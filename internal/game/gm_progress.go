@@ -20,3 +20,21 @@ func (c *Character) SetLevel(request byte) {
 	c.Level = LevelForExp(uint64(c.EXP))
 	c.StatPoints = uint16(min(int(c.StatPoints)+gained*StatPointsPerLevel, math.MaxUint16))
 }
+
+// GMResetAttributeBaseline is GmManager.RestatPlayer's base attribute target.
+const GMResetAttributeBaseline = 10
+
+// ResetAttributes refunds only base allocations above the reset budget. The
+// reference reads bonus-inclusive getters but writes base setters, refunding
+// avatar bonuses again on every reset. Permanent bonuses are not refundable.
+// Returns the points actually granted after saturation; call on a clone.
+func (c *Character) ResetAttributes() uint16 {
+	base := c.Base
+	total := int(base.Strength) + int(base.Constitution) + int(base.Intelligence) + int(base.Wisdom) + int(base.Agility)
+	baseline := Attributes{GMResetAttributeBaseline, GMResetAttributeBaseline, GMResetAttributeBaseline, GMResetAttributeBaseline, GMResetAttributeBaseline}
+	budget := int(baseline.Strength) + int(baseline.Constitution) + int(baseline.Intelligence) + int(baseline.Wisdom) + int(baseline.Agility)
+	refund := min(max(total-budget, 0), math.MaxUint16-int(c.StatPoints))
+	c.Base = baseline
+	c.StatPoints += uint16(refund)
+	return uint16(refund)
+}

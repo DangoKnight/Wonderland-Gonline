@@ -12,7 +12,7 @@ func TestSettingsNativePacketsAndPersistence(t *testing.T) {
 	s, players, wires := partyFixture(t)
 	c := players[0]
 	tradeDo(t, s, c, []byte{33, 2})
-	if p := wires[0].packets(t); len(p) != 1 || !bytes.Equal(p[0], []byte{33, 2, 1, 1, 1, 31}) {
+	if p := wires[0].packets(t); len(p) != 1 || !bytes.Equal(p[0], []byte{33, 2, 1, 1, 1, 1, 31, 0}) {
 		t.Fatal("native defaults", p)
 	}
 	cases := []struct{ in, out []byte }{
@@ -26,7 +26,7 @@ func TestSettingsNativePacketsAndPersistence(t *testing.T) {
 		{[]byte{33, 5}, []byte{33, 5, 1}},
 		{[]byte{33, 5, 0}, []byte{33, 5, 0}},
 		{[]byte{33, 1, 3, 18}, nil},
-		{[]byte{33, 2}, []byte{33, 2, 1, 1, 1, 18}},
+		{[]byte{33, 2}, []byte{33, 2, 1, 1, 1, 1, 18, 0}},
 	}
 	for _, tt := range cases {
 		wires[0].Reset()
@@ -53,7 +53,7 @@ func TestSettingsNativePacketsAndPersistence(t *testing.T) {
 		t.Fatal("settings not saved")
 	}
 	packets, err := s.worldEntryPackets(chars[0], c.view, newPetRoster())
-	if err != nil || !contains(packets, []byte{33, 2, 1, 1, 1, 18}) {
+	if err != nil || !contains(packets, []byte{33, 2, 1, 1, 1, 1, 18, 0}) {
 		t.Fatal("login used fixed preferences", err)
 	}
 	if wires[1].Len() != 0 || wires[2].Len() != 0 {

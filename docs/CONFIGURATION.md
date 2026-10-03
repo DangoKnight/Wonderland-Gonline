@@ -111,6 +111,21 @@ Both characters must have finished loading and have no active battle, trade,
 event, storm or beach sequence. Repairs persist before client updates; repeating
 the command on healthy items makes no changes.
 
+### GM attribute reset
+
+GM accounts can use `/restat` or `/resetstats` (also with `:`), optionally followed
+by an online character ID/name. The command sets each stored base attribute to
+10, refills equipped HP/SP and returns `max(sum(base attributes) - 50, 0)` points.
+Available points saturate at 65,535; feedback reports the points actually added.
+Permanent avatar bonuses still apply to displayed attributes and do not count
+as refundable allocations. Repeating a reset therefore grants no extra points.
+
+The command preserves skills, level, EXP, items and currency. Both characters
+must have finished loading and have no active battle, trade, event, storm or
+beach sequence. State saves before client stat and character snapshots; missing
+targets fail explicitly. This is a free GM operation and is separate from
+player stat-reset items.
+
 ## Static gameplay tuning
 
 The running server uses a startup snapshot of `assets_database`. SQL indexed rows

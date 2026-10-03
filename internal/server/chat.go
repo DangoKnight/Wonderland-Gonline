@@ -69,6 +69,8 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 	switch name[1:] {
 	case "level", "lvl", "points", "sp", "statpoint", "statpoints", "stats", "stat", "exp", "skill":
 		return s.gmProgress(ctx, c, name[1:], words)
+	case "restat", "resetstats":
+		return s.gmRestat(ctx, c, words[1:])
 	case "repair", "fixall":
 		return s.gmRepair(ctx, c, words[1:])
 	case "droprate":

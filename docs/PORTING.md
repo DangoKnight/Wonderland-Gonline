@@ -1021,3 +1021,32 @@ active assets database and three asset backups; integrity checks passed.
 - Repairs save before native AC23 bag removals/additions and equipment synchronization. Metadata, quantities and currency remain intact. Healthy repeats make no changes. Missing targets fail explicitly; active interactions on either actor or target block repair. Failed delivery to a repaired target closes that target's connection for a fresh snapshot while retaining the GM session.
 - Regression tests cover independent packet layouts, native additive inventory replay, forge preservation, persistence, aliases, target lookup, permission/revocation, interaction ownership and save failure. Original source hashes match after CRLF normalization. Remaining GM operations and native-client acceptance remain pending.
 - Verification: focused GM repair regressions, the full `go test -race ./...` suite with imported SQL assets and both original native data paths, and `make fmt-check lint build` passed. The server binary was rebuilt; the running instance was not restarted.
+
+
+## Native Local chat settings correction
+
+The native `aLogin` Local sender reports `Whisper is closed` when its Local
+channel gate is off. Its AC33:2 receive case at `0x2ea812..0x2ea872` reads four
+option bytes, then the channel mask and a final byte passed to a no-op.
+The C# and previous Go snapshot had only three option bytes and the mask;
+that six-byte packet left the native mask field absent.
+
+Go now sends eight bytes: `33, 2, PK, join, trade, option10, channels, tail`.
+`option10` retains the native enabled constructor default (its gameplay meaning
+is unresolved); `tail` is zero. Channel bits and stored preferences stay intact.
+The same builder serves login/reconnect and AC33:2 refresh requests. Independent
+byte fixtures and native-offset tests cover all five channel flags, disabled
+channels, and saved-setting synchronization. After rebuilding, restarting and
+logging in again, the user confirmed Local chat works in the real alogin client.
+
+Verification: focused settings/chat regressions, full native-data and SQL-assets
+race suite, formatting, lint and server build passed.
+
+
+## GM attribute reset continuation
+
+- Ported AC02 `/restat`, `:restat`, `/resetstats` and `:resetstats`, with optional online character target selection. Each base attribute resets to the legacy baseline of 10, positive excess base points return with uint16 saturation, and equipped HP/SP refill.
+- Corrected the reference refund calculation: Equip getters add permanent avatar bonuses, while setters write base values. Refunding the getters would grant avatar-bonus points on every repeated reset. Go refunds only stored base allocations above the 50-point reset budget; low-total characters receive no refund, preserving the legacy baseline behavior.
+- SQL skill table orders supply AC5:3 serialization. Stat updates and the full snapshot publish only after durable save; snapshot or storage failures leave state untouched. Missing targets fail explicitly, busy actors/targets cannot bypass interactions, and failed target delivery is isolated for reconnect. Skills, level/EXP, inventory and currency remain intact.
+- Tests cover independent stat packet bytes, persistence, usable refunds, repeat safety, saturation, permanent bonuses, target authorization, aliases, gameplay gates and failure recovery. Native-client reset acceptance and remaining GM operations are pending.
+- Verification: AC02, GmManager and Equip reference hashes matched after CRLF normalization; focused reset tests and their race run, the full native-data/SQL-assets race suite, formatting, lint and server build passed. The server binary was rebuilt without restarting the running instance.
