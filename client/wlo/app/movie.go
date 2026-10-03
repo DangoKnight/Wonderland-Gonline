@@ -11,6 +11,7 @@ import (
 	"wonderland-go/client/wlo/movie"
 	"wonderland-go/client/wlo/role"
 	"wonderland-go/client/wlo/surface"
+	"wonderland-go/client/wlo/weather"
 	"wonderland-go/client/wlo/world"
 	"wonderland-go/internal/clientassets"
 )
@@ -248,6 +249,9 @@ func (c *Client) movieFrame() bool {
 	}
 	mp.p.Tick()
 	c.sync(mp)
+	// The movie's draw runs the weather passes with its overlay (+0xf9a)
+	// rather than the map's weather.
+	mp.view.Weather, mp.view.WeatherKind = c.weatherLayer(), weather.Kind(mp.p.Overlay)
 	mp.view.Draw()
 	c.drawPictures(mp)
 	c.drawEffects(mp.p)

@@ -19,6 +19,7 @@ import (
 	"wonderland-go/client/wlo/sprites"
 	"wonderland-go/client/wlo/surface"
 	"wonderland-go/client/wlo/text"
+	"wonderland-go/client/wlo/weather"
 	"wonderland-go/client/wlo/world"
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/clientassets"
@@ -105,6 +106,10 @@ type Client struct {
 	// first entry.
 	sceneNames map[uint16]string
 	mapScenes  map[uint16]uint16
+	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
+	// movies, and each scene's weather byte.
+	weather      *weather.Layer
+	sceneWeather map[uint16]byte
 
 	background *surface.Surface // login background object (0x40c27c)
 	logo       int              // its Icon_LoginLogo_1
@@ -207,8 +212,14 @@ func New(o Options) (*Client, error) {
 	c.ChatBar = hud.NewInputBar(c.Env)
 	c.UI.Add(c.ChatBar)
 	c.ChatBar.Message.OnEnter = c.sendChat
+	c.ChatBar.Whisper.OnEnter = c.whisperEnter
+	c.ChatBar.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
+	c.ChatBar.Focus = func(f seui.Control) { c.Input.Focused = f }
+	c.ChatBar.InTeam, c.ChatBar.InGuild = c.inTeam, c.inGuild
 	c.Chat = hud.NewChatLog(c.Env)
 	c.Chat.Now = func() time.Time { return c.Now() }
+	c.Chat.Faces = c.chatFace
+	c.ChatBar.Notice = c.Chat.Notice
 	c.UI.Add(c.Chat)
 	c.Talk = hud.NewTalk(c.Env)
 	c.Talk.Now = func() time.Time { return c.Now() }
@@ -350,10 +361,10 @@ func (c *Client) dispatch(p []byte) {
 		c.Stats.Apply(s[1], binary.LittleEndian.Uint32(s[3:]))
 	case p[0] == protocol.CommandGold && sub == protocol.GoldBalance && len(s) >= 5:
 		c.Stats.Gold = binary.LittleEndian.Uint32(s[1:])
-	case p[0] == protocol.CommandChat && sub == protocol.ChatMapMessage:
-		c.mapChat(s)
-	case p[0] == protocol.CommandChat && (sub == chatNotice || sub == protocol.ChatHeadBanner):
-		// 2/3 and 2/16 (0x2dfd5d): an ID, then text for the notice board.
+	case p[0] == protocol.CommandChat && sub <= protocol.ChatAllyMessage:
+		c.receiveChat(sub, s)
+	case p[0] == protocol.CommandChat && sub == protocol.ChatHeadBanner:
+		// 2/16 (0x2dfd44): an ID, then text for the notice board.
 		if len(s) > chatIDEnd {
 			c.Notices.Show(s[chatIDEnd:], chatNoticeFor, c.Now())
 		}
@@ -439,6 +450,7 @@ func (c *Client) enterWorld(p []byte) {
 		return
 	}
 	c.loadNPCs(w)
+	c.attachWeather(w)
 	w.OnLeg = c.sendLeg
 	w.Now = func() time.Time { return c.Now() }
 	c.MainStatus.Portrait = w.Body

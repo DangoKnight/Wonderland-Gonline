@@ -11,6 +11,7 @@ import (
 
 	"wonderland-go/client/wlo/login"
 	"wonderland-go/client/wlo/seui"
+	"wonderland-go/client/wlo/weather"
 )
 
 // Screen layout of the static view, measured from the original's capture
@@ -128,6 +129,10 @@ type World struct {
 	HideNames bool
 	// Now is the clock for animated scene objects.
 	Now func() time.Time
+	// Weather is the weather layer and WeatherKind the kind it shows: the
+	// scene's, or a movie's overlay.
+	Weather     *weather.Layer
+	WeatherKind weather.Kind
 }
 
 // New enters a map: the scene is loaded and the player dressed.
@@ -180,6 +185,10 @@ func (w *World) Draw() {
 		w.Scene.Draw(scr, cx, cy)
 	}
 	now := w.Now()
+	// The weather's under pass (FUN_00334580) follows the ground.
+	if w.Weather != nil {
+		w.Weather.Under(scr, w.WeatherKind, image.Pt(cx, cy), now)
+	}
 	objects := w.Scene.Objects
 	for i := range objects {
 		if objects[i].Kind < ObjectSorted {
@@ -247,6 +256,10 @@ func (w *World) Draw() {
 		w.lightsFrom = now
 	}
 	w.drawLights(cx, cy, now)
+	// Its over pass (FUN_003346e8) follows the effects list.
+	if w.Weather != nil {
+		w.Weather.Over(scr, w.WeatherKind, image.Pt(cx, cy))
+	}
 	if !w.Cinematic {
 		w.drawMarker(cx, cy, now)
 		w.drawLocation()

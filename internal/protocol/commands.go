@@ -76,12 +76,20 @@ const (
 	HandshakeWorldReady        = 11
 )
 
-// Chat subcommands (AC2).
+// Chat subcommands (AC2). Each carries the speaker's ID and the text both
+// ways, except that a whisper request carries the target's ID; the client
+// shows 2/n on its chat channel n (FUN_0048ac28 via the receive cases at
+// 0x2df0b7) and puts 2/16 on the notice board.
 const (
-	ChatMapMessage = 2
-	// Unresolved wire meaning; retain the numeric code until verified.
-	ChatWireCode4  = 4
-	ChatHeadBanner = 16
+	ChatSystemMessage  = 0
+	ChatWorldMessage   = 1
+	ChatMapMessage     = 2 // the Local channel
+	ChatWhisperMessage = 3
+	ChatGMMessage      = 4
+	ChatTeamMessage    = 5
+	ChatGuildMessage   = 6
+	ChatAllyMessage    = 7
+	ChatHeadBanner     = 16
 )
 
 // CharacterState subcommands (AC5).
@@ -513,7 +521,6 @@ const (
 	EventFrame                 = 1
 	EventPortal                = 8
 	EventHold                  = 9
-	ChatLocalMessage           = 1
 	PoseSet                    = 1
 	PoseStop                   = 3
 	ClinicRestConfirm          = 1

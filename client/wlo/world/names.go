@@ -87,6 +87,30 @@ func SceneMusic(a login.Assets) (map[uint16]string, error) {
 	return out, nil
 }
 
+// SceneWeather maps scene IDs to their weather byte (the record's +0x29,
+// tested by FUN_00334120; weather.SceneKind names the values). The export
+// still calls it by its file offset.
+func SceneWeather(a login.Assets) (map[uint16]byte, error) {
+	var doc struct {
+		Records []struct {
+			Fields struct {
+				ID      uint16 `json:"id"`
+				Weather byte   `json:"unknown_u8_offset_35"`
+			} `json:"fields"`
+		} `json:"records"`
+	}
+	if err := readJSON(a.DataPath(sceneExport), &doc); err != nil {
+		return nil, err
+	}
+	out := map[uint16]byte{}
+	for _, r := range doc.Records {
+		if r.Fields.Weather != 0 {
+			out[r.Fields.ID] = r.Fields.Weather
+		}
+	}
+	return out, nil
+}
+
 // MapScenes maps each map ID to its scene.
 func MapScenes(a login.Assets) (map[uint16]uint16, error) {
 	var doc struct {

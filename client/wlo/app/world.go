@@ -73,6 +73,7 @@ func (c *Client) warp(p []byte) {
 			return
 		}
 		c.loadNPCs(w)
+		c.attachWeather(w)
 		w.OnLeg = c.sendLeg
 		w.Now = func() time.Time { return c.Now() }
 		c.World = w

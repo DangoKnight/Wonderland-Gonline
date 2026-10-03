@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"wonderland-go/client/wlo/seui"
+	"wonderland-go/client/wlo/surface"
 )
 
 // ChatLog is TTalkMsgForm (constructor FUN_0048bbf4, adding FUN_0048ac28,
@@ -20,6 +21,9 @@ type ChatLog struct {
 	Lock, Up, Down, Switch *seui.FixedButton
 	Now                    func() time.Time
 	Lines                  []ChatLine
+	// Faces finds a speaker's look by ID (the player, then the map's
+	// players); nil leaves the row without an icon.
+	Faces func(id uint32) SpeakerFace
 
 	ticker    []byte   // +0x170, the shown ticker text
 	queue     [][]byte // +0x178, system lines waiting for the ticker
@@ -33,8 +37,16 @@ type ChatLog struct {
 
 // ChatLine is one wrapped row of the list.
 type ChatLine struct {
-	Text []byte
-	Ink  uint16
+	Text    []byte
+	Ink     uint16
+	Channel int    // the row's channel (+0x4cc)
+	Speaker uint32 // the speaker's ID (+0x4d4), 0 for none
+	First   bool   // the entry's first row
+}
+
+// SpeakerFace draws a speaker's face sprite (Human.DrawFace).
+type SpeakerFace interface {
+	DrawFace(dst *surface.Surface, x, y, action int, blinking bool)
 }
 
 const (
@@ -44,7 +56,7 @@ const (
 	chatListTop             = 0xe
 	chatListWidth           = 0x208 - 0x73
 	chatListHeight          = 100 - 0x28
-	chatRowHeight           = 0x12
+	chatRowHeight           = 0x14
 	chatCharWidth           = 8
 	chatMaxLines            = 100 // FUN_0048e37c keeps 100 entries (20 in mode 2)
 	chatTextStyle           = 2
@@ -91,15 +103,20 @@ func drawStretched(env *seui.Env, pic, x, y, w, h, split int) {
 	pics.DrawRect(scr, pic, x, y+max(h-bottom, split), image.Rect(0, split, w, ph), true)
 }
 
-// Chat channels (TTalkMsgForm's list colours, FUN_0048d250, and the input
-// bar's channels): system lines are 0.
+// Chat channels of the list (FUN_0048ac28's last argument, also the
+// colour entry): 2/n arrives on channel n for n up to 7.
 const (
-	ChannelSystem = 0
-	ChannelWorld  = 1
-	ChannelLocal  = 2
-	ChannelWhisp  = 3
-	ChannelTeam   = 4
-	ChannelGuild  = 5
+	ChannelSystem  = 0  // no prefix ("(SystemPromp):" without a speaker); joins the ticker
+	ChannelWorld   = 1  // "(World)"
+	ChannelLocal   = 2  // "(Local)"
+	ChannelWhisper = 3  // "(Whisp)"
+	ChannelGM      = 4  // "(GM)"
+	ChannelTeam    = 5  // "(Team)"
+	ChannelGuild   = 6  // "(Guild)"
+	ChannelAlly    = 7  // "(Ally)"
+	ChannelNotice  = 10 // the client's own messages, as given
+	ChannelPrompt  = 11 // "(System):"
+	ChannelBouquet = 12 // "(Bouquet):"
 )
 
 // chatPalette is the colour table FUN_003beb14 fills (0x72a360), and
@@ -117,10 +134,31 @@ func ChannelInk(channel int) uint16 {
 	return chatPalette[6]
 }
 
-// Line prefixes of FUN_0048ac28 (strings at 0x48b2c8…).
+// Line prefixes of FUN_0048ac28 (strings at 0x48b284…): a speaker's
+// line reads prefix + name + ":" + text.
 var (
-	localTag  = []byte("(Local)")
-	nameColon = []byte(":")
+	channelTag = map[int][]byte{
+		ChannelWorld:   []byte("(World)"),
+		ChannelLocal:   []byte("(Local)"),
+		ChannelWhisper: []byte("(Whisp)"),
+		ChannelGM:      []byte("(GM)"),
+		ChannelTeam:    []byte("(Team)"),
+		ChannelGuild:   []byte("(Guild)"),
+		ChannelAlly:    []byte("(Ally)"),
+	}
+	systemPromptTag = []byte("(SystemPromp):")
+	promptTag       = []byte("(System):")
+	bouquetTag      = []byte("(Bouquet):")
+	nameColon       = []byte(":")
+)
+
+// Speaker icons (FUN_004905e8): rows of channels 1..7 whose speaker is
+// known show the speaker's face sprite in action 4 (+0x121 = 4), 10 pixels
+// left of the list and 10 below the row's top.
+const (
+	chatFaceAction = 4
+	chatFaceLeft   = -10
+	chatFaceDown   = 10
 )
 
 // NewChatLog is FUN_0048bbf4's resting layout.
@@ -137,14 +175,47 @@ func NewChatLog(env *seui.Env) *ChatLog {
 	return l
 }
 
-// Add is FUN_0048ac28 for an already formatted line: it is wrapped into
-// the list, and a system line also joins the ticker's queue.
-func (l *ChatLog) Add(text []byte, channel int) {
+// Say is FUN_0048ac28: the line is formatted for its channel, with the
+// speaker's name, and added.
+func (l *ChatLog) Say(speaker uint32, name, text []byte, channel int) {
+	var line []byte
+	switch channel {
+	case ChannelSystem:
+		if speaker == 0 {
+			line = append(append([]byte(nil), systemPromptTag...), text...)
+		} else {
+			line = text
+		}
+	case ChannelPrompt:
+		line = append(append([]byte(nil), promptTag...), text...)
+	case ChannelBouquet:
+		line = append(append([]byte(nil), bouquetTag...), text...)
+	default:
+		if tag, ok := channelTag[channel]; ok {
+			line = bytes.Join([][]byte{tag, name, nameColon, text}, nil)
+		} else {
+			line = text
+		}
+	}
+	l.add(line, channel, speaker)
+}
+
+// Add adds an already formatted line without a speaker; a system line
+// also joins the ticker's queue.
+func (l *ChatLog) Add(text []byte, channel int) { l.add(text, channel, 0) }
+
+// Notice is a channel-10 line: the client's own messages ("No target"),
+// red and without a prefix.
+func (l *ChatLog) Notice(text string) { l.add([]byte(text), ChannelNotice, 0) }
+
+// add wraps a line into the list (FUN_0048e37c).
+func (l *ChatLog) add(text []byte, channel int, speaker uint32) {
 	if channel == ChannelSystem {
 		l.queue = append(l.queue, append([]byte(nil), text...))
 	}
 	ink := ChannelInk(channel)
 	per := chatListWidth / chatCharWidth
+	first := true
 	for len(text) > 0 {
 		n := min(len(text), per)
 		// Keep a double-byte character whole.
@@ -159,18 +230,13 @@ func (l *ChatLog) Add(text []byte, channel int) {
 				}
 			}
 		}
-		l.Lines = append(l.Lines, ChatLine{append([]byte(nil), text[:n]...), ink})
+		l.Lines = append(l.Lines, ChatLine{Text: append([]byte(nil), text[:n]...), Ink: ink, Channel: channel, Speaker: speaker, First: first})
+		first = false
 		text = text[n:]
 	}
 	if over := len(l.Lines) - chatMaxLines; over > 0 {
 		l.Lines = l.Lines[over:]
 	}
-}
-
-// AddLocal is a Local channel line: "(Local)" + name + ":" + text.
-func (l *ChatLog) AddLocal(name, text []byte) {
-	line := bytes.Join([][]byte{localTag, name, nameColon, text}, nil)
-	l.Add(line, ChannelLocal)
 }
 
 // Clear is FUN_0048cab4: the list and the ticker empty.
@@ -233,6 +299,11 @@ func (l *ChatLog) Paint() {
 	first := max(len(l.Lines)-rows, 0)
 	y := l.Top + chatListTop + (rows-(len(l.Lines)-first))*chatRowHeight
 	for _, line := range l.Lines[first:] {
+		if line.First && line.Speaker != 0 && line.Channel >= ChannelWorld && line.Channel <= ChannelAlly && l.Faces != nil {
+			if f := l.Faces(line.Speaker); f != nil {
+				f.DrawFace(scr, l.Left+chatListLeft+chatFaceLeft, y+chatFaceDown, chatFaceAction, false)
+			}
+		}
 		w := len(line.Text)*chatCharWidth + chatCharWidth
 		txt.Draw(l.Left+chatListLeft, y, 0, false, true, scr, line.Text, 0, w, 0, line.Ink, chatTextStyle)
 		y += chatRowHeight

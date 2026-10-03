@@ -1,6 +1,7 @@
 package world
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"time"
@@ -148,4 +149,18 @@ func ParsePlace(p []byte) (id uint32, mapID uint16, x, y int, ok bool) {
 	}
 	return binary.LittleEndian.Uint32(p), binary.LittleEndian.Uint16(p[4:]),
 		int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:])), true
+}
+
+// PeerByName is FUN_0042a478 over the map's players: the ID of the player
+// with that name (letter case ignored), the player's own included.
+func (w *World) PeerByName(name []byte) (uint32, bool) {
+	if bytes.EqualFold(name, w.Player.Name) {
+		return w.Player.ID, true
+	}
+	for id, p := range w.Peers {
+		if bytes.EqualFold(name, p.Name) {
+			return id, true
+		}
+	}
+	return 0, false
 }

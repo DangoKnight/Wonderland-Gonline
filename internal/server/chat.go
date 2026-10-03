@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/binary"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,8 +21,8 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 	}
 	text := string(p[2:])
 	switch p[1] {
-	case protocol.ChatLocalMessage:
-		return s.worldChat(c, text)
+	case protocol.ChatWorldMessage:
+		return s.worldChat(c, text, false)
 	case protocol.ChatMapMessage:
 		if strings.HasPrefix(text, ":") || strings.HasPrefix(text, "/") {
 			if !validChatText(text, chatCommandMaxBytes) {
@@ -35,7 +36,19 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 		if !validChatText(text, chatMessageMaxBytes) {
 			return s.chatFeedback(c, "Chat messages must contain 1–60 bytes without control characters.")
 		}
-		s.deliverChat(c, s.peers(c), game.ChatChannelLocal, protocol.Builder{protocol.CommandChat, protocol.ChatMapMessage}.U32(c.character.ID).Bytes(p[2:]), false)
+		s.deliverChat(c, s.peers(c), game.ChatChannelLocal, chatPacket(protocol.ChatMapMessage, c, p[2:]), false)
+		return nil
+	case protocol.ChatWhisperMessage:
+		// The client names the target by ID before the text.
+		if len(p) < 2+4 {
+			return protocol.ErrMalformed
+		}
+		target := s.onlineByID(binary.LittleEndian.Uint32(p[2:]))
+		return s.whisper(c, target, string(p[6:]))
+	case protocol.ChatTeamMessage:
+		return s.teamChat(c, text)
+	case protocol.ChatGuildMessage:
+		// Guilds are not ported; the client refuses the channel without one.
 		return nil
 	}
 	return ErrUnsupported
@@ -157,7 +170,7 @@ func (s *Server) notice(text string) {
 	if text == "" {
 		return
 	}
-	packet := protocol.Builder{protocol.CommandChat, protocol.ChatWireCode4}.U32(0).Bytes([]byte(text))
+	packet := protocol.Builder{protocol.CommandChat, protocol.ChatGMMessage}.U32(0).Bytes([]byte(text))
 	s.mu.Lock()
 	recipients := make([]*Session, 0, len(s.sessions))
 	for _, c := range s.sessions {

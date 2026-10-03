@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"wonderland-go/internal/game"
@@ -25,10 +24,11 @@ func validChatText(text string, limit int) bool {
 	return true
 }
 
-// Extra channel commands use the verified native head-banner packet until the
-// original client's dedicated whisper/team/world receive layouts are ported.
-func chatChannelPacket(label string, sender *Session, text string) []byte {
-	return protocol.Builder{protocol.CommandChat, protocol.ChatHeadBanner}.U32(0).Bytes([]byte(fmt.Sprintf("(%s) %s: %s", label, sender.character.Name, text)))
+// chatPacket is 2/sub with the speaker's ID and the text, the layout the
+// client reads for every chat channel (2/1 World, 2/2 Local, 2/3 Whisper,
+// 2/5 Team).
+func chatPacket(sub byte, sender *Session, text []byte) []byte {
+	return protocol.Builder{protocol.CommandChat, sub}.U32(sender.character.ID).Bytes(text)
 }
 
 func (s *Server) deliverChat(sender *Session, recipients []*Session, channel byte, packet []byte, echo bool) {
@@ -46,7 +46,9 @@ func (s *Server) chatFeedback(c *Session, text string) error {
 	return c.send(headBanner(text))
 }
 
-func (s *Server) worldChat(c *Session, text string) error {
+// worldChat is 2/1 to every player in the world. The client logs its own
+// line when it sends 2/1, so only the chat commands echo it.
+func (s *Server) worldChat(c *Session, text string, echo bool) error {
 	if !validChatText(text, chatMessageMaxBytes) {
 		return s.chatFeedback(c, "Chat messages must contain 1–60 bytes without control characters.")
 	}
@@ -54,7 +56,47 @@ func (s *Server) worldChat(c *Session, text string) error {
 	for _, peer := range s.world {
 		recipients = append(recipients, peer)
 	}
-	s.deliverChat(c, recipients, game.ChatChannelWorld, chatChannelPacket("World", c, text), true)
+	s.deliverChat(c, recipients, game.ChatChannelWorld, chatPacket(protocol.ChatWorldMessage, c, []byte(text)), echo)
+	return nil
+}
+
+// teamChat is 2/5 to the party, the sender included: the client does not
+// log its own Team line.
+func (s *Server) teamChat(c *Session, text string) error {
+	if !validChatText(text, chatMessageMaxBytes) {
+		return s.chatFeedback(c, "Usage: /team <message> (up to 60 bytes)")
+	}
+	if c.party == nil {
+		return s.chatFeedback(c, "You are not in a party.")
+	}
+	s.deliverChat(c, c.party.members, game.ChatChannelTeam, chatPacket(protocol.ChatTeamMessage, c, []byte(text)), true)
+	return nil
+}
+
+// whisper is 2/3 from the sender to the target, echoed to the sender: the
+// client does not log its own whisper.
+func (s *Server) whisper(c *Session, target *Session, text string) error {
+	if !validChatText(text, chatMessageMaxBytes) {
+		return s.chatFeedback(c, "Usage: /whisper <character ID or name> <message>")
+	}
+	if target == nil || target.character.Preferences().Channels&game.ChatChannelWhisper == 0 {
+		return s.chatFeedback(c, "That character is unavailable for whispers.")
+	}
+	recipients := []*Session{target}
+	if target != c {
+		recipients = append(recipients, c)
+	}
+	s.deliverChat(c, recipients, game.ChatChannelWhisper, chatPacket(protocol.ChatWhisperMessage, c, []byte(text)), true)
+	return nil
+}
+
+// onlineByID is a ready player in the world by character ID.
+func (s *Server) onlineByID(id uint32) *Session {
+	for _, peer := range s.world {
+		if peer.character != nil && peer.ready && peer.character.ID == id {
+			return peer
+		}
+	}
 	return nil
 }
 
@@ -63,21 +105,11 @@ func (s *Server) chatChannelCommand(c *Session, text string) (bool, error) {
 	header, body, _ := strings.Cut(text, " ")
 	switch strings.ToLower(header) {
 	case "/world", ":world", "/global", ":global":
-		return true, s.worldChat(c, body)
+		return true, s.worldChat(c, body, true)
 	case "/team", ":team", "/party", ":party", "/p":
-		if !validChatText(body, chatMessageMaxBytes) {
-			return true, s.chatFeedback(c, "Usage: /team <message> (up to 60 bytes)")
-		}
-		if c.party == nil {
-			return true, s.chatFeedback(c, "You are not in a party.")
-		}
-		s.deliverChat(c, c.party.members, game.ChatChannelTeam, chatChannelPacket("Team", c, body), true)
-		return true, nil
+		return true, s.teamChat(c, body)
 	case "/whisper", ":whisper", "/w", "/tell":
 		targetName, message, _ := strings.Cut(strings.TrimSpace(body), " ")
-		if !validChatText(message, chatMessageMaxBytes) {
-			return true, s.chatFeedback(c, "Usage: /whisper <character ID or name> <message>")
-		}
 		var target *Session
 		id, err := strconv.ParseUint(targetName, 10, 32)
 		for _, peer := range s.world {
@@ -90,14 +122,7 @@ func (s *Server) chatChannelCommand(c *Session, text string) (bool, error) {
 				break
 			}
 		}
-		if target == nil || target.character.Preferences().Channels&game.ChatChannelWhisper == 0 {
-			return true, s.chatFeedback(c, "That character is unavailable for whispers.")
-		}
-		s.deliverChat(c, []*Session{target}, game.ChatChannelWhisper, chatChannelPacket("Whisper", c, message), true)
-		if target != c {
-			return true, s.chatFeedback(c, fmt.Sprintf("(Whisper to %s) %s", target.character.Name, message))
-		}
-		return true, nil
+		return true, s.whisper(c, target, message)
 	}
 	return false, nil
 }

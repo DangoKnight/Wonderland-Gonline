@@ -16,24 +16,29 @@ const (
 	EffectReset   = 0 // no overlay, full light
 	EffectDark    = 1 // the light goes to 0
 	EffectFadeOut = 2 // the light fades to 0, 5 a frame
-	EffectRain    = 3 // overlay 1
+	EffectLeaves  = 3 // overlay 1
 	EffectSnow    = 4 // overlay 2
-	EffectWeather = 5 // overlay 3
+	EffectRain    = 5 // overlay 3
 	EffectKeep    = 6
-	EffectRed     = 7 // overlay 7
-	EffectGrey    = 8 // overlay 8
-	EffectTint    = 9 // overlay 9, the stage's colour
-	EffectTen     = 10
+	EffectRed     = 7  // overlay 7
+	EffectGrey    = 8  // overlay 8
+	EffectTint    = 9  // overlay 9, the stage's colour
+	EffectSteam   = 10 // overlay 10
 )
 
 // Overlays (+0xf9a). 7, 8 and 9 fill the screen with ro_ARGB colours
-// through ro_Clipper_Alpha_Fill; 1, 2, 3 and 10 are the weather effects
-// of FUN_00334580, not ported.
+// through ro_Clipper_Alpha_Fill; 1, 2, 3 and 10 are the weather layer's
+// kinds (weather.Leaves, Snow, Rain, Steam), which the movie's draw runs
+// in place of the map's weather.
 const (
-	OverlayNone = 0
-	OverlayRed  = 7
-	OverlayGrey = 8
-	OverlayTint = 9
+	OverlayNone   = 0
+	OverlayLeaves = 1
+	OverlaySnow   = 2
+	OverlayRain   = 3
+	OverlayRed    = 7
+	OverlayGrey   = 8
+	OverlayTint   = 9
+	OverlaySteam  = 10
 )
 
 // Shake operands.
@@ -145,13 +150,15 @@ func (p *Player) applyEffects(now time.Time) {
 		p.Light = 0
 	case EffectFadeOut:
 		p.Light, p.fading = lightFull, true
-	case EffectRain:
-		p.Overlay = 1
+	case EffectLeaves:
+		p.Overlay = OverlayLeaves
 	case EffectSnow:
-		p.Overlay = 2
-	case EffectWeather:
-		p.Overlay = 3
-	case EffectRed, EffectGrey, EffectTint, EffectTen:
+		p.Overlay = OverlaySnow
+	case EffectRain:
+		p.Overlay = OverlayRain
+	case EffectSteam:
+		p.Overlay = OverlaySteam
+	case EffectRed, EffectGrey, EffectTint:
 		p.Overlay = st.Effect
 	}
 	for _, v := range []byte{st.ShakeA, st.ShakeB} {
