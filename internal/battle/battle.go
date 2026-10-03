@@ -109,11 +109,13 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
-	Skills   map[uint16]assets.Skill
-	Timing   map[uint16]int
-	Critical game.CriticalHits
-	Next     func(lo, hi int) int
-	Float    func() float64
+	// Zero retains the default multiplier for existing rule constructors.
+	DropRateMultiplier float64
+	Skills             map[uint16]assets.Skill
+	Timing             map[uint16]int
+	Critical           game.CriticalHits
+	Next               func(lo, hi int) int
+	Float              func() float64
 }
 
 // Battle is ActiveBattle for one party against monsters. PvP is not ported.
@@ -1036,22 +1038,37 @@ type Drop struct {
 	Count byte
 }
 
+const (
+	DefaultDropRateMultiplier = 1.0
+	MinDropRateMultiplier     = 0.1
+	MaxDropRateMultiplier     = 100.0
+	dropRateCalibration       = 0.35
+	dropRateFloorPercent      = 5.0
+	dropPercentScale          = 100.0
+	dropNativeItemIDLimit     = 65000
+)
+
 // RollDrops is MonsterDropManager.RollDrops for one monster: configured entries that
 // also appear in the monster's native Npc.dat slots, calibrated to 35% of the configured
-// rate with a 5% floor, and at most one entry.
+// rate times the live multiplier with a 5% floor, and at most one entry.
 func (r Rules) RollDrops(table []assets.Drop, native [5]uint16, known func(uint16) bool) []Drop {
+	multiplier := r.DropRateMultiplier
+	if multiplier == 0 || math.IsNaN(multiplier) || math.IsInf(multiplier, 0) {
+		multiplier = DefaultDropRateMultiplier
+	}
+	multiplier = min(MaxDropRateMultiplier, max(MinDropRateMultiplier, multiplier))
 	for _, e := range table {
 		inNative := false
 		for _, id := range native {
-			if id > 0 && id < 65000 && id == e.Item {
+			if id > 0 && id < dropNativeItemIDLimit && id == e.Item {
 				inNative = true
 			}
 		}
-		if !inNative || e.Rate <= 0 || e.Min < 1 || e.Max < e.Min || e.Max > 50 {
+		if !inNative || e.Rate <= 0 || e.Min < 1 || e.Max < e.Min || e.Max > game.MaxItemStack || math.IsNaN(e.Rate) || math.IsInf(e.Rate, 0) {
 			continue
 		}
-		roll := r.Float() * 100
-		if roll > math.Max(5, e.Rate*0.35) || !known(e.Item) {
+		roll := r.Float() * dropPercentScale
+		if roll > math.Max(dropRateFloorPercent, e.Rate*dropRateCalibration*multiplier) || !known(e.Item) {
 			continue
 		}
 		count := e.Min

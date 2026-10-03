@@ -685,9 +685,19 @@
 				"internal/server/travel_commands.go",
 				"internal/server/travel_commands_test.go",
 				"internal/server/gm_progress.go",
-				"internal/server/gm_progress_test.go"
+				"internal/server/gm_progress_test.go",
+				"internal/server/drop_rate.go",
+				"internal/server/drop_rate_test.go",
+				"internal/server/combat.go",
+				"internal/battle/drop_rate_test.go",
+				"internal/server/gm_repair.go",
+				"internal/server/gm_repair_test.go",
+				"internal/game/gm_progress.go",
+				"internal/game/gm_restat_test.go",
+				"internal/server/gm_restat.go",
+				"internal/server/gm_restat_test.go"
 			],
-			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat TODO continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending."
+			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending. Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC03.cs",
@@ -1058,9 +1068,11 @@
 			"sha256": "78492e3a4d1292a0ad962b68a0a8d22c1e41433e5f63c814dbba7ab950f4c0f2",
 			"go_files": [
 				"internal/game/settings.go",
-				"internal/server/settings.go"
+				"internal/server/settings.go",
+				"internal/game/settings_test.go",
+				"internal/server/settings_test.go"
 			],
-			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending."
+			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending. Native alogin compatibility correction: AC33:2 now supplies four option values, channel mask at payload byte 6 and a trailing no-op byte (eight bytes total). The original six-byte C# ToArray misplaced the mask and disabled native Local chat with the misleading Whisper is closed error. Native receive trace 0x2ea812..0x2ea872 and FUN_002823ac/FUN_00482abc establish offsets and unchanged 1-based channel bit order. Unresolved option 10 keeps native constructor enabled default; tail is zero. Golden tests cover defaults, disabled channels and independent per-bit native decoding; settings refresh and login persistence expectations updated. The user confirmed Local chat works in the real alogin client after restarting and logging in again."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC34.cs",
@@ -1779,8 +1791,13 @@
 			"sha256": "43c56bee8c91bcce1501bcbb451281aa46e24c735ae5623d850bb8e58b9d220d",
 			"go_files": [
 				"internal/assets/quests.go",
-				"internal/battle/battle.go"
-			]
+				"internal/battle/battle.go",
+				"internal/server/drop_rate.go",
+				"internal/server/drop_rate_test.go",
+				"internal/server/combat.go",
+				"internal/battle/drop_rate_test.go"
+			],
+			"notes": "Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/Battle/PalaceTrialManager.cs",
@@ -2265,9 +2282,12 @@
 				"internal/game/banking_test.go",
 				"internal/server/banking.go",
 				"internal/server/banking_test.go",
-				"internal/store/banking_test.go"
+				"internal/store/banking_test.go",
+				"internal/game/gm_restat_test.go",
+				"internal/server/gm_restat.go",
+				"internal/server/gm_restat_test.go"
 			],
-			"notes": "Includes Equip.SetLevel threshold EXP, positive level-point grants, downward level changes and equipped vitals. Requested level 200 preserves the non-reborn displayed cap of 199. Point grants saturate; rebirth and EXP beyond uint32 remain pending. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending."
+			"notes": "Includes Equip.SetLevel threshold EXP, positive level-point grants, downward level changes and equipped vitals. Requested level 200 preserves the non-reborn displayed cap of 199. Point grants saturate; rebirth and EXP beyond uint32 remain pending. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Friends.cs",
@@ -2316,9 +2336,15 @@
 				"internal/store/mall_adjust.go",
 				"internal/admin/mall.go",
 				"internal/server/travel_commands.go",
-				"internal/server/travel_commands_test.go"
+				"internal/server/travel_commands_test.go",
+				"internal/server/gm_repair.go",
+				"internal/server/gm_repair_test.go",
+				"internal/game/gm_progress.go",
+				"internal/game/gm_restat_test.go",
+				"internal/server/gm_restat.go",
+				"internal/server/gm_restat_test.go"
 			],
-			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending."
+			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Guild.cs",
@@ -2459,9 +2485,11 @@
 			"sha256": "e5af44c69bd6b2e7b5d3114f793ff288f816fefad68c0a0d83fb14ce600f1cee",
 			"go_files": [
 				"internal/game/settings.go",
-				"internal/server/settings.go"
+				"internal/server/settings.go",
+				"internal/game/settings_test.go",
+				"internal/server/settings_test.go"
 			],
-			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending."
+			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending. Native alogin compatibility correction: AC33:2 now supplies four option values, channel mask at payload byte 6 and a trailing no-op byte (eight bytes total). The original six-byte C# ToArray misplaced the mask and disabled native Local chat with the misleading Whisper is closed error. Native receive trace 0x2ea812..0x2ea872 and FUN_002823ac/FUN_00482abc establish offsets and unchanged 1-based channel bit order. Unresolved option 10 keeps native constructor enabled default; tail is zero. Golden tests cover defaults, disabled channels and independent per-bit native decoding; settings refresh and login persistence expectations updated. The user confirmed Local chat works in the real alogin client after restarting and logging in again."
 		},
 		{
 			"source": "wlo.pserver.core/Game/QuestRelated/PlayerQuest.cs",
