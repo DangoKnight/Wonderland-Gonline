@@ -41,11 +41,16 @@ func (c *Client) receiveChat(sub byte, s []byte) {
 	if sub != protocol.ChatSystemMessage && sub != protocol.ChatGMMessage && len(text) > chatMaxReceived {
 		text = text[:chatMaxReceived]
 	}
-	name := c.World.PeerName(id)
+	name := c.playerName(id)
 	if sub == protocol.ChatTeamMessage && name == nil {
 		return
 	}
 	c.Chat.Say(id, name, text, int(sub))
+	// Another player's whisper joins the recent whisperers (FUN_0048ac28
+	// case 3 → FUN_00268cdc).
+	if sub == protocol.ChatWhisperMessage && id != c.World.Player.ID && len(name) > 0 {
+		c.ChatBar.RememberWhisperer(name, false)
+	}
 }
 
 // chatFace is a speaker's look for the chat log's icon: the player, or a
@@ -141,7 +146,7 @@ func (c *Client) sendChat() {
 			bar.Remember()
 			return
 		}
-		if c.World.PeerName(bar.Target) == nil {
+		if c.playerName(bar.Target) == nil {
 			c.Chat.Notice(targetOffline)
 			bar.Target = 0
 			return
@@ -181,7 +186,7 @@ func (c *Client) msgCommand(text []byte) ([]byte, bool) {
 	}
 	name, body, _ := bytes.Cut(rest, []byte(" "))
 	c.ChatBar.SelectChannel(hud.InputWhisper)
-	id, ok := c.World.PeerByName(name)
+	id, ok := c.playerByName(name)
 	if !ok {
 		c.ChatBar.Target = 0
 		return nil, false
@@ -203,7 +208,7 @@ func (c *Client) whisperEnter() {
 		bar.Target = 0
 		return
 	}
-	id, ok := c.World.PeerByName(bar.Whisper.Text)
+	id, ok := c.playerByName(bar.Whisper.Text)
 	if !ok {
 		c.Chat.Notice(noSuchPerson)
 		bar.Target = 0
@@ -213,9 +218,24 @@ func (c *Client) whisperEnter() {
 	c.whisperTo(id)
 }
 
+// SpeakerPress is FUN_00496ca4's chat check: a press while the pointer is
+// over a speaker's icon in the chat log (and the channel list is closed)
+// whispers to that speaker, without the "Whisp to" line (+0x1b4), and
+// takes the press.
+func (c *Client) SpeakerPress() bool {
+	if c.World == nil || c.Chat == nil || !c.Chat.Visible || c.ChatBar.Frame.Visible || c.Chat.Hovered == 0 {
+		return false
+	}
+	c.quietWhisper = true
+	c.whisperTo(c.Chat.Hovered)
+	c.quietWhisper = false
+	return true
+}
+
 // whisperTo is FUN_00269068: the target is set (not the player), the log
-// says "Whisp to <<name>>", and the bar moves to Whisper with the name in
-// its field.
+// says "Whisp to <<name>>" (unless a portrait was pressed), and the bar
+// moves to Whisper with the name in its field and the keyboard on the
+// message.
 func (c *Client) whisperTo(id uint32) {
 	bar := c.ChatBar
 	if id == bar.Target {
@@ -226,10 +246,13 @@ func (c *Client) whisperTo(id uint32) {
 		bar.Target = 0
 		return
 	}
-	name := c.World.PeerName(id)
-	line := bytes.Join([][]byte{[]byte(whisperToOpen), name, []byte(whisperToClose)}, nil)
-	c.Chat.Say(id, nil, line, hud.ChannelNotice)
+	name := c.playerName(id)
+	if !c.quietWhisper {
+		line := bytes.Join([][]byte{[]byte(whisperToOpen), name, []byte(whisperToClose)}, nil)
+		c.Chat.Say(id, nil, line, hud.ChannelNotice)
+	}
 	bar.SelectChannel(hud.InputWhisper)
+	bar.RememberWhisperer(name, true)
 	bar.Whisper.SetText(name)
 	c.Input.Focused = bar.Message
 }
@@ -245,3 +268,37 @@ func (c *Client) hasRadio() bool {
 // ported, so the player is in neither.
 func (c *Client) inTeam() bool  { return false }
 func (c *Client) inGuild() bool { return false }
+
+// The online players the client knows (PTR_DAT_004c9788, filled by every
+// AC4 through FUN_00429a38 whatever its map): whispers find their targets
+// and speakers' names here, beyond the map's players.
+
+// rememberPlayer keeps an AC4's ID and name.
+func (c *Client) rememberPlayer(id uint32, name []byte) {
+	if c.players == nil {
+		c.players = map[uint32][]byte{}
+	}
+	c.players[id] = append([]byte(nil), name...)
+}
+
+// playerName is FUN_003c011c: a known player's name, nil when unknown.
+func (c *Client) playerName(id uint32) []byte {
+	if n := c.World.PeerName(id); n != nil {
+		return n
+	}
+	return c.players[id]
+}
+
+// playerByName is FUN_0042a478: the ID of a known player by name, letter
+// case ignored.
+func (c *Client) playerByName(name []byte) (uint32, bool) {
+	if id, ok := c.World.PeerByName(name); ok {
+		return id, true
+	}
+	for id, n := range c.players {
+		if bytes.EqualFold(n, name) {
+			return id, true
+		}
+	}
+	return 0, false
+}

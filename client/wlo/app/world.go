@@ -46,9 +46,13 @@ func (c *Client) warp(p []byte) {
 		return
 	}
 	if id := binary.LittleEndian.Uint32(p); id != c.World.Player.ID {
-		// Another player placed on a map: gone unless it is ours.
-		if binary.LittleEndian.Uint16(p[4:]) != c.World.Player.Map {
+		// Another player placed on a map: gone unless it is ours; map 0
+		// means the player left the game.
+		if m := binary.LittleEndian.Uint16(p[4:]); m != c.World.Player.Map {
 			c.World.RemovePeer(id)
+			if m == 0 {
+				delete(c.players, id)
+			}
 		} else {
 			c.World.PlacePeer(id, int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:])))
 		}
@@ -103,7 +107,7 @@ const (
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
-	if c.World == nil {
+	if c.World == nil || c.sceneFrozen() {
 		return
 	}
 	if c.movie != nil {
@@ -206,6 +210,7 @@ func (c *Client) peerAppears(s []byte) {
 	if err != nil {
 		return
 	}
+	c.rememberPlayer(p.ID, p.Name)
 	var newBody func() login.RoleView
 	if c.lib != nil {
 		newBody = func() login.RoleView { return role.NewHuman(c.lib, c.items) }

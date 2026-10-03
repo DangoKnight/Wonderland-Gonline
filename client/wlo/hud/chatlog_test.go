@@ -84,3 +84,11 @@ func TestChatPrefixes(t *testing.T) {
 		t.Fatalf("notice ink %#x, ticker queue %d", last.Ink, len(l.queue))
 	}
 }
+
+// TestWhisperInk: whispers are orange (0xfc00, the default ChannelColor2
+// 10), as the original shows them.
+func TestWhisperInk(t *testing.T) {
+	if ink := ChannelInk(ChannelWhisper); ink != 0xfc00 {
+		t.Fatalf("whisper ink %#x", ink)
+	}
+}

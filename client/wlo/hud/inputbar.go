@@ -9,8 +9,8 @@ import (
 
 // InputBar is TSe_InputBar (constructor FUN_0026348c, paint FUN_00268194):
 // the chat bar along the bottom: the channel button, the whisper name and
-// message fields, and the emote button. Not ported yet: the whisper name
-// list (+0x174), the emote panel (icon_expre_1..31), the mail animation,
+// message fields, the recent whisperers, and the emote button. Not ported
+// yet: the emote panel (icon_expre_1..31), the mail animation,
 // the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
 // and auto-play buttons.
 type InputBar struct {
@@ -28,6 +28,13 @@ type InputBar struct {
 	Frame  *seui.Panel                             // +0x1e8 icon_Channelframe_1
 	Others [channelListSlots + 1]*seui.FixedButton // +0x1b4..
 	others [channelListSlots + 1]byte              // +0x1d0.. their channels
+	// The recent whisperers (+0x174 in the panel +0x178): shown on the
+	// Whisper channel while the pointer is over the whisper field or the
+	// list (FUN_00268194); a pick fills the field and takes the name as
+	// the target (FUN_00268c38 → OnWhisperName).
+	Whisperers    *seui.SelectText
+	WhispererBox  *seui.Panel
+	OnWhisperName func()
 	// Pointer is the pointer's screen position.
 	Pointer func() (int, int)
 	// InTeam and InGuild are the player's memberships (+0x1eff, the guild
@@ -90,6 +97,16 @@ const (
 	inputEmoteLeft    = 0x1ec
 	inputTextInk      = 0xffff
 	inputHistory      = 10
+	whisperersMax     = 10
+	whispererRow      = 0x14
+	whispererPad      = 0xc
+	whispererBoxLeft  = 0x18
+	whispererBoxW     = 0x8c
+	whispererListLeft = 0x19
+	whispererListTop  = 8
+	whisperFieldHover = 0x46 // the hover rectangle: 0x56 × 0x16 from here, a pixel below the bar's top
+	whisperFieldW     = 0x56
+	whisperFieldH     = 0x16
 	channelPicture    = "btn_channel_"
 	channelPictureEnd = "_1"
 	channelFrame      = "icon_Channelframe_1"
@@ -112,6 +129,7 @@ func NewInputBar(env *seui.Env) *InputBar {
 	b.Switch.Init(channelButton(InputLocal), inputSwitchLeft, inputSwitchH, inputSwitchW, 0, 0, true, inputSwitchH, inputSwitchW, inputSwitchTop)
 	b.Switch.SetHint([]byte("Switch Channel"))
 	b.Switch.OnClick = b.nextChannel
+	b.Switch.OnUp = b.toggleList
 	for i := 1; i <= channelListSlots; i++ {
 		o := seui.NewFixedButton(env, b)
 		o.Init("", inputSwitchLeft, inputSwitchH, inputSwitchW, 0, 0, true, inputSwitchH, inputSwitchW, -inputListStep*i-inputListTop)
@@ -130,9 +148,59 @@ func NewInputBar(env *seui.Env) *InputBar {
 	b.Whisper.ReadOnly = true
 	b.Message = newField(env, b, inputMessageLeft, inputMessageWidth, inputMessageMax, "Press Ctrl+V to paste")
 	b.Message.AllowPaste = true
+	// The constructor clears the message field's pixel hit test (+0xa8);
+	// it has no picture, so it is clicked by its rectangle. The whisper
+	// field keeps it and takes the keyboard when Whisper is selected.
+	b.Message.PixelHit = false
 	b.Message.OnUp, b.Message.OnDown = b.recallOlder, b.recallNewer
 	b.Emotes = newBarButton(env, b, "Btn_expression_1", inputEmoteLeft, 0, "Chat Emotes")
+	b.WhispererBox = seui.NewPanel(env, b)
+	b.WhispererBox.Init("", whispererBoxLeft, 0x32, 0x56, 0, 0, true, 0x24, whispererBoxW, -0x20)
+	b.WhispererBox.SetMargins(7, 7, 7, 7)
+	b.WhispererBox.Hover = false
+	b.WhispererBox.SetVisible(false)
+	b.Whisperers = seui.NewSelectText(env, b.WhispererBox)
+	b.Whisperers.SetBounds(whispererListLeft, whispererListTop, whispererRow, whispererBoxW)
+	b.Whisperers.SetColor(inputTextInk)
+	b.Whisperers.OnSelect = b.pickWhisperer
 	return b
+}
+
+// RememberWhisperer is FUN_00268cdc: a received whisper's speaker goes in
+// before the last name (moved: false); a chosen target goes to the end,
+// moving it if listed (moved: true). Past ten the oldest is dropped.
+func (b *InputBar) RememberWhisperer(name []byte, moved bool) {
+	l := b.Whisperers
+	if i := l.IndexOf(name); i >= 0 {
+		if !moved {
+			return
+		}
+		l.Delete(i)
+	}
+	name = append([]byte(nil), name...)
+	if !moved && l.Count() > 0 {
+		l.Insert(name, l.Count()-1, "", "")
+	} else {
+		l.Add(name, "", "")
+	}
+	if l.Count() > whisperersMax {
+		l.Delete(0)
+	}
+	h := l.Count()*whispererRow + whispererPad
+	b.WhispererBox.Height, b.WhispererBox.Top = h, -h
+	l.SetBounds(whispererListLeft, whispererListTop, l.Count()*whispererRow, whispererBoxW)
+}
+
+// pickWhisperer is FUN_00268c38.
+func (b *InputBar) pickWhisperer(i int) {
+	if i < 0 || i >= b.Whisperers.Count() {
+		return
+	}
+	b.Whisper.SetText(b.Whisperers.Items[i])
+	if b.OnWhisperName != nil {
+		b.OnWhisperName()
+	}
+	b.WhispererBox.SetVisible(false)
 }
 
 // channelButton is a channel's button picture: "btn_channel_<n>_1".
@@ -164,13 +232,35 @@ func (b *InputBar) Reset() {
 }
 
 // nextChannel is the button's click (FUN_00269b30): World, Local, Whisper
-// and Team in turn; from Guild it does nothing.
+// and Team in turn; from Guild it does nothing. It only acts while the
+// channel list is closed, and the list opens as soon as the pointer is
+// over the button, so a click leaves the channel alone.
 func (b *InputBar) nextChannel() {
+	if b.Frame.Visible {
+		return
+	}
 	switch {
 	case b.Channel >= InputWorld && b.Channel < InputTeam:
 		b.SelectChannel(b.Channel + 1)
 	case b.Channel == InputTeam:
 		b.SelectChannel(InputWorld)
+	}
+}
+
+// toggleList is the button's +0x60 handler (FUN_0026527c): the list
+// opens or closes (the paint keeps it open under the pointer).
+func (b *InputBar) toggleList() { b.showList(!b.Frame.Visible) }
+
+// Presses on the bar itself (FUN_002695d8): the whisper field's area,
+// whose read-only field takes no hits, selects Whisper.
+var whisperArea = image.Rect(0x46, 0x240, 0x46+0x56, 0x240+0x16)
+
+// LeftDown is the bar's press (FUN_002695d8). The mail icon's press
+// (opening the mailbox) is not ported.
+func (b *InputBar) LeftDown(shift byte, x, y int) {
+	b.FixedForm.LeftDown(shift, x, y)
+	if image.Pt(x, y).In(whisperArea) {
+		b.SelectChannel(InputWhisper)
 	}
 }
 
@@ -283,6 +373,13 @@ func (b *InputBar) Paint() {
 		button := image.Rect(b.Left+inputSwitchHover, b.Top, b.Left+inputSwitchHover+inputSwitchW, b.Top+inputSwitchH)
 		list := image.Rect(b.Left+inputSwitchHover, b.Top-inputListHeight, b.Left+inputSwitchHover+inputSwitchW, b.Top)
 		b.showList(pt.In(button) || (b.Frame.Visible && pt.In(list)))
+		if b.Whisperers.Count() > 0 && b.Channel == InputWhisper {
+			field := image.Rect(b.Left+whisperFieldHover, b.Top+1, b.Left+whisperFieldHover+whisperFieldW, b.Top+1+whisperFieldH)
+			box := b.WhispererBox.Rect()
+			b.WhispererBox.SetVisible(pt.In(field) || (b.WhispererBox.Visible && pt.In(box)))
+		} else {
+			b.WhispererBox.SetVisible(false)
+		}
 	}
 	b.FixedForm.Paint()
 	pics, scr := b.Env.Pics, b.Env.Screen

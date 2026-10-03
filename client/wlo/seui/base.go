@@ -259,8 +259,9 @@ func (g *GrBasic) updateChildren(in *Input) {
 }
 
 // Hint is slot +0x1c (FUN_00466be4): a tooltip above the control. The box
-// is filled with $F98B3D at alpha 200 and framed; the text is drawn by the
-// font in style 2. Box blending is approximated by an opaque fill.
+// is filled with $F98B3D at alpha 200 (FillRectAlpha) and framed by a
+// one-pixel $800000 pen with a clear brush; the text is drawn by the font
+// in style 2, white over a 0x0841 shadow.
 func (g *GrBasic) Hint() {
 	if !g.Visible || !g.HasHint || len(g.HintText) == 0 {
 		return
@@ -280,9 +281,19 @@ func (g *GrBasic) Hint() {
 		dy = 0x32
 		r = r.Add(image.Pt(0, dy))
 	}
-	g.Env.Screen.Fill(r, surface.RGB565(0x3d, 0x8b, 0xf9))
-	g.Env.Text.Draw(a.X+2+dx, a.Y-0x16+dy, 0, false, true, g.Env.Screen, g.HintText, 0x10, 400, 0xffff, 0x0841, 2)
+	g.Env.Screen.FillAlpha(r, hintFill, hintAlpha)
+	g.Env.Screen.Frame(r, surface.TColor(hintPen))
+	g.Env.Text.Draw(a.X+2+dx, a.Y-0x16+dy, 0, false, true, g.Env.Screen, g.HintText, 0x10, 400, hintShadow, hintInk, 2)
 }
+
+// Hint box colours (FUN_00466be4's arguments).
+const (
+	hintFill   = 0xf98b3d // TColor
+	hintAlpha  = 200
+	hintPen    = 0x800000 // TColor: navy
+	hintShadow = 0x0841
+	hintInk    = 0xffff
+)
 
 // Event slots. Each fires its handlers only while the control and its root
 // are visible.

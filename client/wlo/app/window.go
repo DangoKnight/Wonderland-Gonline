@@ -105,7 +105,9 @@ func (g *Game) Update() error {
 			ui.MouseDown(seui.ButtonLeft, mouse|shiftDouble, x, y)
 			g.lastDown = time.Time{}
 		} else {
-			if !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
+			// A press on a speaker's icon in the chat log whispers to them
+			// before the interface sees it (FUN_00496ca4).
+			if !g.C.SpeakerPress() && !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
 				g.C.GroundClick(x, y)
 			}
 			g.lastDown, g.lastPt = now, [2]int{x, y}

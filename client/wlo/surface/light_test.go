@@ -28,3 +28,15 @@ func TestDrawLight(t *testing.T) {
 		t.Errorf("saturated pixel = %04x", dst.Pix[0])
 	}
 }
+
+// TestFillAlpha16: FillRectAlpha blends the 5/6/5-bit channels; the
+// original's tooltip ($F98B3D at 200) over (0, 125, 156) gives
+// (41, 134, 231) on screen.
+func TestFillAlpha16(t *testing.T) {
+	s := New(1, 1)
+	s.Pix[0] = RGB565(0, 125, 156)
+	s.FillAlpha(image.Rect(0, 0, 1, 1), 0xf98b3d, 200)
+	if got := Expand(s.Pix[0]); got.R != 41 || got.G != 134 || got.B != 231 {
+		t.Fatalf("blend %v", got)
+	}
+}

@@ -39,3 +39,22 @@ func TestShipDeck(t *testing.T) {
 		t.Fatalf("%dx%d, %d layers", s.Width, s.Height, len(s.Layers))
 	}
 }
+
+// TestCameraStaysOnMap follows FUN_003f94e8 on Dango Beach (1664 × 1280):
+// centred in the middle, 0 near the left and top, width − 820 near the
+// right and height − 600 near the bottom (Chat_02/Beach_Camera_Clamped.png
+// at X:1082 Y:1195).
+func TestCameraStaysOnMap(t *testing.T) {
+	w := &World{Scene: &Scene{Width: 1664, Height: 1280}}
+	for _, c := range []struct{ x, y, cx, cy int }{
+		{1082, 1195, 682, 680},
+		{800, 600, 400, 300},
+		{300, 200, 0, 0},
+		{1600, 1270, 1664 - 820, 680},
+	} {
+		w.Player.X, w.Player.Y = c.x, c.y
+		if cx, cy := w.Camera(); cx != c.cx || cy != c.cy {
+			t.Errorf("player (%d, %d): camera (%d, %d), want (%d, %d)", c.x, c.y, cx, cy, c.cx, c.cy)
+		}
+	}
+}

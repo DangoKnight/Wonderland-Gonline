@@ -313,7 +313,52 @@ func (h *Human) DrawFace(dst *surface.Surface, x, y, action int, blinking bool) 
 	if blinking {
 		frame = 1
 	}
+	h.DrawFaceFrame(dst, x, y, action, frame)
+}
+
+// DrawFaceFrame draws one frame of the face sprite's action (+0x121, the
+// frame +0x11e): the chat log's speaker icon is action 4's second frame,
+// the head turned three-quarters.
+func (h *Human) DrawFaceFrame(dst *surface.Surface, x, y, action, frame int) {
+	if h.body == 0 || h.body > 4 {
+		return
+	}
 	h.layerSprite(dst, familyName(h.body)+"f", baseID(h.body)+portraitSpriteOffset+int(h.head), action, frame, x, y)
+}
+
+// FaceHit reports whether (px, py) falls on an opaque pixel of the face
+// frame DrawFaceFrame draws at (x, y): the sprite draw's own hit test,
+// which sets the role's +0x80 for the chat log's speaker icons.
+func (h *Human) FaceHit(x, y, action, frame, px, py int) bool {
+	if h.body == 0 || h.body > 4 {
+		return false
+	}
+	arc, key := h.Lib.lookup(familyName(h.body)+"f", baseID(h.body)+portraitSpriteOffset+int(h.head))
+	if arc == nil {
+		return false
+	}
+	s := arc.sprite(key)
+	if s == nil {
+		return false
+	}
+	n := s.frameCount(action)
+	if n == 0 {
+		return false
+	}
+	f := s.frame(action, frame%n)
+	if f == nil {
+		return false
+	}
+	pixels, err := f.Image(s.m)
+	if err != nil || pixels == nil {
+		return false
+	}
+	cx, cy := px-x-f.OffsetX, py-y-f.OffsetY
+	if cx < 0 || cy < 0 || cx >= f.Width || cy >= f.Height {
+		return false
+	}
+	b := pixels.Bounds()
+	return pixels.NRGBAAt(b.Min.X+cx, b.Min.Y+cy).A != 0
 }
 
 // Hold draws a movie's frame: a keyframe's fixed frame (clamped to the

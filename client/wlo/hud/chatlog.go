@@ -24,6 +24,11 @@ type ChatLog struct {
 	// Faces finds a speaker's look by ID (the player, then the map's
 	// players); nil leaves the row without an icon.
 	Faces func(id uint32) SpeakerFace
+	// Pointer is the pointer's screen position; Hovered is the speaker
+	// whose icon is under it (+0x500, cleared by every paint), which a
+	// press whispers to (FUN_00496ca4).
+	Pointer func() (int, int)
+	Hovered uint32
 
 	ticker    []byte   // +0x170, the shown ticker text
 	queue     [][]byte // +0x178, system lines waiting for the ticker
@@ -44,9 +49,12 @@ type ChatLine struct {
 	First   bool   // the entry's first row
 }
 
-// SpeakerFace draws a speaker's face sprite (Human.DrawFace).
+// SpeakerFace draws a frame of a speaker's face sprite
+// (Human.DrawFaceFrame).
 type SpeakerFace interface {
-	DrawFace(dst *surface.Surface, x, y, action int, blinking bool)
+	DrawFaceFrame(dst *surface.Surface, x, y, action, frame int)
+	// FaceHit tests a point against the frame's opaque pixels.
+	FaceHit(x, y, action, frame, px, py int) bool
 }
 
 const (
@@ -120,10 +128,15 @@ const (
 )
 
 // chatPalette is the colour table FUN_003beb14 fills (0x72a360), and
-// channelColor the entry each channel uses (FUN_0048bbf4).
+// channelColor the entry each channel uses. The list starts with
+// FUN_0048bbf4's entries, but every sent and received line first copies
+// the player's ChannelColor1..5 setting into its channel's slot (+0x4e0 +
+// channel·2); without a save those are Local 9, Whisper 10, Team 6, Guild
+// 4 and World 1 (0x284d05), so Whisper is orange (0xfc00), as
+// Chat_02/Connection_Lost.png shows.
 var (
 	chatPalette  = [...]uint16{0xfe31, 0xffb3, 0xc6f3, 0x8653, 0x6e7e, 0x8e27, 0xffff, 0xf800, 0xf4a3, 0xff80, 0xfc00}
-	channelColor = map[int]int{0: 7, 1: 1, 2: 9, 3: 0, 4: 10, 5: 6, 6: 4, 7: 5, 8: 2, 10: 7, 11: 7}
+	channelColor = map[int]int{0: 7, 1: 1, 2: 9, 3: 10, 4: 10, 5: 6, 6: 4, 7: 5, 8: 2, 10: 7, 11: 7}
 )
 
 // ChannelInk is a channel's line colour.
@@ -153,10 +166,13 @@ var (
 )
 
 // Speaker icons (FUN_004905e8): rows of channels 1..7 whose speaker is
-// known show the speaker's face sprite in action 4 (+0x121 = 4), 10 pixels
-// left of the list and 10 below the row's top.
+// known show the speaker's face sprite in action 4 (+0x121 = 4) at its
+// second frame (+0x11e = 1, the head turned three-quarters, as
+// Chat_Icons_02.png shows), 10 pixels left of the list and 10 below the
+// row's top.
 const (
 	chatFaceAction = 4
+	chatFaceFrame  = 1
 	chatFaceLeft   = -10
 	chatFaceDown   = 10
 )
@@ -295,13 +311,20 @@ func (l *ChatLog) Paint() {
 	// With every line in view the thumb fills the track.
 	_, barH := pics.Size(l.scrollBar)
 	drawStretched(l.Env, l.scrollBar, l.Left+chatThumbLeft, l.Top+chatScrollTop, chatThumbWidth, chatScrollH, barH/2)
+	l.Hovered = 0
 	rows := chatListHeight / chatRowHeight
 	first := max(len(l.Lines)-rows, 0)
 	y := l.Top + chatListTop + (rows-(len(l.Lines)-first))*chatRowHeight
 	for _, line := range l.Lines[first:] {
 		if line.First && line.Speaker != 0 && line.Channel >= ChannelWorld && line.Channel <= ChannelAlly && l.Faces != nil {
 			if f := l.Faces(line.Speaker); f != nil {
-				f.DrawFace(scr, l.Left+chatListLeft+chatFaceLeft, y+chatFaceDown, chatFaceAction, false)
+				fx, fy := l.Left+chatListLeft+chatFaceLeft, y+chatFaceDown
+				f.DrawFaceFrame(scr, fx, fy, chatFaceAction, chatFaceFrame)
+				if l.Pointer != nil {
+					if px, py := l.Pointer(); f.FaceHit(fx, fy, chatFaceAction, chatFaceFrame, px, py) {
+						l.Hovered = line.Speaker
+					}
+				}
 			}
 		}
 		w := len(line.Text)*chatCharWidth + chatCharWidth

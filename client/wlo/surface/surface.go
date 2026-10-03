@@ -136,25 +136,27 @@ func TColor(c uint32) uint16 {
 	return RGB565(uint8(c), uint8(c>>8), uint8(c>>16))
 }
 
-// FillAlpha blends a TColor over a rectangle (DelphiX FillRectAlpha).
-// The 8-bit blend of expanded pixels is an approximation of DelphiX's
-// 16-bit routine, which has not been traced.
+// FillAlpha blends a TColor over a rectangle (DelphiX FillRectAlpha, as
+// the hint box uses it): each 16-bit channel becomes (src·alpha +
+// dst·(256 − alpha)) >> 8, computed on the 5-, 6- and 5-bit values. The
+// original's tooltip over the sea (Chat/Whisper_Chat_01_(tooltip).png,
+// $F98B3D at 200) matches this to the bit.
 func (s *Surface) FillAlpha(r image.Rectangle, c uint32, alpha int) {
 	if alpha >= 0xff {
 		s.Fill(r, TColor(c))
 		return
 	}
 	r = r.Intersect(image.Rect(0, 0, s.W, s.H))
-	src := [3]int{int(uint8(c)), int(uint8(c >> 8)), int(uint8(c >> 16))}
+	src := TColor(c)
+	blend := func(sv, dv uint16, shift, max uint16) uint16 {
+		a, b := int(sv>>shift&max), int(dv>>shift&max)
+		return uint16((a*alpha+b*(256-alpha))>>8) << shift
+	}
 	for y := r.Min.Y; y < r.Max.Y; y++ {
+		row := s.Pix[y*s.W:]
 		for x := r.Min.X; x < r.Max.X; x++ {
-			d := Expand(s.Pix[y*s.W+x])
-			dst := [3]int{int(d.R), int(d.G), int(d.B)}
-			var o [3]uint8
-			for i := range o {
-				o[i] = uint8((src[i]*alpha + dst[i]*(256-alpha)) >> 8)
-			}
-			s.Pix[y*s.W+x] = RGB565(o[0], o[1], o[2])
+			d := row[x]
+			row[x] = blend(src, d, 11, 0x1f) | blend(src, d, 5, 0x3f) | blend(src, d, 0, 0x1f)
 		}
 	}
 }

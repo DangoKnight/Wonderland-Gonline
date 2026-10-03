@@ -119,6 +119,12 @@ func (b *Button) Paint() {
 		clip := image.Rect(b.Clip.Min.X, row, b.Clip.Max.X, row+h)
 		b.ninePatch(image.Rect(o.X+b.Left, o.Y+b.Top, o.X+b.Left+b.Width, o.Y+b.Top+b.Height), clip)
 	}
+	// The centre slice's drawer (FUN_004680d8) ends with the caption,
+	// recentred (FUN_004679bc), in the button's colours and style.
+	if len(b.Caption) > 0 {
+		b.SetCaption(b.Caption)
+		b.Env.Text.Draw(o.X+b.TextX, o.Y+b.TextY, 0, false, true, b.Env.Screen, b.Caption, b.CharH, b.Width, b.Color2, b.Color, b.TextStyle)
+	}
 	if b.Icon == -1 {
 		return
 	}

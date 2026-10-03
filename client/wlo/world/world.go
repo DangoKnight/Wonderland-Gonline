@@ -16,8 +16,9 @@ import (
 
 // Screen layout of the static view, measured from the original's capture
 // (In-Game/Ship_Deck.png): the camera keeps the player at the screen
-// centre, the name is centred above, and the location line ends at the
-// right edge above the bottom bar.
+// centre away from the map's edges (Camera), the name is centred above
+// (0x12c − 0xc8 above the feet), and the location line ends at the right
+// edge above the bottom bar.
 const (
 	screenW, screenH = 800, 600
 	charW            = 8
@@ -158,13 +159,41 @@ func New(env *seui.Env, a login.Assets, p Player, body login.RoleView, names map
 	return w, nil
 }
 
-// Camera is the scene position at the screen's top-left corner.
+// Camera is the scene position at the screen's top-left corner
+// (FUN_003f94e8, the map's +0xc/+0x10): centred on the player, but kept on
+// the map. Near the left or top edge it is 0; near the right edge it stops
+// at the map's width − 800 − 20 and near the bottom at its height − 600
+// (0 when the map is narrower or shorter than the screen).
 func (w *World) Camera() (int, int) {
 	if w.CameraAt != nil {
 		return w.CameraAt.X, w.CameraAt.Y
 	}
-	return w.Player.X - screenW/2, w.Player.Y - screenH/2
+	px, py := w.Player.X, w.Player.Y
+	cx, cy := px-screenW/2, py-screenH/2
+	mapW, mapH := w.Scene.Width, w.Scene.Height
+	switch {
+	case px <= screenW/2:
+		cx = 0
+	case mapW < screenW/2+px:
+		cx = 0
+		if screenW < mapW {
+			cx = mapW - screenW - cameraRightMargin
+		}
+	}
+	switch {
+	case py-screenH/2 < 1:
+		cy = 0
+	case mapH < screenH/2+py:
+		cy = 0
+		if screenH < mapH {
+			cy = mapH - screenH
+		}
+	}
+	return cx, cy
 }
+
+// cameraRightMargin is FUN_003f94e8's 0x14 at the map's right edge.
+const cameraRightMargin = 0x14
 
 // NewView is a view of a map's scene with no player of its own, for a
 // movie: its actors are set as NPCs (and Player/Body when the player takes
@@ -279,7 +308,7 @@ func (w *World) drawNames(cx, cy, px int) {
 		txt.Draw(p.X-cx-len(name)*charW/2, p.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
 	}
 	name := w.Player.Name
-	txt.Draw(px-len(name)*charW/2, nameY, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
+	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
 }
 
 // drawLocation draws the name, scene and position line.

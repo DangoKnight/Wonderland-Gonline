@@ -109,6 +109,8 @@ type Client struct {
 	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
 	// movies, and each scene's weather byte.
 	weather      *weather.Layer
+	quietWhisper bool              // +0x1b4: a portrait press, so no "Whisp to" line
+	players      map[uint32][]byte // known online players by ID (chat.go)
 	sceneWeather map[uint16]byte
 
 	background *surface.Surface // login background object (0x40c27c)
@@ -119,6 +121,10 @@ type Client struct {
 	Now func() time.Time
 	// Exit is set by the Leave button.
 	Exit bool
+	// Lost is the message form a lost connection shows; fade darkens and
+	// freezes the scene behind it (lost.go).
+	Lost *LostForm
+	fade fadeState
 	// Unhandled receives packets the login phase does not handle.
 	Unhandled func(p []byte)
 }
@@ -181,6 +187,10 @@ func New(o Options) (*Client, error) {
 	c.Servers = login.NewSelectServer(c.Env, c.G, c.Net, a)
 	c.Servers.INI, c.Servers.FallbackINI = o.ServerINI, o.FallbackINI
 	c.Servers.OnExit = func() { c.Exit = true }
+	c.Lost = newLostForm(c.Env)
+	c.UI.Add(c.Lost)
+	c.Lost.Leave.OnClick = func() { c.Exit = true }
+	c.Lost.Prev.OnClick = c.lostPrev
 	c.Servers.OnConnecting = func() { c.Net.Send(login.Discovery()) }
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
@@ -213,12 +223,14 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.ChatBar)
 	c.ChatBar.Message.OnEnter = c.sendChat
 	c.ChatBar.Whisper.OnEnter = c.whisperEnter
+	c.ChatBar.OnWhisperName = c.whisperEnter
 	c.ChatBar.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
 	c.ChatBar.Focus = func(f seui.Control) { c.Input.Focused = f }
 	c.ChatBar.InTeam, c.ChatBar.InGuild = c.inTeam, c.inGuild
 	c.Chat = hud.NewChatLog(c.Env)
 	c.Chat.Now = func() time.Time { return c.Now() }
 	c.Chat.Faces = c.chatFace
+	c.Chat.Pointer = c.ChatBar.Pointer
 	c.ChatBar.Notice = c.Chat.Notice
 	c.UI.Add(c.Chat)
 	c.Talk = hud.NewTalk(c.Env)
@@ -259,7 +271,7 @@ func (c *Client) Frame() {
 	c.handleNet()
 	c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
 	c.Input.Hovered = nil // FUN_0040f97c
-	if c.World != nil {
+	if c.World != nil && c.fade.frozen == nil {
 		c.World.Step(c.Now())
 		if c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
@@ -270,15 +282,20 @@ func (c *Client) Frame() {
 		c.eventTick()
 		c.areaTick()
 		c.ambientTick()
-		c.World.HideNames = c.Talk.Drawn()
+		// The lost connection's snapshot is taken before the names and the
+		// location line are drawn, so the frozen scene has neither.
+		fading := c.fade.step > 0
+		c.World.HideNames = c.Talk.Drawn() || fading
+		c.World.Cinematic = fading
 		if !c.movieFrame() {
 			c.World.Draw()
 			c.Talk.Draw()
 		}
-	} else {
+	} else if c.fade.frozen == nil {
 		c.drawBackground()
 	}
 	now := c.Now()
+	c.drawFade(now)
 	if !c.Login.LoginTime.IsZero() && now.Sub(c.Login.LoginTime) > loginTimeout {
 		c.Notices.Show(noticeTimeout, timeoutNotice, now)
 		c.Login.Previous()
@@ -496,27 +513,6 @@ func (c *Client) roster(s []byte) {
 	if c.Login.Remember {
 		c.Login.Account.AddItem(c.Login.Account.Text)
 		c.Login.Account.Save(c.Login.Account.Entries())
-	}
-}
-
-// disconnected is ClientSocket1Disconnect (0x49871c). The message form
-// (PTR_DAT_004ca12c) and the return path behind it (FUN_0049a2e8) are not
-// ported: the text is shown as a notice, the login timer stops and the
-// server list returns.
-func (c *Client) disconnected() {
-	c.G.InGame = false
-	c.Login.LoginTime = time.Time{}
-	text := c.disconnectText
-	if len(text) == 0 {
-		text = noticeConnection
-	}
-	c.disconnectText = nil
-	c.Login.Hide()
-	c.Chars.Hide()
-	c.Notices.Show(text, 3*time.Second, c.Now())
-	c.Servers.Show()
-	if c.Music != nil {
-		c.Music.Play(loginMusic) // back in the login phase: CheckStartMusic
 	}
 }
 
