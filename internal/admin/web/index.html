@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Wonderland · Server administration</title>
+		<link rel="stylesheet" href="/style.css" />
+		<script src="/app.js" defer></script>
+	</head>
+	<body>
+		<aside>
+			<a class="brand" href="/"
+				>W<span>Wonderland<small>SERVER ADMINISTRATION</small></span></a
+			>
+			<nav aria-label="Administration">
+				<button data-view="overview" class="active">Overview</button
+				><button data-view="sessions">Sessions</button
+				><button data-view="accounts">Accounts</button
+				><button data-view="npcs">NPC library</button
+				><button data-view="maps">World maps</button
+				><button data-view="catalog">Item mall catalog</button
+				><button data-view="settings">Settings</button>
+			</nav>
+			<div class="foot">Wonderland Go<br /><span>Migration in progress</span></div>
+		</aside>
+		<main>
+			<header>
+				<div>
+					<p class="eyebrow">CONTROL ROOM</p>
+					<h1 id="heading">Overview</h1>
+				</div>
+				<button id="refresh" class="secondary">Refresh</button>
+			</header>
+			<div id="message" role="status" aria-live="polite"></div>
+			<section id="login" class="panel">
+				<p class="eyebrow">ADMINISTRATOR ACCESS</p>
+				<h2>Connect to your server</h2>
+				<p>
+					Enter the administrator token configured for this server. It stays in memory
+					until you close or reload this page.
+				</p>
+				<form id="login-form">
+					<label
+						>Administrator token<input
+							id="token"
+							type="password"
+							autocomplete="off"
+							required
+							minlength="24" /></label
+					><button>Connect</button>
+				</form>
+			</section>
+			<div id="content" hidden></div>
+		</main>
+		<template id="overview"
+			><div class="notice">
+				Character creation and initial map synchronization are available. Gameplay migration
+				is still in progress.
+			</div>
+			<div class="metrics"></div>
+			<div class="columns">
+				<section class="panel">
+					<h2>Native game data</h2>
+					<div id="assets"></div>
+				</section>
+				<section class="panel">
+					<h2>Port coverage</h2>
+					<div id="coverage"></div>
+				</section></div
+		></template>
+	</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "source": "txt/hotkeyt.txt",
+  "source_bytes": 217,
+  "source_sha256": "d66b4f8405e9e314c72c10f28a33e1e15d59b8ecbd33d9fdc57a51fe07422895",
+  "format": "text-resource",
+  "source_hex": "30303120312e20b56fa8a5c057b944a1430d0a30303720322e20b0d3a9b1a1430d0a30313120332e20b867c5e7adc8aabaa8fab16fa1430d0a30313820342e20a57ca46ac4dda9cabb50a4c9afc5a1430d0a30323720352e20af53a7deaababba1a9faa1430d0a30333520362e20bed4b0abbba1a9faa1430d0a30343920372e20a7d6b374c1e4a1430d0a30373520382e20b943c0b8b565adb1a9e7b7d3a55cafe0a1430d0a30373820392e20b9cec0b2bb73a740bb50a457b6c7a1430d0a3039392031302ea55ba44ac2beb77eaa60b74ea8c6b6b5a14320",
+  "encoding": "cp950",
+  "text": "001 1. 發言頻道。\r\n007 2. 商店。\r\n011 3. 經驗值的取得。\r\n018 4. 四大屬性與升級。\r\n027 5. 特技的說明。\r\n035 6. 戰鬥說明。\r\n049 7. 快速鍵。\r\n075 8. 遊戲畫面拍照功能。\r\n078 9. 團徽製作與上傳。\r\n099 10.加入職業注意事項。 "
+}

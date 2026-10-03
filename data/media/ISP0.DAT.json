@@ -1,0 +1,9 @@
+{
+  "source": "ISP0.DAT",
+  "source_bytes": 56,
+  "source_sha256": "be37599d168fd129e6e5416d2a26ee00758aec8d292ebd3a589881acff412ec5",
+  "format": "text-resource",
+  "source_hex": "adbbb4e4a661b0cf31202020202020203136352e38342e3138312e313139202020323120203530303020616e6f6e796d6f75730d0a656e64",
+  "encoding": "cp950",
+  "text": "香港地區1       165.84.181.119   21  5000 anonymous\r\nend"
+}

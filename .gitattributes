@@ -1,0 +1,2 @@
+data/ground_data.json filter=lfs diff=lfs merge=lfs -text
+data/sprites/**/sprites.json filter=lfs diff=lfs merge=lfs -text

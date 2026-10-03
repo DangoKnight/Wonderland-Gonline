@@ -1,0 +1,3117 @@
+{
+  "schema_version": 1,
+  "key_source": "/home/dango/Personal/Wonderland/Wonderland-Client/aLogin.exe",
+  "key_source_sha256": "a5ecb1deb3f1f363e4efecc3b580a654248bdf31b6e4e483afa1efad7eef016c",
+  "sources": [
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001.jma",
+      "bytes": 207846702,
+      "sha256": "a313ba4d1b839ed9f57fb8e78c530edf0cd6387780049b6ea320895cdf07579f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001/sprites.json",
+          "bytes": 70014629,
+          "sha256": "d696840712462f2315a44f47ea6e46dfb3335499641244719d6621c50f3e0972"
+        }
+      ],
+      "sprites": 704,
+      "frames": 37799
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c01.jma",
+      "bytes": 6744924,
+      "sha256": "be4b9c14f81cf528d51f983bdb8f85e614d8bae502f24226dd3788d0d461c88c",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001_c01/sprites.json",
+          "bytes": 2265855,
+          "sha256": "586d7a1a9565b0dac96649da2737929428c26868ac30a2cbe09652c817b37a46"
+        }
+      ],
+      "sprites": 57,
+      "frames": 891
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c02.jma",
+      "bytes": 80747190,
+      "sha256": "5c11b4584ee64011888e229be9d815b3bbd2926fa70d996f6b57c61c2b7e52b9",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001_c02/sprites.json",
+          "bytes": 24320206,
+          "sha256": "a57030dc44be656f494fe3a2a757e59bf8cfeaee0ae5ac9bbab0f767fec40c87"
+        }
+      ],
+      "sprites": 100,
+      "frames": 8045
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c03.jma",
+      "bytes": 54627854,
+      "sha256": "ada4eb8f599ad4256c917955d8d8142b13a5b0bb6034b5b517bdbc52ae1b23ed",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001_c03/sprites.json",
+          "bytes": 16081023,
+          "sha256": "bca8a9635af0a87c1456d9ba268e9a5e67868de15e71cce56b2237b57339f713"
+        }
+      ],
+      "sprites": 100,
+      "frames": 6970
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c04.jma",
+      "bytes": 8244732,
+      "sha256": "290f09eece68da90845c4f741f316e8a0b6db891f5ca759dc0abd14c38c3388c",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001_c04/sprites.json",
+          "bytes": 3243266,
+          "sha256": "86bb408ff6da8f5d241a2df1be49442d20ce8130772d79aab2433b37cc8cd07f"
+        }
+      ],
+      "sprites": 23,
+      "frames": 1353
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001w.jma",
+      "bytes": 390184,
+      "sha256": "26c3b512fc37d31674eda725294626f6b36dc15544592fc74435817af3566bcb",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "001w/sprites.json",
+          "bytes": 131589,
+          "sha256": "07a114af9e885e7e6779b753596cfb5ffaff7ce357b45c2ef4e92b597f83a348"
+        }
+      ],
+      "sprites": 3,
+      "frames": 192
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002.jma",
+      "bytes": 546348,
+      "sha256": "b3002bcbea5dd5e3a46b5ed7df295668b6c9f7b4c4deda1051e06898ee330992",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002/sprites.json",
+          "bytes": 202117,
+          "sha256": "1f3dc547cfaa1e3ef2e7fe3122f0807b041abda2edf271a70812b7c4d0a057c3"
+        }
+      ],
+      "sprites": 1,
+      "frames": 216
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002a.jma",
+      "bytes": 1671512,
+      "sha256": "0830adc8dd21e8e2ffd69087f469b5e7c7887aca3a5d71d47f1e598d4bd23235",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002a/sprites.json",
+          "bytes": 2328959,
+          "sha256": "c6fd3b1b7011d6bbfe062be3d08fbd580ba7ae0e669fb186cca8b87b71bf895b"
+        }
+      ],
+      "sprites": 35,
+      "frames": 4015
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002a_c01.jma",
+      "bytes": 6382130,
+      "sha256": "e093d764dc9d29315f86c3f3bb378338e40e7a0669ce65c08f8159e4fd494577",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002a_c01/sprites.json",
+          "bytes": 4909959,
+          "sha256": "a587b5970c8884aa071d1c41b30cc642698897988d3f04f760d9b4e5d6e85c66"
+        }
+      ],
+      "sprites": 42,
+      "frames": 8002
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c.jma",
+      "bytes": 3765044,
+      "sha256": "d39d20de7bbb8b105a793128b1187b6b0d3a99d23c2db2cff3411082a2df267b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002c/sprites.json",
+          "bytes": 3387184,
+          "sha256": "c97e950454b2708c1f24f82410ae8a91fb044ab0cc65c543ba535a33ff0d8d95"
+        }
+      ],
+      "sprites": 45,
+      "frames": 6015
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c1.jma",
+      "bytes": 20319376,
+      "sha256": "de456a4224c5fe7b051aab7df395516e41c9535330026cbb29a90ed14bc0322e",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002c1/sprites.json",
+          "bytes": 11457880,
+          "sha256": "194e902c48ef16e72d6edb2ba85d8db7edf4ecf7d8893b19eddfe79043cbe30d"
+        }
+      ],
+      "sprites": 97,
+      "frames": 18604
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c2.jma",
+      "bytes": 2419224,
+      "sha256": "a20cf1596760a42862bf477674a7976e8bc646cf2fb8e85c9abb961d306e8c49",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002c2/sprites.json",
+          "bytes": 1524549,
+          "sha256": "fe3bf697f8fe05ab595d57556d07098809ed6293ebb18575dcc568e61fd3948a"
+        }
+      ],
+      "sprites": 13,
+      "frames": 2600
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c_c01.jma",
+      "bytes": 11105164,
+      "sha256": "252cfdd04f00ece5c6b77e29565b308cc517db560df074e4876d60f0b408394c",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002c_c01/sprites.json",
+          "bytes": 6287047,
+          "sha256": "4eac6e76c31f3dc8253a98ca8a80e0d7f1351060bcc97b4355615420f660d5c6"
+        }
+      ],
+      "sprites": 55,
+      "frames": 10204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e.jma",
+      "bytes": 10542366,
+      "sha256": "4047addfac9ee549ea555863070ea7be07e75ca2361aa2f40b72b7cc4e0a4584",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e/sprites.json",
+          "bytes": 7449457,
+          "sha256": "83c796df3f4b6205b7ae6dbe4db4184578086fe902f129ada6752f82b9d756de"
+        }
+      ],
+      "sprites": 60,
+      "frames": 9214
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e1.jma",
+      "bytes": 41486680,
+      "sha256": "c241fa2c9cb59a5adac949543112362f6315c98f6ffd080d6f96b9645128f92e",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e1/sprites.json",
+          "bytes": 16960603,
+          "sha256": "2e29083145e0d9a5d371e72d0b0be85fab5e5b3c9018dcad1fb4642ff006314f"
+        }
+      ],
+      "sprites": 89,
+      "frames": 16805
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e1_c01.jma",
+      "bytes": 10196348,
+      "sha256": "6a5e40aa2d0a474d6b7663db0c918beb2d30f3fd32538c3a9b7ce542f64c68fa",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e1_c01/sprites.json",
+          "bytes": 3347895,
+          "sha256": "655ef701500bbfaa607aee433e62ad05986dd67182f2c8214c29153a34d5af9d"
+        }
+      ],
+      "sprites": 11,
+      "frames": 2200
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e2.jma",
+      "bytes": 47626370,
+      "sha256": "7441b0242e1c7a06c4023ebd54b3543befb8cb6f73fce0e950bf97b4771c5081",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e2/sprites.json",
+          "bytes": 19110510,
+          "sha256": "2bb945693b745a44f32ddac54f2224abede2f72ac16f640a88c33c3a60deb00b"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19403
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e3.jma",
+      "bytes": 14350296,
+      "sha256": "f321724a64af422438628f9b93eaac78d2c76b12c144428abd44ebed178bc50f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e3/sprites.json",
+          "bytes": 5410289,
+          "sha256": "bba2c5f61458fb2dc7aa7ba7d652f4859ed8b9ca403a11ed6dde8ddcbca42b96"
+        }
+      ],
+      "sprites": 29,
+      "frames": 5597
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e_c01.jma",
+      "bytes": 12537310,
+      "sha256": "ff221a508fee3b2c295b1cbb3b763f6bb602f49b2879c3a2fb5450cfbf37a36f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002e_c01/sprites.json",
+          "bytes": 6358555,
+          "sha256": "5992519d4aa78f0e4aee0913dfe5340d4464b2adac680eec4b9eeab738e812fe"
+        }
+      ],
+      "sprites": 40,
+      "frames": 7204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002f.jma",
+      "bytes": 360576,
+      "sha256": "85d38ed9277e8039e09dc5462177f0b848a4582dd074aa9c004e7d651af5df6a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002f/sprites.json",
+          "bytes": 268519,
+          "sha256": "db1674c592fe82123e09f220cc106f72f17cee58678db9830b8048398c1e964b"
+        }
+      ],
+      "sprites": 61,
+      "frames": 83
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002h.jma",
+      "bytes": 184368,
+      "sha256": "8fce8ff43bdafc92ff9393dcc70fa55b78f3af280452a901c7ea66ebb865f7d3",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002h/sprites.json",
+          "bytes": 139101,
+          "sha256": "37eba8919a176508f835af7e062c4e6374ab50100a10bb4f125ae52bc00c4c86"
+        }
+      ],
+      "sprites": 1,
+      "frames": 216
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s.jma",
+      "bytes": 3289130,
+      "sha256": "8c14c7b5698f0a0c93dbad73336437aa3478f602338bf780537ddea4eab262d3",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002s/sprites.json",
+          "bytes": 3635601,
+          "sha256": "b0e827b3741bdc58ed53702fe0debdbb0421c3bc4a37661ddd2a9bb2c008e9f7"
+        }
+      ],
+      "sprites": 42,
+      "frames": 5614
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s2.jma",
+      "bytes": 1359468,
+      "sha256": "ae270b4b3f1a73b3f25e76690e53a9c38069b9350960fd76fee20493c28a701a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002s2/sprites.json",
+          "bytes": 676656,
+          "sha256": "1bb988c6efde14a5bce9c03d4ae3cb45c61045c6e45848d5a43f688eb38a10eb"
+        }
+      ],
+      "sprites": 5,
+      "frames": 1000,
+      "encrypted_sprites": 5
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s_c01.jma",
+      "bytes": 9171546,
+      "sha256": "191eb8a8bdd08374304be0776da4c8297c9aeb2ed0e8dce272df282b3b2ff5e5",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002s_c01/sprites.json",
+          "bytes": 6831256,
+          "sha256": "796783e48cde28c0bd61a08b5e798a6ebfccdde58956808180f3d2cd2ba58105"
+        }
+      ],
+      "sprites": 58,
+      "frames": 10207
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w.jma",
+      "bytes": 27447480,
+      "sha256": "05d85adbe8346ff4cf086782f90056f2aa4e8459150ed51de005d012cc4c3bfe",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002w/sprites.json",
+          "bytes": 10536774,
+          "sha256": "9e466c77cb860d42e10df6d0fc27afe4819a379aef8748a371ebd169770ca9b2"
+        }
+      ],
+      "sprites": 99,
+      "frames": 15407
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w1.jma",
+      "bytes": 2924538,
+      "sha256": "6dffeebf720255f21f132ae20b9ab8d2db996ced83ef1b6c26d8983cdd43c544",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002w1/sprites.json",
+          "bytes": 1406395,
+          "sha256": "b5939f7dd601b5754c1053df9d2b8eddefee7fae8082d58c0b4ab0f80312a5d7"
+        }
+      ],
+      "sprites": 12,
+      "frames": 2121
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w1_c01.jma",
+      "bytes": 36583590,
+      "sha256": "c26d68b2ca7356ba9c45efc2a51eb68929d48e3996d86300ac60d608a09364d0",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002w1_c01/sprites.json",
+          "bytes": 12319250,
+          "sha256": "432e85d07c005f98e2894dcc1100694f6cd8227d86bca94d87f1cf09deff61c4"
+        }
+      ],
+      "sprites": 88,
+      "frames": 16717
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w2.jma",
+      "bytes": 50954958,
+      "sha256": "4dedf5a4d1edb79ab5b3c57ae3deac8ad48f2793b43739e34e9d432a25dc2feb",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002w2/sprites.json",
+          "bytes": 14986728,
+          "sha256": "c15431971ffb4c3f04b3f0de1af31934ab4dbda554c106ecb14cb54af2abb4a6"
+        }
+      ],
+      "sprites": 100,
+      "frames": 18838
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w3.jma",
+      "bytes": 18982100,
+      "sha256": "4b215975a5419c76f678212cc5934c264fab8efcef46c3797dbc91f74c3c27fe",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "002w3/sprites.json",
+          "bytes": 4090156,
+          "sha256": "d62a504d38755bcd773e139a22219298defc4d4b7f382a97a1e4f3eb8532e6d5"
+        }
+      ],
+      "sprites": 33,
+      "frames": 4259
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003.jma",
+      "bytes": 548796,
+      "sha256": "a190bceaef8949fccc2eafa70575044096d83d20250bb83921ca365979a14522",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003/sprites.json",
+          "bytes": 203012,
+          "sha256": "107dec350b06f8679a39d616a1a7c2ad8abee8e381977fc83874bab9c12f02f8"
+        }
+      ],
+      "sprites": 1,
+      "frames": 216
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003a.jma",
+      "bytes": 1544288,
+      "sha256": "b1d988e7ecbfd074201d8a4542948f72d28fb2c976475609aaab3f5911800dba",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003a/sprites.json",
+          "bytes": 2341209,
+          "sha256": "cf2a8dde7b2032e8b37ff4d0d995418b8cfdcb1b6f18c3258781f8a1180209a6"
+        }
+      ],
+      "sprites": 35,
+      "frames": 4015
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003a_c01.jma",
+      "bytes": 6094670,
+      "sha256": "bfa8ca3347e240e658d9e3921acadc020bc17d6d146c1e487c558f1dc5bbf38e",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003a_c01/sprites.json",
+          "bytes": 5015917,
+          "sha256": "5c72e3f602d3c69091a2622c7cfafaf41e755ecafa9b52d10a8cefecadbc7589"
+        }
+      ],
+      "sprites": 42,
+      "frames": 8201
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c.jma",
+      "bytes": 3585176,
+      "sha256": "c99ba6fa3bbfa49a7952485d4ca81f9f3f2bbc58079bc46597b43ff072acd717",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003c/sprites.json",
+          "bytes": 3559530,
+          "sha256": "f31c430511bb3f2fd9d95974b675e3c9c6130dc730637129ca0f4a5ffbf2119f"
+        }
+      ],
+      "sprites": 45,
+      "frames": 6413
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c1.jma",
+      "bytes": 20558480,
+      "sha256": "95823babd1149aee77852305d6c64f2294e381135e65b611ef3a0d28d75c83b1",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003c1/sprites.json",
+          "bytes": 11610582,
+          "sha256": "296bfd42ed8aa42cafa003645e4c98dbde8d41c20c16c867194392ebcc63fbc1"
+        }
+      ],
+      "sprites": 97,
+      "frames": 18803
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c2.jma",
+      "bytes": 2514144,
+      "sha256": "a8320dff3c63c06ca98351d2b5be5f386d48ab591139e4acb3e725ca09a38878",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003c2/sprites.json",
+          "bytes": 1559306,
+          "sha256": "b3cdc8995355eec08346708dd69013f32bf6264c83ed8b4c200749e8a8ba6f80"
+        }
+      ],
+      "sprites": 13,
+      "frames": 2600
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c_c01.jma",
+      "bytes": 10919784,
+      "sha256": "cb11fafe45a49795b26b01a9cdee5bd75ca421abc02d892ec1bf4bf485c23b0f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003c_c01/sprites.json",
+          "bytes": 6364714,
+          "sha256": "a8057a4928ad424e1f0424140112dfdec6402829bf11f183047c256ae76d68f0"
+        }
+      ],
+      "sprites": 55,
+      "frames": 10403
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e.jma",
+      "bytes": 9746850,
+      "sha256": "f688a4779a998021d65c730b0a378e3cd53be6d62b480d7059d43d529d78d708",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e/sprites.json",
+          "bytes": 7180442,
+          "sha256": "698fb859355e8a0fe5397956449fffc44bfeb233b256a5c518fe206ac863b8a0"
+        }
+      ],
+      "sprites": 60,
+      "frames": 9413
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e1.jma",
+      "bytes": 40163620,
+      "sha256": "88c377d03d0526985edd859e360c3aeea93ec922598473858f73163de429159b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e1/sprites.json",
+          "bytes": 16330798,
+          "sha256": "bb64fafc9c4a5cf457ddc14f2551fb1c5bf8ab221718f21fa44b7cac97a6d548"
+        }
+      ],
+      "sprites": 89,
+      "frames": 16606
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e1_c01.jma",
+      "bytes": 10064112,
+      "sha256": "b83741b639be9496991d2493e2dd4b641d93463f5b2fc816e6247802ea5dce39",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e1_c01/sprites.json",
+          "bytes": 3302822,
+          "sha256": "2a67d3e91e2dfdfb2c8a4bbd105aa4a075efae7a7cefc5fc85e39cb6a1dc8838"
+        }
+      ],
+      "sprites": 11,
+      "frames": 2200
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e2.jma",
+      "bytes": 46084250,
+      "sha256": "80a7e978f30f9c1ac0297b1470279e159bab2fbbe2c3fa1220cfa6b5350c76fe",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e2/sprites.json",
+          "bytes": 18295469,
+          "sha256": "8924ba5731a30d88b24b9b599a12f4ff6c6f000a6a6fe3aefaf1a837cd5fa69f"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e3.jma",
+      "bytes": 14317928,
+      "sha256": "be980a38c008c328c21d6fadcaf793e1c2146886ca077bfe46190d94ee77a9d7",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e3/sprites.json",
+          "bytes": 5356673,
+          "sha256": "f02c5737c578d4d28c910e96a3b6f41a173094ed8093ce1e236c98aef0ef3331"
+        }
+      ],
+      "sprites": 29,
+      "frames": 5601
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e_c01.jma",
+      "bytes": 12064006,
+      "sha256": "ef2de96c55cf0f3d230d399a6cb71cd8c19e9040bf26c694238bc705ed24c901",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003e_c01/sprites.json",
+          "bytes": 6187410,
+          "sha256": "96a27f2388ecedb265582030cebd9ac2718deb235a967bcacb4a566839b30381"
+        }
+      ],
+      "sprites": 40,
+      "frames": 7204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003f.jma",
+      "bytes": 648750,
+      "sha256": "1eff2cd7a06789b70e123b0d8c32b6d51323f6f2be32b8a92a5d7ae9713d45ff",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003f/sprites.json",
+          "bytes": 376125,
+          "sha256": "af6d4478f2f2d5d376fbbb85de777dc7711eed9fca2613008b8668a1637d84e6"
+        }
+      ],
+      "sprites": 62,
+      "frames": 106
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003h.jma",
+      "bytes": 391410,
+      "sha256": "c32f79d7710470c4e1db6467af2c6ce4e33279171b6f7bf46b9af97db90b318b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003h/sprites.json",
+          "bytes": 283331,
+          "sha256": "082d7a205398d2a0dacc46cd4efb1ad25e5a244b67eca8e8e283cdebffc079d4"
+        }
+      ],
+      "sprites": 2,
+      "frames": 432
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s.jma",
+      "bytes": 3517750,
+      "sha256": "6962268f368ea91cc866ac15995d6b378d251a2807c45138e8e9585319db4870",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003s/sprites.json",
+          "bytes": 3750786,
+          "sha256": "016a7c105611746f506d6ba56f6305138e35b9d41cb9ac0f34c4ddc6c74eb310"
+        }
+      ],
+      "sprites": 42,
+      "frames": 5813
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s2.jma",
+      "bytes": 1330304,
+      "sha256": "a079717276d01b84a57b1ecdd267dd07a20307cbfd5c61b0fbfaa275ddc45576",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003s2/sprites.json",
+          "bytes": 671066,
+          "sha256": "8b300f3069bddc5699df9a90d61cb1e90065dfb48cfb5b71ec233ede0aa1a1b7"
+        }
+      ],
+      "sprites": 5,
+      "frames": 1000,
+      "encrypted_sprites": 5
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s_c01.jma",
+      "bytes": 10258594,
+      "sha256": "c5613c3ab540b340dd8650a5ae250d06b7c091cb633da705b828732b1718f861",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003s_c01/sprites.json",
+          "bytes": 7306925,
+          "sha256": "50f0d61e1382f6117cf8bbf80b28717ba0346956586c22a2ae5bf79adfddf4fb"
+        }
+      ],
+      "sprites": 58,
+      "frames": 10804
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w.jma",
+      "bytes": 27953144,
+      "sha256": "f865b0f54c7ffc64e9b5c0efa3e5f4193629d14a19bdfdfadd541ed0468dffbc",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003w/sprites.json",
+          "bytes": 10854877,
+          "sha256": "c62216420e22980689c0506349a1f78dd8b27c7c703e57b2db9ab882420676e4"
+        }
+      ],
+      "sprites": 99,
+      "frames": 15932
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w1.jma",
+      "bytes": 2929546,
+      "sha256": "e9cdbe67390a7aa1c81ed391a2bf968e4e697a71566b8f818ab6e8f735fce2d2",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003w1/sprites.json",
+          "bytes": 1405243,
+          "sha256": "54acf2779ceae41a8d88c9a0ccfc260ea5eff48886497fc821e7fd224075db31"
+        }
+      ],
+      "sprites": 12,
+      "frames": 2121
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w1_c01.jma",
+      "bytes": 36901754,
+      "sha256": "03fe11d46bf86ba0f09637ffe04360d3c74a0fe89d25c66d20fc64c8b7c36357",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003w1_c01/sprites.json",
+          "bytes": 12305437,
+          "sha256": "2de030194a0fe6c7083d0ca73d30f83dc6e95e5b6b27f5c7c64958af02838205"
+        }
+      ],
+      "sprites": 88,
+      "frames": 16717
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w2.jma",
+      "bytes": 50642526,
+      "sha256": "c0aef19f1a1823ed961f06c36f9af12d3884b6b118d0d0562cd9c715918e62ca",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003w2/sprites.json",
+          "bytes": 14944306,
+          "sha256": "f6040dcaacdc43158ea018cf36a9a9f7607b85fa7566e170814666363b70c473"
+        }
+      ],
+      "sprites": 100,
+      "frames": 18838
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w3.jma",
+      "bytes": 21305112,
+      "sha256": "53d9b21b9e051c26fe768ced5c34c48811bff9fed4abd98b72a34caf424d1760",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "003w3/sprites.json",
+          "bytes": 4423212,
+          "sha256": "1479d02267da4a333c3b164892a9ca9d3a1f27072deefeca58620919eb7d4105"
+        }
+      ],
+      "sprites": 33,
+      "frames": 4633
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004.jma",
+      "bytes": 704528,
+      "sha256": "651880879ab2d5a0df2ec6669e9109140e96cf04f07259ab5a01ba9bdca05aa1",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004/sprites.json",
+          "bytes": 225788,
+          "sha256": "6bf64fa19bd203b064ae38f91b4f0e88d672d91fb7d0598add96560b2b012534"
+        }
+      ],
+      "sprites": 1,
+      "frames": 216
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004a.jma",
+      "bytes": 2262128,
+      "sha256": "883eaf8d8aaf41a38c9795edcfca45b2d5ebadcf2494d650cedbc219578e8893",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004a/sprites.json",
+          "bytes": 2394789,
+          "sha256": "9c2edaf83f7a1c79cd6b6ab025fb90b6f43beff73cd8e2640a2a5ec027f4bde3"
+        }
+      ],
+      "sprites": 35,
+      "frames": 4015
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004a_c01.jma",
+      "bytes": 8271658,
+      "sha256": "e916b5ca807fb081b2f7f304c63844c7f0cefcf79352e17fbc6abcebade38e7c",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004a_c01/sprites.json",
+          "bytes": 5067508,
+          "sha256": "fb3143057f808e6f5325dcc96fad6c8963594ee09583e754e05860ba587b6239"
+        }
+      ],
+      "sprites": 42,
+      "frames": 8002
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c.jma",
+      "bytes": 3868032,
+      "sha256": "571345bb30397bee007955e6bbc36dd8100d53c2b8e3e66a7f0e90d47296d9ad",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004c/sprites.json",
+          "bytes": 3391966,
+          "sha256": "c2460cbc1b2fade572ff0f67d1f607f1c3825cf9047776594b4425036b5b89ed"
+        }
+      ],
+      "sprites": 45,
+      "frames": 6015
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c1.jma",
+      "bytes": 20977552,
+      "sha256": "5b25a77b1fd0ac86c7d8ada0a9a5b0b5adf4fa04a734e1434faa1a1550c77a7b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004c1/sprites.json",
+          "bytes": 11611208,
+          "sha256": "596239f91a5729713b688fb41fa5b0e7e6970b3aace1d0e9dd49f6bbc45bd438"
+        }
+      ],
+      "sprites": 97,
+      "frames": 18806
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c2.jma",
+      "bytes": 2623952,
+      "sha256": "75a4791946489e2d58394afe7aa2f2bdbda10f86c344baa5a274593cfade878d",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004c2/sprites.json",
+          "bytes": 1553925,
+          "sha256": "7adf0c5b9b52be39b892bbdccce530956899e995ff92c7230cd7dc78f8d4e087"
+        }
+      ],
+      "sprites": 13,
+      "frames": 2600
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c_c01.jma",
+      "bytes": 11335396,
+      "sha256": "43fd5c9e91766ee9267ba7fc09ab94e0ff406eea6287998d22ec78d9e862ba26",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004c_c01/sprites.json",
+          "bytes": 6284681,
+          "sha256": "daf62350829a1720ae1580c2a1fc5a5dc8afe9d2063e96ce70a5a0ea1eb19df0"
+        }
+      ],
+      "sprites": 55,
+      "frames": 10204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e.jma",
+      "bytes": 15908442,
+      "sha256": "f8a896474d086916223a76a7477694be5d265223904f93bbcfdec21e3b76c8f7",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e/sprites.json",
+          "bytes": 9053677,
+          "sha256": "1c29971369a3729c0fb9d239712730c5caa0a5175c13fb834a3c8950e8bd1592"
+        }
+      ],
+      "sprites": 60,
+      "frames": 9811
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e1.jma",
+      "bytes": 46622896,
+      "sha256": "fc03f9557241f2a9ce0854c4bfd866d43feae9abe428cecc3859c84d74f4bf1f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e1/sprites.json",
+          "bytes": 18110957,
+          "sha256": "3c167d91aae80e9894016b5650a783a39eb52e0c023de2b9ae860f83c4a6ca1c"
+        }
+      ],
+      "sprites": 89,
+      "frames": 16805
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e1_c01.jma",
+      "bytes": 10900072,
+      "sha256": "3a799baf73c4dd1aebbfc192e0df03a58433662f41b597c5cc2524403c87e70d",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e1_c01/sprites.json",
+          "bytes": 3500641,
+          "sha256": "54894a5d8c504899ead0c3055871ff0eb8547257b3afefb9b753c733984bcf72"
+        }
+      ],
+      "sprites": 11,
+      "frames": 2200
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e2.jma",
+      "bytes": 55454374,
+      "sha256": "ba1c1cda6bc11debec75cf53c45d129ac9474ca5cdb1e179aafcaf480bb8840d",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e2/sprites.json",
+          "bytes": 20889278,
+          "sha256": "e598ba168ed447e9611872534fbf62c32634a6d0497bb188e0719ec709bbaa37"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19602
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e3.jma",
+      "bytes": 17796580,
+      "sha256": "34855a868805e65d5fd2da8170654735f8a411632d42cd802d2366a63d60d409",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e3/sprites.json",
+          "bytes": 6100529,
+          "sha256": "0830f8865ac9639b4e3c499ba1022316990336f5a806f954a6fda3b4f2558a28"
+        }
+      ],
+      "sprites": 29,
+      "frames": 5800
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e_c01.jma",
+      "bytes": 14356630,
+      "sha256": "80b89c5fb3e09e5ffb38addac500d43f7fe603b2e0aeaa50919c6c1432e22f17",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004e_c01/sprites.json",
+          "bytes": 6639050,
+          "sha256": "c0706a19a07a860f08cdc67c7bda4c530ab883a4b737dd5c6ea27c21e65e116b"
+        }
+      ],
+      "sprites": 40,
+      "frames": 7005
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004f.jma",
+      "bytes": 1497726,
+      "sha256": "7bba5ed48fba7ef08c48435ec8ac009ac4cb90714500c12f39938943c5e16cd0",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004f/sprites.json",
+          "bytes": 654848,
+          "sha256": "30d7d9781653b0cfb5eaa3a0cfd5eba58d38e2f702ece8f1fb72d870dbda68bc"
+        }
+      ],
+      "sprites": 64,
+      "frames": 152
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004h.jma",
+      "bytes": 671758,
+      "sha256": "58381b027dcf676ec972e7d96c1a16750aecc7b9190d537629bd35c0bbd20af0",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004h/sprites.json",
+          "bytes": 546847,
+          "sha256": "67a3b02c30c7d27906792f0c291a74b13450a4aff83d8ee94a865bbc3e9a60d3"
+        }
+      ],
+      "sprites": 4,
+      "frames": 864
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s.jma",
+      "bytes": 4794042,
+      "sha256": "1bf34698be4e6c8857d4bf9fdaf801b70cd60a56fc709d4d70c5048f1f119605",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004s/sprites.json",
+          "bytes": 4217004,
+          "sha256": "cf7c46247033e33aead58f4949deddaa1e8ab71ce09f8f3c890c798e6d3a7bd3"
+        }
+      ],
+      "sprites": 42,
+      "frames": 6211
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s2.jma",
+      "bytes": 1768016,
+      "sha256": "97f605c0a239004ec7fe514a6d3d06f7727acfd0c669b3c369a453f13717b74a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004s2/sprites.json",
+          "bytes": 720414,
+          "sha256": "5e46ea61fd974cb9ec50d1611486ad7dd320545a4abe20b00495a7f812803ea7"
+        }
+      ],
+      "sprites": 5,
+      "frames": 1000,
+      "encrypted_sprites": 5
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s_c01.jma",
+      "bytes": 11885534,
+      "sha256": "8b15867f2e05dda9f9365629ae481ba72cfbd1922f6745f3dbde0bfcc7e702ec",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004s_c01/sprites.json",
+          "bytes": 7112947,
+          "sha256": "c6b8038929b9f1f9edb84e69649bf7d42c241dee736c494478de152df5c13ff5"
+        }
+      ],
+      "sprites": 58,
+      "frames": 10008
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w.jma",
+      "bytes": 30864176,
+      "sha256": "fedf5f94a206b01289f862a1c1ce01a355e7e1853ce9294a307240e2bcca92c2",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004w/sprites.json",
+          "bytes": 10886062,
+          "sha256": "b7f39eba7f4e06e370e668be20adf469f176ad7a34f73ffb8769b38ac9d11479"
+        }
+      ],
+      "sprites": 99,
+      "frames": 15598
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w1.jma",
+      "bytes": 3139998,
+      "sha256": "e6348a3871c15ee2a0bf0b12939a3bab3156849998bf5b4e533f59a2387882c1",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004w1/sprites.json",
+          "bytes": 1430410,
+          "sha256": "df9a899a311cc45359ca59f5b26cdfb241efe83b583422f9b0a40f63c1912d5b"
+        }
+      ],
+      "sprites": 12,
+      "frames": 2121
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w1_c01.jma",
+      "bytes": 38032070,
+      "sha256": "d9303be6c49e514cc9edfb0b248918e7d1d1b0e7b44dc76fdd617a488b6986d8",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004w1_c01/sprites.json",
+          "bytes": 12408934,
+          "sha256": "6e8a341dc1882b2e422d3f6b9dd1ce4b67bd96c2c266829dd582b175347d9c80"
+        }
+      ],
+      "sprites": 88,
+      "frames": 16717
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w2.jma",
+      "bytes": 53995138,
+      "sha256": "02f5098ea611a430da5eadcb0ff3528c12b13880c729f9d51527cb8c35e01a13",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004w2/sprites.json",
+          "bytes": 15244420,
+          "sha256": "4eb9648f3b0264d7dcf3663ad77c9da974299ccd49f0d8ea75060f4ef2cc961d"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19029
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w3.jma",
+      "bytes": 23411304,
+      "sha256": "2c3f37acb950ad1da01e9431b8270cbc1ad2298147609a02482ce3f1f5dee16d",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "004w3/sprites.json",
+          "bytes": 4668827,
+          "sha256": "aea3a2a6f15e419ec2bc226708158b759f4c97b3dd010a6d3ed6032b5889242e"
+        }
+      ],
+      "sprites": 33,
+      "frames": 4824
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005.jma",
+      "bytes": 636316,
+      "sha256": "0e1989c18f086f9c7ba26e9a55c626cf1090e6850ace1b54cb1aab38ce133c3a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005/sprites.json",
+          "bytes": 220913,
+          "sha256": "ff335c86c58c582b9f552eff7fbd9d54ee48a5b44765a9d8b0022859a2d74aa9"
+        }
+      ],
+      "sprites": 1,
+      "frames": 216
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005a.jma",
+      "bytes": 2200088,
+      "sha256": "6311546ea0b6536d55b7d4d307f8c43be8cd0bc316fe45e425ba6fb3c8ac2ec2",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005a/sprites.json",
+          "bytes": 2640012,
+          "sha256": "9456d3cbac6cab68eea5c296d4b086607282efd20d3b24d7eb049f893e8084da"
+        }
+      ],
+      "sprites": 35,
+      "frames": 4413
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005a_c01.jma",
+      "bytes": 7491630,
+      "sha256": "5a0909624ac4a5d8adcaf6dba778aa32332ba5135ffa85dcda38af94ffe0ecec",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005a_c01/sprites.json",
+          "bytes": 5278057,
+          "sha256": "44fff580266ab45e2d065b0b0fc203e84048e41863b40255ea289f8ab75658f2"
+        }
+      ],
+      "sprites": 42,
+      "frames": 8400
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c.jma",
+      "bytes": 4118688,
+      "sha256": "1586a965d72a23f794a8f5e6fe949839563aa8b1f464c147a6132ba89cc4a55b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005c/sprites.json",
+          "bytes": 3942059,
+          "sha256": "5770b409dc95bc57ed5eb1351d4102494e653fd2275115d30c39c27b1518f765"
+        }
+      ],
+      "sprites": 45,
+      "frames": 7010
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c1.jma",
+      "bytes": 21142248,
+      "sha256": "94eb7c8108c2fcfe0dae5d0a65c3f07521aa98a938c6f8e0f82035473c0fb254",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005c1/sprites.json",
+          "bytes": 11784023,
+          "sha256": "7960c2db09f7602440ad23deb2dc86b76c1346c8f3321964b06acd3f57f81531"
+        }
+      ],
+      "sprites": 97,
+      "frames": 19002
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c2.jma",
+      "bytes": 2671740,
+      "sha256": "5ad6c20d6b9fbde90e4bf7b509b6f89211a65525cfb34819fe74efff8378c51c",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005c2/sprites.json",
+          "bytes": 1561105,
+          "sha256": "1611ccf304529aeb4ecc14b41deb038262c75157fd74bf2735ac9bf16a5826a1"
+        }
+      ],
+      "sprites": 13,
+      "frames": 2600
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c_c01.jma",
+      "bytes": 10865588,
+      "sha256": "94b811943d2dce92a22b649a3a5a481061b89c8ada389b683dce1521d3f31e55",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005c_c01/sprites.json",
+          "bytes": 6053687,
+          "sha256": "079ac49e6ce2458de0343eaf20e0a02b12ff1b80bf4e2ffe3f1a30aee4567014"
+        }
+      ],
+      "sprites": 55,
+      "frames": 9806
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e.jma",
+      "bytes": 14371014,
+      "sha256": "6464274e4ce1a0b68f95dda3a8d0ed5c5bafeca1ed2c9b0365c4e6594e39a9ef",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e/sprites.json",
+          "bytes": 8931901,
+          "sha256": "1b227ad64a938ac30d59aa97d5ef8fe5f8275bd43dd6d3744c7bf3d2e211db0f"
+        }
+      ],
+      "sprites": 60,
+      "frames": 10607
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e1.jma",
+      "bytes": 44514460,
+      "sha256": "dbc9af90f47515585eb9daa245f605d95787e6b345b7bd04d96aff42a29d5cd8",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e1/sprites.json",
+          "bytes": 17385991,
+          "sha256": "6e10f69ec6bd7286e4123624d504c163a3513bc57cc2d904e699a68dfef260c2"
+        }
+      ],
+      "sprites": 89,
+      "frames": 16606
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e1_c01.jma",
+      "bytes": 10661944,
+      "sha256": "fc12696d0a88cf8e324d39b555c6da31c4f520795b5c15f1459a2eaee027fd34",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e1_c01/sprites.json",
+          "bytes": 3388668,
+          "sha256": "79ce6979faa97b4f71187e111b17ca6dc62a8d925bdcc37829914b9a0efb397e"
+        }
+      ],
+      "sprites": 11,
+      "frames": 2200
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e2.jma",
+      "bytes": 51595954,
+      "sha256": "65ba0107c4506e3dfea29d7408ef98133e40a36f0603160c5eb4021556b82b5d",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e2/sprites.json",
+          "bytes": 19588967,
+          "sha256": "99fdbfb6073970cfb808c857895aac472d3632536ccfd4d72daee81d7f74677e"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19403
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e3.jma",
+      "bytes": 16763344,
+      "sha256": "c0dc938289a93b2e4e39ed92468b27cf71161c970cf4754ae87cc5f067927a2b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e3/sprites.json",
+          "bytes": 5932196,
+          "sha256": "32292fb364e98ef36eab9cbf5883c4daffc160fe997d6015d47d4fffa8e46982"
+        }
+      ],
+      "sprites": 29,
+      "frames": 5800
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e_c01.jma",
+      "bytes": 13693042,
+      "sha256": "67c003ef85af3ee5d1df63d5916613510f760e30a868f16b9999a41707880b39",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005e_c01/sprites.json",
+          "bytes": 6529978,
+          "sha256": "0ae1d8676eec7c1fd55ca20f806930d446284e666763c2b60b4c57925e2d08bf"
+        }
+      ],
+      "sprites": 40,
+      "frames": 7204
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005f.jma",
+      "bytes": 2818902,
+      "sha256": "8e488b92722fd4eab005a9940bbe55a099f44bb3143cd94779531052e40bc39a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005f/sprites.json",
+          "bytes": 1151387,
+          "sha256": "63852a39a01968ac08becd51b6480fccaa497d38140ef445529a3eba6d0b48ed"
+        }
+      ],
+      "sprites": 68,
+      "frames": 244
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005h.jma",
+      "bytes": 2234402,
+      "sha256": "34638a834159a111b4a55da4bdd5e164afb876d67ba470d899e11037cc06fee5",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005h/sprites.json",
+          "bytes": 1285895,
+          "sha256": "4d05ab8eaf6248d0ff193d23b57575e61397d3df3bb5582698b7b589de9ff6e6"
+        }
+      ],
+      "sprites": 8,
+      "frames": 1728
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s.jma",
+      "bytes": 5046982,
+      "sha256": "a248be8136845869427020cb8527443fbde1e7186f95b89bff2368a9c8e71d1a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005s/sprites.json",
+          "bytes": 4667639,
+          "sha256": "b05beb52b591c6b17647c3d890023580b6bbd449531814578aaeb0d989060cad"
+        }
+      ],
+      "sprites": 42,
+      "frames": 7007
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s2.jma",
+      "bytes": 1556528,
+      "sha256": "f93b0fa5694926850409e6c2f5a5d746017f7c141c440f33a3d9b4987e307067",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005s2/sprites.json",
+          "bytes": 705237,
+          "sha256": "28b031070bb10532ed641adfa51e0e02f12003e33b988bf0bc7c6cd29520fc2f"
+        }
+      ],
+      "sprites": 5,
+      "frames": 1000,
+      "encrypted_sprites": 5
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s_c01.jma",
+      "bytes": 12219414,
+      "sha256": "bfff942f1d97ff3d0e47fb2bc3180d5b388160d479cccf88b1814c8d4a77454f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005s_c01/sprites.json",
+          "bytes": 7648184,
+          "sha256": "109162b0065ecbbf3195b0cb5851ff3dffd3202962062bddb35ac8f3c6331ab8"
+        }
+      ],
+      "sprites": 58,
+      "frames": 10804
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w.jma",
+      "bytes": 31681452,
+      "sha256": "6a89325d5f8bd094195c9e3c6278a75d4ac8304aea380fbce7fe393375a00c21",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005w/sprites.json",
+          "bytes": 11294741,
+          "sha256": "d86b80e0cd1c3eca8a1380e8e3d812d43643d2b84f1d48f73ac6fcd771899bc3"
+        }
+      ],
+      "sprites": 99,
+      "frames": 16318
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w1.jma",
+      "bytes": 3631266,
+      "sha256": "fa39e7db6f1dd59104002b31b4afeaeb39f5b20df35865553c0dea20a9989b5b",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005w1/sprites.json",
+          "bytes": 1532977,
+          "sha256": "f6407ad7b79b44e2d31efa93f2d9299a0f87e0c130f21d3c33de6f5d751edcde"
+        }
+      ],
+      "sprites": 12,
+      "frames": 2260
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w1_c01.jma",
+      "bytes": 38815942,
+      "sha256": "416a3818303f13604637cd3801d774f1f38eea7e74b69c737288a7dfd39d2d56",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005w1_c01/sprites.json",
+          "bytes": 12596350,
+          "sha256": "a8d6c0bcde84372d735ba8782fe4a1778b831aa7b842ea5e191d62e000490268"
+        }
+      ],
+      "sprites": 88,
+      "frames": 16908
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w2.jma",
+      "bytes": 52419790,
+      "sha256": "45ca4e76edc2f1e9a19057cc2d748df0052b3557a39eb2e8d8a76c558ee6db31",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005w2/sprites.json",
+          "bytes": 15150164,
+          "sha256": "e6c9d68b09c51963ef86ce510d69edae520fc8585e9ffddd071f2cd3c534f838"
+        }
+      ],
+      "sprites": 100,
+      "frames": 19033
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w3.jma",
+      "bytes": 24957562,
+      "sha256": "63a903575e6166b92e89e767ae9d1dc5100035c272e826aa83c98d369dcc504f",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "005w3/sprites.json",
+          "bytes": 5527629,
+          "sha256": "c24df88b29ed73bb2cfbdeab1a50ca0dc6b23469cbb0116798417e755dceeef5"
+        }
+      ],
+      "sprites": 34,
+      "frames": 5975
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006.jma",
+      "bytes": 22834086,
+      "sha256": "9e51ff566ace5188b71dc5b17efe3f0f44fff6fab6f518813b5a3b058c7c1282",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "006/sprites.json",
+          "bytes": 7119128,
+          "sha256": "40b90b916998a7b7966813ed4a4590c4d645a00895c34702a7ad67e55a22dc1e"
+        }
+      ],
+      "sprites": 28,
+      "frames": 1736
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c01.jma",
+      "bytes": 57307546,
+      "sha256": "ada90b2131abadda33f896629a0d8b99b23b129f651e85d86e6896a13f39c977",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "006_c01/sprites.json",
+          "bytes": 15376033,
+          "sha256": "e8699224785b0742bc5877953ad4ea4131760bd9194c41a923c090e58689c3d7"
+        }
+      ],
+      "sprites": 72,
+      "frames": 4482
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c02.jma",
+      "bytes": 417080,
+      "sha256": "ec3dad8467efe414cd3bf3b1ee16fab8fb309b9ee13293acd61a78b2fef841d9",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "006_c02/sprites.json",
+          "bytes": 73803,
+          "sha256": "f9100a66e2cc104b2e9a7cea930fe213b0076b943997bba4c64adaaba1100156"
+        }
+      ],
+      "sprites": 1,
+      "frames": 64,
+      "encrypted_sprites": 1
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/007.jma",
+      "bytes": 480108,
+      "sha256": "90fbc070644cadeb365616ca525b33b8a425da57a001bdb32eec8f840d085b65",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "007/sprites.json",
+          "bytes": 1005426,
+          "sha256": "296384430059ecd996d7aba264aa7f611a76f767e950e0ffeb2417b5e27e23ce"
+        }
+      ],
+      "sprites": 287,
+      "frames": 287
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/007_c01.jma",
+      "bytes": 221358,
+      "sha256": "72924fc5ef564bf5a4ca88b5c3e7b21b74a60e4661040f8b19044e9e05068b64",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "007_c01/sprites.json",
+          "bytes": 486460,
+          "sha256": "0933e570d1901bab82f25e6a849ab71eb167485aec62fb3ed53058f94ac68dc1"
+        }
+      ],
+      "sprites": 132,
+      "frames": 132
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/008.jma",
+      "bytes": 1262524,
+      "sha256": "a5682610bf7825f8f943871062d1a8d3f06ba12d731ed8ace45fee4e4dd6abc0",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "008/sprites.json",
+          "bytes": 725604,
+          "sha256": "d0fb1ec0580210d797a2b5929ed298d20dc943ce79c89ecf61d21626ea69cc14"
+        }
+      ],
+      "sprites": 115,
+      "frames": 229
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/008_c01.jma",
+      "bytes": 90110,
+      "sha256": "856e6091df8be8330e088355134b677348c5b7f61c6f4f026ffe8424d284a358",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "008_c01/sprites.json",
+          "bytes": 63701,
+          "sha256": "a2865ec94d2dbe3bef7f1635e21b65b60a885c32d9da4defd1cc4f836579e3e1"
+        }
+      ],
+      "sprites": 8,
+      "frames": 16
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/009.jma",
+      "bytes": 1573606,
+      "sha256": "91b23fd3b3f207b5446a48d29554e4a8defc11e3918c6a368a4b13cb419da29a",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "009/sprites.json",
+          "bytes": 861661,
+          "sha256": "b626e6b7380aad6a343477d3d4cfc12c66b20f0852b8bdefc064d510a24fe0ba"
+        }
+      ],
+      "sprites": 56,
+      "frames": 271
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/009_c01.jma",
+      "bytes": 1883274,
+      "sha256": "3319953525c8605758dfd2fd13be777f1ece400866eb064ff6a5ab9c359a8cd7",
+      "format": "decompiled-sprites",
+      "outputs": [
+        {
+          "path": "009_c01/sprites.json",
+          "bytes": 1318303,
+          "sha256": "5411d6890add7ec0f9ff79691b0f857790a39ae3ccc0b461ebc23bf5bcca06c7"
+        }
+      ],
+      "sprites": 84,
+      "frames": 146
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001.Jxa",
+      "bytes": 56334,
+      "sha256": "a4ec11ec8c41ed7a3e265491c35708b52da44f0428eccaaf5b5b26061b05d236",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001/actions.json",
+          "bytes": 804838,
+          "sha256": "b47ce35311bb356665f68525290ed631d7480a5b16d18455f6cdbc6545f78ad8"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c01.Jxa",
+      "bytes": 4574,
+      "sha256": "07a339f52361e5de2fd9f04bdbe56b40383bd9ab01620b53a4e44e3591cb7629",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001_c01/actions.json",
+          "bytes": 65364,
+          "sha256": "6653d03772a9ab6b53d30f6e7948acea18819eeed91a200cf978d44bfc30d396"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c02.Jxa",
+      "bytes": 8014,
+      "sha256": "6c556d0e8fa8113de3f052c49c1d8bf40eb6ef6112fdaa0ea66d38e384607306",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001_c02/actions.json",
+          "bytes": 114462,
+          "sha256": "f1ae09fdb6e55df3510b902aa0e2ba833ea535a739816ffda7fa5fbd3696d128"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c03.Jxa",
+      "bytes": 8014,
+      "sha256": "c29e214bdc87ed8dfc784b03380eb3e9e9d04bde9a70725e1b33c119b4e5c624",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001_c03/actions.json",
+          "bytes": 114457,
+          "sha256": "18023251f3393c5d1a32a7c5c5e50f057c5ea4f898800ba04349f03ad7b9c592"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001_c04.Jxa",
+      "bytes": 1854,
+      "sha256": "349c8bc5e76a7452181937e664c474c3beb2d3911a8c8538554e5734ad689295",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001_c04/actions.json",
+          "bytes": 26531,
+          "sha256": "340a4291d4bec06bc67a80681e326eab11d82c2c0f12e4166330ea320c1ca53e"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/001w.Jxa",
+      "bytes": 254,
+      "sha256": "fc554418fcc1453e548f670a641d9e862c1134a60038aff44287cb37f6fa9f38",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "001w/actions.json",
+          "bytes": 3700,
+          "sha256": "47f2c6b8b97714474486b8cb5b4cfd8d66e5a7fe7ece5aaefe55f268ab2370ff"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002.Jxa",
+      "bytes": 94,
+      "sha256": "3f80e9a02fc821712f46cfabae5dbf4cada33ac24a5d8f23fa2f637622cdc59d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002/actions.json",
+          "bytes": 1417,
+          "sha256": "0758fd7b80d60b44db692bff3d2a885d57552c847195db2cc759c9341f03295c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002a.Jxa",
+      "bytes": 2814,
+      "sha256": "7d0e18cc6a575bd566a9a967fad082f0311a1023f049be228c62d85700d2ef8f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002a/actions.json",
+          "bytes": 40222,
+          "sha256": "78ee5cca5dbc25d6a579ba040bb5c9c71b266c17799bf2ef5a0ae6ffca9d801c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002a_c01.Jxa",
+      "bytes": 3374,
+      "sha256": "5692fa48238b791b2f9a60619fef06828e87b25bd74c5341886e5337f59b9225",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002a_c01/actions.json",
+          "bytes": 48233,
+          "sha256": "a91afeecf2aac658bb4e0a26809332bd7778298580081594c600ef5a0c57e22b"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c.Jxa",
+      "bytes": 3614,
+      "sha256": "81b90cdf57b87863da6412a9632b78c26db77832059ae8ee3eb9291193fa5d14",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002c/actions.json",
+          "bytes": 51642,
+          "sha256": "e46e0a8d2fcc5879040efa4eb174908ceeac0c4132a0150ecf2120fa8e29a2d1"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c1.Jxa",
+      "bytes": 7774,
+      "sha256": "e74bbc9bf17e368301299a52bbca598e7a4da203a4715825820211e169955570",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002c1/actions.json",
+          "bytes": 111038,
+          "sha256": "660c9155d753e65ad2420d2a8ac6b1bb96a680099f848c47bc56aa9166e25f2d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c2.Jxa",
+      "bytes": 1054,
+      "sha256": "cd01b43fb140c312cf7769093d3136df64747a248d7cdb463c84c4447c768912",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002c2/actions.json",
+          "bytes": 15114,
+          "sha256": "fdf68cae092dfb26d085dd1fdcac9033000f7f9f13451e877a6305d7856efb74"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002c_c01.Jxa",
+      "bytes": 4414,
+      "sha256": "919f1bcb99897a5dee877fa74dfb1a3fc6b4a37bdeade92aada76a450d9a4c52",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002c_c01/actions.json",
+          "bytes": 63078,
+          "sha256": "0761f2402dd5a80993efb87f86b1d4086fc919a52a7896c60dc276dfa8beb95b"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e.Jxa",
+      "bytes": 4814,
+      "sha256": "0fbcafd1adf8b1f89b2bf1a8912494231c02b9a253e794eb6a1e492b1046ff3c",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e/actions.json",
+          "bytes": 68773,
+          "sha256": "027f1fc0cf321111b7c10b430b735f309238bc310c1e5de0b053bdc963a016f2"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e1.Jxa",
+      "bytes": 7134,
+      "sha256": "91605ad04662e45f7c8429b310e1e88769e7d6d4a733063130fa3ebdce79b06a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e1/actions.json",
+          "bytes": 101901,
+          "sha256": "4aa0f20f6e40da5c7a903c03a3359a672ba61ae5c6e8ec752f214d62539d0661"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e1_c01.Jxa",
+      "bytes": 894,
+      "sha256": "ae5b0e28c807918eb875f6d30dc9df67e652b5a4cb10e5c4ce3c17a49fcd6987",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e1_c01/actions.json",
+          "bytes": 12834,
+          "sha256": "c5156dc9e39880a7905bc168a3eed6a5e7e7fed2353d8de3cf8cc18f94ab5bf8"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e2.Jxa",
+      "bytes": 8014,
+      "sha256": "1e416662fdba2cdec7068ba4c44230fa91da0bd5931bb6dbfff6327221766ad7",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e2/actions.json",
+          "bytes": 114466,
+          "sha256": "6ee00ffa003e2d5b65e1168b90ca3bb473ea64372620ceb747d69ed632ef272a"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e3.Jxa",
+      "bytes": 2334,
+      "sha256": "b29b302e6f77f0632d5d747e4216c925ea3827ffc6fb68394285d40e855549c1",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e3/actions.json",
+          "bytes": 33385,
+          "sha256": "bba1152d55d0e986bdc9aaae1a196b68774c8a657f3228327d5ba9ad6919e4fc"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002e_c01.Jxa",
+      "bytes": 3214,
+      "sha256": "d8dbac559e7be9bf6c75fb8a5094213502e38d20505ffa0996a69a7032705c6f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002e_c01/actions.json",
+          "bytes": 45947,
+          "sha256": "160588bdc18e40830c3ff6837518a5bc9ec79969da7c82cd61d9b470186e9e12"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002f.Jxa",
+      "bytes": 4894,
+      "sha256": "b657f414ff9813f1340ee1732dc5402658e978045fbfce504a629a8c9f622a3c",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002f/actions.json",
+          "bytes": 69868,
+          "sha256": "d8a3ac4c020a2374942a287efd17acb0c195493696fd7a260aa45a88df373d0e"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002h.Jxa",
+      "bytes": 94,
+      "sha256": "3f80e9a02fc821712f46cfabae5dbf4cada33ac24a5d8f23fa2f637622cdc59d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002h/actions.json",
+          "bytes": 1418,
+          "sha256": "3bf3d7d205f3dd0f7e9a0f06813b6f429f0b021bc23d4ba08555196168a78799"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s.Jxa",
+      "bytes": 3374,
+      "sha256": "d458369c1a06839f8faa261101ab2d4dc428573d84f1780790b262a1bfa7e797",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002s/actions.json",
+          "bytes": 48217,
+          "sha256": "6e43d195850a0b4d4d65fd12971ecf3f0f4f4f1e79657eda482e80e1426d0ef8"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s2.jxa",
+      "bytes": 414,
+      "sha256": "846b3a604e3753ca6bc40803d6112ddd1dfe7ff301756b49ebeee41cb295509a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002s2/actions.json",
+          "bytes": 5983,
+          "sha256": "1fd2fd243eb1361fb29cd03da90d07477a55119f1919ccc9fc31319b92f2b08d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s2.jxan",
+      "bytes": 336,
+      "sha256": "e209f95002a90d635f0525b747a3353ac9cb999bb632bf82f8167c8f7f3db3a6",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "002s2/encryption_metadata.json",
+          "bytes": 2424,
+          "sha256": "f7767b139307f5e8659f3fbdc78c8522404aab4f58008d883812e667f8677ebe"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s_c01.Jxa",
+      "bytes": 4654,
+      "sha256": "638bbb7becd620227e0aebce2294084a414400734ad04492b2c264440629f348",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002s_c01/actions.json",
+          "bytes": 66501,
+          "sha256": "7e92dfc064e277b2c55937d22d8a431cf08fad0b904fcdf3c4835e0a7a7a25ae"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w.Jxa",
+      "bytes": 7934,
+      "sha256": "3bdf313c47e8c38a1126f102e4e896a7cd7454053ac416d342116641c54c9332",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002w/actions.json",
+          "bytes": 113306,
+          "sha256": "07a3061118feb0a49667a54e39a653b60646740f3017d442c8d759a705cbe599"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w1.Jxa",
+      "bytes": 974,
+      "sha256": "a8bc55aaba6eb08a8e9c77d4dd66053743b6a0ef2bdff14957d3932e63d3f784",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002w1/actions.json",
+          "bytes": 13971,
+          "sha256": "06e82c2725cfc568c95f92953d1a6cdb2e4ba471c596622b344fe8a41a56d450"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w1_c01.Jxa",
+      "bytes": 7054,
+      "sha256": "44f444584e0ffac2e42689ed1ad6954ea54708b858f022a1fe936b90de60aa1f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002w1_c01/actions.json",
+          "bytes": 100767,
+          "sha256": "a11a3424d6e91a28ba4b1b8ec4f8943736bbd4f5715a9084a5c20a9236ad6c1a"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w2.Jxa",
+      "bytes": 8014,
+      "sha256": "44e2682688e55dba2d979ca00c4eeb2b70e52929fcf82342a29423422cfab4d1",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002w2/actions.json",
+          "bytes": 114466,
+          "sha256": "6f8de67b2697dc766a3e8fb67080b8cc9b0ce4cf8940d2b435b737b4e35f101c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w3.Jxa",
+      "bytes": 2654,
+      "sha256": "fe6d59f70d1cbfc9204233495f9d64f88bb61813afb917d8b9242d6e666e4c57",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "002w3/actions.json",
+          "bytes": 37945,
+          "sha256": "c255760e415c14b40b74a5ae848c1c173dadcbc18f3297d4120439faf4398306"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002w4.jxan",
+      "bytes": 400,
+      "sha256": "0975b32633c57b293c56ef8ad9469498018e19bf9cf6177e33bcf2c009f9ad69",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "002w4/encryption_metadata.json",
+          "bytes": 2845,
+          "sha256": "d6f435571ac462f87d8abf726efa0396727e39cbac3aa2cd7b52a3e5b26286af"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003.Jxa",
+      "bytes": 94,
+      "sha256": "3f80e9a02fc821712f46cfabae5dbf4cada33ac24a5d8f23fa2f637622cdc59d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003/actions.json",
+          "bytes": 1417,
+          "sha256": "655083c38420ef9a64005e308b9b567d7a9798ac506a9d51b33d5ad891d098ba"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003a.Jxa",
+      "bytes": 2814,
+      "sha256": "7d0e18cc6a575bd566a9a967fad082f0311a1023f049be228c62d85700d2ef8f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003a/actions.json",
+          "bytes": 40222,
+          "sha256": "06199cb6720d154394aab6c9858cbdbf4b02500f9fed8587ac18b8d33c60fbd8"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003a_c01.Jxa",
+      "bytes": 3374,
+      "sha256": "63c7fed8d0368ae769afa973e0cf4be3d03700e02b9c067a934a6fb749a80ee8",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003a_c01/actions.json",
+          "bytes": 48235,
+          "sha256": "5da74556116f19fa0f447b4ebce5e5c53802741aa1582485c12a57d9f6c0310f"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c.Jxa",
+      "bytes": 3614,
+      "sha256": "2ae886e7d11ca0adb2cc90de1ba4d2ca0d602a0c90774f74ba43ef01f5e1505f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003c/actions.json",
+          "bytes": 51644,
+          "sha256": "aa013070b095eee201b563176596c55589ba160645db6c6a9b83760abba22606"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c1.Jxa",
+      "bytes": 7774,
+      "sha256": "29ede4a353dafe01e2baea0a78477569fcd89bd746d7028901c6e8ab672b9b4e",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003c1/actions.json",
+          "bytes": 111039,
+          "sha256": "96260f022d94bb10ee2a3d5ac01990127a387a72eb1d51d4c1f773997e7e08c9"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c2.Jxa",
+      "bytes": 1054,
+      "sha256": "cd01b43fb140c312cf7769093d3136df64747a248d7cdb463c84c4447c768912",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003c2/actions.json",
+          "bytes": 15114,
+          "sha256": "e9e644af02278ebaa262d4ca6971c438c76a89f0a499a42123cbe6c8f3e58f95"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003c_c01.Jxa",
+      "bytes": 4414,
+      "sha256": "12521409cdec19aa99d669927c9c332d23fb091078db4c83b1422d102b6a3c46",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003c_c01/actions.json",
+          "bytes": 63078,
+          "sha256": "df41a297d59ed4720ba22a927e1d04c2e82feee7cd656b8d46d32930c48a400e"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e.Jxa",
+      "bytes": 4814,
+      "sha256": "9e7a4b7bac2f402aa0b9aa554fe7c86c3c16686e5c9e11a7d3304e6ea817ff05",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e/actions.json",
+          "bytes": 68774,
+          "sha256": "a81fd5e01d03a0aa683dfccc06782fb6ac9db670c52e5c6448bb863cc949c2d2"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e1.Jxa",
+      "bytes": 7134,
+      "sha256": "1c331e5b36bf0bf756fe4c949ad5b3de2e7da08981c44721c24d4fc29b49c09c",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e1/actions.json",
+          "bytes": 101901,
+          "sha256": "f32948e28a9b95f8dd3cc0e2feb07fa97877723d43cb3b7a401e50cf40917176"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e1_c01.Jxa",
+      "bytes": 894,
+      "sha256": "ae5b0e28c807918eb875f6d30dc9df67e652b5a4cb10e5c4ce3c17a49fcd6987",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e1_c01/actions.json",
+          "bytes": 12834,
+          "sha256": "302f4e3655af0fcf27bbae7dbc5801ee8cd8e58c4c6c9bfaca5b48f31bf001ab"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e2.Jxa",
+      "bytes": 8014,
+      "sha256": "d165c5ebfa0ec954d6db85638013f48d75d3393fdc4d04c29dd7c218899d97ac",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e2/actions.json",
+          "bytes": 114464,
+          "sha256": "97a1cbb4319e622d2aaf0a76948240ea9b303621f51d7993fc9b06f2de7b97a6"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e3.Jxa",
+      "bytes": 2334,
+      "sha256": "6eaa0122e90e1ceb7bab3dcdb3dc2d22e3d2e1b4f8df2c63d31bc156b88965b7",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e3/actions.json",
+          "bytes": 33385,
+          "sha256": "906870a634dd352cab311d3f714454f5a51ec58061e6d4bb2546920e9f75c2e6"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003e_c01.Jxa",
+      "bytes": 3214,
+      "sha256": "ab89c14265400e090c5d7f2090d94cbfa2f589c333207c190cf3801b9057bb6d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003e_c01/actions.json",
+          "bytes": 45947,
+          "sha256": "94f8335bba75fb349932b1cbb4c894453c5ecc0152c55c6ef78776aad974d5e7"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003f.Jxa",
+      "bytes": 4974,
+      "sha256": "a2be38563a5df60309d78c4346cf71e038e76f0210517059b6530e43c13526a2",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003f/actions.json",
+          "bytes": 71009,
+          "sha256": "5aec1f8a1cf77ccf25a56a571393ac37928467da3b597658033663d5d2a4f089"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003h.Jxa",
+      "bytes": 174,
+      "sha256": "df78747c5fb5e70b57c6175f68ff58b17725cb0c0480710ed23f8a51f62163e5",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003h/actions.json",
+          "bytes": 2559,
+          "sha256": "de56a27f63f809bdab7fd381bcdc979e974b26e5d374cacb7984368faed71173"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s.Jxa",
+      "bytes": 3374,
+      "sha256": "b60c983bd75764fce5ce62aac62a79fdd938eabb9178be83f59f68ba5b77194d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003s/actions.json",
+          "bytes": 48218,
+          "sha256": "a8ffcea43bbd9db11da929f49e3ea1f8ac1cdb65deb190d598bc04460e79c767"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s2.jxa",
+      "bytes": 414,
+      "sha256": "846b3a604e3753ca6bc40803d6112ddd1dfe7ff301756b49ebeee41cb295509a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003s2/actions.json",
+          "bytes": 5983,
+          "sha256": "71e71d94923ecc41e665b03caeaf5c32279a25dc8e6d856b052c95b6e029a55e"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s2.jxan",
+      "bytes": 336,
+      "sha256": "2bcd46e32e0f1557ef0dcea2f0eb7016dc2cd9e25d307cd57d9109fce748332e",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "003s2/encryption_metadata.json",
+          "bytes": 2423,
+          "sha256": "5b375974a3ea6cef18a2729747644f62c95d37c3d73d05bf96a56b8a6af24c39"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003s_c01.Jxa",
+      "bytes": 4654,
+      "sha256": "c9ba176c94a8ab98c1056bc8968cb2d6b9443c293cfdf40557564d98ba7b4f02",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003s_c01/actions.json",
+          "bytes": 66504,
+          "sha256": "b2e2396abef6a98bddd98aeb41aad14bb70b7fcff2c10c31796e11b376f5dc66"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w.Jxa",
+      "bytes": 7934,
+      "sha256": "5ddceb5d891d58256ec9d9bce84bfd05ff359f8d59ad9ac57f068da6aea0b844",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003w/actions.json",
+          "bytes": 113309,
+          "sha256": "1c405c1ce39f34aeab99e94b69d5410b301b6ce5ee8948162fd0753913f7302c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w1.Jxa",
+      "bytes": 974,
+      "sha256": "a8bc55aaba6eb08a8e9c77d4dd66053743b6a0ef2bdff14957d3932e63d3f784",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003w1/actions.json",
+          "bytes": 13971,
+          "sha256": "19913fb2caa150672d7bcc6d62ac09e93aeb527fd726c9c225403ede332ee55b"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w1_c01.Jxa",
+      "bytes": 7054,
+      "sha256": "44f444584e0ffac2e42689ed1ad6954ea54708b858f022a1fe936b90de60aa1f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003w1_c01/actions.json",
+          "bytes": 100767,
+          "sha256": "16debbae63de6b6437b0242bfa56506ed71c238488b943931bf98675ace6df1f"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w2.Jxa",
+      "bytes": 8014,
+      "sha256": "0fbe4347d17580db73b6b1c95c3bbfdb777ae8872c3bea3eac2efe252a3f9266",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003w2/actions.json",
+          "bytes": 114466,
+          "sha256": "37f803530d4af6409cd4812c1ed911e3b994a8b7d687fdee728976c5b3b25f07"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w3.Jxa",
+      "bytes": 2654,
+      "sha256": "f8dfd991962e2d1590a9d1c36233be091b7a01fde46da3c97f5290902c17913f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "003w3/actions.json",
+          "bytes": 37947,
+          "sha256": "c3f269381a49dfd305ee87e7f25f515b2bc8a64eec7e3d7790a554ffebd248d9"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/003w4.jxan",
+      "bytes": 400,
+      "sha256": "c221fcd6e040dfd8e1a8bcfb176fe7f335cb3f8a33cbb9d915bb0f2ca3f78906",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "003w4/encryption_metadata.json",
+          "bytes": 2841,
+          "sha256": "0088dd5f25c420e13eb6f5bbcbdf1d7e544c1d27a5037cd75d8c75279c0e1b58"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004.Jxa",
+      "bytes": 94,
+      "sha256": "3f80e9a02fc821712f46cfabae5dbf4cada33ac24a5d8f23fa2f637622cdc59d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004/actions.json",
+          "bytes": 1417,
+          "sha256": "dd2831450adc163bc14540a4d6e1f3ab1931141912af83a0468593f7fd72b876"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004a.Jxa",
+      "bytes": 2814,
+      "sha256": "7d0e18cc6a575bd566a9a967fad082f0311a1023f049be228c62d85700d2ef8f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004a/actions.json",
+          "bytes": 40222,
+          "sha256": "eadca4e226f9f7e20c8b57b0c637db9ed5429b683c4eae5f1035d4a497227ef8"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004a_c01.Jxa",
+      "bytes": 3374,
+      "sha256": "5692fa48238b791b2f9a60619fef06828e87b25bd74c5341886e5337f59b9225",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004a_c01/actions.json",
+          "bytes": 48233,
+          "sha256": "a642e6b4a795288b25fa578aacb16266d8bf534cc4a9dc80dcbcfe3b2d1540cf"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c.Jxa",
+      "bytes": 3614,
+      "sha256": "6dde615a616c03937290c90ca65cec03c85dfb962b5ce1989cc6cc8711fb2787",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004c/actions.json",
+          "bytes": 51642,
+          "sha256": "e9b9400a96f2d54aa981703b164ac07df11ae78544849b88051ce59ed10ef62c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c1.Jxa",
+      "bytes": 7774,
+      "sha256": "e484d5a4491cc2b2a9bb91a26d6a75e25c25fb708dc7115548373669e4083899",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004c1/actions.json",
+          "bytes": 111040,
+          "sha256": "c452fa9bc29938e3a3b64e8c43c68c6b08eb15daaeac1478160a5928bb57e549"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c2.Jxa",
+      "bytes": 1054,
+      "sha256": "cd01b43fb140c312cf7769093d3136df64747a248d7cdb463c84c4447c768912",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004c2/actions.json",
+          "bytes": 15114,
+          "sha256": "a6b09a8dc30a0cd4e1876165caadbb004fa78d00fde75997a64b798c91bc474e"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004c_c01.Jxa",
+      "bytes": 4414,
+      "sha256": "0dde43b7b89b773288944182c7ca83dfd7827ab3b700619088ae56b845a51b59",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004c_c01/actions.json",
+          "bytes": 63077,
+          "sha256": "e99e12b2dce8e74092703ae8fc5d6e2faac23542f5580793f1d4bb0efb05fa75"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e.Jxa",
+      "bytes": 4814,
+      "sha256": "2dd06adc8130ddbd778aa108f79b72ada49d7bc087179e49992c4a97ccdae19a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e/actions.json",
+          "bytes": 68776,
+          "sha256": "c4f4bb462d49078bbe8a67ba4544d32e42821a334af1c77622cabda0709e86fc"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e1.Jxa",
+      "bytes": 7134,
+      "sha256": "39b24b76923eec67b235625cdff251d1a52e6033b37534b6871bbcb9f9641cc0",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e1/actions.json",
+          "bytes": 101901,
+          "sha256": "2dc2b8a7be353def515eeadec810dd546d1e0966cc13404604dd62dc0357beed"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e1_c01.Jxa",
+      "bytes": 894,
+      "sha256": "ae5b0e28c807918eb875f6d30dc9df67e652b5a4cb10e5c4ce3c17a49fcd6987",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e1_c01/actions.json",
+          "bytes": 12834,
+          "sha256": "687523c9dc52033e19b2f1750a2bf4b470d5f266a787a278a90a1ada725a7fb3"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e2.Jxa",
+      "bytes": 8014,
+      "sha256": "1e416662fdba2cdec7068ba4c44230fa91da0bd5931bb6dbfff6327221766ad7",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e2/actions.json",
+          "bytes": 114466,
+          "sha256": "98979a58ea01eb9db73f010239d086d56adcf141c8f695d107ef70bd356d5117"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e3.Jxa",
+      "bytes": 2334,
+      "sha256": "7b0afba95cf6e3d82c5edba3673e0aa1e790b6150ad203d2ac763146a80d05c5",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e3/actions.json",
+          "bytes": 33386,
+          "sha256": "dcb11686a8de231c7eae09cbb46f63fc413b708b4ddf430c0345ca39d9be7130"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004e_c01.Jxa",
+      "bytes": 3214,
+      "sha256": "94138f06aa44953ee7075804951c8080e773c001ab65b68bc6e22b2fa476f0fb",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004e_c01/actions.json",
+          "bytes": 45946,
+          "sha256": "38dd963e16805e96e4d0624660b1b471690a9ad7a873f55e21e41eac4345bcee"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004f.Jxa",
+      "bytes": 5134,
+      "sha256": "23e1ff2201c44785eeac534393f9fefaf299057d4c592068e6a00d3f36c75d62",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004f/actions.json",
+          "bytes": 73291,
+          "sha256": "5487b4c34e954d955c5657f165495736def56f02e70e8ece05f06beb4c673215"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004h.Jxa",
+      "bytes": 334,
+      "sha256": "b1a34146f008c976b8d702e43cac84ecc9123ff359a09da7c9dfa595b22462b6",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004h/actions.json",
+          "bytes": 4841,
+          "sha256": "bd316da01772a5d6ec049ce99affaec625dd966761f5cdbab33836dbbd7f552d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s.Jxa",
+      "bytes": 3374,
+      "sha256": "94d48b3729da102b36353e58ce944ed20cb9e37822de12b9d82e9a25529be35b",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004s/actions.json",
+          "bytes": 48220,
+          "sha256": "5328065b4b15eaa57619064f5d9585b077876a435ac62b95a27693396f4e054d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s2.jxa",
+      "bytes": 414,
+      "sha256": "846b3a604e3753ca6bc40803d6112ddd1dfe7ff301756b49ebeee41cb295509a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004s2/actions.json",
+          "bytes": 5983,
+          "sha256": "bd581bad1b06a98eb4910862df187c64c1f1e8ba167f0289aa32e74f4c135bad"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s2.jxan",
+      "bytes": 336,
+      "sha256": "436578e7d685e7d089fa2c831944effdd46f44f6ab95889b74b16373c057257b",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "004s2/encryption_metadata.json",
+          "bytes": 2425,
+          "sha256": "5bbf907995744f809818c89ca999327f76dc3125791ed5f59b9366b62d3579ad"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004s_c01.Jxa",
+      "bytes": 4654,
+      "sha256": "5b5befb3aa98b915402cbabefbd47a8244e6b9b579fa6592f17fcbe10d00ecb3",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004s_c01/actions.json",
+          "bytes": 66499,
+          "sha256": "34a055362b5f07e32228586927ee5bd6e27897b367b51dc830dda3f709148fda"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w.Jxa",
+      "bytes": 7934,
+      "sha256": "29fe2093310ac8bbb0473a9ea96b8f09442eaa5a0f30d701642cb1f4499fb555",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004w/actions.json",
+          "bytes": 113307,
+          "sha256": "336654e85dab7841ad2c7fd2428648c888eabcbf88629ec3e73bad659c7cac1f"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w1.Jxa",
+      "bytes": 974,
+      "sha256": "a8bc55aaba6eb08a8e9c77d4dd66053743b6a0ef2bdff14957d3932e63d3f784",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004w1/actions.json",
+          "bytes": 13971,
+          "sha256": "c05c85ebe3ee818a031d409eb4661844571e5e25d74271ebb9031d39eb88f675"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w1_c01.Jxa",
+      "bytes": 7054,
+      "sha256": "44f444584e0ffac2e42689ed1ad6954ea54708b858f022a1fe936b90de60aa1f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004w1_c01/actions.json",
+          "bytes": 100767,
+          "sha256": "54982b270b4544c846a2022ca5ec46f735bc2d9078e499cc74143ccb8cca59c0"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w2.Jxa",
+      "bytes": 8014,
+      "sha256": "253aaf89a879359c0b1527d12c60b9c390164f2c804ed4f113e895c983a75d4a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004w2/actions.json",
+          "bytes": 114467,
+          "sha256": "35575765d6afb676ef6415cd5532e7b5a3cf5ece9ed1460a9a07aae932f8dfe4"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w3.Jxa",
+      "bytes": 2654,
+      "sha256": "472629c1d3b90a0e6941269d9493ddeebf0cd34f1ae0f71ac3b8657cc4b62588",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "004w3/actions.json",
+          "bytes": 37946,
+          "sha256": "cac8ef3d6b22db50b1aeaf379370862472bc4c7eba145198d72e73c5d66f6d81"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w4.jxan",
+      "bytes": 400,
+      "sha256": "2f948291f84ce255367553c0b9ed1532398cc1bb290084039e37ac0dc5baa257",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "004w4/encryption_metadata.json",
+          "bytes": 2841,
+          "sha256": "9ab725b4c0e4c28871d69750f73e56bd7672c26e847e1357bc866e0ff1a7cd10"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005.Jxa",
+      "bytes": 94,
+      "sha256": "3f80e9a02fc821712f46cfabae5dbf4cada33ac24a5d8f23fa2f637622cdc59d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005/actions.json",
+          "bytes": 1417,
+          "sha256": "01e7c2a5a570b906f5b548de049fde3427bc34f491b10f966a1ba095099ceb4d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005a.Jxa",
+      "bytes": 2814,
+      "sha256": "081ba4f0a870510bd5ce25b6f2cfb722164a60e9019a38658f8c5de54b30d2fd",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005a/actions.json",
+          "bytes": 40224,
+          "sha256": "a758629aea15f9fbc34429cdb10e44738e5b5e232d62165f9ab26b5e49dad04c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005a_c01.Jxa",
+      "bytes": 3374,
+      "sha256": "63c7fed8d0368ae769afa973e0cf4be3d03700e02b9c067a934a6fb749a80ee8",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005a_c01/actions.json",
+          "bytes": 48235,
+          "sha256": "1fbf3df8f7aceddb3003ad2cea4940d9bd341f74e87b245503d09b91130a6451"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c.Jxa",
+      "bytes": 3614,
+      "sha256": "a7780bbc59340965c5a55893b8121f80db930d698d9f559a84c66dd7357e25c9",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005c/actions.json",
+          "bytes": 51647,
+          "sha256": "9cfd346be32b4824ea387710574de6797b956b7f2634fd0676660f047262b01d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c1.Jxa",
+      "bytes": 7774,
+      "sha256": "b37f1dbd441958e13a58892f334b34bc0b7370588e7bf5a55220ab23a577c3fd",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005c1/actions.json",
+          "bytes": 111041,
+          "sha256": "58eb88c5ec08c6703dec207f9641c800890c981448e540e492b98ac598c22543"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c2.Jxa",
+      "bytes": 1054,
+      "sha256": "cd01b43fb140c312cf7769093d3136df64747a248d7cdb463c84c4447c768912",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005c2/actions.json",
+          "bytes": 15114,
+          "sha256": "0bf759edcc6c9cf6ed642feb8b6ff0d21c2dc4de27c491165c79b7482844ea53"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005c_c01.Jxa",
+      "bytes": 4414,
+      "sha256": "378469bea2be5b91a755cc86fc662bf09f7f5ce66d945a913468e5dd74198b2f",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005c_c01/actions.json",
+          "bytes": 63075,
+          "sha256": "c13c3a44f9d3b9646a468f4025747539f9af20ba50c0f69c441bef7fba26e16a"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e.Jxa",
+      "bytes": 4814,
+      "sha256": "2736399f070c7d34570101ec967bf639bbfb7a2b4b224b7d75496c096f580d1a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e/actions.json",
+          "bytes": 68780,
+          "sha256": "aa81793823a500e04baf64291c6e32bedc2b7185896fc5ccad0cd1b49dab5a27"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e1.Jxa",
+      "bytes": 7134,
+      "sha256": "b43d0ecea29ffef90412c3b4d323650310ecff922d1b3650b727275225fee67b",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e1/actions.json",
+          "bytes": 101900,
+          "sha256": "e900e807c008f1515b6ddd7acecbd47ea25019cf1a3d5702469b773222e308b5"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e1_c01.Jxa",
+      "bytes": 894,
+      "sha256": "ae5b0e28c807918eb875f6d30dc9df67e652b5a4cb10e5c4ce3c17a49fcd6987",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e1_c01/actions.json",
+          "bytes": 12834,
+          "sha256": "9e37bddaac17f2c8d7c8019946d1e22d736ecbc37f55d175c90e3dfa98f211c7"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e2.Jxa",
+      "bytes": 8014,
+      "sha256": "44dc1d18cea2e53b0fc48159eb8e1255c02c862f26a89ffd8910b97195f0a69a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e2/actions.json",
+          "bytes": 114465,
+          "sha256": "c4725fc0929765ed920b5c55613571454c20ca4938de549921d45c6e09cb0885"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e3.Jxa",
+      "bytes": 2334,
+      "sha256": "7b0afba95cf6e3d82c5edba3673e0aa1e790b6150ad203d2ac763146a80d05c5",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e3/actions.json",
+          "bytes": 33386,
+          "sha256": "4fa60c21843c889be2f9418c0bd14306509f76520e8324f76a48975937c0438d"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005e_c01.Jxa",
+      "bytes": 3214,
+      "sha256": "eb98c8c285b0ba98cfbcc8c3cd85fb1d346c0408b957455a57e9e9e1f13dba50",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005e_c01/actions.json",
+          "bytes": 45947,
+          "sha256": "cbe643b6dd5a0a6404737c1908de7b748087001f0a62cb0a71ef03f27624e469"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005f.Jxa",
+      "bytes": 5454,
+      "sha256": "c05cef8f84520e3323706d7becec203b91c961b10ba16f586891437c5287c5a0",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005f/actions.json",
+          "bytes": 77855,
+          "sha256": "5e78e666b52080e41b99ef474297b634b9ac469e9ffa825795f312277142c9d4"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005h.Jxa",
+      "bytes": 654,
+      "sha256": "879b951f57c341de770ff0747690fd53dd21eb98ff8df5cac5f29ea5af601857",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005h/actions.json",
+          "bytes": 9405,
+          "sha256": "35e0cdae37519ed9ba46cc353b8eac6671a2f7386f7a5e374840613e5f358956"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s.Jxa",
+      "bytes": 3374,
+      "sha256": "827e04fb601ef73d1b159c0e7f2f6af10e2d6298716ec1146d6b280caa05a33c",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005s/actions.json",
+          "bytes": 48224,
+          "sha256": "4a830a2d4cf56dd1dc19989cb8b9625690eedd8fb8376b996805a5e309117db1"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s2.jxa",
+      "bytes": 414,
+      "sha256": "846b3a604e3753ca6bc40803d6112ddd1dfe7ff301756b49ebeee41cb295509a",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005s2/actions.json",
+          "bytes": 5983,
+          "sha256": "33fa856512e23aba71a507e02476e42483f0137c3417cd9f7a9273def2e0ca38"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s2.jxan",
+      "bytes": 336,
+      "sha256": "64d0d2b476dc7d3a2a279eb3369c836f35e98314c89732df4a950b548fbde936",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "005s2/encryption_metadata.json",
+          "bytes": 2423,
+          "sha256": "cd8cb4671879d382618d64c49a035439eb0eb7e9422454b9530ad86ccf339ec2"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005s_c01.Jxa",
+      "bytes": 4654,
+      "sha256": "305212d1c09f964ed70d3deef7c65aeefb6e4a939aa74066de9170cd8895d6ed",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005s_c01/actions.json",
+          "bytes": 66503,
+          "sha256": "38a4d7f44f3c4d2bc7756b2df6a443211d55a5023051f2a333476e08eab6f590"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w.Jxa",
+      "bytes": 7934,
+      "sha256": "0f03af293c83b32f3dd1f3a88b30dd73a6c7f82f712a43b0feff711a518e2fb7",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005w/actions.json",
+          "bytes": 113311,
+          "sha256": "d7805b2cdf16aaa725127c5c29ba84bd619252bcc960346d74776b71bd3b5585"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w1.Jxa",
+      "bytes": 974,
+      "sha256": "b880a21255fdb3f287e100133fdf33caa93fe3396ef29aa7eac5a747628112de",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005w1/actions.json",
+          "bytes": 13972,
+          "sha256": "21ae0d6cc506c5870a9941ad0ffb18b4b7f2d275c266b5e5f4d72955319c2beb"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w1_c01.Jxa",
+      "bytes": 7054,
+      "sha256": "923d72895069a95f5af850bf40b43d0a3f5997598f5c54d9cb71894585f5eacc",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005w1_c01/actions.json",
+          "bytes": 100768,
+          "sha256": "d23c7fd9168604c7150e71525a60bdeac94ac95c710c90a1bf7eaa05f4cb0dd7"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w2.Jxa",
+      "bytes": 8014,
+      "sha256": "70574e802f19f0b6c446971365e0344533579c6f4cc4f1e0a51adcea21867a20",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005w2/actions.json",
+          "bytes": 114467,
+          "sha256": "2d6146a161d9e6fb2a8b79f4457936f8473d501779e632dd2447806c9682c674"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/005w3.Jxa",
+      "bytes": 2734,
+      "sha256": "6dbc8a85ff60de7e7df53873b29c6d4b52887b629323aee2e27452d1ca32e9c4",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "005w3/actions.json",
+          "bytes": 39093,
+          "sha256": "ae37a64d4fcf2865b85fbed76babfc4e73fcc556b8c72e104feb82847b923daa"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006.Jxa",
+      "bytes": 2254,
+      "sha256": "dcad61e16a6d73f82f31c06f84e88a0db2b8eeaf625a41e5b2b9e34308dec8cf",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "006/actions.json",
+          "bytes": 32241,
+          "sha256": "cc98f6520f4da088dcb81ddff325af39ab2376dddd5a1be8c3056fa90dbd6bbe"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c01.Jxa",
+      "bytes": 5774,
+      "sha256": "65f48e7a4e0fdb00f871cb1d3fc2e7d899994fa7ddb725737e4f5e02714c6f8c",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "006_c01/actions.json",
+          "bytes": 82492,
+          "sha256": "c1d2a86e9515f0fbbf58fe729240fded32d01ce14bbcce31e620cf3d29f18ab9"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c02.jxa",
+      "bytes": 94,
+      "sha256": "03d9163312bdafab9da6f13184fce59bf8a587161d46cd3159578bd13808e8d3",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "006_c02/actions.json",
+          "bytes": 1421,
+          "sha256": "bb58c5be1f7c6681d46dcafa99e9525421d4105f930fd03ea99a06e5a7647a90"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c02.jxan",
+      "bytes": 80,
+      "sha256": "8a22827bbe111ebdf80520d17f8af9b112f35e560bcfcf488b3242611d020f3e",
+      "format": "plaintext-jxan-metadata",
+      "outputs": [
+        {
+          "path": "006_c02/encryption_metadata.json",
+          "bytes": 745,
+          "sha256": "108f4b2be8d10479cd3c140aa8090798fba3db56b8861d5ec6fbfaaafa92d2a6"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/007.Jxa",
+      "bytes": 22974,
+      "sha256": "2d706bc9b203f82bc0b954c4e7e82188ce72e37831b5fdbd08673ccd108f1f19",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "007/actions.json",
+          "bytes": 327920,
+          "sha256": "28468caf4431735005dd976b961719893382bdd9957d8701f4e806fd3f8f71ee"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/007_c01.Jxa",
+      "bytes": 10574,
+      "sha256": "7356c4d232648e7b537544a2d0e91d6b4fef902769fba42ca45a23aebdc6a01b",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "007_c01/actions.json",
+          "bytes": 150914,
+          "sha256": "515bb3aa693f82bce3c572cfd873a6ce4c8dd80aaacd9c84b0ab375ed6433e44"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/008.Jxa",
+      "bytes": 9214,
+      "sha256": "66a4f6aeb7f99c5b89fa45d5c9659bc4ea2ac1a7fdd306a072e6a22bb12b057d",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "008/actions.json",
+          "bytes": 131496,
+          "sha256": "cc02bec2825076f39d2e29a28d0e51d7191028eaa0cb0b92a71ebcbe6a5dbb6c"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/008_c01.Jxa",
+      "bytes": 654,
+      "sha256": "966a1b96ea3676e5a028dc94dbd0813af28c594dd1728080a7b4de3bc864850b",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "008_c01/actions.json",
+          "bytes": 9400,
+          "sha256": "ee815cba5bd405331c41ff425c2e2834f9263c3e26319b7aad2c0fd5ef030ea0"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/009.Jxa",
+      "bytes": 4494,
+      "sha256": "f3cb4edaafcf55614e76ba6a300457bf559d01fed381b09f0f9d8814de0cfe78",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "009/actions.json",
+          "bytes": 64177,
+          "sha256": "62c6059c234d86b60d85028643cee8e523e07be5ec1a5d4fc59f9c7583f37316"
+        }
+      ]
+    },
+    {
+      "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/009_c01.Jxa",
+      "bytes": 6734,
+      "sha256": "342a5431034fe0b99ecea747a147d2cc065035de7c6b4745b1786ebdfbe48e54",
+      "format": "plaintext-jxa",
+      "outputs": [
+        {
+          "path": "009_c01/actions.json",
+          "bytes": 96114,
+          "sha256": "7ffe24012ad26ac432dcb3f1d5ec341f9ff21a29c4d3c2e1ca1539b459f64dc8"
+        }
+      ]
+    }
+  ],
+  "sprites": 6257,
+  "frames": 816578,
+  "decrypted_sprites": 21,
+  "already_plaintext_authenticated": 0,
+  "missing_companion_records": 18
+}

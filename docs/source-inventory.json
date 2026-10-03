@@ -1,0 +1,2691 @@
+{
+	"revision": "bc4a140d5d145e5bad4ec08581aa47f9ce6c066e",
+	"files": [
+		{
+			"source": "Phoenix.Core/Phoenix.Core/CMDParameter.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "5dbb643067b65318b9d7e161277a5be7eeef70f09c779e97ae9b1e5da1559e51"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core/DataBase.cs",
+			"lines": 630,
+			"status": "pending",
+			"sha256": "991a985d280f093133991b7b66dfc55cb056bd3506bc46de6641363e57074f0e"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core/DataBaseExt.cs",
+			"lines": 28,
+			"status": "pending",
+			"sha256": "9fb6faaf37f16a783061f00963c1a3693eb1a1b6b53b8684369cf4f8a71fb706"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core/DbParam.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "ee68ac8cf426122c9082df9d4acb0901816ef8a9018d819321f7cf174ab78f98"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core/Get.cs",
+			"lines": 11,
+			"status": "pending",
+			"sha256": "890e57e5ab5f47d34de88fc98b08668da9429b84a300f228f0261fefe2528ecb"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Controls/IUpdatableControl.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "6b10a20f4dbe07ceb0acb0a8a953a241c84a66bde3b4995019ba7783856e07ec"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Exceptions/ExceptionData.cs",
+			"lines": 64,
+			"status": "pending",
+			"sha256": "9e5d8e2b02c23d80bd86ebe86a533c2f441e87bcff2e948ec7082c4d7118cd9f"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Exceptions/ExceptionSeverity.cs",
+			"lines": 9,
+			"status": "pending",
+			"sha256": "f4ac646f7a9564213b2939d307fbf492ffaf8ac42360c4066c8c4e2358ae6116"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Exceptions.Message/Frame.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "25539d2d7cb0ec65a1c6e0667e0d9b90a70f72458784f8287be43ba6b259f875"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/IClient.cs",
+			"lines": 255,
+			"status": "pending",
+			"sha256": "f8ba591d182d8285930881c4def1698531c1a6d9a08533da50524a13f15e12b3"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/IPacket.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "a3910c5cb2dd8c178f9558a5f4c657d09aa6869580f80c25b813134f14fba812"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/ISocket.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "d79919dcecdad6ecdfabaac9aaa9806eb31e582301a7b036a9195cbbde2139c5"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/IncomingPacket.cs",
+			"lines": 84,
+			"status": "pending",
+			"sha256": "8e27880c4dfa006fbb56bf92fdc64c55d9d346370ab6f38433fd6057e60ab3f0"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/ListenSocket.cs",
+			"lines": 51,
+			"status": "pending",
+			"sha256": "dd2f3862cec883e2a415fa5291dca29e43bcaae3b5bf2ff226a604cf73a2bb3e"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/OutgoingPacket.cs",
+			"lines": 42,
+			"status": "pending",
+			"sha256": "c95165c288654c598f1ead95502c3c673d233d8341aa55e2ff854e0f33f1ff31"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/Packet.cs",
+			"lines": 386,
+			"status": "pending",
+			"sha256": "d966a23d755793dbcbe98d7c2a2b6a6993a7a77186efac28c926ee15af2be311"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/PacketBuilder.cs",
+			"lines": 107,
+			"status": "pending",
+			"sha256": "7359686f205c9b9ce71fe2b48bd36acea443dae4a2efc50efe1ad58c2ec08487"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/PacketFlags.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "ada0d767dc502ab470df3e933d1a6fc90b31c3bd0601f7be6ead990f1ddf616f"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking/SClient.cs",
+			"lines": 262,
+			"status": "pending",
+			"sha256": "0ec1f4ca2e83e1c18251b1522adf10a7109b284ce2058682433796224eb91408"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking.Sockets/CanPing.cs",
+			"lines": 27,
+			"status": "pending",
+			"sha256": "02b0768a10835f556d5900daa8e6ae4b39b78cca5deac7839e8ba70ba3ebbe66"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Networking.Web/WebServer.cs",
+			"lines": 308,
+			"status": "pending",
+			"sha256": "025f74c80cbce16ae4b42828402b0407f7bd17600dd7e116b7f3f62f2fb3d641"
+		},
+		{
+			"source": "Phoenix.Core/Phoenix.Core.Threading.Tasks/TaskManager.cs",
+			"lines": 5,
+			"status": "pending",
+			"sha256": "73feac49677d3f152099807c33b1d225b711d0b0f7556755b112250b73627248"
+		},
+		{
+			"source": "Phoenix.Core/Properties/AssemblyInfo.cs",
+			"lines": 19,
+			"status": "pending",
+			"sha256": "ac0f7b98264926b6af907b6095ccb9108c7f8a97d93b0fc7ae46355283be3e2c"
+		},
+		{
+			"source": "Phoenix.Core/System/DebugItem.cs",
+			"lines": 53,
+			"status": "pending",
+			"sha256": "3171ccc691666e20d065521d93d1238bebfa4a6d16350e96a9e86620cede4a76"
+		},
+		{
+			"source": "Phoenix.Core/System/DebugItemType.cs",
+			"lines": 13,
+			"status": "pending",
+			"sha256": "cc9561a28ff4de6d3133798893a360ad8ce24114eba858da5ddeb2f3f1f3edf7"
+		},
+		{
+			"source": "Phoenix.Core/System/DebugSystem.cs",
+			"lines": 282,
+			"status": "pending",
+			"sha256": "fcd2ec3279ba983abb4ff000c8a18ab0e7d96a63c4c7d4f8d3f294761ab03d9d"
+		},
+		{
+			"source": "Phoenix.Core/System.Threading/ThreadExt.cs",
+			"lines": 23,
+			"status": "pending",
+			"sha256": "6e819aa824b4e7d0b86aa926179ed65dfa8c6cdf690be29877ba4b77dfd6399b"
+		},
+		{
+			"source": "Phoenix.Core/System.Threading/ThreadManager.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "a87386da4da313572d7f1c9d8a024a67702e2939a6035b8311385855505ca658"
+		},
+		{
+			"source": "PhoenixData/DataFiles/IDataManager.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "e117746aecc0e38e91802e2ccc0f629132ce9ca4aad59d2167348878ab29098f"
+		},
+		{
+			"source": "PhoenixData/DataFiles/ItemNotFoundException.cs",
+			"lines": 20,
+			"status": "pending",
+			"sha256": "3458d6374b08c3ff26480da839aad7710c3555a948231ae7e4bcd10c4d3a2f67"
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhoneixNpc.cs",
+			"lines": 136,
+			"status": "pending",
+			"sha256": "3c08681cf70d0731990a858dc6fe73c7490d7117a46b3ca61b7f63bdc6e9a1fc"
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhxItemDat.cs",
+			"lines": 240,
+			"status": "partial",
+			"sha256": "2bdd38261813887db6c4a08ec581f62b2df8d910fa2243ae56b446f0e38fbbc9",
+			"go_files": [
+				"internal/assets/items.go",
+				"internal/assets/items_native.go",
+				"internal/assets/items_json.go"
+			],
+			"notes": "Runtime items exclusively use the maintained JSON translated-client asset. Native and converted binary parsers are offline tools/tests; full decoded record bytes remain available. Editor/write parity, full native property consumers and client content patches remain pending."
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhxItemInfo.cs",
+			"lines": 47,
+			"status": "partial",
+			"sha256": "db68fa1885b8a7f403b9ffd86f0f832f9bc711aed44d88f21cf2fc6ce267b4ef",
+			"go_files": [
+				"internal/assets/items.go",
+				"internal/game/creation.go",
+				"internal/assets/items_native.go",
+				"internal/assets/items_json.go"
+			],
+			"notes": "Runtime items exclusively use the maintained JSON translated-client asset. Native and converted binary parsers are offline tools/tests; full decoded record bytes remain available. Editor/write parity, full native property consumers and client content patches remain pending."
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhxMarkDat.cs",
+			"lines": 118,
+			"status": "pending",
+			"sha256": "897922d8955b2889f4ffdec6d2193f3cf0f6fe16d28f3cc491a8ca481234d7b0"
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhxNpcDat.cs",
+			"lines": 193,
+			"status": "pending",
+			"sha256": "69c22dc2278b1d6645459719159350ce325db487af831ac5f2072ecbe2bdff02"
+		},
+		{
+			"source": "PhoenixData/DataFiles/PhxTalkDat.cs",
+			"lines": 132,
+			"status": "partial",
+			"sha256": "187a817a85c5a2d15706d7c37d32999d1fca0a59af256ed70e6adc285e8508ff",
+			"go_files": [
+				"internal/assets/catalog.go"
+			]
+		},
+		{
+			"source": "PhoenixData/DataFiles/TalkResolver.cs",
+			"lines": 177,
+			"status": "pending",
+			"sha256": "09b3812d704f1ee55993d204a2f4bc1cdbc58f8463ab86215c8798cc62fac19c"
+		},
+		{
+			"source": "PhoenixData/DataFiles/eItemType.cs",
+			"lines": 48,
+			"status": "pending",
+			"sha256": "98a7ab8f33a29543e6195e5e698767734b2ecc961cb155c46c632a54d7311a50"
+		},
+		{
+			"source": "PhoenixData/DataFiles/eSpecialStatus.cs",
+			"lines": 7,
+			"status": "pending",
+			"sha256": "006cf6a9f6effc4fa96dbec8e13c3ba4b852b7c8113b1511d8cc139ea0d9bebd"
+		},
+		{
+			"source": "PhoenixData/DataFiles/eWearSlot.cs",
+			"lines": 16,
+			"status": "pending",
+			"sha256": "b731cffce64377c859c1c0495bdc9aa3cc062d310fddf5f2482d122a1f3fa53b"
+		},
+		{
+			"source": "PhoenixData/DataFiles/usetype.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "02425ba005cb3345ff19548ce484baccab8c2ccac2737c26793546126bd33dd0"
+		},
+		{
+			"source": "PhoenixData/PhoenixData/PhcSkillDat.cs",
+			"lines": 5,
+			"status": "pending",
+			"sha256": "b3b0b3a8d697aed970b23bbb41055eb3c0c86486157de57d49088d11d53f26ea"
+		},
+		{
+			"source": "PhoenixData/PhoenixData.Models/PhcNpcModelExt.cs",
+			"lines": 11,
+			"status": "pending",
+			"sha256": "407393a929fd964ee3fa5b41c6e161c4c504e7a76352dd84331c50b802d668fa"
+		},
+		{
+			"source": "PhoenixData/PhoenixData.Models/PhxItemModel.cs",
+			"lines": 190,
+			"status": "pending",
+			"sha256": "76a6a3f18bcf04d860dff91b1a9549cbbfe4952d7d1ae4a2458de68b62cf76bb"
+		},
+		{
+			"source": "PhoenixData/PhoenixData.Models/PhxNpcModel.cs",
+			"lines": 387,
+			"status": "pending",
+			"sha256": "8cc4801436e5cd8a9c4140ba2191b61b22d300b525af66c2b25a39c3d3a55f97"
+		},
+		{
+			"source": "PhoenixData/Properties/AssemblyInfo.cs",
+			"lines": 17,
+			"status": "pending",
+			"sha256": "be06989af91d2d9d43b06d9ba638c75131d3e15fe27ac04c83b0f4e9c5d63055"
+		},
+		{
+			"source": "PhoenixData/System/Generics.cs",
+			"lines": 47,
+			"status": "pending",
+			"sha256": "7b0d089fd4a87c7b2e9745a71292dd7105a1a4b76075e3723538d63e7c585e37"
+		},
+		{
+			"source": "PhoenixData/System/StringExtensions.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "c7bd55b164ac6d2085273438145957b52de61ad670b13e0b799e19af1f7b3118"
+		},
+		{
+			"source": "Properties/AssemblyInfo.cs",
+			"lines": 35,
+			"status": "pending",
+			"sha256": "650c8b64d94806eb8adc2ea360aaf58b7184458f40ae450f55166917d42917df"
+		},
+		{
+			"source": "Properties/Resources.Designer.cs",
+			"lines": 113,
+			"status": "pending",
+			"sha256": "450a3e844ea8284f4e1c803ca948b84fa9f505d5c2081bfb34e7d1017bb4481e"
+		},
+		{
+			"source": "Properties/Settings.Designer.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "cf5875ddd05386595820b8aafb8c7c323c5a5c04f67e402f8008dff41e5dcf9f"
+		},
+		{
+			"source": "Properties/Version.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "d3c2f319940c8f197769749d51e3437a2d94647c8d1763294c540e362ff7aff1"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Controls/IUpdatableControl.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "94d73c30ff3413055f0cbc7c534bd7fcf1e46eb655857159dd4ba7baa976c40d"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Controls/InputBox.cs",
+			"lines": 100,
+			"status": "pending",
+			"sha256": "e413ca89d57c8ebe10d51da076479051bc5ae94779b16aa01edd082448cb02eb"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Controls/Popup_Notification_ProgressBar.cs",
+			"lines": 101,
+			"status": "pending",
+			"sha256": "b53c654005bc7d73847f18300e4ea657a01c77861ab6a037e19b1ec65e06ee43"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Exceptions.Message/Frame.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "25539d2d7cb0ec65a1c6e0667e0d9b90a70f72458784f8287be43ba6b259f875"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Networking.Web/WebServer.cs",
+			"lines": 308,
+			"status": "pending",
+			"sha256": "beb91c8dbf9c584dce9efe452fccb294b59b54f588adb82b4d4c050c1e5d97f4"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Threading/CountdownTimer.cs",
+			"lines": 32,
+			"status": "pending",
+			"sha256": "c277d9cb6ea732d09c71442aca5c049e68e4801e1a43b42c07858026cb19d6b1"
+		},
+		{
+			"source": "RCLibrary/Phoenix.Core.Threading.Tasks/TaskManager.cs",
+			"lines": 5,
+			"status": "pending",
+			"sha256": "73feac49677d3f152099807c33b1d225b711d0b0f7556755b112250b73627248"
+		},
+		{
+			"source": "RCLibrary/Properties/AssemblyInfo.cs",
+			"lines": 19,
+			"status": "pending",
+			"sha256": "a03792f1949e956c02060e6775dded555aa9df6a2ab23b603cd4d851731c0fad"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/CMDParameter.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "c1a513ad736eb927cfc7dfaf6f033353e21901b03b4ed0b3c4eb43e02a6e206f"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/DBConnectInfo.cs",
+			"lines": 20,
+			"status": "pending",
+			"sha256": "f4b5f28f44893cdd0f5ac2a8aef8c9d2b43cd2070a06bf080ebfab2216effa9a"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/DataBase.cs",
+			"lines": 1028,
+			"status": "pending",
+			"sha256": "d0d35309ccd198a0fda7d51184b87fb7b99afd3ab6abccb3e7011b7363b4d55b"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/DataBaseExt.cs",
+			"lines": 28,
+			"status": "pending",
+			"sha256": "1b642089339bbffc53f592d046e7a6dcfb6c97ec6428e26ff53d163d4f309a9e"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/DataBaseTypes.cs",
+			"lines": 9,
+			"status": "pending",
+			"sha256": "cdb0d153ba8caf8103f8216db6d9534f298d0be5b661e1de1d2ba55650de8d00"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/DbParam.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "4014036ca6f3949d467bffdffdb3b2ef41fb465351b66a476aa47c33b0a6b591"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core/PathHelper.cs",
+			"lines": 400,
+			"status": "pending",
+			"sha256": "c8fde81c0ba1e15e8f70d1d54271b5466f4489efa624d7b9d9257b4b485c4fc7"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/CanPing.cs",
+			"lines": 23,
+			"status": "pending",
+			"sha256": "42841284d3558441d9d6aff9884abe860499b694d61b1ad2d18ae83655bee8b0"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/IPacket.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "03e164a0b022d4ccb234584d84f4508a64d0d91d9a9d529de8abe970cc9d11c4"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/ISocket.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "3d8d786aa85c66d546bb672fde3e8cc0312a75b53f368f60d3626d4d5916efe2"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/IncomingPacket.cs",
+			"lines": 97,
+			"status": "partial",
+			"sha256": "38c3c8030683a22c9de44859c19811f7f1184b96be52be3ad7cda44c6db049c8",
+			"go_files": [
+				"internal/protocol/packet.go"
+			]
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/OutgoingPacket.cs",
+			"lines": 56,
+			"status": "partial",
+			"sha256": "4160d1ec6f87a75af0a9901ba21aae819ba65b688fd6fe485e97db5be39045e7",
+			"go_files": [
+				"internal/protocol/packet.go"
+			]
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/Packet.cs",
+			"lines": 291,
+			"status": "partial",
+			"sha256": "8688dd69160d6590fc1ff90796e3c704e128c82ede4628d603b92313d41fa39c",
+			"go_files": [
+				"internal/protocol/packet.go"
+			]
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/PacketBuilder.cs",
+			"lines": 99,
+			"status": "pending",
+			"sha256": "236ce75e3fa5c398fb99473010877a8ba20f5c12ec78ac3bc7379b1ff335f43c"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/PacketFlags.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "7d8b8c96b1dc5a65c2ca5bb0e1e01c640713373199128195907cce5fdf56eed2"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/SClient.cs",
+			"lines": 233,
+			"status": "pending",
+			"sha256": "e755439290ebe83c1dcf5e923bf67bb2c8f34bfb35bcfc1bf3bb4c1a3bfcf1cd"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/TcpServer.cs",
+			"lines": 52,
+			"status": "pending",
+			"sha256": "22859a44e9867b0c34253a1333e47c7b28e4a04bb5e82152c786b952026c2a55"
+		},
+		{
+			"source": "RCLibrary/RCLibrary.Core.Networking/UDPServer.cs",
+			"lines": 126,
+			"status": "pending",
+			"sha256": "f7de8a17d0d7baf7bcdeb0bf8d6bc45501d6a7c2e0d2cec0c3e25182afb7a698"
+		},
+		{
+			"source": "RCLibrary/System/DebugItem.cs",
+			"lines": 127,
+			"status": "pending",
+			"sha256": "98bbbe5a1e04e1e584b99e9b0ec732fecf4e82abdb608d51306ec0b232a61c6b"
+		},
+		{
+			"source": "RCLibrary/System/DebugItemType.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "0926839bba83a1602e47c491827cedfff0093ab9979fb6ed64848605fe1fe319"
+		},
+		{
+			"source": "RCLibrary/System/DebugSystem.cs",
+			"lines": 505,
+			"status": "pending",
+			"sha256": "8ecef8a39fe1983dfdef18ca295cf11d587f3d31302a861103e13f8c3d4568b7"
+		},
+		{
+			"source": "RCLibrary/System/ExceptionData.cs",
+			"lines": 106,
+			"status": "pending",
+			"sha256": "ea8d13651761844b002a73d357fe53743720e0af3df51efbccf57db07a85ac70"
+		},
+		{
+			"source": "RCLibrary/System/ExceptionSeverity.cs",
+			"lines": 9,
+			"status": "pending",
+			"sha256": "a7972edfd8c7efb80fed9f9ccbb67555c7641bc7d74eed67a4ec840b3a9b9b12"
+		},
+		{
+			"source": "RCLibrary/System/ObjectExt.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "ce25037c0fe431d223e29a6860d8009d594dcfad0bed94526793fe2439899b60"
+		},
+		{
+			"source": "RCLibrary/System.IO/Get.cs",
+			"lines": 11,
+			"status": "pending",
+			"sha256": "0ccdef73f9e43b09a3b988f539face6649f2679f3f10fe3606457aacf7eda7fd"
+		},
+		{
+			"source": "RCLibrary/System.Net.Sockets/Client3.cs",
+			"lines": 458,
+			"status": "pending",
+			"sha256": "4aa34f7f1c35b22d71531d2e8cf2ac3d66e906795c3d0440da9d29e633f8c1da"
+		},
+		{
+			"source": "RCLibrary/System.Threading/AsyncSemaphore.cs",
+			"lines": 56,
+			"status": "pending",
+			"sha256": "b69f2c91e9f5b211fc19e598a3a6426e21c1c466c8f866d40e58a4a70fde84a9"
+		},
+		{
+			"source": "RCLibrary/System.Threading/ThreadExt.cs",
+			"lines": 23,
+			"status": "pending",
+			"sha256": "6e819aa824b4e7d0b86aa926179ed65dfa8c6cdf690be29877ba4b77dfd6399b"
+		},
+		{
+			"source": "RCLibrary/System.Threading/ThreadManager.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "a87386da4da313572d7f1c9d8a024a67702e2939a6035b8311385855505ca658"
+		},
+		{
+			"source": "Src/DataFiles/Compound2Dat.cs",
+			"lines": 213,
+			"status": "partial",
+			"sha256": "2394bf2e0ba220c6be3e91d26495b5e5c4869961b64d1ce12a2a6c9c11a28706",
+			"go_files": [
+				"internal/assets/alchemy.go"
+			],
+			"notes": "Two-input/output projection for AlchemyManager and AC23:14. Full manufacturing fields and execution remain pending."
+		},
+		{
+			"source": "Src/Debugging/Debug.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "c9998fa5b0b11fd7990b04016d725f5e616b9bb6ebc4da1e2498b542d66dc739"
+		},
+		{
+			"source": "Src/Gui/CharacterDataEditorForm.Designer.cs",
+			"lines": 1107,
+			"status": "pending",
+			"sha256": "7ea6a042472e036cc98115f78fa0f605b78027c5de576c6d331ea1435215a5b6"
+		},
+		{
+			"source": "Src/Gui/CharacterDataEditorForm.cs",
+			"lines": 1152,
+			"status": "pending",
+			"sha256": "8aa1628579d3de3c83c129e02ffafecd58662a03c378de9a29b20ad7a6ee098e"
+		},
+		{
+			"source": "Src/Gui/MainForm1.Designer.cs",
+			"lines": 1509,
+			"status": "pending",
+			"sha256": "515675df8e0a3f472fa9e7f1cf71d9d7077c027b8ff56baff44b07bbb1c6ba12"
+		},
+		{
+			"source": "Src/Gui/MainForm1.ExtendedTabs.cs",
+			"lines": 2917,
+			"status": "pending",
+			"sha256": "a37b4d84428c8ebef54507e84fbb55e0fab25caf9bc708f4bc8dc806209b6ac9"
+		},
+		{
+			"source": "Src/Gui/MainForm1.ModernUi.cs",
+			"lines": 998,
+			"status": "pending",
+			"sha256": "41f5dc35024514ed71453b48a9f08b7277c81c239a36803ca1bdb4c59809314c"
+		},
+		{
+			"source": "Src/Gui/MainForm1.cs",
+			"lines": 6700,
+			"status": "pending",
+			"sha256": "77e5955ac2c96d7b69ed0c1c42212b154ba3f9b3afc0d0e7ad2146fa803caf23"
+		},
+		{
+			"source": "Src/Gui/ModernTheme.cs",
+			"lines": 252,
+			"status": "pending",
+			"sha256": "410447e9ddf20f8831349faf67304f72f45f965fa24b273eafbe310e81ae76f6"
+		},
+		{
+			"source": "Src/Gui/ShutDown Dialog.Designer.cs",
+			"lines": 88,
+			"status": "pending",
+			"sha256": "8b81d79df6c483b7ce1767082fd36a21e5cdbb0e7615ef48f63c5a2260a718cd"
+		},
+		{
+			"source": "Src/Gui/ShutDown Dialog.cs",
+			"lines": 102,
+			"status": "pending",
+			"sha256": "3a2dda190dfc0d93d7937fe229c8f30030264334f5e60b3c7e830bde464603e0"
+		},
+		{
+			"source": "Src/Gui/TaskItem.Designer.cs",
+			"lines": 49,
+			"status": "pending",
+			"sha256": "8147a9efe6a83cf51ce3f12caed8a1debc867327ea00f2db50707b443bdaa8b6"
+		},
+		{
+			"source": "Src/Gui/TaskItem.cs",
+			"lines": 20,
+			"status": "pending",
+			"sha256": "9146af02caf9a0b9c995cabd48cc0f918c65c07baf9aafdd9a6b6123c7215482"
+		},
+		{
+			"source": "Src/Gui/Update/GitUpdateItem.Designer.cs",
+			"lines": 103,
+			"status": "pending",
+			"sha256": "f3a806c467a3f08bfdc08f9ce88af7b5f6433f81566fc5b82520e61d0d9d5c27"
+		},
+		{
+			"source": "Src/Gui/Update/GitUpdateItem.cs",
+			"lines": 55,
+			"status": "pending",
+			"sha256": "588323aea8de2824fdfe4e2480acd55cfbc3edd198d8bfbf7444b7c1150c96fb"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC0.cs",
+			"lines": 39,
+			"status": "partial",
+			"sha256": "b4add6d669b546ecbad0667ed0832b95438710ca25005b5ccf902aa3093140f2",
+			"go_files": [
+				"internal/server/server.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC01.cs",
+			"lines": 68,
+			"status": "partial",
+			"sha256": "48c52d390ff8415d52daf0bc7db1c9200959005ee49c7dd26aab37f0b1606f8c",
+			"go_files": [
+				"internal/server/server.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC02.cs",
+			"lines": 1000,
+			"status": "partial",
+			"sha256": "6be70b0891226c6cefeaa3bf54ef2107f8a55567c30587a37ab2ef5fbf9fa549",
+			"go_files": [
+				"internal/server/chat_channels.go",
+				"internal/server/chat_channels_test.go",
+				"internal/server/chat.go",
+				"internal/server/mall_adjust.go",
+				"internal/server/travel_commands.go",
+				"internal/server/travel_commands_test.go",
+				"internal/server/gm_progress.go",
+				"internal/server/gm_progress_test.go"
+			],
+			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat TODO continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC03.cs",
+			"lines": 47,
+			"status": "pending",
+			"sha256": "340ea59753be97b88fef5a253071d2d1a8e5d7a5593fe60be46dd2c5e8af6ad3"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC04.cs",
+			"lines": 112,
+			"status": "pending",
+			"sha256": "970280c5494ac8f2c78e82865c4d082ac57e7f43e06f52ff9ff5504ba4ee9117"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC05.cs",
+			"lines": 120,
+			"status": "partial",
+			"sha256": "b5056f2bfdd6dc43d2258bc0ccd4e1efc043413555aa0636a437dd909ad6096a",
+			"go_files": [
+				"internal/server/services.go",
+				"internal/server/travel_commands.go",
+				"internal/server/travel_commands_test.go"
+			],
+			"notes": "Existing menu teleports and sprite refresh; Carnie menu and public chat travel now share return-point handling that does not alter the previous point after a failed save or unavailable destination. Carnie travel interaction gates preserve loading, battle and event ownership. Script-owned transitions remain unrestricted by chat guards. Actual-client validation remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC06.cs",
+			"lines": 115,
+			"status": "partial",
+			"sha256": "500e547dd836aa76bfe39867c77d2c5a8c6457ec6a83bcca4ef926afa93cc2dc",
+			"go_files": [
+				"internal/server/characters.go",
+				"internal/server/encounters.go",
+				"internal/server/events.go",
+				"internal/server/vehicles.go",
+				"internal/server/vehicles_test.go",
+				"internal/server/world.go",
+				"internal/world/event.go",
+				"internal/world/monsters.go",
+				"internal/server/movement.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go"
+			],
+			"notes": "Inbound handlers and interaction policies now share one registry; exhaustive raw opcode tests preserve existing routing and gate exceptions. Migration status is unchanged."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC07.cs",
+			"lines": 53,
+			"status": "pending",
+			"sha256": "4539902f10914a23c47e9cd6562ad9480da4376cb58a035a2b34e2e657f3d0ab"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC08.cs",
+			"lines": 306,
+			"status": "partial",
+			"sha256": "0586d836a927e158e3b916609abced1730ea9f3f6547a66eff9e74546a9a47b1",
+			"go_files": [
+				"internal/game/progress.go",
+				"internal/game/pets.go",
+				"internal/server/items.go"
+			],
+			"notes": "Character and client-slot pet stat allocation implemented, including stat-qualified character skills and grade-ten evolutions. Attributes and skills commit together before updates; HP/SP are not refilled. Budget/wrapping, persistence and failed-save regressions pass."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC09.cs",
+			"lines": 124,
+			"status": "partial",
+			"sha256": "687505d78b22d40041ac7b7eed379245e8099a5bfa8a23d176b9b7c75e95af12",
+			"go_files": [
+				"internal/game/creation.go",
+				"internal/server/characters.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC10.cs",
+			"lines": 159,
+			"status": "partial",
+			"sha256": "7c81010f58aa6f2af39dde7969690e655961dce627c4aa6fcdfb49a5d3fc52ae",
+			"go_files": [
+				"internal/server/social.go",
+				"internal/server/social_test.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go",
+				"internal/server/friends.go",
+				"internal/store/friends.go",
+				"internal/store/friends_test.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "All five reference operations implemented: immediate same-map add, accept/decline, list, removal and status query. Contacts share the durable symmetric AC14 store, both list limits and deletion cleanup. Native AC10:1 status and AC10:4 removal receipts preserved; lists publish one authoritative AC14:11/5 snapshot instead of duplicated in-memory/database lists. Malformed requests, world gates, stale invitations and failed persistence/recipient writes covered. Native-client capture acceptance remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC104.cs",
+			"lines": 94,
+			"status": "partial",
+			"sha256": "2283ffdbeb01e58712d0e5d2e7980008d4ed5c6aac07279a6308bc2a904dec16",
+			"go_files": [
+				"internal/server/lucky_draw.go",
+				"internal/server/lucky_draw_test.go",
+				"internal/store/lucky_draw.go",
+				"internal/store/lucky_draw_test.go",
+				"internal/game/lucky_draw.go",
+				"internal/game/lucky_draw_test.go",
+				"internal/assets/lucky_draw.go",
+				"internal/assets/lucky_draw_test.go",
+				"internal/assetsql/database.go",
+				"internal/assetsql/database_test.go",
+				"internal/assetdb/import.go",
+				"internal/assetdb/import_test.go",
+				"tools/data_export/lucky_draw.py",
+				"internal/server/diagnostics.go",
+				"internal/server/diagnostics_test.go",
+				"internal/server/services.go",
+				"internal/server/characters.go",
+				"internal/server/world.go"
+			],
+			"notes": "Three draws per character per UTC day; SQL-weighted rewards and usage commit atomically against fresh durable state. Native client capture confirms inbound AC104:1. Fresh translated aLogin.exe Lottery handlers recover outgoing AC104:1:1 catalog and AC104:1:2 result with cumulative used counts, superseding the C# constant-one and AC35:12 balance assumptions. Catalogs synchronize at login, warp, menu refresh and UTC midnight. SQL slots are consecutive in authored order, at most 20. Independent packets, reconnect/refresh, capacity, rollback, receipt failure and clock-reset regressions cover gameplay and display state. Bounded draw-specific diagnostics preserve credentials. Fourteen equal-weight reference outcomes remain; paid draws/global announcements remain unported, the user confirmed corrected rewards, allowance and refresh/reopen in the original client. A fresh character completed three live spins with captured cumulative usage 1/2/3."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC105.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "f2ddca7af9668c8cf6c911ad811290a375f56d5bdf36af67b4bf897905c3c22a"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC11.cs",
+			"lines": 183,
+			"status": "partial",
+			"sha256": "ab9de30adefadd7f01d06d164a5b0fb1251c0369099a37a46afa8fc4b0050356",
+			"go_files": [
+				"internal/server/combat.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC12.cs",
+			"lines": 132,
+			"status": "partial",
+			"sha256": "0b4bbffe49230dc1219ece3692f0984346121a39cb21f099769a6393c6578798",
+			"go_files": [
+				"internal/server/characters.go",
+				"internal/server/events.go",
+				"internal/server/story.go",
+				"internal/server/world.go",
+				"internal/world/event.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC13.cs",
+			"lines": 214,
+			"status": "pending",
+			"sha256": "eb7f391522cfcb014fc5c788558ed57b44f7eb2f12697feb01535e3f1421dde4"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC14.cs",
+			"lines": 588,
+			"status": "partial",
+			"sha256": "ea8df54b39bff9c4ac940ea55f7950b3f9dee6f3273d5015c0c7f79cf2a0bf19",
+			"go_files": [
+				"internal/server/friends.go",
+				"internal/store/friends.go",
+				"internal/server/friends_test.go",
+				"internal/store/friends_test.go",
+				"internal/server/mail.go",
+				"internal/server/mail_test.go",
+				"internal/server/world.go",
+				"internal/store/mail.go",
+				"internal/store/mail_test.go",
+				"internal/store/migrations.go",
+				"internal/server/social.go",
+				"internal/server/social_test.go"
+			],
+			"notes": "AC14 friendship requests/accept/removal/lists and native text mail implemented. Text mail persists with verified identities before ACK, preserves native encoded bytes, delivers across maps and queues offline/loading recipients for AC12 publication. Schema v6 cascades sender/recipient deletion. Delivery markers follow successful socket writes; crash-boundary duplicates remain possible. Name fallback, parcel/attachment mail, actual-client validation remain pending. Native AC10 contact commands now share these durable relationships; same-map immediate add semantics remain separate from AC14 invitations."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC15.cs",
+			"lines": 227,
+			"status": "partial",
+			"sha256": "ff3cd57d13ecd03765a429ebe079615cf1a55b76cef5d18282c324ba534eb425",
+			"go_files": [
+				"internal/server/characters.go",
+				"internal/server/mounts.go",
+				"internal/server/mounts_test.go",
+				"internal/server/pet_control.go",
+				"internal/server/pet_control_test.go",
+				"internal/server/server.go",
+				"internal/server/vehicles.go",
+				"internal/server/vehicles_test.go"
+			],
+			"notes": "Native rename (raw ASCII), permanent party release and companion mount/rest implemented. Client slot/alias validation, durable changes before broadcasts, owner/peer snapshots and removal cleanup covered. Vehicle/raft placement, boarding, landing and ACK subcodes are implemented with exact-slot validation, durable mutation, wear/wrecking and map synchronization. Item locks and actual-client verification remain pending. Top-level AC15 dispatch is covered by companion control and vehicle regressions."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC16.cs",
+			"lines": 61,
+			"status": "partial",
+			"sha256": "dccd881a4ee5282f64ee51ee425b7715bdf7eda0f117866494f62b66f44b0535",
+			"go_files": [
+				"internal/game/settings.go",
+				"internal/server/settings.go"
+			],
+			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC18.cs",
+			"lines": 52,
+			"status": "pending",
+			"sha256": "df439e3f4b4e68f6e8691750d07bfe12662f7bb87d221ec20c656291fbfe976f"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC183.cs",
+			"lines": 43,
+			"status": "pending",
+			"sha256": "2eaa58772dd1c3c86ef2616bd0055cfc574c1cc52cb634f95cc557d1554e744c"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC184.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "5ad24515ffc731df6057ffdcd1738ca1930cee90f2400a941a0923ad049eaf12"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC186.cs",
+			"lines": 61,
+			"status": "pending",
+			"sha256": "8d0d0498cbc890dcfd52965eaba0bc9ad5931ffe7590f5d52cd387c57d664951"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC19.cs",
+			"lines": 149,
+			"status": "partial",
+			"sha256": "999226ebf46eccdb8ca2eb77e20dc56f10953e60b7ac9643747ad17df4ef7f35",
+			"go_files": [
+				"internal/server/pets.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC191.cs",
+			"lines": 38,
+			"status": "pending",
+			"sha256": "8aab4aa8934e09169aae22546df581665928322055e30f120ca2d1325c3f84b7"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC199.cs",
+			"lines": 40,
+			"status": "pending",
+			"sha256": "e9fab44a0cc48e873c9b6daf6deb4117b5da97d764a5d59110c76f9c122582e2"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC20.cs",
+			"lines": 298,
+			"status": "partial",
+			"sha256": "0688b6b0dbc3442bee943436cc18e29bcb66b8a0f84e22831cdb6e0f32721fdc",
+			"go_files": [
+				"internal/server/events.go",
+				"internal/server/story.go",
+				"internal/server/vehicles.go",
+				"internal/server/world.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC21.cs",
+			"lines": 94,
+			"status": "pending",
+			"sha256": "1ef85d1b4bb3f0ca1a9b0e7c44085379c66fefe71566c02f66e931d1c37ca6d8"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC22.cs",
+			"lines": 266,
+			"status": "pending",
+			"sha256": "7798ba5f816c473081a0be73e738e22d2c0634574bfa238e2a5776bc75e2411a"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC226.cs",
+			"lines": 61,
+			"status": "pending",
+			"sha256": "d720e4a70f03db4fda77e5a510b52c55715d0e77eae7f1eb02ef550417f10e1b"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC23.cs",
+			"lines": 474,
+			"status": "partial",
+			"sha256": "a88a64a832d804cbf0c5a574334fcc7055fe61695a5264065390ac60f8d04fdb",
+			"go_files": [
+				"internal/server/items.go",
+				"internal/server/pet_equipment.go",
+				"internal/server/vouchers.go",
+				"internal/server/compound.go",
+				"internal/server/mall.go",
+				"internal/server/gacha.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC24.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "06dae62a0167b10116b89f1577c0e3846b3d2b1804fcab31fc899ccd3e769728"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC25.cs",
+			"lines": 157,
+			"status": "partial",
+			"sha256": "1c4f93e1f6acdd34d2d8ec1f8849c3df235162acaf974148a1ef7b8865823491",
+			"go_files": [
+				"internal/game/trade.go",
+				"internal/server/trade.go",
+				"internal/store/character_pair.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC26.cs",
+			"lines": 67,
+			"status": "pending",
+			"sha256": "9b354e476158cc59150b8ce0abb2a78c8858e8c1e520b23d9da122c163cfd670"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC27.cs",
+			"lines": 43,
+			"status": "partial",
+			"sha256": "befbaa7e9eb11baf07f631337c438a9e4f1446c89e6aa33f461350704ba81021",
+			"go_files": [
+				"internal/server/services.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC28.cs",
+			"lines": 50,
+			"status": "pending",
+			"sha256": "121c1d50b27e8bde1a5c0d730c730e6d6ce6e264672490e20e8065fa86571a60"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC29.cs",
+			"lines": 144,
+			"status": "pending",
+			"sha256": "d376282b7ff7bc76eaa81f20993a3966e22b70746ec78aae70ea87cb9f8f06e9"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC30.cs",
+			"lines": 103,
+			"status": "partial",
+			"sha256": "47f7ec41c54d55e61c68354cef46f00b17cd195883f8ebadae712f9ef5b1cba7",
+			"go_files": [
+				"internal/server/services.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC31.cs",
+			"lines": 95,
+			"status": "partial",
+			"sha256": "331833a34923ea8334519b3c60dafffe9523ea8103bec0ad2e93b9f04efd36dc",
+			"go_files": [
+				"internal/server/services.go",
+				"internal/server/hotel.go",
+				"internal/server/hotel_test.go"
+			],
+			"notes": "Rest and native hotel deposit/withdraw/exchange implemented; decoder, full-list exchange and SQLite persistence regressions pass. Native-client validation pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC32.cs",
+			"lines": 83,
+			"status": "partial",
+			"sha256": "9641cac19a33f7c5a669695a8968e20b18ea99df7fc75046f26f72132f9878f7",
+			"go_files": [
+				"internal/server/chat.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC33.cs",
+			"lines": 124,
+			"status": "partial",
+			"sha256": "78492e3a4d1292a0ad962b68a0a8d22c1e41433e5f63c814dbba7ab950f4c0f2",
+			"go_files": [
+				"internal/game/settings.go",
+				"internal/server/settings.go"
+			],
+			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC34.cs",
+			"lines": 30,
+			"status": "partial",
+			"sha256": "8843b504d50c049f9060efd78a7da8ade400f207fa8d9cd2deec752517ded3bd",
+			"go_files": [
+				"internal/server/mall_checkout.go",
+				"internal/server/mall_checkout_test.go",
+				"internal/server/mall.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go",
+				"internal/protocol/commands.go",
+				"internal/store/mall.go"
+			],
+			"notes": "Native AC34:1 balance query implemented for both accepted mode bytes. One authoritative SQL snapshot produces AC75:3/9 balances and AC35:4 checkout resume; no catalog/settings refresh clears the pending cart. Source behavior uses ordinary IM points in both modes; their separate meanings remain unresolved. Read-only query does not spend points or mutate inventory. Raw packet, current-SQL/cache, cart continuation, validation, world gates, read/socket failure and wire-range tests added. Actual-client checkout capture acceptance remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC35.cs",
+			"lines": 59,
+			"status": "partial",
+			"sha256": "39200e99a60636aee760d0911d02353cc3357bcb2d1a6b479ac5871387844f22",
+			"go_files": [
+				"internal/server/characters.go",
+				"internal/store/characters.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC36.cs",
+			"lines": 46,
+			"status": "partial",
+			"sha256": "f9ce1c87100af5233e526d040b686fb6945b84898a9e744aafb56dff7f0467e9",
+			"go_files": [
+				"internal/game/repair.go",
+				"internal/server/repair.go"
+			],
+			"notes": "AC36 bag-slot repair, wrench-first/500 gold payment and same-map effect; fixes missing damage restoration and commits before receipts. Item locks and original-client validation remain pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC37.cs",
+			"lines": 49,
+			"status": "pending",
+			"sha256": "1ab33a785b8e10f0f5bde720c1947d6ad7989baa2c3e5867f37f70dbf1ae8835"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC39.cs",
+			"lines": 186,
+			"status": "pending",
+			"sha256": "68564c4a656e0e5d4c9ef4b92e45f544f73bb039d29368833e7e633a68e7af08",
+			"notes": "Source audit during the travel-command continuation found that the recorded sha256 differs from both the pinned revision and current sibling file. Both source versions match; their CRLF-normalized SHA-256 is 68c77291de9752a7dd5917f150e91cb4ccfea81c0e156ddb03f032b076c4bbf8. The original recorded hash is preserved for investigation. This handler remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC40.cs",
+			"lines": 67,
+			"status": "partial",
+			"sha256": "d6c90edb55a635cbba6421f478137e1dc4fce4d4b171ab1166408980ea8838e7",
+			"go_files": [
+				"internal/server/alchemy.go",
+				"internal/server/alchemy_test.go",
+				"internal/assets/alchemy.go"
+			],
+			"notes": "Recipe-only two-slot AC40 synthesis with symmetric precedence, native status replies and atomic ingredient/output persistence from SQL assets. Strict requests and ownership gates; original-client validation remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC41.cs",
+			"lines": 49,
+			"status": "pending",
+			"sha256": "6ae2a244c81074eeb31350fb6d3691253345d13e96d77d1b41a939be8b9da27e"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC43.cs",
+			"lines": 46,
+			"status": "pending",
+			"sha256": "e01048267951cd5c3439db81bde3b8faa7cce1ccc4c75b0f6d78b3381940931d"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC44.cs",
+			"lines": 52,
+			"status": "pending",
+			"sha256": "97bde68f17629ed4883e1978d8edd45f1cfa0417e1ad70ad491545d4c8b261c1"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC45.cs",
+			"lines": 117,
+			"status": "partial",
+			"sha256": "fa005d71531803d6d5bc3ffd9b1813c71aea8532ef2dbb898acad9ac051d4e2e",
+			"go_files": [
+				"internal/server/banking.go",
+				"internal/server/banking_test.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go",
+				"internal/game/banking.go",
+				"internal/game/banking_test.go",
+				"internal/game/character.go",
+				"internal/store/banking_test.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "AC45:8 bank/wallet balance, :9 deposit and :10 withdrawal implemented. BankGold persists in the existing character JSON, defaulting to zero for older state. Both balances save before AC26:4 wallet and native AC45 receipts. Checks prevent bank uint32 overflow, carrying-limit loss, insufficient funds and zero transfers. Loading/battle/trade/event gates and failure/reopen tests cover ownership and atomicity. Reference PIN and character-transfer success-only placeholders remain unavailable; verified native ATM activation/capture acceptance remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC50.cs",
+			"lines": 56,
+			"status": "partial",
+			"sha256": "db422b62344e7baf2836b2bf84884ea0522db1e38eb1613ec00b6e2df2bedb7f",
+			"go_files": [
+				"internal/server/combat.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC51.cs",
+			"lines": 55,
+			"status": "pending",
+			"sha256": "430589e087a04f16e7a1fd4576885efc2723ee820efd61b35f999b5cbb8060dd"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC54.cs",
+			"lines": 81,
+			"status": "pending",
+			"sha256": "0a19978587ea67b8e03221f5243736b02f65be02a45e44dec69e433ce097a7d4"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC55.cs",
+			"lines": 17,
+			"status": "pending",
+			"sha256": "8c80cce287b34ab5963a8c2388ee9f0bff2bb33f40a7afb29bee68a785974b9b"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC56.cs",
+			"lines": 129,
+			"status": "pending",
+			"sha256": "f155d2ecaa30e44c4aa7c059c95e61d058f4a9915586e9ebdb445112a414266e"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC57.cs",
+			"lines": 112,
+			"status": "partial",
+			"sha256": "5b1ec9db8c8589e1c13271b4239aa04a9781344d7084e445e6dc8ef69a7da6b3",
+			"go_files": [
+				"internal/server/minigames.go",
+				"internal/server/minigames_test.go"
+			],
+			"notes": "Native EVE minigame start/result/finish and outcome routing implemented; native rabbit rewards and restart smoke pass. Standalone arcade rewards and native-client validation pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC59.cs",
+			"lines": 53,
+			"status": "pending",
+			"sha256": "94120df0ec90db3a6d7296578a112724364c3e28a3e0a89b24ff622c03baba7f"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC60.cs",
+			"lines": 43,
+			"status": "pending",
+			"sha256": "3a9a18dd423eb901cb479742d45b14889f35dfdfc592ea82af8b0d369b4561ab"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC61.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "2370d047e478628bf46b1f7a51b85a4c38235b1ccb72be91ff852bbceb780aa3"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC62.cs",
+			"lines": 124,
+			"status": "pending",
+			"sha256": "61fed46a4aeeb26dd66d99b0cd008f7f17dac64cfde9dfd3bc742dcb7084c899"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC63.cs",
+			"lines": 337,
+			"status": "partial",
+			"sha256": "324eaa14a76156fb86259a08e341941f09f993670655583ea43ef810f63d806d",
+			"go_files": [
+				"internal/server/server.go"
+			]
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC64.cs",
+			"lines": 191,
+			"status": "pending",
+			"sha256": "49176f495ea633defd354591b1c3005b48a60913f6ffde6f91d93aef89ff4685"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC65.cs",
+			"lines": 83,
+			"status": "pending",
+			"sha256": "05b64bb22f82bb3df7833881e643ddd21c5c0c35af8dd3864b7d45daee0f150b"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC66.cs",
+			"lines": 43,
+			"status": "pending",
+			"sha256": "8055538601ec81be787d1933d5de3f6721e3c45d3011be08c4cb80081cff2f67"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC67.cs",
+			"lines": 46,
+			"status": "partial",
+			"sha256": "e746d64ecfa4f81224dd9ba35b82f0a7542c4ed19c10bf7515fcc157485265c9",
+			"go_files": [
+				"internal/server/pet_feeding.go",
+				"internal/server/pet_feeding_test.go",
+				"internal/server/items.go",
+				"internal/server/server.go",
+				"internal/server/characters.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "AC67 feeding continuation implements subcommand 1 with a WORD item-ID request and native success/failure receipt. It selects the first registered party pet marked for battle, scans matching bag stacks in slot order and uses shared status-64 feeding with one-item consumption. SQL item definitions supply additive amity gains and the 100 cap; exact-stack metadata and other pets remain intact. Food/amity state commits before remove/stat/banner/receipt packets. Shared feeding rejects bad slots, zero count and empty stacks. Authored wire bytes, client/persistent slot differences, aliases, caps, missing pet/food/definitions, interaction gates and failed-save isolation are covered. Item locks and actual-client AC67 capture validation remain pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC68.cs",
+			"lines": 112,
+			"status": "partial",
+			"sha256": "1a986e83a3971d6082030cf81867d134e341a72c58fb987f8a2837efb78eabd9",
+			"go_files": [
+				"internal/game/pet_training.go",
+				"internal/game/pet_training_test.go",
+				"internal/server/pet_training.go",
+				"internal/server/pet_training_test.go",
+				"internal/server/server.go",
+				"internal/server/characters.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "AC68 stat-allocation continuation implements subcommand 2 with per-login client-slot selection and STR/CON/INT/WIS/AGI selectors. One unallocated point is spent through the shared pet allocator; derived vitals normalize without refill before durable commit, then AC8:2 progression and AC68 receipts are emitted. Invalid/unknown slots, selectors, insufficient budgets and attribute overflow receive failure results rather than the reference default success. Tests cover authored wire bytes, all selectors, alias/persistent-slot distinctions, AC8 budget sharing, reconnect state, interaction gates and save failure. Subcommand 1 remains an explicit unavailable result: the C# potential branch increments without checking or consuming an item and SendPetProgression sends level-minus-one as stat 37, so genuine potential-item and client-display semantics remain unverified."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC69.cs",
+			"lines": 96,
+			"status": "partial",
+			"sha256": "05b24dac3ee4c2413fa7e084047b4ff208e9456ec7cd123e36484047da9572d8",
+			"go_files": [
+				"internal/game/pet_rebirth.go",
+				"internal/game/pet_rebirth_test.go",
+				"internal/server/pet_rebirth.go",
+				"internal/server/pet_rebirth_test.go",
+				"internal/protocol/commands.go",
+				"internal/server/characters.go",
+				"internal/server/server.go"
+			],
+			"notes": " AC69 rebirth ascension continuation implements client-slot party-pet selection, level/amity 100 requirements, level-1/zero-EXP reset, 50 additive stat points and reborn metadata while retaining attributes, skills, equipment, job and active-pet selection. Vitals normalize/refill before durable commit; success/list/progression packets follow the save. Repeat/ineligible/unknown slots fail without mutation; malformed/unknown subcommands, overflow, save failure and loading/battle/trade/event/cutscene gates are covered. Native client AC69 capture validation and model/quest-driven evolution remain pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC70.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "00793c7d39da83675790a41ff5b07202ba7870d68edd7440832c0c5911af7358"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC71.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "1c11fec919b55d09cdb0a02ae4c1ea402fd4cc36337b9bf736cdbe2e73cbab87"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC72.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "b55d1c18c56cdb39e35e6f947f6cde0180c348d4597cb226a87d6b041ee25012"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC74.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "954de7702a548fbe48af780dc4281ee23c7f6d771defab8e58e22df7a7dbe2dc"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC75.cs",
+			"lines": 61,
+			"status": "partial",
+			"sha256": "eccf411ea25a6735761cf64478ee5d73eaf72b585519b3262d1ab8eecb075768",
+			"go_files": [
+				"internal/server/mall.go",
+				"internal/store/mall.go",
+				"internal/server/forging.go",
+				"internal/server/forging_test.go",
+				"internal/server/arcade.go",
+				"internal/server/arcade_test.go"
+			],
+			"notes": "Points/bonus catalogs, balances and atomic cart purchases; Strong Scroll upgrades and 50% point forging with atomic costs and native AC75:6 replies; AC75:4 category forwarding with the legacy zero seed and authoritative balance refresh. All defined AC75 request handlers are mapped. Arcade ticket/prize exchange and original-client validation remain pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC76.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "3324f667f145bd6a7e168cece3908d98245cf18346b17e79e80415025b7c81ec"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC77.cs",
+			"lines": 46,
+			"status": "pending",
+			"sha256": "586819d2d9fbb329d8da17dd7ffe78eeaff36cf955e188b1b94942f9467067b6"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC78.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "49508fe794522b8cde916d7ab2cbda2a401d281b6381fdebabdb588906fbc787"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC79.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "ef7685048601cfeb66266fee1faf2ffb5e892cbd52d09e013352ff4f077b7203"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC80.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "2a4d87afe4de9b5632a7122c7b6ffdc854c1fcfffc858469a5863a3b4121b1fe"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC81.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "ab54ffd63e9a1a3e0beee84fbaa18cd9a1e4cce2c221e49aadb16b3eb684cbf0"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC82.cs",
+			"lines": 58,
+			"status": "pending",
+			"sha256": "87a9bc59a26bba7eb92d56543b1eed4503cd412d0955681be3e2d788eef20f8b"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC84.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "589a012381ea8c2b2ddd747feb713bd55f660f4421856ff497d2a04c3bd330b1"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC85.cs",
+			"lines": 129,
+			"status": "pending",
+			"sha256": "4287574b356dcb093caee59acd2dc4cae7b9e792feb4d6af259f6829277292a2"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC86.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "d784a873703f8f63e916e557040ca0bc6915460d881ee3f2e9f225fea5da4de7"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC87.cs",
+			"lines": 40,
+			"status": "pending",
+			"sha256": "58ff1d3bba337b068f8b9e1a257fb55fb57d6954f31abeac86f2d33dc18cda4a"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC88.cs",
+			"lines": 39,
+			"status": "pending",
+			"sha256": "5667fb2a67374f4f9078e3e2170065c2a9863b2945cb6f6f1cc50cebc224310f"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC89.cs",
+			"lines": 41,
+			"status": "pending",
+			"sha256": "809bbcc9a50942990a1fa8fa94b7be46af75a11fdcc011e2e25b019c876f90e9"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC90.cs",
+			"lines": 63,
+			"status": "pending",
+			"sha256": "4146b3f5ac336224ee4cad21d0a4a72a108a6bdad29c7165fa85e160754f94e6"
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC91.cs",
+			"lines": 21,
+			"status": "partial",
+			"sha256": "3ec5df88b334f62d205e8d15d6fa7f70734f2d0b11318d9f337cbb524f3d55c2",
+			"go_files": [
+				"internal/server/gacha.go"
+			],
+			"notes": "Native read-only contents request/response and cache hints implemented; original-client validation remains pending."
+		},
+		{
+			"source": "Src/Network/ActionCodes/AC92.cs",
+			"lines": 22,
+			"status": "pending",
+			"sha256": "03c13c42b329ff2d3e8b2190ce2d5f5bdd3fb1e4063e5118b23a615a0671861b"
+		},
+		{
+			"source": "Src/Network/Client.cs",
+			"lines": 43,
+			"status": "pending",
+			"sha256": "e232f163c657c9ed47e228ac2445814ed2ef464f6cb02c05a4a7eebe503ba861"
+		},
+		{
+			"source": "Src/Program.cs",
+			"lines": 19,
+			"status": "partial",
+			"sha256": "43b2cb12ea94f480b677e9963aec265166b4337c6405a0c3e388124e1442c0c5",
+			"go_files": [
+				"cmd/wonderland/main.go"
+			]
+		},
+		{
+			"source": "Src/Server/API/RegistrationServer.cs",
+			"lines": 542,
+			"status": "partial",
+			"sha256": "8f15e11efae66d5ac525f8b0a06bff3474e9bbf9477a6aa7b4f377c7e3bff098",
+			"go_files": [
+				"internal/admin/admin.go"
+			]
+		},
+		{
+			"source": "Src/Server/Bots/Cupid.cs",
+			"lines": 17,
+			"status": "pending",
+			"sha256": "af0cd58d6532ffcdca0ee0cd86b0e413cde472ee1d2402cdd9320273fa8e3259"
+		},
+		{
+			"source": "Src/Server/Bots/GmBot.cs",
+			"lines": 35,
+			"status": "pending",
+			"sha256": "3401f41ebad104467a2021d06c02c96014a0fd065e3a4efeab608d5e97e3ff50"
+		},
+		{
+			"source": "Src/Server/Config/DB/DataBase.cs",
+			"lines": 73,
+			"status": "pending",
+			"sha256": "f9b5fbd75f09195b3fd31ffcf05c2774e7fdb0485a70eb5b1933bfbf5cc70172"
+		},
+		{
+			"source": "Src/Server/Config/Game/PetConfigs.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "604eaf1d79a0facd733fe6c40519b45179b39e85513ee1eabed8ebe1bf9aff0e"
+		},
+		{
+			"source": "Src/Server/Config/Settings.cs",
+			"lines": 106,
+			"status": "pending",
+			"sha256": "b0622a9d54b140d9679c95990e8b5f1e868987e26d3907e8f415f70604e3b59e"
+		},
+		{
+			"source": "Src/Server/Config/Update.cs",
+			"lines": 23,
+			"status": "pending",
+			"sha256": "695a65a3bd8f7df0d65b751d6ad312f75a65276c85395c93e349c307bb766da7"
+		},
+		{
+			"source": "Src/Server/GM/BigLetterLogo.cs",
+			"lines": 27,
+			"status": "pending",
+			"sha256": "ae61fbbbcd07a4449ed7df6185f9ca2f3158b04e5b8eac67d25d373d60acf985"
+		},
+		{
+			"source": "Src/Server/ItemMallServer.cs",
+			"lines": 137,
+			"status": "pending",
+			"sha256": "7468b2eee6411338fe4b0b47522a073ef7d456c3bcef5e4e914c555bfdd25841"
+		},
+		{
+			"source": "Src/Server/LoginServer.cs",
+			"lines": 207,
+			"status": "partial",
+			"sha256": "5b622f48b720ab74bd4f8f211a9c7a5f56b48c645091dd45d66a0934dfd60c1a",
+			"go_files": [
+				"internal/server/server.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go",
+				"internal/protocol/command_policy.go"
+			],
+			"notes": "Inbound handlers and interaction policies now share one registry; exhaustive raw opcode tests preserve existing routing and gate exceptions. Migration status is unchanged."
+		},
+		{
+			"source": "Src/Server/Plugin/Plugin.cs",
+			"lines": 214,
+			"status": "pending",
+			"sha256": "e6c2f2efc5d386021c36b955d5ee77c115e74a94685771c05ba49720c518f24a"
+		},
+		{
+			"source": "Src/Server/System/MapSystem.cs",
+			"lines": 83,
+			"status": "pending",
+			"sha256": "de24e796643558b45296a68ee98142e3c1b7fa9c653f25a327894a786054f595"
+		},
+		{
+			"source": "Src/Server/System/TaskSystem/Task/ApplicationUpdate_Task.cs",
+			"lines": 47,
+			"status": "pending",
+			"sha256": "2f0f7423613d2ecac592d55843cb2d9726518f07a3862f59c5f2043aba7d4d54"
+		},
+		{
+			"source": "Src/Server/System/TaskSystem/Task/taskItem.cs",
+			"lines": 150,
+			"status": "pending",
+			"sha256": "18a7493ee66b3ac8a6d1131c0e597f78e7440799380824a2cfe3caabde4c83a8"
+		},
+		{
+			"source": "Src/Server/System/TaskSystem/TaskManager.cs",
+			"lines": 58,
+			"status": "pending",
+			"sha256": "b15902ec1378854665a07742e614322bc2cae50b1b8b90c0df9940ffdbee8149"
+		},
+		{
+			"source": "Src/Server/System/UpdateSystem.cs",
+			"lines": 162,
+			"status": "pending",
+			"sha256": "c4a69f2d1c024e94c389eed43ef40a9b46a40c6998d8264ada44f389f316b97c"
+		},
+		{
+			"source": "Src/Server/Utilities/Request/RequestManager.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "da915df2dedce6b13cd084bfc3671553b16882bbba4ef24150dbcab1f5485300"
+		},
+		{
+			"source": "Src/Server/Utilities/Request/requests.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "e99b1e531d0feaef4a417996de844484b593e60f4767e99ac9bd6ce54b8aece8"
+		},
+		{
+			"source": "Src/Server/WloWorldNode.cs",
+			"lines": 270,
+			"status": "pending",
+			"sha256": "0e07d3526df60fcc59b38c8928393d1bc521110e491bbf4dd8279813a5c1689f"
+		},
+		{
+			"source": "Src/Server/WorldServer.cs",
+			"lines": 633,
+			"status": "partial",
+			"sha256": "637004f2d25ddb5f4a05649c93c744c1db9b4b1b17edbc32d7ec206d37192e11",
+			"go_files": [
+				"internal/server/characters.go",
+				"internal/server/events.go",
+				"internal/server/server.go",
+				"internal/server/skill_tree_test.go",
+				"internal/server/command_registry.go",
+				"internal/server/command_registry_test.go",
+				"internal/protocol/command_policy.go",
+				"internal/server/autosave.go",
+				"internal/server/autosave_test.go",
+				"internal/store/autosave.go",
+				"internal/store/autosave_test.go"
+			],
+			"notes": "Inbound handlers and interaction policies share one registry with raw opcode routing tests. AutoSaveLoop ports the one-second character checkpoint and adds a final disconnect checkpoint. Pending snapshots commit transactionally only against their previous checkpoint; unchanged/already-durable snapshots skip writes, newer durable state conflicts without being overwritten, and deleted characters are never recreated. Warping presence is included, failures are isolated per character, and cancellation is bounded. Account IM/bonus balances already persist transactionally on mutation and are never copied from session caches. Remaining WorldServer login/quest/session-handoff and native-client acceptance work is pending."
+		},
+		{
+			"source": "Src/cGlobal.cs",
+			"lines": 48,
+			"status": "pending",
+			"sha256": "0ccbfcb51413870fc72997722d5059f338ca789098779b96e7ae4a33a54c94b1"
+		},
+		{
+			"source": "Wlo.Core/Properties/AssemblyInfo.cs",
+			"lines": 18,
+			"status": "pending",
+			"sha256": "d6b5023a79182490d251d5978530a6514244682184a469e7e82b9dc3347c8878"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/IClient.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "268f7108f2cb2860da1201719fc9efc54dba08d785a91a6ee98c2d4c78e876bc"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/IPacket.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "e92c2d2112892c0cb45aee09cf7bc5d0846d5144e501a2c4fe4a281d8d6aaff2"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/IncomingPacket.cs",
+			"lines": 80,
+			"status": "pending",
+			"sha256": "6eb169e43eee4c3c3fd1dad2fadfa4963d1a8fba94cbca17588aa1f63abd0dcd"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/OutgoingPacket.cs",
+			"lines": 41,
+			"status": "pending",
+			"sha256": "3b8f57fd9ed1ad3ee38eb944e2603ec284bf3f6dace8d49041bda4ca1ff3be5a"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/Packet.cs",
+			"lines": 440,
+			"status": "pending",
+			"sha256": "bcee9f9fa40a53504228c9a38877df275eae62061af5f60ad2d4692b17d41c66"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/PacketBuilder.cs",
+			"lines": 107,
+			"status": "pending",
+			"sha256": "b3863a068efe485fc097579425f3f15e034281070ce3dceb63c47e6a9873e3e5"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/PacketFlags.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "b323ad8e29dbb059b0fdb3d2cadbfe1e67afd065d30cb3ae54e031d871c81470"
+		},
+		{
+			"source": "Wlo.Core/Wlo.Core/WloClient.cs",
+			"lines": 230,
+			"status": "pending",
+			"sha256": "f79f92b75ce6df9fc2d35528844089119314e03d8b687710a26dc8deb06914e2"
+		},
+		{
+			"source": "wlo.pserver.Bot/Class1.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "9f72c7596cc907c0f5605c1f8c30f3d4b5eac8f3c40ff1cfd05e4222ecb0ffaa"
+		},
+		{
+			"source": "wlo.pserver.Bot/Properties/AssemblyInfo.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "a5ef6ff68bb4438c78b5049d900e61eb8d4c4912359c33d190330359f95a6e4d"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/CharacterDataBase.cs",
+			"lines": 2069,
+			"status": "partial",
+			"sha256": "d71a00f5e044e26f1a251a089b0b36748886eee95de139bfebce16f98fa5ff7b",
+			"go_files": [
+				"internal/store/characters.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/GameDataBase.cs",
+			"lines": 893,
+			"status": "pending",
+			"sha256": "13d260de4fd7e2c318d38d674884c3702debeb36c27a9362afa74bcdb9bbe608"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/Migration/DBMigrationWiz.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "af657ce21a7f9da81bc2242abd227f40df69c518b75d7ad7c20a5c14aed7bc95"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/Migration/characterDB_Mig.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "2c02ac7b11dddc3a8987b6eaa0d926ef4803d6798ad280e309e03c20bde84269"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/PortalDataBase.cs",
+			"lines": 315,
+			"status": "pending",
+			"sha256": "d37c0ed1acbcb3b008df1e253b9d83530d7f7809a1f69420da97111d81662666"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/QuestDataBase.cs",
+			"lines": 352,
+			"status": "pending",
+			"sha256": "9bfa843bfb636fe394a307f31c637ce92f5a51d15e8b5d9757661cf7274c0a47"
+		},
+		{
+			"source": "wlo.pserver.core/DataBase/UserDataBase.cs",
+			"lines": 460,
+			"status": "partial",
+			"sha256": "3dd74156186129220cfb0c48a2af65e7c3b7111086204540be39605ae2d199b2",
+			"go_files": [
+				"internal/store/store.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/DataFiles/EveExt.cs",
+			"lines": 423,
+			"status": "pending",
+			"sha256": "e966103753705512e010f01786437b0b3ff494cbc325a34df10191cfadcea30a"
+		},
+		{
+			"source": "wlo.pserver.core/DataFiles/EveLoader.cs",
+			"lines": 971,
+			"status": "partial",
+			"sha256": "6615a263115d7518a4fcba5edd79fdec685b47eb20b26da556c8bbc8e07efc89",
+			"go_files": [
+				"internal/assets/eve.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/DataFiles/SceneDataManager.cs",
+			"lines": 221,
+			"status": "partial",
+			"sha256": "2349d2839fc9f76dd6db498d00fb157822e8c3f8ae3597453cfa633ebcd6d35f",
+			"go_files": [
+				"internal/assets/catalog.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/DataFiles/SceneLoader.cs",
+			"lines": 311,
+			"status": "pending",
+			"sha256": "c0e8a8f24c4501e35b273122b95c72e2c442bb1aed52de63a08854344d6dfb19"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/Battle.cs",
+			"lines": 316,
+			"status": "pending",
+			"sha256": "b7abb343ebed0ce18b4f26d207b2566f036cd0893981f5570c2601e3d66e046b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/BattleScene.cs",
+			"lines": 189,
+			"status": "pending",
+			"sha256": "0ce3c2e0d50d9a8013d1b0fde416eac2c14c1145f85b95a58c8bd76a9dba79e5"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/CriticalHitManager.cs",
+			"lines": 85,
+			"status": "partial",
+			"sha256": "507a6f5c00b10786030fa9c49ca6499e9b7aca71c89a93c998ac33b52385ae5a",
+			"go_files": [
+				"internal/battle/battle.go",
+				"internal/game/critical.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/MonsterDropManager.cs",
+			"lines": 463,
+			"status": "partial",
+			"sha256": "43c56bee8c91bcce1501bcbb451281aa46e24c735ae5623d850bb8e58b9d220d",
+			"go_files": [
+				"internal/assets/quests.go",
+				"internal/battle/battle.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/PalaceTrialManager.cs",
+			"lines": 89,
+			"status": "pending",
+			"sha256": "a6c3b879222c8ab7f6663a07e67b4536590c2c8dcc4b999de98f36df789781e5"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/PvEBattleManager.cs",
+			"lines": 2722,
+			"status": "partial",
+			"sha256": "39821e41080ee43f06f3fc871b979d14d2def7fe9035b89c503df7f97be2e4dd",
+			"go_files": [
+				"internal/assets/effect_catalog.go",
+				"internal/assets/effect_catalog_test.go",
+				"cmd/skill-effects-export/main.go",
+				"internal/battle/physical_shield_test.go",
+				"internal/battle/battle.go",
+				"internal/battle/combos.go",
+				"internal/battle/combos_test.go",
+				"internal/battle/combo_chance_test.go",
+				"internal/game/character.go",
+				"internal/server/combos_test.go",
+				"internal/server/combat.go",
+				"internal/server/encounters.go",
+				"internal/world/monsters.go",
+				"internal/battle/skill_progress_test.go",
+				"internal/server/skill_progress_test.go",
+				"internal/game/skill_tree.go",
+				"internal/game/skill_tree_data.go",
+				"internal/game/skill_tree_test.go",
+				"internal/server/skill_tree_test.go",
+				"internal/server/battle_commit_test.go",
+				"internal/battle/goddess_test.go",
+				"internal/server/goddess_test.go",
+				"internal/battle/effects.go",
+				"internal/battle/effects_test.go",
+				"internal/assets/skill_effects.go",
+				"internal/assets/skill_effects_test.go",
+				"internal/assets/skills.go",
+				"internal/assetsql/database.go",
+				"internal/assetsql/database_test.go",
+				"internal/battle/control_effects_test.go",
+				"internal/server/control_effects_test.go",
+				"internal/battle/evasion_test.go",
+				"internal/protocol/commands.go",
+				"internal/assets/native_effect_rules.go",
+				"internal/assets/native_effect_rules_test.go",
+				"cmd/skill-effects-export/main_test.go"
+			],
+			"notes": "PvE proficiency/evolution and durable battle reward completion implemented. Captures/desertion stage roster changes and peer broadcasts until commit; failed saves abandon and disconnect without departure success. Parties, monster skill AI and other combat parity remain partial. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Party combo continuation replaces pair-only scheduling and damage batches with full-party single-target speed chains (adjacent effective SPD gap at most 99). Round speed snapshots, support/enemy ordering barriers, SQL grade-aware area exclusion and execution-time bridge revalidation preserve action order. Eight player/pet hit records share one animation and aggregate damage; each actor retains SP cost and durable proficiency. Combat regressions and a three-player server persistence test cover chains, boundaries, barriers and lost/redirected bridges. Saved community evidence and remaining deterministic level-chance policy are documented in COMBOS.md; Burst EXP remains outside scope. Combo probability continuation implements the user-requested clamped linear curve from 0 percent at party mean minus enemy level of -25, through 50 percent at equal levels, to 100 percent at +25. Whole present player/pet roster averages retain fractional levels and include support/knocked-out fighters, excluding absent fighters. Each eligible chain rolls once against its actual target; failure executes singles without bonus or subset rerolls. Endpoints and singles consume no chance rolls. Probability, roster and failure damage tests cover this compatibility policy; native formula and rebirth level offsets remain unverified. Rebirth combo continuation implements the user-specified +99 effective levels for each reborn player/pet before party averaging and for reborn targets. Characters carry optional durable reborn metadata and pets retain their existing flag. Effective levels use int arithmetic without altering byte-sized visible levels or stored EXP. Mixed-party means, absent reborn pets, high-level overflow and target parity tests pass; three reborn level-1 players combo against a level-75 enemy and retain flags and skill proficiency through battle saves. Full character rebirth progression, job and roster presentation remain pending. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Battle/PvPManager.cs",
+			"lines": 130,
+			"status": "pending",
+			"sha256": "6971c7cc45b27f26f8724aefe1d69a8b2d726a548b7a2709c8004a95be9c377b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Bots/Cupid.cs",
+			"lines": 17,
+			"status": "pending",
+			"sha256": "6ba3943f4434c82a8b28d3351bc6f3c2615d8048fb141a890c20939ddfb3c0bb"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Bots/GmBot.cs",
+			"lines": 35,
+			"status": "pending",
+			"sha256": "b6b7c66ef7c0d25ad54957c5742517019d7c0499ddb525f808478711cada7a18"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Crafting/AlchemyManager.cs",
+			"lines": 305,
+			"status": "partial",
+			"sha256": "515e93035cc90308f1a1bcdd4d3b549f84039f4c1932ec71be559c60632e9512",
+			"go_files": [
+				"internal/assets/alchemy.go",
+				"internal/assets/database.go",
+				"internal/server/compound.go",
+				"internal/server/alchemy.go"
+			],
+			"notes": "SQL-authored defaults and Compound2/Compound two-input lookup; deterministic AC23:14 synthesis and recipe-only AC40 with atomic saves. Legacy database recipe import/editing and separate probabilistic CompoundItems path remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Crafting/EquipmentRepairManager.cs",
+			"lines": 61,
+			"status": "partial",
+			"sha256": "53d38af3dd9c045d5fcc4fb18dfcd91c998437a1ab24b1e394b886341195a9e4",
+			"go_files": [
+				"internal/game/repair.go",
+				"internal/server/repair.go"
+			],
+			"notes": "AC36 bag-slot repair, wrench-first/500 gold payment and same-map effect; fixes missing damage restoration and commits before receipts. Item locks and original-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Crafting/ForgingManager.cs",
+			"lines": 65,
+			"status": "pending",
+			"sha256": "6d48918072e4d17ced887f70df54bfc85c3d0e3ea959a84e38d2a2127b4f2a45"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Crafting/GatheringManager.cs",
+			"lines": 130,
+			"status": "pending",
+			"sha256": "7705dd9cc5a92e2763d90e232765da0fef23bafd86b581b5f1db3fd47e992416"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Crafting/TentManufactureManager.cs",
+			"lines": 108,
+			"status": "pending",
+			"sha256": "4521afa1b9ffc6207ba6fb88c50e83bcf08bc1d6dffe27ae549c4917bc895b9d"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Delegates.cs",
+			"lines": 13,
+			"status": "pending",
+			"sha256": "1eda392bf0307c96021af202d9bec4471f2dcad536dc15b96d9d0c045a33a2b4"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/BattleEnum.cs",
+			"lines": 63,
+			"status": "pending",
+			"sha256": "d5951607d99c91ddf73be757f145ca2fc4434d7f33097734d4b45cbdafa0369c"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/CharEnums.cs",
+			"lines": 45,
+			"status": "pending",
+			"sha256": "873c3415e982e2205f46ef6011776dcc001d5b70520f540ceef2a4d76f9cea6e"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/DataBaseEnums.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "90c4b55664a4c3f10e4f5f0fb350ccfe5a5322540d8472345b93f11245aa58d5"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/EveEnums.cs",
+			"lines": 18,
+			"status": "pending",
+			"sha256": "02be22ea9a98d65d26d4b3ed2411941a7507c18994ade3e199e55a5671aac6c9"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/MapEnums.cs",
+			"lines": 34,
+			"status": "pending",
+			"sha256": "ca3f164fa1343fcb139cd307a07791f2f97d5c7ccb15436befdd9b45efb57da0"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/NpcEnums.cs",
+			"lines": 20,
+			"status": "pending",
+			"sha256": "51fa72a6fe59aef8833f91b5c0b85ec31b82ba76bc0b347d2c42a5fcaade0412"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/PetEnums.cs",
+			"lines": 9,
+			"status": "pending",
+			"sha256": "fb059771097fe7f449bbc0ea688e338c9dade79199502b0a3455d7cd7666a072"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/PlayerEnums.cs",
+			"lines": 27,
+			"status": "pending",
+			"sha256": "d53328f6e383d8d80e363aa3c3b7a8a767e96b75a3f03de57571ed3bb6128cab"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/SkillEnums.cs",
+			"lines": 78,
+			"status": "pending",
+			"sha256": "ae40bee53017cb84b5b5718530b35d43923ddb6a9f97e76a755030ea4fd07423"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/SocketEnum.cs",
+			"lines": 10,
+			"status": "pending",
+			"sha256": "82b3f83f5712293cb19afda81656d0feb97e6f6b584d5fdc302ef286d1506bbd"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/StatEnums.cs",
+			"lines": 31,
+			"status": "pending",
+			"sha256": "6b014a4b7661f0edcedf8e55d441f8cbaebcbd7d06d73e77e6c1276e97a2b76e"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/TentEnums.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "0a26b505706eb23b918e394941f40453b49c86fc24f50c0b8dd3b79fb8144516"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Enums/WorldEnums.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "52ef6ef7108bc0dd9a39b25ebabe0315fb5e3886ba8fd90fb7d897682431fa62"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Interface/Fighter.cs",
+			"lines": 42,
+			"status": "pending",
+			"sha256": "80389c3eb8a136976025224ad1192d73898a556b6f0a3f0f5b52f7173c595b39"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Inventory.cs",
+			"lines": 898,
+			"status": "partial",
+			"sha256": "7f99a119a028387361b3e9d92efd3e055f2b55419fb64fb1dca1f055575d9fcd",
+			"go_files": [
+				"internal/game/inventory.go",
+				"internal/game/vehicles.go",
+				"internal/server/items.go",
+				"internal/server/pet_equipment.go",
+				"internal/server/services.go",
+				"internal/server/vehicles.go",
+				"internal/game/compound.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/Item.cs",
+			"lines": 342,
+			"status": "partial",
+			"sha256": "f81243e8444870d2b3d262f86f4757d39553aebed91d688ae8b8e3d278df3eaa",
+			"go_files": [
+				"internal/game/creation.go",
+				"internal/game/inventory.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/ChestDropManager.cs",
+			"lines": 366,
+			"status": "pending",
+			"sha256": "941af17e1fa0d0c101073f4c66bcb0085dd7a8760f063a470c8570723c0f5c31"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/EveEventInterpreter.cs",
+			"lines": 1009,
+			"status": "partial",
+			"sha256": "2d6578e40076869cb8f494a93d524ba0da846a4349cc6c82c56549e898d22b48",
+			"go_files": [
+				"internal/server/events.go",
+				"internal/world/event.go",
+				"internal/server/minigames.go",
+				"internal/world/gathering.go",
+				"internal/server/gathering.go",
+				"internal/server/gathering_test.go",
+				"internal/game/breillat.go",
+				"internal/world/breillat.go",
+				"internal/server/breillat.go",
+				"internal/server/breillat_test.go"
+			],
+			"notes": " Water gathering intercepts verified complete branches before ordinary execution and evaluates persisted cooldown conditions; unsupported gathering actions remain rejected outside that atomic workflow. Breillat now counts the first interaction once, prioritizes the ten-talk unlock branch, and commits permanent body/head and both quest marks atomically while preserving existing equipment. Native SQL scripts on all eleven maps have regression coverage; other transformations and original-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/EveEventRuntime.cs",
+			"lines": 1091,
+			"status": "partial",
+			"sha256": "f20e6fc00c8f95d5a72ddaa732386ba91c38903155b12f18740e43260b981de2",
+			"go_files": [
+				"internal/server/events.go",
+				"internal/server/pets.go",
+				"internal/world/event.go",
+				"internal/world/preevent.go",
+				"internal/world/view.go",
+				"internal/server/story_test.go",
+				"internal/server/minigames.go",
+				"internal/world/gathering.go",
+				"internal/server/gathering.go",
+				"internal/server/gathering_test.go",
+				"internal/game/breillat.go",
+				"internal/world/breillat.go",
+				"internal/server/breillat.go",
+				"internal/server/breillat_test.go"
+			],
+			"notes": "Includes map 11077 interrupted farewell recovery and hotel-aware pet ownership conditions; SQLite-backed arrival recovery regressions pass. Water gathering intercepts verified complete branches before ordinary execution and evaluates persisted cooldown conditions; unsupported gathering actions remain rejected outside that atomic workflow. Breillat now counts the first interaction once, prioritizes the ten-talk unlock branch, and commits permanent body/head and both quest marks atomically while preserving existing equipment. Native SQL scripts on all eleven maps have regression coverage; other transformations and original-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/EveGatheringRuntime.cs",
+			"lines": 183,
+			"status": "partial",
+			"sha256": "db94232c59f7aa85ed35e54a9796a4a3a627d526979509d59d0f034184f3a5aa",
+			"go_files": [
+				"internal/game/event_timers.go",
+				"internal/game/event_timers_test.go",
+				"internal/world/gathering.go",
+				"internal/world/gathering_test.go",
+				"internal/world/preevent.go",
+				"internal/server/gathering.go",
+				"internal/server/gathering_test.go",
+				"internal/store/gathering.go",
+				"internal/store/gathering_test.go",
+				"internal/game/character.go",
+				"internal/game/map_ids.go",
+				"internal/world/event.go"
+			],
+			"notes": "Verified EVE pool-7 sea/fresh water gathering at four authored map/event pairs, complete initial/repeat branch shape validation, active/inactive timer conditions, one free-slot prerequisite, three-minute cooldown, and atomic durable inventory/quest-mark/timer commits via GORM. Timers survive reconnect/restart and expired claims are rechecked transactionally against current branch conditions. Native SQL regressions cover both reward branches at all four nodes; concurrent claims, rollback, stale state, cloned timers, packet bytes and failed receipts are tested. Other resource pools/general gathering timers, legacy timer-table import/MySQL compatibility and native-client acceptance remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/InteractableObjects.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "d7ba787f4de8e631f13435933a31acb8857e36bf0f658d916e8aac65bb95d613"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/QuestNpc.cs",
+			"lines": 751,
+			"status": "partial",
+			"sha256": "32f8e95b00df1292912993297b10859dd1fe922ecfebc4ced209a0208a9e9a5f",
+			"go_files": [
+				"internal/server/encounters.go",
+				"internal/server/events.go",
+				"internal/world/monsters.go",
+				"internal/world/world.go",
+				"internal/server/service_fallback.go",
+				"internal/server/service_fallback_test.go"
+			],
+			"notes": "Adds name/template service fallbacks only when native events are absent: storage, hotel, doctor choices and shop selling menus. Gathering and movement remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/ShopKeeper.cs",
+			"lines": 13,
+			"status": "pending",
+			"sha256": "c7e4aa4824edb6adb6965815d7549749a59f3c20cf8300bac4fceae1407a49d7"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/ShoppingCart.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "4a24cd5f0413bd90373eb18960ebd264b8d9ee9e16758aab7a8931af50854fbe"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/TalkableObject.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "91ca1e645209252df8f857c49e301b14c1f5ed845c629eb88fdaf6265d8d243d"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/WalkableObjects.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "2e295c7f4237733034cb557f516e86b54fdf2f4079874efac30eccd733b33d64"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Code/WarpData.cs",
+			"lines": 20,
+			"status": "pending",
+			"sha256": "1d23c41cbd8694329f6c260738dc23778c6f8fe6bb68632b85efd84b1a5c65c6"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/Map.cs",
+			"lines": 1737,
+			"status": "partial",
+			"sha256": "e5c599c12781a637b17aee588d79fcb949dc515634e22ae6742f902eff546d82",
+			"go_files": [
+				"internal/game/login_packets.go",
+				"internal/server/characters.go",
+				"internal/server/world.go",
+				"internal/world/ground.go",
+				"internal/world/portal.go",
+				"internal/world/world.go",
+				"internal/server/mounts.go",
+				"internal/server/mounts_test.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/MapManager.cs",
+			"lines": 56,
+			"status": "pending",
+			"sha256": "4c3686d85b1f3a97a694af8db813f700e7c22c2878e5a3c90923b2cd0c282dad"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/MapObject.cs",
+			"lines": 21,
+			"status": "pending",
+			"sha256": "dfd50009cd5912857e631f6f7625f476498ab0b799ce6b723268f62ce8101220"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/WarpDest.cs",
+			"lines": 16,
+			"status": "pending",
+			"sha256": "a581b94b262335c2000d59c82296def1504b244314cb24423770e177394de6fe"
+		},
+		{
+			"source": "wlo.pserver.core/Game/Maps/WarpPortal.cs",
+			"lines": 26,
+			"status": "pending",
+			"sha256": "2700b712e8069adadd2c299174b15514552574aa47c747d17695fec08929156e"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PetRelated/PetAmityManager.cs",
+			"lines": 84,
+			"status": "partial",
+			"sha256": "eed3debcece6b649ce29a3b1e39758b7cbb92c9c6a91dcace8cd439b45dca08d",
+			"go_files": [
+				"internal/server/combat.go",
+				"internal/server/items.go",
+				"internal/server/mounts.go",
+				"internal/server/battle_commit_test.go",
+				"internal/server/pet_feeding.go",
+				"internal/server/pet_feeding_test.go",
+				"internal/server/server.go",
+				"internal/server/characters.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "AC67 feeding continuation implements subcommand 1 with a WORD item-ID request and native success/failure receipt. It selects the first registered party pet marked for battle, scans matching bag stacks in slot order and uses shared status-64 feeding with one-item consumption. SQL item definitions supply additive amity gains and the 100 cap; exact-stack metadata and other pets remain intact. Food/amity state commits before remove/stat/banner/receipt packets. Shared feeding rejects bad slots, zero count and empty stacks. Authored wire bytes, client/persistent slot differences, aliases, caps, missing pet/food/definitions, interaction gates and failed-save isolation are covered. Item locks and actual-client AC67 capture validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PetRelated/PetVoucherManager.cs",
+			"lines": 115,
+			"status": "partial",
+			"sha256": "12e0d2e9d75918ea0980f3ba26d552868aeeef5e79c5622afabdbf4a41ce2878",
+			"go_files": [
+				"internal/assets/vouchers.go",
+				"internal/assets/vouchers_test.go",
+				"internal/server/vouchers.go",
+				"internal/server/vouchers_test.go"
+			],
+			"notes": "Table validation and atomic voucher consumption/recruitment implemented; refusal and SQLite-backed persistence regressions pass. Item locks remain unported."
+		},
+		{
+			"source": "wlo.pserver.core/Game/Player.cs",
+			"lines": 2107,
+			"status": "partial",
+			"sha256": "2478ad7a75a7b0ebdf15fd0ed4a4feb75e7c087c4b856bfae8348dc4e1f5744a",
+			"go_files": [
+				"internal/game/pets.go",
+				"internal/server/characters.go",
+				"internal/server/items.go",
+				"internal/server/pets.go",
+				"internal/server/services.go",
+				"internal/server/world.go",
+				"internal/server/hotel.go",
+				"internal/server/pet_equipment.go",
+				"internal/server/mounts.go",
+				"internal/server/mounts_test.go",
+				"internal/server/pet_control.go",
+				"internal/server/pet_control_test.go",
+				"internal/game/pet_rebirth.go",
+				"internal/game/pet_rebirth_test.go",
+				"internal/server/pet_rebirth.go",
+				"internal/server/pet_rebirth_test.go",
+				"internal/protocol/commands.go",
+				"internal/game/pet_training.go",
+				"internal/game/pet_training_test.go",
+				"internal/server/pet_training.go",
+				"internal/server/pet_training_test.go",
+				"internal/server/server.go",
+				"internal/game/banking.go",
+				"internal/game/banking_test.go",
+				"internal/server/banking.go",
+				"internal/server/banking_test.go",
+				"internal/store/banking_test.go"
+			],
+			"notes": " AC69 rebirth ascension continuation implements client-slot party-pet selection, level/amity 100 requirements, level-1/zero-EXP reset, 50 additive stat points and reborn metadata while retaining attributes, skills, equipment, job and active-pet selection. Vitals normalize/refill before durable commit; success/list/progression packets follow the save. Repeat/ineligible/unknown slots fail without mutation; malformed/unknown subcommands, overflow, save failure and loading/battle/trade/event/cutscene gates are covered. Native client AC69 capture validation and model/quest-driven evolution remain pending. AC68 stat-allocation continuation implements subcommand 2 with per-login client-slot selection and STR/CON/INT/WIS/AGI selectors. One unallocated point is spent through the shared pet allocator; derived vitals normalize without refill before durable commit, then AC8:2 progression and AC68 receipts are emitted. Invalid/unknown slots, selectors, insufficient budgets and attribute overflow receive failure results rather than the reference default success. Tests cover authored wire bytes, all selectors, alias/persistent-slot distinctions, AC8 budget sharing, reconnect state, interaction gates and save failure. Subcommand 1 remains an explicit unavailable result: the C# potential branch increments without checking or consuming an item and SendPetProgression sends level-minus-one as stat 37, so genuine potential-item and client-display semantics remain unverified. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Character.cs",
+			"lines": 236,
+			"status": "partial",
+			"sha256": "eb26a850767419bc7b989e5b980b5ba234f7a69097e895b44c200ea1d81ceca1",
+			"go_files": [
+				"internal/game/character.go",
+				"internal/game/creation.go",
+				"internal/game/login_packets.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Equip.cs",
+			"lines": 1526,
+			"status": "partial",
+			"sha256": "3eb0c3d06edc6d9462322cca93e56e21a46cc428cf413080b8fe08d98bf1380e",
+			"go_files": [
+				"internal/game/creation.go",
+				"internal/game/equipment.go",
+				"internal/game/login_packets.go",
+				"internal/game/progress.go",
+				"internal/game/gm_progress.go",
+				"internal/game/gm_progress_test.go",
+				"internal/game/stat_ids.go",
+				"internal/server/gm_progress.go",
+				"internal/server/gm_progress_test.go",
+				"internal/game/banking.go",
+				"internal/game/banking_test.go",
+				"internal/server/banking.go",
+				"internal/server/banking_test.go",
+				"internal/store/banking_test.go"
+			],
+			"notes": "Includes Equip.SetLevel threshold EXP, positive level-point grants, downward level changes and equipped vitals. Requested level 200 preserves the non-reborn displayed cap of 199. Point grants saturate; rebirth and EXP beyond uint32 remain pending. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Friends.cs",
+			"lines": 158,
+			"status": "partial",
+			"sha256": "ac47c88a10f1ef58496edfb3efd206e2a931b75ab20f6d2020fe03ba5bca0d17",
+			"go_files": [
+				"internal/server/friends.go",
+				"internal/store/friends.go",
+				"internal/server/friends_test.go",
+				"internal/store/friends_test.go",
+				"internal/server/social.go",
+				"internal/server/social_test.go"
+			],
+			"notes": "AC14 requests/accept/removal/lists and durable symmetric friendships implemented, with cross-map presence, native appearance fields and deletion cleanup. Name fallback, native-client validation pending. Native AC10 contact commands now share these durable relationships; same-map immediate add semantics remain separate from AC14 invitations."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/GachaManager.cs",
+			"lines": 136,
+			"status": "partial",
+			"sha256": "3e3f5e30ce2835293c521fe72a3d8ef8cf643492e8a87d36c48e47aa69908fea",
+			"go_files": [
+				"internal/assets/gacha.go",
+				"internal/game/gacha.go",
+				"internal/server/gacha.go",
+				"internal/server/mall.go",
+				"internal/assetdb/import.go",
+				"internal/assetsql/database.go",
+				"internal/assets/gacha_test.go",
+				"internal/server/gacha_test.go",
+				"internal/assetsql/database_test.go",
+				"internal/assetdb/import_test.go"
+			],
+			"notes": "SQL-authored tables and pack IDs, availability, AC91 contents, weighted cryptographic draws and AC23:75/128/96 atomic opening. Structurally valid missing-item pools are disabled individually without removing rewards or changing odds; 20 of 24 source pools match translated-client items. Malformed tables fail runtime startup. Ordered asset_gacha_packs/asset_gacha_rewards SQL views and reload/custom-pack regressions added. General item-lock state/enforcement and original-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/GmManager.cs",
+			"lines": 926,
+			"status": "partial",
+			"sha256": "c898317cbde40551b4181575fb471a77717ad69e9c2f8836868c376b05514b4f",
+			"go_files": [
+				"internal/admin/admin.go",
+				"internal/server/chat.go",
+				"internal/store/store.go",
+				"internal/server/mall_adjust.go",
+				"internal/store/mall_adjust.go",
+				"internal/admin/mall.go",
+				"internal/server/travel_commands.go",
+				"internal/server/travel_commands_test.go"
+			],
+			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Guild.cs",
+			"lines": 727,
+			"status": "pending",
+			"sha256": "ad15e73aa645950ba224ae9869e4ae4eb432ccabe8c4a8826c081761f49edb9a"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/ItemMallManager.cs",
+			"lines": 768,
+			"status": "partial",
+			"sha256": "a5f73f6173fbc877b77310de069991a17bead21b1032395c718ea915995155a9",
+			"go_files": [
+				"internal/server/mall.go",
+				"internal/server/mall_adjust.go",
+				"internal/store/mall.go",
+				"internal/store/mall_adjust.go",
+				"internal/assets/gacha.go",
+				"internal/server/mall_checkout.go",
+				"internal/server/mall_checkout_test.go"
+			],
+			"notes": "Native points/bonus catalogs, balances, atomic cart delivery, audited signed adjustments and configured pack availability. Forging and arcade launch remain pending. AC34 checkout now publishes current point/bonus balances plus native AC35:4 from one SQL snapshot without catalog refresh; no points are spent during the handshake."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Mail.cs",
+			"lines": 464,
+			"status": "pending",
+			"sha256": "7525d55d75bc8980e32861cc5ca0bfd6474b199952b1676437826245ecbae218"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/MailManager.cs",
+			"lines": 9,
+			"status": "pending",
+			"sha256": "29ce21ef27e48631380123d0d4ec056fcc5fc1784d98154ac1b0157048d11b70"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/MallForgingManager.cs",
+			"lines": 204,
+			"status": "partial",
+			"sha256": "e9bcb4f023662553aeb1b720c79acdcb99ce20eaa69f85762e48f88f9de46cf2",
+			"go_files": [
+				"internal/assets/forging.go",
+				"internal/assets/database.go",
+				"internal/game/forging.go",
+				"internal/server/forging.go",
+				"internal/store/mall.go",
+				"internal/server/forging_test.go"
+			],
+			"notes": "SQL-configured upgrade families and point eligibility, tier-dependent Strong Scroll costs, durability-preserving replacements, three-point 50% attempts, capped forge metadata, native result/reset replies and atomic payment/state. General item locks and original-client validation remain pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/MarriageManager.cs",
+			"lines": 426,
+			"status": "pending",
+			"sha256": "60f87b7b7ee14e9f6023e9c039393502325b26928de4117d2029791b780fd28b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/NotebookManager.cs",
+			"lines": 141,
+			"status": "partial",
+			"sha256": "02a0c1c1bc07db0ce91e8e995d4fd2e956e500b788106865b53439d49c92ff6d",
+			"go_files": [
+				"internal/assets/quests.go",
+				"internal/world/view.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Quest.cs",
+			"lines": 15,
+			"status": "pending",
+			"sha256": "2e0de3c1a102837fff81e10f2ae7eeb473787e5f14cb6c5f56474fffcbdd8a8b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/RebornManager.cs",
+			"lines": 107,
+			"status": "pending",
+			"sha256": "9d68e9eb0068a97b9c241cbb1541831310f248c87f1831b522fb58366906b23c"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/RiceBall.cs",
+			"lines": 92,
+			"status": "pending",
+			"sha256": "92f645a19eb9e8a2aa528eb2d39214d376c6458a306489d80e667db5fee1d4ff"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/StallManager.cs",
+			"lines": 185,
+			"status": "pending",
+			"sha256": "bc72517d6f7e420291f55a475ef025e176e42f3110883ccb05a7106364f500df"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/StarterPackManager.cs",
+			"lines": 312,
+			"status": "partial",
+			"sha256": "bc0a6c3467fd28bf0e14f369ca4f5e82ebd09243267ade34254bd27785fe5681",
+			"go_files": [
+				"internal/assets/items.go",
+				"internal/game/creation.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Tent/Tent.cs",
+			"lines": 520,
+			"status": "pending",
+			"sha256": "1ecd5335d063d54dd62b49d194ac192cd0e666b61b27a088b8e333ee3df85a3c"
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Trade.cs",
+			"lines": 408,
+			"status": "partial",
+			"sha256": "d95ee31a49d18414048b43569b537eaa69f41c3188f21f23b676b3c577c374a9",
+			"go_files": [
+				"internal/game/trade.go",
+				"internal/server/trade.go",
+				"internal/store/character_pair.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/Vehicle.cs",
+			"lines": 168,
+			"status": "partial",
+			"sha256": "2e10c7b7fa3587c77614a144cca399908440eacb1cf5ea8bae6695fdd2c2e8f3",
+			"go_files": [
+				"internal/game/vehicles.go",
+				"internal/game/vehicles_test.go",
+				"internal/server/pets.go",
+				"internal/server/vehicles.go",
+				"internal/server/vehicles_test.go",
+				"internal/server/world.go",
+				"internal/world/preevent.go"
+			],
+			"notes": "Item vehicle ownership, placement, boarding, dismount, exact-slot raft wrecking and map-entry synchronization implemented. Capsule families shared with EVE conditions. Riding state persists in character JSON; item locks and native-client validation remain pending. Reference fuel fields have no active consumption path."
+		},
+		{
+			"source": "wlo.pserver.core/Game/PlayerRelated/inGameSettings.cs",
+			"lines": 118,
+			"status": "partial",
+			"sha256": "e5af44c69bd6b2e7b5d3114f793ff288f816fefad68c0a0d83fb14ce600f1cee",
+			"go_files": [
+				"internal/game/settings.go",
+				"internal/server/settings.go"
+			],
+			"notes": "Native preference packets, persistence and login snapshots implemented; walk/follow acknowledgment behavior preserved. Native-client validation pending."
+		},
+		{
+			"source": "wlo.pserver.core/Game/QuestRelated/PlayerQuest.cs",
+			"lines": 31,
+			"status": "partial",
+			"sha256": "0980e53e4940be2316e6cf2021bd1fe5fae96e45c14fa1030643d62bf05e2293",
+			"go_files": [
+				"internal/game/quest.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/QuestRelated/PreEventInterpreter.cs",
+			"lines": 775,
+			"status": "partial",
+			"sha256": "2810f6c471c31c95c1becd54ff28130cbdd6a309245a3a4b88e77b8327189915",
+			"go_files": [
+				"internal/world/preevent.go",
+				"internal/world/view.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/QuestRelated/QuestDefinition.cs",
+			"lines": 177,
+			"status": "pending",
+			"sha256": "c031ee0a04eb60b15e71e1958e2d6f69dba92f53dfbb0ba63494ae3f7c24a29b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/QuestRelated/QuestEnums.cs",
+			"lines": 21,
+			"status": "pending",
+			"sha256": "99dce2cdf5073899bb5ffca6bff66cc76a803c5b3cba9503a48b25aa437d879b"
+		},
+		{
+			"source": "wlo.pserver.core/Game/QuestRelated/QuestManager.cs",
+			"lines": 1972,
+			"status": "partial",
+			"sha256": "267ecf2ad5fce9d63b9e8ce027f184c953077757d75085bfe2bc83e4c60b7cd8",
+			"go_files": [
+				"internal/game/quest.go",
+				"internal/server/events.go",
+				"internal/server/pets.go",
+				"internal/world/preevent.go",
+				"internal/world/view.go",
+				"internal/game/pet_training.go",
+				"internal/game/pet_training_test.go",
+				"internal/server/pet_training.go",
+				"internal/server/pet_training_test.go",
+				"internal/server/server.go",
+				"internal/server/characters.go",
+				"internal/protocol/commands.go"
+			],
+			"notes": "AC68 stat-allocation continuation implements subcommand 2 with per-login client-slot selection and STR/CON/INT/WIS/AGI selectors. One unallocated point is spent through the shared pet allocator; derived vitals normalize without refill before durable commit, then AC8:2 progression and AC68 receipts are emitted. Invalid/unknown slots, selectors, insufficient budgets and attribute overflow receive failure results rather than the reference default success. Tests cover authored wire bytes, all selectors, alias/persistent-slot distinctions, AC8 budget sharing, reconnect state, interaction gates and save failure. Subcommand 1 remains an explicit unavailable result: the C# potential branch increments without checking or consuming an item and SendPetProgression sends level-minus-one as stat 37, so genuine potential-item and client-display semantics remain unverified."
+		},
+		{
+			"source": "wlo.pserver.core/Game/SkillRelated/SkillAnimationTiming.cs",
+			"lines": 142,
+			"status": "partial",
+			"sha256": "362ff0ec4ba656779e0ae40bf3ee2ec59df0957957ea9e4289da163e67d7cdc3",
+			"go_files": [
+				"internal/assets/animation.go",
+				"internal/battle/battle.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Game/SkillRelated/SkillManager.cs",
+			"lines": 836,
+			"status": "partial",
+			"sha256": "3d83321b75c6c26059f40e8ff31b4e7b7fbb6d27c881d527ee3af91b92a4d829",
+			"go_files": [
+				"internal/assets/effect_catalog.go",
+				"internal/assets/effect_catalog_test.go",
+				"cmd/skill-effects-export/main.go",
+				"internal/battle/physical_shield_test.go",
+				"internal/assets/skills.go",
+				"internal/battle/battle.go",
+				"internal/game/skill_rewards.go",
+				"internal/game/skill_rewards_test.go",
+				"internal/server/skill_rewards_test.go",
+				"internal/game/skill_progress.go",
+				"internal/game/skill_progress_test.go",
+				"internal/battle/skill_progress_test.go",
+				"internal/server/combat.go",
+				"internal/server/skill_progress_test.go",
+				"internal/game/skill_tree.go",
+				"internal/game/skill_tree_data.go",
+				"internal/game/skill_tree_test.go",
+				"internal/server/skill_tree_test.go",
+				"internal/server/items.go",
+				"internal/server/characters.go",
+				"internal/server/server.go",
+				"internal/game/gm_progress_test.go",
+				"internal/server/gm_progress.go",
+				"internal/server/gm_progress_test.go",
+				"internal/battle/goddess_test.go",
+				"internal/server/goddess_test.go",
+				"internal/battle/effects.go",
+				"internal/battle/effects_test.go",
+				"internal/assets/skill_effects.go",
+				"internal/assets/skill_effects_test.go",
+				"internal/assetsql/database.go",
+				"internal/assetsql/database_test.go",
+				"internal/battle/control_effects_test.go",
+				"internal/server/control_effects_test.go",
+				"internal/battle/evasion_test.go",
+				"internal/protocol/commands.go",
+				"internal/assets/native_effect_rules.go",
+				"internal/assets/native_effect_rules_test.go",
+				"cmd/skill-effects-export/main_test.go"
+			],
+			"notes": "Includes durable EVE skill rewards, player/pet combat proficiency, 92 stat-qualified requirements and 78 grade-ten evolution links. Creation/login qualification and allocation/combat unlocks save before success packets; trained progress is preserved. Native-client skill-book validation remains pending. Explicit GM skill overrides reset proficiency, permit grade decreases, map the avatar stunt alias, and reproduce native unlock/grade/proficiency packets after persistence. Known SQL catalog IDs and grades 1..10 are required; quest replay still preserves training. Bulk skill administration remains pending. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered."
+		},
+		{
+			"source": "wlo.pserver.core/Game/User.cs",
+			"lines": 92,
+			"status": "pending",
+			"sha256": "a466d363a3b51b0be06e3ad17789c415fdcfa5b33c2ff4cd7b7583bddf1d6ed2"
+		},
+		{
+			"source": "wlo.pserver.core/Generics/Tools.cs",
+			"lines": 209,
+			"status": "pending",
+			"sha256": "180d0b046e6abecedff471e68d43bf0e7ebf3867a5c5ff957e3337ceb6856cd2"
+		},
+		{
+			"source": "wlo.pserver.core/Network/ActionCodes/AC.cs",
+			"lines": 91,
+			"status": "pending",
+			"sha256": "04537d39d72141dc862538e1db6743c4bd3962aa3b527acc65d1a844e0f55372"
+		},
+		{
+			"source": "wlo.pserver.core/Network/EmbeddedWebServer.cs",
+			"lines": 323,
+			"status": "pending",
+			"sha256": "f5c21f7da1574c457c14997a7df856ac7ccb065ff2d0714f618af8e3dcd66f4f"
+		},
+		{
+			"source": "wlo.pserver.core/Network/Packet.cs",
+			"lines": 138,
+			"status": "partial",
+			"sha256": "1843755dbf2d7471d19bfa8647aee5e57bab8c83fc9ad442ed39d8e57ce922b8",
+			"go_files": [
+				"internal/protocol/packet.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.core/Network/SocketClient.cs",
+			"lines": 29,
+			"status": "pending",
+			"sha256": "07ed3363fb646203001ad732ef27f3eca2fa1601dd5ed288240933f40b16845c"
+		},
+		{
+			"source": "wlo.pserver.core/Plugin/InteractableObj.cs",
+			"lines": 37,
+			"status": "pending",
+			"sha256": "16c73806d0da0332bb5c15bc73159dcf4a52fd0a8a6ffe3303e8eafbfd10a32b"
+		},
+		{
+			"source": "wlo.pserver.core/Plugin/MapHost.cs",
+			"lines": 14,
+			"status": "pending",
+			"sha256": "e8ed0f8aa7e15ef0fb2a24298b90b2f9aad338169a56c3e19a3c6afcac76c108"
+		},
+		{
+			"source": "wlo.pserver.core/Plugin/PluginHost.cs",
+			"lines": 27,
+			"status": "pending",
+			"sha256": "6780211c75dc43662b011d765f8ee0743d7d88f633137d4f7d2ae517c041d006"
+		},
+		{
+			"source": "wlo.pserver.core/Plugin/PluginObj.cs",
+			"lines": 48,
+			"status": "pending",
+			"sha256": "fe4698bf2d37fc77a85c30b56cee0923ee86be8a1f8d4ce8d0375226cff0e959"
+		},
+		{
+			"source": "wlo.pserver.core/Plugin/WorldAccess.cs",
+			"lines": 25,
+			"status": "pending",
+			"sha256": "b1ab9f24618ae75582081dd71dca1069c6f67d22391ea180940be334a7259184"
+		},
+		{
+			"source": "wlo.pserver.core/Properties/AssemblyInfo.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "62f4d6fb8c0e8c3168c7171fb01813cb225f80f532faff16cbb72ae09f1b91a3"
+		},
+		{
+			"source": "wlo.pserver.core/Server/ServerStatusManager.cs",
+			"lines": 356,
+			"status": "partial",
+			"sha256": "fdcdf32efa2379034f05b7e2d6c3d8eb7caab3154417a327725c937b2a542fa7",
+			"go_files": [
+				"internal/server/server.go"
+			]
+		},
+		{
+			"source": "wlo.pserver.maps/Class1.cs",
+			"lines": 12,
+			"status": "pending",
+			"sha256": "f5dade2895a73227d97a6ca1e29ace7dab8ddb98f61f978e6377fb0ac84f727a"
+		},
+		{
+			"source": "wlo.pserver.maps/Properties/AssemblyInfo.cs",
+			"lines": 36,
+			"status": "pending",
+			"sha256": "80a5607a716523dbf2a04d1837e02795d537eed4977acbe4b98a52d0af9f3d5a"
+		}
+	],
+	"note": "Partial means related behavior exists in Go, not full source-file or runtime parity. See PORTING.md.",
+	"native_client_work": {
+		"status": "asset-workbench",
+		"reference": "decompiled/aLogin_decompiled.c FUN_004121a8 and read-only native client archives",
+		"go_files": [
+			"internal/clientassets/ground.go",
+			"internal/clientassets/images.go",
+			"client/main.go",
+			"client/artwork.go",
+			"cmd/client-assets/main.go",
+			"cmd/client-assets/main_test.go",
+			"cmd/client-assets/unpack.go",
+			"cmd/client-assets/unpack_test.go"
+		],
+		"asset_installation": "Cross-platform cmd/client-assets -unpack validates package checksums before extraction, checks resource checksums and paths, retains verified files, repairs missing/damaged files and verifies the complete local tree. No external ZIP utility required.",
+		"asset_distribution": "4,070 native resource files staged in ignored client/assets from Wonderland-Client; 13 upload ZIPs in var/client-assets-upload. Tracked client/assets-manifest.json and client/asset-packages.json record SHA-256 and sizes. Runtime defaults to local assets, including terrain; no sibling installation is required. See CLIENT.md.",
+		"verification": "Terrain prefix, image directory bounds/signatures and base-archive image decoding tested; native Ebitengine frame visually verified. Three client variants supported. See CLIENT.md for the malformed native BMP exception and pending animation/scene/network work."
+	}
+}

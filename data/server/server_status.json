@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/Data/server_status.txt",
+  "source_bytes": 171,
+  "source_sha256": "862959537db6e26d90692f187926cef28cf317c6ac123832243e1c138c0b3bc2",
+  "format": "plaintext-text",
+  "encoding": "utf-8-sig",
+  "text": "# WLO Single Server Status Color Configuration (Port 6416)\n# 1=Green (Yeşil), 2=Yellow (Sarı), 3=Red (Kırmızı), 0=Offline, 255=Auto\nCLUSTER=1\nSERVER_ID=1\nMODE=255\n",
+  "source_hex": "efbbbf2320574c4f2053696e676c65205365727665722053746174757320436f6c6f7220436f6e66696775726174696f6e2028506f72742036343136290a2320313d477265656e20285965c59f696c292c20323d59656c6c6f772028536172c4b1292c20333d52656420284bc4b1726dc4b17ac4b1292c20303d4f66666c696e652c203235353d4175746f0a434c55535445523d310a5345525645525f49443d310a4d4f44453d3235350a"
+}

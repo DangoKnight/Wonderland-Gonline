@@ -1,0 +1,9 @@
+{
+  "source": "MsgSkin.txt",
+  "source_bytes": 3,
+  "source_sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04",
+  "format": "text-resource",
+  "source_hex": "310d0a",
+  "encoding": "utf-8-sig",
+  "text": "1\r\n"
+}

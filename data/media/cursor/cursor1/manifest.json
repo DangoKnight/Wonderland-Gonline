@@ -1,0 +1,125 @@
+{
+  "source": "cursor/cursor1.ani",
+  "source_bytes": 18116,
+  "source_sha256": "11521b5d282e55455f0a0f6444b1b20aed7c2a2bc8dad2c3cfd336c45ca2b40a",
+  "format": "animated-cursor",
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_001.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_002.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_003.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_004.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_005.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_006.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_007.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    }
+  ],
+  "declared_bytes": 18124,
+  "warnings": [
+    "Original RIFF size includes the eight-byte header twice."
+  ],
+  "header": {
+    "header_bytes": 36,
+    "frame_count": 8,
+    "step_count": 8,
+    "width": 0,
+    "height": 0,
+    "bit_depth": 0,
+    "planes": 0,
+    "default_jiffies": 10,
+    "flags": 3
+  },
+  "rate_jiffies": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+  ],
+  "sequence": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "jiffies_per_second": 60,
+  "extra_chunks": []
+}

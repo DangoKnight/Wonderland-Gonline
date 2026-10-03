@@ -1,0 +1,14 @@
+{
+  "source": "images/bg2.gif",
+  "source_bytes": 444,
+  "source_sha256": "2a3eac397704e0755736885b11338d4d1b23c3a8647665afc1e4b60f16316ef1",
+  "format": "gif-animation",
+  "loop": null,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 0,
+      "disposal": 0
+    }
+  ]
+}

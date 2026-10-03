@@ -1,0 +1,16 @@
+{
+	"name": "wonderland-go",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Wonderland Go server admin web assets tooling",
+	"scripts": {
+		"format": "prettier --write \"internal/admin/web/**/*.{html,css,js}\"",
+		"format:check": "prettier --check \"internal/admin/web/**/*.{html,css,js}\"",
+		"lint": "npm run lint:html",
+		"lint:html": "htmlhint --config .htmlhintrc internal/admin/web/index.html"
+	},
+	"devDependencies": {
+		"htmlhint": "^1.9.2",
+		"prettier": "^3.8.1"
+	}
+}

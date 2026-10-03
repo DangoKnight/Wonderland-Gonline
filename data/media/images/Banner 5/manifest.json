@@ -1,0 +1,89 @@
+{
+  "source": "images/Banner 5.gif",
+  "source_bytes": 138046,
+  "source_sha256": "729d020bfad64ff4dac8bb96e1cddd7ee49ba876af040c28020f828fed713ce9",
+  "format": "gif-animation",
+  "loop": 0,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_001.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_002.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_003.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_004.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_005.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_006.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_007.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_008.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_009.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_010.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_011.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_012.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_013.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_014.png",
+      "duration_ms": 200,
+      "disposal": 1
+    },
+    {
+      "png": "frame_015.png",
+      "duration_ms": 200,
+      "disposal": 1
+    }
+  ]
+}

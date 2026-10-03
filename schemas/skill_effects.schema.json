@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reusable skill effect definitions",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "format",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "format": {
+      "const": "skill-effect-definitions"
+    },
+    "source": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "string"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "effects"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string"
+          },
+          "effects": {
+            "$ref": "#/$defs/effects"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "required": [
+        "target",
+        "rounds"
+      ],
+      "properties": {
+        "target": {
+          "enum": [
+            "ally",
+            "enemy",
+            "self"
+          ]
+        },
+        "rounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "stack_group": {
+          "type": "string"
+        },
+        "modifiers": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": [
+              "stat"
+            ],
+            "properties": {
+              "stat": {
+                "enum": [
+                  "atk",
+                  "matk",
+                  "def",
+                  "mdef",
+                  "spd",
+                  "damage_dealt",
+                  "damage_taken",
+                  "physical_damage_taken",
+                  "magical_damage_taken"
+                ]
+              },
+              "flat": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              },
+              "percent": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "presentation": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "ally_attack_chance_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "periodic_damage": {
+          "type": "object",
+          "properties": {
+            "max_hp_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "flat": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "minimum": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          },
+          "additionalProperties": false
+        },
+        "miss_physical_attacks": {
+          "type": "boolean"
+        },
+        "miss_area_attacks": {
+          "type": "boolean"
+        },
+        "block_actions": {
+          "type": "boolean"
+        },
+        "break_on_damage": {
+          "type": "boolean"
+        },
+        "on_hit": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    }
+  }
+}

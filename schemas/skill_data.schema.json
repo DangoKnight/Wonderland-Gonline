@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native skill export with effect annotations",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "fields",
+          "decoded_hex"
+        ],
+        "properties": {
+          "fields": {
+            "type": "object",
+            "properties": {
+              "effect_refs": {
+                "type": "array",
+                "maxItems": 32,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "effects": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "$ref": "skill_effects.schema.json#/$defs/effect"
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "effect_refs",
+                "effects"
+              ]
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "effects"
+                ]
+              },
+              {
+                "required": [
+                  "effect_refs"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "source": "unWL.ico",
+  "source_bytes": 2238,
+  "source_sha256": "6aae657dafe5d0bb2f4b0ab535b4efb0c25e6bc9b381ea2175d6077297394782",
+  "format": "icon",
+  "images": [
+    {
+      "png": "32x32.png",
+      "width": 32,
+      "height": 32
+    }
+  ]
+}

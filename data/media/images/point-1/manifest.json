@@ -1,0 +1,14 @@
+{
+  "source": "images/point-1.gif",
+  "source_bytes": 9780,
+  "source_sha256": "d1edd3ebae0e0accf223ebcb3c19620476fb5fadf5174687ca1be08ce1d6fce9",
+  "format": "gif-animation",
+  "loop": null,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 0,
+      "disposal": 0
+    }
+  ]
+}

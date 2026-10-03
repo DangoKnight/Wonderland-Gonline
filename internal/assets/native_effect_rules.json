@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "policy": "native-compatibility-v1",
+  "rules": [
+    {
+      "name": "Freeze",
+      "layer": 3,
+      "code": 1,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Tree Bind",
+      "layer": 3,
+      "code": 3,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Seal",
+      "layer": 3,
+      "code": 4,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Sleep",
+      "layer": 3,
+      "code": 6,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true,
+          "break_on_damage": true
+        }
+      ]
+    },
+    {
+      "name": "Coma",
+      "layer": 3,
+      "code": 7,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Paralysis",
+      "layer": 3,
+      "code": 8,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Stone Wall",
+      "layer": 4,
+      "code": 101,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "miss_physical_attacks": true
+        }
+      ]
+    },
+    {
+      "name": "Water Shield",
+      "layer": 4,
+      "code": 105,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "protection_buff",
+          "modifiers": [
+            {
+              "stat": "magical_damage_taken",
+              "percent": -50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Poison",
+      "layer": 15,
+      "code": 171,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "stack_group": "periodic_poison",
+          "periodic_damage": {
+            "max_hp_percent": 8,
+            "minimum": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shrink",
+      "layer": 15,
+      "code": 172,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "modifiers": [
+            {
+              "stat": "atk",
+              "percent": -50
+            },
+            {
+              "stat": "matk",
+              "percent": -50
+            },
+            {
+              "stat": "def",
+              "percent": -50
+            },
+            {
+              "stat": "mdef",
+              "percent": -50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Confusion",
+      "layer": 15,
+      "code": 173,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "stack_group": "attack_redirection",
+          "ally_attack_chance_percent": 50
+        }
+      ]
+    },
+    {
+      "name": "Freeze debuff",
+      "layer": 15,
+      "code": 177,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Seal debuff",
+      "layer": 15,
+      "code": 178,
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 1,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "name": "Speedup",
+      "layer": 19,
+      "code": 51,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "speed_buff",
+          "modifiers": [
+            {
+              "stat": "spd",
+              "flat": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shield Defense",
+      "layer": 19,
+      "code": 52,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "protection_buff",
+          "modifiers": [
+            {
+              "stat": "def",
+              "percent": 10
+            },
+            {
+              "stat": "mdef",
+              "percent": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vanish",
+      "layer": 19,
+      "code": 53,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "miss_physical_attacks": true,
+          "miss_area_attacks": true,
+          "presentation": "vanish"
+        }
+      ]
+    },
+    {
+      "name": "Fiery",
+      "layer": 19,
+      "code": 59,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Hot Fire",
+      "layer": 19,
+      "code": 60,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "War Cry",
+      "layer": 19,
+      "code": 73,
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 1,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 100
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

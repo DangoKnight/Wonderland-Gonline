@@ -1,0 +1,75 @@
+{
+  "source": "cursor/cursor18.ani",
+  "source_bytes": 9076,
+  "source_sha256": "71faca9ea08878d03996ffdf3ba3923e856e4fb79c0ebd34a124974a5b79506d",
+  "format": "animated-cursor",
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        16,
+        16
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_001.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        16,
+        16
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_002.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        16,
+        16
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_003.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        16,
+        16
+      ],
+      "invert_pixels": []
+    }
+  ],
+  "declared_bytes": 9076,
+  "warnings": [],
+  "header": {
+    "header_bytes": 36,
+    "frame_count": 4,
+    "step_count": 4,
+    "width": 32,
+    "height": 32,
+    "bit_depth": 8,
+    "planes": 1,
+    "default_jiffies": 1,
+    "flags": 1
+  },
+  "rate_jiffies": [
+    6,
+    6,
+    6,
+    6
+  ],
+  "sequence": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "jiffies_per_second": 60,
+  "extra_chunks": []
+}

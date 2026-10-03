@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/Data/Config.settings.wlo",
+  "source_bytes": 652,
+  "source_sha256": "6092e6adc55d846aacc7ab816086213f070e3e9a11106747c51989795fe6c483",
+  "format": "plaintext-xml",
+  "encoding": "utf-8-sig",
+  "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Settings xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <Update>\n    <EnableSchedUpdate>false</EnableSchedUpdate>\n    <WarnofUpdate>false</WarnofUpdate>\n    <UpdtControl>Never</UpdtControl>\n    <UpdtChk_Interval />\n    <AutoUpdt_Schedule />\n  </Update>\n  <DB>\n    <Port>0</Port>\n    <Server_Type>Undefined</Server_Type>\n    <_PassVerifi>0</_PassVerifi>\n    <PassVerification>0</PassVerification>\n  </DB>\n  <ServerName>Wonderland</ServerName>\n  <WelcomeMessage />\n  <WelcomeMessages />\n  <EnableLoginEventPrompts>true</EnableLoginEventPrompts>\n</Settings>",
+  "source_hex": "efbbbf3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d227574662d38223f3e0a3c53657474696e677320786d6c6e733a7873693d22687474703a2f2f7777772e77332e6f72672f323030312f584d4c536368656d612d696e7374616e63652220786d6c6e733a7873643d22687474703a2f2f7777772e77332e6f72672f323030312f584d4c536368656d61223e0a20203c5570646174653e0a202020203c456e61626c6553636865645570646174653e66616c73653c2f456e61626c6553636865645570646174653e0a202020203c5761726e6f665570646174653e66616c73653c2f5761726e6f665570646174653e0a202020203c55706474436f6e74726f6c3e4e657665723c2f55706474436f6e74726f6c3e0a202020203c5570647443686b5f496e74657276616c202f3e0a202020203c4175746f557064745f5363686564756c65202f3e0a20203c2f5570646174653e0a20203c44423e0a202020203c506f72743e303c2f506f72743e0a202020203c5365727665725f547970653e556e646566696e65643c2f5365727665725f547970653e0a202020203c5f506173735665726966693e303c2f5f506173735665726966693e0a202020203c50617373566572696669636174696f6e3e303c2f50617373566572696669636174696f6e3e0a20203c2f44423e0a20203c5365727665724e616d653e576f6e6465726c616e643c2f5365727665724e616d653e0a20203c57656c636f6d654d657373616765202f3e0a20203c57656c636f6d654d65737361676573202f3e0a20203c456e61626c654c6f67696e4576656e7450726f6d7074733e747275653c2f456e61626c654c6f67696e4576656e7450726f6d7074733e0a3c2f53657474696e67733e",
+  "document": {
+    "tag": "Settings",
+    "attributes": {},
+    "text": "\n  ",
+    "tail": null,
+    "children": [
+      {
+        "tag": "Update",
+        "attributes": {},
+        "text": "\n    ",
+        "tail": "\n  ",
+        "children": [
+          {
+            "tag": "EnableSchedUpdate",
+            "attributes": {},
+            "text": "false",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "WarnofUpdate",
+            "attributes": {},
+            "text": "false",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "UpdtControl",
+            "attributes": {},
+            "text": "Never",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "UpdtChk_Interval",
+            "attributes": {},
+            "text": null,
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "AutoUpdt_Schedule",
+            "attributes": {},
+            "text": null,
+            "tail": "\n  ",
+            "children": []
+          }
+        ]
+      },
+      {
+        "tag": "DB",
+        "attributes": {},
+        "text": "\n    ",
+        "tail": "\n  ",
+        "children": [
+          {
+            "tag": "Port",
+            "attributes": {},
+            "text": "0",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "Server_Type",
+            "attributes": {},
+            "text": "Undefined",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "_PassVerifi",
+            "attributes": {},
+            "text": "0",
+            "tail": "\n    ",
+            "children": []
+          },
+          {
+            "tag": "PassVerification",
+            "attributes": {},
+            "text": "0",
+            "tail": "\n  ",
+            "children": []
+          }
+        ]
+      },
+      {
+        "tag": "ServerName",
+        "attributes": {},
+        "text": "Wonderland",
+        "tail": "\n  ",
+        "children": []
+      },
+      {
+        "tag": "WelcomeMessage",
+        "attributes": {},
+        "text": null,
+        "tail": "\n  ",
+        "children": []
+      },
+      {
+        "tag": "WelcomeMessages",
+        "attributes": {},
+        "text": null,
+        "tail": "\n  ",
+        "children": []
+      },
+      {
+        "tag": "EnableLoginEventPrompts",
+        "attributes": {},
+        "text": "true",
+        "tail": "\n",
+        "children": []
+      }
+    ]
+  }
+}

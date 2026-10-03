@@ -1,0 +1,56 @@
+{
+  "flags": 1,
+  "header_hex": "4a58414e020001000100000005000000",
+  "key_id": 1,
+  "records": [
+    {
+      "authentication_tag_hex": "43b7991f79672fb56024620ddf89f47c",
+      "bytes": 530746,
+      "file_offset": 154,
+      "name": "12400.jmp",
+      "nonce_hex": "b5419918617c31298f81bc4dc5c75732",
+      "record_hex": "0931323430302e6a6d7000000000000000b5419918617c31298f81bc4dc5c7573243b7991f79672fb56024620ddf89f47c9a0000003a19080000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    },
+    {
+      "authentication_tag_hex": "39c2472fb9b872525cb6d29619dd457c",
+      "bytes": 118958,
+      "file_offset": 530900,
+      "name": "12401.jmp",
+      "nonce_hex": "2d95e95784eda5ea25d98d7ddb8e6268",
+      "record_hex": "0931323430312e6a6d70000000000000002d95e95784eda5ea25d98d7ddb8e626839c2472fb9b872525cb6d29619dd457cd4190800aed0010000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    },
+    {
+      "authentication_tag_hex": "c1ee0e56a3b52c00a2fdcb4d537f356d",
+      "bytes": 106926,
+      "file_offset": 649858,
+      "name": "12402.jmp",
+      "nonce_hex": "01355ce5e97e7e142b0b6b2558d660e6",
+      "record_hex": "0931323430322e6a6d700000000000000001355ce5e97e7e142b0b6b2558d660e6c1ee0e56a3b52c00a2fdcb4d537f356d82ea0900aea1010000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    },
+    {
+      "authentication_tag_hex": "e5a594edd730ef5c3b6edf8f26b56a7a",
+      "bytes": 70714,
+      "file_offset": 756784,
+      "name": "12403.jmp",
+      "nonce_hex": "0a1ada1b164ca68e43a23c5b317da03b",
+      "record_hex": "0931323430332e6a6d70000000000000000a1ada1b164ca68e43a23c5b317da03be5a594edd730ef5c3b6edf8f26b56a7a308c0b003a14010000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    },
+    {
+      "authentication_tag_hex": "3f45099f5b4c565d294be531ea5fe248",
+      "bytes": 531970,
+      "file_offset": 827498,
+      "name": "12404.jmp",
+      "nonce_hex": "d52e5cdf64b7623e523ef6050c52a9ac",
+      "record_hex": "0931323430342e6a6d7000000000000000d52e5cdf64b7623e523ef6050c52a9ac3f45099f5b4c565d294be531ea5fe2486aa00c00021e080000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    }
+  ],
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/002s2.jxan",
+  "source_sha256": "e209f95002a90d635f0525b747a3353ac9cb999bb632bf82f8167c8f7f3db3a6",
+  "version": 2
+}

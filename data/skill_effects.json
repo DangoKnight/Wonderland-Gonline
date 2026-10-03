@@ -1,0 +1,470 @@
+{
+  "schema_version": 1,
+  "format": "skill-effect-definitions",
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/data/Skill.dat",
+  "source_sha256": "c06a7edfdeeebabd6f2a22b743ec955e9fd9dad119eff7a178a8a227987b19ad",
+  "policy": "native-compatibility-v1",
+  "records": [
+    {
+      "id": "native_15_171_rounds_2",
+      "name": "Poison",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "stack_group": "periodic_poison",
+          "periodic_damage": {
+            "max_hp_percent": 8,
+            "minimum": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "native_15_171_rounds_3",
+      "name": "Poisonous Pollen",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "stack_group": "periodic_poison",
+          "periodic_damage": {
+            "max_hp_percent": 8,
+            "minimum": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "native_15_171_rounds_4",
+      "name": "Poison Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "stack_group": "periodic_poison",
+          "periodic_damage": {
+            "max_hp_percent": 8,
+            "minimum": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "native_15_172_rounds_4",
+      "name": "Shrink",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "modifiers": [
+            {
+              "stat": "atk",
+              "percent": -50
+            },
+            {
+              "stat": "matk",
+              "percent": -50
+            },
+            {
+              "stat": "def",
+              "percent": -50
+            },
+            {
+              "stat": "mdef",
+              "percent": -50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_15_173_rounds_2",
+      "name": "Mess Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "stack_group": "attack_redirection",
+          "ally_attack_chance_percent": 50
+        }
+      ]
+    },
+    {
+      "id": "native_15_173_rounds_3",
+      "name": "Dog Mess",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "stack_group": "attack_redirection",
+          "ally_attack_chance_percent": 50
+        }
+      ]
+    },
+    {
+      "id": "native_15_173_rounds_4",
+      "name": "Mess Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "stack_group": "attack_redirection",
+          "ally_attack_chance_percent": 50
+        }
+      ]
+    },
+    {
+      "id": "native_15_177_rounds_3",
+      "name": "Shield Smash",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_15_178_rounds_2",
+      "name": "Blockage",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_15_178_rounds_3",
+      "name": "Tiger Seal",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_19_51_rounds_2",
+      "name": "Speedup",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 2,
+          "stack_group": "speed_buff",
+          "modifiers": [
+            {
+              "stat": "spd",
+              "flat": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_51_rounds_4",
+      "name": "Speed Up",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 4,
+          "stack_group": "speed_buff",
+          "modifiers": [
+            {
+              "stat": "spd",
+              "flat": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_52_rounds_3",
+      "name": "Plaster",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 3,
+          "stack_group": "protection_buff",
+          "modifiers": [
+            {
+              "stat": "def",
+              "percent": 10
+            },
+            {
+              "stat": "mdef",
+              "percent": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_52_rounds_4",
+      "name": "Shield Defence",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 4,
+          "stack_group": "protection_buff",
+          "modifiers": [
+            {
+              "stat": "def",
+              "percent": 10
+            },
+            {
+              "stat": "mdef",
+              "percent": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_53_rounds_3",
+      "name": "Vanish",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 3,
+          "miss_physical_attacks": true,
+          "miss_area_attacks": true,
+          "presentation": "vanish"
+        }
+      ]
+    },
+    {
+      "id": "native_19_59_rounds_2",
+      "name": "Strengthen",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 2,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_59_rounds_4",
+      "name": "Fiery Attack",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 4,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_60_rounds_3",
+      "name": "Fire Attack",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 3,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_19_73_rounds_4",
+      "name": "War Cry",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 4,
+          "stack_group": "attack_damage_buff",
+          "modifiers": [
+            {
+              "stat": "damage_dealt",
+              "percent": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_3_1_rounds_2",
+      "name": "Freezing Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_1_rounds_3",
+      "name": "Dog Freeze",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_1_rounds_4",
+      "name": "Phenix Dream",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_3_rounds_3",
+      "name": "Tree Bind",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_4_rounds_3",
+      "name": "Stone Curse",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_4_rounds_4",
+      "name": "Terrafication",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_6_rounds_2",
+      "name": "Sleep",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "block_actions": true,
+          "break_on_damage": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_6_rounds_3",
+      "name": "Goddess Murmur",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true,
+          "break_on_damage": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_7_rounds_2",
+      "name": "Coma Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_8_rounds_2",
+      "name": "Cord Spell",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 2,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_8_rounds_3",
+      "name": "Tiger Cord",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 3,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_3_8_rounds_4",
+      "name": "Dog Trap",
+      "effects": [
+        {
+          "target": "enemy",
+          "rounds": 4,
+          "block_actions": true
+        }
+      ]
+    },
+    {
+      "id": "native_4_101_rounds_4",
+      "name": "Stone Wall",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 4,
+          "miss_physical_attacks": true
+        }
+      ]
+    },
+    {
+      "id": "native_4_105_rounds_5",
+      "name": "Water Shield",
+      "effects": [
+        {
+          "target": "ally",
+          "rounds": 5,
+          "stack_group": "protection_buff",
+          "modifiers": [
+            {
+              "stat": "magical_damage_taken",
+              "percent": -50
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

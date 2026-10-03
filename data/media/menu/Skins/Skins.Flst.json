@@ -1,0 +1,9 @@
+{
+  "source": "menu/Skins/Skins.Flst",
+  "source_bytes": 71,
+  "source_sha256": "0d522a060c9ce9dc4ef05011a3878ecb0f98015aa5a2bb78a4418426a9f7118b",
+  "format": "text-resource",
+  "source_hex": "677265656e4e65740d0a36353533350d0a6d656e755c536b696e735c677265656e4e65745c0d0a77686974650d0a323131330d0a6d656e755c536b696e735c77686974655c0d0a",
+  "encoding": "utf-8-sig",
+  "text": "greenNet\r\n65535\r\nmenu\\Skins\\greenNet\\\r\nwhite\r\n2113\r\nmenu\\Skins\\white\\\r\n"
+}

@@ -1,0 +1,65 @@
+{
+  "flags": 1,
+  "header_hex": "4a58414e020001000100000006000000",
+  "key_id": 1,
+  "records": [
+    {
+      "authentication_tag_hex": "8b1f6152c5fcd7b832e627a4c91d6315",
+      "bytes": 1224658,
+      "file_offset": 182,
+      "name": "24000.jmp",
+      "nonce_hex": "4328d7c0b0575c1fa646b0ad702cd5e5",
+      "record_hex": "0932343030302e6a6d70000000000000004328d7c0b0575c1fa646b0ad702cd5e58b1f6152c5fcd7b832e627a4c91d6315b6000000d2af120000000000000000",
+      "source_status": "missing-companion-archive"
+    },
+    {
+      "authentication_tag_hex": "4b50dd1ad56f1c8fe2b05af3b39f9ebd",
+      "bytes": 1224658,
+      "file_offset": 1224840,
+      "name": "24001.jmp",
+      "nonce_hex": "c703e018cbb65331b1074e1b9ae72082",
+      "record_hex": "0932343030312e6a6d7000000000000000c703e018cbb65331b1074e1b9ae720824b50dd1ad56f1c8fe2b05af3b39f9ebd88b01200d2af120000000000000000",
+      "source_status": "missing-companion-archive"
+    },
+    {
+      "authentication_tag_hex": "19fbaf768a6cc93d4e35a0f0a2a56492",
+      "bytes": 2047338,
+      "file_offset": 2449498,
+      "name": "24002.jmp",
+      "nonce_hex": "839866d65ea062120f9a11c1c6c79f5e",
+      "record_hex": "0932343030322e6a6d7000000000000000839866d65ea062120f9a11c1c6c79f5e19fbaf768a6cc93d4e35a0f0a2a564925a6025006a3d1f0000000000000000",
+      "source_status": "missing-companion-archive"
+    },
+    {
+      "authentication_tag_hex": "5d52ad8426e9a15d67e25f426ee9baaa",
+      "bytes": 2047338,
+      "file_offset": 4496836,
+      "name": "24003.jmp",
+      "nonce_hex": "b71a8bda174d438a8ac6721714072bd5",
+      "record_hex": "0932343030332e6a6d7000000000000000b71a8bda174d438a8ac6721714072bd55d52ad8426e9a15d67e25f426ee9baaac49d44006a3d1f0000000000000000",
+      "source_status": "missing-companion-archive"
+    },
+    {
+      "authentication_tag_hex": "8b007618b825f657c815fe29c7234003",
+      "bytes": 1082,
+      "file_offset": 6544174,
+      "name": "24004.jmp",
+      "nonce_hex": "39d15634663fd12888231997b02077fd",
+      "record_hex": "0932343030342e6a6d700000000000000039d15634663fd12888231997b02077fd8b007618b825f657c815fe29c72340032edb63003a04000000000000000000",
+      "source_status": "missing-companion-archive"
+    },
+    {
+      "authentication_tag_hex": "fe18dfe979d49f157ea298569c8173e7",
+      "bytes": 1853262,
+      "file_offset": 6545256,
+      "name": "24005.jmp",
+      "nonce_hex": "dcf5a68c51749635f66a2577b62e36a0",
+      "record_hex": "0932343030352e6a6d7000000000000000dcf5a68c51749635f66a2577b62e36a0fe18dfe979d49f157ea298569c8173e768df63004e471c0000000000000000",
+      "source_status": "missing-companion-archive"
+    }
+  ],
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/004w4.jxan",
+  "source_sha256": "2f948291f84ce255367553c0b9ed1532398cc1bb290084039e37ac0dc5baa257",
+  "version": 2
+}

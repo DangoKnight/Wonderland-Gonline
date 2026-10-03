@@ -1,0 +1,101 @@
+{
+  "source": "cursor/cursor6.ani",
+  "source_bytes": 13608,
+  "source_sha256": "f158f3fb127f76381a7aa2e2c9876f9ce48536a8f33fba2825941a4a074606c0",
+  "format": "animated-cursor",
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_001.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_002.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_003.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_004.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    },
+    {
+      "png": "frame_005.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    }
+  ],
+  "declared_bytes": 13616,
+  "warnings": [
+    "Original RIFF size includes the eight-byte header twice."
+  ],
+  "header": {
+    "header_bytes": 36,
+    "frame_count": 6,
+    "step_count": 6,
+    "width": 0,
+    "height": 0,
+    "bit_depth": 0,
+    "planes": 0,
+    "default_jiffies": 10,
+    "flags": 3
+  },
+  "rate_jiffies": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+  ],
+  "sequence": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "jiffies_per_second": 60,
+  "extra_chunks": []
+}

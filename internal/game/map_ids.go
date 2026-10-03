@@ -1,0 +1,54 @@
+package game
+
+// MapID names preserve authored content references whose location names have not
+// been verified. Replace the numeric suffix with a location name when established
+// from the assets or legacy implementation; keep the value unchanged.
+const (
+	MapID10000 = 10000
+	MapID10001 = 10001
+	MapID10017 = 10017
+	MapID10024 = 10024
+	MapID10028 = 10028
+	MapID10036 = 10036
+	MapID11005 = 11005
+	MapID11013 = 11013
+	MapID11015 = 11015
+	MapID11016 = 11016
+	MapID11032 = 11032
+	MapID11036 = 11036
+	MapID11037 = 11037
+	MapID11039 = 11039
+	MapID11040 = 11040
+	MapID11049 = 11049
+	MapID11050 = 11050
+	MapID11052 = 11052
+	MapID11075 = 11075
+	MapID11077 = 11077
+	MapID11094 = 11094
+	MapID11148 = 11148
+	MapID11149 = 11149
+	MapID11157 = 11157
+	MapID11158 = 11158
+	MapID11159 = 11159
+	MapID11162 = 11162
+	MapID11166 = 11166
+	MapID11167 = 11167
+	MapID11185 = 11185
+	MapID12000 = 12000
+	MapID12001 = 12001
+	MapID12002 = 12002
+	MapID12050 = 12050
+	MapID12052 = 12052
+	MapID12055 = 12055
+	MapID12211 = 12211
+	MapID12268 = 12268
+	MapID12380 = 12380
+	MapID12508 = 12508
+	MapID12523 = 12523
+	MapID60001 = 60001
+	MapID60002 = 60002
+	MapID60003 = 60003
+	MapID60005 = 60005
+	MapID60014 = 60014
+	MapID60020 = 60020
+)

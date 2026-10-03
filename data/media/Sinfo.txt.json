@@ -1,0 +1,9 @@
+{
+  "source": "Sinfo.txt",
+  "source_bytes": 40,
+  "source_sha256": "f92d6dfee75c00b55509d8ce3963e2a1054bf63131bbd7f8eb98031cc8c7d98c",
+  "format": "text-resource",
+  "source_hex": "57696e646f7753637265656e0d0a436f6d706c657869746965730d0a46756c6c4d656d6f72790d0a",
+  "encoding": "utf-8-sig",
+  "text": "WindowScreen\r\nComplexities\r\nFullMemory\r\n"
+}

@@ -1,0 +1,14 @@
+{
+  "source": "images/conner_line.gif",
+  "source_bytes": 44,
+  "source_sha256": "b3f7b2a7ac008d5b129655de06878dbb6e78c9d06ac6bf18cc870247a58818e0",
+  "format": "gif-animation",
+  "loop": null,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 0,
+      "disposal": 0
+    }
+  ]
+}

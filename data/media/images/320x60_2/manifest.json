@@ -1,0 +1,104 @@
+{
+  "source": "images/320x60_2.gif",
+  "source_bytes": 81710,
+  "source_sha256": "f7058b64d5acc91073cb976b64ec7314870aac6cd1ac3bfc32299ebee41d888e",
+  "format": "gif-animation",
+  "loop": 0,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_001.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_002.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_003.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_004.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_005.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_006.png",
+      "duration_ms": 150,
+      "disposal": 1
+    },
+    {
+      "png": "frame_007.png",
+      "duration_ms": 300,
+      "disposal": 1
+    },
+    {
+      "png": "frame_008.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_009.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_010.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_011.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_012.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_013.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_014.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_015.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_016.png",
+      "duration_ms": 0,
+      "disposal": 1
+    },
+    {
+      "png": "frame_017.png",
+      "duration_ms": 100,
+      "disposal": 1
+    },
+    {
+      "png": "frame_018.png",
+      "duration_ms": 2000,
+      "disposal": 1
+    }
+  ]
+}

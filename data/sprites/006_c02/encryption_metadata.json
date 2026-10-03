@@ -1,0 +1,20 @@
+{
+  "flags": 1,
+  "header_hex": "4a58414e020001000100000001000000",
+  "key_id": 1,
+  "records": [
+    {
+      "authentication_tag_hex": "46f0741765cc6dd24bfea149520da488",
+      "bytes": 417038,
+      "file_offset": 42,
+      "name": "6100.jmp",
+      "nonce_hex": "f78036da111f750037c0b9ee2d6a7a69",
+      "record_hex": "08363130302e6a6d700000000000000000f78036da111f750037c0b9ee2d6a7a6946f0741765cc6dd24bfea149520da4882a0000000e5d060000000000000000",
+      "source_status": "decrypted-and-authenticated"
+    }
+  ],
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/jma/006_c02.jxan",
+  "source_sha256": "8a22827bbe111ebdf80520d17f8af9b112f35e560bcfcf488b3242611d020f3e",
+  "version": 2
+}

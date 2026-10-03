@@ -1,0 +1,1101 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/Data/critical_hits.json",
+  "source_bytes": 20650,
+  "source_sha256": "9efbb4d7897e49e73f0d6e8cf4763ca6a5b8e721ce1ee926784fd77f7150701a",
+  "format": "plaintext-json",
+  "encoding": "utf-8",
+  "text": "{\n  \"damage_multiplier\": 1.5,\n  \"source_sha256\": \"041f29cdc94bdfd62e5b7a7a44112f9e8a523f7b2aacdec79ad110be1bbb36cb\",\n  \"items\": [\n    {\n      \"item_id\": 10068,\n      \"name\": \"Steel Falchion\",\n      \"chance_percent\": 170\n    },\n    {\n      \"item_id\": 10073,\n      \"name\": \"Warrior Katana\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 10100,\n      \"name\": \"Onikiri\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10101,\n      \"name\": \"Zhangetsu\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10102,\n      \"name\": \"Dragonblade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10103,\n      \"name\": \"Serpentblade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10105,\n      \"name\": \"Eternal Whip\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10106,\n      \"name\": \"Celestial Whip\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10107,\n      \"name\": \"Scarlet Sickle\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10108,\n      \"name\": \"Hell Sickle\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10114,\n      \"name\": \"Blood Reaper\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10115,\n      \"name\": \"Ghost Reaper\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10117,\n      \"name\": \"Ghost Rhapsody\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10118,\n      \"name\": \"Soul Rhapsody\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10129,\n      \"name\": \"Flare Saber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10130,\n      \"name\": \"Thunder Saber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10136,\n      \"name\": \"Blood Thirst\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10137,\n      \"name\": \"Jungle Law\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10145,\n      \"name\": \"Vine Whip\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10146,\n      \"name\": \"Gilded Blade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10153,\n      \"name\": \"Sunlight Saber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10154,\n      \"name\": \"Aegis Saber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10216,\n      \"name\": \"C.Tassel Blade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10217,\n      \"name\": \"B.Tassel Blade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 10243,\n      \"name\": \"R.Sakura Blade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11048,\n      \"name\": \"Sky Sword+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 11050,\n      \"name\": \"Lord Sword+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 11101,\n      \"name\": \"Sky Sword\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 11102,\n      \"name\": \"Lord Sword\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 11103,\n      \"name\": \"Sky Sword+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 11104,\n      \"name\": \"Lord Sword+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 11105,\n      \"name\": \"Sky Sword+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 11106,\n      \"name\": \"Lord Sword+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 11107,\n      \"name\": \"Sky Sword+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 11108,\n      \"name\": \"Lord Sword+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 11110,\n      \"name\": \"Sky Sword+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 11111,\n      \"name\": \"Lord Sword+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 11114,\n      \"name\": \"Dragon Sword\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 11117,\n      \"name\": \"Sky Sword+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 11118,\n      \"name\": \"Lord Sword+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 11130,\n      \"name\": \"Sky Sword+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 11131,\n      \"name\": \"Lord Sword+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 11133,\n      \"name\": \"Sky Sword+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 11134,\n      \"name\": \"Lord Sword+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 11138,\n      \"name\": \"Sky Sword +9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 11139,\n      \"name\": \"Lord Sword +9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 11146,\n      \"name\": \"Sky Sword +10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11147,\n      \"name\": \"Lord Sword +10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11152,\n      \"name\": \"Damascus Sword\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 11165,\n      \"name\": \"Frozen T.Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11174,\n      \"name\": \"Guardian Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11175,\n      \"name\": \"Souleater Swor\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11177,\n      \"name\": \"Broad Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11181,\n      \"name\": \"Blazing Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11183,\n      \"name\": \"Wind Cut Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11187,\n      \"name\": \"Amethyst Epee\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11188,\n      \"name\": \"G.Red Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11189,\n      \"name\": \"G.Blue Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11212,\n      \"name\": \"Sun Lightsaber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11213,\n      \"name\": \"Sky Lightsaber\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11238,\n      \"name\": \"Snake Umbrella\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11272,\n      \"name\": \"Shinobi Scythe\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11281,\n      \"name\": \"Execution Swor\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11283,\n      \"name\": \"Viridian Blade\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11289,\n      \"name\": \"Sword of Oath\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11297,\n      \"name\": \"Exalted Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11303,\n      \"name\": \"Snowdrift Lord\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11309,\n      \"name\": \"Misty Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 11310,\n      \"name\": \"Wutong Sword\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12072,\n      \"name\": \"Beast Fork\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 12073,\n      \"name\": \"Spiri Fork\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 12074,\n      \"name\": \"Beast Fork+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 12075,\n      \"name\": \"Spiri Fork+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 12076,\n      \"name\": \"Beast Fork+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 12077,\n      \"name\": \"Spiri Fork+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 12078,\n      \"name\": \"Beast Fork+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 12079,\n      \"name\": \"Spiri Fork+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 12080,\n      \"name\": \"Beast Fork+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 12081,\n      \"name\": \"Spiri Fork+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 12082,\n      \"name\": \"Beast Fork+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 12083,\n      \"name\": \"Spiri Fork+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 12085,\n      \"name\": \"Evil Fork\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 12089,\n      \"name\": \"Acuminate Halb\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 12504,\n      \"name\": \"Beast Fork+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 12505,\n      \"name\": \"Spiri Fork+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 12093,\n      \"name\": \"Beast Fork+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12094,\n      \"name\": \"Spirit Folk+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12096,\n      \"name\": \"Beast Fork+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 12097,\n      \"name\": \"Spirit Folk+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 12099,\n      \"name\": \"Beast Fork +9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 12100,\n      \"name\": \"Spiri Fork +9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 12101,\n      \"name\": \"Thunder Spear\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 12102,\n      \"name\": \"ThunderSpear+1\",\n      \"chance_percent\": 26\n    },\n    {\n      \"item_id\": 12103,\n      \"name\": \"ThunderSpear+2\",\n      \"chance_percent\": 28\n    },\n    {\n      \"item_id\": 12104,\n      \"name\": \"ThunderSpear+3\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 12105,\n      \"name\": \"ThunderSpear+4\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 12106,\n      \"name\": \"ThunderSpear+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 12107,\n      \"name\": \"ThunderSpear+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 12108,\n      \"name\": \"ThunderSpear+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12109,\n      \"name\": \"ThunderSpear+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 12110,\n      \"name\": \"ThunderSpear+9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 12115,\n      \"name\": \"ThunderSpea+10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12116,\n      \"name\": \"Beast Fork+10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12117,\n      \"name\": \"Spiri Fork+10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12126,\n      \"name\": \"Abyss Demon Fo\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12130,\n      \"name\": \"Nightmare Fork\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 12135,\n      \"name\": \"Darkbane Halbe\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12136,\n      \"name\": \"Abyssbane Halb\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12143,\n      \"name\": \"Fire Spear\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12144,\n      \"name\": \"Deep Sea Spear\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 12165,\n      \"name\": \"War Sp.Shield\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 12175,\n      \"name\": \"Angel Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12176,\n      \"name\": \"Fairy Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12180,\n      \"name\": \"Glacier Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12183,\n      \"name\": \"Quiet Summer\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12186,\n      \"name\": \"Inari Naginata\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12190,\n      \"name\": \"E.Knight Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12196,\n      \"name\": \"Execution Spea\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12208,\n      \"name\": \"W.Knight Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 12209,\n      \"name\": \"Bamboo T.Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 13059,\n      \"name\": \"Crescent Bow+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 13060,\n      \"name\": \"Crescent Bow+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 13061,\n      \"name\": \"Crescent Bow\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 13062,\n      \"name\": \"Crescent Bow+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 13063,\n      \"name\": \"Crescent Bow+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 13068,\n      \"name\": \"Crescent Bow+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 13069,\n      \"name\": \"Crescent Bow+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 13077,\n      \"name\": \"Frost Bow\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 13082,\n      \"name\": \"Fire Karma Bow\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 13083,\n      \"name\": \"Green Vine Bow\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 13084,\n      \"name\": \"Dragon Bow\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 13086,\n      \"name\": \"Wisteria Bow\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 13091,\n      \"name\": \"True Love Bow\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 13097,\n      \"name\": \"Seawing Bow\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 14076,\n      \"name\": \"Polished Wand\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 14078,\n      \"name\": \"Light Wand\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 14079,\n      \"name\": \"Polish Wand+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 14080,\n      \"name\": \"Light Wand+1\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 14081,\n      \"name\": \"Polish Wand+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 14082,\n      \"name\": \"Light Wand+2\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 14083,\n      \"name\": \"Polish Wand+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 14084,\n      \"name\": \"Light Wand+3\",\n      \"chance_percent\": 32\n    },\n    {\n      \"item_id\": 14085,\n      \"name\": \"Polish Wand+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 14086,\n      \"name\": \"Light Wand+4\",\n      \"chance_percent\": 34\n    },\n    {\n      \"item_id\": 14114,\n      \"name\": \"Thut's Wand\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 14115,\n      \"name\": \"Dragon Soul Wa\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 14120,\n      \"name\": \"Polish Wand+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 14121,\n      \"name\": \"Light Wand+5\",\n      \"chance_percent\": 36\n    },\n    {\n      \"item_id\": 14122,\n      \"name\": \"Polish Wand+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 14123,\n      \"name\": \"Light Wand+6\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 14131,\n      \"name\": \"Polish Wand+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 14132,\n      \"name\": \"Light Wand+7\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 14136,\n      \"name\": \"Polish Wand+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 14137,\n      \"name\": \"Light Wand+8\",\n      \"chance_percent\": 42\n    },\n    {\n      \"item_id\": 14144,\n      \"name\": \"Polish Wand+9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 14145,\n      \"name\": \"Light Wand +9\",\n      \"chance_percent\": 44\n    },\n    {\n      \"item_id\": 14161,\n      \"name\": \"Polished Wa+10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14162,\n      \"name\": \"Light Wand+10\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14185,\n      \"name\": \"Love Wand\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14193,\n      \"name\": \"Pink Paw Cane\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14194,\n      \"name\": \"Blue Paw Cane\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14204,\n      \"name\": \"E.Seer Wand\",\n      \"chance_percent\": 38\n    },\n    {\n      \"item_id\": 14205,\n      \"name\": \"Twilight Wand\",\n      \"chance_percent\": 24\n    },\n    {\n      \"item_id\": 14221,\n      \"name\": \"Bear Wand\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14235,\n      \"name\": \"Floating Star\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14236,\n      \"name\": \"Phantom Moon\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14237,\n      \"name\": \"Cotton Candy\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14240,\n      \"name\": \"Red Rose Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14243,\n      \"name\": \"B.Feather Staf\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14245,\n      \"name\": \"Blue Rose Staf\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14252,\n      \"name\": \"Heaven Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14253,\n      \"name\": \"Mystic Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14254,\n      \"name\": \"Inari Flute\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 14261,\n      \"name\": \"E.Knight Scept\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14262,\n      \"name\": \"Shinobi Scroll\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14269,\n      \"name\": \"Grn Moon Wand\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14270,\n      \"name\": \"Purp Moon Wand\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14278,\n      \"name\": \"Viridian Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14284,\n      \"name\": \"Wisdom Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14286,\n      \"name\": \"Mystic Scroll\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14287,\n      \"name\": \"Primal Scroll\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 14290,\n      \"name\": \"Cloud T.Lance\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 15073,\n      \"name\": \"Gale Claws\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 15076,\n      \"name\": \"Night Claws\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17074,\n      \"name\": \"Blaze Tomahawk\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17075,\n      \"name\": \"Ocean Tomahawk\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17082,\n      \"name\": \"Gold Tomahawk\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17083,\n      \"name\": \"Silver Tomahaw\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17084,\n      \"name\": \"Summer Energy\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 17085,\n      \"name\": \"Grave Digger\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 18090,\n      \"name\": \"Titan Hammer\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 18096,\n      \"name\": \"Watch Suitcase\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 18102,\n      \"name\": \"Berserk Guitar\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 18103,\n      \"name\": \"Fervent Guitar\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 18108,\n      \"name\": \"Dual Baguettes\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 18109,\n      \"name\": \"Hymn Bell\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19056,\n      \"name\": \"Dragon Fan\",\n      \"chance_percent\": 14\n    },\n    {\n      \"item_id\": 19058,\n      \"name\": \"Light Twin Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19062,\n      \"name\": \"Book of Power\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19063,\n      \"name\": \"Book of Magic\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19067,\n      \"name\": \"White Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19068,\n      \"name\": \"Azure Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19074,\n      \"name\": \"GoldDragon Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19078,\n      \"name\": \"Star Fire Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19079,\n      \"name\": \"Star River Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19082,\n      \"name\": \"Green Twin Fan\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 19083,\n      \"name\": \"Snow Twin Fan\",\n      \"chance_percent\": 40\n    },\n    {\n      \"item_id\": 19085,\n      \"name\": \"Crimson Skygem\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19086,\n      \"name\": \"Clear Skygem\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19087,\n      \"name\": \"Bless Crystal\",\n      \"chance_percent\": 30\n    },\n    {\n      \"item_id\": 19094,\n      \"name\": \"Hymn Codex\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19105,\n      \"name\": \"Frostnight Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19106,\n      \"name\": \"Bamboo Fan\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19113,\n      \"name\": \"Exalted Ward\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19122,\n      \"name\": \"Snowdrift Rove\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19124,\n      \"name\": \"W.Knight Staff\",\n      \"chance_percent\": 46\n    },\n    {\n      \"item_id\": 19142,\n      \"name\": \"R.Sakura Fan\",\n      \"chance_percent\": 46\n    }\n  ]\n}\n",
+  "source_hex": "7b0a20202264616d6167655f6d756c7469706c696572223a20312e352c0a202022736f757263655f736861323536223a202230343166323963646339346264666436326535623761376134343131326639653861353233663762326161636465633739616431313062653162626233366362222c0a2020226974656d73223a205b0a202020207b0a202020202020226974656d5f6964223a2031303036382c0a202020202020226e616d65223a2022537465656c2046616c6368696f6e222c0a202020202020226368616e63655f70657263656e74223a203137300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303037332c0a202020202020226e616d65223a202257617272696f72204b6174616e61222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130302c0a202020202020226e616d65223a20224f6e696b697269222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130312c0a202020202020226e616d65223a20225a68616e6765747375222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130322c0a202020202020226e616d65223a2022447261676f6e626c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130332c0a202020202020226e616d65223a202253657270656e74626c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130352c0a202020202020226e616d65223a2022457465726e616c2057686970222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130362c0a202020202020226e616d65223a202243656c65737469616c2057686970222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130372c0a202020202020226e616d65223a2022536361726c6574205369636b6c65222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303130382c0a202020202020226e616d65223a202248656c6c205369636b6c65222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303131342c0a202020202020226e616d65223a2022426c6f6f6420526561706572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303131352c0a202020202020226e616d65223a202247686f737420526561706572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303131372c0a202020202020226e616d65223a202247686f73742052686170736f6479222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303131382c0a202020202020226e616d65223a2022536f756c2052686170736f6479222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303132392c0a202020202020226e616d65223a2022466c617265205361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303133302c0a202020202020226e616d65223a20225468756e646572205361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303133362c0a202020202020226e616d65223a2022426c6f6f6420546869727374222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303133372c0a202020202020226e616d65223a20224a756e676c65204c6177222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303134352c0a202020202020226e616d65223a202256696e652057686970222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303134362c0a202020202020226e616d65223a202247696c64656420426c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303135332c0a202020202020226e616d65223a202253756e6c69676874205361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303135342c0a202020202020226e616d65223a20224165676973205361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303231362c0a202020202020226e616d65223a2022432e54617373656c20426c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303231372c0a202020202020226e616d65223a2022422e54617373656c20426c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031303234332c0a202020202020226e616d65223a2022522e53616b75726120426c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313034382c0a202020202020226e616d65223a2022536b792053776f72642b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313035302c0a202020202020226e616d65223a20224c6f72642053776f72642b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130312c0a202020202020226e616d65223a2022536b792053776f7264222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130322c0a202020202020226e616d65223a20224c6f72642053776f7264222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130332c0a202020202020226e616d65223a2022536b792053776f72642b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130342c0a202020202020226e616d65223a20224c6f72642053776f72642b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130352c0a202020202020226e616d65223a2022536b792053776f72642b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130362c0a202020202020226e616d65223a20224c6f72642053776f72642b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130372c0a202020202020226e616d65223a2022536b792053776f72642b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313130382c0a202020202020226e616d65223a20224c6f72642053776f72642b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313131302c0a202020202020226e616d65223a2022536b792053776f72642b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313131312c0a202020202020226e616d65223a20224c6f72642053776f72642b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313131342c0a202020202020226e616d65223a2022447261676f6e2053776f7264222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313131372c0a202020202020226e616d65223a2022536b792053776f72642b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313131382c0a202020202020226e616d65223a20224c6f72642053776f72642b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133302c0a202020202020226e616d65223a2022536b792053776f72642b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133312c0a202020202020226e616d65223a20224c6f72642053776f72642b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133332c0a202020202020226e616d65223a2022536b792053776f72642b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133342c0a202020202020226e616d65223a20224c6f72642053776f72642b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133382c0a202020202020226e616d65223a2022536b792053776f7264202b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313133392c0a202020202020226e616d65223a20224c6f72642053776f7264202b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313134362c0a202020202020226e616d65223a2022536b792053776f7264202b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313134372c0a202020202020226e616d65223a20224c6f72642053776f7264202b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313135322c0a202020202020226e616d65223a202244616d61736375732053776f7264222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313136352c0a202020202020226e616d65223a202246726f7a656e20542e53776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313137342c0a202020202020226e616d65223a2022477561726469616e2053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313137352c0a202020202020226e616d65223a2022536f756c65617465722053776f72222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313137372c0a202020202020226e616d65223a202242726f61642053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313138312c0a202020202020226e616d65223a2022426c617a696e672053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313138332c0a202020202020226e616d65223a202257696e64204375742053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313138372c0a202020202020226e616d65223a2022416d6574687973742045706565222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313138382c0a202020202020226e616d65223a2022472e5265642053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313138392c0a202020202020226e616d65223a2022472e426c75652053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313231322c0a202020202020226e616d65223a202253756e204c696768747361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313231332c0a202020202020226e616d65223a2022536b79204c696768747361626572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313233382c0a202020202020226e616d65223a2022536e616b6520556d6272656c6c61222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313237322c0a202020202020226e616d65223a20225368696e6f626920536379746865222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313238312c0a202020202020226e616d65223a2022457865637574696f6e2053776f72222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313238332c0a202020202020226e616d65223a2022566972696469616e20426c616465222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313238392c0a202020202020226e616d65223a202253776f7264206f66204f617468222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313239372c0a202020202020226e616d65223a20224578616c7465642053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313330332c0a202020202020226e616d65223a2022536e6f776472696674204c6f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313330392c0a202020202020226e616d65223a20224d697374792053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031313331302c0a202020202020226e616d65223a20225775746f6e672053776f7264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037322c0a202020202020226e616d65223a2022426561737420466f726b222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037332c0a202020202020226e616d65223a2022537069726920466f726b222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037342c0a202020202020226e616d65223a2022426561737420466f726b2b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037352c0a202020202020226e616d65223a2022537069726920466f726b2b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037362c0a202020202020226e616d65223a2022426561737420466f726b2b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037372c0a202020202020226e616d65223a2022537069726920466f726b2b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037382c0a202020202020226e616d65223a2022426561737420466f726b2b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323037392c0a202020202020226e616d65223a2022537069726920466f726b2b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038302c0a202020202020226e616d65223a2022426561737420466f726b2b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038312c0a202020202020226e616d65223a2022537069726920466f726b2b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038322c0a202020202020226e616d65223a2022426561737420466f726b2b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038332c0a202020202020226e616d65223a2022537069726920466f726b2b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038352c0a202020202020226e616d65223a20224576696c20466f726b222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323038392c0a202020202020226e616d65223a20224163756d696e6174652048616c62222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323530342c0a202020202020226e616d65223a2022426561737420466f726b2b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323530352c0a202020202020226e616d65223a2022537069726920466f726b2b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323039332c0a202020202020226e616d65223a2022426561737420466f726b2b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323039342c0a202020202020226e616d65223a202253706972697420466f6c6b2b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323039362c0a202020202020226e616d65223a2022426561737420466f726b2b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323039372c0a202020202020226e616d65223a202253706972697420466f6c6b2b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323039392c0a202020202020226e616d65223a2022426561737420466f726b202b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130302c0a202020202020226e616d65223a2022537069726920466f726b202b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130312c0a202020202020226e616d65223a20225468756e646572205370656172222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130322c0a202020202020226e616d65223a20225468756e64657253706561722b31222c0a202020202020226368616e63655f70657263656e74223a2032360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130332c0a202020202020226e616d65223a20225468756e64657253706561722b32222c0a202020202020226368616e63655f70657263656e74223a2032380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130342c0a202020202020226e616d65223a20225468756e64657253706561722b33222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130352c0a202020202020226e616d65223a20225468756e64657253706561722b34222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130362c0a202020202020226e616d65223a20225468756e64657253706561722b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130372c0a202020202020226e616d65223a20225468756e64657253706561722b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130382c0a202020202020226e616d65223a20225468756e64657253706561722b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323130392c0a202020202020226e616d65223a20225468756e64657253706561722b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323131302c0a202020202020226e616d65223a20225468756e64657253706561722b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323131352c0a202020202020226e616d65223a20225468756e646572537065612b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323131362c0a202020202020226e616d65223a2022426561737420466f726b2b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323131372c0a202020202020226e616d65223a2022537069726920466f726b2b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323132362c0a202020202020226e616d65223a202241627973732044656d6f6e20466f222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323133302c0a202020202020226e616d65223a20224e696768746d61726520466f726b222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323133352c0a202020202020226e616d65223a20224461726b62616e652048616c6265222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323133362c0a202020202020226e616d65223a2022416279737362616e652048616c62222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323134332c0a202020202020226e616d65223a202246697265205370656172222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323134342c0a202020202020226e616d65223a20224465657020536561205370656172222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323136352c0a202020202020226e616d65223a20225761722053702e536869656c64222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323137352c0a202020202020226e616d65223a2022416e67656c204c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323137362c0a202020202020226e616d65223a20224661697279204c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323138302c0a202020202020226e616d65223a2022476c6163696572204c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323138332c0a202020202020226e616d65223a202251756965742053756d6d6572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323138362c0a202020202020226e616d65223a2022496e617269204e6167696e617461222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323139302c0a202020202020226e616d65223a2022452e4b6e69676874204c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323139362c0a202020202020226e616d65223a2022457865637574696f6e2053706561222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323230382c0a202020202020226e616d65223a2022572e4b6e69676874204c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031323230392c0a202020202020226e616d65223a202242616d626f6f20542e4c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333035392c0a202020202020226e616d65223a20224372657363656e7420426f772b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036302c0a202020202020226e616d65223a20224372657363656e7420426f772b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036312c0a202020202020226e616d65223a20224372657363656e7420426f77222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036322c0a202020202020226e616d65223a20224372657363656e7420426f772b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036332c0a202020202020226e616d65223a20224372657363656e7420426f772b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036382c0a202020202020226e616d65223a20224372657363656e7420426f772b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333036392c0a202020202020226e616d65223a20224372657363656e7420426f772b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333037372c0a202020202020226e616d65223a202246726f737420426f77222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333038322c0a202020202020226e616d65223a202246697265204b61726d6120426f77222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333038332c0a202020202020226e616d65223a2022477265656e2056696e6520426f77222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333038342c0a202020202020226e616d65223a2022447261676f6e20426f77222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333038362c0a202020202020226e616d65223a2022576973746572696120426f77222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333039312c0a202020202020226e616d65223a202254727565204c6f766520426f77222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031333039372c0a202020202020226e616d65223a202253656177696e6720426f77222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343037362c0a202020202020226e616d65223a2022506f6c69736865642057616e64222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343037382c0a202020202020226e616d65223a20224c696768742057616e64222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343037392c0a202020202020226e616d65223a2022506f6c6973682057616e642b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038302c0a202020202020226e616d65223a20224c696768742057616e642b31222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038312c0a202020202020226e616d65223a2022506f6c6973682057616e642b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038322c0a202020202020226e616d65223a20224c696768742057616e642b32222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038332c0a202020202020226e616d65223a2022506f6c6973682057616e642b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038342c0a202020202020226e616d65223a20224c696768742057616e642b33222c0a202020202020226368616e63655f70657263656e74223a2033320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038352c0a202020202020226e616d65223a2022506f6c6973682057616e642b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343038362c0a202020202020226e616d65223a20224c696768742057616e642b34222c0a202020202020226368616e63655f70657263656e74223a2033340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343131342c0a202020202020226e616d65223a20225468757427732057616e64222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343131352c0a202020202020226e616d65223a2022447261676f6e20536f756c205761222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343132302c0a202020202020226e616d65223a2022506f6c6973682057616e642b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343132312c0a202020202020226e616d65223a20224c696768742057616e642b35222c0a202020202020226368616e63655f70657263656e74223a2033360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343132322c0a202020202020226e616d65223a2022506f6c6973682057616e642b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343132332c0a202020202020226e616d65223a20224c696768742057616e642b36222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343133312c0a202020202020226e616d65223a2022506f6c6973682057616e642b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343133322c0a202020202020226e616d65223a20224c696768742057616e642b37222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343133362c0a202020202020226e616d65223a2022506f6c6973682057616e642b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343133372c0a202020202020226e616d65223a20224c696768742057616e642b38222c0a202020202020226368616e63655f70657263656e74223a2034320a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343134342c0a202020202020226e616d65223a2022506f6c6973682057616e642b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343134352c0a202020202020226e616d65223a20224c696768742057616e64202b39222c0a202020202020226368616e63655f70657263656e74223a2034340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343136312c0a202020202020226e616d65223a2022506f6c69736865642057612b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343136322c0a202020202020226e616d65223a20224c696768742057616e642b3130222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343138352c0a202020202020226e616d65223a20224c6f76652057616e64222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343139332c0a202020202020226e616d65223a202250696e6b205061772043616e65222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343139342c0a202020202020226e616d65223a2022426c7565205061772043616e65222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343230342c0a202020202020226e616d65223a2022452e536565722057616e64222c0a202020202020226368616e63655f70657263656e74223a2033380a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343230352c0a202020202020226e616d65223a20225477696c696768742057616e64222c0a202020202020226368616e63655f70657263656e74223a2032340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343232312c0a202020202020226e616d65223a2022426561722057616e64222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343233352c0a202020202020226e616d65223a2022466c6f6174696e672053746172222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343233362c0a202020202020226e616d65223a20225068616e746f6d204d6f6f6e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343233372c0a202020202020226e616d65223a2022436f74746f6e2043616e6479222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343234302c0a202020202020226e616d65223a202252656420526f7365205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343234332c0a202020202020226e616d65223a2022422e466561746865722053746166222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343234352c0a202020202020226e616d65223a2022426c756520526f73652053746166222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343235322c0a202020202020226e616d65223a202248656176656e205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343235332c0a202020202020226e616d65223a20224d7973746963205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343235342c0a202020202020226e616d65223a2022496e61726920466c757465222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343236312c0a202020202020226e616d65223a2022452e4b6e69676874205363657074222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343236322c0a202020202020226e616d65223a20225368696e6f6269205363726f6c6c222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343236392c0a202020202020226e616d65223a202247726e204d6f6f6e2057616e64222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343237302c0a202020202020226e616d65223a202250757270204d6f6f6e2057616e64222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343237382c0a202020202020226e616d65223a2022566972696469616e205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343238342c0a202020202020226e616d65223a2022576973646f6d205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343238362c0a202020202020226e616d65223a20224d7973746963205363726f6c6c222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343238372c0a202020202020226e616d65223a20225072696d616c205363726f6c6c222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031343239302c0a202020202020226e616d65223a2022436c6f756420542e4c616e6365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031353037332c0a202020202020226e616d65223a202247616c6520436c617773222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031353037362c0a202020202020226e616d65223a20224e6967687420436c617773222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373037342c0a202020202020226e616d65223a2022426c617a6520546f6d616861776b222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373037352c0a202020202020226e616d65223a20224f6365616e20546f6d616861776b222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373038322c0a202020202020226e616d65223a2022476f6c6420546f6d616861776b222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373038332c0a202020202020226e616d65223a202253696c76657220546f6d61686177222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373038342c0a202020202020226e616d65223a202253756d6d657220456e65726779222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031373038352c0a202020202020226e616d65223a2022477261766520446967676572222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383039302c0a202020202020226e616d65223a2022546974616e2048616d6d6572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383039362c0a202020202020226e616d65223a20225761746368205375697463617365222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383130322c0a202020202020226e616d65223a20224265727365726b20477569746172222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383130332c0a202020202020226e616d65223a202246657276656e7420477569746172222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383130382c0a202020202020226e616d65223a20224475616c20426167756574746573222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031383130392c0a202020202020226e616d65223a202248796d6e2042656c6c222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393035362c0a202020202020226e616d65223a2022447261676f6e2046616e222c0a202020202020226368616e63655f70657263656e74223a2031340a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393035382c0a202020202020226e616d65223a20224c69676874205477696e2046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393036322c0a202020202020226e616d65223a2022426f6f6b206f6620506f776572222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393036332c0a202020202020226e616d65223a2022426f6f6b206f66204d61676963222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393036372c0a202020202020226e616d65223a202257686974652046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393036382c0a202020202020226e616d65223a2022417a7572652046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393037342c0a202020202020226e616d65223a2022476f6c64447261676f6e2046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393037382c0a202020202020226e616d65223a20225374617220466972652046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393037392c0a202020202020226e616d65223a2022537461722052697665722046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393038322c0a202020202020226e616d65223a2022477265656e205477696e2046616e222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393038332c0a202020202020226e616d65223a2022536e6f77205477696e2046616e222c0a202020202020226368616e63655f70657263656e74223a2034300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393038352c0a202020202020226e616d65223a20224372696d736f6e20536b7967656d222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393038362c0a202020202020226e616d65223a2022436c65617220536b7967656d222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393038372c0a202020202020226e616d65223a2022426c657373204372797374616c222c0a202020202020226368616e63655f70657263656e74223a2033300a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393039342c0a202020202020226e616d65223a202248796d6e20436f646578222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393130352c0a202020202020226e616d65223a202246726f73746e696768742046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393130362c0a202020202020226e616d65223a202242616d626f6f2046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393131332c0a202020202020226e616d65223a20224578616c7465642057617264222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393132322c0a202020202020226e616d65223a2022536e6f77647269667420526f7665222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393132342c0a202020202020226e616d65223a2022572e4b6e69676874205374616666222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d2c0a202020207b0a202020202020226974656d5f6964223a2031393134322c0a202020202020226e616d65223a2022522e53616b7572612046616e222c0a202020202020226368616e63655f70657263656e74223a2034360a202020207d0a20205d0a7d0a",
+  "value": {
+    "damage_multiplier": 1.5,
+    "source_sha256": "041f29cdc94bdfd62e5b7a7a44112f9e8a523f7b2aacdec79ad110be1bbb36cb",
+    "items": [
+      {
+        "item_id": 10068,
+        "name": "Steel Falchion",
+        "chance_percent": 170
+      },
+      {
+        "item_id": 10073,
+        "name": "Warrior Katana",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 10100,
+        "name": "Onikiri",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10101,
+        "name": "Zhangetsu",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10102,
+        "name": "Dragonblade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10103,
+        "name": "Serpentblade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10105,
+        "name": "Eternal Whip",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10106,
+        "name": "Celestial Whip",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10107,
+        "name": "Scarlet Sickle",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10108,
+        "name": "Hell Sickle",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10114,
+        "name": "Blood Reaper",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10115,
+        "name": "Ghost Reaper",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10117,
+        "name": "Ghost Rhapsody",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10118,
+        "name": "Soul Rhapsody",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10129,
+        "name": "Flare Saber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10130,
+        "name": "Thunder Saber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10136,
+        "name": "Blood Thirst",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10137,
+        "name": "Jungle Law",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10145,
+        "name": "Vine Whip",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10146,
+        "name": "Gilded Blade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10153,
+        "name": "Sunlight Saber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10154,
+        "name": "Aegis Saber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10216,
+        "name": "C.Tassel Blade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10217,
+        "name": "B.Tassel Blade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 10243,
+        "name": "R.Sakura Blade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11048,
+        "name": "Sky Sword+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 11050,
+        "name": "Lord Sword+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 11101,
+        "name": "Sky Sword",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 11102,
+        "name": "Lord Sword",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 11103,
+        "name": "Sky Sword+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 11104,
+        "name": "Lord Sword+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 11105,
+        "name": "Sky Sword+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 11106,
+        "name": "Lord Sword+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 11107,
+        "name": "Sky Sword+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 11108,
+        "name": "Lord Sword+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 11110,
+        "name": "Sky Sword+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 11111,
+        "name": "Lord Sword+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 11114,
+        "name": "Dragon Sword",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 11117,
+        "name": "Sky Sword+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 11118,
+        "name": "Lord Sword+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 11130,
+        "name": "Sky Sword+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 11131,
+        "name": "Lord Sword+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 11133,
+        "name": "Sky Sword+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 11134,
+        "name": "Lord Sword+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 11138,
+        "name": "Sky Sword +9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 11139,
+        "name": "Lord Sword +9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 11146,
+        "name": "Sky Sword +10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11147,
+        "name": "Lord Sword +10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11152,
+        "name": "Damascus Sword",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 11165,
+        "name": "Frozen T.Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11174,
+        "name": "Guardian Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11175,
+        "name": "Souleater Swor",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11177,
+        "name": "Broad Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11181,
+        "name": "Blazing Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11183,
+        "name": "Wind Cut Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11187,
+        "name": "Amethyst Epee",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11188,
+        "name": "G.Red Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11189,
+        "name": "G.Blue Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11212,
+        "name": "Sun Lightsaber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11213,
+        "name": "Sky Lightsaber",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11238,
+        "name": "Snake Umbrella",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11272,
+        "name": "Shinobi Scythe",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11281,
+        "name": "Execution Swor",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11283,
+        "name": "Viridian Blade",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11289,
+        "name": "Sword of Oath",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11297,
+        "name": "Exalted Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11303,
+        "name": "Snowdrift Lord",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11309,
+        "name": "Misty Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 11310,
+        "name": "Wutong Sword",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12072,
+        "name": "Beast Fork",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 12073,
+        "name": "Spiri Fork",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 12074,
+        "name": "Beast Fork+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 12075,
+        "name": "Spiri Fork+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 12076,
+        "name": "Beast Fork+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 12077,
+        "name": "Spiri Fork+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 12078,
+        "name": "Beast Fork+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 12079,
+        "name": "Spiri Fork+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 12080,
+        "name": "Beast Fork+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 12081,
+        "name": "Spiri Fork+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 12082,
+        "name": "Beast Fork+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 12083,
+        "name": "Spiri Fork+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 12085,
+        "name": "Evil Fork",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 12089,
+        "name": "Acuminate Halb",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 12504,
+        "name": "Beast Fork+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 12505,
+        "name": "Spiri Fork+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 12093,
+        "name": "Beast Fork+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12094,
+        "name": "Spirit Folk+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12096,
+        "name": "Beast Fork+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 12097,
+        "name": "Spirit Folk+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 12099,
+        "name": "Beast Fork +9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 12100,
+        "name": "Spiri Fork +9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 12101,
+        "name": "Thunder Spear",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 12102,
+        "name": "ThunderSpear+1",
+        "chance_percent": 26
+      },
+      {
+        "item_id": 12103,
+        "name": "ThunderSpear+2",
+        "chance_percent": 28
+      },
+      {
+        "item_id": 12104,
+        "name": "ThunderSpear+3",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 12105,
+        "name": "ThunderSpear+4",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 12106,
+        "name": "ThunderSpear+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 12107,
+        "name": "ThunderSpear+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 12108,
+        "name": "ThunderSpear+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12109,
+        "name": "ThunderSpear+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 12110,
+        "name": "ThunderSpear+9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 12115,
+        "name": "ThunderSpea+10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12116,
+        "name": "Beast Fork+10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12117,
+        "name": "Spiri Fork+10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12126,
+        "name": "Abyss Demon Fo",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12130,
+        "name": "Nightmare Fork",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 12135,
+        "name": "Darkbane Halbe",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12136,
+        "name": "Abyssbane Halb",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12143,
+        "name": "Fire Spear",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12144,
+        "name": "Deep Sea Spear",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 12165,
+        "name": "War Sp.Shield",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 12175,
+        "name": "Angel Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12176,
+        "name": "Fairy Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12180,
+        "name": "Glacier Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12183,
+        "name": "Quiet Summer",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12186,
+        "name": "Inari Naginata",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12190,
+        "name": "E.Knight Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12196,
+        "name": "Execution Spea",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12208,
+        "name": "W.Knight Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 12209,
+        "name": "Bamboo T.Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 13059,
+        "name": "Crescent Bow+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 13060,
+        "name": "Crescent Bow+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 13061,
+        "name": "Crescent Bow",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 13062,
+        "name": "Crescent Bow+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 13063,
+        "name": "Crescent Bow+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 13068,
+        "name": "Crescent Bow+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 13069,
+        "name": "Crescent Bow+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 13077,
+        "name": "Frost Bow",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 13082,
+        "name": "Fire Karma Bow",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 13083,
+        "name": "Green Vine Bow",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 13084,
+        "name": "Dragon Bow",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 13086,
+        "name": "Wisteria Bow",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 13091,
+        "name": "True Love Bow",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 13097,
+        "name": "Seawing Bow",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 14076,
+        "name": "Polished Wand",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 14078,
+        "name": "Light Wand",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 14079,
+        "name": "Polish Wand+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 14080,
+        "name": "Light Wand+1",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 14081,
+        "name": "Polish Wand+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 14082,
+        "name": "Light Wand+2",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 14083,
+        "name": "Polish Wand+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 14084,
+        "name": "Light Wand+3",
+        "chance_percent": 32
+      },
+      {
+        "item_id": 14085,
+        "name": "Polish Wand+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 14086,
+        "name": "Light Wand+4",
+        "chance_percent": 34
+      },
+      {
+        "item_id": 14114,
+        "name": "Thut's Wand",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 14115,
+        "name": "Dragon Soul Wa",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 14120,
+        "name": "Polish Wand+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 14121,
+        "name": "Light Wand+5",
+        "chance_percent": 36
+      },
+      {
+        "item_id": 14122,
+        "name": "Polish Wand+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 14123,
+        "name": "Light Wand+6",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 14131,
+        "name": "Polish Wand+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 14132,
+        "name": "Light Wand+7",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 14136,
+        "name": "Polish Wand+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 14137,
+        "name": "Light Wand+8",
+        "chance_percent": 42
+      },
+      {
+        "item_id": 14144,
+        "name": "Polish Wand+9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 14145,
+        "name": "Light Wand +9",
+        "chance_percent": 44
+      },
+      {
+        "item_id": 14161,
+        "name": "Polished Wa+10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14162,
+        "name": "Light Wand+10",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14185,
+        "name": "Love Wand",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14193,
+        "name": "Pink Paw Cane",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14194,
+        "name": "Blue Paw Cane",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14204,
+        "name": "E.Seer Wand",
+        "chance_percent": 38
+      },
+      {
+        "item_id": 14205,
+        "name": "Twilight Wand",
+        "chance_percent": 24
+      },
+      {
+        "item_id": 14221,
+        "name": "Bear Wand",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14235,
+        "name": "Floating Star",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14236,
+        "name": "Phantom Moon",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14237,
+        "name": "Cotton Candy",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14240,
+        "name": "Red Rose Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14243,
+        "name": "B.Feather Staf",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14245,
+        "name": "Blue Rose Staf",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14252,
+        "name": "Heaven Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14253,
+        "name": "Mystic Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14254,
+        "name": "Inari Flute",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 14261,
+        "name": "E.Knight Scept",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14262,
+        "name": "Shinobi Scroll",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14269,
+        "name": "Grn Moon Wand",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14270,
+        "name": "Purp Moon Wand",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14278,
+        "name": "Viridian Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14284,
+        "name": "Wisdom Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14286,
+        "name": "Mystic Scroll",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14287,
+        "name": "Primal Scroll",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 14290,
+        "name": "Cloud T.Lance",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 15073,
+        "name": "Gale Claws",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 15076,
+        "name": "Night Claws",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17074,
+        "name": "Blaze Tomahawk",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17075,
+        "name": "Ocean Tomahawk",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17082,
+        "name": "Gold Tomahawk",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17083,
+        "name": "Silver Tomahaw",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17084,
+        "name": "Summer Energy",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 17085,
+        "name": "Grave Digger",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 18090,
+        "name": "Titan Hammer",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 18096,
+        "name": "Watch Suitcase",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 18102,
+        "name": "Berserk Guitar",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 18103,
+        "name": "Fervent Guitar",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 18108,
+        "name": "Dual Baguettes",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 18109,
+        "name": "Hymn Bell",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19056,
+        "name": "Dragon Fan",
+        "chance_percent": 14
+      },
+      {
+        "item_id": 19058,
+        "name": "Light Twin Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19062,
+        "name": "Book of Power",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19063,
+        "name": "Book of Magic",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19067,
+        "name": "White Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19068,
+        "name": "Azure Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19074,
+        "name": "GoldDragon Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19078,
+        "name": "Star Fire Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19079,
+        "name": "Star River Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19082,
+        "name": "Green Twin Fan",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 19083,
+        "name": "Snow Twin Fan",
+        "chance_percent": 40
+      },
+      {
+        "item_id": 19085,
+        "name": "Crimson Skygem",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19086,
+        "name": "Clear Skygem",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19087,
+        "name": "Bless Crystal",
+        "chance_percent": 30
+      },
+      {
+        "item_id": 19094,
+        "name": "Hymn Codex",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19105,
+        "name": "Frostnight Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19106,
+        "name": "Bamboo Fan",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19113,
+        "name": "Exalted Ward",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19122,
+        "name": "Snowdrift Rove",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19124,
+        "name": "W.Knight Staff",
+        "chance_percent": 46
+      },
+      {
+        "item_id": 19142,
+        "name": "R.Sakura Fan",
+        "chance_percent": 46
+      }
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/listdata/vehicles.csv",
+  "source_bytes": 298,
+  "source_sha256": "b00807cab276c7d92dd327448de52ba3620c732db3718eb910f56206f23eedbd",
+  "format": "plaintext-csv",
+  "encoding": "utf-8",
+  "text": "48001,Hot-air Balloon \n48002,Airship \n48003,Boat \n48004,Mighty Plane \n48005,Jalor \n48006,Steam Ship \n48007,Motorbike \n48008,Magic Carpet \n48009,Turtle Car \n48010,Raft  \n48011,Cabriolet  \n48012,Yacht \n48013,UFO \n48014,Robot \n48015,???(??) \n48016,Robinson's Raft \n48017,Submarine \n48018,Space Craft \n",
+  "source_hex": "34383030312c486f742d6169722042616c6c6f6f6e200a34383030322c41697273686970200a34383030332c426f6174200a34383030342c4d696768747920506c616e65200a34383030352c4a616c6f72200a34383030362c537465616d2053686970200a34383030372c4d6f746f7262696b65200a34383030382c4d6167696320436172706574200a34383030392c547572746c6520436172200a34383031302c5261667420200a34383031312c43616272696f6c657420200a34383031322c5961636874200a34383031332c55464f200a34383031342c526f626f74200a34383031352c3f3f3f283f3f29200a34383031362c526f62696e736f6e27732052616674200a34383031372c5375626d6172696e65200a34383031382c5370616365204372616674200a",
+  "rows": [
+    [
+      "48001",
+      "Hot-air Balloon "
+    ],
+    [
+      "48002",
+      "Airship "
+    ],
+    [
+      "48003",
+      "Boat "
+    ],
+    [
+      "48004",
+      "Mighty Plane "
+    ],
+    [
+      "48005",
+      "Jalor "
+    ],
+    [
+      "48006",
+      "Steam Ship "
+    ],
+    [
+      "48007",
+      "Motorbike "
+    ],
+    [
+      "48008",
+      "Magic Carpet "
+    ],
+    [
+      "48009",
+      "Turtle Car "
+    ],
+    [
+      "48010",
+      "Raft  "
+    ],
+    [
+      "48011",
+      "Cabriolet  "
+    ],
+    [
+      "48012",
+      "Yacht "
+    ],
+    [
+      "48013",
+      "UFO "
+    ],
+    [
+      "48014",
+      "Robot "
+    ],
+    [
+      "48015",
+      "???(??) "
+    ],
+    [
+      "48016",
+      "Robinson's Raft "
+    ],
+    [
+      "48017",
+      "Submarine "
+    ],
+    [
+      "48018",
+      "Space Craft "
+    ]
+  ]
+}

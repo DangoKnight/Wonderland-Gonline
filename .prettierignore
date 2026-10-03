@@ -1,0 +1,7 @@
+/bin/
+/var/
+/node_modules/
+/coverage.out
+*.db
+config.local.json
+package-lock.json

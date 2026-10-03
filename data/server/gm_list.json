@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/Data/gm_list.txt",
+  "source_bytes": 90,
+  "source_sha256": "7f57b3cfff21d7b3825117a158aa1f8e65110de200b3ef8bfeea451ff9f32e33",
+  "format": "plaintext-text",
+  "encoding": "utf-8-sig",
+  "text": "# WLO GM & Administrator List\n# Format: One CharName or Username per line\ngmone\ngmone1\n",
+  "source_hex": "efbbbf2320574c4f20474d20262041646d696e6973747261746f72204c6973740a2320466f726d61743a204f6e6520436861724e616d65206f7220557365726e616d6520706572206c696e650a676d6f6e650a676d6f6e65310a"
+}

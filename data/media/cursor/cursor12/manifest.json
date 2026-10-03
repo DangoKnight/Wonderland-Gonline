@@ -1,0 +1,41 @@
+{
+  "source": "cursor/cursor12.ani",
+  "source_bytes": 2338,
+  "source_sha256": "a4b44c4d4031adf6d7e5ec75119234aab83d8ff3132c834e2aecdcf0a39b0c08",
+  "format": "animated-cursor",
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        0,
+        0
+      ],
+      "invert_pixels": []
+    }
+  ],
+  "declared_bytes": 2346,
+  "warnings": [
+    "Original RIFF size includes the eight-byte header twice."
+  ],
+  "header": {
+    "header_bytes": 36,
+    "frame_count": 1,
+    "step_count": 1,
+    "width": 0,
+    "height": 0,
+    "bit_depth": 0,
+    "planes": 0,
+    "default_jiffies": 10,
+    "flags": 3
+  },
+  "rate_jiffies": [
+    10
+  ],
+  "sequence": [
+    0
+  ],
+  "jiffies_per_second": 60,
+  "extra_chunks": []
+}

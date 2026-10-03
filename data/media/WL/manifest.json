@@ -1,0 +1,13 @@
+{
+  "source": "WL.ico",
+  "source_bytes": 9662,
+  "source_sha256": "3d65041ccc5be20ffa2cfd4d8402618f6820dbde9f1bbc85a8782fb22fc2af37",
+  "format": "icon",
+  "images": [
+    {
+      "png": "48x48.png",
+      "width": 48,
+      "height": 48
+    }
+  ]
+}

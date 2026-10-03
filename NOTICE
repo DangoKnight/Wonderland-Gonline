@@ -1,0 +1,11 @@
+Wonderland-Go contains Go translations of behavior and packet formats from
+Wonderland-Private-Server, source revision bc4a140 (Develop).
+The source project's GNU General Public License version 3 is preserved in LICENSE.
+Tracked JSON exports preserve original game data. The original WLRI installation
+and ignored image/audio/video payloads are supplied separately; the Go client
+loads its decompiled data directory and the server loads its SQL asset catalog. The original C# implementation remains the reference
+for gameplay behavior until each subsystem passes parity checks.
+
+Go dependencies retain their own licenses:
+- github.com/mattn/go-sqlite3: MIT; bundled SQLite is public domain.
+- golang.org/x/text: BSD 3-Clause.

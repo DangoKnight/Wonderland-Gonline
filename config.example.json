@@ -1,0 +1,15 @@
+{
+  "name": "Wonderland Go",
+  "login_address": "127.0.0.1:6414",
+  "world_address": "127.0.0.1:6415",
+  "status_address": "127.0.0.1:6416",
+  "status_server_ids": [
+    1,
+    101
+  ],
+  "http_address": "127.0.0.1:8080",
+  "database": "var/wonderland.db",
+  "max_connections": 512,
+  "idle_seconds": 120,
+  "assets_database": "var/assets.db"
+}

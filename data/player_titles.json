@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/data/PlayerTitleData.txt",
+  "source_bytes": 121,
+  "source_sha256": "895852511591aefcf8ba74cf12492c4281a96422a7b427790b297e80521f0942",
+  "format": "plaintext-text",
+  "encoding": "big5",
+  "text": "0,text,無稱號\r\n1,pic,稱霸聖夜的王者\r\n2,pic,聖夜的支配者\r\n3,pic,聖夜騎士\r\n4,pic,聖夜守護者\r\n5,pic,完美情人\r\n6,pic,超級玩家",
+  "source_hex": "302c746578742cb54cbad9b8b90d0a312c7069632cbad9c551b874a95daabaa4fdaacc0d0a322c7069632cb874a95daabaa4e4b074aacc0d0a332c7069632cb874a95dc34da4680d0a342c7069632cb874a95da675c540aacc0d0a352c7069632ca7b9acfcb1a1a4480d0a362c7069632cb657afc5aab1ae61"
+}

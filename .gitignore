@@ -1,0 +1,30 @@
+/var/
+/bin/
+/coverage.out
+/config.local.json
+/node_modules/
+/client/assets/
+/client/reference/
+__pycache__/
+
+# Regenerated local audio payloads (about 1.43 GB); indexes remain versioned.
+/data/audio/**/*.ogg
+
+# Generated image and native sprite payloads stay local; JSON metadata is tracked.
+/data/**/*.png
+/data/sprites/**/*.jma
+
+# Decoded PCM sound/voice/video audio remains local with image payloads.
+/data/**/*.wav
+/data/**/*.WAV
+
+# Preserved video containers remain local with other media payloads.
+/data/**/*.avi
+/data/**/*.AVI
+
+# Documented data mining
+/docs/References/*
+
+.claude/
+
+*.pyc

@@ -1,0 +1,2893 @@
+{
+  "version": 1,
+  "sprites": [
+    {
+      "name": "8115.jmp",
+      "index": 0,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 71,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8116.jmp",
+      "index": 1,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 142,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 213,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8117.jmp",
+      "index": 2,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 284,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 355,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8118.jmp",
+      "index": 3,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 426,
+            "y": 0,
+            "width": 71,
+            "height": 72
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 0
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 498,
+            "y": 0,
+            "width": 71,
+            "height": 72
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 0
+        }
+      ]
+    },
+    {
+      "name": "8119.jmp",
+      "index": 4,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 570,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 641,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8120.jmp",
+      "index": 5,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 712,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 783,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8121.jmp",
+      "index": 6,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "01.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 854,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "02.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 925,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    },
+    {
+      "name": "8122.jmp",
+      "index": 7,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": []
+        },
+        {
+          "name": "action_02",
+          "frames": []
+        },
+        {
+          "name": "action_03",
+          "frames": []
+        },
+        {
+          "name": "action_04",
+          "frames": []
+        },
+        {
+          "name": "action_05",
+          "frames": []
+        },
+        {
+          "name": "action_06",
+          "frames": []
+        },
+        {
+          "name": "action_07",
+          "frames": []
+        },
+        {
+          "name": "action_08",
+          "frames": []
+        },
+        {
+          "name": "action_09",
+          "frames": []
+        },
+        {
+          "name": "action_10",
+          "frames": []
+        },
+        {
+          "name": "action_11",
+          "frames": []
+        },
+        {
+          "name": "action_12",
+          "frames": []
+        },
+        {
+          "name": "action_13",
+          "frames": []
+        },
+        {
+          "name": "action_14",
+          "frames": []
+        },
+        {
+          "name": "action_15",
+          "frames": []
+        },
+        {
+          "name": "action_16",
+          "frames": []
+        },
+        {
+          "name": "action_17",
+          "frames": []
+        },
+        {
+          "name": "action_18",
+          "frames": []
+        },
+        {
+          "name": "action_19",
+          "frames": []
+        },
+        {
+          "name": "action_20",
+          "frames": []
+        },
+        {
+          "name": "action_21",
+          "frames": []
+        },
+        {
+          "name": "action_22",
+          "frames": []
+        },
+        {
+          "name": "action_23",
+          "frames": []
+        },
+        {
+          "name": "action_24",
+          "frames": []
+        },
+        {
+          "name": "action_25",
+          "frames": []
+        },
+        {
+          "name": "action_26",
+          "frames": []
+        },
+        {
+          "name": "action_27",
+          "frames": []
+        },
+        {
+          "name": "action_28",
+          "frames": []
+        },
+        {
+          "name": "action_29",
+          "frames": []
+        },
+        {
+          "name": "action_30",
+          "frames": []
+        },
+        {
+          "name": "action_31",
+          "frames": []
+        },
+        {
+          "name": "action_32",
+          "frames": []
+        },
+        {
+          "name": "action_33",
+          "frames": []
+        },
+        {
+          "name": "action_34",
+          "frames": []
+        },
+        {
+          "name": "action_35",
+          "frames": []
+        },
+        {
+          "name": "action_36",
+          "frames": []
+        },
+        {
+          "name": "action_37",
+          "frames": []
+        },
+        {
+          "name": "action_38",
+          "frames": []
+        },
+        {
+          "name": "action_39",
+          "frames": []
+        },
+        {
+          "name": "action_40",
+          "frames": []
+        },
+        {
+          "name": "action_41",
+          "frames": []
+        },
+        {
+          "name": "action_42",
+          "frames": []
+        },
+        {
+          "name": "action_43",
+          "frames": []
+        },
+        {
+          "name": "action_44",
+          "frames": []
+        },
+        {
+          "name": "action_45",
+          "frames": []
+        },
+        {
+          "name": "action_46",
+          "frames": []
+        },
+        {
+          "name": "action_47",
+          "frames": []
+        },
+        {
+          "name": "action_48",
+          "frames": []
+        },
+        {
+          "name": "action_49",
+          "frames": []
+        },
+        {
+          "name": "action_50",
+          "frames": []
+        },
+        {
+          "name": "action_51",
+          "frames": []
+        },
+        {
+          "name": "action_52",
+          "frames": []
+        },
+        {
+          "name": "action_53",
+          "frames": []
+        },
+        {
+          "name": "action_54",
+          "frames": []
+        },
+        {
+          "name": "action_55",
+          "frames": []
+        },
+        {
+          "name": "action_56",
+          "frames": []
+        },
+        {
+          "name": "action_57",
+          "frames": []
+        },
+        {
+          "name": "action_58",
+          "frames": []
+        },
+        {
+          "name": "action_59",
+          "frames": []
+        },
+        {
+          "name": "action_60",
+          "frames": []
+        },
+        {
+          "name": "action_61",
+          "frames": []
+        },
+        {
+          "name": "action_62",
+          "frames": []
+        },
+        {
+          "name": "action_63",
+          "frames": []
+        },
+        {
+          "name": "action_64",
+          "frames": []
+        },
+        {
+          "name": "action_65",
+          "frames": []
+        },
+        {
+          "name": "action_66",
+          "frames": []
+        },
+        {
+          "name": "action_67",
+          "frames": []
+        },
+        {
+          "name": "action_68",
+          "frames": []
+        },
+        {
+          "name": "action_69",
+          "frames": []
+        },
+        {
+          "name": "action_70",
+          "frames": []
+        },
+        {
+          "name": "action_71",
+          "frames": []
+        },
+        {
+          "name": "action_72",
+          "frames": []
+        },
+        {
+          "name": "action_73",
+          "frames": []
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "01.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 996,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        },
+        {
+          "name": "02.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1067,
+            "y": 0,
+            "width": 70,
+            "height": 70
+          },
+          "canvas_width": 72,
+          "canvas_height": 72,
+          "anchor_x": 1,
+          "anchor_y": 1
+        }
+      ]
+    }
+  ]
+}

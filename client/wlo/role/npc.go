@@ -1,0 +1,162 @@
+package role
+
+import (
+	"image"
+	"time"
+
+	"wonderland-go/client/wlo/surface"
+)
+
+// NPC sprites. An NPC object keeps body type 0, so FUN_00433318 draws one
+// sprite of the 001 family, 1000 + its look (+0xb6), in the action +0x121
+// and the object's colours.
+const (
+	npcFamily     = "001"
+	npcSpriteBase = 1000
+	npcLookRange  = 1000 // FUN_004265a4 keeps the template's look modulo 1000
+	npcColorParts = 4    // template colour values fill groups 1..4
+	// Talk faces (FUN_002586c8, body 0): the template's face sprite
+	// (Npc.dat +0x58) from the 008 family, action 0, frame 1 blinking.
+	npcFaceFamily = "008"
+	npcFaceAction = 0
+)
+
+// NPC draws one map NPC.
+type NPC struct {
+	Lib *Library
+	Now func() time.Time
+
+	sprite int
+	colors Colors
+	// Lit draws the NPC highlighted, as while the pointer is over it.
+	Lit     bool
+	frame   int
+	frameAt time.Time
+}
+
+// NewNPC is FUN_004265a4's appearance part: the template's look and its
+// four colour values over a neutral block.
+func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
+	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors()}
+	for i, v := range colors {
+		n.colors.Set(int32(v), allParts, i+1)
+	}
+	n.frameAt = n.Now()
+	return n
+}
+
+// SetLit turns the hover highlight on or off.
+func (n *NPC) SetLit(on bool) { n.Lit = on }
+
+// Sprite is the drawn sprite ID.
+func (n *NPC) Sprite() int { return n.sprite }
+
+// Draw draws the NPC's feet at (x, y). The frame advances every 100 ms
+// (230 ms standing) and wraps at the action's frame count, as for players.
+func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
+	arc, key := n.Lib.lookup(npcFamily, n.sprite)
+	if arc == nil {
+		return
+	}
+	s := arc.sprite(key)
+	if s == nil {
+		return
+	}
+	count := s.frameCount(action)
+	if count == 0 {
+		return
+	}
+	if now := n.Now(); now.Sub(n.frameAt) > intervalFor(action) {
+		n.frameAt = now
+		n.frame++
+	}
+	n.frame %= count
+	if f := s.frame(action, n.frame); f != nil {
+		colors := &n.colors
+		if n.Lit {
+			lit := n.colors.lifted(litSteps)
+			colors = &lit
+		}
+		s.drawColored(dst, f, x, y, n.sprite, colors)
+	}
+}
+
+// Bounds is the screen rectangle of the frame Draw shows at (x, y); empty
+// while the sprite is not available.
+func (n *NPC) Bounds(x, y, action int) image.Rectangle {
+	arc, key := n.Lib.lookup(npcFamily, n.sprite)
+	if arc == nil {
+		return image.Rectangle{}
+	}
+	s := arc.sprite(key)
+	if s == nil {
+		return image.Rectangle{}
+	}
+	count := s.frameCount(action)
+	if count == 0 {
+		return image.Rectangle{}
+	}
+	f := s.frame(action, n.frame%count)
+	if f == nil {
+		return image.Rectangle{}
+	}
+	return image.Rect(0, 0, f.Width, f.Height).Add(image.Pt(x+f.OffsetX, y+f.OffsetY))
+}
+
+// FrameSize is the size of the action's first frame (FUN_002fe570 leaves
+// it in the library's +8 and +0xc); zero while the sprite is missing.
+func (n *NPC) FrameSize(action int) (w, h int) {
+	arc, key := n.Lib.lookup(npcFamily, n.sprite)
+	if arc == nil {
+		return 0, 0
+	}
+	s := arc.sprite(key)
+	if s == nil || s.frameCount(action) == 0 {
+		return 0, 0
+	}
+	if f := s.frame(action, 0); f != nil {
+		return f.Width, f.Height
+	}
+	return 0, 0
+}
+
+// DrawFace draws the talk window's face sprite with the NPC's colours.
+func (n *NPC) DrawFace(dst *surface.Surface, x, y int, face uint16, blinking bool) {
+	if face == 0 {
+		return
+	}
+	arc, key := n.Lib.lookup(npcFaceFamily, int(face))
+	if arc == nil {
+		return
+	}
+	s := arc.sprite(key)
+	if s == nil {
+		return
+	}
+	count := s.frameCount(npcFaceAction)
+	if count == 0 {
+		return
+	}
+	frame := 0
+	if blinking {
+		frame = 1 % count
+	}
+	if f := s.frame(npcFaceAction, frame); f != nil {
+		s.drawColored(dst, f, x, y, int(face), &n.colors)
+	}
+}
+
+// FirstAnchorY is the anchor Y of the sprite's first frame, which
+// FUN_002fe570 leaves in the library (+0x3c) when the template is applied;
+// false while the sprite is not available.
+func (n *NPC) FirstAnchorY() (int, bool) {
+	arc, key := n.Lib.lookup(npcFamily, n.sprite)
+	if arc == nil {
+		return 0, false
+	}
+	s := arc.sprite(key)
+	if s == nil || len(s.Frames) == 0 {
+		return 0, false
+	}
+	return s.Frames[0].AnchorY, true
+}

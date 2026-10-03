@@ -1,0 +1,9 @@
+{
+  "source": "txt/charge.txt",
+  "source_bytes": 262,
+  "source_sha256": "e644b1f68092dc23acbb426d44f2855455305b8c67f678693a510482e39670e1",
+  "format": "text-resource",
+  "source_hex": "a4402eaec9ac71a8ee0d0ac4c6ac79a4dbb9d24f6e6c696e65a175aec9ac71a8eea176a6acb64facb03132a470aec9a6a93230c249b943c0b80d0ac249bcc62ca6a9b0a3c249bcc6abe1aaba3132a470aec9a4ba2cb17aa569a4a3adada6b8bcc6aabab56ea44aa9ce0d0ab56ea558b943c0b82ca6dc3132a470aec9b94cabe1a47eb77ca641a6b8a6a9b0a33230c249aabac249bcc6a1430d0aa4472ea4ebb64fa8ee0d0aa175c4c6ac79a4dbb9d2a176a4ebb64fa564aabaa6a9c249a4e8a6a1acb033302b32a4d1a4a3adadaec9bcc60d0aa8cfa5ceb54cadada8eea8b3b1b6ba5aa7d6a457baf4a1430d0ac2e0b4aba6a8a4ebb64fa8eebbddad6e333530c2490d0a0d0a",
+  "encoding": "cp950",
+  "text": "一.時段制\r\n飄流幻境Online「時段制」收費為12小時扣20點遊戲\r\n點數,扣除點數後的12小時內,您可不限次數的登入或\r\n登出遊戲,至12小時過後才會再次扣除20點的點數。\r\n二.月費制\r\n「飄流幻境」月費卡的扣點方式為30+2天不限時數\r\n使用無限制迅捷暢快上網。\r\n轉換成月費制需要350點\r\n\r\n"
+}

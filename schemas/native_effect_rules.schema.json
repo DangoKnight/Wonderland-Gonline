@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Offline native effect conversion policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "policy",
+    "rules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "policy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "layer",
+          "code",
+          "effects"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "layer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "code": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "effects": {
+            "$ref": "skill_effects.schema.json#/$defs/effects"
+          }
+        }
+      }
+    }
+  }
+}

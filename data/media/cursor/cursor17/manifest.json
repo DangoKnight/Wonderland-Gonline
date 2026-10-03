@@ -1,0 +1,39 @@
+{
+  "source": "cursor/cursor17.ani",
+  "source_bytes": 2326,
+  "source_sha256": "d673281b2489c89657129a7e5f2b48b245604eb4920bff2b7b4e1ff920afb165",
+  "format": "animated-cursor",
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "width": 32,
+      "height": 32,
+      "hotspot": [
+        16,
+        16
+      ],
+      "invert_pixels": []
+    }
+  ],
+  "declared_bytes": 2326,
+  "warnings": [],
+  "header": {
+    "header_bytes": 36,
+    "frame_count": 1,
+    "step_count": 1,
+    "width": 32,
+    "height": 32,
+    "bit_depth": 8,
+    "planes": 1,
+    "default_jiffies": 1,
+    "flags": 1
+  },
+  "rate_jiffies": [
+    6
+  ],
+  "sequence": [
+    0
+  ],
+  "jiffies_per_second": 60,
+  "extra_chunks": []
+}

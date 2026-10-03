@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Private-Server/Data/starter_items.json",
+  "source_bytes": 1172,
+  "source_sha256": "997bc87901cc7e1fdcd7cd580e8161a8f73894cccd64a83f12eabe4960e7c98b",
+  "format": "plaintext-json",
+  "encoding": "utf-8",
+  "text": "[\n  {\n    \"OrderIdx\": 1,\n    \"ItemID\": 34038,\n    \"ItemName\": \"Notepad\",\n    \"Count\": 1,\n    \"Description\": \"Beginner guide and notepad\"\n  },\n  {\n    \"OrderIdx\": 2,\n    \"ItemID\": 34058,\n    \"ItemName\": \"Remote Control\",\n    \"Count\": 1,\n    \"Description\": \"Auto-combat assistant controller\"\n  },\n  {\n    \"OrderIdx\": 3,\n    \"ItemID\": 32176,\n    \"ItemName\": \"Fugu Hot Pot\",\n    \"Count\": 50,\n    \"Description\": \"Full recovery food\"\n  },\n  {\n    \"OrderIdx\": 4,\n    \"ItemID\": 34014,\n    \"ItemName\": \"Tao Rice Ball\",\n    \"Count\": 10,\n    \"Description\": \"Pet and character food\"\n  },\n  {\n    \"OrderIdx\": 5,\n    \"ItemID\": 34026,\n    \"ItemName\": \"Protective EXP Pill\",\n    \"Count\": 5,\n    \"Description\": \"Prevents EXP loss upon death\"\n  },\n  {\n    \"OrderIdx\": 6,\n    \"ItemID\": 34169,\n    \"ItemName\": \"Bamboo Dragonfly\",\n    \"Count\": 1,\n    \"Description\": \"Starter flying mount vehicle\"\n  },\n  {\n    \"OrderIdx\": 7,\n    \"ItemID\": 34190,\n    \"ItemName\": \"10X Holy EXP Potion\",\n    \"Count\": 3,\n    \"Description\": \"Boosts experience gain\"\n  },\n  {\n    \"OrderIdx\": 8,\n    \"ItemID\": 34253,\n    \"ItemName\": \"Training Ticket\",\n    \"Count\": 5,\n    \"Description\": \"Training island pass\"\n  }\n]\n",
+  "source_hex": "5b0a20207b0a20202020224f72646572496478223a20312c0a20202020224974656d4944223a2033343033382c0a20202020224974656d4e616d65223a20224e6f7465706164222c0a2020202022436f756e74223a20312c0a20202020224465736372697074696f6e223a2022426567696e6e657220677569646520616e64206e6f7465706164220a20207d2c0a20207b0a20202020224f72646572496478223a20322c0a20202020224974656d4944223a2033343035382c0a20202020224974656d4e616d65223a202252656d6f746520436f6e74726f6c222c0a2020202022436f756e74223a20312c0a20202020224465736372697074696f6e223a20224175746f2d636f6d62617420617373697374616e7420636f6e74726f6c6c6572220a20207d2c0a20207b0a20202020224f72646572496478223a20332c0a20202020224974656d4944223a2033323137362c0a20202020224974656d4e616d65223a20224675677520486f7420506f74222c0a2020202022436f756e74223a2035302c0a20202020224465736372697074696f6e223a202246756c6c207265636f7665727920666f6f64220a20207d2c0a20207b0a20202020224f72646572496478223a20342c0a20202020224974656d4944223a2033343031342c0a20202020224974656d4e616d65223a202254616f20526963652042616c6c222c0a2020202022436f756e74223a2031302c0a20202020224465736372697074696f6e223a202250657420616e642063686172616374657220666f6f64220a20207d2c0a20207b0a20202020224f72646572496478223a20352c0a20202020224974656d4944223a2033343032362c0a20202020224974656d4e616d65223a202250726f74656374697665204558502050696c6c222c0a2020202022436f756e74223a20352c0a20202020224465736372697074696f6e223a202250726576656e747320455850206c6f73732075706f6e206465617468220a20207d2c0a20207b0a20202020224f72646572496478223a20362c0a20202020224974656d4944223a2033343136392c0a20202020224974656d4e616d65223a202242616d626f6f20447261676f6e666c79222c0a2020202022436f756e74223a20312c0a20202020224465736372697074696f6e223a20225374617274657220666c79696e67206d6f756e742076656869636c65220a20207d2c0a20207b0a20202020224f72646572496478223a20372c0a20202020224974656d4944223a2033343139302c0a20202020224974656d4e616d65223a202231305820486f6c792045585020506f74696f6e222c0a2020202022436f756e74223a20332c0a20202020224465736372697074696f6e223a2022426f6f73747320657870657269656e6365206761696e220a20207d2c0a20207b0a20202020224f72646572496478223a20382c0a20202020224974656d4944223a2033343235332c0a20202020224974656d4e616d65223a2022547261696e696e67205469636b6574222c0a2020202022436f756e74223a20352c0a20202020224465736372697074696f6e223a2022547261696e696e672069736c616e642070617373220a20207d0a5d0a",
+  "value": [
+    {
+      "OrderIdx": 1,
+      "ItemID": 34038,
+      "ItemName": "Notepad",
+      "Count": 1,
+      "Description": "Beginner guide and notepad"
+    },
+    {
+      "OrderIdx": 2,
+      "ItemID": 34058,
+      "ItemName": "Remote Control",
+      "Count": 1,
+      "Description": "Auto-combat assistant controller"
+    },
+    {
+      "OrderIdx": 3,
+      "ItemID": 32176,
+      "ItemName": "Fugu Hot Pot",
+      "Count": 50,
+      "Description": "Full recovery food"
+    },
+    {
+      "OrderIdx": 4,
+      "ItemID": 34014,
+      "ItemName": "Tao Rice Ball",
+      "Count": 10,
+      "Description": "Pet and character food"
+    },
+    {
+      "OrderIdx": 5,
+      "ItemID": 34026,
+      "ItemName": "Protective EXP Pill",
+      "Count": 5,
+      "Description": "Prevents EXP loss upon death"
+    },
+    {
+      "OrderIdx": 6,
+      "ItemID": 34169,
+      "ItemName": "Bamboo Dragonfly",
+      "Count": 1,
+      "Description": "Starter flying mount vehicle"
+    },
+    {
+      "OrderIdx": 7,
+      "ItemID": 34190,
+      "ItemName": "10X Holy EXP Potion",
+      "Count": 3,
+      "Description": "Boosts experience gain"
+    },
+    {
+      "OrderIdx": 8,
+      "ItemID": 34253,
+      "ItemName": "Training Ticket",
+      "Count": 5,
+      "Description": "Training island pass"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "source": "images/mark.gif",
+  "source_bytes": 2183,
+  "source_sha256": "01e975507874f0ebfb80a468ae35e926aa7733618706a9af256b196979684eed",
+  "format": "gif-animation",
+  "loop": null,
+  "frames": [
+    {
+      "png": "frame_000.png",
+      "duration_ms": 0,
+      "disposal": 0
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "source": "Finfo.txt",
+  "source_bytes": 6,
+  "source_sha256": "bcb681aed6e73f198d7a84527e40cb9f6ebc68d950c0a548c6af4a881c07789f",
+  "format": "text-resource",
+  "source_hex": "36300d0a4f4e",
+  "encoding": "utf-8-sig",
+  "text": "60\r\nON"
+}

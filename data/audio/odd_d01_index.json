@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "source": "/home/dango/Personal/Wonderland/Wonderland-Client/data/odd_d01.dat",
+  "source_bytes": 1284556,
+  "source_sha256": "821607dd91bdd75570d834effc26792c70d82d01a2ef8a1e2e0fb2c4192f82be",
+  "format": "plaintext-indexed-ogg-audio",
+  "payload_bytes": 1284061,
+  "payload_sha256": "16d88bc6943aa84811a42a582a62bedee89ed3fc966d1fb5267ca74f5564fbd0",
+  "pages": 135,
+  "entries": [
+    {
+      "record_index": 0,
+      "name": "2040_bt11.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 0,
+      "bytes": 29075,
+      "index_hex": "0d323034305f627431312e6f6767000000000000000000000093710000",
+      "pages": 4
+    },
+    {
+      "record_index": 1,
+      "name": "2040_bt12.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 29075,
+      "bytes": 29075,
+      "index_hex": "0d323034305f627431322e6f6767000000000000009371000093710000",
+      "pages": 4
+    },
+    {
+      "record_index": 2,
+      "name": "2040_bt13.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 58150,
+      "bytes": 29075,
+      "index_hex": "0d323034305f627431332e6f67670000000000000026e3000093710000",
+      "pages": 4
+    },
+    {
+      "record_index": 3,
+      "name": "2040_bt31.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 87225,
+      "bytes": 61237,
+      "index_hex": "0d323034305f627433312e6f676700000000000000b954010035ef0000",
+      "pages": 4
+    },
+    {
+      "record_index": 4,
+      "name": "2040_bt32.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 148462,
+      "bytes": 61237,
+      "index_hex": "0d323034305f627433322e6f676700000000000000ee43020035ef0000",
+      "pages": 4
+    },
+    {
+      "record_index": 5,
+      "name": "2040_bt33.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 209699,
+      "bytes": 61237,
+      "index_hex": "0d323034305f627433332e6f6767000000000000002333030035ef0000",
+      "pages": 4
+    },
+    {
+      "record_index": 6,
+      "name": "2040_bt41.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 270936,
+      "bytes": 37665,
+      "index_hex": "0d323034305f627434312e6f6767000000000000005822040021930000",
+      "pages": 4
+    },
+    {
+      "record_index": 7,
+      "name": "2040_bt42.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 308601,
+      "bytes": 31871,
+      "index_hex": "0d323034305f627434322e6f67670000000000000079b504007f7c0000",
+      "pages": 4
+    },
+    {
+      "record_index": 8,
+      "name": "2040_bt43.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 340472,
+      "bytes": 31871,
+      "index_hex": "0d323034305f627434332e6f676700000000000000f83105007f7c0000",
+      "pages": 4
+    },
+    {
+      "record_index": 9,
+      "name": "57153.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 372343,
+      "bytes": 72145,
+      "index_hex": "0935373135332e6f67672e6f67670000000000000077ae0500d1190100",
+      "pages": 9
+    },
+    {
+      "record_index": 10,
+      "name": "57154.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 444488,
+      "bytes": 109387,
+      "index_hex": "0935373135342e6f67672e6f67670000000000000048c806004bab0100",
+      "pages": 12
+    },
+    {
+      "record_index": 11,
+      "name": "57155.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 553875,
+      "bytes": 141838,
+      "index_hex": "0935373135352e6f67672e6f676700000000000000937308000e2a0200",
+      "pages": 15
+    },
+    {
+      "record_index": 12,
+      "name": "57158.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 695713,
+      "bytes": 184456,
+      "index_hex": "0935373135382e6f67672e6f676700000000000000a19d0a0088d00200",
+      "pages": 19
+    },
+    {
+      "record_index": 13,
+      "name": "57159.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 880169,
+      "bytes": 46287,
+      "index_hex": "0935373135392e6f67672e6f676700000000000000296e0d00cfb40000",
+      "pages": 6
+    },
+    {
+      "record_index": 14,
+      "name": "57160.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 926456,
+      "bytes": 138204,
+      "index_hex": "0935373136302e6f67672e6f676700000000000000f8220e00dc1b0200",
+      "pages": 14
+    },
+    {
+      "record_index": 15,
+      "name": "57161.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 1064660,
+      "bytes": 145782,
+      "index_hex": "0935373136312e6f67672e6f676700000000000000d43e100076390200",
+      "pages": 15
+    },
+    {
+      "record_index": 16,
+      "name": "57162.ogg",
+      "name_encoding": "utf-8",
+      "file_offset": 1210442,
+      "bytes": 73619,
+      "index_hex": "0935373136322e6f67672e6f6767000000000000004a781200931f0100",
+      "pages": 9
+    }
+  ],
+  "footer_hex": "0d323034305f627431312e6f67670000000000000000000000937100000d323034305f627431322e6f67670000000000000093710000937100000d323034305f627431332e6f67670000000000000026e30000937100000d323034305f627433312e6f676700000000000000b954010035ef00000d323034305f627433322e6f676700000000000000ee43020035ef00000d323034305f627433332e6f6767000000000000002333030035ef00000d323034305f627434312e6f67670000000000000058220400219300000d323034305f627434322e6f67670000000000000079b504007f7c00000d323034305f627434332e6f676700000000000000f83105007f7c00000935373135332e6f67672e6f67670000000000000077ae0500d11901000935373135342e6f67672e6f67670000000000000048c806004bab01000935373135352e6f67672e6f676700000000000000937308000e2a02000935373135382e6f67672e6f676700000000000000a19d0a0088d002000935373135392e6f67672e6f676700000000000000296e0d00cfb400000935373136302e6f67672e6f676700000000000000f8220e00dc1b02000935373136312e6f67672e6f676700000000000000d43e1000763902000935373136322e6f67672e6f6767000000000000004a781200931f01001100",
+  "interpretation": "Individual Ogg tracks live in track_directory. Concatenate entries in index order and append footer_hex to reconstruct the original archive.",
+  "track_directory": "odd_d01"
+}

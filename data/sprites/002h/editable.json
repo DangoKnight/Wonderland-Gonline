@@ -1,0 +1,3722 @@
+{
+  "version": 1,
+  "sprites": [
+    {
+      "name": "2100.jmp",
+      "index": 0,
+      "animations": [
+        {
+          "name": "action_00",
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "action_01",
+          "frames": [
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "name": "action_02",
+          "frames": [
+            8,
+            9,
+            10,
+            11
+          ]
+        },
+        {
+          "name": "action_03",
+          "frames": [
+            12,
+            13,
+            14,
+            15
+          ]
+        },
+        {
+          "name": "action_04",
+          "frames": [
+            16,
+            17,
+            18,
+            19
+          ]
+        },
+        {
+          "name": "action_05",
+          "frames": [
+            20,
+            21,
+            22,
+            23
+          ]
+        },
+        {
+          "name": "action_06",
+          "frames": [
+            24,
+            25,
+            26,
+            27
+          ]
+        },
+        {
+          "name": "action_07",
+          "frames": [
+            28,
+            29,
+            30,
+            31
+          ]
+        },
+        {
+          "name": "action_08",
+          "frames": [
+            32,
+            33,
+            34,
+            35
+          ]
+        },
+        {
+          "name": "action_09",
+          "frames": [
+            36,
+            37,
+            38,
+            39
+          ]
+        },
+        {
+          "name": "action_10",
+          "frames": [
+            40,
+            41,
+            42,
+            43
+          ]
+        },
+        {
+          "name": "action_11",
+          "frames": [
+            44,
+            45,
+            46,
+            47
+          ]
+        },
+        {
+          "name": "action_12",
+          "frames": [
+            48,
+            49,
+            50,
+            51
+          ]
+        },
+        {
+          "name": "action_13",
+          "frames": [
+            52,
+            53,
+            54,
+            55
+          ]
+        },
+        {
+          "name": "action_14",
+          "frames": [
+            56,
+            57,
+            58,
+            59
+          ]
+        },
+        {
+          "name": "action_15",
+          "frames": [
+            60,
+            61,
+            62,
+            63
+          ]
+        },
+        {
+          "name": "action_16",
+          "frames": [
+            64,
+            65,
+            66,
+            67
+          ]
+        },
+        {
+          "name": "action_17",
+          "frames": [
+            68,
+            69,
+            70,
+            71
+          ]
+        },
+        {
+          "name": "action_18",
+          "frames": [
+            72,
+            73,
+            74,
+            75
+          ]
+        },
+        {
+          "name": "action_19",
+          "frames": [
+            76,
+            77,
+            78,
+            79
+          ]
+        },
+        {
+          "name": "action_20",
+          "frames": [
+            80,
+            81,
+            82,
+            83
+          ]
+        },
+        {
+          "name": "action_21",
+          "frames": [
+            84,
+            85,
+            86,
+            87
+          ]
+        },
+        {
+          "name": "action_22",
+          "frames": [
+            88,
+            89,
+            90,
+            91
+          ]
+        },
+        {
+          "name": "action_23",
+          "frames": [
+            92,
+            93,
+            94,
+            95
+          ]
+        },
+        {
+          "name": "action_24",
+          "frames": [
+            96,
+            97,
+            98,
+            99
+          ]
+        },
+        {
+          "name": "action_25",
+          "frames": [
+            100,
+            101,
+            102,
+            103
+          ]
+        },
+        {
+          "name": "action_26",
+          "frames": [
+            104,
+            105
+          ]
+        },
+        {
+          "name": "action_27",
+          "frames": [
+            106,
+            107
+          ]
+        },
+        {
+          "name": "action_28",
+          "frames": [
+            108
+          ]
+        },
+        {
+          "name": "action_29",
+          "frames": [
+            109
+          ]
+        },
+        {
+          "name": "action_30",
+          "frames": [
+            110
+          ]
+        },
+        {
+          "name": "action_31",
+          "frames": [
+            111
+          ]
+        },
+        {
+          "name": "action_32",
+          "frames": [
+            112,
+            113,
+            114,
+            115
+          ]
+        },
+        {
+          "name": "action_33",
+          "frames": [
+            116,
+            117,
+            118,
+            119
+          ]
+        },
+        {
+          "name": "action_34",
+          "frames": [
+            120,
+            121,
+            122,
+            123
+          ]
+        },
+        {
+          "name": "action_35",
+          "frames": [
+            124,
+            125,
+            126,
+            127
+          ]
+        },
+        {
+          "name": "action_36",
+          "frames": [
+            128,
+            129,
+            130,
+            131
+          ]
+        },
+        {
+          "name": "action_37",
+          "frames": [
+            132,
+            133,
+            134,
+            135
+          ]
+        },
+        {
+          "name": "action_38",
+          "frames": [
+            136,
+            137,
+            138,
+            139
+          ]
+        },
+        {
+          "name": "action_39",
+          "frames": [
+            140,
+            141,
+            142,
+            143
+          ]
+        },
+        {
+          "name": "action_40",
+          "frames": [
+            144,
+            145,
+            146,
+            147
+          ]
+        },
+        {
+          "name": "action_41",
+          "frames": [
+            148,
+            149,
+            150,
+            151
+          ]
+        },
+        {
+          "name": "action_42",
+          "frames": [
+            152,
+            153,
+            154,
+            155
+          ]
+        },
+        {
+          "name": "action_43",
+          "frames": [
+            156,
+            157,
+            158,
+            159
+          ]
+        },
+        {
+          "name": "action_44",
+          "frames": [
+            160,
+            161
+          ]
+        },
+        {
+          "name": "action_45",
+          "frames": [
+            162,
+            163
+          ]
+        },
+        {
+          "name": "action_46",
+          "frames": [
+            164
+          ]
+        },
+        {
+          "name": "action_47",
+          "frames": [
+            165
+          ]
+        },
+        {
+          "name": "action_48",
+          "frames": [
+            166
+          ]
+        },
+        {
+          "name": "action_49",
+          "frames": [
+            167
+          ]
+        },
+        {
+          "name": "action_50",
+          "frames": [
+            168
+          ]
+        },
+        {
+          "name": "action_51",
+          "frames": [
+            169
+          ]
+        },
+        {
+          "name": "action_52",
+          "frames": [
+            170
+          ]
+        },
+        {
+          "name": "action_53",
+          "frames": [
+            171
+          ]
+        },
+        {
+          "name": "action_54",
+          "frames": [
+            172,
+            173
+          ]
+        },
+        {
+          "name": "action_55",
+          "frames": [
+            174,
+            175
+          ]
+        },
+        {
+          "name": "action_56",
+          "frames": [
+            176,
+            177
+          ]
+        },
+        {
+          "name": "action_57",
+          "frames": [
+            178,
+            179
+          ]
+        },
+        {
+          "name": "action_58",
+          "frames": [
+            180,
+            181
+          ]
+        },
+        {
+          "name": "action_59",
+          "frames": [
+            182,
+            183
+          ]
+        },
+        {
+          "name": "action_60",
+          "frames": [
+            184,
+            185
+          ]
+        },
+        {
+          "name": "action_61",
+          "frames": [
+            186,
+            187
+          ]
+        },
+        {
+          "name": "action_62",
+          "frames": [
+            188,
+            189
+          ]
+        },
+        {
+          "name": "action_63",
+          "frames": [
+            190,
+            191
+          ]
+        },
+        {
+          "name": "action_64",
+          "frames": [
+            192,
+            193,
+            194,
+            195
+          ]
+        },
+        {
+          "name": "action_65",
+          "frames": [
+            196,
+            197,
+            198,
+            199
+          ]
+        },
+        {
+          "name": "action_66",
+          "frames": [
+            200,
+            201
+          ]
+        },
+        {
+          "name": "action_67",
+          "frames": [
+            202,
+            203
+          ]
+        },
+        {
+          "name": "action_68",
+          "frames": [
+            204,
+            205
+          ]
+        },
+        {
+          "name": "action_69",
+          "frames": [
+            206,
+            207
+          ]
+        },
+        {
+          "name": "action_70",
+          "frames": [
+            208,
+            209
+          ]
+        },
+        {
+          "name": "action_71",
+          "frames": [
+            210,
+            211
+          ]
+        },
+        {
+          "name": "action_72",
+          "frames": [
+            212,
+            213
+          ]
+        },
+        {
+          "name": "action_73",
+          "frames": [
+            214,
+            215
+          ]
+        },
+        {
+          "name": "action_74",
+          "frames": []
+        },
+        {
+          "name": "action_75",
+          "frames": []
+        },
+        {
+          "name": "action_76",
+          "frames": []
+        },
+        {
+          "name": "action_77",
+          "frames": []
+        },
+        {
+          "name": "action_78",
+          "frames": []
+        },
+        {
+          "name": "action_79",
+          "frames": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "name": "00-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "00-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 30,
+            "y": 0,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "00-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 61,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "00-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "01-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 91,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "01-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 117,
+            "y": 0,
+            "width": 26,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 26
+        },
+        {
+          "name": "01-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 144,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "01-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 171,
+            "y": 0,
+            "width": 25,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 26
+        },
+        {
+          "name": "02-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 197,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 25
+        },
+        {
+          "name": "02-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 226,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "02-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 257,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "02-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 287,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 26
+        },
+        {
+          "name": "03-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 316,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 24
+        },
+        {
+          "name": "03-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 347,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "03-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 379,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 24
+        },
+        {
+          "name": "03-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 411,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "04-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 442,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "04-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 472,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "04-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 504,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "04-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 535,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "05-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 565,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "05-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 596,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "05-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 628,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "05-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 660,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "06-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 691,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "06-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 720,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "06-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 751,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "06-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 781,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "07-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 810,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "07-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 836,
+            "y": 0,
+            "width": 26,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "07-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 863,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "07-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 890,
+            "y": 0,
+            "width": 25,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "08-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "08-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 30,
+            "y": 0,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 24
+        },
+        {
+          "name": "08-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 61,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "08-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "09-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "09-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 942,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 24
+        },
+        {
+          "name": "09-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 969,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 24
+        },
+        {
+          "name": "09-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 24
+        },
+        {
+          "name": "10-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 197,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "10-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 995,
+            "y": 0,
+            "width": 29,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "10-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1025,
+            "y": 0,
+            "width": 28,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "10-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1054,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "11-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1083,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "11-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1114,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "11-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1146,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "11-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1083,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "12-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "12-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1208,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "12-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1238,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "12-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "13-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1268,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "13-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1299,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "13-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1331,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "13-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1268,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "14-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 691,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "14-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1363,
+            "y": 0,
+            "width": 29,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "14-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1393,
+            "y": 0,
+            "width": 28,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 24
+        },
+        {
+          "name": "14-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1422,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "15-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "15-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1477,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "15-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1504,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "15-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "16-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1530,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 34
+        },
+        {
+          "name": "16-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1561,
+            "y": 0,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 35
+        },
+        {
+          "name": "16-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1593,
+            "y": 0,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 36
+        },
+        {
+          "name": "16-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1625,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 35
+        },
+        {
+          "name": "17-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1656,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 34
+        },
+        {
+          "name": "17-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1687,
+            "y": 0,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 35
+        },
+        {
+          "name": "17-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1719,
+            "y": 0,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 36
+        },
+        {
+          "name": "17-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1751,
+            "y": 0,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 35
+        },
+        {
+          "name": "18-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "18-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 30,
+            "y": 0,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "18-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 30,
+            "y": 0,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "18-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "19-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "19-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 942,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 26
+        },
+        {
+          "name": "19-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 942,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "19-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 24
+        },
+        {
+          "name": "20-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1054,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "20-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1782,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "20-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1782,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "20-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1054,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "21-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1812,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "21-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1843,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 27
+        },
+        {
+          "name": "21-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1843,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "21-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1812,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "22-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "22-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1875,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "22-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1875,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "22-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 24
+        },
+        {
+          "name": "23-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1905,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "23-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1936,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 27
+        },
+        {
+          "name": "23-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1936,
+            "y": 0,
+            "width": 31,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "23-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1905,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "24-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1422,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "24-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1968,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "24-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1968,
+            "y": 0,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "24-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1422,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "25-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "25-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1477,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "25-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1477,
+            "y": 0,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "25-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 24
+        },
+        {
+          "name": "26-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1998,
+            "y": 0,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 30,
+          "anchor_y": 52
+        },
+        {
+          "name": "26-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 29,
+            "width": 33,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 20,
+          "anchor_y": 86
+        },
+        {
+          "name": "27-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 34,
+            "y": 29,
+            "width": 30,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 68,
+          "anchor_y": 52
+        },
+        {
+          "name": "27-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 65,
+            "y": 29,
+            "width": 33,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 75,
+          "anchor_y": 86
+        },
+        {
+          "name": "28-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 99,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 57,
+          "anchor_y": 34
+        },
+        {
+          "name": "29-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 130,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 41,
+          "anchor_y": 34
+        },
+        {
+          "name": "30-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 161,
+            "y": 29,
+            "width": 33,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 64,
+          "anchor_y": 36
+        },
+        {
+          "name": "31-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 195,
+            "y": 29,
+            "width": 33,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 31,
+          "anchor_y": 36
+        },
+        {
+          "name": "32-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 229,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 34
+        },
+        {
+          "name": "32-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 259,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 33
+        },
+        {
+          "name": "32-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 288,
+            "y": 29,
+            "width": 32,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 41,
+          "anchor_y": 35
+        },
+        {
+          "name": "32-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 321,
+            "y": 29,
+            "width": 28,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 34,
+          "anchor_y": 47
+        },
+        {
+          "name": "33-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 350,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 34
+        },
+        {
+          "name": "33-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 380,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 52,
+          "anchor_y": 33
+        },
+        {
+          "name": "33-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 409,
+            "y": 29,
+            "width": 32,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 55,
+          "anchor_y": 35
+        },
+        {
+          "name": "33-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 442,
+            "y": 29,
+            "width": 28,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 66,
+          "anchor_y": 47
+        },
+        {
+          "name": "34-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 471,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 35
+        },
+        {
+          "name": "34-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 501,
+            "y": 29,
+            "width": 27,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 43,
+          "anchor_y": 39
+        },
+        {
+          "name": "34-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 529,
+            "y": 29,
+            "width": 26,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 46,
+          "anchor_y": 41
+        },
+        {
+          "name": "34-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 556,
+            "y": 29,
+            "width": 28,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 34,
+          "anchor_y": 49
+        },
+        {
+          "name": "35-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 585,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 35
+        },
+        {
+          "name": "35-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 615,
+            "y": 29,
+            "width": 27,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 58,
+          "anchor_y": 39
+        },
+        {
+          "name": "35-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 643,
+            "y": 29,
+            "width": 26,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 56,
+          "anchor_y": 41
+        },
+        {
+          "name": "35-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 670,
+            "y": 29,
+            "width": 28,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 66,
+          "anchor_y": 49
+        },
+        {
+          "name": "36-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 699,
+            "y": 29,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "36-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 730,
+            "y": 29,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "36-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 760,
+            "y": 29,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 38
+        },
+        {
+          "name": "36-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 787,
+            "y": 29,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 46,
+          "anchor_y": 42
+        },
+        {
+          "name": "37-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 819,
+            "y": 29,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 25
+        },
+        {
+          "name": "37-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 850,
+            "y": 29,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 26
+        },
+        {
+          "name": "37-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 880,
+            "y": 29,
+            "width": 26,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 54,
+          "anchor_y": 38
+        },
+        {
+          "name": "37-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 907,
+            "y": 29,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 42
+        },
+        {
+          "name": "38-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 939,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 24,
+          "anchor_y": 58
+        },
+        {
+          "name": "38-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 968,
+            "y": 29,
+            "width": 28,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 33
+        },
+        {
+          "name": "38-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 997,
+            "y": 29,
+            "width": 25,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 47,
+          "anchor_y": 29
+        },
+        {
+          "name": "38-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1023,
+            "y": 29,
+            "width": 32,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 32,
+          "anchor_y": 48
+        },
+        {
+          "name": "39-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1056,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 76,
+          "anchor_y": 58
+        },
+        {
+          "name": "39-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1085,
+            "y": 29,
+            "width": 28,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 33
+        },
+        {
+          "name": "39-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1114,
+            "y": 29,
+            "width": 25,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 56,
+          "anchor_y": 29
+        },
+        {
+          "name": "39-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1140,
+            "y": 29,
+            "width": 32,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 64,
+          "anchor_y": 48
+        },
+        {
+          "name": "40-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1173,
+            "y": 29,
+            "width": 32,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 29
+        },
+        {
+          "name": "40-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1206,
+            "y": 29,
+            "width": 27,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 40
+        },
+        {
+          "name": "40-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1234,
+            "y": 29,
+            "width": 27,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 45,
+          "anchor_y": 39
+        },
+        {
+          "name": "40-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1262,
+            "y": 29,
+            "width": 28,
+            "height": 24
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 45,
+          "anchor_y": 39
+        },
+        {
+          "name": "41-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1291,
+            "y": 29,
+            "width": 32,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 29
+        },
+        {
+          "name": "41-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1324,
+            "y": 29,
+            "width": 27,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 40
+        },
+        {
+          "name": "41-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1352,
+            "y": 29,
+            "width": 27,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 56,
+          "anchor_y": 39
+        },
+        {
+          "name": "41-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1380,
+            "y": 29,
+            "width": 28,
+            "height": 24
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 55,
+          "anchor_y": 39
+        },
+        {
+          "name": "42-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1409,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "42-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1439,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 26
+        },
+        {
+          "name": "42-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1470,
+            "y": 29,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 44,
+          "anchor_y": 29
+        },
+        {
+          "name": "42-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1502,
+            "y": 29,
+            "width": 35,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 39,
+          "anchor_y": 35
+        },
+        {
+          "name": "43-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1409,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "43-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1538,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 47,
+          "anchor_y": 26
+        },
+        {
+          "name": "43-3.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1569,
+            "y": 29,
+            "width": 31,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 29
+        },
+        {
+          "name": "43-4.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1601,
+            "y": 29,
+            "width": 35,
+            "height": 23
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 54,
+          "anchor_y": 35
+        },
+        {
+          "name": "44-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1637,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 35
+        },
+        {
+          "name": "44-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1668,
+            "y": 29,
+            "width": 29,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 34
+        },
+        {
+          "name": "45-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1698,
+            "y": 29,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 35
+        },
+        {
+          "name": "45-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1729,
+            "y": 29,
+            "width": 29,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 34
+        },
+        {
+          "name": "46-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 47
+        },
+        {
+          "name": "47-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 54,
+          "anchor_y": 47
+        },
+        {
+          "name": "48-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1759,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 54,
+          "anchor_y": 48
+        },
+        {
+          "name": "49-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1812,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 48
+        },
+        {
+          "name": "50-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1788,
+            "y": 29,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 49
+        },
+        {
+          "name": "51-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1905,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 48
+        },
+        {
+          "name": "52-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1818,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 46,
+          "anchor_y": 48
+        },
+        {
+          "name": "53-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 47
+        },
+        {
+          "name": "54-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "54-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "55-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1847,
+            "y": 29,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "55-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1873,
+            "y": 29,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 25
+        },
+        {
+          "name": "56-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1899,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "56-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1054,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "57-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1812,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "57-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1812,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 26
+        },
+        {
+          "name": "58-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1928,
+            "y": 29,
+            "width": 27,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 51,
+          "anchor_y": 25
+        },
+        {
+          "name": "58-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1956,
+            "y": 29,
+            "width": 29,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 25
+        },
+        {
+          "name": "59-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1905,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "59-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1905,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 26
+        },
+        {
+          "name": "60-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1986,
+            "y": 29,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "60-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1422,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "61-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 2015,
+            "y": 29,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "61-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 58,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 25
+        },
+        {
+          "name": "62-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 26,
+            "y": 58,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 33
+        },
+        {
+          "name": "62-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 57,
+            "y": 58,
+            "width": 30,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 33
+        },
+        {
+          "name": "63-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 88,
+            "y": 58,
+            "width": 30,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 33
+        },
+        {
+          "name": "63-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 119,
+            "y": 58,
+            "width": 30,
+            "height": 25
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 33
+        },
+        {
+          "name": "64-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 150,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 23,
+          "anchor_y": 54
+        },
+        {
+          "name": "64-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 179,
+            "y": 58,
+            "width": 33,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 14,
+          "anchor_y": 49
+        },
+        {
+          "name": "64-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 150,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 23,
+          "anchor_y": 54
+        },
+        {
+          "name": "64-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 213,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 21,
+          "anchor_y": 51
+        },
+        {
+          "name": "65-1.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 242,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 77,
+          "anchor_y": 54
+        },
+        {
+          "name": "65-2.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 271,
+            "y": 58,
+            "width": 33,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 81,
+          "anchor_y": 49
+        },
+        {
+          "name": "65-3.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 242,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 77,
+          "anchor_y": 54
+        },
+        {
+          "name": "65-4.BMP",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 305,
+            "y": 58,
+            "width": 28,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 79,
+          "anchor_y": 51
+        },
+        {
+          "name": "66-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 63
+        },
+        {
+          "name": "66-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 29,
+            "height": 28
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 63
+        },
+        {
+          "name": "67-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 63
+        },
+        {
+          "name": "67-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 916,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 53,
+          "anchor_y": 63
+        },
+        {
+          "name": "68-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 197,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "68-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 197,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "69-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1083,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 63
+        },
+        {
+          "name": "69-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1083,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 48,
+          "anchor_y": 63
+        },
+        {
+          "name": "70-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 63
+        },
+        {
+          "name": "70-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1178,
+            "y": 0,
+            "width": 29,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 49,
+          "anchor_y": 63
+        },
+        {
+          "name": "71-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1268,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "71-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1268,
+            "y": 0,
+            "width": 30,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "72-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 691,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "72-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 691,
+            "y": 0,
+            "width": 28,
+            "height": 26
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "73-1.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        },
+        {
+          "name": "73-2.bmp",
+          "sheet": "atlas/page_000.png",
+          "rect": {
+            "x": 1451,
+            "y": 0,
+            "width": 25,
+            "height": 27
+          },
+          "canvas_width": 128,
+          "canvas_height": 128,
+          "anchor_x": 50,
+          "anchor_y": 63
+        }
+      ]
+    }
+  ]
+}
