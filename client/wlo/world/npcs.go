@@ -31,16 +31,61 @@ const (
 	actorHidden = 2
 	// AC22:4 entries: click ID, state, X, Y, kind, duration, action.
 	actorRecordBytes = 14
+	actorStateOffset = 2
+	// frameFree is the state that animates a prop (+0x11f = 0xff).
+	frameFree = 0xff
 )
+
+// Template kinds (Npc.dat +0x0b). Props are FUN_00482424's kinds: AC22:4
+// sets their frame (+0x11f) from its state, so a chest stays closed (0)
+// or open (1). The name overlay (FUN_004147f8) skips the unnamed kinds.
+const (
+	kindProp     = 6
+	kindUnnamedA = 8
+	kindObject   = 9
+	kindObjectB  = 10
+)
+
+// Prop reports FUN_00482424: the template's sprite shows a fixed frame.
+func (t NPCTemplate) Prop() bool {
+	return t.Kind == kindProp || t.Kind == kindObject || t.Kind == kindObjectB
+}
+
+// Unnamed reports the kinds whose names are not drawn (FUN_004147f8, while
+// the player's +0x1f16 is 0).
+func (t NPCTemplate) Unnamed() bool {
+	return t.Kind == kindProp || t.Kind == kindUnnamedA || t.Kind == kindObject
+}
+
+// Sprite drop (FUN_002fe8e8): templates on the tall name base (+0x5b = 1)
+// draw their sprite 0x44 lower, and 0x20 more on the doubled scale
+// (+0x3c = 1); the name and shadow stay at the feet.
+const (
+	spriteDropTall   = 0x44
+	spriteDropScaled = 0x20
+)
+
+// SpriteDrop is how far below the feet the sprite is drawn.
+func (t NPCTemplate) SpriteDrop() int {
+	if t.HeightPreset != 1 {
+		return 0
+	}
+	if t.HeightScale == 1 {
+		return spriteDropTall + spriteDropScaled
+	}
+	return spriteDropTall
+}
 
 // NPCTemplate is the part of an Npc.dat record the map view uses, as
 // FUN_004265a4 copies it (memory offsets are disk offsets + 4): the name
-// (+0x08, drawn from the object's +9), the look (+0x12), four colour
-// values (+0x16..+0x22), the shadow kind (+0x4e) and the two bytes that
-// choose the name height (+0x3c, +0x5b), and the talk window's face
-// sprite (+0x5c, FUN_002586c8).
+// (+0x08, drawn from the object's +9), the kind (+0x0f, the object's
+// +0x4e), the look (+0x12), four colour values (+0x16..+0x22), the shadow
+// kind (+0x4e) and the two bytes that choose the name height and the
+// sprite's drop (+0x3c, +0x5b), and the talk window's face sprite (+0x5c,
+// FUN_002586c8).
 type NPCTemplate struct {
 	Name         string
+	Kind         byte
 	Look         uint16
 	Face         uint16
 	TalkLow      byte // +0x5a: 1 stands the talk window's body lower
@@ -48,6 +93,8 @@ type NPCTemplate struct {
 	Shadow       byte
 	HeightScale  byte
 	HeightPreset byte
+	// Sound is the wav#### a prop plays as it opens (+0x60, FUN_00408054).
+	Sound uint16
 }
 
 // NPCPainter draws an NPC's sprite at its feet.
@@ -126,6 +173,32 @@ type NPC struct {
 	Action   int
 	Shown    bool
 	Painter  NPCPainter
+	// Fixed holds a prop on Frame (+0x11f); otherwise the sprite animates.
+	// With Wrap, Frame is a movie actor's animation counter.
+	Fixed, Wrap bool
+	Frame       int
+	// Depth moves the NPC's place among the depth-sorted figures (record
+	// +0x1180): a coconut up a palm sorts in front of the palm.
+	Depth int
+}
+
+// SortY is the NPC's key in the depth-sorted list (FUN_0041d13c).
+func (n *NPC) SortY() int { return n.Y + n.Depth }
+
+// recordDepth is the eve record's sort offset, the int the loader
+// (FUN_00484a50) copies from +0x6b4 to +0x1180: the last two of the
+// record's trailing words.
+func recordDepth(w [4]uint16) int { return int(int32(uint32(w[2]) | uint32(w[3])<<16)) }
+
+// paint hands the NPC's fixed frame to its painter.
+func (n *NPC) paint() {
+	if h, ok := n.Painter.(interface{ Hold(int, bool) }); ok {
+		if n.Fixed {
+			h.Hold(n.Frame, n.Wrap)
+		} else {
+			h.Hold(-1, false)
+		}
+	}
 }
 
 // standFacing converts a record's facing to its standing action.
@@ -164,6 +237,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 			} `json:"name"`
 			Fields struct {
 				ID           uint32 `json:"id"`
+				Kind         byte   `json:"type"`
 				Look         uint16 `json:"unknown_u16_offset_14"`
 				Color1       uint32 `json:"unknown_u32_offset_18"`
 				Color2       uint32 `json:"unknown_u32_offset_22"`
@@ -174,6 +248,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				HeightPreset byte   `json:"unknown_u8_offset_87"`
 				Face         uint16 `json:"unknown_u16_offset_88"`
 				TalkLow      byte   `json:"unknown_u8_offset_86"`
+				Sound        uint16 `json:"unknown_u16_offset_92"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
@@ -183,8 +258,8 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	out := make(map[uint32]NPCTemplate, len(doc.Records))
 	for _, r := range doc.Records {
 		f := r.Fields
-		out[f.ID] = NPCTemplate{Name: r.Name.Text, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, TalkLow: f.TalkLow, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
+		out[f.ID] = NPCTemplate{Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
+			Face: f.Face, TalkLow: f.TalkLow, Sound: f.Sound, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
 	}
 	npcData.path, npcData.templates = path, out
 	return out, nil
@@ -231,7 +306,8 @@ func MapNPCs(rec native.Map, templates map[uint32]NPCTemplate, newPainter func(N
 	out := make(map[uint16]*NPC, len(rec.NPCs))
 	for _, r := range rec.NPCs {
 		n := &NPC{ClickID: r.ClickID, Template: r.Template, X: int(r.X), Y: int(r.Y),
-			Action: standFacing(r.Rotation), Shown: r.Flags&npcFlagShown != 0}
+			Action: standFacing(r.Rotation), Shown: r.Flags&npcFlagShown != 0,
+			Depth: recordDepth(r.UnknownWords)}
 		if t, ok := templates[r.Template]; ok {
 			n.Info = t
 			if newPainter != nil {
@@ -245,8 +321,9 @@ func MapNPCs(rec native.Map, templates map[uint32]NPCTemplate, newPainter func(N
 
 // ApplyActorPositions is AC22:4 (FUN_0038cf30) for map NPCs: each entry
 // moves an NPC and sets its visibility. p is the packet after its command
-// and subcommand bytes. The state, duration and action fields drive
-// animations that are not ported yet.
+// and subcommand bytes. A prop takes the state as its frame; the duration
+// and the other NPCs' action fields drive animations that are not ported
+// yet.
 func (w *World) ApplyActorPositions(p []byte) {
 	for ; len(p) >= actorRecordBytes; p = p[actorRecordBytes:] {
 		n := w.NPCs[binary.LittleEndian.Uint16(p)]
@@ -254,6 +331,10 @@ func (w *World) ApplyActorPositions(p []byte) {
 			continue
 		}
 		n.X, n.Y = int(binary.LittleEndian.Uint16(p[4:])), int(binary.LittleEndian.Uint16(p[6:]))
+		if n.Info.Prop() {
+			f := p[actorStateOffset]
+			n.Fixed, n.Frame = f != frameFree, int(f)
+		}
 		switch p[8] {
 		case actorShown:
 			n.Shown = true
@@ -272,15 +353,16 @@ func (w *World) Hover(x, y int) { w.hovered = w.NPCAt(x, y) }
 func (w *World) Hovered() *NPC { return w.hovered }
 
 // NPCAt is the shown NPC drawn under a screen point, the front one
-// (largest feet Y) when several overlap; nil for none.
+// (largest sort key) when several overlap; nil for none.
 func (w *World) NPCAt(x, y int) *NPC {
 	cx, cy := w.Camera()
 	var hit *NPC
 	for _, n := range w.NPCs {
-		if !n.Shown || n.Painter == nil || (hit != nil && n.Y < hit.Y) {
+		if !n.Shown || n.Painter == nil || (hit != nil && n.SortY() < hit.SortY()) {
 			continue
 		}
-		if image.Pt(x, y).In(n.Painter.Bounds(n.X-cx, n.Y-cy, n.Action)) {
+		n.paint()
+		if image.Pt(x, y).In(n.Painter.Bounds(n.X-cx, n.Y-cy+n.Info.SpriteDrop(), n.Action)) {
 			hit = n
 		}
 	}
@@ -312,7 +394,7 @@ func (w *World) drawShadow(n *NPC, sx, sy int) {
 // drawName draws an NPC's name centred above it (0x415fca): white, in the
 // outlined style, lifted by the template's name height.
 func (w *World) drawName(n *NPC, sx, sy int) {
-	if n.Info.Name == "" {
+	if n.Info.Name == "" || n.Info.Unnamed() {
 		return
 	}
 	anchor, ok := n.Painter.FirstAnchorY()
@@ -323,4 +405,34 @@ func (w *World) drawName(n *NPC, sx, sy int) {
 	width := len(name) * charW
 	y := sy + nameTop(nameHeight(n.Info, anchor))
 	w.Env.Text.Draw(sx-width/2, y, 0, false, true, w.Env.Screen, name, 0, width+charW, 0, npcNameInk, npcNameStyle)
+}
+
+// AC22:1 (FUN_00408054): click ID, then the frame. A prop whose frame goes
+// from 0 to 1 plays its template's sound.
+const (
+	actorStateBytes = 3
+	propClosed      = 0
+	propOpened      = 1
+)
+
+// ApplyActorState is AC22:1 after its subcommand: it sets the NPC's fixed
+// frame (+0x11f) and returns the sound to play as a prop opens, 0 for none.
+func (w *World) ApplyActorState(p []byte) uint16 {
+	if len(p) < actorStateBytes {
+		return 0
+	}
+	n := w.NPCs[binary.LittleEndian.Uint16(p)]
+	if n == nil {
+		return 0
+	}
+	state := p[2]
+	old := frameFree
+	if n.Fixed {
+		old = n.Frame
+	}
+	n.Fixed, n.Wrap, n.Frame = state != frameFree, false, int(state)
+	if n.Info.Sound != 0 && old == propClosed && state == propOpened {
+		return n.Info.Sound
+	}
+	return 0
 }

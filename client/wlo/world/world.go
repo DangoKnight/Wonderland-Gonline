@@ -101,6 +101,10 @@ type World struct {
 	NPCs map[uint16]*NPC
 	// Questions are the map's event questions by click ID.
 	Questions map[uint16]Question
+	// Areas are the map's event areas (MapAreas); lightsFrom starts the
+	// door lights' frames.
+	Areas      []Area
+	lightsFrom time.Time
 	// OnLeg is called as each leg of a walk starts, with the facing and
 	// the waypoint (the client sends 6/1).
 	OnLeg  func(facing, x, y int)
@@ -114,6 +118,9 @@ type World struct {
 	// Cinematic leaves out the location line and the walk marker (a
 	// movie's view).
 	Cinematic bool
+	// HideScene leaves out the background, HidePlayer the player (a
+	// movie's stage effects and cast).
+	HideScene, HidePlayer bool
 	// Marker is the walk marker at a mouse walk's destination.
 	Marker Marker
 	// HideNames leaves out the characters' names, as during a
@@ -169,7 +176,9 @@ func NewView(env *seui.Env, a login.Assets, mapID uint16) (*World, error) {
 func (w *World) Draw() {
 	scr := w.Env.Screen
 	cx, cy := w.Camera()
-	w.Scene.Draw(scr, cx, cy)
+	if !w.HideScene {
+		w.Scene.Draw(scr, cx, cy)
+	}
 	now := w.Now()
 	objects := w.Scene.Objects
 	for i := range objects {
@@ -178,7 +187,8 @@ func (w *World) Draw() {
 		}
 	}
 	px, py := w.Player.X-cx, w.Player.Y-cy
-	// Characters are drawn back to front by their feet's Y, with kind-3
+	// Characters are drawn back to front by their feet's Y (NPCs plus their
+	// record's depth), with kind-3
 	// objects at their depth lines after characters on the same row
 	// (FUN_0041d13c's list order); the player goes after NPCs on the same
 	// row.
@@ -189,12 +199,13 @@ func (w *World) Draw() {
 	var figures []figure
 	for _, n := range w.NPCs {
 		if n.Shown && n.Painter != nil {
-			figures = append(figures, figure{n.Y, func() {
+			figures = append(figures, figure{n.SortY(), func() {
 				w.drawShadow(n, n.X-cx, n.Y-cy)
 				if l, ok := n.Painter.(interface{ SetLit(bool) }); ok {
 					l.SetLit(n == w.hovered)
 				}
-				n.Painter.Draw(scr, n.X-cx, n.Y-cy, n.Action)
+				n.paint()
+				n.Painter.Draw(scr, n.X-cx, n.Y-cy+n.Info.SpriteDrop(), n.Action)
 			}})
 		}
 	}
@@ -207,7 +218,7 @@ func (w *World) Draw() {
 		}
 	}
 	sort.SliceStable(figures, func(i, j int) bool { return figures[i].y < figures[j].y })
-	if w.Body != nil {
+	if w.Body != nil && !w.HidePlayer {
 		i := sort.Search(len(figures), func(i int) bool { return figures[i].y > w.Player.Y })
 		figures = slices.Insert(figures, i, figure{w.Player.Y, func() {
 			w.drawSmallShadow(px, py)
@@ -231,6 +242,11 @@ func (w *World) Draw() {
 	if !w.HideNames {
 		w.drawNames(cx, cy, px)
 	}
+	// The effects list (FUN_00403b8c) follows the map paint.
+	if w.lightsFrom.IsZero() {
+		w.lightsFrom = now
+	}
+	w.drawLights(cx, cy, now)
 	if !w.Cinematic {
 		w.drawMarker(cx, cy, now)
 		w.drawLocation()

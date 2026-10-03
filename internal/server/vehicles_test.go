@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
-	"time"
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/config"
 	"wonderland-go/internal/game"
@@ -288,7 +287,7 @@ func TestVehicleSnapshotRestoreAndPortalLanding(t *testing.T) {
 	s.Assets.Maps[11016] = assets.Map{ID: 11016, Warps: []assets.Warp{{ClickID: 1, MapID: 10017, X: 1042, Y: 1075}}}
 	s.World = world.New(s.Assets)
 	c.character.Map = 11016
-	c.lastWarp = time.Now().Add(-10 * time.Second)
+	c.arrived = false
 	for _, w := range wires {
 		w.Reset()
 	}

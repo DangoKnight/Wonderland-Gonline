@@ -28,6 +28,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	}
 	if x != prevX || y != prevY {
 		s.cancelTrade(c)
+		c.arrived = false
 	}
 	c.character.X, c.character.Y = x, y
 	packet := protocol.Builder{protocol.CommandMovement, protocol.MovementMove}.U32(c.character.ID).U8(direction).U16(x).U16(y)

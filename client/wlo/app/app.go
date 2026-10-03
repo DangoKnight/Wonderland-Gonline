@@ -88,7 +88,16 @@ type Client struct {
 	talks        map[uint16]string
 	event        eventState
 	pendingNPC   *world.NPC // clicked out of reach, sent on arrival
-	held         bool       // 6/2: the server holds the player
+	areas        areaWatch
+	sounds       []string // the sound table (soundtable.go)
+	sfx          *Sounds  // the effects player (set by Run)
+	ambient      ambience
+	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
+	// the map load is acknowledged. Until then prop sounds and area
+	// triggers stay silent, so the arrival's replay of opened props does
+	// not sound.
+	mapReady bool
+	held     bool // 6/2: the server holds the player
 
 	lib   *role.Library
 	items map[uint16]assets.NativeItem
@@ -142,7 +151,8 @@ func New(o Options) (*Client, error) {
 		return nil, err
 	}
 	// The ground shadows of pic\images.BMg (1.bls), from its PNG export.
-	for _, name := range []string{world.ShadowPicture, world.MonsterShadowPicture} {
+	// The door lights come from the same archive.
+	for _, name := range []string{world.ShadowPicture, world.MonsterShadowPicture, world.DoorLightPicture, world.SmallDoorLightPicture} {
 		m, err := a.LoadPicture(shadowArchive, name)
 		if err != nil {
 			return nil, err
@@ -247,6 +257,8 @@ func (c *Client) Frame() {
 		}
 		c.reachNPC()
 		c.eventTick()
+		c.areaTick()
+		c.ambientTick()
 		c.World.HideNames = c.Talk.Drawn()
 		if !c.movieFrame() {
 			c.World.Draw()
@@ -362,6 +374,11 @@ func (c *Client) dispatch(p []byte) {
 		c.eventClose()
 	case p[0] == protocol.CommandEvent && sub == protocol.EventResume:
 		c.eventResume()
+	case p[0] == protocol.CommandEvent && stepDone(sub):
+		// 20/10 and its twins finish the step (+0x7108): the frame loop
+		// acknowledges it with 20/6, which moves server-driven sequences
+		// such as the beach rescue along.
+		c.event.done = true
 	case p[0] == protocol.CommandPosition:
 		if id, _, x, y, ok := world.ParsePlace(s); ok && c.World != nil && id != c.World.Player.ID {
 			c.World.PlacePeer(id, x, y)
@@ -369,6 +386,17 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandMapAcknowledgment:
 		// AC12 (0x2e20cf) places the player on a map.
 		c.warp(s)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateRefresh:
+		// 5/4 (FUN_002dde1c's 5/4 case) marks the map ready.
+		c.mapReady = true
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorState:
+		// AC22:1 (FUN_00408054) sets an NPC's frame; an opening prop sounds
+		// once the map is ready.
+		if c.World != nil {
+			if snd := c.World.ApplyActorState(s[1:]); snd != 0 && c.mapReady && c.Env.Sound != nil {
+				c.Env.Sound(numberedSound(int(snd)))
+			}
+		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPosition:
 		// AC22:4 (FUN_0038cf30) moves, shows and hides map NPCs.
 		if c.World != nil {

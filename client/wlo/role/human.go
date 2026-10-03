@@ -52,10 +52,13 @@ type Human struct {
 	frame      int
 	frameAt    time.Time
 	lastAction int // a new action starts from its first frame
+	// hold is a movie's frame (Hold), < 0 for the body's own clock.
+	hold     int
+	holdWrap bool
 }
 
 func NewHuman(lib *Library, items map[uint16]assets.NativeItem) *Human {
-	return &Human{Lib: lib, Items: items, Now: time.Now}
+	return &Human{Lib: lib, Items: items, Now: time.Now, hold: -1}
 }
 
 // SetCharacter is the part of FUN_004013d0 that fills the body object:
@@ -127,15 +130,21 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 	if action != h.lastAction {
 		h.lastAction, h.frame, h.frameAt = action, 0, h.Now()
 	}
-	if now := h.Now(); now.Sub(h.frameAt) > intervalFor(action) {
+	if now := h.Now(); h.hold < 0 && now.Sub(h.frameAt) > intervalFor(action) {
 		h.frameAt = now
 		h.frame++
 	}
 	if arc, key := h.Lib.lookup(fam, base); arc != nil {
 		if s := arc.sprite(key); s != nil && s.frameCount(action) > 0 {
-			if n := s.frameCount(action); fallAction(action) {
+			n := s.frameCount(action)
+			switch {
+			case h.hold >= 0 && h.holdWrap:
+				h.frame = h.hold % n
+			case h.hold >= 0:
+				h.frame = min(h.hold, n-1)
+			case fallAction(action):
 				h.frame = min(h.frame, n-1)
-			} else {
+			default:
 				h.frame %= n
 			}
 		}
@@ -306,6 +315,11 @@ func (h *Human) DrawFace(dst *surface.Surface, x, y, action int, blinking bool) 
 	}
 	h.layerSprite(dst, familyName(h.body)+"f", baseID(h.body)+portraitSpriteOffset+int(h.head), action, frame, x, y)
 }
+
+// Hold draws a movie's frame: a keyframe's fixed frame (clamped to the
+// action's last) or, with wrap, the actor's animation counter. A negative
+// frame returns the body to its own clock.
+func (h *Human) Hold(frame int, wrap bool) { h.hold, h.holdWrap = frame, wrap }
 
 // fallAction reports the falling group, which holds its last frame.
 func fallAction(action int) bool { return action == fallFirst || action == fallFirst+1 }

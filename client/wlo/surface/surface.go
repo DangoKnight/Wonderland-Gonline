@@ -52,6 +52,38 @@ func (s *Surface) DrawRect(x, y int, r image.Rectangle, src *Surface, transparen
 	}
 }
 
+// LightLevelFull is the light level that adds the whole source.
+const LightLevelFull = 32
+
+// DrawLight is rodraw2's ro_Clipper_LightAlpha_ColorKey_Blt: the source
+// rectangle is added to the destination, each channel scaled by
+// level/32 and saturating, skipping the source's key colour.
+func (s *Surface) DrawLight(x, y int, r image.Rectangle, src *Surface, level int) {
+	r = r.Intersect(image.Rect(0, 0, src.W, src.H))
+	for sy := r.Min.Y; sy < r.Max.Y; sy++ {
+		dy := y + sy - r.Min.Y
+		if dy < 0 || dy >= s.H {
+			continue
+		}
+		for sx := r.Min.X; sx < r.Max.X; sx++ {
+			dx := x + sx - r.Min.X
+			if dx < 0 || dx >= s.W {
+				continue
+			}
+			v := src.Pix[sy*src.W+sx]
+			if v == src.Key {
+				continue
+			}
+			d := &s.Pix[dy*s.W+dx]
+			add := func(shift, max uint16) uint16 {
+				c := (*d>>shift)&max + uint16(int((v>>shift)&max)*level/LightLevelFull)
+				return min(c, max) << shift
+			}
+			*d = add(11, 0x1f) | add(5, 0x3f) | add(0, 0x1f)
+		}
+	}
+}
+
 // Fill sets a rectangle to one RGB565 value.
 func (s *Surface) Fill(r image.Rectangle, v uint16) {
 	r = r.Intersect(image.Rect(0, 0, s.W, s.H))

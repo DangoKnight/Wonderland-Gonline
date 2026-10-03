@@ -200,3 +200,24 @@ func TestQuestion(t *testing.T) {
 		t.Fatal("the question is still open")
 	}
 }
+
+// TestStepCompleteAcknowledged: 20/10 (and its twins) finish the step, so
+// the next frame answers 20/6 at once, as the beach rescue's server steps
+// expect.
+func TestStepCompleteAcknowledged(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	sent := wire(t, c)
+	ack := []byte{protocol.CommandEvent, protocol.EventAcknowledge}
+	for i, sub := range []byte{protocol.EventStepComplete, eventStepDoneWireCode11, eventStepDoneWireCode13, eventStepDoneWireCode17} {
+		c.dispatch([]byte{protocol.CommandEvent, sub})
+		c.Frame()
+		if got := sent(); len(got) != i+1 || !bytes.Equal(got[i], ack) {
+			t.Fatalf("after 20/%d sent %x", sub, got)
+		}
+	}
+	c.dispatch([]byte{protocol.CommandEvent, 12})
+	c.Frame()
+	if got := sent(); len(got) != 4 {
+		t.Fatalf("20/12 was acknowledged: %x", got)
+	}
+}

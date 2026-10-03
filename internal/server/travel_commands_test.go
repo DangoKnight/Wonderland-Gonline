@@ -6,7 +6,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/game"
@@ -62,7 +61,7 @@ func TestPublicCarnieCommandAndReturn(t *testing.T) {
 		t.Fatal("repeated visit overwrote return point")
 	}
 	acknowledgeTravel(t, s, c)
-	c.lastWarp = time.Time{}
+	c.arrived = false
 	c.character.X, c.character.Y = 600, 600
 	if err := s.dispatch(context.Background(), c, []byte{20, 8, 1, 0}); err != nil {
 		t.Fatal(err)

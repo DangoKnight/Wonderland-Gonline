@@ -254,6 +254,14 @@ func (db *DB) DrawRect(dst *surface.Surface, i, x, y int, r image.Rectangle, tra
 	}
 }
 
+// DrawLight is FUN_0045f0f0: the source rectangle r added to dst at the
+// light level (surface.DrawLight).
+func (db *DB) DrawLight(dst *surface.Surface, i, x, y int, r image.Rectangle, level int) {
+	if src := db.image(i); src != nil {
+		dst.DrawLight(x, y, r, src, level)
+	}
+}
+
 // Opaque is FUN_004784ec with key 0: whether the pixel at (x, y) is not the
 // transparent colour. A deferred image is loaded first (FUN_0047b1a0).
 func (db *DB) Opaque(i, x, y int) bool {

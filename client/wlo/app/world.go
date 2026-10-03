@@ -35,6 +35,7 @@ func (c *Client) loadNPCs(w *world.World) {
 	}
 	w.NPCs = world.MapNPCs(rec, c.npcTemplates, paint)
 	w.Questions = world.MapQuestions(rec)
+	w.Areas = world.MapAreas(rec)
 }
 
 // warp is AC12 for the player: the map loads (again, when it changed) at
@@ -53,10 +54,15 @@ func (c *Client) warp(p []byte) {
 		}
 		return
 	}
+	// Loading a map forgets the area last entered (FUN_00304898), and the
+	// map is not ready until 5/4.
+	c.areas.last = 0
+	c.mapReady = false
 	pl := c.World.Player
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
 	if pl.Map != c.World.Player.Map {
+		c.stopAmbience() // FUN_004057c8(-1, -1)
 		var body login.RoleView
 		if c.lib != nil {
 			body = role.NewHuman(c.lib, c.items)

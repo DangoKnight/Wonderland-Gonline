@@ -4,7 +4,8 @@
 // Only the static view is ported so far. The scene loader (FUN_003f830c)
 // reads a Ground.MMG record whose first block (FUN_004121a8) gives the
 // scene size, its background layers and a 20-pixel walk grid, followed by
-// the scene objects (objects.go); the rest of the record is not used yet.
+// the sound zones (zones.go) and the scene objects (objects.go); the rest
+// of the record is not used yet.
 //
 // The terrain comes from the extracted Ground.MMG (data/ground_data.json)
 // and the background pictures from the PNG export of pic\ (data/pictures).
@@ -36,6 +37,7 @@ type Scene struct {
 	Ground        clientassets.GroundPrefix
 	Layers        []Layer
 	Objects       []Object
+	Zones         []SoundZone
 }
 
 // Layer is a background picture at a scene position.
@@ -55,6 +57,7 @@ type groundEntry struct {
 		GridWidth  uint16         `json:"grid_width"`
 		GridHeight uint16         `json:"grid_height"`
 		CellsHex   string         `json:"cells_hex"`
+		Zones      []groundZone   `json:"unknown_triples"`
 		Objects    []groundObject `json:"objects"`
 	} `json:"terrain"`
 }
@@ -114,7 +117,7 @@ func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
 	}
 	g := clientassets.GroundPrefix{Width: t.Width, Height: t.Height, Layers: t.Layers,
 		GridWidth: t.GridWidth, GridHeight: t.GridHeight, Cells: cells}
-	s := &Scene{MapID: mapID, Width: int(g.Width), Height: int(g.Height), Ground: g}
+	s := &Scene{MapID: mapID, Width: int(g.Width), Height: int(g.Height), Ground: g, Zones: zonesOf(t.Zones)}
 	for _, l := range g.Layers {
 		img, err := background(a, l.Resource)
 		if err != nil {

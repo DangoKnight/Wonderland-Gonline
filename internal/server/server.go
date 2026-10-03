@@ -67,18 +67,19 @@ type Session struct {
 	resumeAt      time.Time // NpcClickResumeAt: ignore a repeated click after an interaction.
 	lastClick     uint16
 	lastClickMap  uint16
-	lastWarp      time.Time
-	spawnX        uint16
-	spawnY        uint16
-	info          SessionInfo
-	conn          net.Conn
-	account       store.Account
-	slot          byte
-	gmLevel       atomic.Uint32
-	sendMu        sync.Mutex
-	log           *slog.Logger
-	lastWindow    time.Time
-	packets       int
+	// arrived is set when the character lands on a map (login or warp) and
+	// cleared by its first move: the client reports the area it lands in
+	// (20/8) before moving, which must not send it back.
+	arrived    bool
+	info       SessionInfo
+	conn       net.Conn
+	account    store.Account
+	slot       byte
+	gmLevel    atomic.Uint32
+	sendMu     sync.Mutex
+	log        *slog.Logger
+	lastWindow time.Time
+	packets    int
 }
 
 func (s *Session) send(p []byte) error {
