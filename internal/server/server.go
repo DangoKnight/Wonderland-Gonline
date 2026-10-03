@@ -117,6 +117,8 @@ type Server struct {
 	received       atomic.Uint64
 	unsupported    atomic.Uint64
 	name           atomic.Value
+
+	dropRateMultiplier float64 // Live GM setting; guarded by worldMu.
 }
 
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {

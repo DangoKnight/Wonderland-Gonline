@@ -470,6 +470,7 @@ func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition
 	var adds []game.Addition
 	var dropped []string
 	r := s.rules()
+	r.DropRateMultiplier = s.dropRateMultiplier
 	for _, m := range run.b.Defenders {
 		if m.Captured {
 			continue

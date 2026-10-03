@@ -685,9 +685,15 @@
 				"internal/server/travel_commands.go",
 				"internal/server/travel_commands_test.go",
 				"internal/server/gm_progress.go",
-				"internal/server/gm_progress_test.go"
+				"internal/server/gm_progress_test.go",
+				"internal/server/drop_rate.go",
+				"internal/server/drop_rate_test.go",
+				"internal/server/combat.go",
+				"internal/battle/drop_rate_test.go",
+				"internal/server/gm_repair.go",
+				"internal/server/gm_repair_test.go"
 			],
-			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat TODO continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending."
+			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending. Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC03.cs",
@@ -1779,8 +1785,13 @@
 			"sha256": "43c56bee8c91bcce1501bcbb451281aa46e24c735ae5623d850bb8e58b9d220d",
 			"go_files": [
 				"internal/assets/quests.go",
-				"internal/battle/battle.go"
-			]
+				"internal/battle/battle.go",
+				"internal/server/drop_rate.go",
+				"internal/server/drop_rate_test.go",
+				"internal/server/combat.go",
+				"internal/battle/drop_rate_test.go"
+			],
+			"notes": "Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/Battle/PalaceTrialManager.cs",
@@ -2316,9 +2327,11 @@
 				"internal/store/mall_adjust.go",
 				"internal/admin/mall.go",
 				"internal/server/travel_commands.go",
-				"internal/server/travel_commands_test.go"
+				"internal/server/travel_commands_test.go",
+				"internal/server/gm_repair.go",
+				"internal/server/gm_repair_test.go"
 			],
-			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending."
+			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Guild.cs",

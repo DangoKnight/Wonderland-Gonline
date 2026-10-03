@@ -41,8 +41,7 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 	return ErrUnsupported
 }
 
-// command runs a chat command. Feedback text is not sent: SendSystemMessage is disabled
-// in the C# revision. GM rights come only from an administrator-granted account level;
+// command runs a chat command. GM rights come only from an administrator-granted account level;
 // the C# default names and gm_list.txt are deliberately not trusted.
 func (s *Server) command(ctx context.Context, c *Session, text string) error {
 	words := strings.Split(text, " ")
@@ -70,6 +69,10 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 	switch name[1:] {
 	case "level", "lvl", "points", "sp", "statpoint", "statpoints", "stats", "stat", "exp", "skill":
 		return s.gmProgress(ctx, c, name[1:], words)
+	case "repair", "fixall":
+		return s.gmRepair(ctx, c, words[1:])
+	case "droprate":
+		return s.gmDropRate(c, words[1:])
 	case "heal", "hp", "full":
 		return s.heal(ctx, c, words)
 	case "gold", "money":

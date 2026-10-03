@@ -6,7 +6,7 @@ The client runs from the decompiled data in repository `data/` (JSON exports, PN
 
 The requested outcome is a full Go replacement for Wonderland-Private-Server, including a web replacement for the Windows administration interface. **That outcome has not been reached.** A successful Go build or working dashboard does not establish gameplay parity.
 
-The separately requested Go/Ebitengine client now has a read-only native artwork workbench and verified terrain-prefix decoder. It renders authentic backgrounds and browses native image archives from all three available client installations. It is not yet server-connected or playable. See [client status and commands](CLIENT.md).
+The separately requested Go/Ebitengine client includes server login, character selection/creation and world rendering alongside the native artwork workbench. Full gameplay parity and native-client acceptance remain pending. See [client status and commands](CLIENT.md).
 
 Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `source-inventory.json` records the full commit and hashes, including UI and support libraries. Counts are an inventory, not a percentage-complete metric.
 
@@ -1005,3 +1005,19 @@ Validation: 20 Python asset-tool tests and affected Go race tests pass. All 40
 remaining static sources reconstruct byte for byte; formatting, lint and server
 build pass. The override document and its manifest entries were purged from the
 active assets database and three asset backups; integrity checks passed.
+
+## Live monster drop multiplier continuation
+
+- Ported AC02 `/droprate` and `:droprate`: GM-only query/update, finite numeric validation and the original 0.1–100 clamp. The process-local setting defaults to 1.0 after restart.
+- Victory loot reads the live setting under world ownership, so existing battles use the value at reward time. MonsterDropManager calibration retains the 5% floor, disabled rows, native/known item validation, authored row order and one-entry limit. Captured monsters remain excluded.
+- Regression tests cover deterministic probability boundaries, malformed values, authorization/revocation, private AC2:16 feedback and actual victory-loot integration. SQL drop definitions remain authoritative; no asset fallback or original account database was added.
+- Remaining GM commands, loot editing and native-client acceptance stay in the pending categories above.
+- Verification: original AC02 and MonsterDropManager SHA-256 hashes matched after CRLF normalization; focused regression tests, full `go test -race ./...` with `WONDERLAND_TEST_ASSETS_DB=var/assets.db` and both native reference data paths, plus `make fmt-check lint build`, passed. Native-client interaction with the new command remains untested.
+
+
+## GM repair continuation
+
+- Ported AC02 `/repair`, `:repair`, `/fixall` and `:fixall`, backed by the original GmManager.RepairAllItems behavior: free durability restoration for worn gear and bag stacks, with optional online target selection.
+- Repairs save before native AC23 bag removals/additions and equipment synchronization. Metadata, quantities and currency remain intact. Healthy repeats make no changes. Missing targets fail explicitly; active interactions on either actor or target block repair. Failed delivery to a repaired target closes that target's connection for a fresh snapshot while retaining the GM session.
+- Regression tests cover independent packet layouts, native additive inventory replay, forge preservation, persistence, aliases, target lookup, permission/revocation, interaction ownership and save failure. Original source hashes match after CRLF normalization. Remaining GM operations and native-client acceptance remain pending.
+- Verification: focused GM repair regressions, the full `go test -race ./...` suite with imported SQL assets and both original native data paths, and `make fmt-check lint build` passed. The server binary was rebuilt; the running instance was not restarted.

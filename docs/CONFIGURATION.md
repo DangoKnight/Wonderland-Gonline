@@ -99,6 +99,18 @@ removal, session termination and audited mall-point adjustments. These operate
 on gameplay state. Registration does not grant GM/admin access. Admin changes do
 not rebuild static data or change the startup listener/timeout configuration.
 
+### GM item repair
+
+GM accounts can use `/repair` or `/fixall` (also with `:`) to repair their own
+items, or append an online character ID/name to repair that character. Repairs
+clear damage on equipped items and bag stacks without spending gold or wrenches.
+Counts, slots and forge metadata are preserved. Companions' equipment and stored
+items are outside this command's scope. Missing targets fail explicitly.
+
+Both characters must have finished loading and have no active battle, trade,
+event, storm or beach sequence. Repairs persist before client updates; repeating
+the command on healthy items makes no changes.
+
 ## Static gameplay tuning
 
 The running server uses a startup snapshot of `assets_database`. SQL indexed rows
@@ -147,10 +159,23 @@ checksums against `data/asset_manifest.json`. Use the appropriate exporter to
 update the definitions and manifest together. Original-data reconstruction
 verification also distinguishes original bytes from deliberate tuning.
 
+### Live monster drop multiplier
+
+A GM account can use `/droprate` (or `:droprate`) to query the current multiplier,
+and `/droprate <number>` to change it. Finite values are clamped to 0.1–100.
+The default is 1.0; restarting the server restores that default. This is a live
+server-wide setting and affects subsequent victory loot rolls, including battles
+already underway. Feedback goes only to the requesting GM.
+
+Each eligible row uses `max(5%, configured_rate × 0.35 × multiplier)`.
+Rates reaching 100% guarantee that eligible row; zero-rate rows stay disabled.
+Only known items listed in the monster's native drop slots can drop. At most one
+row succeeds per uncaptured monster, in authored order. Quantities, EXP, gold,
+gacha rewards and Lucky Draw weights are unchanged.
+
 ### Values that need code changes
 
-There is currently no server-config EXP multiplier, global drop multiplier or
-combo-probability slider. Shared fixed rules live in their owning Go packages;
+There is currently no server-config EXP multiplier or combo-probability slider. Shared fixed rules live in their owning Go packages;
 changing them requires rebuilding the server and testing the resulting behavior.
 Examples:
 
