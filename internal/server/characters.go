@@ -153,7 +153,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.encounter = encounterState{next: firstEncounter}
 	c.encounter.enterMap()
 	c.slot = char.Slot
-	c.lastWarp, c.spawnX, c.spawnY = time.Now(), char.X, char.Y
+	c.arrived = true
 	s.mu.Lock()
 	c.info.CharacterID = char.ID
 	c.info.CharacterName = char.Name

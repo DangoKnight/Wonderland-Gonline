@@ -189,7 +189,10 @@ func npcSpeaker(n *world.NPC) hud.Speaker {
 		return who
 	}
 	who.BodyW, who.BodyH = f.FrameSize(talkBodyAction)
-	who.Body = func(dst *surface.Surface, x, y int) { f.Draw(dst, x, y, talkBodyAction) }
+	// The body goes through the map's sprite placement (FUN_002fe8e8), so
+	// tall-name templates such as Burke the tiger drop as they do there.
+	drop := n.Info.SpriteDrop()
+	who.Body = func(dst *surface.Surface, x, y int) { f.Draw(dst, x, y+drop, talkBodyAction) }
 	return who
 }
 
@@ -277,9 +280,27 @@ func (c *Client) pickAnswer(x, y int) {
 // eventClose is 20/7: the step ends and is acknowledged.
 func (c *Client) eventClose() { c.event.done = true }
 
-// eventResume is 20/8: the event is over.
+// Receive cases 10, 0xb and 0xd..0x11 of 20 (0x2e3dc0) all set +0x7108
+// and clear +0x7109; only 10 is named by the server. The others keep their
+// numbers until their senders are traced.
+const (
+	eventStepDoneWireCode11 = 11
+	eventStepDoneWireCode13 = 13
+	eventStepDoneWireCode17 = 17
+)
+
+// stepDone reports a 20 subcommand that finishes the step.
+func stepDone(sub byte) bool {
+	return sub == protocol.EventStepComplete || sub == eventStepDoneWireCode11 ||
+		(sub >= eventStepDoneWireCode13 && sub <= eventStepDoneWireCode17)
+}
+
+// eventResume is 20/8 (receive case 8): the event is over and the server
+// no longer holds the player (+0x2392 = 0), so a door event's 6/2 hold
+// ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
 	c.event = eventState{}
+	c.held = false
 	c.Talk.Hide()
 }
 

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/binary"
+	"image"
 	"log"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"wonderland-go/client/wlo/hud"
 	"wonderland-go/client/wlo/movie"
 	"wonderland-go/client/wlo/role"
+	"wonderland-go/client/wlo/surface"
 	"wonderland-go/client/wlo/world"
 	"wonderland-go/internal/clientassets"
 )
@@ -23,9 +25,12 @@ import (
 // interpreter marked it done when the movie started (+0x7108) and the
 // acknowledgement waits for the movie.
 //
-// Not ported yet: the screen effects of the timeline (overlay, flashes,
-// shaking), its sounds and music, the pictures (images), the actors'
-// party-member speakers, and the music change at the end.
+// The timeline's effects, music and keyframe sounds are in movie/effects.go
+// and soundtable.go, the pictures in movie/pictures.go. Not ported yet: the
+// weather overlays (1, 2, 3, 10), looping keyframe sounds, pictures' light
+// blit and their place in the depth order (drawn over the scene here), the
+// actors' trails and draw modes (keyframe +0x1d), and party-member
+// speakers.
 const (
 	eventFrameValue  = 10 // u32
 	movieScenePrefix = "Map"
@@ -41,6 +46,50 @@ type moviePlay struct {
 	view *world.World
 	npcs []*world.NPC // the actors after the player, in order
 	mode byte
+	pics map[string]*surface.Surface // the pictures' images, keyed
+}
+
+// pictureArchives are the image archives (pic\*.BMg) a picture's name is
+// looked up in; the original registers them all in one picture database.
+var pictureArchives = []string{"images3", "images", "images1", "images4", "images3_01", "images3_c01", "images1_d01", "images4_c01", "images_c01"}
+
+// picture loads a movie picture's image with its colour key.
+func (c *Client) picture(mp *moviePlay, pic *movie.Picture) *surface.Surface {
+	if s, ok := mp.pics[pic.Name]; ok {
+		return s
+	}
+	var s *surface.Surface
+	for _, arc := range pictureArchives {
+		if m, err := c.Assets.LoadPicture(arc, pic.Name); err == nil {
+			s = surface.FromImage(m)
+			s.Key = pic.Key()
+			break
+		}
+	}
+	mp.pics[pic.Name] = s
+	return s
+}
+
+// drawPictures is FUN_00342508 for each picture drawn in the stage: one
+// frame of its strip, centred on its point with its bottom on it. Pictures
+// below the full light level (+0x2164 < 255) use the light blit in the
+// original; the movies seen so far use 255, so all are drawn keyed.
+func (c *Client) drawPictures(mp *moviePlay) {
+	p := mp.p
+	cam := p.Camera.Add(p.ShakeOffset())
+	for _, ps := range p.Pictures {
+		if !ps.Drawn(p.Stage) {
+			continue
+		}
+		img := c.picture(mp, ps.Pic)
+		if img == nil {
+			continue
+		}
+		rows, cols := ps.Pic.Grid()
+		w, h := img.W/cols, img.H/rows
+		pt := ps.Point()
+		c.Screen.DrawRect(pt.X-w/2-cam.X, pt.Y-h-cam.Y, image.Rect(0, (ps.Frame-1)*h, w, ps.Frame*h), img, true)
+	}
 }
 
 // startMovie is kind 5.
@@ -58,7 +107,7 @@ func (c *Client) startMovie(s []byte) {
 		c.event.done = true
 		return
 	}
-	mp := &moviePlay{view: view, mode: movieModeNormal}
+	mp := &moviePlay{view: view, mode: movieModeNormal, pics: map[string]*surface.Surface{}}
 	if mode := s[eventFrameMode]; mode == 2 || mode == 4 {
 		mp.mode = movieModeWide
 	}
@@ -87,7 +136,10 @@ func (c *Client) startMovie(s []byte) {
 	}
 	view.Now = c.World.Now
 	mp.p = &movie.Player{M: m, Now: c.Now, Facing: world.Facing,
-		Say: func(l movie.Line) { c.movieSay(mp, l) }, Talking: c.Talk.Shown}
+		Say: func(l movie.Line) { c.movieSay(mp, l) }, Talking: c.Talk.Shown,
+		Music:    func(i int) { c.playTableMusic(i) },
+		MapMusic: c.playMapMusic,
+		Sound:    func(i int, _ bool) { c.playTableSound(i) }}
 	mp.p.Start()
 	c.movie = mp
 	c.Talk.Lowered = true
@@ -128,24 +180,65 @@ func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 }
 
 // sync copies the movie's actors and camera into its view.
+// The shake moves the camera (+4000, +0xfa4), only the actors of the
+// current stage are drawn (FUN_00340404), and each shows its keyframe's
+// fixed frame or its own animation (FUN_00339930).
 func (c *Client) sync(mp *moviePlay) {
 	p := mp.p
-	cam := p.Camera
-	*mp.view.CameraAt = cam
+	*mp.view.CameraAt = p.Camera.Add(p.ShakeOffset())
+	mp.view.HideScene = p.HideScene
 	i := 0
 	for _, a := range p.Actors {
 		pt := a.Point()
 		action := a.Action()
+		frame, fixed := a.Frame()
 		if a.Actor == p.M.Player {
 			mp.view.Player.X, mp.view.Player.Y = pt.X, pt.Y
 			mp.view.Player.Direction = int32(action)
+			mp.view.HidePlayer = !p.Shown(a)
+			if h, ok := mp.view.Body.(interface{ Hold(int, bool) }); ok {
+				h.Hold(frame, !fixed)
+			}
 			continue
 		}
 		n := mp.npcs[i]
 		i++
-		n.X, n.Y, n.Action, n.Shown = pt.X, pt.Y, action, a.Active(p.Stage) || a.Key > 0
+		n.X, n.Y, n.Action, n.Shown = pt.X, pt.Y, action, p.Shown(a)
+		n.Fixed, n.Wrap, n.Frame = true, !fixed, frame
 	}
 }
+
+// drawEffects paints the stage's overlay fill (FUN_003346e8: ro_ARGB
+// through ro_Clipper_Alpha_Fill) and the scene's light (DAT_0072a090).
+func (c *Client) drawEffects(p *movie.Player) {
+	full := image.Rect(0, 0, ScreenWidth, ScreenHeight)
+	if a, r, g, b, ok := p.Fill(); ok {
+		c.Screen.FillAlpha(full, uint32(r)|uint32(g)<<8|uint32(b)<<16, int(a))
+	}
+	if p.Light < lightFull {
+		c.Screen.FillAlpha(full, 0, lightFull-p.Light)
+	}
+}
+
+// zoomScreen is the main form's view rectangle (+0x584): each zoom step
+// trims 20 by 15 pixels from every side, and the rest fills the window.
+func (c *Client) zoomScreen(zoom int) {
+	if zoom <= 0 {
+		return
+	}
+	r := image.Rect(zoom*movie.ZoomStepW, zoom*movie.ZoomStepH, ScreenWidth-zoom*movie.ZoomStepW, ScreenHeight-zoom*movie.ZoomStepH)
+	src := surface.New(r.Dx(), r.Dy())
+	src.DrawRect(0, 0, r, c.Screen, false)
+	for y := 0; y < ScreenHeight; y++ {
+		sy := y * r.Dy() / ScreenHeight
+		for x := 0; x < ScreenWidth; x++ {
+			c.Screen.Pix[y*ScreenWidth+x] = src.Pix[sy*r.Dx()+x*r.Dx()/ScreenWidth]
+		}
+	}
+}
+
+// lightFull is DAT_0072a090's full light.
+const lightFull = 0xff
 
 // movieFrame runs and draws the movie; it reports false when none plays.
 func (c *Client) movieFrame() bool {
@@ -156,7 +249,10 @@ func (c *Client) movieFrame() bool {
 	mp.p.Tick()
 	c.sync(mp)
 	mp.view.Draw()
+	c.drawPictures(mp)
+	c.drawEffects(mp.p)
 	c.Talk.Draw()
+	c.zoomScreen(mp.p.Zoom)
 	if mp.p.Ended() {
 		c.endMovie()
 	}

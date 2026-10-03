@@ -41,7 +41,7 @@ func TestBeachMovie(t *testing.T) {
 	}
 	found := false
 	for _, l := range m.Lines {
-		if l.Stage == 14 && l.Speaker == PlayerTemplate && l.Talk == 20306 {
+		if l.Stage == 15 && l.Speaker == PlayerTemplate && l.Talk == 20306 {
 			found = true
 		}
 	}
@@ -68,5 +68,26 @@ func TestAllMovies(t *testing.T) {
 	}
 	if bad > 0 {
 		t.Fatalf("%d of %d movies failed", bad, len(styles.raw))
+	}
+}
+
+// TestStormLines: the storm's lines are records 1..4 of [speaker, talk,
+// stage, delay]: the captain asks what is the matter in stage 2, after the
+// first red stage, and the crewman reports in stage 4, as the video shows.
+func TestStormLines(t *testing.T) {
+	needAssets(t)
+	m, err := Load(assets, 123)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Line{{Stage: 2, Delay: 500, Speaker: 14003, Talk: 30115}, {Stage: 4, Delay: 800, Speaker: 14002, Talk: 30159},
+		{Stage: 5, Delay: 500, Speaker: 14003, Talk: 30160}, {Stage: 14, Delay: 500, Speaker: 14003, Talk: 30249}}
+	if len(m.Lines) != len(want) {
+		t.Fatalf("lines %+v", m.Lines)
+	}
+	for i, l := range want {
+		if m.Lines[i] != l {
+			t.Fatalf("line %d %+v, want %+v", i, m.Lines[i], l)
+		}
 	}
 }

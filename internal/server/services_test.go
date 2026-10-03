@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"testing"
-	"time"
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
@@ -135,7 +134,7 @@ func TestMenuWarps(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Carnie's exit returns to where the visit began.
-	c.lastWarp = time.Time{}
+	c.arrived = false
 	c.character.X, c.character.Y = 600, 600
 	if err := s.worldCommand(ctx, c, []byte{20, 8, 1, 0}); err != nil || c.character.Map != 10017 || c.character.X != 1042 {
 		t.Fatal("carnie exit", c.character.Map, err)

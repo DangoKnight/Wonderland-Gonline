@@ -184,10 +184,11 @@ func TestRegionsAndDoorEntries(t *testing.T) {
 	say := func(id byte, talk uint16) assets.Event {
 		return assets.Event{ClickID: uint16(id), Branches: []assets.Branch{{Index: 1, Condition: evCond(0, 0, 0, 0, 0, 0), Operations: []assets.Operation{evOp(1, 2, 0, 0, talk, 0)}}}}
 	}
-	// Alice stands at (1042, 1075): cell (52, 53). Region 1 covers cells 60..61,
-	// door 2 is around her, and region 3 lies at cell 70.
+	// Alice stands at (1042, 1075): cell (53, 54), as EVE cells count from 1.
+	// Region 1 covers cells 61..62, door 2 is around her, and region 3 lies at
+	// cell 71.
 	s.Assets.Maps[10017] = assets.Map{ID: 10017,
-		Entries: []assets.AreaEntry{areaEntry(1, 1, 60, 53, 61, 53, 7), areaEntry(2, 2, 52, 53, 52, 53, 8), areaEntry(3, 1, 70, 53, 70, 53, 9)},
+		Entries: []assets.AreaEntry{areaEntry(1, 1, 61, 54, 62, 54, 7), areaEntry(2, 2, 53, 54, 53, 54, 8), areaEntry(3, 1, 71, 54, 71, 54, 9)},
 		Events:  []assets.Event{say(7, 30001), say(8, 30002), say(9, 30003)},
 	}
 	s.World = world.New(s.Assets)
@@ -214,7 +215,17 @@ func TestRegionsAndDoorEntries(t *testing.T) {
 	}
 	do(20, 6)
 	do(protocol.Builder{6, 1, 0}.U16(1042).U16(1075)...)
-	c.lastWarp = time.Time{}
+	// The area the player lands in is reported before any move; it does not
+	// run until the player has moved.
+	c.arrived = true
+	wire.Reset()
+	if got = do(20, 8, 2, 0); len(got) != 1 || !bytes.Equal(got[0], []byte{20, 8}) || c.event != nil {
+		t.Fatal("step on arrival", got)
+	}
+	do(protocol.Builder{6, 1, 0}.U16(1043).U16(1075)...)
+	if c.arrived {
+		t.Fatal("still arrived after a move")
+	}
 	wire.Reset()
 	// A step reported as entry 2 runs the door's script instead of warping.
 	if got = do(20, 8, 2, 0); !contains(got, eventFrame(1, 3, 0, 1, 0, 30002, 1, 1)) {

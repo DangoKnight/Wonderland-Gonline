@@ -202,6 +202,7 @@ func (g *Game) Layout(int, int) (int, int) { return ScreenWidth, ScreenHeight }
 func Run(c *Client) error {
 	sounds := &Sounds{Root: c.Assets.Media} // exported PCM WAV login sounds
 	c.Env.Sound = sounds.Play
+	c.sfx = sounds
 	c.Music = &Music{Root: c.Assets.Media, Context: sounds.Context}
 	c.Music.Play(loginMusic) // CheckStartMusic
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)

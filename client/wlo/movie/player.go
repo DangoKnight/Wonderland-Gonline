@@ -31,8 +31,13 @@ type ActorState struct {
 	Facing int // +0x2dd0: the direction
 	// keyFacing is the current keyframe's facing (Keep: by the movement).
 	keyFacing int
-	Moving    bool
-	at        time.Time
+	// The animation frame (+0x68), stepped at the speed class's interval
+	// (+0x2dd8, FUN_00343068) by FUN_0033984c.
+	frame   int
+	class   int
+	frameAt time.Time
+	Moving  bool
+	at      time.Time
 }
 
 // Active reports whether the actor takes part in stage s.
@@ -78,22 +83,26 @@ type Player struct {
 	// window still shows it.
 	Say     func(Line)
 	Talking func() bool
-	// Sound plays a 1-based sound list entry (keyframe sounds, stage
-	// music).
-	Sound func(index int, loop bool)
+	// Music plays a sound table entry as the music, MapMusic the map's
+	// track; Sound plays a keyframe's sound table entry once.
+	Music    func(index int)
+	MapMusic func()
+	Sound    func(index int, loop bool)
 	// Facing turns a movement into a direction (FUN_0041218c).
 	Facing func(x, y, tx, ty, current int) int
 
-	Stage   int // +0xf90
-	Actors  []*ActorState
-	Camera  image.Point // the camera's top-left
-	cam     ActorState
-	camKey  int // +0x2140
-	stageAt time.Time
-	line    *Line // the line being said (+0xf98)
-	lineAt  time.Time
-	said    map[int]bool
-	ended   bool
+	Stage    int // +0xf90
+	Actors   []*ActorState
+	Pictures []*PictureState
+	Camera   image.Point // the camera's top-left
+	cam      ActorState
+	camKey   int // +0x2140
+	stageAt  time.Time
+	line     *Line // the line being said (+0xf98)
+	lineAt   time.Time
+	said     map[int]bool
+	ended    bool
+	effects
 }
 
 // Start begins the movie at stage 0 (FUN_0033e18c's set-up).
@@ -105,7 +114,8 @@ func (p *Player) Start() {
 			return
 		}
 		k := a.Keys[0]
-		s := &ActorState{Actor: a, X: float64(k.X), Y: float64(k.Y), TX: k.X, TY: k.Y, Speed: speeds[4], Pose: NormalPose, Facing: a.Facing, keyFacing: Keep, at: now}
+		s := &ActorState{Actor: a, X: float64(k.X), Y: float64(k.Y), TX: k.X, TY: k.Y, Speed: speeds[defaultClass], Pose: NormalPose, Facing: a.Facing, keyFacing: Keep, at: now,
+			class: defaultClass, frameAt: now}
 		if k.Pose != Keep {
 			s.Pose = k.Pose
 		}
@@ -114,6 +124,9 @@ func (p *Player) Start() {
 	add(p.M.Player)
 	for i := range p.M.NPCs {
 		add(&p.M.NPCs[i])
+	}
+	for i := range p.M.Images {
+		p.Pictures = append(p.Pictures, newPicture(&p.M.Images[i], now))
 	}
 	c := p.M.Camera
 	if len(c.Keys) > 0 {
@@ -125,7 +138,8 @@ func (p *Player) Start() {
 	}
 	p.Camera = p.cam.Point()
 	p.stageAt = now
-	p.enterStage()
+	p.Light = lightFull
+	p.enterStage(now)
 }
 
 // Ended reports whether the movie has finished.
@@ -150,6 +164,19 @@ func (p *Player) Tick() {
 		return
 	}
 	now := p.Now()
+	// The fade and the shakes step once per game frame; a fade holds the
+	// movie until it completes (FUN_003406c4).
+	if p.gameFrames(now) {
+		return
+	}
+	for _, a := range p.Actors {
+		a.stepFrame(now)
+	}
+	for _, s := range p.Pictures {
+		if s.Drawn(p.Stage) {
+			s.stepFrame(now)
+		}
+	}
 	if p.line != nil {
 		// A line waits its delay, then for the talk window to close.
 		if now.Sub(p.lineAt) < time.Duration(p.line.Delay)*time.Millisecond || p.Talking() {
@@ -169,6 +196,15 @@ func (p *Player) Tick() {
 			done++
 		}
 		p.Camera = p.cam.Point()
+	}
+	for _, s := range p.Pictures {
+		if !s.active(p.Stage) {
+			continue
+		}
+		active++
+		if s.mover.step(now) {
+			done++
+		}
 	}
 	for _, a := range p.Actors {
 		if !a.Active(p.Stage) {
@@ -219,6 +255,11 @@ func (p *Player) moveAll(now time.Time) {
 			a.step(now)
 		}
 	}
+	for _, s := range p.Pictures {
+		if s.active(p.Stage) {
+			s.mover.step(now)
+		}
+	}
 	if p.cameraActive() {
 		p.cam.step(now)
 		p.Camera = p.cam.Point()
@@ -246,6 +287,11 @@ func (p *Player) advance(now time.Time) {
 			p.cam.Speed = speedOf(c.Keys[k].Speed, p.cam.Speed)
 		}
 	}
+	for _, s := range p.Pictures {
+		if s.active(p.Stage) {
+			s.next()
+		}
+	}
 	for _, a := range p.Actors {
 		if !a.Active(p.Stage) {
 			continue
@@ -258,6 +304,9 @@ func (p *Player) advance(now time.Time) {
 		k := a.Actor.Keys[a.Key]
 		a.TX, a.TY = k.X, k.Y
 		a.Speed = speedOf(k.Speed, a.Speed)
+		if k.Speed > 0 && k.Speed < len(speeds) {
+			a.class = k.Speed
+		}
 		if k.Pose != Keep {
 			a.Pose = k.Pose
 		}
@@ -270,19 +319,23 @@ func (p *Player) advance(now time.Time) {
 	p.stageAt = now
 	if p.Stage > p.M.Last {
 		p.ended = true
+		if p.MusicChanged && p.MapMusic != nil {
+			p.MapMusic()
+		}
 		return
 	}
-	p.enterStage()
+	p.enterStage(now)
 }
 
-// enterStage applies the stage's timeline: its music (the screen effects
-// are not ported yet).
-func (p *Player) enterStage() {
-	if p.Stage < len(p.M.Stages) {
-		if m := p.M.Stages[p.Stage].Music; m > 0 && p.Sound != nil {
-			p.Sound(m, true)
-		}
-	}
+// enterStage applies the stage's timeline (effects.go).
+func (p *Player) enterStage(now time.Time) {
+	p.applyEffects(now)
+}
+
+// Shown reports whether the actor is drawn in the current stage
+// (FUN_00340404: from stage Start + 1 to Start + Count).
+func (p *Player) Shown(a *ActorState) bool {
+	return a.Actor.Start+1 <= p.Stage && p.Stage <= a.Actor.Start+a.Actor.Count
 }
 
 func speedOf(class int, current float64) float64 {
@@ -311,4 +364,32 @@ func (a *ActorState) Action() int {
 		}
 	}
 	return a.Pose + d
+}
+
+// frameIntervals are FUN_00343068's frame times per speed class.
+var frameIntervals = [...]time.Duration{0, 500 * time.Millisecond, 400 * time.Millisecond, 300 * time.Millisecond,
+	230 * time.Millisecond, 100 * time.Millisecond, 50 * time.Millisecond, time.Millisecond}
+
+const defaultClass = 4
+
+// stepFrame advances an animating actor's frame (FUN_00339930).
+func (a *ActorState) stepFrame(now time.Time) {
+	if _, fixed := a.Frame(); fixed {
+		return
+	}
+	if now.Sub(a.frameAt) > frameIntervals[a.class] {
+		a.frameAt = now
+		a.frame++
+	}
+}
+
+// Frame is the frame to draw: the keyframe's fixed frame (clamped to the
+// action's last by the painter), or the animation counter, which wraps.
+func (a *ActorState) Frame() (frame int, fixed bool) {
+	if a.Key < len(a.Actor.Keys) {
+		if f := a.Actor.Keys[a.Key].Frame; f > 0 {
+			return f - 1, true
+		}
+	}
+	return a.frame, false
 }

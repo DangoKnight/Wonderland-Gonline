@@ -22,6 +22,7 @@ type Sounds struct {
 	Root  string
 	once  sync.Once
 	ctx   *audio.Context
+	mu    sync.Mutex
 	cache map[string][]byte
 }
 
@@ -36,7 +37,17 @@ func (s *Sounds) Context() *audio.Context {
 
 // Play starts a sound; missing or unreadable files are ignored.
 func (s *Sounds) Play(path string) {
+	if pcm := s.PCM(path); len(pcm) > 0 {
+		s.ctx.NewPlayerFromBytes(pcm).Play()
+	}
+}
+
+// PCM is a sound's decoded 16-bit stereo samples at the mixing rate, read
+// once; nil for a missing or unreadable file.
+func (s *Sounds) PCM(path string) []byte {
 	s.Context()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	pcm, ok := s.cache[path]
 	if !ok {
 		raw, err := os.ReadFile(login.Path(s.Root, strings.Split(path, `\`)...))
@@ -47,7 +58,5 @@ func (s *Sounds) Play(path string) {
 		}
 		s.cache[path] = pcm
 	}
-	if len(pcm) > 0 {
-		s.ctx.NewPlayerFromBytes(pcm).Play()
-	}
+	return pcm
 }

@@ -1,6 +1,7 @@
 package movie
 
 import (
+	"image"
 	"testing"
 	"time"
 )
@@ -71,5 +72,48 @@ func TestActorStep(t *testing.T) {
 	now = now.Add(time.Second)
 	if !a.step(now) || a.X != 80 || a.Y != 40 {
 		t.Fatalf("at %v,%v, not arrived", a.X, a.Y)
+	}
+}
+
+// TestBeachDragFrames: while Robinson drags the player, both hold their
+// keyframes' frames (+0x19): Robinson kneels (frame 0), the player lies
+// (frame 1); neither animates.
+func TestBeachDragFrames(t *testing.T) {
+	needAssets(t)
+	m, err := Load(assets, 12008)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(0, 0)
+	p := &Player{M: m, Now: func() time.Time { return now }, Talking: func() bool { return false }}
+	p.Start()
+	for i := 0; i < 400 && p.Stage < 8; i++ {
+		now = now.Add(10 * time.Millisecond)
+		p.Tick()
+		player, robinson := p.Actors[0], p.Actors[1]
+		if f, fixed := player.Frame(); !fixed || f != 1 {
+			t.Fatalf("stage %d: player frame %d fixed %v", p.Stage, f, fixed)
+		}
+		if f, fixed := robinson.Frame(); !fixed || f != 0 {
+			t.Fatalf("stage %d: Robinson frame %d fixed %v", p.Stage, f, fixed)
+		}
+	}
+}
+
+// TestQuakePace: a jolt advances one step per 30 ms game frame however
+// often the movie is ticked.
+func TestQuakePace(t *testing.T) {
+	m := &Movie{Stages: []Stage{{Wait: 10000, ShakeA: ShakeQuake}}, Last: 0}
+	now := time.Unix(0, 0)
+	p := &Player{M: m, Now: func() time.Time { return now }, Talking: func() bool { return false }}
+	p.Start()
+	seen := map[image.Point]int{}
+	for i := 0; i <= 7*30; i++ { // 7 game frames after the first tick, at a 1 ms display frame
+		now = now.Add(time.Millisecond)
+		p.Tick()
+		seen[p.ShakeOffset()]++
+	}
+	if p.step != 0 || len(seen) != shakeQuakeSteps {
+		t.Fatalf("after 7 game frames: step %d, offsets %v", p.step, seen)
 	}
 }

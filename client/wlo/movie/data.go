@@ -39,7 +39,7 @@ type Keyframe struct {
 	Speed     int // +0x0d: the speed class (speeds)
 	Pose      int // +0x11 (+0xa5): the role's pose (+0x1f20), 255 keeps
 	Field15   int
-	Field19   int
+	Frame     int // +0x19: the frame shown (1-based) instead of animating, 0 to animate
 	Field1d   int
 	Sound     int  // +0x21: 1-based index into the sound list, 0 for none
 	SoundLoop bool // +0x25
@@ -65,6 +65,7 @@ type Point struct {
 	X, Y  int
 	Shown bool
 	Speed int
+	Frame int // +0xd: a picture's fixed frame (1-based), 0 to animate
 	Raw   [0x21]byte
 }
 
@@ -87,12 +88,50 @@ type Picture struct {
 	Suffix int32
 }
 
+// A picture's header, as the loader (FUN_0033e18c) reads it: the stage
+// span (+0x213c, +0x214c), the colour key (+0x215c), the light level
+// (+0x2164; 255 draws with the key alone), the frame grid (+0x2c rows,
+// +0x30 columns), the frame time (+0x2158, ms) and the repeats (+0x2168).
+const (
+	pictureStart = iota
+	pictureCount
+	pictureKey
+	pictureLevel
+	pictureRows
+	pictureCols
+	pictureInterval
+	pictureRepeats
+)
+
 // Start and Count are a picture's stage span.
-func (p *Picture) Start() int { return int(p.Header[0]) }
-func (p *Picture) Count() int { return int(p.Header[1]) }
+func (p *Picture) Start() int { return int(p.Header[pictureStart]) }
+func (p *Picture) Count() int { return int(p.Header[pictureCount]) }
+
+// Key is the picture's transparent RGB565 colour.
+func (p *Picture) Key() uint16 { return uint16(p.Header[pictureKey]) }
+
+// Level is the light level; LevelKeyed draws with the colour key only.
+func (p *Picture) Level() int { return int(p.Header[pictureLevel]) }
+
+// LevelKeyed is the level of a plain colour-keyed picture.
+const LevelKeyed = 0xff
+
+// Grid is the frame grid: rows of frames stacked vertically, columns side
+// by side (the draw uses one column).
+func (p *Picture) Grid() (rows, cols int) {
+	return max(int(p.Header[pictureRows]), 1), max(int(p.Header[pictureCols]), 1)
+}
 
 // Line is a line of dialogue (+0x164 + i·4): said at Stage after Delay ms
 // by Speaker (an Npc.dat template, or 0xffff for the player).
+//
+// lineInts is a record's size in ints; the export's line rows begin
+// lineShift ints into the unused record 0.
+const (
+	lineInts  = 4
+	lineShift = 2
+)
+
 type Line struct {
 	Stage   int
 	Delay   int
@@ -102,12 +141,14 @@ type Line struct {
 
 // Stage is one stage's timeline entry (+0x2f8, +0x2fc).
 type Stage struct {
-	Wait    int  // ms the stage lasts at least
-	Overlay byte // +4: the screen effect (+0xf9a)
-	FlashA  byte // +8: +0xf9c
-	FlashB  byte // +0xc: +0xf9d
-	Music   int  // +0x10: 1-based sound list index, 0 for none
-	Bytes   [4]byte
+	Wait   int  // ms the stage lasts at least
+	Effect byte // +4: the screen effect operand (Effect*)
+	ShakeA byte // +8: the first shake operand (+0xf9c, Shake*)
+	ShakeB byte // +0xc: the second (+0xf9d)
+	Music  int  // +0x10: 1-based sound table entry, 0 for none
+	// Tint is effect 9's fill colour (+0x38..+0x44): alpha, red, green,
+	// blue.
+	Tint [4]byte
 }
 
 // Movie is one .sty file.
@@ -244,8 +285,8 @@ func decode(raw json.RawMessage) (*Movie, error) {
 		st := Stage{Wait: int(w)}
 		if i < len(s.Timeline.Operands) {
 			o := s.Timeline.Operands[i]
-			st.Overlay, st.FlashA, st.FlashB, st.Music = o.B0, o.B1, o.B2, int(o.U3)
-			st.Bytes = [4]byte{o.B7, o.B8, o.B9, o.B10}
+			st.Effect, st.ShakeA, st.ShakeB, st.Music = o.B0, o.B1, o.B2, int(o.U3)
+			st.Tint = [4]byte{o.B7, o.B8, o.B9, o.B10}
 		}
 		m.Stages = append(m.Stages, st)
 	}
@@ -256,11 +297,20 @@ func decode(raw json.RawMessage) (*Movie, error) {
 	if len(s.Counts) == 6 {
 		lines = s.Counts[4]
 	}
-	for i, r := range s.Extra {
-		if i >= lines || len(r) < 4 {
+	// The loader reads lines+1 records of four ints (speaker, talk, stage at
+	// +0xc, delay at +0x10) and plays records 1..lines; the export's rows
+	// start two ints into record 0, so record i begins at 4i − 2.
+	var flat []int32
+	for _, r := range s.Extra {
+		flat = append(flat, r...)
+	}
+	for i := 1; i <= lines; i++ {
+		k := lineInts*i - lineShift
+		if k+lineInts > len(flat) {
 			break
 		}
-		m.Lines = append(m.Lines, Line{Stage: int(r[0]), Delay: int(r[1]), Speaker: uint32(r[2]), Talk: uint16(r[3])})
+		r := flat[k:]
+		m.Lines = append(m.Lines, Line{Speaker: uint32(r[0]), Talk: uint16(r[1]), Stage: int(r[2]), Delay: int(r[3])})
 	}
 	return m, nil
 }
@@ -292,7 +342,7 @@ func actorOf(e exActor, npc bool) (*Actor, error) {
 func keyframe(b []byte) Keyframe {
 	i := func(o int) int { return int(int32(binary.LittleEndian.Uint32(b[o:]))) }
 	return Keyframe{Facing: i(0), X: i(4), Y: i(8), Shown: b[0xc] != 0, Speed: i(0xd), Pose: i(0x11),
-		Field15: i(0x15), Field19: i(0x19), Field1d: i(0x1d), Sound: i(0x21), SoundLoop: b[0x25] != 0, Channel: i(0x26)}
+		Field15: i(0x15), Frame: i(0x19), Field1d: i(0x1d), Sound: i(0x21), SoundLoop: b[0x25] != 0, Channel: i(0x26)}
 }
 
 func points(frames []exFrame) []Point {
@@ -303,7 +353,8 @@ func points(frames []exFrame) []Point {
 	var out []Point
 	for ; len(b) >= pointBytes; b = b[pointBytes:] {
 		p := Point{X: int(int32(binary.LittleEndian.Uint32(b))), Y: int(int32(binary.LittleEndian.Uint32(b[4:]))),
-			Shown: b[8] != 0, Speed: int(int32(binary.LittleEndian.Uint32(b[9:])))}
+			Shown: b[8] != 0, Speed: int(int32(binary.LittleEndian.Uint32(b[9:]))),
+			Frame: int(int32(binary.LittleEndian.Uint32(b[0xd:])))}
 		copy(p.Raw[:], b)
 		out = append(out, p)
 	}

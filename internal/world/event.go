@@ -296,9 +296,20 @@ func areaOf(e assets.AreaEntry) Area {
 }
 
 // Inside is InsideEntry: the position's cell, optionally widened by margin cells.
+// EVE cells count from 1, and the area spans |X2 - X1| + 1 cells from X1, as the
+// client's scene loader builds it (FUN_003090f4: (X1 - 1) * 20 wide
+// (|X2 - X1| + 1) * 20), so the client's 20/8 and the server agree on the area.
 func (a Area) Inside(x, y uint16, margin int32) bool {
-	cx, cy := int32(x)/RegionCellPixels, int32(y)/RegionCellPixels
-	return cx >= a.X1-margin && cx <= a.X2+margin && cy >= a.Y1-margin && cy <= a.Y2+margin
+	cx, cy := int32(x)/RegionCellPixels+1, int32(y)/RegionCellPixels+1
+	x2, y2 := a.X1+absCells(a.X2-a.X1), a.Y1+absCells(a.Y2-a.Y1)
+	return cx >= a.X1-margin && cx <= x2+margin && cy >= a.Y1-margin && cy <= y2+margin
+}
+
+func absCells(v int32) int32 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Entry is the region or door with this ID (TryExecuteEntry's lookup).

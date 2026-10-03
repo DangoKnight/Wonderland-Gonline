@@ -32,12 +32,30 @@ type NPC struct {
 	Lit     bool
 	frame   int
 	frameAt time.Time
+	hold    int  // the fixed frame, < 0 to animate
+	wrap    bool // hold counts frames that wrap at the action's count
+}
+
+// Hold fixes the drawn frame: a prop's +0x11f or a movie keyframe's frame
+// (clamped to the action's last), or with wrap a movie actor's animation
+// counter. A negative frame animates by the NPC's own clock.
+func (n *NPC) Hold(frame int, wrap bool) { n.hold, n.wrap = frame, wrap }
+
+// shown is the frame drawn of count frames.
+func (n *NPC) shown(count int) int {
+	switch {
+	case n.hold >= 0 && n.wrap:
+		return n.hold % count
+	case n.hold >= 0:
+		return min(n.hold, count-1)
+	}
+	return n.frame % count
 }
 
 // NewNPC is FUN_004265a4's appearance part: the template's look and its
 // four colour values over a neutral block.
 func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
-	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors()}
+	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors(), hold: -1}
 	for i, v := range colors {
 		n.colors.Set(int32(v), allParts, i+1)
 	}
@@ -52,7 +70,8 @@ func (n *NPC) SetLit(on bool) { n.Lit = on }
 func (n *NPC) Sprite() int { return n.sprite }
 
 // Draw draws the NPC's feet at (x, y). The frame advances every 100 ms
-// (230 ms standing) and wraps at the action's frame count, as for players.
+// (230 ms standing) and wraps at the action's frame count, as for players,
+// unless a frame is held (FUN_0030120c's frame argument).
 func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 	arc, key := n.Lib.lookup(npcFamily, n.sprite)
 	if arc == nil {
@@ -71,7 +90,7 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 		n.frame++
 	}
 	n.frame %= count
-	if f := s.frame(action, n.frame); f != nil {
+	if f := s.frame(action, n.shown(count)); f != nil {
 		colors := &n.colors
 		if n.Lit {
 			lit := n.colors.lifted(litSteps)
@@ -96,7 +115,7 @@ func (n *NPC) Bounds(x, y, action int) image.Rectangle {
 	if count == 0 {
 		return image.Rectangle{}
 	}
-	f := s.frame(action, n.frame%count)
+	f := s.frame(action, n.shown(count))
 	if f == nil {
 		return image.Rectangle{}
 	}

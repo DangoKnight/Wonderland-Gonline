@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"math"
 	"sort"
 	"time"
 	"wonderland-go/internal/game"
@@ -199,11 +198,6 @@ func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *pet
 	return append(packets, s.World.Journal(&char, view)...)
 }
 
-const (
-	warpCooldown = 2500 * time.Millisecond
-	spawnGuard   = 4000 * time.Millisecond
-)
-
 // usePortal handles AC20:8. Reference: AC20.Recv8 and GameMap.Teleport(Regular).
 func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	// The C# reader ignores bytes after the portal ID.
@@ -237,12 +231,10 @@ func (s *Server) enterPortal(ctx context.Context, c *Session, portal uint16) err
 func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16, scripted bool) error {
 	unfreeze := func() error { return c.send([]byte{protocol.CommandEvent, protocol.EventResume}) }
 	char := c.character
-	elapsed := time.Since(c.lastWarp)
-	if elapsed < warpCooldown {
-		return unfreeze()
-	}
-	// Do not bounce a player back through the portal they arrived on.
-	if elapsed < spawnGuard && c.spawnX > 0 && c.spawnY > 0 && math.Hypot(float64(int(char.X)-int(c.spawnX)), float64(int(char.Y)-int(c.spawnY))) < spawnGuardRangePixels {
+	// Do not bounce a player back through the area it arrived in: the client
+	// reports it on landing (its last area is cleared by the map load,
+	// FUN_00304898) and does not report it again until it has left.
+	if c.arrived {
 		return unfreeze()
 	}
 	if scripted {
@@ -308,7 +300,7 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 	c.info.Map = dst.Map
 	s.mu.Unlock()
 	c.ready, c.warped = false, true
-	c.lastWarp, c.spawnX, c.spawnY = time.Now(), dst.X, dst.Y
+	c.arrived = true
 	s.endEvent(c)
 	c.resumeAt = time.Time{}
 	c.encounter.enterMap()
