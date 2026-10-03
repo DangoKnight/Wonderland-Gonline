@@ -110,6 +110,9 @@ func (s *Store) DeleteCharacter(ctx context.Context, a Account, slot byte, code 
 		if err := tx.Where(map[string]any{"id": a.CharacterID(slot), "account_id": a.ID, "slot": slot}).Delete(&characterRow{}).Error; err != nil {
 			return err
 		}
+		if err := repairGuildLeaders(tx); err != nil {
+			return err
+		}
 		var remaining int64
 		if err := tx.Model(&characterRow{}).Where(map[string]any{"account_id": a.ID}).Count(&remaining).Error; err != nil {
 			return err

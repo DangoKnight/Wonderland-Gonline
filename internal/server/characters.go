@@ -43,6 +43,8 @@ func (s *Server) releaseName(c *Session) {
 }
 
 func (s *Server) createCharacter(ctx context.Context, c *Session, p []byte) error {
+	s.catalogMu.RLock()
+	defer s.catalogMu.RUnlock()
 	if len(p) < 2 || c.account.ID == 0 || c.slot < 1 || c.slot > 2 || c.character != nil {
 		return protocol.ErrMalformed
 	}

@@ -119,3 +119,35 @@ func TestDatabaseRolesMustRemainSeparate(t *testing.T) {
 		}
 	}
 }
+
+func TestIdleTimeoutConfiguration(t *testing.T) {
+	for _, key := range []string{"idle_seconds", "world_idle_seconds"} {
+		for _, seconds := range []int{-1, 0, 600, 86400, 86401} {
+			raw, err := json.Marshal(map[string]int{key: seconds})
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "config.json")
+			if err := os.WriteFile(path, raw, 0600); err != nil {
+				t.Fatal(err)
+			}
+			got, err := Load(path)
+			valid := seconds >= 0 && seconds <= 86400
+			if (err == nil) != valid {
+				t.Fatalf("%s=%d validation: %v", key, seconds, err)
+			}
+			if valid {
+				if key == "idle_seconds" && (got.IdleSeconds != seconds || got.WorldIdleSeconds != 0) {
+					t.Fatal("login timeout or gameplay default lost", got)
+				}
+				if key == "world_idle_seconds" && (got.WorldIdleSeconds != seconds || got.IdleSeconds != 600) {
+					t.Fatal("gameplay timeout or login default lost", got)
+				}
+			}
+		}
+	}
+	got, err := Load("")
+	if err != nil || got.IdleSeconds != 600 || got.WorldIdleSeconds != 0 {
+		t.Fatal("wrong idle defaults", got, err)
+	}
+}

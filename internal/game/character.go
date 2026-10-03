@@ -7,8 +7,10 @@ import (
 )
 
 type Character struct {
-	EventTimers map[uint16]time.Time `json:"event_timers,omitempty"`
-	LuckyDraw   LuckyDrawState       `json:"lucky_draw,omitempty"`
+	ChestRespawns map[uint32]time.Time `json:"chest_respawns,omitempty"`
+	MutedUntil    time.Time            `json:"muted_until,omitempty"`
+	EventTimers   map[uint16]time.Time `json:"event_timers,omitempty"`
+	LuckyDraw     LuckyDrawState       `json:"lucky_draw,omitempty"`
 	// Reborn supplies combo effective-level metadata. Rebirth progression and
 	// character roster/job presentation remain unported.
 	Reborn   bool            `json:"reborn,omitempty"`
@@ -60,6 +62,13 @@ type Location struct {
 
 // Clone copies the character so mutations cannot reach the original's maps or slices.
 func (c Character) Clone() Character {
+	if c.ChestRespawns != nil {
+		timers := make(map[uint32]time.Time, len(c.ChestRespawns))
+		for key, value := range c.ChestRespawns {
+			timers[key] = value
+		}
+		c.ChestRespawns = timers
+	}
 	if c.EventTimers != nil {
 		timers := make(map[uint16]time.Time, len(c.EventTimers))
 		for id, expiry := range c.EventTimers {

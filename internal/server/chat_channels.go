@@ -43,6 +43,9 @@ func (s *Server) deliverChat(sender *Session, recipients []*Session, channel byt
 }
 
 func (s *Server) chatFeedback(c *Session, text string) error {
+	if c.adminFeedback != nil {
+		*c.adminFeedback = append(*c.adminFeedback, text)
+	}
 	return c.send(headBanner(text))
 }
 

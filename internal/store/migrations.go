@@ -4,7 +4,7 @@ import "fmt"
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 6
+const schemaVersion = 7
 
 func (s *Store) migrate() error {
 	var version int
@@ -74,6 +74,18 @@ func (s *Store) migrate() error {
  delivered INTEGER NOT NULL DEFAULT 0 CHECK(delivered IN (0,1)));
  CREATE INDEX IF NOT EXISTS text_mail_pending ON text_mail(receiver_id,delivered,id);
  PRAGMA user_version=6;`); e != nil {
+		return e
+	}
+
+	// v7: migrated administration records. Gameplay identity foreign keys clean
+	// membership, marriages and pending gifts when a character is removed.
+	if _, e = tx.Exec(`CREATE TABLE IF NOT EXISTS banned_ips(ip TEXT PRIMARY KEY,reason TEXT NOT NULL,at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS guilds(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,notice TEXT NOT NULL,leader_id INTEGER NOT NULL);
+ CREATE TABLE IF NOT EXISTS guild_members(guild_id INTEGER NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,character_id INTEGER NOT NULL UNIQUE REFERENCES characters(id) ON DELETE CASCADE,PRIMARY KEY(guild_id,character_id));
+ CREATE TABLE IF NOT EXISTS marriages(id INTEGER PRIMARY KEY AUTOINCREMENT,character1 INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,character2 INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,at TEXT NOT NULL,CHECK(character1<>character2));
+ CREATE TABLE IF NOT EXISTS admin_mail(id INTEGER PRIMARY KEY AUTOINCREMENT,receiver_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,subject TEXT NOT NULL,body TEXT NOT NULL,gold INTEGER NOT NULL CHECK(gold>=0),item_id INTEGER NOT NULL,count INTEGER NOT NULL,claimed INTEGER NOT NULL DEFAULT 0,delivered INTEGER NOT NULL DEFAULT 0,at INTEGER NOT NULL);
+ CREATE INDEX IF NOT EXISTS admin_mail_pending ON admin_mail(receiver_id,delivered,id);
+ PRAGMA user_version=7;`); e != nil {
 		return e
 	}
 	return tx.Commit()

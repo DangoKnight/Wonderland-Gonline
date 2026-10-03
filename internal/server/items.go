@@ -223,6 +223,7 @@ func (s *Server) runRespawns(ctx context.Context) {
 			return
 		case now := <-t.C:
 			s.respawnGround(now)
+			s.respawnChests(now)
 			s.reviveMonsters(now)
 		}
 	}

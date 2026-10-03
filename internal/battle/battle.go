@@ -165,8 +165,8 @@ func MonsterStats(level int) (sp, atk, def, spd int) {
 }
 
 // PlayerFighter is BuildFighters for a character (no pets).
-func PlayerFighter(c *game.Character, items map[uint16]game.ItemDefinition, slot int) *Fighter {
-	full := c.Combat(items)
+func PlayerFighter(c *game.Character, items map[uint16]game.ItemDefinition, slot int, growth ...game.ElementalGrowth) *Fighter {
+	full := c.Combat(items, growth...)
 	f := &Fighter{Side: Attacker, Kind: Player, ID: c.ID, Name: c.Name, Level: c.Level, Element: c.Element,
 		MaxHP: max(1, int(full.MaxHP)), HP: max(1, int(c.HP)), MaxSP: max(0, int(full.MaxSP)), SP: max(0, int(c.SP)),
 		Atk: int(full.ATK), Def: int(full.DEF), Matk: int(full.MAT), Mdef: int(full.MDF), Spd: int(full.SPD),

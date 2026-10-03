@@ -8,24 +8,32 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
 )
 
+const (
+	defaultLoginIdleSeconds = 600
+	maxIdleSeconds          = 86400
+)
+
 type Config struct {
-	StatusServerIDs []uint16 `json:"status_server_ids"`
-	Name            string   `json:"name"`
-	Login           string   `json:"login_address"`
-	World           string   `json:"world_address"`
-	Status          string   `json:"status_address"`
-	HTTP            string   `json:"http_address"`
-	Database        string   `json:"database"`
-	AssetsDatabase  string   `json:"assets_database"`
-	MaxConnections  int      `json:"max_connections"`
-	IdleSeconds     int      `json:"idle_seconds"`
+	PetGrowthFormula game.PetGrowthFormula `json:"pet_growth_formula"`
+	StatusServerIDs  []uint16              `json:"status_server_ids"`
+	Name             string                `json:"name"`
+	Login            string                `json:"login_address"`
+	World            string                `json:"world_address"`
+	Status           string                `json:"status_address"`
+	HTTP             string                `json:"http_address"`
+	Database         string                `json:"database"`
+	AssetsDatabase   string                `json:"assets_database"`
+	MaxConnections   int                   `json:"max_connections"`
+	IdleSeconds      int                   `json:"idle_seconds"`
+	WorldIdleSeconds int                   `json:"world_idle_seconds"`
 }
 
 func Default() Config {
-	return Config{StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Go", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: 120}
+	return Config{PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Go", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
 }
 func Load(path string) (Config, error) {
 	c := Default()
@@ -45,6 +53,15 @@ func Load(path string) (Config, error) {
 			return c, fmt.Errorf("trailing config data")
 		}
 	}
+	return validate(c)
+}
+
+// Validate checks a proposed startup configuration without changing listeners.
+func Validate(c Config) error { _, err := validate(c); return err }
+func validate(c Config) (Config, error) {
+	if !c.PetGrowthFormula.Valid() {
+		return c, fmt.Errorf("pet_growth_formula must be base_stats or combat_stats")
+	}
 	if c.Name == "" || len(c.Name) > 200 || c.Database == "" || c.AssetsDatabase == "" {
 		return c, fmt.Errorf("name, database and assets database are required")
 	}
@@ -61,7 +78,7 @@ func Load(path string) (Config, error) {
 	if gameplayPath == assetsPath || (gameplayErr == nil && assetsErr == nil && os.SameFile(gameplayInfo, assetsInfo)) {
 		return c, fmt.Errorf("database and assets_database must be separate files")
 	}
-	if c.MaxConnections < 1 || c.MaxConnections > 100000 || c.IdleSeconds < 1 || c.IdleSeconds > 86400 {
+	if c.MaxConnections < 1 || c.MaxConnections > 100000 || c.IdleSeconds < 0 || c.IdleSeconds > maxIdleSeconds || c.WorldIdleSeconds < 0 || c.WorldIdleSeconds > maxIdleSeconds {
 		return c, fmt.Errorf("invalid connection limits")
 	}
 	if len(c.StatusServerIDs) == 0 || len(c.StatusServerIDs) > protocol.StatusMaxServerRecords {
@@ -92,3 +109,7 @@ func Load(path string) (Config, error) {
 	return c, nil
 }
 func (c Config) IdleTimeout() time.Duration { return time.Duration(c.IdleSeconds) * time.Second }
+
+func (c Config) WorldIdleTimeout() time.Duration {
+	return time.Duration(c.WorldIdleSeconds) * time.Second
+}

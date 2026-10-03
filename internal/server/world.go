@@ -73,6 +73,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	peers := s.peers(c)
 	// Finish the entrant's snapshot before publishing it to existing players.
 	for _, peer := range peers {
+		if peer.invisible {
+			continue
+		}
 		packets, err := peerPackets(*peer.character, false, false)
 		if err != nil {
 			return err
@@ -102,6 +105,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	c.ready = true
 	s.Log.Info("map load acknowledged", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map)
 	for _, peer := range peers {
+		if c.invisible {
+			break
+		}
 		for _, packet := range arrival {
 			if err := peer.send(packet); err != nil {
 				// A failed recipient must not disconnect the player causing the update.
@@ -129,12 +135,18 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 	}
+	if err := s.deliverAdminMail(context.Background(), c); err != nil {
+		return err
+	}
 	// AC12:1 also starts the authored arrival script.
 	return s.arrivalScript(c)
 }
 
 // broadcastWorld sends to map peers, excluding the actor. Caller holds worldMu.
 func (s *Server) broadcastWorld(c *Session, packet []byte) {
+	if c.invisible {
+		return
+	}
 	for _, peer := range s.peers(c) {
 		if err := peer.send(packet); err != nil {
 			peer.conn.Close()
@@ -292,6 +304,12 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 	}); e != nil {
 		return e
 	}
+	return s.teleportAfterSave(c, dst, portal)
+}
+
+// teleportAfterSave publishes an already durable destination. Caller holds worldMu.
+func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byte) error {
+	char := c.character
 	s.cancelTrade(c)
 	// Old-map peers see the departure as a load command toward the destination.
 	s.depart(c, protocol.Builder{protocol.CommandMapAcknowledgment}.U32(char.ID).U16(dst.Map).U16(dst.X).U16(dst.Y).U16(uint16(portal)).U8(0))

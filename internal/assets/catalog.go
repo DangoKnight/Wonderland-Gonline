@@ -131,6 +131,7 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
+	ChestPools            []ChestPool
 	LuckyDraw             LuckyDrawPool
 	Forging               Forging
 	AssetsDatabase        string

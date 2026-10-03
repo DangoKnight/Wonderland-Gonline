@@ -396,6 +396,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		delay = s.rules().Delay(0, "flee")
 	}
 	exp, gold := run.b.Rewards()
+	exp = ScaleExperience(exp, s.expRateMultiplier)
 	var results []memberResult
 	for _, m := range run.active() {
 		c := m.c
@@ -420,10 +421,10 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 				next.Refill(s.Assets.Items)
 			}
 			if j := battlePetIndex(next, m); j >= 0 {
-				// The pet earns the same EXP (server rate 1.0).
+				// The pet receives the same once-scaled reward as its owner.
 				pet := &next.Pets[j]
 				pet.HP = int32(max(1, m.pet.HP))
-				grown := pet.GainExp(uint32(min(exp, 1<<31-1)), s.petTemplate(pet.ID), true, petGrowth)
+				grown := s.gainPetExp(pet, uint32(min(exp, 1<<31-1)), petGrowth)
 				pet.Normalize(s.Assets.Items, grown > 0)
 			}
 			if len(adds) > 0 {

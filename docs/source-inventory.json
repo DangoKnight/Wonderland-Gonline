@@ -539,8 +539,16 @@
 		{
 			"source": "RCLibrary/System.Net.Sockets/Client3.cs",
 			"lines": 458,
-			"status": "pending",
-			"sha256": "4aa34f7f1c35b22d71531d2e8cf2ac3d66e906795c3d0440da9d29e633f8c1da"
+			"status": "partial",
+			"sha256": "4aa34f7f1c35b22d71531d2e8cf2ac3d66e906795c3d0440da9d29e633f8c1da",
+			"go_files": [
+				"internal/server/server.go",
+				"internal/server/idle.go",
+				"internal/server/idle_test.go",
+				"internal/config/config.go",
+				"internal/config/config_test.go"
+			],
+			"notes": "ReceiveTimeout/Interrupted are retried by the reference socket. Go uses configurable phase-specific read deadlines: login defaults to 600 seconds and gameplay to 0 (disabled); actual socket expiry and disabled waits are regression-tested. Remaining socket lifecycle behavior is only partially mapped."
 		},
 		{
 			"source": "RCLibrary/System.Threading/AsyncSemaphore.cs",
@@ -579,38 +587,119 @@
 		{
 			"source": "Src/Gui/CharacterDataEditorForm.Designer.cs",
 			"lines": 1107,
-			"status": "pending",
-			"sha256": "7ea6a042472e036cc98115f78fa0f605b78027c5de576c6d331ea1435215a5b6"
+			"status": "partial",
+			"sha256": "7ea6a042472e036cc98115f78fa0f605b78027c5de576c6d331ea1435215a5b6",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/CharacterDataEditorForm.cs",
 			"lines": 1152,
-			"status": "pending",
-			"sha256": "8aa1628579d3de3c83c129e02ffafecd58662a03c378de9a29b20ad7a6ee098e"
+			"status": "partial",
+			"sha256": "8aa1628579d3de3c83c129e02ffafecd58662a03c378de9a29b20ad7a6ee098e",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md",
+				"internal/world/admin_test.go",
+				"internal/assetdb/edit_test.go",
+				"internal/server/admin_asset_validation.go"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/MainForm1.Designer.cs",
 			"lines": 1509,
-			"status": "pending",
-			"sha256": "515675df8e0a3f472fa9e7f1cf71d9d7077c027b8ff56baff44b07bbb1c6ba12"
+			"status": "partial",
+			"sha256": "515675df8e0a3f472fa9e7f1cf71d9d7077c027b8ff56baff44b07bbb1c6ba12",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/MainForm1.ExtendedTabs.cs",
 			"lines": 2917,
-			"status": "pending",
-			"sha256": "a37b4d84428c8ebef54507e84fbb55e0fab25caf9bc708f4bc8dc806209b6ac9"
+			"status": "partial",
+			"sha256": "a37b4d84428c8ebef54507e84fbb55e0fab25caf9bc708f4bc8dc806209b6ac9",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md",
+				"internal/world/admin_test.go",
+				"internal/assetdb/edit_test.go",
+				"internal/server/admin_asset_validation.go"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/MainForm1.ModernUi.cs",
 			"lines": 998,
-			"status": "pending",
-			"sha256": "41f5dc35024514ed71453b48a9f08b7277c81c239a36803ca1bdb4c59809314c"
+			"status": "partial",
+			"sha256": "41f5dc35024514ed71453b48a9f08b7277c81c239a36803ca1bdb4c59809314c",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/MainForm1.cs",
 			"lines": 6700,
-			"status": "pending",
-			"sha256": "77e5955ac2c96d7b69ed0c1c42212b154ba3f9b3afc0d0e7ad2146fa803caf23"
+			"status": "partial",
+			"sha256": "77e5955ac2c96d7b69ed0c1c42212b154ba3f9b3afc0d0e7ad2146fa803caf23",
+			"go_files": [
+				"internal/admin/tools.go",
+				"internal/admin/tools_test.go",
+				"internal/admin/web/tools.js",
+				"internal/server/admin_players.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_assets.go",
+				"internal/server/admin_live.go",
+				"internal/store/admin_tools_test.go",
+				"docs/ADMINISTRATION.md",
+				"internal/world/admin_test.go",
+				"internal/assetdb/edit_test.go",
+				"internal/server/admin_asset_validation.go"
+			],
+			"notes": "Web replacement implements operations, versioned deep character/inventory/stats/preferences editing, GM studio, account/session controls, security/IP bans, guild/marriage records, GM mail gifts, battle tools, map/NPC/events/talk inspection, SQL content editing and atomic startup configuration. SQLite paths replace MySQL provider configuration. NPC visibility/prop tools affect the live view. Gift claims are durable and idempotent; SQL candidate validation rolls back invalid edits. Native guild/marriage gameplay and manual browser/aLogin acceptance remain pending; see ADMINISTRATION.md."
 		},
 		{
 			"source": "Src/Gui/ModernTheme.cs",
@@ -695,9 +784,22 @@
 				"internal/game/gm_progress.go",
 				"internal/game/gm_restat_test.go",
 				"internal/server/gm_restat.go",
-				"internal/server/gm_restat_test.go"
+				"internal/server/gm_restat_test.go",
+				"internal/server/gm_skills.go",
+				"internal/server/gm_skills_test.go",
+				"internal/game/gm_skills.go",
+				"internal/server/gm_commands.go",
+				"internal/server/gm_commands_test.go",
+				"internal/server/gm_moderation.go",
+				"internal/server/gm_operations.go",
+				"internal/server/gm_pets.go",
+				"internal/server/gm_player.go",
+				"internal/server/gm_reload.go",
+				"internal/server/gm_reload_test.go",
+				"internal/world/gm_reload_test.go",
+				"internal/store/gm_levels_test.go"
 			],
-			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining GM commands, remaining chat channels and actual-client validation are pending. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending. Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
+			"notes": "Public :carnie, :unride/:dismount aliases; GM :town with all 16 legacy destination aliases and :summonall. Travel preserves durable positions, Carnie return points, vehicle inventory/wear, native replies and map acknowledgment. Interaction/loading gates prevent chat bypasses; failed summon recipients are isolated. Remaining chat/native-client acceptance is documented separately. GM level/lvl, points/sp/statpoint/statpoints, stat/stats, exp and skill overrides now save before replies, use the SQL skill catalog, and reject busy/loading/trading sessions. Direct EXP assignment grants no points; grades are restricted to 1..10 and EXP to uint32. Server chat continuation delivers map/world messages and public party/whisper commands with exact target resolution, preference filtering, loading gates, control/length validation and failed-recipient isolation. Map chat retains AC2:2 without sender echo; additional channels use verified AC2:16 native notices with channel/name text. Command authorization remains intact. Scope is server only; dedicated native channel layouts and guild membership remain pending. Live GM /droprate and :droprate query/update now apply a finite, clamped 0.1–100 process-local multiplier to subsequent victory loot rolls, including active battles. Default 1.0, 35% calibration, 5% floor, disabled rows, native/known item restrictions, captured-monster exclusion and one-entry limit are preserved. World ownership serializes updates and rewards. Deterministic probability, GM authorization/revocation, private native feedback and victory-loot integration tests cover the port. GUI loot editing and actual-client command validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending. GM clearskills/resetskills now rebuilds starter and current stat-qualified skills at grade one/zero EXP, removing other skills without changing quests or other character state. SQL table orders supply AC5:3; removed entries receive transient grade-zero records because native snapshots overlay the indexed table. Save precedes snapshot/refresh; GM privileges, busy/loading gates, missing targets and failed-target isolation match other GM mutations. Focused regressions cover native replay, repeat persistence, cross-map targets, revocation and save/catalog/delivery failures. Actual-client acceptance remains pending. All AC02 GM command aliases and advertised petlvl/petexp/clearinv are now implemented. Bulk element skills/god, pet recruitment/amity/rebirth/level/EXP, bag clearing/Tent/mall buying, online information, persistent mute/jail, map invisibility, kickall, normal-reward forced PvE victory, SQL category/GM-level reload and graceful countdown shutdown use existing persistence and interaction ownership. New command definitions drive aliases/help. Explicit hide/unhide, repeat-safe pet rebirth and stat-derived god pet caps correct reference inconsistencies. SQL reload preserves map geometry and runtime respawn state, rejects active quest interactions and synchronizes immutable administration snapshots; privilege reload is unbounded and ordered against administrator grants. Focused race tests cover command coverage, permissions, native replies, persistence/failures, moderation, visibility, purchases, rewards, reload and shutdown. Native aLogin acceptance remains pending."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC03.cs",
@@ -1246,8 +1348,13 @@
 			"status": "partial",
 			"sha256": "324eaa14a76156fb86259a08e341941f09f993670655583ea43ef810f63d806d",
 			"go_files": [
-				"internal/server/server.go"
-			]
+				"internal/server/server.go",
+				"internal/server/idle.go",
+				"internal/server/idle_test.go",
+				"internal/config/config.go",
+				"internal/config/config_test.go"
+			],
+			"notes": "Reference selection waits 60 seconds. Go login, selection and creation use an incoming-packet idle limit configurable through idle_seconds (600 by default); world_idle_seconds applies after selecting or creating a character."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC64.cs",
@@ -1846,9 +1953,11 @@
 				"internal/protocol/commands.go",
 				"internal/assets/native_effect_rules.go",
 				"internal/assets/native_effect_rules_test.go",
-				"cmd/skill-effects-export/main_test.go"
+				"cmd/skill-effects-export/main_test.go",
+				"internal/server/gm_operations.go",
+				"internal/server/gm_commands_test.go"
 			],
-			"notes": "PvE proficiency/evolution and durable battle reward completion implemented. Captures/desertion stage roster changes and peer broadcasts until commit; failed saves abandon and disconnect without departure success. Parties, monster skill AI and other combat parity remain partial. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Party combo continuation replaces pair-only scheduling and damage batches with full-party single-target speed chains (adjacent effective SPD gap at most 99). Round speed snapshots, support/enemy ordering barriers, SQL grade-aware area exclusion and execution-time bridge revalidation preserve action order. Eight player/pet hit records share one animation and aggregate damage; each actor retains SP cost and durable proficiency. Combat regressions and a three-player server persistence test cover chains, boundaries, barriers and lost/redirected bridges. Saved community evidence and remaining deterministic level-chance policy are documented in COMBOS.md; Burst EXP remains outside scope. Combo probability continuation implements the user-requested clamped linear curve from 0 percent at party mean minus enemy level of -25, through 50 percent at equal levels, to 100 percent at +25. Whole present player/pet roster averages retain fractional levels and include support/knocked-out fighters, excluding absent fighters. Each eligible chain rolls once against its actual target; failure executes singles without bonus or subset rerolls. Endpoints and singles consume no chance rolls. Probability, roster and failure damage tests cover this compatibility policy; native formula and rebirth level offsets remain unverified. Rebirth combo continuation implements the user-specified +99 effective levels for each reborn player/pet before party averaging and for reborn targets. Characters carry optional durable reborn metadata and pets retain their existing flag. Effective levels use int arithmetic without altering byte-sized visible levels or stored EXP. Mixed-party means, absent reborn pets, high-level overflow and target parity tests pass; three reborn level-1 players combo against a level-75 enemy and retain flags and skill proficiency through battle saves. Full character rebirth progression, job and roster presentation remain pending. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered."
+			"notes": "PvE proficiency/evolution and durable battle reward completion implemented. Captures/desertion stage roster changes and peer broadcasts until commit; failed saves abandon and disconnect without departure success. Parties, monster skill AI and other combat parity remain partial. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Party combo continuation replaces pair-only scheduling and damage batches with full-party single-target speed chains (adjacent effective SPD gap at most 99). Round speed snapshots, support/enemy ordering barriers, SQL grade-aware area exclusion and execution-time bridge revalidation preserve action order. Eight player/pet hit records share one animation and aggregate damage; each actor retains SP cost and durable proficiency. Combat regressions and a three-player server persistence test cover chains, boundaries, barriers and lost/redirected bridges. Saved community evidence and remaining deterministic level-chance policy are documented in COMBOS.md; Burst EXP remains outside scope. Combo probability continuation implements the user-requested clamped linear curve from 0 percent at party mean minus enemy level of -25, through 50 percent at equal levels, to 100 percent at +25. Whole present player/pet roster averages retain fractional levels and include support/knocked-out fighters, excluding absent fighters. Each eligible chain rolls once against its actual target; failure executes singles without bonus or subset rerolls. Endpoints and singles consume no chance rolls. Probability, roster and failure damage tests cover this compatibility policy; native formula and rebirth level offsets remain unverified. Rebirth combo continuation implements the user-specified +99 effective levels for each reborn player/pet before party averaging and for reborn targets. Characters carry optional durable reborn metadata and pets retain their existing flag. Effective levels use int arithmetic without altering byte-sized visible levels or stored EXP. Mixed-party means, absent reborn pets, high-level overflow and target parity tests pass; three reborn level-1 players combo against a level-75 enemy and retain flags and skill proficiency through battle saves. Full character rebirth progression, job and roster presentation remain pending. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered. GM command completion uses these existing skill, battle and map paths; see docs/CONFIGURATION.md for semantics and docs/PORTING.md for focused validation. Native-client acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/Battle/PvPManager.cs",
@@ -2028,8 +2137,22 @@
 		{
 			"source": "wlo.pserver.core/Game/Maps/ChestDropManager.cs",
 			"lines": 366,
-			"status": "pending",
-			"sha256": "941af17e1fa0d0c101073f4c66bcb0085dd7a8760f063a470c8570723c0f5c31"
+			"status": "partial",
+			"sha256": "941af17e1fa0d0c101073f4c66bcb0085dd7a8760f063a470c8570723c0f5c31",
+			"go_files": [
+				"internal/assets/admin_overrides.go",
+				"internal/assets/admin_overrides_test.go",
+				"internal/assetsql/admin_overrides_test.go",
+				"internal/server/chest_pools.go",
+				"internal/server/events.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/world/preevent.go",
+				"internal/world/view.go",
+				"internal/world/admin_test.go",
+				"internal/assetdb/edit_test.go",
+				"internal/server/admin_asset_validation.go"
+			],
+			"notes": "Optional administrator-authored SQL chest pools with map/category selection, relative positive weights and per-character cooldowns. Reward is chosen before capacity checks; reward/mark/timer commit together; failed grants preserve eligibility. Expiry updates live props and reconnect snapshots. Unconfigured authored chest rewards remain unchanged. Original default pools and category taxonomy are not automatically seeded; native acceptance remains pending. Category aliases and category/map/default selection order follow RollDrop. Native original defaults are deliberately not seeded into an existing server; operators can configure SQL pools."
 		},
 		{
 			"source": "wlo.pserver.core/Game/Maps/Code/EveEventInterpreter.cs",
@@ -2158,8 +2281,17 @@
 				"internal/world/portal.go",
 				"internal/world/world.go",
 				"internal/server/mounts.go",
-				"internal/server/mounts_test.go"
-			]
+				"internal/server/mounts_test.go",
+				"internal/server/server.go",
+				"internal/server/idle.go",
+				"internal/server/idle_test.go",
+				"internal/config/config.go",
+				"internal/config/config_test.go",
+				"internal/server/gm_moderation.go",
+				"internal/server/gm_reload.go",
+				"internal/world/gm_reload_test.go"
+			],
+			"notes": "Idle policy intentionally differs from the reference 30-minute map check: gameplay idle logout is configurable and disabled by default, including map loading/warps. Reference IdleTimer uses LastPacketTime, which this checkout never refreshes. GM command completion uses these existing skill, battle and map paths; see docs/CONFIGURATION.md for semantics and docs/PORTING.md for focused validation. Native-client acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/Maps/MapManager.cs",
@@ -2223,6 +2355,12 @@
 			"sha256": "2478ad7a75a7b0ebdf15fd0ed4a4feb75e7c087c4b856bfae8348dc4e1f5744a",
 			"go_files": [
 				"internal/game/pets.go",
+				"internal/game/pet_growth_test.go",
+				"internal/game/pet_growth.go",
+				"internal/game/pet_growth_formula_test.go",
+				"internal/config/pet_growth_test.go",
+				"internal/server/pet_growth_formula_test.go",
+
 				"internal/server/characters.go",
 				"internal/server/items.go",
 				"internal/server/pets.go",
@@ -2250,7 +2388,7 @@
 				"internal/server/banking_test.go",
 				"internal/store/banking_test.go"
 			],
-			"notes": " AC69 rebirth ascension continuation implements client-slot party-pet selection, level/amity 100 requirements, level-1/zero-EXP reset, 50 additive stat points and reborn metadata while retaining attributes, skills, equipment, job and active-pet selection. Vitals normalize/refill before durable commit; success/list/progression packets follow the save. Repeat/ineligible/unknown slots fail without mutation; malformed/unknown subcommands, overflow, save failure and loading/battle/trade/event/cutscene gates are covered. Native client AC69 capture validation and model/quest-driven evolution remain pending. AC68 stat-allocation continuation implements subcommand 2 with per-login client-slot selection and STR/CON/INT/WIS/AGI selectors. One unallocated point is spent through the shared pet allocator; derived vitals normalize without refill before durable commit, then AC8:2 progression and AC68 receipts are emitted. Invalid/unknown slots, selectors, insufficient budgets and attribute overflow receive failure results rather than the reference default success. Tests cover authored wire bytes, all selectors, alias/persistent-slot distinctions, AC8 budget sharing, reconnect state, interaction gates and save failure. Subcommand 1 remains an explicit unavailable result: the C# potential branch increments without checking or consuming an item and SendPetProgression sends level-minus-one as stat 37, so genuine potential-item and client-display semantics remain unverified. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending."
+			"notes": " AC69 rebirth ascension continuation implements client-slot party-pet selection, level/amity 100 requirements, level-1/zero-EXP reset, 50 additive stat points and reborn metadata while retaining attributes, skills, equipment, job and active-pet selection. Vitals normalize/refill before durable commit; success/list/progression packets follow the save. Repeat/ineligible/unknown slots fail without mutation; malformed/unknown subcommands, overflow, save failure and loading/battle/trade/event/cutscene gates are covered. Native client AC69 capture validation and model/quest-driven evolution remain pending. AC68 stat-allocation continuation implements subcommand 2 with per-login client-slot selection and STR/CON/INT/WIS/AGI selectors. One unallocated point is spent through the shared pet allocator; derived vitals normalize without refill before durable commit, then AC8:2 progression and AC68 receipts are emitted. Invalid/unknown slots, selectors, insufficient budgets and attribute overflow receive failure results rather than the reference default success. Tests cover authored wire bytes, all selectors, alias/persistent-slot distinctions, AC8 budget sharing, reconnect state, interaction gates and save failure. Subcommand 1 remains an explicit unavailable result: the C# potential branch increments without checking or consuming an item and SendPetProgression sends level-minus-one as stat 37, so genuine potential-item and client-display semantics remain unverified. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending. Automatic pet level-up allocation now weights all five attributes instead of retaining only the strongest three, an intentional user-requested gameplay change. Known NPC template attributes supply weights; unknown templates use current pet attributes. Zero weights retain a minimum chance of one; capped attributes are excluded and all-capped pets skip RNG. One growth point per gained level and manual AC8/AC68 allocation budgets remain unchanged. Exhaustive weighted-interval, zero-weight, cap, lowest-stat and multi-level tests accompany focused pet progression and battle EXP regressions. Startup pet_growth_formula now selects base_stats or combat_stats. The latter weights STR/CON/INT/WIS/AGI by calculated ATK/DEF/MAT/MDF/SPD including equipment, forging, level and existing pet elemental rules, recalculated for each gained-level point. Battle and GM pet EXP share a constructor-captured immutable selection. Admin live operations/database settings cannot modify it; startup file edits require restart. Vitals, temporary effects and manual training budgets are excluded. Independent weighted-interval, equipment, element, repeated-level, validation and startup-immutability tests cover the new formula."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Character.cs",
@@ -2285,9 +2423,16 @@
 				"internal/store/banking_test.go",
 				"internal/game/gm_restat_test.go",
 				"internal/server/gm_restat.go",
-				"internal/server/gm_restat_test.go"
+				"internal/server/gm_restat_test.go",
+				"internal/game/equipment_test.go",
+				"internal/game/elemental_growth.go",
+				"internal/game/growth_parameters.go",
+				"internal/game/elemental_growth_test.go",
+				"internal/config/elemental_growth_test.go",
+				"internal/battle/elemental_growth_test.go",
+				"internal/server/elemental_growth_test.go"
 			],
-			"notes": "Includes Equip.SetLevel threshold EXP, positive level-point grants, downward level changes and equipped vitals. Requested level 200 preserves the non-reborn displayed cap of 199. Point grants saturate; rebirth and EXP beyond uint32 remain pending. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
+			"notes": "Includes Equip.SetLevel threshold EXP, positive level-point grants, downward level changes and equipped vitals. Requested level 200 preserves the non-reborn displayed cap of 199. Point grants saturate; rebirth and EXP beyond uint32 remain pending. AC45 bank gold now persists alongside carried gold; deposits/withdrawals conserve currency and publish only after commit. Bank PIN/character transfers and native ATM activation remain pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending. User-requested gameplay change: Water player MDF now has the same level contribution as Earth DEF, round(level*3 + WIS*2), before equipment bonuses. The original Equip.cs has no Water-specific MDF bonus. Focused elemental stat and equipment regressions cover this intentional deviation at levels 1, 40 and 199. Player formulas now use compiled per-element growth parameters in internal/game/growth_parameters.go for all level and attribute terms and nonlinear HP/SP growth, shared by creation, combat, refills, stat updates and login recalculation. Earth HP and Water SP default to 20% extra growth as compiled, tunable user-requested gameplay changes. Native AC8 contributions receive differences from original formulas; custom-client acceptance remains pending. Focused custom coefficient, creation, packet, validation, fighter and compiled clinic/login persistence tests cover the shared policy. Startup JSON and web administration do not expose growth tuning; changes require rebuilding. Native packet references remain independent of compiled gameplay coefficients. Current standard-growth coefficients supersede the earlier Water MDF and 20% vital changes: the saved WLRI Japanese wiki gives CON-to-DEF 1.75, WIS-to-MDF 2.2, AGI-to-SPD 1.8, Earth DEF level 2.6 and Earth MDF level 2.2, with standard Water MDF level 2. Formula.Dat confirms shared HP/SP growth and multiplier 1 for every element. Independent tests compare compiled coefficients with the reference table and decoded formula export. Rebirth effective-level and job multipliers remain pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Friends.cs",
@@ -2342,9 +2487,22 @@
 				"internal/game/gm_progress.go",
 				"internal/game/gm_restat_test.go",
 				"internal/server/gm_restat.go",
-				"internal/server/gm_restat_test.go"
+				"internal/server/gm_restat_test.go",
+				"internal/server/gm_skills.go",
+				"internal/server/gm_skills_test.go",
+				"internal/game/gm_skills.go",
+				"internal/server/gm_commands.go",
+				"internal/server/gm_commands_test.go",
+				"internal/server/gm_moderation.go",
+				"internal/server/gm_operations.go",
+				"internal/server/gm_pets.go",
+				"internal/server/gm_player.go",
+				"internal/server/gm_reload.go",
+				"internal/server/gm_reload_test.go",
+				"internal/world/gm_reload_test.go",
+				"internal/store/gm_levels_test.go"
 			],
-			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Invisibility, mute/jail, bulk skills/pets, rebirth, remaining operational commands and actual-client validation remain pending. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending."
+			"notes": "Administrator-granted GM privileges, mall point adjustments and existing warp/summon/kick/notice operations; all 16 TownDirectory aliases and snapshot-based SummonAllPlayers now ported. Recipients commit independently; busy/loading characters are skipped and failed recipients reconnect. Remaining chat/native-client acceptance is documented separately. GM repair/fixall now clears durability damage on equipped items and bag stacks for self or an online target without payment. State saves before native AC23 removal/addition and equipment replies; quantities, forge metadata and unrelated state remain intact. Missing targets do not fall back to self; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Healthy repeats are no-ops; failed persistence publishes nothing, and failed target delivery requires reconnect without disconnecting the GM. Source restored-item feedback counts only damaged stacks. Native-client command acceptance remains pending. GM restat/resetstats now sets each stored base attribute to 10, refunds max(sum(base)-50,0) with uint16 saturation, refills equipped HP/SP and saves before AC8 stat updates and AC5:3 snapshot. Permanent avatar bonuses remain additive and are excluded from refunds: the original bonus-inclusive getters/base setters would mint bonus points on every repeated reset. Missing targets fail explicitly; actor/target loading, battle, trade, event, storm and beach gates prevent bypasses. Skills, level/EXP, currency and inventory remain intact. Regression tests cover repeat safety, ordinary spending of refunds, saturation, native replies, target authorization/revocation, save/snapshot failures and failed-target isolation. Native-client reset acceptance remains pending. GM clearskills/resetskills now rebuilds starter and current stat-qualified skills at grade one/zero EXP, removing other skills without changing quests or other character state. SQL table orders supply AC5:3; removed entries receive transient grade-zero records because native snapshots overlay the indexed table. Save precedes snapshot/refresh; GM privileges, busy/loading gates, missing targets and failed-target isolation match other GM mutations. Focused regressions cover native replay, repeat persistence, cross-map targets, revocation and save/catalog/delivery failures. Actual-client acceptance remains pending. All AC02 GM command aliases and advertised petlvl/petexp/clearinv are now implemented. Bulk element skills/god, pet recruitment/amity/rebirth/level/EXP, bag clearing/Tent/mall buying, online information, persistent mute/jail, map invisibility, kickall, normal-reward forced PvE victory, SQL category/GM-level reload and graceful countdown shutdown use existing persistence and interaction ownership. New command definitions drive aliases/help. Explicit hide/unhide, repeat-safe pet rebirth and stat-derived god pet caps correct reference inconsistencies. SQL reload preserves map geometry and runtime respawn state, rejects active quest interactions and synchronizes immutable administration snapshots; privilege reload is unbounded and ordered against administrator grants. Focused race tests cover command coverage, permissions, native replies, persistence/failures, moderation, visibility, purchases, rewards, reload and shutdown. Native aLogin acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/PlayerRelated/Guild.cs",
@@ -2597,9 +2755,14 @@
 				"internal/protocol/commands.go",
 				"internal/assets/native_effect_rules.go",
 				"internal/assets/native_effect_rules_test.go",
-				"cmd/skill-effects-export/main_test.go"
+				"cmd/skill-effects-export/main_test.go",
+				"internal/server/gm_skills.go",
+				"internal/server/gm_skills_test.go",
+				"internal/game/gm_skills.go",
+				"internal/server/gm_player.go",
+				"internal/server/gm_commands_test.go"
 			],
-			"notes": "Includes durable EVE skill rewards, player/pet combat proficiency, 92 stat-qualified requirements and 78 grade-ten evolution links. Creation/login qualification and allocation/combat unlocks save before success packets; trained progress is preserved. Native-client skill-book validation remains pending. Explicit GM skill overrides reset proficiency, permit grade decreases, map the avatar stunt alias, and reproduce native unlock/grade/proficiency packets after persistence. Known SQL catalog IDs and grades 1..10 are required; quest replay still preserves training. Bulk skill administration remains pending. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered."
+			"notes": "Includes durable EVE skill rewards, player/pet combat proficiency, 92 stat-qualified requirements and 78 grade-ten evolution links. Creation/login qualification and allocation/combat unlocks save before success packets; trained progress is preserved. Native-client skill-book validation remains pending. Explicit GM skill overrides reset proficiency, permit grade decreases, map the avatar stunt alias, and reproduce native unlock/grade/proficiency packets after persistence. Known SQL catalog IDs and grades 1..10 are required; quest replay still preserves training. Bulk skill administration remains pending. Explicit SQL skill-ID dispatch corrects Shrink/Hot Fire fallback damage. Battle-only effective stat reductions, non-compounding refresh/expiry, ally damage buffs, strict effect targets and durable proficiency are tested. These correct gaps inherited from the C# name classifiers; the duration/magnitude compatibility policy is documented in PORTING.md. Native hit-chance, persistent visual status and complete Goddess parity remain pending. Generic effect continuation replaces the earlier skill-ID dispatch and numerical status checks with declarative skill effects, native layer/code projection and aggregate stat/damage modifiers. Buff groups, refresh/expiry, temporary speed, player/pet/monster effects, arbitrary multi-effect abilities and SQL/native parity are tested. Native magnitudes/durations retain the documented compatibility policy; remaining control-status decoding and full original-client parity are pending. Control continuation removes separate StatusKind/Status storage and skill-name condition classifiers. Declarative action blocking, damage-sensitive removal, periodic HP damage, ally attack redirection, on-hit application and timed presentation now use ActiveEffect. Recognized native condition classes load from SQL; generic/native/server tests cover blocking, waking, DOT knockout, expiry, redirection and durable control proficiency. Vanish is a presentation effect preserving existing gameplay; native protection/resistance and secondary-hit decoding remain pending. Vanish protection continuation adds generic miss_physical_attacks and miss_area_attacks capabilities, confirmed by user investigation and translated native description. Player, pet, combo and monster attacks emit zero-damage miss records without applying hit effects; SP and proficiency still count. Native targeting pattern bytes now project from SQL and offline decoders; grade bands 1-3/4-6/7-9/10 are compatibility assumptions with an authored area_attack override. Complete AOE target expansion, native grade thresholds and original-client MISS rendering remain pending. Stone Wall continuation maps protection layer 4/code 101 to ally-targeted miss_physical_attacks using the shared effect engine. Physical attacks miss; single-target and area magic remain damaging. Existing metadata duration policy, SP cost and proficiency persist. Native/arbitrary-ID battle and installed-SQL tests cover ally targeting, non-damaging casts, physical immunity, allowed magic, expiry, miss/support packets and durable proficiency. Water Shield continuation narrows protection layer 4/code 105 to magical_damage_taken (-50 percent). Generic incoming reduction and applicable magical modifiers aggregate once with the existing group policy and single rounding step; physical/basic/staff/monster attacks and periodic damage remain unchanged. Native projection, arbitrary-ID attack/stacking/expiry tests and an installed-SQL cast with unreduced physical retaliation and durable proficiency pass. Shield Defense continuation maps native buff layer 19/code 52 to physical_damage_taken (-50 percent), preserving SQL SP/duration and generic effect dispatch. Shared incoming damage aggregation now selects physical or magical protection for every attack, including ordinary and redirected monster basic strikes. Both shields coexist and generic modifiers retain strongest-group and single-rounding semantics. Projection/validation, attack category/expiry/DOT matrices, mixed player/pet combo records, monster redirection, stacking and installed-SQL durable casts are covered. Source asset description is preserved unchanged. Skill/effect JSON TODO continuation adds source-only effect_refs annotations, reusable skill_effects.json definitions and JSON schemas. SQL indexes and resolves authoritative definitions/ref rows, with clone isolation, explicit-empty/inline semantics and invalid-reference rejection. Export/manifest/reconstruction verification preserves native bytes and provenance; the asset database is rebuilt separately with backups. Shield Defense now increases DEF and MDEF by 10 percent through modifiers, superseding physical reduction, preserving cost/duration and durable proficiency. Reference validation, SQL row edits/deletion, category/stat/expiry and installed catalog tests cover the new policy. Data-driven conversion continuation removes ability-specific Go constants and switch branches. Authored internal/assets/native_effect_rules.json supplies layer/code mappings and effect templates to offline decoders/exporters; generic validation, cloning and native duration adjustment remain in Go. Runtime SQL requires explicit effects or references and never infers native effects. JSON-only new mappings/tuning, template isolation, invalid rules/durations and missing SQL metadata are covered. GM clearskills/resetskills now rebuilds starter and current stat-qualified skills at grade one/zero EXP, removing other skills without changing quests or other character state. SQL table orders supply AC5:3; removed entries receive transient grade-zero records because native snapshots overlay the indexed table. Save precedes snapshot/refresh; GM privileges, busy/loading gates, missing targets and failed-target isolation match other GM mutations. Focused regressions cover native replay, repeat persistence, cross-map targets, revocation and save/catalog/delivery failures. Actual-client acceptance remains pending. GM command completion uses these existing skill, battle and map paths; see docs/CONFIGURATION.md for semantics and docs/PORTING.md for focused validation. Native-client acceptance remains pending."
 		},
 		{
 			"source": "wlo.pserver.core/Game/User.cs",
@@ -2637,8 +2800,16 @@
 		{
 			"source": "wlo.pserver.core/Network/SocketClient.cs",
 			"lines": 29,
-			"status": "pending",
-			"sha256": "07ed3363fb646203001ad732ef27f3eca2fa1601dd5ed288240933f40b16845c"
+			"status": "partial",
+			"sha256": "07ed3363fb646203001ad732ef27f3eca2fa1601dd5ed288240933f40b16845c",
+			"go_files": [
+				"internal/server/server.go",
+				"internal/server/idle.go",
+				"internal/server/idle_test.go",
+				"internal/config/config.go",
+				"internal/config/config_test.go"
+			],
+			"notes": "Reference wrapper inherits Client3 retry behavior. Go TCP sessions apply independent configurable login and gameplay idle limits; zero clears the read deadline."
 		},
 		{
 			"source": "wlo.pserver.core/Plugin/InteractableObj.cs",
@@ -2682,8 +2853,13 @@
 			"status": "partial",
 			"sha256": "fdcdf32efa2379034f05b7e2d6c3d8eb7caab3154417a327725c937b2a542fa7",
 			"go_files": [
-				"internal/server/server.go"
-			]
+				"internal/server/server.go",
+				"internal/server/runtime_settings.go",
+				"internal/server/admin_logs.go",
+				"internal/server/admin_runtime_test.go",
+				"internal/server/combat.go"
+			],
+			"notes": "Persisted EXP/drop/status/log runtime controls and GM exprate alias. Midpoint-even scaling, positive reward minimum and native signed cap apply once to both player/pet battle rewards. Fixed status colors override native automatic thresholds. Original Windows control binding is replaced by authenticated web operations; broader server lifecycle parity remains tracked separately."
 		},
 		{
 			"source": "wlo.pserver.maps/Class1.cs",

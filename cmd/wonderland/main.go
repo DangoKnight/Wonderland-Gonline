@@ -68,12 +68,19 @@ func run() error {
 	}
 	defer db.Close()
 	s := server.New(c, db, a, log)
+	s.SetConfigurationPath(*path)
 	settings, e := db.Settings(context.Background())
 	if e != nil {
 		return e
 	}
 	if name := settings["server_name"]; name != "" {
 		s.SetName(name)
+	}
+	if e = s.LoadRuntimeSettings(context.Background()); e != nil {
+		return e
+	}
+	if e = s.LoadIPBans(context.Background()); e != nil {
+		return e
 	}
 	handler, e := admin.New(s, token)
 	if e != nil {

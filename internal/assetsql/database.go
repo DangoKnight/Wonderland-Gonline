@@ -64,8 +64,20 @@ func LoadDatabase(path string) (*assets.Catalog, error) {
 		return nil, fmt.Errorf("assets database %s: %w", path, err)
 	}
 	defer assetdb.Close(db)
-	c := &assets.Catalog{AssetsDatabase: path, Items: map[uint16]game.ItemDefinition{}, Warnings: []string{}}
-	err = db.Transaction(func(tx *gorm.DB) error {
+	var catalog *assets.Catalog
+	err = db.Transaction(func(tx *gorm.DB) error { var err error; catalog, err = LoadTransaction(tx); return err })
+	if err != nil {
+		return nil, fmt.Errorf("assets database %s: %w", path, err)
+	}
+	catalog.AssetsDatabase = path
+	return catalog, nil
+}
+
+// LoadTransaction validates a complete catalog, including uncommitted edits.
+func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
+	c := &assets.Catalog{Items: map[uint16]game.ItemDefinition{}, Warnings: []string{}}
+	var err error
+	err = func() error {
 		var info assetdb.ImportInfo
 		if err := tx.Select("schema_version").Where("id = ?", assetdb.ImportMetadataID).Take(&info).Error; err != nil {
 			return fmt.Errorf("asset import metadata: %w", err)
@@ -160,10 +172,53 @@ func LoadDatabase(path string) (*assets.Catalog, error) {
 				return fmt.Errorf("asset %s: %w", asset, err)
 			}
 		}
+
+		for _, asset := range []string{assets.AdminMapsAsset, assets.AdminChestAsset} {
+			var count int64
+			if err := tx.Model(&assetdb.Document{}).Where(map[string]any{"asset": asset}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				continue
+			}
+			doc, err := read(asset)
+			if err != nil {
+				return err
+			}
+			if asset == assets.AdminMapsAsset {
+				var overrides []assets.Map
+				if err := json.Unmarshal(doc.Value, &overrides); err != nil {
+					return err
+				}
+				seen := map[uint16]bool{}
+				for _, m := range overrides {
+					if m.ID == 0 || seen[m.ID] {
+						return fmt.Errorf("invalid map override %d", m.ID)
+					}
+					seen[m.ID] = true
+					if _, ok := c.Maps[m.ID]; !ok {
+						return fmt.Errorf("unknown override map %d", m.ID)
+					}
+					for _, w := range m.Warps {
+						if w.MapID != 0 {
+							if _, ok := c.Maps[w.MapID]; !ok {
+								return fmt.Errorf("unknown warp map %d", w.MapID)
+							}
+						}
+					}
+					c.Maps[m.ID] = m
+				}
+			} else {
+				c.ChestPools, err = assets.ParseChestPools(doc.Value, c)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		return nil
-	})
+	}()
 	if err != nil {
-		return nil, fmt.Errorf("assets database %s: %w", path, err)
+		return nil, err
 	}
 	return c, nil
 }

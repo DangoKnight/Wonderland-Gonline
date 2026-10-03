@@ -33,7 +33,7 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | Critical hits                | `internal/game`                                                                          | Legacy config bounds, equipment chance cap, attack-only criticals and int32 saturation; combat integration pending                                                                                                                                                                                                                                                                                                                                                                      |
 | Equipment                    | `internal/game/equipment.go`, `internal/server/items.go`                                 | AC23:11 wear (swap into the same bag slot) and AC23:12 remove (empty destination only), then Send8_1 stats and the equipment change banner. Worn items keep damage and forge; schema v2 ID arrays still load. Forge-aware bonuses, UInt16 wrap of combat totals and banker's rounding follow EquipManager.                                                                                                                                                                              |
 | Chat and poses               | `internal/server/chat.go`                                                                | AC2:2 map chat to peers (not echoed), AC2:1 world chat to every other player, AC2:3 whispers by target ID (echoed to the sender), AC2:5 team chat to the party, AC32:1/2/3 changed-pose broadcast and replay to later arrivals.                                                                                                                                                                                                                                                                                                                                                                |
-| GM commands                  | `internal/server/chat.go`, `internal/store`, `internal/admin`                            | Administrator-granted account GM level (schema v3, audited, applied to online sessions immediately). `:heal`, `:gold`, `:item`, `:warp/:goto/:tp`, `:summon/:bring`, `:kick`, `:b/:broadcast/:notice`, `:town` (all 16 legacy aliases), `:summonall` with a stable recipient snapshot and failure isolation, and durable `:level/:lvl`, `:points/:sp/:statpoint/:statpoints`, `:stat/:stats`, `:exp` and `:skill` progression overrides.                                                                                                                                                                                                                                                                                  |
+| GM commands                  | `internal/server/chat.go`, `internal/store`, `internal/admin`                            | Administrator-granted account GM level (schema v3, audited, applied to online sessions immediately). `:heal`, `:gold`, `:item`, `:warp/:goto/:tp`, `:summon/:bring`, `:kick`, `:b/:broadcast/:notice`, `:town` (all 16 legacy aliases), `:summonall` with a stable recipient snapshot and failure isolation, and durable `:level/:lvl`, `:points/:sp/:statpoint/:statpoints`, `:stat/:stats`, `:exp` and `:skill` progression overrides; `:clearskills/:resetskills` rebuilds starter and current stat-qualified skills with native removal synchronization. All remaining AC02 GM commands and advertised pet progression/bag clearing are implemented; see the configuration command reference. SQL reload, persistent moderation, invisibility, forced PvE victory and graceful countdown shutdown have focused coverage. Native-client acceptance remains pending. |
 | Public travel commands       | `internal/server/travel_commands.go`, `internal/server/travel_commands_test.go`             | `:carnie`/`/carnie` preserve the visit return point; `:unride`/`:dismount` and slash aliases dismount item vehicles without consuming the item, with legacy map-10036 shore relocation. Chat cannot bypass loading, battle, trade, event or cutscene ownership. Vehicle companions remain mounted; Carnie memo changes only after durable travel. |
 | NPC events                   | `internal/world/event.go`, `internal/server/events.go`                                   | AC20:1 click (reach 200 px, concealment, 1.5 s repeat guard, door portals), linked/direct event selection, FindBranch with trailing AND conditions and choice callbacks, AC20:6/9 session runner: speech, questions, path groups, movies, music, effects, quest marks, gold/EXP/recovery/record point, atomic quest items, chest marks, prop frames, actor show/hide, poses, minimap markers, teleports. Branches with unported actions or disabled data are refused before any change. |
 | Quest journal and scene sync | `internal/world/view.go`, `internal/assets/quests.go`                                    | Mark.dat (2,154 marks), AC24:4/6/7 journal on entry, AC24:1/4/5 updates, completed-event replay, PreEvent visibility and prop-frame re-evaluation, authored and question-mark minimap icons.                                                                                                                                                                                                                                                                                            |
@@ -64,7 +64,7 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | Player trading               | `internal/game/trade.go`, `internal/server/trade.go`, `internal/store/character_pair.go` | AC25 requests, acceptance, item/gold offers, confirmations and cancellation; both character rows commit atomically, with metadata-preserving transfers and inventory reservations.                                                                                                                                                                                                                                                                                                      |
 | Item vehicles and rafts      | `internal/game/vehicles.go`, `internal/server/vehicles.go`                               | AC15:14 owner-only placement, AC15:7/9 boarding, AC15:10 landing and AC15:13 acknowledgment; exact owned slot, capsule-family condition checks, persisted boarding, AC15:10/11 peer synchronization after map load, raft wear and exact-slot wrecking, mounted-slot move guard and transaction cleanup. Item locks remain pending.                                                                                                                                                      |
 | Native assets                | `internal/assets`                                                                        | NPC, Talk, Skill, exclusive maintained JSON item catalog with complete decoded native records, starter JSON, MBTM animation timing; all eleven EVE categories with raw sections preserved and Big5 names                                                                                                                                                                                                                                                                                |
-| Web administration           | `internal/admin`                                                                         | Token authentication, sessions/disconnect, account list/ban/delete/password reset, audited point/bonus adjustments, settings, NPC search, map list, mall catalog                                                                                                                                                                                                                                                                                                                        |
+| Web administration           | `internal/admin`                                                                         | Token authentication; account/session controls; versioned character, inventory, stats and preferences editors; GM studio; EXP/drop/status/log settings; SQL content and map editors; guild/marriage records; GM gifts; IP bans; battles; diagnostics; atomic startup configuration (see ADMINISTRATION.md)                                                                                                                                                                                                                                                                                                                        |
 
 ## Native data census
 
@@ -100,10 +100,9 @@ Only pending features belong in this list. Implemented behavior and verification
 4. **Quests:** other transformations, non-water gathering, unsupported event operands; remaining C# map-specific story patches in TryExecute/StartSession/FindBranch; shared prop break/respawn; legacy database quest definitions and constellation packets. Port the outstanding Fred/Roca/Elin/Clive/Maka regression scenarios.
 5. **Combat:** PvP/trials, monster skill AI and legacy monster-ID quest rewards.
 6. **Companions and vehicles:** quest/model-driven pet evolution, potential training, remaining legacy pet operations, vehicle item locks and actual-client validation.
-7. **Economy and social:** arcade ticket/prize exchange, player shops, remaining stock/currency handlers (including bank PIN, character transfers and native ATM activation), advanced alchemy and recipe editing, other gathering/manufacturing, furniture, parcel/attachment mail and mailbox management, guild/marriage, remaining chat channels and GM commands.
+7. **Economy and social:** arcade ticket/prize exchange, player shops, remaining stock/currency handlers (including bank PIN, character transfers and native ATM activation), advanced alchemy and recipe editing, other gathering/manufacturing, furniture, parcel/attachment mail and mailbox management, guild/marriage, remaining chat channels.
 8. **Storage compatibility:** read-only legacy import tooling, legacy password-format handling and character/inventory/pet/quest mappings; MySQL adapter and cross-backend checks.
-9. **Administration parity:** remaining legacy operational panels, player editing, web broadcast controls, remaining configuration/telemetry/log controls, asset editors and graceful countdown.
-10. **Acceptance:** outstanding `.codex-verify` scenarios, actual-client packet comparisons, multiplayer load/soak and crash-recovery checks, native game-client validation, production server deployment/service packaging and operator procedures.
+9. **Acceptance:** outstanding `.codex-verify` scenarios, actual-client packet comparisons, multiplayer load/soak and crash-recovery checks, native game-client validation, production server deployment/service packaging and operator procedures.
 
 Each category still contains pending work. Full native-client acceptance and execution of the legacy PowerShell suite against Go remain pending. Historical checkpoint limitations below may be superseded by later implemented features and verification.
 
@@ -1050,3 +1049,144 @@ race suite, formatting, lint and server build passed.
 - SQL skill table orders supply AC5:3 serialization. Stat updates and the full snapshot publish only after durable save; snapshot or storage failures leave state untouched. Missing targets fail explicitly, busy actors/targets cannot bypass interactions, and failed target delivery is isolated for reconnect. Skills, level/EXP, inventory and currency remain intact.
 - Tests cover independent stat packet bytes, persistence, usable refunds, repeat safety, saturation, permanent bonuses, target authorization, aliases, gameplay gates and failure recovery. Native-client reset acceptance and remaining GM operations are pending.
 - Verification: AC02, GmManager and Equip reference hashes matched after CRLF normalization; focused reset tests and their race run, the full native-data/SQL-assets race suite, formatting, lint and server build passed. The server binary was rebuilt without restarting the running instance.
+
+
+## Configurable login and gameplay idle limits
+
+`idle_seconds` now applies to login, character selection and character creation,
+with a ten-minute default. `world_idle_seconds` applies after a character is
+selected or created, including map loading and warps; its default of zero disables
+idle logout. Both accept zero (disabled) or 1–86400 seconds. Each incoming packet
+renews the current phase's deadline; outgoing packets do not. Existing login
+deadlines are cleared when disabled gameplay begins. Restart to apply changes.
+
+The reference SocketClient inherits Client3, which retries socket receive timeouts.
+Map.Process separately checks a 30-minute IdleTimer; its LastPacketTime is never
+refreshed in this checkout. AC63 also imposes a 60-second character selection wait.
+Go uses the requested configurable idle policy rather than copying those timers.
+Reference hashes were verified after CRLF normalization. Configuration and socket
+regressions cover expiry, disabled waits, and login/gameplay phase transitions.
+
+Verification: focused idle-policy race regressions, the full SQL-assets/native-data
+race suite, formatting, lint and server build passed. The local configuration was
+updated and the binary rebuilt; restart the running server to apply the policy.
+
+
+## GM skill reset continuation
+
+- Ported AC02 `/clearskills`, `:clearskills`, `/resetskills` and `:resetskills`, for self or an online character selected by ID/name. GmManager.ClearSkills rebuilds SkillManager starter and current stat-qualified skills at grade one with zero proficiency; quest/reward/evolved skills outside that baseline are removed, while quest progress and other character state remain intact.
+- SQL skill table orders supply AC5:3 synchronization. Native FUN_004381c4 (`0x438526..0x43858a`) overlays indexed records without clearing omitted entries. The outgoing snapshot includes removed skills at grade/EXP zero, followed by AC5:4; these transient zero-grade records are never persisted. The reference incremental AC5:12/11 replies are insufficient to clear removed entries.
+- Saves and validates the complete snapshot before sending. Both actor and target must be ready and free of battles, trades, events and movie sequences. Missing targets fail explicitly, privileges are checked per command, and a failed target delivery closes only that target for reconnect.
+- Focused race regressions cover independent native skill records and overwrite replay, progression rebuilding, persistence and repeat safety, target lookup, GM revocation, interaction gates, missing catalog records, canceled saves and failed target delivery. Source hashes matched after CRLF normalization. Actual-client acceptance and remaining GM commands are pending.
+- Verification: affected GM/chat/skill race tests passed, including all four elements against the installed SQL catalog and adjacent allocation/login/evolution tests. Formatting, lint and Server build passed. The binary was rebuilt without restarting the running instance.
+
+## GM command completion
+
+- Completed all AC02 chat command aliases and the advertised `petlvl`, `petexp`
+  and `clearinv` commands. Shared definitions drive new command dispatch and help.
+  Added bulk element skills, god attributes, pet recruitment/amity/rebirth/level/EXP,
+  bag clearing, Tent grants, mall purchases, online information, mute/jail,
+  map invisibility, bulk kicking, forced PvE victory, SQL reload and shutdown.
+- Durable mute expiry covers every chat channel and survives reconnects. Jail
+  persists mute and location together; explicit unjail clears both. Visibility
+  changes synchronize existing peers and exclude hidden GMs from late arrivals.
+- Forced victories use the existing party reward and quest continuation path;
+  processing/finished battle guards prevent repeated awards. Countdown shutdown
+  exits through listener/session cleanup and normal disconnect autosaves.
+- SQL reload replaces selected immutable collections. Quest reload rejects active
+  interactions and retains map geometry and ground/monster timers. Catalog locks
+  cover pre-world readers and administration snapshots. GM privilege reload reads
+  all accounts and orders persisted/live changes against administration grants.
+- Intentional reference corrections: `hide`/`unhide` set explicit states, pet
+  rebirth cannot repeatedly mint points, and god pet vitals use calculated caps
+  rather than fixed values that disagree with native roster/reconnect normalization.
+  Tent grants do not implement tent interiors. Quest/mall/drop reloads use the
+  configured assets database exclusively; file import/export is offline tooling.
+- Verification: focused GM/chat, SQL reload, world-state preservation and complete
+  privilege reload race tests passed against the installed SQL assets. Formatting,
+  lint and Server build passed. The running server was not restarted. Native
+  aLogin acceptance of these newly completed commands remains pending.
+
+## Water magic defense contribution (superseded)
+
+The compiled standard-growth table below supersedes this earlier custom change.
+
+- Water player MDF now uses `round(level * 3 + WIS * 2)` before equipment
+  bonuses, matching Earth's level contribution to physical DEF. Other elements
+  retain `round(level * 2 + WIS * 2)` for MDF. This is an intentional gameplay
+  change requested by the user; Private Server's Equip.cs has no Water MDF bonus.
+- Focused stat regressions cover all four elemental bonuses, equipment MDF and
+  Water's isolated contribution at levels 1, 40 and 199.
+
+
+## EXP rate and Windows administration migration
+
+- Added persisted `/exprate` (`/experience`) and Server operations tuning with
+  source midpoint-even rounding, positive minimum and native EXP cap. Player and
+  pet victory rewards scale once; direct GM/native EVE progression remains unscaled.
+- Replaced the original MainForm/ExtendedTabs controls with authenticated web
+  operations, character editors, GM studio, account/session/security controls,
+  friends, guild/marriage records, GM gifts, battles, static content editors,
+  map/NPC/event inspection, dialogue resolution, logs and startup configuration.
+  See [ADMINISTRATION.md](ADMINISTRATION.md) for controls and constraints.
+- Character and asset editors reject stale versions. SQL edits validate a complete
+  catalog before commit, retain source provenance and reconnect loaded players.
+  Optional map/chest documents live only in SQL; no external override file is
+  restored. Weighted chest rewards/cooldowns are per character and atomic.
+- Schema v7 adds administration records. Guild/marriage management does not imply
+  native client guild/marriage gameplay is complete. SQLite configuration replaces
+  legacy provider selection; original account snapshots remain excluded. NPC
+  show/hide and prop controls are live view changes, matching the editor's scope.
+- Focused regressions cover permission checks for every new route, EXP persistence
+  and player/pet scaling, state conflicts/loading gates, SQL rollback/projection,
+  gift idempotency/full bags, guild cleanup, IP normalization, log concurrency,
+  configuration replacement and chest respawns. All 22 new administration views render in a headless Chromium smoke, including
+  read-only inspector controls. Focused race tests, formatting, lint and build
+  pass. Interactive native aLogin acceptance remains pending. The running server
+  is not restarted by this work.
+
+## Compiled player elemental growth
+
+Player ATK/DEF/MAT/MDF/SPD and nonlinear HP/SP growth share a compiled table in
+`internal/game/growth_parameters.go`. Every element has explicit level and
+attribute coefficients; HP/SP also expose base, power, nonlinear attribute
+coefficients and multiplier. HP/SP use Formula.Dat coefficients with multiplier
+1 for all elements. Standard combat growth follows the saved WLRI Japanese wiki
+in docs/References: DEF uses CON × 1.75, MDF WIS × 2.2 and SPD AGI × 1.8;
+Earth has DEF level × 2.6 and MDF level × 2.2. This replaces the custom Water MDF
+bonus and assumed Earth HP/Water SP bonuses. Changing parameters requires rebuilding;
+startup JSON and administration do not expose them. Creation, battle, rest,
+allocation, equipment, progression and GM/admin stat operations use the same
+policy. Login recalculates and persists maxima without healing. Native AC8
+contributions use fixed original formulas as their reference, independent of
+compiled gameplay tuning. Custom aLogin display acceptance remains pending.
+Pet/monster growth and reborn-job multipliers remain separate. See
+[CONFIGURATION.md](CONFIGURATION.md#elemental-stat-growth).
+
+## Pet growth across all attributes
+
+Automatic pet level-up points now use weighted draws across STR, CON, INT, WIS
+and AGI. This intentionally replaces the private server's strongest-three rule.
+Weights use the NPC template when known and current attributes otherwise, with a
+minimum of one per uncapped attribute. Capped attributes are excluded and all-capped
+pets skip the draw. One point is allocated per gained level; manual training and
+allocation budgets retain their existing rules. Exhaustive interval tests cover
+exact weight proportions, low-stat eligibility, missing/zero template weights,
+capacity exclusions and multi-level growth. Pet battle EXP/progression tests
+verify the shared allocation path.
+
+## Selectable pet growth formula
+
+Startup `pet_growth_formula` selects `base_stats` (default, all-five species/base
+attribute weights) or `combat_stats` (ATK/DEF/MAT/MDF/SPD weights for
+STR/CON/INT/WIS/AGI). The new calculation includes current level, attributes,
+equipment/forging and existing pet combat elemental rules. Weights are rebuilt
+for every gained-level point, and capped attributes are excluded. HP/SP and
+transient battle effects do not add weights. Battle reward and GM pet EXP grants
+share the same startup selection; manual training and `/petlvl` point budgets
+remain separate. The selector is captured at startup and requires a restart to
+change; live operations and gameplay database settings cannot alter it.
+Exact weighted intervals, equipment penalties/bonuses, elemental differences,
+multi-level recalculation, missing-template fallback, selector validation and
+save-without-live-application are covered by focused regressions. See
+[CONFIGURATION.md](CONFIGURATION.md#pet-automatic-point-allocation).

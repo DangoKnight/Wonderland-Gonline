@@ -58,10 +58,13 @@ Explain semantic exceptions in nearby comments when their role is unclear.
 Prefer named packet builders when an entire layout is repeated or difficult to
 read. Avoid inventing wrappers for every one-line packet just to hide its bytes.
 
-Run the affected tests after a small naming change. For changes across protocol or
-event handling, run the native-data suite with the race detector and the normal
-formatting, lint and build checks described in the README. Review namespaces as
-well as values: byte-for-byte tests cannot detect a misleading name.
+During development, run only tests relevant to the modified modules and affected
+integrations. Use focused test selections within large packages; protocol or event
+changes should include their relevant native-data compatibility tests. Use the
+race detector when changing concurrent behavior. Reserve full test-suite runs for
+pre-commit validation. Run formatting, lint and build checks appropriate to the
+change. Review namespaces as well as values: byte-for-byte tests cannot detect a
+misleading name.
 
 ## Editable sprite assets
 
@@ -91,8 +94,10 @@ which SQL fields are authoritative when adding a projection, and validate before
 publishing the startup snapshot. Keep file decoders for offline tools and
 independent compatibility tests.
 
-Run the gameplay suite against imported assets with
-`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
+Run relevant gameplay tests against imported assets with
+`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test ./internal/<package> -run <tests>`.
+Add `-race` for concurrent behavior. At pre-commit validation, run the full suite
+with `WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
 format tests still accept `WONDERLAND_TEST_DATA` and
 `WONDERLAND_TEST_CLIENT_DATA`.
 
@@ -585,3 +590,45 @@ changes. Never clear equipment to imitate a reference handler with missing or
 misclassified item IDs. Unsupported model conversions remain rejected before
 ordinary branch mutations. See the Breillat regression suite for the ten-talk
 unlock, decline, stale state and failed delivery cases.
+
+## Character growth settings
+
+Keep player growth tuning in `internal/game/growth_parameters.go`, in the
+compiled `DefaultElementalGrowth()` table. Each element has its own complete
+level, attribute and vital coefficients. Standard combat coefficients follow the
+saved WLRI Japanese wiki in docs/References; HP/SP follow Formula.Dat. Keep
+independent reference-value and formula-export tests to detect accidental drift.
+Edit the table and rebuild to change
+gameplay; do not expose these values in startup JSON or web administration.
+Use the shared character creation, combat, refill, recalculation and stat-packet
+helpers in gameplay handlers instead of duplicating formulas. HP/SP bases and
+equipment bonuses stay outside the growth multiplier. `baselineGrowth()` and
+`nativeElementGrowth()` are fixed native-client compatibility references;
+keep them independent of gameplay tuning so packet adjustments still work after
+rebuilding with different coefficients. Growth arguments on low-level helpers
+allow isolated formula tests; production server handlers use the compiled table.
+Run focused growth tests after edits, including validation of finite coefficients
+and bounds. Pet and monster growth are separate policies. See
+[CONFIGURATION.md](CONFIGURATION.md#elemental-stat-growth) for field meanings and
+build instructions.
+
+## Pet level-up stat distribution
+
+Pet automatic growth allocates one attribute point per gained level. Keep all
+five attributes eligible and weight them through `Pet.growthWeights`; do not
+restrict candidates to the strongest attributes. `PetGrowthBaseStats` uses known
+NPC template stats or current attributes when the template is missing.
+`PetGrowthCombatStats` maps STR/CON/INT/WIS/AGI to current ATK/DEF/MAT/MDF/SPD from
+`Pet.Combat`, including equipment and existing elemental modifiers. Recalculate
+weights for each point after increasing the level. Vitals and temporary battle
+effects are separate and do not add weights.
+
+The formula selector is startup JSON `pet_growth_formula`, captured by `Server.New`
+and immutable for that process. Do not expose it through live runtime operations
+or persisted database settings. Route automatic EXP growth through `gainPetExp`
+so battle rewards and GM pet EXP use the same selection and catalog. Pass an
+explicit roll function for independent interval tests. Retain minimum weight one,
+exclude capped attributes before summing weights, and skip the draw if all are
+capped. Keep manual AC8/AC68 spending separate. Test exact intervals, equipment
+bonuses/penalties, elemental behavior, per-level recalculation and startup-save
+immutability; avoid probabilistic sampling tests.

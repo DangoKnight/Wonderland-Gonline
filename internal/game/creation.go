@@ -188,7 +188,7 @@ func StarterSkills(body, head uint16, element byte) []LearnedSkill {
 	return out
 }
 
-func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []StarterGrant, items map[uint16]ItemDefinition, now time.Time) (Character, error) {
+func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []StarterGrant, items map[uint16]ItemDefinition, now time.Time, growth ...ElementalGrowth) (Character, error) {
 	if err := ValidateCharacterName(name); err != nil {
 		return Character{}, err
 	}
@@ -205,8 +205,9 @@ func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []Star
 	}
 	stats := c.Attributes()
 	level := float64(c.Level)
-	hp := math.RoundToEven(math.Pow(level, .35)*float64(stats.Constitution)*2 + level + float64(stats.Constitution)*2 + 180)
-	sp := math.RoundToEven(math.Pow(level, .3)*float64(stats.Wisdom)*3.2 + level + float64(stats.Wisdom)*2 + 94)
+	g := characterGrowth(c.Element, growth)
+	hp := math.RoundToEven(g.HP.value(level, stats))
+	sp := math.RoundToEven(g.SP.value(level, stats))
 	bonus := c.Equipment.Bonuses(items)
 	hp += float64(bonus.HP)
 	sp += float64(bonus.SP)

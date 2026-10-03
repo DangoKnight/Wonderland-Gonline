@@ -6,6 +6,13 @@ limits and content references descriptive names in their owning packages. Use
 explicit compatibility values and documented fallback names for unresolved codes.
 Preserve independent raw-byte golden tests and authored data tables.
 
+## Test scope
+
+During development, run only tests relevant to the modified modules and their
+affected integrations. Reserve full test-suite runs for pre-commit validation.
+Use focused test selections within large packages and the race detector when
+changing concurrent behavior.
+
 ## Approval requests
 
 The user often denies approval requests accidentally. If a request is denied

@@ -10,6 +10,8 @@
   "http_address": "127.0.0.1:8080",
   "database": "var/wonderland.db",
   "max_connections": 512,
-  "idle_seconds": 120,
-  "assets_database": "var/assets.db"
+  "idle_seconds": 600,
+  "world_idle_seconds": 0,
+  "assets_database": "var/assets.db",
+  "pet_growth_formula": "base_stats"
 }

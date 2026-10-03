@@ -187,7 +187,8 @@ Choose your own credentials. Names accept 4–14 ASCII letters, digits or
 underscores; passwords accept 4–14 printable ASCII bytes. Registration creates
 an ordinary account. Use the admin Accounts view to grant GM access, ban/unban,
 reset passwords, delete accounts or adjust mall balances. Sessions can be
-terminated there without restarting the server.
+terminated there without restarting the server. See [Web administration](ADMINISTRATION.md)
+for character editing, GM tools, EXP tuning, gifts, content editors and maintenance.
 
 ## 6. Compile and run the Go client
 
@@ -295,7 +296,7 @@ credential. Use Ctrl+C there to stop it.
 | Admin token error | Set `WONDERLAND_ADMIN_TOKEN` in the same shell that starts the server |
 | `address already in use` | Stop the previous instance or change the relevant listener; keep client game-port expectations in mind |
 | Launcher shows offline while admin health works | Check TCP 6416, host/firewall and `status_server_ids`; `/healthz` does not serve launcher status |
-| Client connection lost after inactivity | Review `idle_seconds`, logs and incoming keepalive traffic |
+| Client connection lost after inactivity | Review `idle_seconds` for login or `world_idle_seconds` for gameplay (0 disables the limit), and check logs |
 | Client cannot open a window | Check display session and graphics drivers; see [CLIENT.md](CLIENT.md#run) |
 | Config change appears ineffective | Restart for startup settings; saved admin `server_name` overrides config `name` |
 | Files appear under an unexpected directory | Relative paths resolve from the working directory, including database and log paths |

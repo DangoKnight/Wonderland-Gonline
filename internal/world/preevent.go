@@ -276,6 +276,9 @@ func (w *World) propCondition(c *game.Character, v *View, mapID uint16, ev *asse
 		done, ok2 := questActive(c, 13025)
 		return flag((ok && heretic.Step >= 7) || (ok2 && done.Step > 0))
 	}
+	if expiry, configured := c.ChestRespawns[ChestKey(mapID, ev.ClickID)]; configured {
+		return flag(time.Now().Before(expiry))
+	}
 	if mode == 3 && v != nil && Mechanism(mapID) {
 		if state, ok := v.Props[actor]; ok {
 			return compare(int64(state), value, op)
@@ -398,6 +401,11 @@ func (w *World) VisibleIn(c *game.Character, v *View, mapID, click uint16) bool 
 
 // visible is ShouldNpcBeVisible; on mechanism maps a scripted show/hide wins.
 func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool {
+	if view != nil {
+		if shown, ok := view.AdminActors[click]; ok {
+			return shown
+		}
+	}
 	if view != nil && Mechanism(mapID) {
 		if shown, ok := view.Actors[click]; ok {
 			return shown

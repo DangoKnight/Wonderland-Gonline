@@ -48,8 +48,8 @@ func (c Character) ExpPacket() []byte {
 }
 
 // Refill sets HP and SP to the equipped maxima, as Send8_1(levelup) does.
-func (c *Character) Refill(items map[uint16]ItemDefinition) {
-	full := c.Combat(items)
+func (c *Character) Refill(items map[uint16]ItemDefinition, growth ...ElementalGrowth) {
+	full := c.Combat(items, growth...)
 	c.MaxHP, c.MaxSP = uint32(max(full.MaxHP, 1)), uint32(max(full.MaxSP, 0))
 	c.HP, c.SP = c.MaxHP, c.MaxSP
 }
@@ -143,4 +143,13 @@ func (c *Character) Allocate(requests []StatAllocation) bool {
 		changed = true
 	}
 	return changed
+}
+
+// RecalculateVitals applies startup growth changes without healing existing characters.
+func (c *Character) RecalculateVitals(items map[uint16]ItemDefinition, growth ...ElementalGrowth) bool {
+	before := [4]uint32{c.MaxHP, c.MaxSP, c.HP, c.SP}
+	full := c.Combat(items, growth...)
+	c.MaxHP, c.MaxSP = uint32(max(full.MaxHP, 1)), uint32(max(full.MaxSP, 0))
+	c.HP, c.SP = min(c.HP, c.MaxHP), min(c.SP, c.MaxSP)
+	return before != [4]uint32{c.MaxHP, c.MaxSP, c.HP, c.SP}
 }
