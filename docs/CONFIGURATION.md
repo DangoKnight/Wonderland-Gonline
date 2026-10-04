@@ -9,6 +9,13 @@ Copy `config.example.json` to ignored `config.local.json`, then pass
 `-config config.local.json`. Omitted fields keep the built-in defaults. Unknown
 fields and trailing JSON are rejected; use the supported keys below.
 
+Startup parameters are the JSON-file exception in the
+[server data policy](DEVELOPMENT.md#server-data-ownership-and-initialization).
+Shared definitions belong in the assets database; mutable gameplay state and
+persistent server settings belong in the gameplay database. Database defaults
+may be seeded from JSON, but initialization must preserve existing records and
+administrator edits. Compiled growth formulas remain in code.
+
 | Key | Default | Meaning / constraints |
 | --- | --- | --- |
 | `name` | `Wonderland Go` | Initial server name, 1–200 bytes; a saved admin `server_name` takes precedence |
@@ -321,33 +328,33 @@ snapshot and refresh; removed skills are cleared from the client's indexed table
 
 ## Static gameplay tuning
 
-The running server uses a startup snapshot of `assets_database`. SQL indexed rows
-are authoritative for indexed arrays; editing only a retained document's array
-will not override them. Close your SQL editor and restart after changes. Use
-`-inspect-data` to catch catalog errors before starting listeners. See
-[ASSET_DATABASE.md](ASSET_DATABASE.md) for schema, validation and backups.
+The running server uses a SQL-derived snapshot of `assets_database`. Typed
+`catalog_*` tables are authoritative. Source records and old JSON views are
+provenance; editing them does not change gameplay. Use the administration datasets
+for validated edits, then reconnect/reload as directed by the panel. Direct SQL
+edits require a restart or the relevant GM reload command. Use `-inspect-data`
+to validate a snapshot before starting listeners. See [ASSET_DATABASE.md](ASSET_DATABASE.md).
 
-| Behavior | Runtime source / editing location |
+| Behavior | Administration dataset |
 | --- | --- |
-| Daily Lucky Draw rewards | `asset_records`: `asset='lucky_draw.json'`, `collection='value'`; view `asset_lucky_draw_rewards` |
-| Gacha pack contents and probabilities | Indexed `gacha_packs.json/value`; views `asset_gacha_packs` and `asset_gacha_rewards` |
-| Skill buffs, debuffs and protection | Indexed `skill_effects.json/records` plus skill effect references; [effect conventions](DEVELOPMENT.md#skill-json-and-reusable-effects) |
-| Starter grants, pet vouchers, shops/mall, drops, alchemy and forging | Corresponding exported setting/table documents and indexed collections in SQL |
-| NPCs, skills, dialogue and events | SQL-loaded exported records; native IDs, ordering and binary-derived fields must stay valid |
-| Client artwork | Editable PNGs/atlases and frame metadata under `data/`; [sprite editing](../data/sprites/EDITING.md) |
+| Daily Lucky Draw rewards | `LuckyDraw` |
+| Gacha pack contents and probabilities | `GachaPacks` |
+| Skill buffs, debuffs and protection | `Skills`, `SkillEffects` |
+| Monster loot | `Drops` |
+| Mall offers | `Mall` |
+| Character starter grants | `StarterItems` |
 
-For example, to increase the relative weight of the first Lucky Draw reward,
-stop the server, back up the assets database, then execute in a SQLite editor:
+Example reward-weight edit:
 
 ```sql
-UPDATE asset_records
-SET json = json_set(json, '$.weight', 5)
-WHERE asset = 'lucky_draw.json' AND collection = 'value' AND ordinal = 0;
+UPDATE catalog_lucky_draw_rewards
+SET value_weight = 5
+WHERE lucky_draw_rewards_ordinal = 0;
 ```
 
 This changes that reward's weight to 5 while leaving its item, quantity and slot
-intact. Weights are relative; this does not mean a 5% probability. Positive
-integer weights must fit the supported total. Daily Draw allows at most 20
+intact. Weights are relative; this does not mean a 5% probability. Use the validated
+`LuckyDraw` editor so its saved total is recalculated. Positive integer weights must fit the supported total. Daily Draw allows at most 20
 consecutive one-based reward slots. Gacha packs have their own policy: positive
 weights total 10,000, with up to 41 outcomes. Missing item definitions can disable
 a whole affected gacha pack; the loader does not silently drop its rewards.
@@ -435,3 +442,21 @@ Server operations also persists the drop multiplier. `/droprate` retains the
 reference's process-local behavior: it changes the live value until another
 saved operations update or restart. To make a drop rate durable, save it through
 Server operations.
+
+### Combat content controls
+
+NPC skill choices use the three skill slots in the SQL `npc.dat` records and
+the effects in `skill.dat`; there is no separate AI skill-ID list or launch
+switch. Palace stages use the optional SQL `combat_trials.json` table, managed
+through the authenticated asset API. GM `/palace <stage>` and native AC77:1
+share those definitions and admission rules. See
+[ADMINISTRATION.md](ADMINISTRATION.md#palace-trials) for configuration and the
+reference placeholder limitations. Empty definitions disable Palace challenges.
+
+## Structured database upgrade
+
+Server startup requires structured asset tables. Upgrade existing databases with
+`go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v1`,
+then set `database` and `assets_database` to the verified copies. See
+[ASSET_DATABASE.md](ASSET_DATABASE.md). These paths are startup parameters; content
+definitions and durable settings remain in their respective SQL databases.

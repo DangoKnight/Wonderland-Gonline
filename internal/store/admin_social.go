@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 	"net/netip"
 	"time"
+	"wonderland-go/internal/game"
 )
 
 type IPBan struct {
@@ -49,6 +50,7 @@ type AdminGuild struct {
 	Name     string   `json:"name"`
 	Notice   string   `json:"notice"`
 	LeaderID uint32   `json:"leader_id"`
+	Icon     uint32   `json:"icon"`
 	Members  []uint32 `json:"members" gorm:"-"`
 }
 
@@ -57,6 +59,7 @@ func (AdminGuild) TableName() string { return "guilds" }
 type guildMember struct {
 	GuildID     uint32 `gorm:"primaryKey;autoIncrement:false"`
 	CharacterID uint32 `gorm:"primaryKey;autoIncrement:false"`
+	Rank        byte
 }
 
 func (guildMember) TableName() string { return "guild_members" }
@@ -79,7 +82,7 @@ func (s *Store) AdminGuilds(ctx context.Context) ([]AdminGuild, error) {
 	return guilds, nil
 }
 func (s *Store) SaveAdminGuild(ctx context.Context, guild AdminGuild) error {
-	if guild.Name == "" || len(guild.Name) > maxGuildNameBytes || len(guild.Notice) > maxSettingBytes {
+	if guild.Name == "" || len(guild.Name) > maxGuildNameBytes || len(guild.Notice) > GuildNoticeMaxBytes || len(guild.Members) > GuildMemberLimit || guild.ID > game.MaxNativeGuildID {
 		return errors.New("invalid guild name or announcement")
 	}
 	leader := false
@@ -108,14 +111,37 @@ func (s *Store) SaveAdminGuild(ctx context.Context, guild AdminGuild) error {
 				return errors.New("character already belongs to another guild")
 			}
 		}
+		var oldMembers []guildMember
+		if err := tx.Where("guild_id = ?", guild.ID).Find(&oldMembers).Error; err != nil {
+			return err
+		}
+		ranks := map[uint32]byte{}
+		for _, member := range oldMembers {
+			ranks[member.CharacterID] = member.Rank
+		}
+		if guild.Icon == 0 {
+			var old AdminGuild
+			if guild.ID != 0 {
+				if err := tx.First(&old, guild.ID).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return err
+				}
+			}
+			guild.Icon = old.Icon
+			if guild.Icon == 0 {
+				guild.Icon = DefaultGuildIcon
+			}
+		}
 		if err := tx.Save(&guild).Error; err != nil {
 			return err
+		}
+		if guild.ID > game.MaxNativeGuildID {
+			return errors.New("guild ID limit reached")
 		}
 		if err := tx.Where(map[string]any{"guild_id": guild.ID}).Delete(&guildMember{}).Error; err != nil {
 			return err
 		}
 		for _, id := range guild.Members {
-			if err := tx.Create(&guildMember{GuildID: guild.ID, CharacterID: id}).Error; err != nil {
+			if err := tx.Create(&guildMember{GuildID: guild.ID, CharacterID: id, Rank: ranks[id]}).Error; err != nil {
 				return err
 			}
 		}

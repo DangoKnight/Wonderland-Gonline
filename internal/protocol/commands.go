@@ -20,6 +20,7 @@ const (
 	CommandMapAcknowledgment  = 12
 	CommandTeam               = 13
 	CommandFriends            = 14
+	CommandStoryConstellation = 15 // Outbound star collection, distinct from pet commands.
 	CommandPetControl         = 15
 	CommandDirectSettings     = 16
 	CommandBattlePet          = 19
@@ -42,6 +43,7 @@ const (
 	CommandBank               = 45
 	CommandBattleAction       = 50
 	CommandBattleReady        = 52
+	CommandMonsterBook        = 53 // Outbound discovery; AC53:9 carries a template ID.
 	CommandBattleEffect       = 53
 	CommandDiscoveryChannels  = 54
 	CommandMinigame           = 57
@@ -52,6 +54,9 @@ const (
 	CommandPetRebirth         = 69
 	CommandTerritory          = 70
 	CommandMall               = 75
+	CommandSceneReady         = 89
+	CommandSceneReadyReply    = 90
+	CommandSceneReadyAck      = 92
 	CommandPackContents       = 91
 	CommandLuckyDraw          = 104
 	CommandMovie              = 186
@@ -159,6 +164,8 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	BattleStateWireCode0     = 0
 	BattleStateExit          = 1
+	BattleStateChallenge     = 2
+	BattleChallengePlayer    = 3
 	BattleStateParticipation = 4
 	BattleStateParticipant   = 5
 	BattleStateInitialize    = 10
@@ -693,4 +700,101 @@ const (
 	LuckyDrawCatalog      = 1
 	LuckyDrawResult       = 2
 	LuckyDrawRequestBytes = 2
+)
+
+// Native login completion and notebook synchronization.
+const (
+	SceneReadyLoaded       = 0
+	SceneReadyStatus       = 1
+	SceneReadyAcknowledged = 1
+	MonsterBookDiscover    = 9
+	StoryConstellationList = 19
+)
+
+// PalaceTrial preserves the AC77 request/reply envelope.
+const (
+	CommandPalaceTrial        = 77
+	PalaceTrialChallenge      = 1
+	PalaceTrialRejected  byte = 0
+	PalaceTrialAccepted  byte = 1
+)
+
+// Native player stalls (AC56).
+const (
+	CommandStall = 56
+	StallOpen    = 1
+	StallClose   = 2
+	StallView    = 3
+	StallBuy     = 4
+	StallSign    = 30
+)
+
+// Guild gameplay (AC39), distinct from inbound chat AC2:6.
+const (
+	CommandGuild    = 39
+	GuildJournal    = 1
+	GuildInvite     = 2
+	GuildAccept     = 3
+	GuildLeave      = 6
+	GuildDismiss    = 7
+	GuildMessage    = 8
+	GuildRoster     = 8
+	GuildNotice     = 9
+	GuildDemote     = 11
+	GuildMemberList = 12
+	GuildPromote    = 14
+	GuildPermission = 16
+	GuildInsignia   = 18
+	GuildBadge      = 30
+)
+
+// Outbound legacy parcel mailbox; inbound AC23:77 remains stall synchronization.
+const (
+	InventoryParcelList    = 76
+	InventoryParcelDetails = 77
+)
+
+// Native manufacturing (AC59). The reference wire handler selects Forge.
+const (
+	CommandManufacture      = 59
+	ManufactureRequestBytes = 8
+	ManufactureFailed       = 0
+	ManufactureSucceeded    = 1
+)
+
+// Fixed Economy/Social inbound payload sizes include command and subcommand.
+const (
+	StallHeaderRequestBytes     = 2
+	StallTargetRequestBytes     = 6
+	StallPurchaseRequestBytes   = 8
+	GuildHeaderRequestBytes     = 2
+	GuildTargetRequestBytes     = 6
+	GuildPermissionRequestBytes = 7
+)
+
+// Player homes: native interior template plus owner-scoped server instances.
+const (
+	CommandTent                 = 65
+	CommandTentFurniture        = 62
+	TentEnter                   = 1
+	TentClose                   = 2
+	TentExit                    = 3
+	TentClosed                  = 4
+	TentInteriorStatus          = 7
+	TentOpened                  = 59
+	TentOpenedStatus            = 2
+	TentPlaceFurniture          = 1
+	TentMoveFurniture           = 3
+	TentFurnitureSucceeded      = 1
+	InventoryTentFurniture      = 3
+	PresenceMapAvailable        = 255
+	InventoryTentPlayers        = 138
+	InventoryTentPlayer         = 122
+	InventoryTentPlayerComplete = 76
+	TentHeaderRequestBytes      = 2
+	TentEnterRequestBytes       = 6
+	TentPlaceRequestBytes       = 16
+	TentMoveRequestBytes        = 16
+	TentMoveRotatedRequestBytes = 17
+	TentCoordinateMax           = 65535
 )

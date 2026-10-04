@@ -41,10 +41,16 @@ func (s *Server) gmCombat(_ context.Context, c *Session, command string, args []
 	if run.b.Processing {
 		return s.chatFeedback(c, "Wait for the current battle animation to finish.")
 	}
-	for _, enemy := range run.b.Defenders {
+	enemies := run.b.Defenders
+	outcome := battle.Victory
+	if member := run.member(c); member != nil && member.self.Side == battle.Defender {
+		enemies = run.b.Attackers
+		outcome = battle.Defeat
+	}
+	for _, enemy := range enemies {
 		enemy.HP = 0
 	}
-	s.endBattle(run, battle.Victory)
+	s.endBattle(run, outcome)
 	return nil
 }
 

@@ -77,14 +77,14 @@ func ResolveSkillEffects(s *Skill, definitions map[string]EffectDefinition) erro
 				return fmt.Errorf("skill %d: missing or duplicate effect reference %s", s.ID, id)
 			}
 			seen[id] = true
-			// Clone through JSON: skill-local modification cannot mutate shared definitions.
-			raw, err := json.Marshal(d.Effects)
-			if err != nil {
-				return err
-			}
-			var cloned []SkillEffect
-			if err = json.Unmarshal(raw, &cloned); err != nil {
-				return err
+			// Copy mutable effect fields without a serialization round trip.
+			cloned := append([]SkillEffect(nil), d.Effects...)
+			for i := range cloned {
+				cloned[i].Modifiers = append([]StatModifier(nil), cloned[i].Modifiers...)
+				if cloned[i].PeriodicDamage != nil {
+					damage := *cloned[i].PeriodicDamage
+					cloned[i].PeriodicDamage = &damage
+				}
 			}
 			s.Effects = append(s.Effects, cloned...)
 		}

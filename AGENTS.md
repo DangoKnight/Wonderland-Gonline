@@ -5,6 +5,11 @@ Follow its numeric naming convention: give protocol codes, event codes, flags,
 limits and content references descriptive names in their owning packages. Use
 explicit compatibility values and documented fallback names for unresolved codes.
 Preserve independent raw-byte golden tests and authored data tables.
+Follow the server data ownership and initialization policy in DEVELOPMENT.md:
+shared definitions belong in the assets database; durable gameplay state and
+server settings belong in the gameplay database. Prefer structured tables over
+JSON files and virtual documents, preserve existing data during initialization,
+and keep transient process state in memory. Compiled growth formulas remain in code.
 
 ## Test scope
 

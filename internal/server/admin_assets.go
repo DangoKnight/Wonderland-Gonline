@@ -28,13 +28,9 @@ func (s *Server) AssetDocuments(ctx context.Context) ([]AssetDocument, error) {
 		return nil, err
 	}
 	defer assetdb.Close(db)
-	var docs []assetdb.Document
-	if err = db.WithContext(ctx).Select("asset", "origin", "source").Order("asset").Find(&docs).Error; err != nil {
-		return nil, err
-	}
 	out := []AssetDocument{}
-	for _, d := range docs {
-		out = append(out, AssetDocument{d.Asset, d.Origin, d.Source})
+	for _, name := range assetsql.DefinitionNames {
+		out = append(out, AssetDocument{Asset: name, Origin: "SQL", Source: "assets database"})
 	}
 	return out, nil
 }
@@ -44,22 +40,44 @@ func (s *Server) ReadAssetDocument(ctx context.Context, asset string) (AssetEdit
 		return AssetEdit{}, err
 	}
 	defer assetdb.Close(db)
-	raw, err := assetdb.ReadDocument(db.WithContext(ctx), asset)
+	var raw []byte
+	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error { var err error; raw, err = assetsql.ReadDefinition(tx, asset); return err })
 	if err != nil {
 		return AssetEdit{}, err
 	}
 	return AssetEdit{Version: assetdb.DocumentVersion(raw), Value: raw}, nil
 }
-func (s *Server) ReadAssetRecords(ctx context.Context, asset string, id int64) ([]assetdb.Record, error) {
+
+type AssetRecord struct {
+	Collection string `json:"collection"`
+	Ordinal    int    `json:"ordinal"` // Numeric game identity, independent of source position.
+	AssetEdit
+}
+
+func (s *Server) ReadAssetRecords(ctx context.Context, asset string, id int64) ([]AssetRecord, error) {
+	if id < 0 || uint64(id) > uint64(^uint32(0)) {
+		return nil, fmt.Errorf("invalid asset identity")
+	}
 	db, err := assetdb.OpenReadOnly(s.Config.AssetsDatabase)
 	if err != nil {
 		return nil, err
 	}
 	defer assetdb.Close(db)
-	var rows []assetdb.Record
-	err = db.WithContext(ctx).Where(map[string]any{"asset": asset, "game_id": id}).Order("ordinal").Limit(20).Find(&rows).Error
-	return rows, err
+	var raw []byte
+	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		raw, err = assetsql.ReadDefinitionRecord(tx, asset, int(id))
+		return err
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return []AssetRecord{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return []AssetRecord{{Collection: asset, Ordinal: int(id), AssetEdit: AssetEdit{Version: assetdb.DocumentVersion(raw), Value: raw}}}, nil
 }
+
 func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, collection string, ordinal int) error {
 	s.adminEditMu.Lock()
 	defer s.adminEditMu.Unlock()
@@ -93,13 +111,27 @@ func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, co
 	}
 	defer assetdb.Close(db)
 	var candidate *assets.Catalog
-	validate := func(tx *gorm.DB) error {
+	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var current []byte
 		var err error
-		candidate, err = assetsql.LoadTransaction(tx)
+		var recordID *int
+		if collection == "" {
+			current, err = assetsql.ReadDefinition(tx, asset)
+		} else {
+			if collection != asset {
+				return errors.New("record collection does not match dataset")
+			}
+			recordID = &ordinal
+			current, err = assetsql.ReadDefinitionRecord(tx, asset, ordinal)
+		}
 		if err != nil {
 			return err
 		}
-		if err := validateAdminAsset(asset, edit.Value, candidate); err != nil {
+		if edit.Version == "" || assetdb.DocumentVersion(current) != edit.Version {
+			return assetdb.ErrEditConflict
+		}
+		candidate, err = assetsql.DefinitionCandidate(tx, asset, edit.Value, recordID)
+		if err != nil {
 			return err
 		}
 		for id := range s.Assets.Maps {
@@ -107,13 +139,8 @@ func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, co
 				return fmt.Errorf("cannot remove existing map %d", id)
 			}
 		}
-		return nil
-	}
-	if collection == "" {
-		err = assetdb.ReplaceDocument(ctx, db, asset, edit.Version, edit.Value, validate)
-	} else {
-		err = assetdb.ReplaceRecord(ctx, db, asset, collection, ordinal, edit.Version, edit.Value, validate)
-	}
+		return assetsql.SaveEditedCatalog(tx, candidate)
+	})
 	if err != nil {
 		return err
 	}
@@ -141,5 +168,6 @@ func (s *Server) EnsureAdminAsset(ctx context.Context, asset string) error {
 		return err
 	}
 	defer assetdb.Close(db)
-	return assetdb.EnsureDocument(ctx, db, asset)
+	_, err = assetsql.ReadDefinition(db.WithContext(ctx), asset)
+	return err
 }

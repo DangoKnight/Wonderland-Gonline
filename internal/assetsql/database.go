@@ -73,8 +73,8 @@ func LoadDatabase(path string) (*assets.Catalog, error) {
 	return catalog, nil
 }
 
-// LoadTransaction validates a complete catalog, including uncommitted edits.
-func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
+// loadLegacyTransaction is used only by offline conversion and reference tests.
+func loadLegacyTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{Items: map[uint16]game.ItemDefinition{}, Warnings: []string{}}
 	var err error
 	err = func() error {
@@ -213,6 +213,34 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 				if err != nil {
 					return err
 				}
+			}
+		}
+		var trialDocuments int64
+		if err := tx.Model(&assetdb.Document{}).Where("asset = ?", assets.CombatTrialsAsset).Count(&trialDocuments).Error; err != nil {
+			return err
+		}
+		if trialDocuments > 0 {
+			doc, err := read(assets.CombatTrialsAsset)
+			if err != nil {
+				return err
+			}
+			c.CombatTrials, err = assets.ParseCombatTrials(doc.Value, c)
+			if err != nil {
+				return fmt.Errorf("combat trials: %w", err)
+			}
+		}
+		var visibilityDocuments int64
+		if err := tx.Model(&assetdb.Document{}).Where("asset = ?", assets.QuestVisibilityAsset).Count(&visibilityDocuments).Error; err != nil {
+			return err
+		}
+		if visibilityDocuments > 0 {
+			doc, err := read(assets.QuestVisibilityAsset)
+			if err != nil {
+				return err
+			}
+			c.QuestVisibility, err = assets.ParseQuestVisibility(doc.Value, c)
+			if err != nil {
+				return fmt.Errorf("quest visibility: %w", err)
 			}
 		}
 		return nil

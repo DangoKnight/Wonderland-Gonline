@@ -19,7 +19,7 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | Runtime                      | `internal/server`, `cmd/wonderland`                                                      | TCP listeners, bounded connections, per-connection command serialization, write deadlines, idle timeout, packet rate cap, signal shutdown                                                                                                                                                                                                                                                                                                                                               |
 | Login                        | `internal/server`                                                                        | AC0 discovery, AC1 handshake, AC63:4 version prefix and login; AC63:1 native roster fields, bare AC63:0 return and same-connection reauthentication, duplicate login rejection, empty character selection                                                                                                                                                                                                                                                                               |
 | Accounts                     | `internal/store`                                                                         | Separate SQLite DB, password hashing, banned account rejection, concurrent registration, restart persistence                                                                                                                                                                                                                                                                                                                                                                            |
-| Character creation           | `internal/game`, `internal/server`                                                       | AC9 name reservation and appearance, all 15 character presets and four elements, initial skills/outfits/items, atomic creation and hashed secondary deletion code                                                                                                                                                                                                                                                                                                                       |
+| Character creation           | `internal/game`, `internal/server`                                                       | AC9 name reservation and appearance, all 15 character presets and four elements, initial skills/outfits/items, five-point creation budget excluding model bonuses, atomic creation and hashed secondary deletion code                                                                                                                                                                                                                                                                                                                       |
 | Initial world state          | `internal/game`, `internal/server`                                                       | AC3/5:3/8:1/23:5/23:11/12/7 packets; AC12:1 releases the map gate; movement persists and broadcasts within the map.                                                                                                                                                                                                                                                                                                                                                                     |
 | Map scene                    | `internal/world`                                                                         | SendMapInfo order: AC23:138, AC22:4 actors (14-byte records, idle/opened prop frame, concealment), AC23:4 native ground items, entrant AC23:122/10:3/23:76, AC23:102, AC20:8. Golden bytes and a 1,119-map native census.                                                                                                                                                                                                                                                               |
 | NPC visibility               | `internal/world/preevent.go`                                                             | EVE flag bit 0, cumulative PreEvent rules with ANDed branches, the Sealed Bead rule filter, and the quest-mark story overrides of `ShouldNpcBeVisible`. Conditions 0/1/2/5/6/10/14/15 evaluate against Go state; owned-companion and active-vehicle operands use persisted state; the four water timer conditions use durable UTC expiries.                                                                                                                                                                          |
@@ -27,6 +27,7 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | Map peers                    | `internal/server/world.go`                                                               | Acknowledged players exchange AC4/5:0/10:3/5:8 appearance and AC7 position; AC6 movement stays within the map; AC12 logout despawns once. Concurrent entry and failed-recipient tests pass.                                                                                                                                                                                                                                                                                             |
 | Character deletion           | `internal/store`, `internal/server`                                                      | AC35:2 ownership, secondary-code verification, last-character code removal; schema v1→v2 preserves accounts                                                                                                                                                                                                                                                                                                                                                                             |
 | Character storage            | `internal/store`, `internal/game`                                                        | Account-owned character records, atomic mutation callback, rollback, native selection serialization                                                                                                                                                                                                                                                                                                                                                                                     |
+| Items and player state | `internal/server/tents.go`, `items.go`; `internal/game/item_locks.go`; `internal/store/tents.go` | Source-supported special-item dispatch, targeted gacha use, owner-isolated native tents, furniture placement/movement/recovery, durable access locks and per-visitor return points. Transient item reservations protect inventory, equipment, trades and SQL reward transactions. See [ITEMS_PLAYER_STATE.md](ITEMS_PLAYER_STATE.md). Native-client acceptance remains pending. |
 | Inventory library            | `internal/game`                                                                          | 50 slots, all-or-nothing grants with additive AC23:5 deltas, transfers, metadata-compatible stacks, partial moves (MoveItem), droppable item types, 31-byte serialization                                                                                                                                                                                                                                                                                                               |
 | Bag and ground actions       | `internal/server/items.go`, `internal/world/ground.go`                                   | AC23:2 pickup (dropped items first, then native slot, then click ID; 180 px reach; full-bag banner), AC23:3 drop (one ground slot per unit avoiding native slots and click IDs; destroy prompt for non-droppable types), AC23:10 move, native respawn on a one-second tick. The bag commits before success packets. Dropped items live in memory, as in C#.                                                                                                                             |
 | Quest library                | `internal/game`                                                                          | Monotonic progress, completion timestamps, atomic item reward and replay prevention; interpreter pending                                                                                                                                                                                                                                                                                                                                                                                |
@@ -38,7 +39,7 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | NPC events                   | `internal/world/event.go`, `internal/server/events.go`                                   | AC20:1 click (reach 200 px, concealment, 1.5 s repeat guard, door portals), linked/direct event selection, FindBranch with trailing AND conditions and choice callbacks, AC20:6/9 session runner: speech, questions, path groups, movies, music, effects, quest marks, gold/EXP/recovery/record point, atomic quest items, chest marks, prop frames, actor show/hide, poses, minimap markers, teleports. Branches with unported actions or disabled data are refused before any change. |
 | Quest journal and scene sync | `internal/world/view.go`, `internal/assets/quests.go`                                    | Mark.dat (2,154 marks), AC24:4/6/7 journal on entry, AC24:1/4/5 updates, completed-event replay, PreEvent visibility and prop-frame re-evaluation, authored and question-mark minimap icons.                                                                                                                                                                                                                                                                                            |
 | Starter story                | `internal/server/story.go`                                                               | Ship storm movie, warp to the shipwreck beach, the timed rescue sequence (mark 12040) and Robinson's dialogue.                                                                                                                                                                                                                                                                                                                                                                          |
-| PvE combat                   | `internal/battle`, `internal/server/combat.go`                                           | Quest and field battles from EVE actions 4/6 (formations from EVE category 8, Npc.dat stats), AC11:250/11:5 fighter records, AC50 commands with acknowledgment, 30 s turn timeout, speed order with combos, basic and skill damage, elements, criticals, guard and status effects, heals/buffs, explicit Shrink/Hot Fire compatibility effects, monster turns, victory/defeat/flee endings, EXP/levels/stat points, gold, native loot, and the event's battle callback branch.                                                          |
+| Combat                       | `internal/battle`, `internal/server/combat.go`                                           | Quest and field battles from EVE actions 4/6 (formations from EVE category 8, Npc.dat stats), AC11:250/11:5 fighter records, AC50 commands with acknowledgment, 30 s turn timeout, speed order with combos, basic and skill damage, elements, criticals, guard and status effects, heals/buffs, explicit Shrink/Hot Fire compatibility effects, monster turns, victory/defeat/flee endings, EXP/levels/stat points, gold, native loot, and the event's battle callback branch.                                                          |
 | Levels                       | `internal/game/progress.go`                                                              | Total-EXP level curve (CalcMaxExp), three stat points per level, AC8:1 stat 36, refill on level-up.                                                                                                                                                                                                                                                                                                                                                                                     |
 | Stats and items              | `internal/game/progress.go`, `internal/server/items.go`                                  | AC8 stat allocation (all accepted packet layouts, character target), AC23:96/15 recovery items and equipment use, AC23:124 confirmed destruction.                                                                                                                                                                                                                                                                                                                                       |
 | Skill progression            | `internal/game/skill_tree.go`, `internal/game/skill_progress.go`, `internal/server`      | Player/pet combat proficiency, 92 element/stat requirements, 78 grade-ten evolution links, creation/login qualification and incremental skill-book updates. Skill and attribute changes persist before success; native-client validation remains pending.                                                                                                                                                                                                                               |
@@ -49,20 +50,22 @@ Reference: sibling `Develop` at `bc4a140`, 331 C# files and 71,144 lines. `sourc
 | Field encounters             | `internal/server/encounters.go`, `internal/world/monsters.go`                            | IsWildMonster and IsSafeTownMap rules, wild-monster clicks, proximity encounters (72 px, re-armed after leaving every monster), step encounters every 18–34 moves (25 first), 4 s map-entry grace, 2–4 s post-battle cooldown, defeated overworld monsters hidden for everyone for 60 s and respawned on the ground-item tick.                                                                                                                                                          |
 | Menu warps                   | `internal/server/services.go`                                                            | AC5:17 starter beach, record point and Carnie (with its remembered exit), refused in battle; AC5:7 sprite refresh.                                                                                                                                                                                                                                                                                                                                                                      |
 | Pets and companions          | `internal/game/pets.go`, `internal/server/pets.go`, `internal/battle`                    | Pet model and persistence (party of four, story-companion reserve), per-login client slots, AC15:8 roster/AC15:1 recruit/AC15:9 name/AC8:2 progression, battle pet on the map for peers, AC19 select/rest, EVE companion actions (recruit, dismiss, amity) and pet conditions, recruited companions leaving the map, battle pets with their own commands, skills and criticals, pet EXP with stat growth, amity loss and desertion, captures, pet food and pet recovery items, durable AC69 rebirth ascension with refreshed pet stats, AC68:2 one-point pet allocation, and AC67 battle-pet feeding by food item ID.          |
+| Player stalls and social economy | `internal/server/stalls.go`, `guilds.go`, `social_commands.go`; `internal/store` | Atomic native stalls; persisted guild membership/roles/notices/insignia and native guild chat; proposals, ceremony and divorce; parcel escrow/read/claim/delete with native mailbox replies. See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md). |
+| Manufacturing and gathering | `internal/server/manufacturing.go`, `synthesis.go`; `internal/assetsql` | SQL-owned recipes, rates, pools and marriage rules; native Forge manufacture, named-workbench public commands, chance-based synthesis and timed gathering with atomic inventory updates. |
 | Bank currency                | `internal/game/banking.go`, `internal/server/banking.go`                                  | Persistent AC45:8 balance queries, :9 deposits and :10 withdrawals; atomic bank/wallet saves, uint32 bank overflow and 999,999 carrying-limit checks, authoritative wallet refresh. PIN changes, character transfers and verified native ATM activation remain pending. |
-| Friendships and presence     | `internal/store/friends.go`, `internal/server/friends.go`                                | AC14:2/3/4 requests, acceptance, removal and lists; durable symmetric relationships, native AC14:5/11 records and online/offline notifications across maps. Native AC14:1 text mail persists before receipt, delivers across maps and queues offline/loading recipients. AC10 same-map contact add/reply, list/status and removal share the durable friend store. Parcel/attachment mail remains pending.                                                                                                                                                                                                                                                                               |
+| Friendships and presence     | `internal/store/friends.go`, `internal/server/friends.go`                                | AC14:2/3/4 requests, acceptance, removal and lists; durable symmetric relationships, native AC14:5/11 records and online/offline notifications across maps. Native AC14:1 text mail persists before receipt, delivers across maps and queues offline/loading recipients. AC10 same-map contact add/reply, list/status and removal share the durable friend store. Parcel escrow and mailbox commands are implemented separately (see ECONOMY_SOCIAL.md); native parcel request dispatch remains pending.                                                                                                                                                                                                                                                                               |
 | Quest minigames              | `internal/server/minigames.go`, `internal/world/event.go`                                | EVE opcode 9, native AC57 start/result/finish and outcome branch selection; rabbit win/loss rewards, event ownership and cancellation. Arcade ticket/prize exchange remains pending.                                                                                                                                                                                                                                                                                                    |
 | Player preferences           | `internal/game/settings.go`, `internal/server/settings.go`                               | Persisted AC16/AC33 PK, team, trade and channel preferences; native settings snapshots and acknowledgments, team request rejection and trade cancellation. Walk mode and team-follow retain native acknowledgment behavior.                                                                                                                                                                                                                                                             |
 | Item mall                    | `internal/server/mall.go`, `internal/server/forging.go`, `internal/store/mall.go`          | AC75 points/bonus catalogs, initialization, balances and native carts; AC34:1/AC35:4 checkout balance/resume without clearing the pending cart; AC23:25/26/54 compatibility; account debit and all inventory additions commit atomically. Schema v5 persists bonus points. Audited GM point adjustments and web point/bonus controls update active clients and synchronize after map loading. Configured gacha packs can be purchased and opened; AC75:3 scroll upgrades and point forging use atomic costs and native results. AC75:4 forwards arcade categories and refreshes balances; ticket/prize exchange remains pending.                                                                    |
-| Gacha packs                  | `internal/assets/gacha.go`, `internal/server/gacha.go`, `internal/game/gacha.go`         | SQL-authored pack IDs and ordered reward views, native AC91 contents, AC23:75/128/96 opening, cryptographic weighted draws, exact-slot consumption and atomic reward delivery. Twenty complete source pools match translated-client items; four incompatible pools are individually unavailable without changing odds. Malformed tables fail startup; withdrawn Lucky Pack remains unavailable. Item locks and original-client validation remain pending.                                                                                                                                                                              |
+| Gacha packs                  | `internal/assets/gacha.go`, `internal/server/gacha.go`, `internal/game/gacha.go`         | SQL-authored pack IDs and ordered reward views, native AC91 contents, AC23:75/128/96 opening, cryptographic weighted draws, exact-slot consumption and atomic reward delivery. Twenty complete source pools match translated-client items; four incompatible pools are individually unavailable without changing odds. Malformed tables fail startup; withdrawn Lucky Pack remains unavailable. Transient item reservations are enforced; original-client validation remains pending.                                                                                                                                                                              |
 | Breillat conversion | `internal/world/breillat.go`, `internal/server/breillat.go` | Ten completed greetings unlock the native choice; acceptance permanently saves body 4/head 3 and quest marks atomically. Equipment is preserved. All eleven SQL-native scripts, decline/retry and failed claims have regression coverage; original-client validation remains pending. |
 | Water gathering | `internal/world/gathering.go`, `internal/server/gathering.go`, `internal/store/gathering.go` | Four verified EVE water nodes, one sea/fresh water per gather, three-minute durable character/node cooldown, complete initial/repeat branch validation and atomic item/mark/timer saves. Other gathering pools remain pending. |
 | Periodic autosave | `internal/server/autosave.go`, `internal/store/autosave.go` | One-second character checkpoints plus final disconnect checkpoint; transactional previous-snapshot comparison, no-op write avoidance, warp presence inclusion, bounded cancellation and per-character failure isolation. Current gameplay and account currencies continue to commit immediately. |
 | Daily Lucky Draw             | `internal/server/lucky_draw.go`, `internal/store/lucky_draw.go`, `internal/assets/lucky_draw.go` | AC104:1 spin, native catalog/results with cumulative usage, three draws per character per UTC day, atomic durable rewards/usage, weighted SQL pool with 14 equal-weight reference outcomes, login/warp synchronization and online midnight refresh. Native catalog/result layouts recovered from the translated client; user verified rewards, usage and refresh in the original client. |
-| Bag-item repairs             | `internal/game/repair.go`, `internal/server/repair.go`                                   | AC36 bag-slot repair, wrench-first or 500-gold payment, damage restoration with metadata preserved and atomic persistence. Healthy items are free; native-client validation and item locks remain pending.                                                                                                                                                                                                                                                                              |
+| Bag-item repairs             | `internal/game/repair.go`, `internal/server/repair.go`                                   | AC36 bag-slot repair, wrench-first or 500-gold payment, damage restoration with metadata preserved and atomic persistence. Healthy items are free; transient reservations are enforced; native-client validation remains pending.                                                                                                                                                                                                                                                                              |
 | Compound synthesis           | `internal/assets/alchemy.go`, `internal/game/compound.go`, `internal/server/compound.go`, `internal/server/alchemy.go` | AC23:14 two-slot synthesis; seed and native binary recipes with first-match precedence, deterministic fallback, atomic ingredient/result persistence and native receipts/animation. AC40 recipe-only synthesis with compatible stack grants, atomic saves and status replies; full manufacturing and recipe editing remain pending.                                                                                                                                                                                                                               |
 | Player trading               | `internal/game/trade.go`, `internal/server/trade.go`, `internal/store/character_pair.go` | AC25 requests, acceptance, item/gold offers, confirmations and cancellation; both character rows commit atomically, with metadata-preserving transfers and inventory reservations.                                                                                                                                                                                                                                                                                                      |
-| Item vehicles and rafts      | `internal/game/vehicles.go`, `internal/server/vehicles.go`                               | AC15:14 owner-only placement, AC15:7/9 boarding, AC15:10 landing and AC15:13 acknowledgment; exact owned slot, capsule-family condition checks, persisted boarding, AC15:10/11 peer synchronization after map load, raft wear and exact-slot wrecking, mounted-slot move guard and transaction cleanup. Item locks remain pending.                                                                                                                                                      |
+| Item vehicles and rafts      | `internal/game/vehicles.go`, `internal/server/vehicles.go`                               | AC15:14 owner-only placement, AC15:7/9 boarding, AC15:10 landing and AC15:13 acknowledgment; exact owned slot, capsule-family condition checks, persisted boarding, AC15:10/11 peer synchronization after map load, raft wear and exact-slot wrecking, mounted-slot move guard and transaction cleanup. Transient item reservations are enforced; native-client acceptance remains pending.                                                                                                                                                      |
 | Native assets                | `internal/assets`                                                                        | NPC, Talk, Skill, exclusive maintained JSON item catalog with complete decoded native records, starter JSON, MBTM animation timing; all eleven EVE categories with raw sections preserved and Big5 names                                                                                                                                                                                                                                                                                |
 | Web administration           | `internal/admin`                                                                         | Token authentication; account/session controls; versioned character, inventory, stats and preferences editors; GM studio; EXP/drop/status/log settings; SQL content and map editors; guild/marriage records; GM gifts; IP bans; battles; diagnostics; atomic startup configuration (see ADMINISTRATION.md)                                                                                                                                                                                                                                                                                                                        |
 
@@ -94,15 +97,13 @@ Parsing event bytecode does not execute events. Unknown native fields are retain
 
 Only pending features belong in this list. Implemented behavior and verification evidence are recorded in the scope table and checkpoints.
 
-1. **World entry:** legacy database quest spawn/despawn lists, creation point-budget validation, optional login systems, world-port session handoff and comparison with actual-client captures.
-2. **Item and player state:** advanced alchemy, remaining special-item use, tents, item locks, parcel/attachment mail.
-3. **World simulation:** scene collision/constraints, NPC movement, instances and tent isolation.
-4. **Quests:** other transformations, non-water gathering, unsupported event operands; remaining C# map-specific story patches in TryExecute/StartSession/FindBranch; shared prop break/respawn; legacy database quest definitions and constellation packets. Port the outstanding Fred/Roca/Elin/Clive/Maka regression scenarios.
-5. **Combat:** PvP/trials, monster skill AI and legacy monster-ID quest rewards.
-6. **Companions and vehicles:** quest/model-driven pet evolution, potential training, remaining legacy pet operations, vehicle item locks and actual-client validation.
-7. **Economy and social:** arcade ticket/prize exchange, player shops, remaining stock/currency handlers (including bank PIN, character transfers and native ATM activation), advanced alchemy and recipe editing, other gathering/manufacturing, furniture, parcel/attachment mail and mailbox management, guild/marriage, remaining chat channels.
-8. **Storage compatibility:** read-only legacy import tooling, legacy password-format handling and character/inventory/pet/quest mappings; MySQL adapter and cross-backend checks.
-9. **Acceptance:** outstanding `.codex-verify` scenarios, actual-client packet comparisons, multiplayer load/soak and crash-recovery checks, native game-client validation, production server deployment/service packaging and operator procedures.
+1. **World simulation:** scene collision/constraints, NPC movement and other instance types.
+2. **Quests:** other transformations, non-water gathering, unsupported event operands; remaining C# map-specific story patches in TryExecute/StartSession/FindBranch; shared prop break/respawn; remaining legacy database quest-definition execution. Port the outstanding Fred/Roca/Elin/Clive/Maka regression scenarios.
+3. **Combat parity:** native area-target expansion and grade thresholds, hit/resistance rules and visual status acceptance.
+4. **Companions and vehicles:** quest/model-driven pet evolution, potential training, remaining legacy pet operations and actual-client validation.
+5. **Economy and social:** verified arcade scoring/ticket/prize rules; bank PIN authentication, character transfers and native ATM activation; guild vault/alliance channels; native nonempty market catalog and purchase history; native parcel request dispatch and gathering animations; verified physical workbench ownership, tent upgrades and decoration purchase rules.
+6. **Storage compatibility:** read-only legacy import tooling, legacy password-format handling and character/inventory/pet/quest mappings; MySQL adapter and cross-backend checks.
+7. **Acceptance:** World Entry native-client capture comparison (creation/login/reconnect, scene-ready, welcome, monster book, constellation and quest visibility); Items/Player State native-client acceptance (special-item targets, tents, furniture synchronization and return locations); Economy/Social native-client acceptance (stalls, guilds, marriage, parcels, manufacturing, synthesis and gathering); outstanding `.codex-verify` scenarios, actual-client packet comparisons, multiplayer load/soak and crash-recovery checks, native game-client validation, production server deployment/service packaging and operator procedures.
 
 Each category still contains pending work. Full native-client acceptance and execution of the legacy PowerShell suite against Go remain pending. Historical checkpoint limitations below may be superseded by later implemented features and verification.
 
@@ -130,7 +131,7 @@ Checkpoint entries below are historical verification records on the named workst
 - Character creation uses the C# body/head bonuses and outfits, the starter JSON order, native skill IDs with the stunt's wire alias, and the original ship position (10017, 1042, 1075).
 - All character and inventory changes in creation commit together. In-session name reservations are released on disconnect; database uniqueness handles committed names. Deletion codes use the existing password-hash format and are not returned in API responses.
 - Characters can receive initial world packets and acknowledge the map, then persist movement and exchange peer appearance/movement/logout packets. This is a protocol development milestone, not a complete playable server. No real game client has been tested.
-- The source accepts creation attributes as byte fields. A client-independent creation point-budget rule is still unverified; production gameplay must remain disabled until this and movement/scene validation are completed.
+- At this checkpoint, the source accepted arbitrary creation attribute bytes. The World Entry completion below now enforces the verified native five-point budget; movement/scene validation has its own remaining work.
 
 ### Verification after resuming
 
@@ -1190,3 +1191,161 @@ Exact weighted intervals, equipment penalties/bonuses, elemental differences,
 multi-level recalculation, missing-template fallback, selector validation and
 save-without-live-application are covered by focused regressions. See
 [CONFIGURATION.md](CONFIGURATION.md#pet-automatic-point-allocation).
+
+
+## World Entry completion
+
+- Admission validates exactly five creation points before name fallback,
+  credentials verification or persistence. The native reset at `0x2190f8`
+  zeros the six-byte attribute array and sets the remaining budget to five;
+  allocation decrements it. Model bonuses remain separate. The old 25-point
+  server test requests have been corrected. Existing characters and GM/stat
+  allocation are unaffected; invalid requests receive AC0:30 and can retry.
+- Character entry restores the monster book through sorted, unique AC53:9
+  template IDs filtered by SQL NPC book indexes 1–5500. PvE victories stage
+  discoveries with rewards in one character save, including captured monsters;
+  failed saves publish nothing. Disconnect/restart retains discoveries.
+- AC15:19 restores the four reference story constellations from active positive
+  completion marks, before final world-ready markers. Quest mark changes send an
+  updated collection after commit. Removed marks do not count as earned stars.
+- Native AC89:0 receives captured AC90:1 scene status; AC92:1 acknowledges it.
+  The first request sends the optional saved MOTD as AC23:57 once per character
+  login. Sync may occur during loading and does not replace AC12:1 or publish
+  world presence. MOTD is limited to 255 encoded bytes.
+- Optional ordered SQL `quest_visibility.json/value` rows implement the reference
+  quest/step spawn and despawn lists for entry, warp and quest resynchronization.
+  Map/actor/step validation rejects invalid edits before commit; indexed SQL rows
+  are authoritative. The legacy quest database loader populates no such lists,
+  so the default is empty. There is no account database import or JSON fallback.
+  Full legacy quest definitions remain in the Quests queue.
+- LoginServer hands the same socket to the world queue; its separate assist-tool
+  path is not an authenticated client transfer protocol. Go uses the authenticated
+  stream on either configured listener. Socket regressions cover creation,
+  acknowledgement and gameplay on both service paths; no ticket/reconnect is
+  invented. Native-client capture comparison remains in Acceptance.
+
+Verification: reference hashes matched after CRLF normalization; focused race
+regressions cover allocation rejection/retry, socket lifecycle, native packet
+bytes, durable discovery/failed saves, story state, SQL ordering and rollback.
+Interactive aLogin checks for these additions remain pending.
+
+## Combat completion checkpoint
+
+The remaining queued Combat ports—native PK, Palace trial execution, monster
+skill AI and legacy monster-ID quest rewards—are implemented.
+
+- AC11:2 type 3 resolves the raw character ID on the same map, checks PK
+  preferences and interaction availability, and creates two party formations.
+  Defender players occupy column 1 and pets column 2. Both sides submit owned
+  actions, receive menus/timeouts, and use side-aware healing/effects/combos.
+  Disconnected fighters stop blocking turns; an absent entire PvP side forfeits.
+  Ending during animation prevents subsequent stale attack packets. PvP results
+  save vitals and proficiency without EXP, gold, drops, notebook discoveries,
+  capture or pet amity/desertion penalties. The losing player's HP recovers to
+  the usual defeat amount. GM forced victory respects the invoking player's
+  side, and the administration battle API identifies PvP encounters.
+- The separate C# PvPManager duel helper has no dispatch callers and only emits
+  a battle background; active native PK uses PvEBattleManager. Go routes native
+  PK to the real engine rather than creating an unregistered duel animation.
+  Join/watch/NPC challenge cases remain inert as in the reference handlers.
+- NPC skill slots are copied from the SQL catalog for quest, wild, trial and GM
+  encounters. AI selects uniformly among distinct usable slots, spends native
+  SP costs, and casts generic damage, effects or compatible healing/revival.
+  Healing chooses the lowest HP ratio; cast effects avoid refreshing already
+  active sources, and offensive skills use a stable live enemy target. Dead or
+  action-blocked monsters do not cast. Missing/unknown/unaffordable/useless
+  slots fall back to the original basic-attack damage/guard behavior. Native
+  basic attacks retain their random target selection. The C# reference always
+  basic-attacks; skill AI extends that implementation through SQL data.
+- AC77:1 and GM `/palace` start real battles using optional validated SQL stages.
+  Victory rewards precede ordinary loot and share the durable character save;
+  defeat, flee and duplicate settlement award none. No default stage table is
+  installed: reference guardian IDs 1001–1012 do not exist in WLRI, and its
+  alleged chests 48030–48033 are vehicle capsules. Configure real content using
+  [the administration procedure](ADMINISTRATION.md#palace-trials). Native EVE
+  Zodiac encounters continue using their existing event formations/rewards.
+- Legacy rescue fallbacks retain reference monster IDs/name aliases for Niss,
+  Xaolan and Little Red Riding Hood. Niss uses WLRI companion 14081, correcting
+  the reference's enemy-template reward. Completed quests cannot pay repeatedly;
+  full/hotel/fate-unavailable companion rosters leave the quest incomplete.
+  Reserve companions keep their progression. Native EVE callbacks and trials
+  own their rewards and suppress these fallbacks. Ordinary bounty definitions
+  and kill objectives belong to the remaining legacy Quests port.
+
+Focused tests cover native formation/ownership bytes, both PvP outcomes and
+party participation, timeouts, forfeits, stopped playback, effects, protection,
+monster skills/SP/fallbacks, SQL projection/rollback, trial admission/rewards,
+quest idempotency, companion identity/capacity and failed-save isolation.
+Source hashes remain pinned and match after CRLF normalization. Native aLogin
+acceptance and commercial-server parity remain unverified; existing area-target
+expansion, exact native grade thresholds and hit/resistance/visual semantics
+remain separate parity work. Burst EXP remains outside the user-approved scope.
+
+## Structured server persistence
+
+- Gameplay schema v8 moves character scalars and owned collections into typed
+  GORM tables. All Store consumers, character administration and checkpoints use
+  these tables transactionally. Legacy character JSON remains an inert migration
+  snapshot. Account constraints, credentials and IDs are preserved.
+- Structured asset schema v1 projects the complete runtime catalog into typed
+  tables and ordered child rows, preserving protocol bytes and unknown imported
+  provenance. Gameplay never assembles JSON documents or native archives.
+- Content administration edits named SQL datasets directly. Optimistic versions,
+  validation, session gates and reconnect publication remain. JSON is API transport.
+- `database-migrate` prepares upgraded copies, verifies conversion parity and SQLite
+  integrity, and leaves originals untouched. New rebuilds prepare the structured
+  catalog before publication. See ASSET_DATABASE.md for activation and rollback.
+
+## Economy and Social checkpoint
+
+Implemented native AC56 stalls and AC39 guild gameplay, guild chat, public marriage
+and parcel mailbox workflows, native AC59 manufacturing, source gathering and
+chance-based public synthesis. Wallet/inventory transfers, parcel escrow/claims
+and marriage fees/rings/relationships commit atomically. Guild roles/icons and
+parcel rows use gameplay schema v9; shared economy rules use asset schema v2.
+The v1-to-v2 upgrade preserves all existing catalog tables and content edits.
+
+Focused tests cover raw native packets, stale offers, overselling, full-bag
+rollback, metadata, unauthorized guild actions, missing invitations, leader
+repair, concurrent claims, ceremony rollback, gathering timing and synthesis
+rate extremes. See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md) for commands, migration
+and the exact remaining native limitations. Private Server's arcade, bank
+PIN/transfer and decoration success acknowledgements do not implement their
+claimed economies. Per the user's instruction, unresolved handlers stay pending.
+
+Local verification prepared `var/migrated-v2-economy/{assets,wonderland}.db`
+from the configured v1/v8 copies, retaining the sources. `config.local.json`
+selects the verified v2/v9 copies. The server binary was rebuilt; no server
+process was started.
+
+## Items and Player State completion
+
+- Native AC23:96/15 dispatches recovery, equipment, vouchers, gacha and tent items.
+  Targeted packs reject quantities other than one and non-character targets before
+  consumption; unavailable/withdrawn pools retain their items. Unsupported special
+  effects remain unavailable rather than consuming items without verified rules.
+- AC65 opens/closes owner-specific homes and enters/exits native interior 63507.
+  Scene identity includes the owner, isolating visibility, movement, local chat,
+  social requests and trades. Homes do not run overworld events or encounters;
+  PK is unavailable inside. Closing/travel/logout evicts visitors, including those
+  still loading. Each visitor's own return coordinates persist for reconnects.
+- AC62 placement and zero-based ordinal movement/rotation preserve full metadata.
+  Bag debit, furniture insertion and pickup grants are transactional. Only the
+  owner may edit; public commands expose access locks and furniture recovery.
+- Gameplay schema v10 owns tent rows, furniture and return fields. Asset schema v3
+  adds source-derived initial tent rules without changing existing definitions.
+  Item reservations remain process-owned and are omitted from SQL/JSON and autosave
+  comparisons. Grants skip reserved slots; removal/movement/repair/equipment and
+  pair transactions honor reservations.
+- Focused regression tests cover native packets, home separation, locked entry,
+  owner-only edits, stale/full-bag rollback, metadata, ordinal indices, loading
+  visitors, logout/crash recovery, transient locks and preserving v9/v2 upgrades.
+  Original-client tent acceptance remains pending. AC60/61 and AC62:4 have no
+  implemented source rules; their decoration/upstairs/special operations remain
+  pending in Economy rather than becoming false-success handlers.
+
+Local upgrade verification created `var/migrated-v3-items/{assets,wonderland}.db`
+from the selected v2/v9 copies, preserving both sources. `config.local.json` now
+selects the verified v3/v10 copies. Imported WLRI definitions include Tent 36002,
+Coconut Basin 38027 and Work Platform 38049 with their expected native types.
+Focused race tests, vet and the server build passed. The server remains stopped.

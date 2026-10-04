@@ -64,7 +64,7 @@ func (s *Store) PendingAdminMail(ctx context.Context, id uint32) ([]AdminMail, e
 
 const textMailBatchLimit = 32
 
-func (s *Store) ClaimAdminMail(ctx context.Context, ref CharacterRef, id uint64, maxStack byte) (game.Character, []game.Addition, error) {
+func (s *Store) ClaimAdminMail(ctx context.Context, ref CharacterRef, id uint64, maxStack byte, reservations ...game.Character) (game.Character, []game.Addition, error) {
 	var next game.Character
 	var adds []game.Addition
 	err := s.transaction(ctx, func(tx *gorm.DB) error {
@@ -75,6 +75,9 @@ func (s *Store) ClaimAdminMail(ctx context.Context, ref CharacterRef, id uint64,
 		var err error
 		next, err = loadCharacter(tx, ref)
 		if err != nil {
+			return err
+		}
+		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
 		}
 		if message.Claimed {

@@ -6,11 +6,28 @@ memory until reload; every administration API route checks it. The public
 registration endpoint creates ordinary accounts. Node is needed only for web
 formatting and lint; the Go binary embeds the interface.
 
+## Database ownership
+
+Shared game definitions live in `assets.db` and are read-only to gameplay;
+validated administrator edits are allowed. Accounts, characters, mutable player
+state and persistent server settings live in `wonderland.db`. Startup connection
+parameters remain in the server configuration file. Initialization must preserve
+existing data and administrator edits. See the
+[development policy](DEVELOPMENT.md#server-data-ownership-and-initialization).
+
+JSON is API transport for the editors. Character and definition edits persist
+in typed SQL tables. Content datasets use names such as `NPCs`, `Skills`, `Maps`,
+`Mall` and `LuckyDraw`; they do not use source filenames or virtual documents.
+The panel uses `/api/assets/definitions`. `/api/assets/documents` remains as a
+URL alias, with the same typed dataset payloads and record IDs. See
+[ASSET_DATABASE.md](ASSET_DATABASE.md) for upgrading an existing installation.
+
 ## Operations and diagnostics
 
 **Server operations** edits the name, saved MOTD, EXP/drop multipliers, launcher
 traffic color and log level. These settings live in the gameplay database and
-survive restart. EXP defaults to 1 and accepts 0.01–1000. See
+survive restart. MOTD is shown once after native scene-ready synchronization and is limited to
+255 encoded bytes. EXP defaults to 1 and accepts 0.01–1000. See
 [CONFIGURATION.md](CONFIGURATION.md#exp-reward-scaling) for reward semantics.
 Broadcast sends a native notice to connected characters. Maintenance controls
 reload quests/mall/drops/GM privileges, checkpoint players, disconnect every
@@ -74,29 +91,22 @@ recipient batches through the API for larger populations.
 
 **Item mall catalog**, **Monster drops**, **Starter items**, **Chest loot** and
 **Portals & destinations** edit the configured assets database. **SQL asset
-editor** finds indexed item/NPC/skill/talk/mark records by game ID. **NPC library**
+editor** finds typed item/NPC/skill/talk/mark records by game ID. **NPC library**
 inspects templates; **Dialogue resolver** searches text and resolves talk IDs,
 byte offsets or record indexes, previews `#n` substitution and sends dialogue to
 an online character. Map inspection exposes NPCs, authored events and warps.
 
-Table editors use JSON; monster drops retain the `TID:monster | item,name,min,max,
-percent` text schema. Indexed record JSON is authoritative. Content saves verify
-the record version, reindex edited documents and load/validate the entire
-candidate SQL catalog inside the transaction. Failed validation rolls back.
-Success publishes a new catalog and reconnects loaded players for fresh native
-snapshots. Finish ongoing battles, trades, event scripts and map loading first.
-Existing maps cannot be removed. There is no runtime native/JSON fallback.
-
-Map overrides and chest pools are optional **SQL documents** initialized by the
-panel, named `map_overrides.json` and `chest_drops.json`. They do not create files
-under `data/`. A map override contains its complete parsed map, including warps,
-NPCs, events and resources; original binary sections/provenance remain in imported
-SQL rows. Chest pools select a map or match an NPC name category, list positive
-weighted rewards and set a per-character cooldown of 1–86400 seconds. Matching categories take priority over map pools, followed by
-`default_chest`, matching the reference manager. Categories `medicine`,
-`headband` and `ore` retain the reference NPC-name aliases. Unconfigured chests retain authored rewards.
-Configured chests choose their reward before capacity checks, persist reward and
-cooldown together, and close their prop at expiry or reconnect.
+Table editors send typed definitions as JSON API payloads. Monster drops are a
+map from monster ID to ordered rewards with `Item`, `Name`, `Min`, `Max`, `Rate`.
+Record lookup addresses a game ID rather than an import ordinal. Content saves
+check a version, validate the edited dataset, preserve unrelated SQL edits and
+commit typed rows in one transaction. Idle connected characters reconnect to
+receive refreshed snapshots; active interactions and map loading block edits.
+Existing maps cannot be removed. Opaque source map sections survive geometry
+and event edits. Optional chest, trial and visibility datasets exist from migration
+and start empty when not previously configured. Initialization endpoints only
+verify availability. For skills with `effect_refs`, the referenced effects are
+derived; set `effect_refs` to null when switching to skill-local `effects`.
 
 Back up the assets database before content editing. Rebuilding it from extracted
 assets replaces administrator changes, so preserve the edited database or export
@@ -116,3 +126,100 @@ Schema v7 automatically adds IP bans, guilds, marriages and GM mail tables witho
 resetting accounts or characters. A headless Chromium smoke renders all 22 new views and checks read-only
 inspectors. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
 transaction behavior, native packet layouts and affected gameplay paths.
+
+
+## Optional quest actor visibility
+
+The authenticated definition API exposes the SQL `QuestVisibility` dataset.
+It exists after migration; its initial contents may be empty.
+Read it with `GET /api/assets/definitions/QuestVisibility`; save with `PUT`
+to that address, supplying the returned `version` and the definition array in
+`value`. This is an operator-authored extension:
+the reference quest loader does not populate actor lists. It creates no asset
+file and imports no original account database.
+
+Example PUT body (include the current version from GET):
+
+```json
+{
+  "version": "<version returned by GET>",
+  "value": [
+    {
+      "quest_id": 99,
+      "map_id": 10017,
+      "spawn_npc_click_ids": [1],
+      "despawn_npc_click_ids": [2],
+      "steps": [
+        {"step": 2, "spawn_npc_click_ids": [3]}
+      ]
+    }
+  ]
+}
+```
+
+Quest-level lists activate on `Completed`; step lists activate on `InProgress`
+at that exact step. Actor IDs are scene click IDs. Ordered rows preserve the
+reference's first matching decision; an inactive spawn list hides its actor.
+Invalid maps, actors, duplicate quest/step IDs and steps outside 1–255 are
+rejected. Successful edits use the existing validation, catalog publication and
+player reconnect procedure. `/reload quests` also reloads this collection.
+Back up the assets database to preserve these authored rows across rebuilding.
+
+## Palace trials
+
+Palace trials use the `CombatTrials` SQL dataset, available after migration. GET and PUT it through the same versioned definition API
+described above. No file under
+`data/` or launch configuration is required. Stages are unavailable until an
+operator supplies valid content.
+
+The reference's guardian IDs 1001–1012 are absent from WLRI, and reward IDs
+48030–48033 are vehicle capsules. Go does not install those placeholders or
+copy the reference's immediate reward without a fight. Choose actual NPC,
+location and reward IDs from the administration asset inspectors.
+
+Example stage definition, using a WLRI Aries fighter and a recovery pack:
+
+```json
+{
+  "version": "<version returned by GET>",
+  "value": [
+    {
+      "stage": 1,
+      "name": "Aries Palace",
+      "map_id": 10017,
+      "guardian_id": 20161,
+      "hp": 15000,
+      "attack": 450,
+      "reward_item_id": 35114,
+      "reward_count": 1
+    }
+  ]
+}
+```
+
+This is an example, not an official stage/reward table. Choose the intended
+trial map before saving. Stage numbers must be unique and between 1 and 12;
+NPCs, maps and items must exist in the current SQL catalog. Guardians must
+have positive native HP and level. Boss HP/attack must be positive signed
+32-bit values, and reward counts must be between 1 and 50. Admission uses the
+item's actual stack limit and available bag slots. Invalid edits
+roll back. Successful administration edits publish the catalog and disconnect
+online characters for coherent re-entry, as with other asset edits.
+
+Native requests use `77,1,stage`; replies use `77,1,stage,accepted`, where
+accepted is 1 or 0. GM `/palace <stage>` uses the same admission checks. The
+initiator must be ready and idle on the configured map. Nearby available
+teammates join through ordinary party battle rules; every participant needs
+room for the reward before admission. Each winner receives the reward after
+victory, before ordinary loot can occupy that space. Defeat, flee and repeated
+settlement never grant a chest. Inventory/reward state saves before success
+packets. The selected definition is copied for the encounter; `/reload quests`
+or `/reload all` loads edited SQL stages for future encounters.
+
+### Economy and guild gameplay
+
+The Economy definition dataset edits manufacturing recipes, synthesis chances,
+gathering pools and marriage requirements/fees/rings. These values live in typed
+asset SQL tables. See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md). Guild edits preserve
+member ranks and publish refreshed native badges/rosters to online players.
+Gameplay uses the same guild and marriage records displayed by Admin.

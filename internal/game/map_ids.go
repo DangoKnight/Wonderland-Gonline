@@ -52,3 +52,6 @@ const (
 	MapID60014 = 60014
 	MapID60020 = 60020
 )
+
+// Shared native interior template; server visibility is additionally scoped by owner.
+const TentMapID uint16 = 63507

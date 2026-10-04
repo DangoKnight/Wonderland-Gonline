@@ -30,6 +30,7 @@ supplies extraction keys and is separate from the Go client.
 | [WLRI asset import](docs/ASSET_IMPORT.md) | Source layout, extraction, verification and safe restoration |
 | [Configuration](docs/CONFIGURATION.md) | Server JSON, flags, admin settings, gameplay tuning and client overrides |
 | [Database operations](docs/ASSET_DATABASE.md) | Asset rebuilds, SQL authority, backups and explicit gameplay reset |
+| [Items and player state](docs/ITEMS_PLAYER_STATE.md) | Tent controls, furniture, item reservations and recovery |
 | [Client](docs/CLIENT.md) | Graphics requirements, asset layout, inspection and packaging |
 
 ## Build and run
@@ -321,3 +322,10 @@ and run `go run ./cmd/data-rebuild -reset-gameplay -config config.local.json`.
 Existing databases are preserved as timestamped backups. Audio bytes stay
 outside SQL. See [the database procedure](docs/ASSET_DATABASE.md) for query
 examples, recovery and current runtime loading behavior.
+
+### Economy and social gameplay
+
+Player shops, guilds, marriage, parcel mail, manufacturing, synthesis and gathering
+are described in [ECONOMY_SOCIAL.md](docs/ECONOMY_SOCIAL.md), including database
+upgrades, player commands, editable economy definitions and remaining native
+client limitations.

@@ -70,6 +70,9 @@ func (s *Server) UpdateRuntimeSettings(ctx context.Context, v RuntimeSettings) e
 	return s.updateRuntimeSettingsLocked(ctx, v)
 }
 func (s *Server) updateRuntimeSettingsLocked(ctx context.Context, v RuntimeSettings) error {
+	if len(v.MOTD) > math.MaxUint8 {
+		return errors.New("MOTD exceeds the native 255-byte popup limit")
+	}
 	if !validExpRate(v.ExpRate) || math.IsNaN(v.DropRate) || math.IsInf(v.DropRate, 0) || v.DropRate < battle.MinDropRateMultiplier || v.DropRate > battle.MaxDropRateMultiplier {
 		return errors.New("invalid EXP or drop multiplier")
 	}
@@ -108,6 +111,9 @@ func (s *Server) LoadRuntimeSettings(ctx context.Context) error {
 		current.Name = name
 	}
 	current.MOTD = v["motd"]
+	if len(current.MOTD) > math.MaxUint8 {
+		return errors.New("persisted MOTD exceeds the native 255-byte popup limit")
+	}
 	for key, target := range map[string]*float64{"exp_rate": &current.ExpRate, "drop_rate": &current.DropRate} {
 		if raw := v[key]; raw != "" {
 			value, err := strconv.ParseFloat(raw, 64)

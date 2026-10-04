@@ -131,6 +131,10 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
+	Tents                 TentRules         `json:"tents"`
+	Economy               Economy           `json:"economy"`
+	CombatTrials          []CombatTrial     `json:"combat_trials,omitempty"`
+	QuestVisibility       []QuestVisibility `json:"quest_visibility,omitempty"`
 	ChestPools            []ChestPool
 	LuckyDraw             LuckyDrawPool
 	Forging               Forging
@@ -158,6 +162,7 @@ type Catalog struct {
 	Warnings              []string
 }
 type Summary struct {
+	CombatTrials      int      `json:"combat_trials,omitempty"`
 	ForgeUpgradeItems int      `json:"forge_upgrade_items"`
 	PointForgeItems   int      `json:"point_forge_items"`
 	AssetsDatabase    string   `json:"assets_database,omitempty"`
@@ -184,7 +189,7 @@ type Summary struct {
 }
 
 func (c *Catalog) Summary() Summary {
-	s := Summary{ForgeUpgradeItems: len(c.Forging.Upgrades), PointForgeItems: len(c.Forging.PointItems), AssetsDatabase: c.AssetsDatabase, NativeItems: len(c.NativeItems), ItemCatalog: c.ItemCatalog, GachaPacks: len(c.GachaPacks), AlchemyRecipes: len(c.AlchemyRecipes), Items: len(c.Items), StarterItems: len(c.StarterItems), Skills: len(c.Skills), AnimationTimings: len(c.AnimationTiming), NPCs: len(c.NPCs), Dialogues: len(c.Talks.ByID), Maps: len(c.Maps), MallItems: len(c.Mall), Marks: len(c.Marks), DisabledEvents: len(c.DisabledEvents), Warnings: c.Warnings}
+	s := Summary{CombatTrials: len(c.CombatTrials), ForgeUpgradeItems: len(c.Forging.Upgrades), PointForgeItems: len(c.Forging.PointItems), AssetsDatabase: c.AssetsDatabase, NativeItems: len(c.NativeItems), ItemCatalog: c.ItemCatalog, GachaPacks: len(c.GachaPacks), AlchemyRecipes: len(c.AlchemyRecipes), Items: len(c.Items), StarterItems: len(c.StarterItems), Skills: len(c.Skills), AnimationTimings: len(c.AnimationTiming), NPCs: len(c.NPCs), Dialogues: len(c.Talks.ByID), Maps: len(c.Maps), MallItems: len(c.Mall), Marks: len(c.Marks), DisabledEvents: len(c.DisabledEvents), Warnings: c.Warnings}
 	for _, m := range c.Maps {
 		s.MapNPCs += len(m.NPCs)
 		s.Events += len(m.Events)

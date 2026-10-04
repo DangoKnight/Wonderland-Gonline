@@ -18,6 +18,7 @@ type gmCommandDefinition struct {
 // Every alias shares the same ownership policy and handler. The usage list also
 // drives /help so it cannot advertise commands without implementations.
 var gmCommandDefinitions = []gmCommandDefinition{
+	{[]string{"palace"}, "palace <stage>", true, (*Server).gmPalace},
 	{[]string{"exprate", "experience"}, "exprate [multiplier]", false, (*Server).gmExpRate},
 	{[]string{"allskills", "maxskills"}, "allskills [grade]", true, (*Server).gmPlayerEdit},
 	{[]string{"god", "godmode"}, "god", true, (*Server).gmPlayerEdit},
@@ -58,7 +59,18 @@ var existingGMCommands = []string{"heal", "hp", "full", "gold", "money", "item",
 
 func (s *Server) commandHelp(c *Session) error {
 	if c.gmLevel.Load() == 0 {
-		return s.chatFeedback(c, "Commands: /help, /unride, /dismount, /carnie, /world, /team, /whisper")
+		for _, line := range []string{
+			"Commands: /help, /unride, /dismount, /carnie, /world, /team, /whisper, /guild",
+			"/guildcreate <name>; /marry <character>; /acceptmarry; /declinemarry; /divorce; /warptospouse",
+			"/mail; /readmail <ID>; /claimmail <ID>; /deletemail <ID>",
+			"/sendmail <ID> <gold> <bag slot or 0> <count or 0> <subject> | <body>",
+			"/compound <slot1> <slot2>; /manufacture <bench> <item1> <count1> <item2> <count2>; /fish; /mine; /chop; /stop",
+		} {
+			if err := s.chatFeedback(c, line); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	lines := []string{
 		"/heal [HP] [SP]; /gold <amount>; /item [add] <ID> [count]",

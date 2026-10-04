@@ -1,180 +1,138 @@
-# Asset SQL database and gameplay reset
+# Server databases and migration
 
-The SQL asset catalog lives in `var/assets.db`. The gameplay database remains
-`var/wonderland.db` (or the `database` path in the selected server config).
+Shared game definitions and administrator content edits live in the configured
+`assets_database`. Accounts, characters, mutable gameplay state, relationships,
+audit records and persistent server settings live in `database`. Defaults are
+`var/assets.db` and `var/wonderland.db`. See the
+[ownership policy](DEVELOPMENT.md#server-data-ownership-and-initialization).
 
-The asset database is a generated copy of the maintained `data/` exports. This
-makes decoded data searchable and supports joins across items, NPCs, skills,
-scenes and quest marks. Original JSON documents and unknown fields are retained.
-GORM owns import writes and schema creation; explicit SQL is limited to schema
-views, integrity checks and SQLite capability checks.
+## Upgrade an existing installation
 
-Audio payloads remain outside the database. Their indexes and file references
-are available in SQL, and rebuilding does not require reading the audio files.
-For initial setup, see [GETTING_STARTED.md](GETTING_STARTED.md). Runtime settings
-and behavior tuning are documented in [CONFIGURATION.md](CONFIGURATION.md).
-
-## Runtime data source
-
-Server startup and `-inspect-data` read exclusively from `assets_database`
-(default `var/assets.db`). Remove `item_catalog` and `data_directory` from older
-configs. Accounts, characters and audit records remain in the separate
-`database`; configuration rejects paths that identify the same database file.
-
-GORM opens assets read-only without creating a missing database. One read
-transaction builds a consistent in-memory catalog for all gameplay handlers:
-items, NPCs, skills, dialogue, maps/events, animation timings, marks, alchemy,
-starter grants, pet vouchers, drops, sale prices, critical hits, mall, gacha, daily Lucky Draw and
-forging families/eligibility.
-Packet handlers use this snapshot. Restart the server after SQL edits or imports.
-Missing required documents, invalid schemas and invalid required catalogs stop
-startup; there is no file fallback. The existing unavailable gacha-item warning
-still disables that optional table.
-
-`asset_records.json` is authoritative for indexed arrays, ordered by `ordinal`.
-Deleted rows are omitted when loading; the original document array does not
-restore them. Edits must preserve catalog validity: item positions, source count
-and IDs must agree with export metadata, and archive indexes must match blocks.
-Invalid edits stop startup. CSV settings use indexed `rows`, JSON settings use
-indexed `value` arrays, and text settings use `asset_documents.json`'s `text`.
-Object-valued JSON settings and export metadata also come from `asset_documents`.
-EVE maps and animation records retain their plaintext bytes in SQL: edit
-`decoded_hex` and the corresponding index/header metadata together. Their
-readable section projections remain inspection aids. Numeric NPC/skill/mark
-fields and readable item definitions are loaded directly from SQL JSON fields.
-
-The original export files are used only by offline import/export and reference
-tests. The `assets.Load` reference API is not used by server startup.
-
-## Rebuild procedure
-
-Stop the server and close database browsers before rebuilding. The command
-rejects SQLite journals/WAL sidecars, concurrent rebuilds, source-data
-replacement, incorrect database roles and, on Linux, open database file handles.
-Never remove active WAL/SHM files to bypass this check. The server and external
-clients must stay stopped throughout publication; sidecar checks alone cannot
-prove that every SQLite client on every platform is offline.
-
-Recreate only the asset catalog:
+Stop the server and database editors before taking snapshots. Keep them stopped
+until configuration points to the upgraded copies. The migration preserves
+accounts, credentials, character state and existing asset edits.
 
 ```sh
-go run ./cmd/data-rebuild
+go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v2
 ```
 
-Recreate the asset catalog and reset the configured gameplay database:
+The output directory must be new. The command opens source databases read-only,
+takes SQLite snapshots with committed WAL data, upgrades the copies, compares
+converted content, and checks SQLite integrity and foreign keys. It never
+replaces the originals. Failure removes the new output directory and returns a
+nonzero exit status. Taking both snapshots while the server is stopped ensures
+they represent the same installation state.
+
+Set these startup parameters to activate the verified copies:
+
+```json
+{
+  "database": "var/migrated-v2/wonderland.db",
+  "assets_database": "var/migrated-v2/assets.db"
+}
+```
+
+Keep other configuration fields. Build and start the server:
 
 ```sh
-go run ./cmd/data-rebuild -reset-gameplay -config config.local.json
+go build -o bin/wonderland ./cmd/wonderland
+./bin/wonderland -config config.local.json
 ```
 
-If using the example configuration, substitute `config.example.json`. Omitting
-`-config` selects the built-in default gameplay database. Optional flags:
+For rollback, stop the server and restore the original configuration paths.
+Progress written to the upgraded database after cutover will not exist in the
+original snapshot. Keep both copies until acceptance testing finishes.
 
-- `-data`: exported data directory; default `data`.
-- `-assets-db`: override the configured asset database path.
-- `-reset-gameplay`: recreate gameplay storage with the current server schema.
-- `-config`: configuration selecting assets and gameplay storage.
+Gameplay schema v10 automatically converts older character rows transactionally
+when `store.Open` opens a database. The offline copy command is the recommended
+upgrade procedure because it leaves a complete original database available.
+Asset conversion is explicit: runtime requires `catalog_schema` version 3 and
+never falls back to source documents. Repeating conversion preserves typed edits.
+The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
+initial rules; it preserves every existing typed content table. Gameplay v9 adds
+guild roles/icons and parcel escrow without replacing existing relationships.
+The v2-to-v3 asset upgrade adds only `catalog_tents*` rules and default furniture.
+Gameplay v10 adds owned tent/furniture tables and per-character tent return
+coordinates. Both upgrades preserve existing records and authored edits.
+See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md) and
+[ITEMS_PLAYER_STATE.md](ITEMS_PLAYER_STATE.md) for initialization and commands.
 
-A gameplay reset erases live accounts, characters, relationships, deletion
-credentials, settings and audit records. Original account databases are excluded
-from the asset catalog. New gameplay accounts can be created through the
-existing administration interface after restarting the server.
+## Authoritative tables
 
-The rebuild prepares and validates fresh databases before replacing the current
-files. Every existing destination becomes a unique sibling backup, for example
-`wonderland.db.backup-20261001T...-...`. The command prints the actual paths.
-Checksum failures leave current databases untouched. Publication errors restore
-files already replaced. Database files are private (`0600` on Unix).
+Gameplay identity constraints remain in `characters`; mutable fields are in:
 
-The two file replacements are separate operations. An operating-system crash
-between them can leave a mixed pair. Keep the printed backups until the new
-files have been inspected. With the server stopped, restore a backup to the
-configured destination if needed. Backups, databases and temporary files are
-under the repository's ignored `var/` directory by default.
+- `character_state`: stats, location, appearance, balances, preferences, active
+  companions, saved return location, mute expiry and Lucky Draw day/usage.
+- `tents`, `tent_items`: owner-specific homes, access locks and ordered furniture
+  with full item metadata.
+- `character_items`: bag, storage, equipment and pet equipment, with slot keys and
+  binary item metadata.
+- `character_skills`, `character_quests`, `character_timers`,
+  `character_discoveries`, `character_pets`, `character_pet_skills`: ordered
+  progress and owned collections. Foreign keys cascade when an identity is deleted.
 
-## SQL schema
+`characters.state` remains an inert pre-migration snapshot for existing rows.
+Runtime never reads or updates it. New characters leave that column empty.
+Do not use it to inspect current progress or restore only that column.
 
-| Table/view | Purpose |
-| --- | --- |
-| `asset_import` | Import schema version and exact manifest JSON/hash |
-| `asset_documents` | All exported JSON documents, exact bytes and provenance |
-| `asset_records` | Indexed collection rows, IDs, names and full record JSON |
-| `asset_items` | Client item IDs, names, types, slots and levels |
-| `asset_npcs` | NPC IDs, names, levels, HP, SP and elements |
-| `asset_skills` | Skill IDs, names, SP and elements |
-| `asset_dialogues` | Dialogue IDs and text |
-| `asset_scenes` | Scene IDs and names |
-| `asset_quest_marks` | Quest IDs, names and completion flags |
-| `asset_audio` | Audio filenames, offsets and sizes; no audio payload bytes |
+Asset definitions use generated `catalog_*` tables with typed scalar columns,
+ordered child tables and ownership foreign keys. There are no JSON columns in
+these tables. Arrays of fixed protocol bytes use BLOBs. Nested events, branches,
+operations, effects, modifiers, reward lists and movement steps have child rows.
+`catalog_presence` preserves absent versus empty collections; `catalog_schema`
+versions the projection. Items have one authoritative definition: gameplay item
+lookups derive from the native item definition rows.
 
-`asset_records` uses `(asset, collection, ordinal)` as its primary key. Duplicate
-IDs and duplicate authored rows are preserved. `(asset, game_id)` and `name`
-are indexed. Each JSON document remains intact, so all nested arrays, field
-layouts, headers, raw bytes, comments and authored metadata remain accessible.
-This is a lossless catalog with useful SQL projections; it is not yet a fully
-normalized gameplay schema with relationships for every unresolved native field.
-
-Original account databases are excluded from the asset export and import.
-The catalog contains static resources; player-owned state belongs to gameplay storage.
-
-### Query examples
-
-Open `var/assets.db` in a SQLite browser or use the `sqlite3` command:
+Models and query projections are in
+`internal/assetsql/catalog_storage_generated.go`. Dataset names match
+`assets.Catalog` fields; SQL column names follow the generated models. Inspect
+`sqlite_master` or a database browser for exact names. For example:
 
 ```sql
-SELECT id, name, level, equip_slot
-FROM asset_items
-WHERE name LIKE '%Sword%'
-ORDER BY level, id;
+SELECT native_items_key, value_definition_name, value_definition_level
+FROM catalog_native_items
+ORDER BY native_items_key;
 
-SELECT id, name, level, hp, sp
-FROM asset_npcs
-WHERE level >= 50
-ORDER BY level, id;
+SELECT lucky_draw_rewards_ordinal, value_id, value_quantity, value_weight, value_slot
+FROM catalog_lucky_draw_rewards
+ORDER BY lucky_draw_rewards_ordinal;
 
-SELECT n.id, n.name, s.name AS first_skill
-FROM asset_npcs AS n
-LEFT JOIN asset_skills AS s
-  ON s.id = json_extract(n.json, '$.fields.skill_1');
-
-SELECT json_extract(json, '$.value') AS authored_settings
-FROM asset_documents
-WHERE asset = 'critical_hits.json';
-
-SELECT game_id, json_extract(json, '$.fields.unknown_u16_offset_14')
-FROM asset_records
-WHERE asset = 'npc.dat' AND collection = 'records';
+SELECT character_id, gold, lucky_day, lucky_used
+FROM character_state;
 ```
 
-SQLite's `json_extract`, `json_each` and `json_tree` give SQL access to remaining
-fields and nested collections. See the [SQLite JSON documentation](https://www.sqlite.org/json1.html).
-The importer verifies JSON support in the actual bundled SQLite library.
+Use validated administration editors for content changes. Direct SQL edits need
+valid typed values and matching presence/order metadata; restart or issue the
+relevant GM reload command to publish a new snapshot.
 
-## Design tradeoffs
+## Seeds and provenance
 
-A generated asset database is useful for inspection, validation, joins and
-runtime loading. Keep JSON exports as the reproducible source, and load gameplay
-lookups into memory when the server starts. Repeated SQL queries inside packet
-handling would add work compared with existing in-memory lookups.
+JSON exports under `data/` are offline initialization inputs. Startup reads SQL
+only, in a consistent read transaction, and builds an immutable catalog snapshot.
+It does not open original files, reconstruct native archives or reseed edits.
 
-A separate asset database allows rebuilding static content without erasing
-players. Preserving complete JSON plus indexed records duplicates some content,
-so this initial catalog is larger than a later normalized schema could be.
-Updates to JSON require a rebuild. Direct SQL edits will be overwritten by the
-next import; edit the maintained source or a future explicit override layer.
-Audio has no server gameplay role and would inflate storage and backup time.
+`asset_import`, `asset_documents`, `asset_records` and their legacy `asset_*`
+views retain imported metadata, unknown fields and original source representations.
+They are migration/provenance records and are not authoritative for gameplay or
+administration after conversion. Their views can be stale after typed edits.
+Editing them does not change the running definitions. Audio, images and video
+payloads remain on disk; the server does not load them into its runtime tables.
 
+## Explicit rebuild/reset
 
-## Daily Lucky Draw rewards
+`data-rebuild` deliberately replaces asset definitions from maintained exports;
+it does not preserve installation-specific content edits. Existing destinations
+are backed up. Stop the server and database clients first; never delete active
+SQLite sidecars to bypass its checks.
 
-`asset_lucky_draw_rewards` exposes ordered rows with `item_id`, `quantity`,
-`weight` and `slot`. Runtime resolves `asset_records` for
-`asset='lucky_draw.json' AND collection='value'`; document JSON is provenance.
-Weights are relative positive integers. All 14 initial rows use weight 1,
-including separate quantities of the same event item. Player allowance lives
-in gameplay character JSON, outside the asset database.
+```sh
+go run ./cmd/data-rebuild -config config.local.json
+# Also erase accounts, characters and gameplay settings:
+go run ./cmd/data-rebuild -config config.local.json -reset-gameplay
+```
 
-Regenerate with `python3 tools/data_export/lucky_draw.py --output data --overwrite`,
-then rebuild the asset database and restart. The exporter validates compatibility
-policy against fresh sibling Item.dat. Older installations must rebuild to add
-`lucky_draw.json`; startup has no embedded or native-file fallback.
+`-data` selects the export directory and `-assets-db` overrides the asset path.
+The command verifies export hashes, creates and validates the structured catalog
+before publication, and prints backups. Restore backups with the server stopped
+if needed. A crash between two file replacements can leave a mixed pair.
+Ordinary migrations and restarts preserve edits; deliberate rebuilds replace them.

@@ -65,6 +65,9 @@ func (s *Server) createCharacter(ctx context.Context, c *Session, p []byte) erro
 		if e != nil {
 			return s.rejectCharacterCreation(c, "decode_request", e)
 		}
+		if e := appearance.ValidateCreationAllocation(); e != nil {
+			return s.rejectCharacterCreation(c, "point_budget", e)
+		}
 		if request.HasConfirmationPassword {
 			account, err := s.Store.Authenticate(ctx, c.account.Username, request.ConfirmationPassword)
 			if err != nil || account.ID != c.account.ID {
@@ -130,6 +133,7 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 		return nil, e
 	}
 	packets := [][]byte{{protocol.CommandEvent, protocol.EventResume}, {protocol.CommandQuest, protocol.QuestFlag, 183, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 53, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 52, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 54, 0, 0}, {protocol.CommandEvent, protocol.EventWireCode33, 0}, {protocol.CommandFriends, protocol.FriendsWireCode13, 3}, appearance, base}
+	packets = append(packets, s.monsterBookPackets(&char)...)
 	packets = append(packets, char.StatPackets(s.Assets.Items)...)
 	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	packets = append(packets, s.arrivalPackets(char, view, pets, 0)...)
@@ -137,18 +141,21 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	for slot := byte(1); slot <= 10; slot++ {
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode24, slot, 0, 0})
 	}
+	packets = append(packets, storyConstellations(&char))
 	packets = append(packets, []byte{protocol.CommandHandshake, protocol.HandshakeWorldReady}, []byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionReady}, protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint}.U32(char.ID).U8(0))
 	return packets, nil
 }
 
 func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, pets *petRoster, packets [][]byte) error {
 	c.character = &char
+	c.openTent, c.tentOwner = nil, 0
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
 	c.event = nil
 	c.walkMode = 0
 	c.ready = false
+	c.motdSent = false
 	c.warped = false
 	c.storm, c.beachPending, c.beach, c.battle = false, false, nil, nil
 	c.restMap, c.saleMode = 0, -1
@@ -203,6 +210,11 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	if p[0] == protocol.CommandLuckyDraw {
 		s.Log.Debug("Lucky Draw dispatch state", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map, "map_ready", c.ready, "warped", c.warped, "battle", c.battle != nil, "trade", c.trade != nil, "minigame", c.event != nil && c.event.onMinigame != nil)
 	}
+	// An open sign cannot reserve an item across arbitrary inventory changes.
+	// Close it before other actions; chat and read-only login sync may continue.
+	if c.stall != nil && p[0] != protocol.CommandStall && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
+		s.closeStall(c)
+	}
 	// Settings and native login synchronization precede the interaction gates.
 	if command.policy.BeforeWorldGates || (command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
 		return command.handle(s, ctx, c, p)
@@ -228,6 +240,13 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	if c.event != nil && c.event.onMinigame != nil && !command.policy.AllowedDuringMinigame {
 		return nil // The minigame owns this interaction until result or cancel.
+	}
+	// Shared template interiors have no overworld events, shops or encounters.
+	if c.tentOwner != 0 {
+		switch p[0] {
+		case protocol.CommandEvent, protocol.CommandNPCService, protocol.CommandShop, protocol.CommandPalaceTrial, protocol.CommandMinigame:
+			return nil
+		}
 	}
 	// Offers reserve inventories; movement and lifecycle transitions cancel them.
 	if c.trade != nil && command.policy.BlockedDuringTrade {

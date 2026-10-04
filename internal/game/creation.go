@@ -82,6 +82,18 @@ func (a Appearance) Validate() error {
 	return nil
 }
 
+// CreationStatPoints matches native TRE_CreateCharacter.reset/statArrow:
+// five distributable points, with model bonuses calculated separately.
+const CreationStatPoints = 5
+
+func (a Appearance) ValidateCreationAllocation() error {
+	total := uint32(a.Base.Strength) + uint32(a.Base.Constitution) + uint32(a.Base.Intelligence) + uint32(a.Base.Wisdom) + uint32(a.Base.Agility)
+	if total != CreationStatPoints {
+		return fmt.Errorf("creation attributes must total %d points", CreationStatPoints)
+	}
+	return nil
+}
+
 const (
 	creationDeletionCodeMinBytes = 6
 	creationDeletionCodeMaxBytes = 14

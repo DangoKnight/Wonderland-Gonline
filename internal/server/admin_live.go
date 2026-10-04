@@ -16,6 +16,7 @@ import (
 )
 
 type AdminBattle struct {
+	PvP        bool              `json:"pvp"`
 	LeaderID   uint32            `json:"leader_id"`
 	Turn       int               `json:"turn"`
 	Processing bool              `json:"processing"`
@@ -35,7 +36,7 @@ func (s *Server) AdminBattles() []AdminBattle {
 			continue
 		}
 		seen[run] = true
-		row := AdminBattle{LeaderID: run.members[0].c.character.ID, Turn: run.b.Turn, Processing: run.b.Processing, Players: []string{}}
+		row := AdminBattle{PvP: run.b.PvP, LeaderID: run.members[0].c.character.ID, Turn: run.b.Turn, Processing: run.b.Processing, Players: []string{}}
 		for _, m := range run.members {
 			row.Players = append(row.Players, m.c.character.Name)
 		}
@@ -198,7 +199,7 @@ func (s *Server) deliverAdminMail(ctx context.Context, c *Session) error {
 				continue
 			}
 		}
-		next, adds, err := s.Store.ClaimAdminMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, message.ID, limit)
+		next, adds, err := s.Store.ClaimAdminMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, message.ID, limit, c.character.Clone())
 		if err != nil {
 			s.Log.Warn("GM gift retained for later claim", "character", c.character.ID, "mail", message.ID, "error", err)
 			continue

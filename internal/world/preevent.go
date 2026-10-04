@@ -8,7 +8,7 @@ import (
 
 // Reference: PreEventInterpreter.ShouldNpcBeVisible and EveEventRuntime.MatchesCondition.
 // Owned pets and active item vehicles evaluate against persisted character state.
-// Shared prop runtime state and legacy quest definitions remain pending.
+// Shared prop runtime state remains pending; optional SQL quest actor lists are supported.
 
 type rule struct {
 	conditions [][21]byte
@@ -434,6 +434,9 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 			}
 			break
 		}
+	}
+	if visible, owned := w.questVisibility(c, mapID, click); owned {
+		return visible
 	}
 	visible := true
 	for _, n := range m.data.NPCs {

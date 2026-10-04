@@ -16,6 +16,7 @@ type RebuildOptions struct {
 	AssetsDB      string
 	GameplayDB    string // Empty leaves the gameplay database untouched.
 	Progress      func(string)
+	PrepareAssets func(string) error // Validate/migrate the staged catalog before publication.
 }
 type RebuildResult struct {
 	Summary
@@ -115,6 +116,11 @@ func Rebuild(options RebuildOptions) (result RebuildResult, err error) {
 	result.Summary, err = Build(root, staged[0], options.Progress)
 	if err != nil {
 		return result, err
+	}
+	if options.PrepareAssets != nil {
+		if err = options.PrepareAssets(staged[0]); err != nil {
+			return result, err
+		}
 	}
 	if options.GameplayDB != "" {
 		gameplay, e := store.Open(staged[1])

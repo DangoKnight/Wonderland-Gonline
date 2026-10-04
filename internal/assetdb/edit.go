@@ -42,7 +42,7 @@ func ReplaceDocument(ctx context.Context, db *gorm.DB, asset string, version str
 
 // EnsureDocument creates only administrator-authored optional tables.
 func EnsureDocument(ctx context.Context, db *gorm.DB, asset string) error {
-	allowed := asset == "map_overrides.json" || asset == "chest_drops.json"
+	allowed := asset == "map_overrides.json" || asset == "chest_drops.json" || asset == "quest_visibility.json" || asset == "combat_trials.json"
 	if !allowed {
 		return errors.New("asset is not an optional administration table")
 	}

@@ -29,51 +29,61 @@ func CharacterVersion(c game.Character) string {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
-func adminCharacter(row characterRow) (AdminCharacter, error) {
-	var c game.Character
-	err := json.Unmarshal(row.State, &c)
+func adminCharacter(tx *gorm.DB, row characterRow) (AdminCharacter, error) {
+	c, err := readCharacterState(tx, row)
 	return AdminCharacter{AccountID: row.AccountID, State: c, Version: CharacterVersion(c)}, err
 }
 func (s *Store) AdminCharacters(ctx context.Context, query string, after uint32) ([]AdminCharacter, error) {
-	db := s.orm.WithContext(ctx).Where(clause.Gt{Column: "id", Value: after})
-	if query != "" {
-		if id, err := strconv.ParseUint(query, 10, 32); err == nil {
-			db = db.Where(clause.Eq{Column: "id", Value: uint32(id)})
-		} else {
-			db = db.Where(clause.Like{Column: "name", Value: "%" + query + "%"})
+	var out []AdminCharacter
+	err := s.transaction(ctx, func(tx *gorm.DB) error {
+		db := tx.Where(clause.Gt{Column: "id", Value: after})
+		if query != "" {
+			if id, err := strconv.ParseUint(query, 10, 32); err == nil {
+				db = db.Where(clause.Eq{Column: "id", Value: uint32(id)})
+			} else {
+				db = db.Where(clause.Like{Column: "name", Value: "%" + query + "%"})
+			}
 		}
-	}
-	var rows []characterRow
-	if err := db.Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}}).Limit(AdminPageLimit).Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	out := make([]AdminCharacter, 0, len(rows))
-	for _, row := range rows {
-		c, err := adminCharacter(row)
-		if err != nil {
-			return nil, err
+		var rows []characterRow
+		if err := db.Omit("state").Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}}).Limit(AdminPageLimit).Find(&rows).Error; err != nil {
+			return err
 		}
-		out = append(out, c)
-	}
-	return out, nil
+		out = make([]AdminCharacter, 0, len(rows))
+		for _, row := range rows {
+			c, err := adminCharacter(tx, row)
+			if err != nil {
+				return err
+			}
+			out = append(out, c)
+		}
+		return nil
+	})
+	return out, err
 }
 func (s *Store) AdminCharacter(ctx context.Context, id uint32) (AdminCharacter, error) {
-	var row characterRow
-	if err := s.orm.WithContext(ctx).Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
-		return AdminCharacter{}, persistenceError(err)
-	}
-	return adminCharacter(row)
+	var out AdminCharacter
+	err := s.transaction(ctx, func(tx *gorm.DB) error {
+		var row characterRow
+		if err := tx.Omit("state").Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
+			return err
+		}
+		var err error
+		out, err = adminCharacter(tx, row)
+		return err
+	})
+	return out, err
 }
+
 func adminAudit(tx *gorm.DB, action string, id any) error {
 	return tx.Create(&auditRow{At: time.Now().UTC().Format(time.RFC3339), Action: action, Subject: fmt.Sprint(id)}).Error
 }
 func (s *Store) ReplaceAdminCharacter(ctx context.Context, id uint32, version string, next game.Character) error {
 	return s.transaction(ctx, func(tx *gorm.DB) error {
 		var row characterRow
-		if err := tx.Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
+		if err := tx.Omit("state").Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
 			return err
 		}
-		current, err := adminCharacter(row)
+		current, err := adminCharacter(tx, row)
 		if err != nil {
 			return err
 		}
@@ -95,10 +105,10 @@ func (s *Store) ReplaceAdminCharacter(ctx context.Context, id uint32, version st
 func (s *Store) DeleteAdminCharacter(ctx context.Context, id uint32, version string) error {
 	return s.transaction(ctx, func(tx *gorm.DB) error {
 		var row characterRow
-		if err := tx.Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
+		if err := tx.Omit("state").Where(map[string]any{"id": id}).Take(&row).Error; err != nil {
 			return err
 		}
-		current, err := adminCharacter(row)
+		current, err := adminCharacter(tx, row)
 		if err != nil {
 			return err
 		}

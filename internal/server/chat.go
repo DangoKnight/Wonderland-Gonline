@@ -35,6 +35,7 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 			if handled, err := s.chatChannelCommand(c, text); handled {
 				return err
 			}
+			s.closeStall(c)
 			return s.command(ctx, c, text)
 		}
 		if !validChatText(text, chatMessageMaxBytes) {
@@ -52,8 +53,7 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 	case protocol.ChatTeamMessage:
 		return s.teamChat(c, text)
 	case protocol.ChatGuildMessage:
-		// Guilds are not ported; the client refuses the channel without one.
-		return nil
+		return s.guildChat(ctx, c, text)
 	}
 	return ErrUnsupported
 }
@@ -66,7 +66,27 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 		return nil
 	}
 	name := strings.ToLower(words[0])
+	if handled, err := s.tentChatCommand(ctx, c, name[1:], words[1:]); handled {
+		return err
+	}
+	if handled, err := s.socialChatCommand(ctx, c, name[1:], words[1:], text); handled {
+		return err
+	}
+	if handled, err := s.craftingChatCommand(ctx, c, name[1:], words[1:], text); handled {
+		return err
+	}
 	switch name[1:] {
+	case "guildcreate":
+		if !commandTravelAvailable(c) || c.trade != nil {
+			return nil
+		}
+		guildName := strings.TrimSpace(strings.TrimPrefix(text, words[0]))
+		if err := s.Store.CreateGuild(ctx, c.character.ID, guildName); err != nil {
+			return s.chatFeedback(c, err.Error())
+		}
+		return s.refreshGuilds(ctx)
+	case "guild":
+		return s.guildChat(ctx, c, strings.TrimSpace(strings.TrimPrefix(text, words[0])))
 	case "help", "cmds", "cmd":
 		return s.commandHelp(c)
 	case "unride", "dismount", "carnie":

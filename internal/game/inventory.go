@@ -9,8 +9,10 @@ const BagSize = 50
 
 var ErrInventoryFull = errors.New("inventory full")
 var ErrInvalidItem = errors.New("invalid item or slot")
+var ErrItemLocked = errors.New("item is reserved by an active operation")
 
 type Item struct {
+	Locked   bool                    `json:"-"` // Transient reservation; never serialized or persisted.
 	ID       uint16                  `json:"id"`
 	Count    byte                    `json:"count"`
 	Damage   byte                    `json:"damage"`
@@ -40,7 +42,7 @@ func (b *Inventory) Grant(item Item, count int, maxStack byte) ([]Addition, erro
 	next := *b
 	var adds []Addition
 	for j := range next {
-		if count > 0 && !next[j].Empty() && next[j].compatible(item) && next[j].Count < maxStack {
+		if count > 0 && !next[j].Locked && !next[j].Empty() && next[j].compatible(item) && next[j].Count < maxStack {
 			n := min(count, int(maxStack-next[j].Count))
 			next[j].Count += byte(n)
 			count -= n
@@ -48,7 +50,7 @@ func (b *Inventory) Grant(item Item, count int, maxStack byte) ([]Addition, erro
 		}
 	}
 	for j := range next {
-		if count > 0 && next[j].Empty() {
+		if count > 0 && !next[j].Locked && next[j].Empty() {
 			n := min(count, int(maxStack))
 			next[j] = item
 			next[j].Count = byte(n)
@@ -78,6 +80,9 @@ func (b *Inventory) Remove(slot byte, count byte) error {
 		return ErrInvalidItem
 	}
 	i := &b[slot-1]
+	if i.Locked {
+		return ErrItemLocked
+	}
 	if i.Empty() || i.Count < count {
 		return ErrInvalidItem
 	}
@@ -95,6 +100,9 @@ func (b *Inventory) Move(from, to, count, maxStack byte) (byte, error) {
 		return 0, ErrInvalidItem
 	}
 	src, dst := b[from-1], b[to-1]
+	if src.Locked || dst.Locked {
+		return 0, ErrItemLocked
+	}
 	if src.Empty() || (!dst.Empty() && !dst.compatible(src)) {
 		return 0, ErrInvalidItem
 	}
@@ -174,7 +182,7 @@ func (b *Inventory) ApplyQuestItems(changes []ItemChange, limit func(uint16) (by
 		}
 		needed := -change.Count
 		for i := range next {
-			if needed > 0 && next[i].ID == change.ID && !next[i].Empty() {
+			if needed > 0 && !next[i].Locked && next[i].ID == change.ID && !next[i].Empty() {
 				take := min(needed, int(next[i].Count))
 				next[i].Count -= byte(take)
 				needed -= take

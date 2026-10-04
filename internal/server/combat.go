@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"strings"
 	"time"
+	"wonderland-go/internal/assets"
 	"wonderland-go/internal/battle"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
@@ -18,7 +20,7 @@ var (
 	battleSleep = time.Sleep
 )
 
-// battleRun is one PvE battle of a character and the teammates on its map
+// battleRun is one PvE or PvP battle of characters and their nearby teammates
 // (GetTeamMembers). Its quest event stays suspended until the outcome callback
 // resumes or releases it. Reference: PvEBattleManager.
 type battleRun struct {
@@ -32,6 +34,7 @@ type battleRun struct {
 	// encounter is the overworld monster this battle consumes on victory.
 	encounter uint16
 	wild      bool
+	trial     *assets.CombatTrial
 }
 
 // battleMember is one participant: its character fighter and battle pet, if any.
@@ -153,7 +156,7 @@ func (s *Server) battleTeam(c *Session) []*Session {
 		return team
 	}
 	for _, m := range c.party.members {
-		if m != c && len(team) < partyMax && m.ready && m.battle == nil && m.event == nil && m.character.Map == c.character.Map {
+		if m != c && len(team) < partyMax && m.ready && m.battle == nil && m.event == nil && sameScene(m, c) {
 			team = append(team, m)
 		}
 	}
@@ -178,6 +181,11 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 		run.members = append(run.members, member)
 	}
+	for i := range enemies {
+		if n, ok := s.Assets.NPCs[uint16(enemies[i].Template)]; ok && enemies[i].Template <= 0xffff {
+			enemies[i].Skills = n.Skills
+		}
+	}
 	run.b = battle.New(fighters, enemies)
 	background := uint16(1)
 	if c.character.Map < game.MapID10000 {
@@ -192,6 +200,11 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			if m.c == c {
+				run.b.Finished = true
+				for _, member := range run.members {
+					member.c.battle = nil
+					member.c.conn.Close()
+				}
 				return err
 			}
 			m.c.conn.Close()
@@ -273,6 +286,10 @@ func (s *Server) tryRound(run *battleRun) {
 func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 	for _, step := range steps {
 		s.worldMu.Lock()
+		if run.b.Finished {
+			s.worldMu.Unlock()
+			return false
+		}
 		members := run.active()
 		for _, m := range members {
 			progress, err := s.commitSkillUses(m.c, run, step.SkillUses)
@@ -400,13 +417,29 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	var results []memberResult
 	for _, m := range run.active() {
 		c := m.c
+		previousQuests := c.character.Quests
 		next := c.character.Clone()
 		next.HP, next.SP = uint32(max(0, m.self.HP)), uint32(max(0, m.self.SP))
 		var first, last [][]byte
-		switch outcome {
+		memberOutcome := outcome
+		if run.b.PvP && m.self.Side == battle.Defender {
+			if outcome == battle.Victory {
+				memberOutcome = battle.Defeat
+			} else if outcome == battle.Defeat {
+				memberOutcome = battle.Victory
+			}
+		}
+		switch memberOutcome {
 		case battle.Victory:
+			if run.b.PvP {
+				break
+			}
+			first = append(first, s.discoverBattleMonsters(&next, run)...)
+			if run.trial != nil {
+				first = append(first, s.trialReward(&next, run.trial)...)
+			}
 			if next.Gold < game.MaxGold {
-				next.Gold = uint32(min(uint64(next.Gold)+gold, 1<<32-1))
+				next.Gold = uint32(min(uint64(next.Gold)+gold, uint64(game.MaxGold)))
 			}
 			var adds []game.Addition
 			if m == run.members[0] {
@@ -447,7 +480,12 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		for id, slot := range c.pets.slots {
 			roster.slots[id] = slot
 		}
-		petPackets, peerPackets := s.petResults(run, m, &next, outcome, roster)
+		if memberOutcome == battle.Victory && !run.b.PvP {
+			if run.trial == nil && m == run.members[0] && run.event == nil {
+				first = append(first, s.legacyBattleRewards(&next, run, roster)...)
+			}
+		}
+		petPackets, peerPackets := s.petResults(run, m, &next, memberOutcome, roster)
 		first = append(append(first, petPackets...), departure...)
 		if e := s.commit(context.Background(), c, next); e != nil {
 			s.Log.Warn("battle result not committed", "character", next.ID, "error", e)
@@ -455,7 +493,20 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			c.conn.Close()
 			continue
 		}
+		var completed []uint32
+		for id, q := range next.Quests {
+			if before, exists := previousQuests[id]; !exists || before.State != q.State {
+				completed = append(completed, id)
+			}
+		}
+		sort.Slice(completed, func(i, j int) bool { return completed[i] < completed[j] })
+		var questPackets [][]byte
+		for _, id := range completed {
+			questPackets = append(questPackets, s.World.QuestUpdate(c.view, id, next.Quests[id])...)
+		}
+		first = append(questPackets, first...)
 		c.pets = roster
+		last = append(last, s.World.Sync(c.character, c.view, false)...)
 		for _, packet := range peerPackets {
 			s.broadcastWorld(c, packet)
 		}
@@ -473,7 +524,7 @@ func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition
 	r := s.rules()
 	r.DropRateMultiplier = s.dropRateMultiplier
 	for _, m := range run.b.Defenders {
-		if m.Captured {
+		if m.Captured || m.Kind != battle.Monster || run.b.PvP {
 			continue
 		}
 		var native [5]uint16
@@ -576,6 +627,10 @@ func (s *Server) abandonBattle(c *Session) {
 		return
 	}
 	if !run.b.Finished {
+		if outcome := run.b.Forfeit(); outcome != battle.Continue {
+			s.endBattle(run, outcome)
+			return
+		}
 		s.tryRound(run)
 	}
 }
@@ -596,16 +651,20 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 	var packets, peerPackets [][]byte
 	if i := battlePetIndex(*next, m); i >= 0 {
 		pet := &next.Pets[i]
-		if outcome != battle.Victory {
+		if outcome != battle.Victory || run.b.PvP {
 			pet.HP = int32(max(0, m.pet.HP))
 		}
 		pet.SP = int32(max(0, m.pet.SP))
 		slot := roster.slot(pet.ID)
-		pet.Amity = byte(max(0, int(pet.Amity)-m.pet.Deaths))
-		if m.pet.Deaths > 0 && slot != 0 {
+		deaths := m.pet.Deaths
+		if run.b.PvP {
+			deaths = 0
+		}
+		pet.Amity = byte(max(0, int(pet.Amity)-deaths))
+		if deaths > 0 && slot != 0 {
 			packets = append(packets, game.PetStat(slot, 64, int64(pet.Amity)))
 		}
-		if pet.Amity < 20 && m.pet.Deaths > 0 {
+		if pet.Amity < 20 && deaths > 0 {
 			// The pet deserts the party.
 			id := pet.ID
 			if next.ActiveMount != 0 && game.SamePet(next.ActiveMount, id) {

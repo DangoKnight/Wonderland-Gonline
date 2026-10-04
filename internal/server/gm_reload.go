@@ -107,6 +107,8 @@ func (s *Server) gmReload(ctx context.Context, c *Session, _ string, args []stri
 		}
 		s.Assets.Maps = maps
 		s.Assets.Marks, s.Assets.DisabledEvents, s.Assets.Talks = next.Marks, next.DisabledEvents, next.Talks
+		s.Assets.QuestVisibility = next.QuestVisibility
+		s.Assets.CombatTrials = next.CombatTrials
 		s.World.ReloadEvents(maps)
 	}
 	if scope == "all" || scope == "mall" {

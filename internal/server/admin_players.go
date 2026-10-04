@@ -298,7 +298,7 @@ func (s *Server) editAdminCharacterValidated(ctx context.Context, id uint32, ver
 		return ErrAdminPlayerUnavailable
 	}
 	c := s.friendSessions[id]
-	if c != nil && !gmIdle(c) {
+	if c != nil && (!gmIdle(c) || c.openTent != nil || c.tentOwner != 0) {
 		return ErrAdminPlayerUnavailable
 	}
 	if err := s.Store.ReplaceAdminCharacter(ctx, id, version, next); err != nil {
@@ -320,7 +320,7 @@ func (s *Server) DeleteAdminCharacter(ctx context.Context, id uint32, version st
 		return ErrAdminPlayerUnavailable
 	}
 	c := s.friendSessions[id]
-	if c != nil && !gmIdle(c) {
+	if c != nil && (!gmIdle(c) || c.openTent != nil || c.tentOwner != 0) {
 		return ErrAdminPlayerUnavailable
 	}
 	friends, err := s.Store.Friends(ctx, id)

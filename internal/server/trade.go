@@ -33,10 +33,10 @@ func tradeMessage(message string) []byte {
 	return p
 }
 func tradeAvailable(c *Session) bool {
-	return c != nil && c.ready && c.character.Preferences().TradeAllowed && c.battle == nil && c.event == nil && !c.storm && c.beach == nil && c.trade == nil
+	return c != nil && c.ready && c.character.Preferences().TradeAllowed && c.battle == nil && c.event == nil && !c.storm && c.beach == nil && c.trade == nil && c.stall == nil
 }
 func tradeNear(a, b *Session) bool {
-	return a.character.Map == b.character.Map && math.Hypot(float64(int(a.character.X)-int(b.character.X)), float64(int(a.character.Y)-int(b.character.Y))) <= tradeRangePixels
+	return sameScene(a, b) && math.Hypot(float64(int(a.character.X)-int(b.character.X)), float64(int(a.character.Y)-int(b.character.Y))) <= tradeRangePixels
 }
 
 // tradeCommand ports AC25; caller holds worldMu. The native handler replaces the
@@ -76,7 +76,7 @@ func (s *Server) tradeCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil
 		}
 		item := c.character.Bag[slot-1]
-		if item.Empty() {
+		if item.Empty() || item.Locked {
 			return nil
 		}
 		if _, known := s.Assets.Items[item.ID]; !known {
@@ -222,6 +222,12 @@ func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
 	var result game.TradeResult
 	err := s.Store.UpdateCharacterPair(ctx, store.CharacterRef{Account: a.account.ID, ID: a.character.ID}, store.CharacterRef{Account: b.account.ID, ID: b.character.ID}, func(first, second *game.Character) error {
 		var err error
+		if err = game.PreserveItemLocks(*a.character, first); err != nil {
+			return err
+		}
+		if err = game.PreserveItemLocks(*b.character, second); err != nil {
+			return err
+		}
 		result, err = game.Exchange(*first, *second, run.offers, s.Assets.Items)
 		if err != nil {
 			return err
@@ -231,7 +237,7 @@ func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
 	})
 	if err != nil {
 		s.cancelTrade(c)
-		if errors.Is(err, game.ErrTradeChanged) || errors.Is(err, game.ErrTradeGoldLimit) || errors.Is(err, game.ErrInventoryFull) || errors.Is(err, game.ErrInvalidItem) {
+		if errors.Is(err, game.ErrTradeChanged) || errors.Is(err, game.ErrTradeGoldLimit) || errors.Is(err, game.ErrInventoryFull) || errors.Is(err, game.ErrInvalidItem) || errors.Is(err, game.ErrItemLocked) {
 			for _, player := range run.players {
 				s.sendOrClose(player, tradeMessage("Trade failed: "+err.Error()+"."))
 			}

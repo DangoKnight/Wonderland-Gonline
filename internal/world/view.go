@@ -244,6 +244,25 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 			}
 		}
 	}
+	for _, q := range w.catalog.QuestVisibility {
+		if q.Map != mapID {
+			continue
+		}
+		for _, id := range q.Spawn {
+			ids[id] = true
+		}
+		for _, id := range q.Despawn {
+			ids[id] = true
+		}
+		for _, step := range q.Steps {
+			for _, id := range step.Spawn {
+				ids[id] = true
+			}
+			for _, id := range step.Despawn {
+				ids[id] = true
+			}
+		}
+	}
 	for id := range v.Hidden {
 		ids[id] = true
 	}

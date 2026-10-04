@@ -24,7 +24,7 @@ func TestAdminSQLCatalogEditValidatesBeforeCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	validate := func(tx *gorm.DB) error { _, err := LoadTransaction(tx); return err }
+	validate := func(tx *gorm.DB) error { _, err := loadLegacyTransaction(tx); return err }
 	bad := []byte(`{"schema_version":1,"value":[{"map_id":10017,"respawn_seconds":60,"rewards":[{"item_id":65000,"count":1,"weight":1}]}]}`)
 	if err := assetdb.ReplaceDocument(ctx, db, assets.AdminChestAsset, assetdb.DocumentVersion(before), bad, validate); err == nil {
 		t.Fatal("unknown reward committed")
@@ -33,7 +33,7 @@ func TestAdminSQLCatalogEditValidatesBeforeCommit(t *testing.T) {
 	if err := assetdb.ReplaceDocument(ctx, db, assets.AdminChestAsset, assetdb.DocumentVersion(before), good, validate); err != nil {
 		t.Fatal(err)
 	}
-	catalog, err := LoadDatabase(path)
+	catalog, err := loadLegacyFixture(path)
 	if err != nil || len(catalog.ChestPools) != 1 {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestAdminSQLCatalogEditValidatesBeforeCommit(t *testing.T) {
 	if err := assetdb.ReplaceDocument(ctx, db, assets.AdminMapsAsset, assetdb.DocumentVersion(before), raw, validate); err != nil {
 		t.Fatal(err)
 	}
-	catalog, err = LoadDatabase(path)
+	catalog, err = loadLegacyFixture(path)
 	if err != nil || len(catalog.Maps[10017].Warps) != 1 || catalog.Maps[10017].Warps[0].X != 42 {
 		t.Fatal(catalog, err)
 	}

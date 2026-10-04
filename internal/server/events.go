@@ -69,6 +69,9 @@ func (s *Server) commit(ctx context.Context, c *Session, next game.Character) er
 // commitState saves and adopts state without publishing packets. The raft wreck
 // path supplies its own break/dismount order. Callers hold worldMu.
 func (s *Server) commitState(ctx context.Context, c *Session, next game.Character) error {
+	if err := game.PreserveItemLocks(*c.character, &next); err != nil {
+		return err
+	}
 	next.NormalizeVehicle(s.Assets.Items)
 	if e := s.Store.UpdateCharacter(ctx, c.account.ID, next.ID, func(stored *game.Character) error {
 		*stored = next
@@ -79,6 +82,7 @@ func (s *Server) commitState(ctx context.Context, c *Session, next game.Characte
 	changedOfferState := c.character.Bag != next.Bag || c.character.Gold != next.Gold
 	*c.character = next
 	if changedOfferState {
+		s.closeStall(c)
 		s.cancelTrade(c)
 	}
 	return nil
@@ -875,7 +879,14 @@ func (s *Server) questMark(ctx context.Context, c *Session, op world.Op) (bool, 
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
-	return true, s.sendAll(c, s.World.QuestUpdate(c.view, id, q))
+	packets := s.World.QuestUpdate(c.view, id, q)
+	for _, reward := range storyStars {
+		if id == reward.mark {
+			packets = append(packets, storyConstellations(c.character))
+			break
+		}
+	}
+	return true, s.sendAll(c, packets)
 }
 
 // actorAction is opcode 2: animations, paths, prop frames, actor visibility and lines.

@@ -1,0 +1,268 @@
+{
+  "marriage": {
+    "minimum_level": 30,
+    "fee": 60000,
+    "rings": [
+      49001,
+      49002
+    ]
+  },
+  "manufacturing": [
+    {
+      "workbench": "Forge",
+      "inputs": [
+        {
+          "item_id": 27020,
+          "count": 2
+        },
+        {
+          "item_id": 27022,
+          "count": 1
+        }
+      ],
+      "output": {
+        "item_id": 46005,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Anvil",
+      "inputs": [
+        {
+          "item_id": 46005,
+          "count": 2
+        },
+        {
+          "item_id": 27001,
+          "count": 1
+        }
+      ],
+      "output": {
+        "item_id": 21001,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Anvil",
+      "inputs": [
+        {
+          "item_id": 46005,
+          "count": 3
+        },
+        {
+          "item_id": 27001,
+          "count": 2
+        }
+      ],
+      "output": {
+        "item_id": 21010,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Loom",
+      "inputs": [
+        {
+          "item_id": 30013,
+          "count": 3
+        },
+        {
+          "item_id": 0,
+          "count": 0
+        }
+      ],
+      "output": {
+        "item_id": 30014,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Sewing Machine",
+      "inputs": [
+        {
+          "item_id": 30014,
+          "count": 2
+        },
+        {
+          "item_id": 30015,
+          "count": 1
+        }
+      ],
+      "output": {
+        "item_id": 22005,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Kiln",
+      "inputs": [
+        {
+          "item_id": 27024,
+          "count": 2
+        },
+        {
+          "item_id": 27001,
+          "count": 1
+        }
+      ],
+      "output": {
+        "item_id": 48010,
+        "count": 1
+      }
+    },
+    {
+      "workbench": "Kiln",
+      "inputs": [
+        {
+          "item_id": 27024,
+          "count": 3
+        },
+        {
+          "item_id": 27020,
+          "count": 1
+        }
+      ],
+      "output": {
+        "item_id": 48011,
+        "count": 1
+      }
+    }
+  ],
+  "gathering": [
+    {
+      "kind": 1,
+      "interval_seconds": 5,
+      "items": [
+        30003,
+        30004,
+        30005,
+        30006,
+        30007
+      ]
+    },
+    {
+      "kind": 2,
+      "interval_seconds": 5,
+      "items": [
+        27020,
+        27021,
+        27022,
+        27023,
+        27024
+      ]
+    },
+    {
+      "kind": 3,
+      "interval_seconds": 5,
+      "items": [
+        27001,
+        27002,
+        27003,
+        27004,
+        27005
+      ]
+    }
+  ],
+  "synthesis": {
+    "failure_item_id": 27008,
+    "default_success_percent": 85,
+    "rates": [
+      {
+        "input1": 27001,
+        "input2": 27001,
+        "output": 48001,
+        "success_percent": 90
+      },
+      {
+        "input1": 27002,
+        "input2": 27001,
+        "output": 48002,
+        "success_percent": 85
+      },
+      {
+        "input1": 27005,
+        "input2": 27001,
+        "output": 27015,
+        "success_percent": 75
+      },
+      {
+        "input1": 27020,
+        "input2": 27001,
+        "output": 46005,
+        "success_percent": 75
+      },
+      {
+        "input1": 46005,
+        "input2": 27001,
+        "output": 21001,
+        "success_percent": 70
+      },
+      {
+        "input1": 46005,
+        "input2": 46005,
+        "output": 21010,
+        "success_percent": 65
+      },
+      {
+        "input1": 28014,
+        "input2": 28006,
+        "output": 30201,
+        "success_percent": 90
+      },
+      {
+        "input1": 30201,
+        "input2": 28015,
+        "output": 30202,
+        "success_percent": 80
+      },
+      {
+        "input1": 30202,
+        "input2": 28015,
+        "output": 30204,
+        "success_percent": 70
+      },
+      {
+        "input1": 30205,
+        "input2": 28012,
+        "output": 30203,
+        "success_percent": 85
+      },
+      {
+        "input1": 30001,
+        "input2": 27001,
+        "output": 28020,
+        "success_percent": 90
+      },
+      {
+        "input1": 30002,
+        "input2": 27001,
+        "output": 28021,
+        "success_percent": 90
+      },
+      {
+        "input1": 30003,
+        "input2": 27001,
+        "output": 28022,
+        "success_percent": 90
+      },
+      {
+        "input1": 30015,
+        "input2": 30016,
+        "output": 22001,
+        "success_percent": 75
+      },
+      {
+        "input1": 30016,
+        "input2": 30013,
+        "output": 22005,
+        "success_percent": 70
+      },
+      {
+        "input1": 30018,
+        "input2": 30013,
+        "output": 22010,
+        "success_percent": 60
+      }
+    ]
+  }
+}

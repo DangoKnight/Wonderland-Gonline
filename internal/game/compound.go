@@ -19,7 +19,7 @@ func (b *Inventory) Compound(first, second byte, result uint16) (byte, error) {
 	if !next[target-1].Empty() {
 		target = 0
 		for index, item := range next {
-			if item.Empty() {
+			if item.Empty() && !item.Locked {
 				target = byte(index + 1)
 				break
 			}

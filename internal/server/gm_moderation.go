@@ -65,6 +65,12 @@ func (s *Server) gmModeration(ctx context.Context, c *Session, command string, a
 		dst = world.Destination{Map: gmReleaseMap, X: gmReleaseX, Y: gmReleaseY}
 	}
 	if jail {
+		if target.openTent != nil {
+			if err = s.closePlayerTent(ctx, target); err != nil {
+				return err
+			}
+		}
+		next.TentReturn = nil
 		if _, ok := s.World.Map(dst.Map); !ok {
 			return s.chatFeedback(c, "The moderation destination is missing from the assets database.")
 		}
@@ -112,6 +118,8 @@ func (s *Server) gmVisibility(_ context.Context, c *Session, command string, arg
 	}
 	if hidden {
 		s.broadcastWorld(c, protocol.Builder{protocol.CommandMapAcknowledgment}.U32(c.character.ID).U16(0).U16(0).U16(0).U16(0).U8(0))
+		s.closeStall(c)
+		c.gathering = nil
 		c.invisible = true
 	} else {
 		packets, err := peerPackets(*c.character, false, false)

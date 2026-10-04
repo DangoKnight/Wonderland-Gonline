@@ -7,10 +7,11 @@ import (
 )
 
 type Character struct {
-	ChestRespawns map[uint32]time.Time `json:"chest_respawns,omitempty"`
-	MutedUntil    time.Time            `json:"muted_until,omitempty"`
-	EventTimers   map[uint16]time.Time `json:"event_timers,omitempty"`
-	LuckyDraw     LuckyDrawState       `json:"lucky_draw,omitempty"`
+	DiscoveredMonsters []uint16             `json:"discovered_monsters,omitempty"`
+	ChestRespawns      map[uint32]time.Time `json:"chest_respawns,omitempty"`
+	MutedUntil         time.Time            `json:"muted_until,omitempty"`
+	EventTimers        map[uint16]time.Time `json:"event_timers,omitempty"`
+	LuckyDraw          LuckyDrawState       `json:"lucky_draw,omitempty"`
 	// Reborn supplies combo effective-level metadata. Rebirth progression and
 	// character roster/job presentation remain unported.
 	Reborn   bool            `json:"reborn,omitempty"`
@@ -43,6 +44,7 @@ type Character struct {
 	Storage    Inventory        `json:"storage"`
 	Quests     map[uint32]Quest `json:"quests"`
 	// RecordPoint is the saved return location (AC5:21), absent until a Record site saves one.
+	TentReturn  *Location `json:"tent_return,omitempty"`
 	RecordPoint *Location `json:"record_point,omitempty"`
 	// Pets is the party (at most four). ReservePets keeps story companions that
 	// temporarily left (C# QuestPets). ActivePet is the battle pet's broadcast ID.
@@ -62,6 +64,11 @@ type Location struct {
 
 // Clone copies the character so mutations cannot reach the original's maps or slices.
 func (c Character) Clone() Character {
+	if c.TentReturn != nil {
+		location := *c.TentReturn
+		c.TentReturn = &location
+	}
+	c.DiscoveredMonsters = append([]uint16(nil), c.DiscoveredMonsters...)
 	if c.ChestRespawns != nil {
 		timers := make(map[uint32]time.Time, len(c.ChestRespawns))
 		for key, value := range c.ChestRespawns {

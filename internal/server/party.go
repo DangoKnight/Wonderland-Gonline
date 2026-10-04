@@ -85,7 +85,7 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 func (s *Server) mapPlayer(c *Session, id uint32) *Session {
 	var shifted *Session
 	for _, peer := range s.world {
-		if peer.character.Map != c.character.Map {
+		if !sameScene(peer, c) {
 			continue
 		}
 		if peer.character.ID == id {
@@ -282,7 +282,7 @@ func (s *Server) partyArrival(c *Session) {
 	}
 	leader := p.leader()
 	for _, m := range p.members {
-		if m == leader || leader.character.Map != m.character.Map || !m.ready || !leader.ready || (c != leader && m != c) {
+		if m == leader || !sameScene(leader, m) || !m.ready || !leader.ready || (c != leader && m != c) {
 			continue
 		}
 		s.sendMap(leader.character.Map, protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(leader.character.ID).U32(m.character.ID), leader)
@@ -300,7 +300,7 @@ func (s *Server) partyFollow(ctx context.Context, c *Session, from uint16) error
 	}
 	dst := world.Destination{Map: c.character.Map, X: c.character.X, Y: c.character.Y}
 	for _, m := range append([]*Session(nil), p.members[1:]...) {
-		if m.character.Map != from || m.battle != nil {
+		if m.character.Map != from || m.tentOwner != 0 || m.battle != nil {
 			continue
 		}
 		if err := s.commandTeleport(ctx, m, dst); err != nil {
@@ -313,7 +313,7 @@ func (s *Server) partyFollow(ctx context.Context, c *Session, from uint16) error
 // sendMap sends to every published character on a map except skip. Caller holds worldMu.
 func (s *Server) sendMap(mapID uint16, packet []byte, skip *Session) {
 	for _, peer := range s.world {
-		if peer != skip && peer.character.Map == mapID {
+		if peer != skip && peer.character.Map == mapID && (skip == nil && peer.tentOwner == 0 || skip != nil && sameScene(peer, skip)) {
 			s.sendOrClose(peer, packet)
 		}
 	}

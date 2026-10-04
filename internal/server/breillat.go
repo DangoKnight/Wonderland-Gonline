@@ -20,6 +20,9 @@ func (s *Server) convertBreillat(ctx context.Context, c *Session, es *eventSessi
 	var next game.Character
 	now := time.Now().UTC()
 	err := s.Store.UpdateCharacter(ctx, c.account.ID, c.character.ID, func(stored *game.Character) error {
+		if err := game.PreserveItemLocks(*c.character, stored); err != nil {
+			return err
+		}
 		talk, converted := stored.Quests[game.BreillatTalkMark], stored.Quests[game.BreillatConversionMark]
 		if stored.Map != es.mapID || talk.State != game.InProgress || talk.Step < game.BreillatRequiredTalks || converted.State == game.Completed || converted.Step > 0 {
 			return errBreillatUnavailable

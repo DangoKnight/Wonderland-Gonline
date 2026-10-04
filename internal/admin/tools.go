@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -78,6 +77,23 @@ func (a *API) bindTools(m *http.ServeMux) {
 	bind("GET /api/mail", a.mail)
 	bind("POST /api/mail", a.mail)
 	bind("DELETE /api/mail/{id}", a.mail)
+	bind("GET /api/assets/definitions", func(w http.ResponseWriter, r *http.Request) {
+		rows, err := a.Server.AssetDocuments(r.Context())
+		if err != nil {
+			a.result(w, err)
+			return
+		}
+		reply(w, 200, rows)
+	})
+	bind("GET /api/assets/definitions/{asset}", a.assetDocument)
+	bind("PUT /api/assets/definitions/{asset}", a.assetDocument)
+	bind("POST /api/assets/definitions/{asset}/initialize", func(w http.ResponseWriter, r *http.Request) {
+		a.result(w, a.Server.EnsureAdminAsset(r.Context(), r.PathValue("asset")))
+	})
+	bind("GET /api/assets/definitions/{asset}/records", a.assetRecords)
+	bind("PUT /api/assets/definitions/{asset}/records/{ordinal}", a.assetRecords)
+
+	// Legacy URL aliases carry typed dataset payloads.
 	bind("GET /api/assets/documents", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := a.Server.AssetDocuments(r.Context())
 		if err != nil {
@@ -262,7 +278,7 @@ func (a *API) guilds(w http.ResponseWriter, r *http.Request) {
 			a.result(w, err)
 			return
 		}
-		a.result(w, a.Server.Store.DeleteAdminGuild(r.Context(), id))
+		a.result(w, a.Server.AdminDeleteGuild(r.Context(), id))
 		return
 	}
 	var v store.AdminGuild
@@ -270,7 +286,7 @@ func (a *API) guilds(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, "invalid guild edit")
 		return
 	}
-	a.result(w, a.Server.Store.SaveAdminGuild(r.Context(), v))
+	a.result(w, a.Server.AdminSaveGuild(r.Context(), v))
 }
 func (a *API) marriages(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -353,16 +369,7 @@ func (a *API) assetRecords(w http.ResponseWriter, r *http.Request) {
 			a.result(w, err)
 			return
 		}
-		type row struct {
-			Collection string `json:"collection"`
-			Ordinal    int    `json:"ordinal"`
-			server.AssetEdit
-		}
-		out := []row{}
-		for _, r := range rows {
-			out = append(out, row{r.Collection, r.Ordinal, server.AssetEdit{Version: assetdb.DocumentVersion([]byte(r.JSON)), Value: json.RawMessage(r.JSON)}})
-		}
-		reply(w, 200, out)
+		reply(w, 200, rows)
 		return
 	}
 	ordinal, err := strconv.Atoi(r.PathValue("ordinal"))

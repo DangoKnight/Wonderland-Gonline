@@ -77,7 +77,7 @@ func TestAutosaveRollbackAndCancellation(t *testing.T) {
 	baseline := chars[0]
 	next := baseline.Clone()
 	next.X = 123
-	if _, err := db.db.Exec("CREATE TRIGGER reject_autosave BEFORE UPDATE ON characters BEGIN SELECT RAISE(ABORT,'injected failure'); END"); err != nil {
+	if _, err := db.db.Exec("CREATE TRIGGER reject_autosave BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'injected failure'); END"); err != nil {
 		t.Fatal(err)
 	}
 	if written, err := db.AutosaveCharacter(context.Background(), refs[0], baseline, next); err == nil || written {
@@ -108,7 +108,7 @@ func TestAutosaveUnchangedDoesNotWriteAndNormalizesClone(t *testing.T) {
 	}
 	baseline := chars[0].Clone()
 	next := baseline.Clone()
-	if _, err := db.db.Exec("CREATE TRIGGER reject_noop BEFORE UPDATE ON characters BEGIN SELECT RAISE(ABORT,'unexpected write'); END"); err != nil {
+	if _, err := db.db.Exec("CREATE TRIGGER reject_noop BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'unexpected write'); END"); err != nil {
 		t.Fatal(err)
 	}
 	if written, err := db.AutosaveCharacter(context.Background(), refs[0], baseline, next); err != nil || written {

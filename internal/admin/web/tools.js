@@ -165,7 +165,7 @@ async function renderAdminTool(target, id) {
 		battles: "battles",
 		portals: "assets/maps",
 		talks: "assets/talks",
-		assets_editor: "assets/documents",
+		assets_editor: "assets/definitions",
 		configuration: "configuration",
 		logs: "logs",
 		audit: "audit",
@@ -546,17 +546,17 @@ function renderStudio(sessions) {
 	content.append(danger);
 }
 async function editableAsset(asset) {
-	return api("assets/documents/" + encodeURIComponent(asset));
+	return api("assets/definitions/" + encodeURIComponent(asset));
 }
 async function saveAsset(asset, doc) {
-	return toolRequest("assets/documents/" + encodeURIComponent(asset), doc, "PUT");
+	return toolRequest("assets/definitions/" + encodeURIComponent(asset), doc, "PUT");
 }
 async function renderAssetTable(target, id) {
 	const asset = {
-		catalog: "item_mall.json",
-		starters: "starter_items.json",
-		chest: "chest_drops.json",
-		drops: "monster_drops.txt",
+		catalog: "Mall",
+		starters: "StarterItems",
+		chest: "ChestPools",
+		drops: "Drops",
 	}[target];
 	let doc;
 	try {
@@ -569,7 +569,7 @@ async function renderAssetTable(target, id) {
 		);
 		panel.append(
 			toolButton("Create chest pool table", async () => {
-				await toolRequest("assets/documents/" + asset + "/initialize", {});
+				await toolRequest("assets/definitions/" + asset + "/initialize", {});
 				await refresh();
 			}),
 		);
@@ -583,16 +583,16 @@ async function renderAssetTable(target, id) {
 	);
 	panel.append(
 		toolButton("Edit table JSON", () =>
-			jsonEditor(toolTitles[target], doc.value.value ?? doc.value.text, (value) =>
+			jsonEditor(toolTitles[target], doc.value, (value) =>
 				saveAsset(asset, {
 					version: doc.version,
-					value: { ...doc.value, [target === "drops" ? "text" : "value"]: value },
+					value,
 				}),
 			),
 		),
 	);
 	if (target === "catalog") {
-		const rows = doc.value.value ?? [];
+		const rows = doc.value ?? [];
 		panel.append(
 			toolButton("Add item", () =>
 				jsonEditor(
@@ -609,7 +609,7 @@ async function renderAssetTable(target, id) {
 					(value) =>
 						saveAsset(asset, {
 							version: doc.version,
-							value: { ...doc.value, value: [...rows, value] },
+							value: [...rows, value],
 						}),
 				),
 			),
@@ -634,10 +634,7 @@ async function renderAssetTable(target, id) {
 							jsonEditor("Edit mall item", row, (value) =>
 								saveAsset(asset, {
 									version: doc.version,
-									value: {
-										...doc.value,
-										value: rows.map((r, i) => (i === index ? value : r)),
-									},
+									value: rows.map((r, i) => (i === index ? value : r)),
 								}),
 							),
 						),
@@ -666,7 +663,7 @@ async function renderAssetTable(target, id) {
 								});
 								await saveAsset(asset, {
 									version: doc.version,
-									value: { ...doc.value, value: next },
+									value: next,
 								});
 								await refresh();
 							}),
@@ -678,10 +675,7 @@ async function renderAssetTable(target, id) {
 								if (!confirm("Delete this mall item?")) return;
 								await saveAsset(asset, {
 									version: doc.version,
-									value: {
-										...doc.value,
-										value: rows.filter((r, i) => i !== index),
-									},
+									value: rows.filter((r, i) => i !== index),
 								});
 								await refresh();
 							},
@@ -694,18 +688,18 @@ async function renderAssetTable(target, id) {
 		);
 	} else if (target === "drops") {
 		content.append(panel);
-		const pre = element("pre", doc.value.text ?? "");
+		const pre = element("pre", JSON.stringify(doc.value, null, 2));
 		pre.className = "asset-preview";
 		content.append(pre);
 		content.append(
 			element(
 				"p",
-				"Rows use TID:<monster ID> | <item ID>,<name>,<min>,<max>,<percentage>. Add, change or remove rows in the table editor.",
+				"Each monster ID maps to an ordered list of rewards with Item, Name, Min, Max and Rate fields.",
 			),
 		);
 	} else {
 		content.append(panel);
-		const pre = element("pre", JSON.stringify(doc.value.value, null, 2));
+		const pre = element("pre", JSON.stringify(doc.value, null, 2));
 		pre.className = "asset-preview";
 		content.append(pre);
 		if (target === "chest")
@@ -722,7 +716,7 @@ async function renderAssetTable(target, id) {
 						(value) =>
 							saveAsset(asset, {
 								version: doc.version,
-								value: { ...doc.value, value: [...(doc.value.value ?? []), value] },
+								value: [...(doc.value ?? []), value],
 							}),
 					),
 				),
@@ -746,16 +740,16 @@ function renderMaps(rows) {
 		p.append(
 			toolButton("Edit portals and map data", async () => {
 				try {
-					await editableAsset("map_overrides.json");
+					await editableAsset("Maps");
 				} catch {
-					await toolRequest("assets/documents/map_overrides.json/initialize", {});
+					await toolRequest("assets/definitions/Maps/initialize", {});
 				}
-				const doc = await editableAsset("map_overrides.json");
+				const doc = await editableAsset("Maps");
 				jsonEditor("Map " + id, data, (value) => {
-					const rows = (doc.value.value ?? []).filter((m) => m.id !== data.id);
-					return saveAsset("map_overrides.json", {
+					const rows = doc.value ?? {};
+					return saveAsset("Maps", {
 						version: doc.version,
-						value: { ...doc.value, value: [...rows, value] },
+						value: { ...rows, [String(data.id)]: value },
 					});
 				});
 			}),
@@ -827,33 +821,33 @@ function renderTalks(rows) {
 function renderAssetDirectory(rows) {
 	const panel = toolPanel(
 		"Authoritative SQL assets",
-		"Use document editors for server tables and a record lookup for native NPC, skill and dialogue fields.",
+		"Edit server definitions in SQL datasets, or look up individual records by game ID.",
 	);
 	panel.append(
 		toolForm(
-			"Find a native record",
+			"Find a definition",
 			[
 				[
 					"Asset",
 					"asset",
-					"npc.dat",
+					"NPCs",
 					"text",
-					["npc.dat", "skill.dat", "talk.dat", "mark.dat", "item.dat"],
+					["NPCs", "Skills", "Talks", "Marks", "NativeItems"],
 				],
 				["Game ID", "id", 10001, "number"],
 			],
 			async (v) => {
 				const records = await api(
-					"assets/documents/" +
+					"assets/definitions/" +
 						encodeURIComponent(v.asset) +
 						"/records?id=" +
 						encodeURIComponent(v.id),
 				);
-				if (!records.length) throw Error("No indexed record found.");
+				if (!records.length) throw Error("No definition found.");
 				for (const record of records)
 					jsonEditor(v.asset + " #" + v.id, record.value, (value) =>
 						toolRequest(
-							"assets/documents/" +
+							"assets/definitions/" +
 								encodeURIComponent(v.asset) +
 								"/records/" +
 								record.ordinal +
@@ -876,7 +870,7 @@ function renderAssetDirectory(rows) {
 				["Source", "source"],
 			],
 			(row) =>
-				toolButton("Edit document", async () => {
+				toolButton("Edit dataset", async () => {
 					const doc = await editableAsset(row.asset);
 					jsonEditor(row.asset, doc.value, (value) =>
 						saveAsset(row.asset, { version: doc.version, value }),
@@ -1050,7 +1044,7 @@ async function renderMail(rows, id) {
 function renderGuilds(rows) {
 	const panel = toolPanel(
 		"Guild administration",
-		"Edit announcements, the leader and membership together. A leader must remain in the member list.",
+		"Edit announcements, insignia, the leader and membership together. Existing member roles are preserved; the leader must remain in the member list.",
 	);
 	panel.append(
 		toolButton("Create guild", () =>
@@ -1082,6 +1076,7 @@ function renderGuilds(rows) {
 								id: row.id,
 								name: row.name,
 								notice: row.notice,
+								icon: row.icon,
 								leader_id: row.leader_id,
 								members: row.members,
 							},

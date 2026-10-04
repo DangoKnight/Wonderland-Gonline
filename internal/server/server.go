@@ -34,6 +34,9 @@ type SessionInfo struct {
 	Connected     time.Time `json:"connected"`
 }
 type Session struct {
+	openTent         *openTent // Guarded by worldMu.
+	tentOwner        uint32    // Private scene identity; guarded by worldMu.
+	motdSent         bool      // One welcome popup per character login, guarded by worldMu.
 	adminFeedback    *[]string // Scoped to a web action under worldMu.
 	invisible        bool      // GM ghost mode; guarded by worldMu.
 	pendingName      string
@@ -54,11 +57,15 @@ type Session struct {
 	carnieReturn *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
 	restMap      uint16             // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
-	trade          *tradeSession // Guarded by worldMu.
-	tradeRequest   *tradeRequest
-	friendRequests map[uint32]time.Time // Guarded by worldMu.
-	friendOnline   bool                 // Presence survives the map-loading phase of a warp.
-	walkMode       byte                 // AC16:4 runtime setting; guarded by worldMu.
+	gathering        *gatheringRun     // Guarded by worldMu.
+	marriageProposal *marriageProposal // Guarded by worldMu.
+	guildInvitation  *guildInvitation  // Guarded by worldMu.
+	stall            *playerStall      // Session-owned; guarded by worldMu.
+	trade            *tradeSession     // Guarded by worldMu.
+	tradeRequest     *tradeRequest
+	friendRequests   map[uint32]time.Time // Guarded by worldMu.
+	friendOnline     bool                 // Presence survives the map-loading phase of a warp.
+	walkMode         byte                 // AC16:4 runtime setting; guarded by worldMu.
 	// Team state, guarded by worldMu: the team, pending join requests by
 	// requester ID, and the vitals last reported to teammates.
 	party         *party
@@ -449,6 +456,7 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 		for _, char := range chars {
 			if char.Slot == slot {
 				char = char.Clone()
+				tentRecovered := recoverTentCharacter(&char)
 				vitalsChanged := char.RecalculateVitals(s.Assets.Items)
 				vehicleChanged := char.NormalizeVehicle(s.Assets.Items)
 				unlocks := char.UnlockQualifiedSkills(false, s.hasSkill)
@@ -457,7 +465,7 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 				if e != nil {
 					return e
 				}
-				if len(unlocks) > 0 || vehicleChanged || vitalsChanged {
+				if len(unlocks) > 0 || vehicleChanged || vitalsChanged || tentRecovered {
 					if e = s.Store.UpdateCharacter(ctx, c.account.ID, char.ID, func(stored *game.Character) error { *stored = char; return nil }); e != nil {
 						return e
 					}

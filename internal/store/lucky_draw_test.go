@@ -95,7 +95,7 @@ func TestLuckyDrawFailedGrantAndSaveRollBackUsage(t *testing.T) {
 	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error { c.Bag = game.Inventory{}; return nil }); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.db.Exec(`CREATE TRIGGER fail_lucky_save BEFORE UPDATE ON characters BEGIN SELECT RAISE(ABORT, 'save failed'); END`); err != nil {
+	if _, err := db.db.Exec(`CREATE TRIGGER fail_lucky_save BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT, 'save failed'); END`); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := db.DrawLucky(ctx, refs[0], 100, 1, 50, now); err == nil {

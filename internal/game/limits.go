@@ -28,3 +28,5 @@ const (
 	RosterNoJob               = 0
 	CharacterRosterFixedBytes = 54
 )
+
+const MaxNativeGuildID = 65535

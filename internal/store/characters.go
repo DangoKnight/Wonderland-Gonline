@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 
 	"gorm.io/gorm"
@@ -13,12 +12,19 @@ import (
 )
 
 func (s *Store) Characters(ctx context.Context, account uint32) ([]game.Character, error) {
-	var rows []characterRow
-	if err := s.orm.WithContext(ctx).Select("state").Where(map[string]any{"account_id": account}).Order(clause.OrderByColumn{Column: clause.Column{Name: "slot"}}).Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	return decodeCharacters(rows)
+	var result []game.Character
+	err := s.transaction(ctx, func(tx *gorm.DB) error {
+		var rows []characterRow
+		if err := tx.Omit("state").Where(map[string]any{"account_id": account}).Order(clause.OrderByColumn{Column: clause.Column{Name: "slot"}}).Find(&rows).Error; err != nil {
+			return err
+		}
+		var err error
+		result, err = decodeCharacters(tx, rows)
+		return err
+	})
+	return result, err
 }
+
 func (s *Store) CreateCharacter(ctx context.Context, a Account, c game.Character) error {
 	return s.CreateCharacterWithCode(ctx, a, c, "")
 }
@@ -40,10 +46,6 @@ func (s *Store) CreateCharacterWithCode(ctx context.Context, a Account, c game.C
 			return err
 		}
 	}
-	raw, err := json.Marshal(c)
-	if err != nil {
-		return err
-	}
 	return s.transaction(ctx, func(tx *gorm.DB) error {
 		var owner accountRow
 		if err := tx.Select("banned").Where(map[string]any{"id": a.ID}).Take(&owner).Error; err != nil {
@@ -52,7 +54,10 @@ func (s *Store) CreateCharacterWithCode(ctx context.Context, a Account, c game.C
 		if owner.Banned {
 			return ErrCredentials
 		}
-		if err := tx.Create(&characterRow{ID: c.ID, AccountID: a.ID, Slot: c.Slot, Name: c.Name, State: raw}).Error; err != nil {
+		if err := tx.Create(&characterRow{ID: c.ID, AccountID: a.ID, Slot: c.Slot, Name: c.Name, State: []byte{}}).Error; err != nil {
+			return err
+		}
+		if err := writeCharacterState(tx, c); err != nil {
 			return err
 		}
 		if hash != "" {
