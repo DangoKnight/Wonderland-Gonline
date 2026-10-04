@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	effectPercentBase        = 100
-	effectNormalHitMode byte = 1
+	effectPercentBase          = 100
+	effectNormalHitMode   byte = 1
+	effectCriticalHitMode byte = 2
 )
 
 type ActiveEffect struct {
@@ -139,31 +140,64 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 			indices = append(indices, i)
 		}
 	}
-	targets := make([]*Fighter, len(definitions))
+	targets := make([][]*Fighter, len(definitions))
 	for i, e := range definitions {
 		switch e.Target {
 		case assets.EffectAlly:
-			targets[i] = at(allies, a.TX, a.TY, true)
+			targets[i] = []*Fighter{at(allies, a.TX, a.TY, true)}
 		case assets.EffectEnemy:
-			targets[i] = at(enemies, a.TX, a.TY, true)
+			targets[i] = []*Fighter{at(enemies, a.TX, a.TY, true)}
 		case assets.EffectSelf:
-			targets[i] = a.Actor
+			targets[i] = []*Fighter{a.Actor}
 		}
-		if targets[i] == nil {
+		if len(targets[i]) == 0 || targets[i][0] == nil {
 			return Step{}
+		}
+		if e.Target != assets.EffectSelf {
+			if shape, ok := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); ok {
+				side := allies
+				if e.Target == assets.EffectEnemy {
+					side = enemies
+				}
+				targets[i] = formationTargets(side, targets[i][0], shape, false)
+			}
 		}
 	}
 	packets := [][]byte{r.spend(a.Actor, a.Skill), turnPacket(a.Actor)}
 	emitted := map[*Fighter]bool{}
+	var results []targetResult
 	for i, e := range definitions {
-		target := targets[i]
-		target.ApplyEffect(a.Skill, indices[i], e)
-		if emitted[target] {
-			continue
+		for _, target := range targets[i] {
+			// Vanish blocks harmful area effects, while friendly buffs still apply.
+			blocked := false
+			if e.Target == assets.EffectEnemy && r.Skills[a.Skill].IsAreaAttack(skillGrade(a.Actor, a.Skill)) {
+				for _, active := range target.Effects {
+					blocked = blocked || active.Turns > 0 && active.Definition.MissAreaAttacks
+				}
+			}
+			if !blocked {
+				target.ApplyEffect(a.Skill, indices[i], e)
+			}
+			if emitted[target] {
+				continue
+			}
+			emitted[target] = true
+			outcome := byte(protocol.BattleHitLanded)
+			if blocked {
+				outcome = protocol.BattleHitMiss
+			}
+			results = append(results, targetResult{target: target, result: outcome, mode: effectNormalHitMode})
 		}
-		emitted[target] = true
-		packets = append(packets, hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, target, a.Skill, false, 0, 0, effectNormalHitMode))
 	}
+	if _, explicit := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); explicit {
+		packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
+	} else {
+		// Preserve existing single-recipient animations for unconfigured skills.
+		for _, result := range results {
+			packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, []targetResult{result}))
+		}
+	}
+
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
 }
 

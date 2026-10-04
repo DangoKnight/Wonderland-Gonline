@@ -693,7 +693,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 		return Step{}
 	}
 	s := r.Skills[a.Skill]
-	packets := [][]byte{r.spend(actor, a.Skill)}
+	var packets [][]byte
 	allies, _ := b.Teams(actor.Side)
 	target := at(allies, a.TX, a.TY, false)
 	if target == nil {
@@ -703,20 +703,36 @@ func (r Rules) support(b *Battle, a Action) Step {
 			target = actor
 		}
 	}
-	packets = append(packets, turnPacket(actor))
-	stat, amount := byte(0), 0
-	switch {
-	case isRevive(s) && target.Dead():
-		amount = max(50, target.MaxHP/3)
-		target.HP, stat = amount, 0x19
-	case isHeal(s):
-		amount = max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15)
-		target.HP, stat = min(target.MaxHP, target.HP+amount), 0x19
+	targets := []*Fighter{target}
+	if shape, ok := s.TargetingAt(skillGrade(actor, a.Skill)); ok {
+		targets = formationTargets(allies, target, shape, isRevive(s))
 	}
-	packets = append(packets, hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, target, a.Skill, false, stat, amount, 1))
-	if stat != 0 {
-		packets = append(packets, StatSync(target.X, target.Y, 0x19, uint32(target.HP)))
+	// Ordinary healing cannot revive a defeated fighter.
+	if !isRevive(s) {
+		targets = living(targets)
 	}
+	if len(targets) == 0 {
+		return Step{}
+	}
+	packets = append(packets, r.spend(actor, a.Skill), turnPacket(actor))
+	var results []targetResult
+	for _, target := range targets {
+		stat, amount := byte(0), 0
+		switch {
+		case isRevive(s) && target.Dead():
+			amount = max(50, target.MaxHP/3)
+			target.HP, stat = amount, game.StatCurrentHP
+		case isHeal(s):
+			amount = max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15)
+			target.HP, stat = min(target.MaxHP, target.HP+amount), game.StatCurrentHP
+		}
+		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: effectNormalHitMode})
+	}
+	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, a.Skill, results))
+	for _, target := range targets {
+		packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentHP, uint32(target.HP)))
+	}
+
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
 }
 
@@ -785,6 +801,11 @@ func systemLine(text string) []byte {
 }
 
 func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step, bool) {
+	if len(group) == 1 && !Basic(group[0].Skill) {
+		if shape, ok := r.Skills[group[0].Skill].TargetingAt(skillGrade(group[0].Actor, group[0].Skill)); ok && (shape.All || len(shape.Offsets) > 1) {
+			return r.areaAttack(b, group[0], shape, defending), false
+		}
+	}
 	var steps []Step
 	type targetKey struct {
 		x, y       byte
@@ -881,38 +902,12 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 					continue
 				}
 				landed = append(landed, a)
-				dmg := r.baseDamage(actor, target, a.Skill, r.Next(1, 6))
-				dmg = max(1, int(float64(dmg)*Elemental(actor.Element, target.Element)))
-				dmg = max(1, actor.modified(assets.EffectDamageDealt, dmg))
-				if len(combo) > 1 {
-					dmg = int(min(float64(dmg)*comboDamageMultiplier, math.MaxInt32))
-				}
-				// Players and pets use their own equipment's critical chance.
-				crit := false
-				var equipment *game.Equipment
-				if actor.Pet != nil {
-					equipment = &actor.Pet.Equipment
-				} else if actor.Char != nil {
-					equipment = &actor.Char.Equipment
-				}
-				if equipment != nil {
-					var d int32
-					d, crit = r.Critical.Damage(int32(dmg), equipment.IDs(), a.Kind, r.Next(0, 100))
-					dmg = int(d)
-				}
 				guarded := defending[target.key()]
-				dmg = max(1, r.incomingDamage(target, a.Skill, dmg))
-				if guarded {
-					dmg = max(1, dmg/2)
-				}
+				dmg, mode := r.strikeDamage(a, target, guarded, len(combo) > 1)
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
 				skill := a.Skill
 				if skill == 0 {
 					skill = basicAttackSkill
-				}
-				mode := byte(1)
-				if crit {
-					mode = 2 // Enlarged critical digits.
 				}
 				anim = hitRecord(anim, actor, target, skill, guarded, 0x19, dmg, mode)
 			}

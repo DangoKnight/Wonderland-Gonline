@@ -131,8 +131,8 @@ func (w *World) RoamingBattle(mapID, click uint16) bool {
 // FindBranch is EveEventRuntime.FindBranch. trigger 0 selects a normal entry branch by
 // its conditions; 4, 7 and 8 select battle, choice and minigame callbacks by source and
 // result. Selection resumes after exclude for choice continuations. It returns -1 when
-// no branch applies. Breillat's unlock branch precedes its broad greeting; other C# map-specific
-// orderings remain unported.
+// no branch applies. Scoped story hand-ins and forward-only continuations follow
+// the reference controller ordering.
 func (w *World) FindBranch(c *game.Character, v *View, mapID uint16, ev *assets.Event, trigger byte, question, answer uint16, exclude int) int {
 	return w.FindBranchAt(c, v, mapID, ev, trigger, question, answer, exclude, time.Now())
 }
@@ -140,13 +140,24 @@ func (w *World) FindBranch(c *game.Character, v *View, mapID uint16, ev *assets.
 // FindBranchAt evaluates every timer in the branch against one instant.
 func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *assets.Event, trigger byte, question, answer uint16, exclude int, now time.Time) int {
 	first := 0
-	if exclude >= 0 && DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult {
+	if exclude >= 0 && (DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult || storyForwardOnly(mapID, ev.ClickID)) {
 		first = exclude + 1
+	}
+	if mapID == storyXaolanHomeMap && (ev.ClickID == storyXaolanHomeFirst || ev.ClickID == storyXaolanHomeSecond) && xaolanFate(c) {
+		return -1
 	}
 	order := make([]int, 0, len(ev.Branches))
 	// The broad greeting condition precedes the unlock condition in native data.
 	if trigger == TriggerEntry && IsBreillat(ev) && first <= BreillatOfferBranch-1 {
 		order = append(order, BreillatOfferBranch-1)
+	}
+	preferred := storyPreferredBranch(mapID, ev.ClickID)
+	if trigger == TriggerEntry && preferred != 0 {
+		for i := first; i < len(ev.Branches); i++ {
+			if ev.Branches[i].Index == preferred {
+				order = append(order, i)
+			}
+		}
 	}
 	for i := first; i < len(ev.Branches); i++ {
 		order = append(order, i)

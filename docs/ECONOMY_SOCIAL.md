@@ -2,7 +2,8 @@
 
 ## Database upgrade
 
-This port requires gameplay schema **v10** and structured assets schema **v3**.
+Current server startup requires gameplay schema **v11** and structured assets
+schema **v6**. Economy/social tables were introduced in earlier versions.
 Use the preserving offline copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,
@@ -121,6 +122,15 @@ full bag stop gathering. Rewards persist before packets are sent. Source fishing
 animations remain pending: its short AC5:12 packet conflicts with the verified
 native model-transform payload, so the server sends status/reward feedback only.
 
+## Shared resource nodes
+
+Unlinked static resource props now use SQL reward pools with atomic inventory
+and shared cooldown updates. Other players see their broken/respawned frames;
+full inventories do not consume the node. Cooldowns persist across reconnects
+and restarts. See [WORLD_SIMULATION.md](WORLD_SIMULATION.md#shared-resource-props).
+Legacy SQLite imports also preserve supported friendships and chat preferences;
+see [LEGACY_IMPORT.md](LEGACY_IMPORT.md).
+
 ## Remaining native work
 
 Arcade scores, ticket prices/rewards, bank PIN authentication/transfers, ATM
@@ -132,3 +142,31 @@ successes. Tent placement, movement and recovery are implemented; see
 purchases and verified manufacturing workbench ownership remain pending.
 Live aLogin acceptance remains pending
 for the newly ported packets.
+
+## Implemented backends versus native requests
+
+Mall checkout/forging and AC71 paid arcade purchases have SQL transaction paths,
+but native AC21 and AC226:255 compatibility replies are absent. Direct AC37
+requests are not covered by mall forging. Direct AC59 handling differs from the
+chat recipe path; its protocol registration/layout needs completion. Native AC64
+requires bench/formula IDs, up to five materials, plans/tools, build duration,
+continue/stop and bag/tent output. The current two-input operation is not a full
+native manufacturing port. Compound2 extraction's two-input projection does not
+represent all those source fields; source recipe fee/chance preservation also
+needs verification. Validated SQL AlchemyRecipes editing is already available.
+
+`/stopgather` and `/inbox` source aliases are absent; use `/stop` and `/mail`.
+AC90 fishing toggle/reel-in and AC87 bath recovery remain missing even though
+other gathering/healing backends exist. Job/nickname fields in friend/guild
+presentation are empty. Source Cupid is excluded from transmitted friend lists;
+absence of a visible contact alone does not establish a wire gap.
+
+The source player-facing HTTP mall page and form-urlencoded registration routes
+are not compatible with Go's current API. Do not restore unauthenticated purchases
+by supplied username. Any future player HTTP checkout must authenticate ownership
+and use the same SQL transaction guarantees as native purchases.
+
+Purchases, fees, transfers, rewards and parcel claims stay immediately durable.
+Buffered walking preserves pending position when adopting a committed SQL
+result. Guarded checkpoints must not undo balances, attachments or draw usage.
+See DEVELOPMENT.md for the persistence boundary and remaining concurrency limits.

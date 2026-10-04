@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"time"
+	"wonderland-go/internal/game"
 	"wonderland-go/internal/store"
 )
 
 const (
-	autosaveInterval = time.Second
-	autosaveTimeout  = 5 * time.Second
+	autosaveTimeout = 5 * time.Second
 )
 
 // Caller holds worldMu, which also serializes gameplay commits and disconnects.
@@ -17,6 +17,9 @@ func (s *Server) autosaveSession(ctx context.Context, c *Session) error {
 		return nil
 	}
 	next := c.character.Clone()
+	if store.CharacterSnapshotsEqual(*c.autosaveBaseline, next) {
+		return nil
+	}
 	_, err := s.Store.AutosaveCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: next.ID}, *c.autosaveBaseline, next)
 	if err != nil {
 		return err
@@ -30,7 +33,6 @@ func (s *Server) autosaveCharacters(ctx context.Context) {
 	defer s.worldMu.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, autosaveTimeout)
 	defer cancel()
-	s.tickGathering(ctx, time.Now())
 	// Presence retains characters during warp loading; include those sessions.
 	seen := make(map[*Session]bool)
 	save := func(c *Session) {
@@ -51,7 +53,7 @@ func (s *Server) autosaveCharacters(ctx context.Context) {
 }
 
 func (s *Server) runAutosave(ctx context.Context) {
-	ticker := time.NewTicker(autosaveInterval)
+	ticker := time.NewTicker(time.Duration(s.Config.CharacterSaveSeconds) * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -61,4 +63,19 @@ func (s *Server) runAutosave(ctx context.Context) {
 			s.autosaveCharacters(ctx)
 		}
 	}
+}
+
+// adoptSavedCharacter publishes a committed SQL result, retaining unsaved walking
+// only when the transaction left the durable position unchanged. Explicit moves
+// adopt their committed destination. Caller holds worldMu.
+func (s *Server) adoptSavedCharacter(c *Session, next game.Character) {
+	baseline := next.Clone()
+	if c.character != nil && c.autosaveBaseline != nil {
+		old, checkpoint := c.character, c.autosaveBaseline
+		if old.Map == checkpoint.Map && next.Map == checkpoint.Map && next.X == checkpoint.X && next.Y == checkpoint.Y {
+			next.X, next.Y = old.X, old.Y
+		}
+	}
+	*c.character = next
+	c.autosaveBaseline = &baseline
 }

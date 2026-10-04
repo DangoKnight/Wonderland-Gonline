@@ -43,7 +43,7 @@ func (s *Server) convertBreillat(ctx context.Context, c *Session, es *eventSessi
 	if err != nil {
 		return false, errors.Join(err, s.cancelInteraction(c))
 	}
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	appearance, err := next.AppearancePacket(true)
 	if err != nil {
 		return false, err

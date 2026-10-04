@@ -126,7 +126,7 @@ func (s *Server) forgeItem(ctx context.Context, c *Session, slot byte, roll func
 	if err != nil {
 		return err
 	}
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
 	reply := []byte{protocol.CommandMall, protocol.MallForgeResult, protocol.MallForgeRollFailed}
 	if success {

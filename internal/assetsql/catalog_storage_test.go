@@ -24,6 +24,7 @@ func TestStructuredCatalogMigrationRoundTripAndAuthority(t *testing.T) {
 	flag := false
 	s := original.Skills[23]
 	s.AreaAttack = &flag
+	s.Targeting = []assets.SkillTargeting{{MinGrade: 1, MaxGrade: 5, Offsets: []assets.FormationOffset{{}, {X: 1}}}, {MinGrade: 6, MaxGrade: 10, All: true}}
 	s.EffectRefs = []string{}
 	original.Skills[23] = s
 	m := original.Maps[10017]

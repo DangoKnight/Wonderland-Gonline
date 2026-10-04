@@ -73,7 +73,7 @@ func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 	if !ok {
 		return nil
 	}
-	for _, n := range m.NPCs {
+	for _, n := range s.World.NPCs(char.Map) {
 		if !s.World.Wild(char.Map, n) || s.World.Defeated(char.Map, n.ClickID) || c.view.Hidden[n.ClickID] ||
 			!s.World.VisibleIn(char, c.view, char.Map, n.ClickID) ||
 			math.Hypot(float64(int(char.X)-int(n.X)), float64(int(char.Y)-int(n.Y))) > proximityRadius {
@@ -167,7 +167,7 @@ func (s *Server) wildClick(c *Session, n world.NPC) (bool, error) {
 func (s *Server) defeatMonster(mapID, click uint16) {
 	s.World.Defeat(mapID, click, time.Now())
 	for _, peer := range s.world {
-		if peer.character.Map == mapID {
+		if peer.character.Map == mapID && peer.tentOwner == 0 {
 			if peer.send(s.World.HideActor(peer.view, mapID, click)) != nil {
 				peer.conn.Close()
 			}
@@ -181,7 +181,7 @@ func (s *Server) reviveMonsters(now time.Time) {
 	defer s.worldMu.Unlock()
 	for mapID, clicks := range s.World.Revive(now) {
 		for _, peer := range s.world {
-			if peer.character.Map != mapID {
+			if peer.character.Map != mapID || peer.tentOwner != 0 {
 				continue
 			}
 			for _, click := range clicks {

@@ -71,7 +71,7 @@ func (s *Server) drawLucky(ctx context.Context, c *Session, now time.Time) error
 	if err != nil {
 		return err
 	}
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	s.Log.Debug("Lucky Draw committed", "session", c.info.ID, "character", next.ID, "reward", reward.ID, "quantity", reward.Quantity, "result_slot", reward.Slot, "remaining", next.LuckyDraw.Remaining(now))
 	// Persist first. Failed receipts cannot restore a consumed draw or duplicate its reward.
 	return s.sendAll(c, [][]byte{

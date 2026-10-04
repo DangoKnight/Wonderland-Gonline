@@ -101,6 +101,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 	}
+	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
 	s.world[c.info.ID] = c
 	c.ready = true
 	s.Log.Info("map load acknowledged", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map)

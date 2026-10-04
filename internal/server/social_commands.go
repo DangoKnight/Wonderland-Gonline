@@ -75,7 +75,7 @@ func (s *Server) socialChatCommand(ctx context.Context, c *Session, name string,
 			return fail("Marriage failed: " + err.Error() + ".")
 		}
 		for i, peer := range []*Session{proposer, c} {
-			*peer.character = chars[i]
+			s.adoptSavedCharacter(peer, chars[i])
 			s.sendOrClose(peer, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(peer.character.Gold))
 			if len(adds[i]) > 0 {
 				s.sendOrClose(peer, peer.character.Bag.AdditionPacket(adds[i]))
@@ -162,7 +162,7 @@ func (s *Server) socialChatCommand(ctx context.Context, c *Session, name string,
 		if err != nil {
 			return fail(err.Error())
 		}
-		*c.character = next
+		s.adoptSavedCharacter(c, next)
 		if len(adds) > 0 {
 			s.sendOrClose(c, c.character.Bag.AdditionPacket(adds))
 		}
@@ -198,7 +198,7 @@ func (s *Server) socialChatCommand(ctx context.Context, c *Session, name string,
 		if err != nil {
 			return fail(err.Error())
 		}
-		*c.character = next
+		s.adoptSavedCharacter(c, next)
 		if values[2] != 0 {
 			s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, byte(values[2]), byte(values[3])})
 		}

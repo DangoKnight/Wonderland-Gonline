@@ -112,7 +112,6 @@ func (w *World) Defeated(mapID, click uint16) bool {
 // Revive returns, per map, the monsters whose respawn time has come, in click order.
 func (w *World) Revive(now time.Time) map[uint16][]uint16 {
 	w.monsters.mu.Lock()
-	defer w.monsters.mu.Unlock()
 	out := map[uint16][]uint16{}
 	for mapID, clicks := range w.monsters.defeated {
 		for click, at := range clicks {
@@ -122,6 +121,12 @@ func (w *World) Revive(now time.Time) map[uint16][]uint16 {
 			}
 		}
 		sort.Slice(out[mapID], func(i, j int) bool { return out[mapID][i] < out[mapID][j] })
+	}
+	w.monsters.mu.Unlock()
+	for mapID, clicks := range out {
+		for _, click := range clicks {
+			w.resetActor(mapID, click, now)
+		}
 	}
 	return out
 }

@@ -62,6 +62,7 @@ func TestAutosaveWorkerAndSerializedMovement(t *testing.T) {
 	s.world[c.info.ID] = c
 	c.ready = true
 	c.character.X = 1200
+	s.Config.CharacterSaveSeconds = 1
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan struct{})
@@ -100,6 +101,7 @@ func TestAutosaveWorkerAndSerializedMovement(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	s.autosaveCharacters(context.Background())
 	chars, err := s.Store.Characters(context.Background(), c.account.ID)
 	if err != nil || chars[0].X != 1200 || chars[0].Y != 1300 {
 		t.Fatal(chars, err)

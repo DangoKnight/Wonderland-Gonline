@@ -2,7 +2,8 @@
 
 ## Initialization
 
-This port uses gameplay schema **v10** and structured assets schema **v3**.
+Current server startup requires gameplay schema **v11** and structured assets
+schema **v6**. Tents were introduced in earlier schema versions.
 Follow the preserving copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. Upgrade copies, then select their
 paths in the startup configuration. Source databases remain available for rollback.
@@ -46,8 +47,9 @@ Closing, owner logout and travel away from the opening map pack up the home,
 release the reserved tent item and return visitors, including loading sessions.
 Visitors return to their own positions. Disconnect/reconnect and crash recovery
 restore durable return coordinates instead of recreating a process-owned opening.
-Homes run no overworld events, encounters or PK. Other instance types, geometry
-constraints and NPC movement remain separate World work.
+Homes run no overworld events, encounters or PK. Public-map collision and NPC
+movement are implemented separately; see [WORLD_SIMULATION.md](WORLD_SIMULATION.md).
+The reference defines no additional functioning instance type.
 
 ## Item use and reservations
 
@@ -81,3 +83,23 @@ rules remain pending; they are not implemented as false successes. Initial floor
 and wallpaper references persist, but native decoration editing and house upgrades
 remain unresolved. Manufacturing currently retains reference workbench-name
 selection; binding recipes to verified physical furniture identities remains pending.
+
+## Remaining state and native compatibility
+
+Character job/nickname/potential/title and pet potential are not modeled. The
+character `Reborn` flag used by combo calculations does not implement six reborn
+jobs or their 10% stat modifiers. The source GM `/reborn` level-reset/cape/aura
+workflow and AC66 job request remain unported. AC68's source potential increment
+has no verified pill debit; persist metadata separately from unfinished training.
+
+Home Locked/Enlarged/Type state exists, but Go stores one floor/wallpaper pair
+instead of the source two-floor decoration fields, accepts floor-zero furniture
+and omits source AC32:2 occupant pose replay. Creation grants configured starters;
+level-one world-entry fallback redelivery and mass online starter grants are absent.
+Inventory enum coverage alone does not prove every item-type restriction or special
+effect is implemented. In particular, verify source trade restrictions and their
+callers before imposing a new limitation.
+
+Routine walking follows the buffered session policy in DEVELOPMENT.md.
+Furniture transfers, purchases, claims, item wear/consumption and inventory
+mutations retain immediate SQL transactions.

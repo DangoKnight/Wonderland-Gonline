@@ -131,7 +131,9 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
- Arcades []ArcadeGame `json:"arcades"`
+	Terrains map[uint16]Terrain
+
+	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`
 	Economy               Economy           `json:"economy"`
 	CombatTrials          []CombatTrial     `json:"combat_trials,omitempty"`

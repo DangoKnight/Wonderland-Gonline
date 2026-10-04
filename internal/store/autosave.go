@@ -11,9 +11,10 @@ import (
 
 var ErrAutosaveConflict = errors.New("autosave snapshot conflicts with durable character state")
 
-// AutosaveCharacter saves pending session changes only if the durable character
-// still matches the previous checkpoint. Already committed and unchanged session
-// snapshots need no write. A newer durable update is never overwritten.
+// AutosaveCharacter checkpoints pending session changes without overwriting
+// newer durable state. Same-map walking uses a guarded position-only update
+// when every other field matches SQL; other changes require the full previous
+// checkpoint to match. Already durable or unchanged snapshots need no write.
 func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baseline, next game.Character) (bool, error) {
 	if baseline.ID != ref.ID || next.ID != ref.ID || baseline.Slot != next.Slot || baseline.Name != next.Name {
 		return false, errors.New("autosave identity mutation is not allowed")
@@ -34,6 +35,24 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		}
 		durable := canonicalCharacter(current)
 		if reflect.DeepEqual(durable, after) || reflect.DeepEqual(before, after) {
+			return nil
+		}
+		// Merge only buffered same-map position when every other cached field
+		// agrees with authoritative SQL. Never rewrite owned child rows for walking.
+		afterState, durableState := after, durable
+		afterState.X, afterState.Y = 0, 0
+		durableState.X, durableState.Y = 0, 0
+		if before.Map == after.Map && durable.Map == before.Map &&
+			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y {
+			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ?", ref.ID, before.Map, before.X, before.Y).
+				Updates(map[string]any{"x": next.X, "y": next.Y})
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected != 1 {
+				return ErrAutosaveConflict
+			}
+			written = true
 			return nil
 		}
 		if !reflect.DeepEqual(durable, before) {
@@ -83,4 +102,10 @@ func canonicalCharacter(c game.Character) game.Character {
 		c.HotelPets = nil
 	}
 	return c
+}
+
+// CharacterSnapshotsEqual ignores transient reservations and representation
+// differences so a clean online session needs no SQL checkpoint transaction.
+func CharacterSnapshotsEqual(a, b game.Character) bool {
+	return reflect.DeepEqual(canonicalCharacter(a), canonicalCharacter(b))
 }

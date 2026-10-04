@@ -29,11 +29,14 @@ func TestTentVersionTwoUpgradePreservesEconomyAndDefinitions(t *testing.T) {
 	models := catalogTables()
 	for i := len(models) - 1; i >= 0; i-- {
 		named, ok := models[i].(interface{ TableName() string })
-		if ok && (strings.HasPrefix(named.TableName(), "catalog_tents") || strings.HasPrefix(named.TableName(), "catalog_arcades")) {
+		if ok && (strings.HasPrefix(named.TableName(), "catalog_tents") || strings.HasPrefix(named.TableName(), "catalog_arcades") || strings.HasPrefix(named.TableName(), "catalog_terrains")) {
 			if err = db.Migrator().DropTable(models[i]); err != nil {
 				t.Fatal(err)
 			}
 		}
+	}
+	if err = db.Migrator().DropColumn(&catalogPresence{}, "Terrains"); err != nil {
+		t.Fatal(err)
 	}
 	if err = db.Migrator().DropColumn(&catalogPresence{}, "Arcades"); err != nil {
 		t.Fatal(err)

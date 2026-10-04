@@ -16,7 +16,8 @@ Do not reload seed files on restart to overwrite database values. Deliberate
 reset/rebuild operations are separate operator actions, never normal startup
 initialization.
 
-Runtime reads and administrative edits must use database interfaces. Prefer
+Durable reads and administrative edits must use database interfaces. Online
+recoverable state may be served from the owning session cache. Prefer
 structured tables, typed columns, relationships and indexes for fields queried
 or edited independently. Avoid JSON files and filename-based virtual JSON
 documents wherever practical, except for server initialization parameters such
@@ -40,14 +41,86 @@ remain in `internal/game/growth_parameters.go`; changing them requires a rebuild
 Game content definitions belong in `assets.db`. Preserve the startup-only
 `pet_growth_formula` selector as a server initialization parameter.
 
-Gameplay schema v10 stores character state in typed tables and owned child rows.
-Structured asset schema v4 stores runtime definitions in generated `catalog_*`
+Gameplay schema v11 stores character state in typed tables and owned child rows.
+Structured asset schema v6 stores runtime definitions in generated `catalog_*`
 tables. Migration retains legacy representations solely as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
 Regenerate asset models after changing catalog types with
 `go run ./tools/asset-schema-generator`, bump the structured schema version and
 provide an explicit preserving migration for installations using earlier versions.
+
+## Transaction boundaries and session checkpoints
+
+Use a hybrid model. The databases own durable state; an online session owns its
+current recoverable state in memory. Persistence ownership does not require a
+SQL write for every packet. SQL-derived asset catalogs already follow this model
+for immutable gameplay reads.
+
+| State/operation | Required persistence boundary |
+| --- | --- |
+| Purchases, sales, trades, bank transfers, fees and resource consumption | Validate authoritative balances/ownership and commit debit plus delivery in one database transaction before success replies |
+| Loot, gacha/Lucky Draw, quest rewards, mail claims and shared-node claims | Commit reward and consumption/claim/cooldown together; concurrent or repeated claims must not duplicate rewards |
+| Account/security, administrator edits, durable relationships and ownership | Validate permissions/version and commit immediately; publish the result after commit |
+| Walking and other explicitly classified recoverable session fields | Update memory, mark dirty, periodically checkpoint only those fields; also flush at character handoff, disconnect and graceful shutdown |
+| Map transitions and recovery destinations | Persist the destination/return state before publishing a transition until a recoverable transition protocol is implemented |
+| Sockets, timers, locks, pending actions and presentation state | Keep in memory; persist only recovery timestamps/results where needed |
+
+Do not move inventory, currency, item durability/consumption, paid draws or scarce
+resource claims into periodic snapshots. A precomputed session copy alone cannot
+validate a purchase: recheck SQL balances, ownership and replay state inside the
+transaction, including both parties when appropriate. Reply failures after commit
+must not cause an automatic refund or repeat grant.
+
+Checkpoint only dirty fields and coalesce repeated updates. Clean sessions must
+need no database transaction. Prefer narrow typed updates over rewriting owned
+inventory/pet/quest rows for a position change. Choose and document the interval
+and its maximum normal crash-loss window. A crash may lose recent walking; it
+must not undo a completed purchase. Failed checkpoints remain dirty and retry;
+log failures, and never report a successful flush or advance its baseline on error.
+
+Merge committed transaction results with pending session fields explicitly.
+Purchasing must not teleport a character back to their saved position. A late
+checkpoint must not overwrite committed inventory/currency, administrator edits,
+a newer warp or a deleted character. Use ownership checks, version/compare-and-save
+conditions and serialized session mutations. Direct external edits to a live
+player's mutable rows are unsupported; route edits through the server's conflict
+checks and cache refresh/disconnect flow. Multiple server processes sharing the
+same player state require an additional ownership/version protocol.
+
+Test walking followed by purchase/trade/warp, rollback, stale snapshots, deletion,
+reconnect, failed checkpoint retries and concurrent players under the race detector
+before enabling buffered persistence. A global world lock must not be held through
+an unbounded batch of SQL writes. Any asynchronous saver needs immutable snapshots,
+per-session ordering and protection against logout/reconnect races.
+
+**Current implementation:** ordinary walking changes the session in memory.
+`character_save_seconds` selects the startup checkpoint interval (default 30,
+accepted 1–3600 seconds). Clean sessions skip SQL entirely. Dirty ordinary walking
+uses guarded X/Y updates without rewriting inventory/pet/quest child rows; other
+pending state retains full-checkpoint conflict validation. Purchases and other
+SQL-returned results preserve pending walking when the transaction leaves the
+saved position unchanged. Warps and recoverable tent returns remain immediate.
+Disconnect and graceful shutdown attempt a final save; failures retain the
+checkpoint baseline and are logged. Gathering remains on the independent
+one-second world tick. Vehicle wear/consumption can commit during movement and
+is deliberately not deferred.
+
+The saver currently serializes checkpoints under `worldMu`, with a bounded
+five-second batch context. This reduces per-packet SQL work but does not remove
+the global world lock or establish load/soak acceptance. Under healthy saves,
+a crash can lose up to one interval of ordinary movement; failed saves can extend
+that window. Runtime interval changes require restart. Tests cover no per-packet
+writes, transaction-result merging, narrow updates, failure/retry, stale warps,
+ownership/deletion, disconnects and concurrent sessions.
+
+For the current development installation, the owner has authorized backed-up
+rebuilds of `wonderland.db` and recreating `assets.db`; there is no requirement to
+retain its existing player data or reverse-migrate model changes. Take consistent
+backups before any deliberate rebuild, stop writers, and document regenerated
+asset inputs. This is permission for explicit development maintenance, not a
+normal-startup reset rule or permission to discard another installation's data.
+No database rebuild was needed for movement checkpointing.
 
 ## Give numeric values names
 
@@ -153,11 +226,23 @@ format tests still accept `WONDERLAND_TEST_DATA` and
 
 ## Migration source inventory
 
+Current migration priority is behavior implemented in the recorded Private Server
+revision. Keep its empty classes, placeholder handlers and unfinished components
+on hold in PORTING.md. Trace callers before treating a pending source entry as a
+missing feature. Port reachable implementations and their regression evidence;
+separate new Gonline gameplay and native-client parity research from that queue.
+
+
 Update `docs/source-inventory.json` when porting a legacy subsystem. Map the C#
 source to the Go implementation and its tests, and describe implemented behavior
 and remaining work in the notes. Preserve the recorded source revision and
 hashes; verify the files used against those hashes after CRLF normalization.
 Keep the inventory and the current scope in `docs/PORTING.md` consistent.
+The inventory retains C# findings in `files` and other reference artifacts in
+`supporting_files`; preserve their hashes, evidence and review limitations.
+Use `audit_verdict`/notes to distinguish missing live behavior from dormant helpers,
+source placeholders, intended replacements and retired scaffolding. Do not infer
+feature completion from file counts or a historical verification report.
 
 ## Client port catalog
 
@@ -310,7 +395,9 @@ classification; magical abilities use the skill layer. Read AOE classification
 from native targeting patterns, never from `attack_category`, which describes
 range. An authored SQL `area_attack` boolean overrides pattern classification.
 Current pattern grade bands (1–3, 4–6, 7–9 and 10) are a compatibility policy until
-native thresholds are verified. Protection does not expand an attack's targets.
+native thresholds are verified. Explicit `targeting` grade ranges take precedence
+over classification and drive recipient expansion. Keep shapes in SQL metadata,
+not skill-ID conditionals. See [COMBAT_TARGETING.md](COMBAT_TARGETING.md).
 
 
 Use `physical_damage_taken` and `magical_damage_taken` for modifiers restricted
@@ -750,3 +837,29 @@ fallback is allowed. The reference loader has no populated lists to extract.
   in the same character clone as battle settlement. Captures are not defeats;
   completed quests cannot pay twice. Keep failed saves from changing client
   rosters, quest visibility or success packets.
+
+## World Simulation
+
+Use the SQL-derived `Catalog.Terrains` for scene bounds and native X-major,
+20-pixel collision grids. Never open Ground.MMG or its JSON export at runtime.
+Terrain cells are server geometry stored as BLOBs, not image payloads. Schema v5
+projects imported Ground.MMG rows during explicit offline migration. Preserve
+existing typed edits and reject malformed geometry transactionally.
+
+AC6 announces a walking leg destination before animation completes; validate
+the straight cell segment without imposing a distance or elapsed-speed cap.
+Reject collisions before persistence, trade cancellation, encounter progress or
+vehicle wear; send the existing AC7 position correction instead of disconnecting.
+A blocked or out-of-bounds saved spawn may recover to a valid destination.
+Validated active item vehicles retain native water/air travel within scene bounds;
+land collision bits are not a vehicle capability table. Missing grids preserve
+legacy movement, without falling back to files or fabricated geometry.
+
+Spawn definitions remain immutable. `World.NPC` and `World.NPCs` report current
+ambient positions for map entry, interaction distance and encounter checks.
+Serialize occupied-map simulation with session events under `worldMu`; lock
+actor snapshots independently and never hold monster locks while resetting
+actors. Preserve private tent isolation, actor concealment, companion ownership,
+battle/event reservations and recipient failure isolation. Ambient patrol cursors,
+positions and deadlines remain transient; monster respawn returns to its authored
+spawn and resets its patrol with the reference three-second grace.

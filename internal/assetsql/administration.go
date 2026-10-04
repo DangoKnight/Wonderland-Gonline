@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
+var DefinitionNames = []string{"Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -127,6 +127,8 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 func validateDefinition(name string, c *assets.Catalog) error {
 	marshal := func(v any) []byte { raw, _ := json.Marshal(v); return raw }
 	switch name {
+	case "Terrains":
+		return assets.ValidateTerrains(c.Terrains)
 	case "Tents":
 		return validateTents(c.Tents)
 	case "Economy":
@@ -207,8 +209,8 @@ func validateDefinition(name string, c *assets.Catalog) error {
 			}
 		}
 	case "Arcades":
- return assets.ValidateArcades(c.Arcades,c.Items)
- case "LuckyDraw":
+		return assets.ValidateArcades(c.Arcades, c.Items)
+	case "LuckyDraw":
 		pool, err := assets.ParseLuckyDrawPool(marshal(c.LuckyDraw.Rewards), c.Items)
 		if err != nil {
 			return err

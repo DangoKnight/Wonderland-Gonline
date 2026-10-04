@@ -66,7 +66,10 @@ func TestArcadeSchemaV3UpgradeAndAdministrationPreserveEdits(t *testing.T) {
 	}
 	defer assetdb.Close(db)
 	// Reconstruct the exact v3 boundary: all old typed rows survive unchanged.
-	if err = db.Migrator().DropTable(&ArcadesRewardsRow{}, &ArcadesRow{}); err != nil {
+	if err = db.Migrator().DropTable(&ArcadesRewardsRow{}, &ArcadesRow{}, &TerrainsRow{}); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.Migrator().DropColumn(&catalogPresence{}, "Terrains"); err != nil {
 		t.Fatal(err)
 	}
 	if err = db.Migrator().DropColumn(&catalogPresence{}, "Arcades"); err != nil {

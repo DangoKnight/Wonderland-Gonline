@@ -183,7 +183,7 @@ func (s *Server) arcadeCommand(ctx context.Context, c *Session, p []byte) error 
 	}
 	// Commit precedes all success packets. A failed socket cannot undo the durable
 	// play or enable a second delivery from the same cached session state.
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
 	c.arcadeNextPurchaseAt = time.Now().Add(time.Duration(definition.CooldownMilliseconds) * time.Millisecond)
 	packets := [][]byte{}

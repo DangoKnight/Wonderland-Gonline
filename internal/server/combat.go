@@ -602,7 +602,7 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 		result = 2
 	}
 	// RunOutcome: the battle callback branch (trigger 4) continues the event.
-	next := s.World.FindBranch(c.character, c.view, es.mapID, es.ev, world.ConditionBattleResult, run.source, result, -1)
+	next := s.World.OutcomeBranch(c.character, c.view, es.mapID, es.ev, run.source, result, es.branch)
 	if next < 0 || c.character.Map != es.mapID {
 		_ = s.cancelInteraction(c)
 		return

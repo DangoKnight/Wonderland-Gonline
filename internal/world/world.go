@@ -97,11 +97,13 @@ type World struct {
 	catalog  *assets.Catalog
 	ground   ground
 	monsters monsters
+	actors   actors
 }
 
 func New(c *assets.Catalog) *World {
 	w := &World{maps: make(map[uint16]*Map, len(c.Maps)), catalog: c}
 	w.ground.init()
+	w.actors.states = map[uint16]map[uint16]*actorState{}
 	w.monsters.defeated = map[uint16]map[uint16]time.Time{}
 	for id, m := range c.Maps {
 		w.maps[id] = newMap(m)
@@ -172,8 +174,8 @@ func (w *World) MapInfo(c *game.Character, v *View, players []uint32) [][]byte {
 	m, ok := w.maps[c.Map]
 	if ok && len(m.NPCs) > 0 {
 		list := protocol.Builder{protocol.CommandScene, protocol.SceneActorPosition}
-		for _, n := range m.NPCs {
-			concealed := !w.Visible(c, m.ID, n.ClickID)
+		for _, n := range w.NPCs(c.Map) {
+			concealed := w.Defeated(m.ID, n.ClickID) || !w.Visible(c, m.ID, n.ClickID)
 			state := w.idleFrame(n.Template)
 			if concealed {
 				v.Hidden[n.ClickID] = true

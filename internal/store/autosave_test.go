@@ -122,3 +122,38 @@ func TestAutosaveUnchangedDoesNotWriteAndNormalizesClone(t *testing.T) {
 		t.Fatal("cloned nil collections caused a conflict", written, err)
 	}
 }
+
+func TestPositionCheckpointDoesNotRewriteOwnedRows(t *testing.T) {
+	db, refs := pairFixture(t)
+	ctx := context.Background()
+	chars, err := db.Characters(ctx, refs[0].Account)
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseline := chars[0].Clone()
+	if err = db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error { c.Gold = 77; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	next := baseline.Clone()
+	next.Gold = 77
+	next.X = 123
+	if _, err = db.db.Exec("CREATE TRIGGER reject_child_rewrite BEFORE DELETE ON character_items BEGIN SELECT RAISE(ABORT,'position rewrote inventory'); END"); err != nil {
+		t.Fatal(err)
+	}
+	if written, err := db.AutosaveCharacter(ctx, refs[0], baseline, next); err != nil || !written {
+		t.Fatal(written, err)
+	}
+	saved, err := db.Characters(ctx, refs[0].Account)
+	if err != nil || saved[0].Gold != 77 || saved[0].X != 123 || saved[0].Bag != baseline.Bag {
+		t.Fatal(saved, err)
+	}
+	// Even a same-map out-of-band position change must defeat a stale checkpoint.
+	if _, err = db.db.Exec("UPDATE character_state SET x=999 WHERE character_id=?", refs[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	pending := next.Clone()
+	pending.Y = 456
+	if _, err := db.AutosaveCharacter(ctx, refs[0], next, pending); !errors.Is(err, ErrAutosaveConflict) {
+		t.Fatal("external warp overwritten", err)
+	}
+}

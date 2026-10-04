@@ -80,7 +80,12 @@ func (s *Server) commitState(ctx context.Context, c *Session, next game.Characte
 		return e
 	}
 	changedOfferState := c.character.Bag != next.Bag || c.character.Gold != next.Gold
+	// This transaction saved the complete supplied snapshot, including its
+	// position. Unlike a database result that retains the old position, an
+	// explicit full-state commit must adopt its destination exactly.
 	*c.character = next
+	baseline := next.Clone()
+	c.autosaveBaseline = &baseline
 	if changedOfferState {
 		s.closeStall(c)
 		s.cancelTrade(c)
@@ -105,7 +110,10 @@ func (s *Server) finishEvent(c *Session, es *eventSession) error {
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
-	return s.sendAll(c, s.World.Sync(c.character, c.view, false))
+	if err := s.sendAll(c, s.World.Sync(c.character, c.view, false)); err != nil {
+		return err
+	}
+	return s.syncMapProps(context.Background(), c, time.Now())
 }
 
 func (s *Server) rejectDisabled(c *Session) error {
@@ -199,7 +207,7 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 	if !ok {
 		return release()
 	}
-	npc, found := m.NPC(click)
+	npc, found := s.World.NPC(char.Map, click)
 	if found {
 		dx, dy := int64(char.X)-int64(npc.X), int64(char.Y)-int64(npc.Y)
 		found = dx*dx+dy*dy <= npcInteractionRangePixels*npcInteractionRangePixels
@@ -215,6 +223,9 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 		if handled, e := s.fallbackService(ctx, c, npc); handled || e != nil {
 			return e
 		}
+		if handled, err := s.harvestProp(ctx, c, npc); handled || err != nil {
+			return err
+		}
 		return release()
 	}
 	// A door object outside interaction range still opens its linked portal.
@@ -227,6 +238,9 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 // runNPCEvent is EveEventInterpreter.TryExecute's native-event path.
 func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (bool, error) {
 	mapID := c.character.Map
+	if handled, err := s.storyClick(ctx, c, click); handled || err != nil {
+		return handled, err
+	}
 	events := s.World.NPCEvents(mapID, click)
 	if len(events) == 0 {
 		return false, nil
@@ -237,6 +251,9 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 	}
 	if disabled {
 		return true, s.rejectDisabled(c)
+	}
+	if n, ok := s.World.NPC(mapID, click); ok && (n.Template == monkeyTemplate || mapID == monkeyMap && click == monkeyActor) {
+		return true, s.startMonkey(ctx, c, click)
 	}
 	for _, ev := range events {
 		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
@@ -256,7 +273,7 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now()); handled {
 		return err
 	}
-	ev = world.PrepareBreillat(ev, branch)
+	ev = world.PrepareStory(mapID, world.PrepareBreillat(ev, branch), branch)
 	s.endEvent(c)
 	es := &eventSession{mapID: mapID, click: click, ev: ev, branch: branch, transition: transition}
 	c.event = es
@@ -424,7 +441,13 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 				return false
 			}
 			if amount != 0 {
+				if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) && c.character.Quests[xaolanRobberyCompleted].State == game.Completed {
+					continue
+				}
 				changes = append(changes, game.ItemChange{ID: op.D3, Count: int(amount)})
+				if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) {
+					changes = append(changes, game.ItemChange{ID: xaolanRobberyStar, Count: xaolanRobberyStarCount})
+				}
 			}
 		case op.D2 == 2 && op.D3 == 0:
 			gold += int64(amount)
@@ -541,6 +564,9 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 		if next := s.World.FindBranch(c.character, c.view, es.mapID, es.ev, world.TriggerEntry, 0, 0, -1); next >= 0 && es.ev.Branches[next].Index == world.BreillatOfferBranch {
 			return s.startEvent(ctx, c, es.click, es.ev, next, false)
 		}
+	}
+	if handled, err := s.storyContinuation(ctx, c, es); handled || err != nil {
+		return err
 	}
 	// A pure mark change may enable the next branch of the same event.
 	if es.transition {
@@ -794,6 +820,9 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	amount := int32(op.Value())
 	if amount == 0 {
 		return true, nil
+	}
+	if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) {
+		return s.claimXaolanRobbery(ctx, c, es, op)
 	}
 	chest := world.DecodeCond(es.ev.Branches[es.branch].Condition).Kind == 3 && amount > 0
 	pool := s.chestPool(es.mapID, es.click)

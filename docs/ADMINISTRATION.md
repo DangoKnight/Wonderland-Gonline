@@ -61,7 +61,8 @@ items, skills, repair/reset/god tools, pets/amity/rebirth, warp/summon, mall poi
 invisibility, mute/jail, test battles, forced victory, NPC event triggers and
 inventory cleanup. Character mutations keep gameplay interaction gates. Responses
 show command feedback, including rejected requests. NPC show/hide and prop
-open/close controls affect the current live map view; edit quest state in the
+open/close controls affect only the selected session view, not every map viewer
+as in the reference; edit quest state in the
 character editor when changing durable story progression.
 
 **Friendships** removes durable pairs and informs online peers. **Live battles**
@@ -75,8 +76,10 @@ disbands a guild. The leader must belong to the list and a character can belong
 to only one guild. Character/account deletion cleans memberships and elects a
 remaining leader, or removes an empty guild. **Marriages** inspects records,
 annuls a marriage or brings online spouses together. These controls administer
-stored records; client guild/marriage gameplay and their native synchronization
-remain separate unported subsystems. No original account database is imported.
+stored records alongside implemented guild gameplay/synchronization and marriage
+commands; see ECONOMY_SOCIAL.md for their scope and remaining native requests.
+Normal startup imports no original account database. LEGACY_IMPORT.md describes
+the separate optional offline conversion.
 
 **GM mail & gifts** sends a message with optional gold and one item reward to a
 single character, online characters or all listed characters. A dispatch is
@@ -122,8 +125,9 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Schema v7 automatically adds IP bans, guilds, marriages and GM mail tables without
-resetting accounts or characters. A headless Chromium smoke renders all 22 new views and checks read-only
+Current startup requires gameplay schema v11 and structured asset schema v6.
+The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
+the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 22 new views and checks read-only
 inspectors. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
 transaction behavior, native packet layouts and affected gameplay paths.
 
@@ -223,3 +227,27 @@ gathering pools and marriage requirements/fees/rings. These values live in typed
 asset SQL tables. See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md). Guild edits preserve
 member ranks and publish refreshed native badges/rosters to online players.
 Gameplay uses the same guild and marriage records displayed by Admin.
+
+## Remaining desktop parity and checkpoint behavior
+
+The panel does not yet expose reference offline launcher status, broadcast
+channel/color selection, one-click mass starter delivery, custom game_quests
+registry/step editing, or identical combined NPC-spawn/opcode reports. Broadcast
+currently uses AC2:4. Raw typed map/dataset inspection replaces some desktop
+reports but does not establish full report/editor field parity. Dialogue lookup
+lacks the reference sound/portrait display and detailed token-stripping interface.
+General character edits reconnect instead of live per-tab refresh; selected-view
+actor controls do not reproduce map-wide changes or linked quest break/restore.
+
+The source MySQL provider test/configuration and SQLite-to-MySQL migration have
+real implementations; Go's SQLite paths are a replacement with no matching
+provider workflow. Windows layout, local aLogin launching and unsafe source
+ownership/schema repair are retired, not administration features to reproduce.
+
+Manual checkpoints and disconnects flush dirty recoverable state. Ordinary
+walking is buffered; periodic checkpoints default to 30 seconds, selected by
+startup `character_save_seconds`. Clean sessions need no SQL transaction, and
+position-only saves do not rewrite owned item/pet/quest rows. Administrators must
+not bypass version
+checks with direct live-player SQL edits. A pending position save must never undo
+an administration edit, purchase or ownership change. See DEVELOPMENT.md.

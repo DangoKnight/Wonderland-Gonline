@@ -140,7 +140,8 @@ go test ./internal/assets -run '^$' -fuzz FuzzEVE -fuzztime 10s
 - `internal/assets`: SQL-backed gameplay catalogs and offline native format readers.
 - `internal/assetdb`: GORM asset import, read-only materialization and database rebuild.
 - `internal/admin`: authenticated HTTP API and embedded HTML/CSS/JavaScript interface.
-- `docs/source-inventory.json`: source revision, file hashes and migration status for all 331 C# files.
+- `docs/source-inventory.json`: source revision, hashes and independent per-file findings for all 566 reference files, including 331 C# files.
+- `docs/PORTING.md`: current implemented scope, remaining executable migration work and unfinished-source hold list.
 
 Unknown actions are counted and logged at debug level; they do not receive a fabricated success response. `GET /api/status` reports incomplete parity and remaining areas. Administrative API requests require `Authorization: Bearer <token>`.
 
@@ -174,11 +175,9 @@ World entry synchronizes the points and bonus catalogs, mall settings/status, an
 both account balances. Native AC75 carts and legacy AC23 catalog, balance and
 purchase requests are supported. Currency deduction and inventory delivery commit
 in one GORM transaction; stale catalog rows, insufficient points and full bags
-cannot partially deliver a cart. Catalogs use the loaded `item_mall.json` data.
-Gacha purchase/opening support requires a valid pool table. The sibling table
-is currently disabled because it references item IDs absent from the exclusive
-JSON catalog. The withdrawn
-Lucky Pack remains unavailable.
+cannot partially deliver a cart. Catalogs use typed SQL Mall definitions initialized from exported defaults.
+Gacha purchase/opening support requires a valid pool table. Invalid or unavailable pools are excluded from the advertised catalogs.
+The withdrawn Lucky Pack remains unavailable.
 Bonus balances appear beside mall points in the administration account list.
 Accounts → Adjust mall points adds or deducts either points or bonus points for
 online and offline accounts. Enter a signed integer; deductions stop at zero,
@@ -192,8 +191,8 @@ explicit target makes no change. Each adjustment records its actor, currency,
 requested/applied amounts, and before/after balances in the database audit table.
 
 The authenticated API is `POST /api/accounts/{id}/mall` with, for example,
-`{"currency":"bonus","delta":100}`. It returns both saved balances. Forging and
-the arcade launcher remain pending.
+`{"currency":"bonus","delta":100}`. It returns both saved balances. Mall forging and the arcade launcher are
+implemented below; additional native mall request compatibility remains pending.
 
 ## Compound synthesis
 
@@ -216,8 +215,9 @@ commit before receipts, and wait during map loading, battle, trade, events and
 cutscenes. A mounted vehicle cannot be used as an ingredient. Recipe rates are
 unused, matching the legacy handlers.
 
-Full manufacturing, advanced alchemy and custom recipe editing/import remain
-pending. Original-client validation of AC40 remains pending.
+Native five-material formula/tool/timer manufacturing remains incomplete.
+Two-input chat manufacturing, probabilistic synthesis and validated SQL recipe
+editing exist; see ECONOMY_SOCIAL.md. Original-client validation remains pending.
 
 ## Mall forging
 
@@ -233,8 +233,8 @@ attempt with a 50% cryptographic success roll. Success increments forge metadata
 up to 200; a failed roll still costs three points. Bonus points are retained.
 Costs and item state save in one transaction before native AC75:6 results and
 balance updates. Missing data, insufficient costs and failed saves spend nothing.
-Forging waits during battles, trades, loading and interactions. General item
-locks and original-client validation remain pending.
+Forging waits during battles, trades, loading and interactions, and respects
+transient item reservations. Original-client validation remains pending.
 
 ## Arcade category launcher
 
@@ -263,7 +263,8 @@ reward definitions and duplicate pool IDs are validated at startup.
 
 Rewards are delivered as items. Their use depends on the corresponding item
 handler; remaining scroll and other special-item behavior and general
-item locks are still pending. Original game-client validation remains pending.
+item restrictions need further verification. Transient item reservations are
+implemented. Original game-client validation remains pending.
 
 ## Bag-item repairs
 
@@ -273,8 +274,8 @@ stack's quantity and other metadata, apart from the one wrench used for payment.
 Payment and repair save together before inventory, balance and success packets.
 Healthy items cost nothing; insufficient funds and failed saves retain the item.
 Mounted vehicles must be landed before repair. The request addresses the bag;
-unequip worn gear first. General item locks and native-client validation remain
-pending.
+unequip worn gear first. Transient reservations are enforced; native-client
+validation remains pending.
 
 ## Item catalog
 
@@ -329,3 +330,22 @@ Player shops, guilds, marriage, parcel mail, manufacturing, synthesis and gather
 are described in [ECONOMY_SOCIAL.md](docs/ECONOMY_SOCIAL.md), including database
 upgrades, player commands, editable economy definitions and remaining native
 client limitations.
+
+For original Private Server player snapshots, see the separate
+[legacy SQLite import procedure](docs/LEGACY_IMPORT.md). For authored combat
+area shapes, see [combat targeting](docs/COMBAT_TARGETING.md).
+
+## Migration findings and persistence direction
+
+The maintained source inventory records an independent review of 566 reference
+files. Native request, manufacturing, character metadata and administration gaps
+remain; see [PORTING.md](docs/PORTING.md). Empty reference handlers and dormant
+quest helpers are listed separately from missing working behavior. Static source
+review is not a substitute for native-client or multiplayer acceptance.
+
+The database owns durable gameplay state. Purchases, exchanges, rewards and claims
+must commit atomically before success replies. Ordinary walking stays in session memory and uses dirty checkpoints, selected by
+startup `character_save_seconds` (default 30 seconds), plus disconnect flushing.
+Purchases and rewards remain immediately durable; checkpoints preserve those
+committed results. See the
+[persistence policy](docs/DEVELOPMENT.md#transaction-boundaries-and-session-checkpoints).

@@ -7,26 +7,27 @@ import (
 )
 
 type Skill struct {
-	EffectRefs         []string      `json:"effect_refs,omitempty"`
-	NativePattern109   byte          `json:"unknown_u8_offset_109"`
-	NativePattern110   byte          `json:"unknown_u8_offset_110"`
-	NativePattern111   byte          `json:"unknown_u8_offset_111"`
-	NativePattern112   byte          `json:"unknown_u8_offset_112"`
-	AreaAttack         *bool         `json:"area_attack,omitempty"`
-	NativeRounds51     byte          `json:"unknown_u8_offset_51"`
-	NativeEffectCode52 byte          `json:"unknown_u8_offset_52"`
-	Effects            []SkillEffect `json:"effects,omitempty"`
-	ID                 uint16        `json:"id"`
-	Name               string        `json:"name"`
-	Type               byte          `json:"type"`
-	SP                 uint16        `json:"sp"`
-	Element            byte          `json:"element"`
-	Attack             uint16        `json:"attack_category"`
-	EffectLayer        byte          `json:"effect_layer"`
-	PowerPerLevel      float64       `json:"power_per_level"`
-	StatMultiplier     float64       `json:"stat_multiplier"`
-	AdditionalDamage   uint16        `json:"additional_damage"`
-	TableOrder         uint16        `json:"table_order"`
+	Targeting          []SkillTargeting `json:"targeting,omitempty"`
+	EffectRefs         []string         `json:"effect_refs,omitempty"`
+	NativePattern109   byte             `json:"unknown_u8_offset_109"`
+	NativePattern110   byte             `json:"unknown_u8_offset_110"`
+	NativePattern111   byte             `json:"unknown_u8_offset_111"`
+	NativePattern112   byte             `json:"unknown_u8_offset_112"`
+	AreaAttack         *bool            `json:"area_attack,omitempty"`
+	NativeRounds51     byte             `json:"unknown_u8_offset_51"`
+	NativeEffectCode52 byte             `json:"unknown_u8_offset_52"`
+	Effects            []SkillEffect    `json:"effects,omitempty"`
+	ID                 uint16           `json:"id"`
+	Name               string           `json:"name"`
+	Type               byte             `json:"type"`
+	SP                 uint16           `json:"sp"`
+	Element            byte             `json:"element"`
+	Attack             uint16           `json:"attack_category"`
+	EffectLayer        byte             `json:"effect_layer"`
+	PowerPerLevel      float64          `json:"power_per_level"`
+	StatMultiplier     float64          `json:"stat_multiplier"`
+	AdditionalDamage   uint16           `json:"additional_damage"`
+	TableOrder         uint16           `json:"table_order"`
 }
 
 // ParseSkills uses SkillManager.LoadSkillDatabase's native 148-byte layout.
@@ -82,6 +83,9 @@ const (
 // Exact native band thresholds and shapes remain to be verified. SQL authors
 // may override classification explicitly without changing native provenance.
 func (s Skill) IsAreaAttack(grade int) bool {
+	if shape, ok := s.TargetingAt(grade); ok {
+		return shape.All || len(shape.Offsets) > 1
+	}
 	if s.AreaAttack != nil {
 		return *s.AreaAttack
 	}

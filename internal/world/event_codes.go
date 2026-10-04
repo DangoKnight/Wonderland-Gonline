@@ -26,19 +26,20 @@ const (
 
 // Branch condition and callback kinds.
 const (
-	ConditionAlways          = 0
-	ConditionEmptyOperands   = 1
-	ConditionSubject         = 2
-	ConditionProp            = 3
-	ConditionBattleResult    = 4
-	ConditionQuest           = 5
-	ConditionAlwaysAlternate = 6
-	ConditionChoiceResult    = 7
-	ConditionMinigameResult  = 8
-	ConditionSkillGrade      = 10
-	ConditionTeamSize        = 13
-	ConditionWaterGathering  = 14
-	ConditionFreeBagSlots    = 15
+	ConditionAlways             = 0
+	ConditionEmptyOperands      = 1
+	ConditionSubject            = 2
+	ConditionProp               = 3
+	ConditionBattleResult       = 4
+	ConditionQuest              = 5
+	ConditionAlwaysAlternate    = 6
+	ConditionChoiceResult       = 7
+	ConditionMinigameResult     = 8
+	ConditionSkillGrade         = 10
+	ConditionTeamSize           = 13
+	ConditionWaterGathering     = 14
+	ConditionFreeBagSlots       = 15
+	ConditionCompanionEquipment = 17
 )
 
 // Condition comparison operators.

@@ -289,6 +289,7 @@ func (s *Server) heal(ctx context.Context, c *Session, words []string) error {
 	}); e != nil {
 		return e
 	}
+	// Only vitals were committed; keep the position checkpoint unchanged.
 	*c.character = next
 	for _, packet := range append(next.StatPackets(s.Assets.Items), base) {
 		if e = c.send(packet); e != nil {

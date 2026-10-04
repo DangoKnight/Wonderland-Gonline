@@ -13,7 +13,7 @@ until configuration points to the upgraded copies. The migration preserves
 accounts, credentials, character state and existing asset edits.
 
 ```sh
-go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v4
+go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v6
 ```
 
 The output directory must be new. The command opens source databases read-only,
@@ -27,8 +27,8 @@ Set these startup parameters to activate the verified copies:
 
 ```json
 {
-  "database": "var/migrated-v4/wonderland.db",
-  "assets_database": "var/migrated-v4/assets.db"
+  "database": "var/migrated-v6/wonderland.db",
+  "assets_database": "var/migrated-v6/assets.db"
 }
 ```
 
@@ -43,10 +43,10 @@ For rollback, stop the server and restore the original configuration paths.
 Progress written to the upgraded database after cutover will not exist in the
 original snapshot. Keep both copies until acceptance testing finishes.
 
-Gameplay schema v10 automatically converts older character rows transactionally
+Gameplay schema v11 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline copy command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 4 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 6 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -55,6 +55,17 @@ The v2-to-v3 asset upgrade adds only `catalog_tents*` rules and default furnitur
 The v3-to-v4 asset upgrade adds only `catalog_arcades*` tables and their presence
 flag, with equal-weight defaults for the five supported paid machines. Existing
 content edits remain intact. See [MINIGAMES.md](MINIGAMES.md) for balance defaults.
+The v4-to-v5 upgrade adds `catalog_terrains` and its presence flag. It projects
+scene dimensions and collision-cell BLOBs from the imported Ground.MMG rows;
+existing content and arcade edits remain intact. Runtime reads typed SQL only.
+An older database without imported terrain retains maps without collision
+grids; rebuild from the complete WLRI exports to supply those grids.
+See [WORLD_SIMULATION.md](WORLD_SIMULATION.md) for movement policy.
+The v5-to-v6 upgrade adds owned skill-targeting and offset tables plus their
+presence flag. Existing skill rows retain their behavior until verified shapes
+are authored; see [COMBAT_TARGETING.md](COMBAT_TARGETING.md).
+Gameplay v11 adds shared map-prop cooldowns. Rewards and cooldowns commit together
+and survive reconnects/restarts.
 Gameplay v10 adds owned tent/furniture tables and per-character tent return
 coordinates. Both upgrades preserve existing records and authored edits.
 See [ECONOMY_SOCIAL.md](ECONOMY_SOCIAL.md) and
@@ -147,3 +158,21 @@ The command verifies export hashes, creates and validates the structured catalog
 before publication, and prints backups. Restore backups with the server stopped
 if needed. A crash between two file replacements can leave a mixed pair.
 Ordinary migrations and restarts preserve edits; deliberate rebuilds replace them.
+
+## Importing Private Server accounts and characters
+
+Use the separate read-only procedure in [LEGACY_IMPORT.md](LEGACY_IMPORT.md).
+`database-migrate` upgrades Go database snapshots; `legacy-import` converts
+supported original SQLite player data into a new Go database.
+
+## Persistence scheduling
+
+These databases own durable state; they do not require every online movement
+packet to produce SQL writes. Assets are served from validated SQL-derived memory
+catalogs. Sensitive mutable operations retain immediate atomic transactions.
+Walking uses dirty session checkpoints (default 30 seconds) under the policy in
+DEVELOPMENT.md. Position-only checkpoints update guarded X/Y columns; clean
+sessions need no SQL transaction. Gathering/world ticks remain independent.
+Stop the server
+before snapshots/upgrades so pending session state can flush and both databases
+represent the same installation.

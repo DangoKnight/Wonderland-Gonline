@@ -19,12 +19,12 @@ func decodeHotel(p []byte) (deposits, withdrawals []byte, ok bool) {
 	case protocol.PetHotelDeposit:
 		deposits = d
 	case protocol.PetHotelTransfer:
-		if len(d) < 2 || d[0] > 4 || len(d) < int(d[0])+2 {
+		if len(d) < 2 || d[0] > game.MaxPets || len(d) < int(d[0])+2 {
 			return
 		}
 		n := int(d[0])
 		m := int(d[n+1])
-		if m > 10 || len(d) != n+m+2 {
+		if m > game.MaxHotelPets || len(d) != n+m+2 {
 			return
 		}
 		deposits, withdrawals = d[1:n+1], d[n+2:]
@@ -41,7 +41,7 @@ func decodeHotel(p []byte) (deposits, withdrawals []byte, ok bool) {
 		}
 		return len(slots) <= int(limit)
 	}
-	ok = len(deposits)+len(withdrawals) > 0 && valid(deposits, 4) && valid(withdrawals, 10)
+	ok = len(deposits)+len(withdrawals) > 0 && valid(deposits, game.MaxPets) && valid(withdrawals, game.MaxHotelPets)
 	return
 }
 
@@ -50,7 +50,7 @@ func (s *Server) hotelPackets(char *game.Character) [][]byte {
 	pets := slices.Clone(char.HotelPets)
 	slices.SortFunc(pets, func(a, b game.Pet) int { return int(a.Slot) - int(b.Slot) })
 	var packets [][]byte
-	for slot := byte(1); slot <= 10; slot++ {
+	for slot := byte(1); slot <= game.MaxHotelPets; slot++ {
 		if !slices.ContainsFunc(pets, func(p game.Pet) bool { return p.Slot == slot }) {
 			packets = append(packets, []byte{protocol.CommandNPCService, protocol.NPCServiceWireCode4, slot})
 		}
@@ -90,7 +90,7 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 		incoming = append(incoming, next.HotelPets[i])
 		next.HotelPets = slices.Delete(next.HotelPets, i, i+1)
 	}
-	if len(next.Pets)+len(incoming) > 4 || len(next.HotelPets)+len(outgoing) > 10 {
+	if len(next.Pets)+len(incoming) > game.MaxPets || len(next.HotelPets)+len(outgoing) > game.MaxHotelPets {
 		return nil
 	}
 	team := append(slices.Clone(next.Pets), incoming...)

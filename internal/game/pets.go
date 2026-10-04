@@ -11,6 +11,9 @@ import (
 // MaxPets is the party size limit.
 const MaxPets = 4
 
+// MaxHotelPets is the native pet hotel capacity (AC31).
+const MaxHotelPets = 10
+
 // Allocate follows AC08 pet allocation, including UInt16 attribute wrapping.
 func (p *Pet) Allocate(requests []StatAllocation) bool {
 	c := Character{Base: p.Base, StatPoints: p.StatPoints}

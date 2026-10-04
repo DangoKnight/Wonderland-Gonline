@@ -13,27 +13,30 @@ import (
 )
 
 const (
-	defaultLoginIdleSeconds = 600
-	maxIdleSeconds          = 86400
+	defaultLoginIdleSeconds     = 600
+	defaultCharacterSaveSeconds = 30
+	maxCharacterSaveSeconds     = 3600
+	maxIdleSeconds              = 86400
 )
 
 type Config struct {
-	PetGrowthFormula game.PetGrowthFormula `json:"pet_growth_formula"`
-	StatusServerIDs  []uint16              `json:"status_server_ids"`
-	Name             string                `json:"name"`
-	Login            string                `json:"login_address"`
-	World            string                `json:"world_address"`
-	Status           string                `json:"status_address"`
-	HTTP             string                `json:"http_address"`
-	Database         string                `json:"database"`
-	AssetsDatabase   string                `json:"assets_database"`
-	MaxConnections   int                   `json:"max_connections"`
-	IdleSeconds      int                   `json:"idle_seconds"`
-	WorldIdleSeconds int                   `json:"world_idle_seconds"`
+	CharacterSaveSeconds int                   `json:"character_save_seconds"`
+	PetGrowthFormula     game.PetGrowthFormula `json:"pet_growth_formula"`
+	StatusServerIDs      []uint16              `json:"status_server_ids"`
+	Name                 string                `json:"name"`
+	Login                string                `json:"login_address"`
+	World                string                `json:"world_address"`
+	Status               string                `json:"status_address"`
+	HTTP                 string                `json:"http_address"`
+	Database             string                `json:"database"`
+	AssetsDatabase       string                `json:"assets_database"`
+	MaxConnections       int                   `json:"max_connections"`
+	IdleSeconds          int                   `json:"idle_seconds"`
+	WorldIdleSeconds     int                   `json:"world_idle_seconds"`
 }
 
 func Default() Config {
-	return Config{PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Go", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
+	return Config{CharacterSaveSeconds: defaultCharacterSaveSeconds, PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Go", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
 }
 func Load(path string) (Config, error) {
 	c := Default()
@@ -59,6 +62,9 @@ func Load(path string) (Config, error) {
 // Validate checks a proposed startup configuration without changing listeners.
 func Validate(c Config) error { _, err := validate(c); return err }
 func validate(c Config) (Config, error) {
+	if c.CharacterSaveSeconds < 1 || c.CharacterSaveSeconds > maxCharacterSaveSeconds {
+		return c, fmt.Errorf("character_save_seconds must be from 1 to %d", maxCharacterSaveSeconds)
+	}
 	if !c.PetGrowthFormula.Valid() {
 		return c, fmt.Errorf("pet_growth_formula must be base_stats or combat_stats")
 	}

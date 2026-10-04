@@ -225,6 +225,15 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 			team += int64(v.Team.Load())
 		}
 		return ev != nil && mapID == game.MapID11052 && ev.ClickID == 3 && w1 == 1 && w2 == 0 && w3 == 0 && compare(team, value, op)
+	case ConditionCompanionEquipment:
+		// EveEventRuntime enables only Elin's three authored weapon gates.
+		if mapID != storyElinWeaponMap || w1 != storyElinTemplate ||
+			!((w2 == storyElinNativeWeaponOperand4 && w3 == storyElinOriginalWeapon) ||
+				(w2 == storyElinNativeWeaponOperand1 && w3 == storyElinReplacementWeapon)) {
+			return false
+		}
+		index, present := c.Pet(storyElinTemplate)
+		return present && compare(int64(c.Pets[index].Equipment[storyWeaponEquipmentIndex].ID), int64(w3), op)
 	case ConditionFreeBagSlots:
 		free := int64(0)
 		for _, it := range c.Bag {
@@ -234,7 +243,7 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		}
 		return w1 == 1 && compare(free, value, op)
 	}
-	// Type 17 (Elin's replacement weapon) needs a companion; unknown types never match.
+	// Unknown condition types never authorize rewards.
 	return false
 }
 

@@ -42,7 +42,7 @@ func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16
 	if err != nil {
 		return true, errors.Join(err, s.cancelInteraction(c))
 	}
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	packets := [][]byte{next.Bag.AdditionPacket(adds)}
 	packets = append(packets, s.World.QuestUpdate(c.view, uint32(plan.Timer), next.Quests[uint32(plan.Timer)])...)
 	if err := s.sendAll(c, packets); err != nil {

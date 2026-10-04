@@ -274,6 +274,7 @@ const (
 // Scene subcommands (AC22).
 const (
 	SceneActorState    = 1
+	SceneActorWalk     = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
 	SceneActorPosition = 4
 	// Unresolved wire meaning; retain the numeric code until verified.
 	SceneWireCode7 = 7
@@ -281,6 +282,7 @@ const (
 	SceneWireCode8 = 8
 	// Unresolved wire meaning; retain the numeric code until verified.
 	SceneWireCode9     = 9
+	SceneActorHide     = 10 // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
 	SceneActorMovement = 11
 	SceneActorAction   = 12
 )

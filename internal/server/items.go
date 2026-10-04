@@ -224,7 +224,10 @@ func (s *Server) runRespawns(ctx context.Context) {
 		case now := <-t.C:
 			s.respawnGround(now)
 			s.respawnChests(now)
+			s.respawnMapProps(ctx, now)
 			s.reviveMonsters(now)
+			s.simulateWorld(now)
+			s.maintainGathering(ctx, now)
 		}
 	}
 }

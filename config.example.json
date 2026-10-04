@@ -12,6 +12,7 @@
   "max_connections": 512,
   "idle_seconds": 600,
   "world_idle_seconds": 0,
+  "character_save_seconds": 30,
   "assets_database": "var/assets.db",
   "pet_growth_formula": "base_stats"
 }

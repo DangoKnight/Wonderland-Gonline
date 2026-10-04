@@ -115,6 +115,8 @@ func TestCreateEnterAcknowledgeAndReconnect(t *testing.T) {
 	if e := s.dispatch(ctx, c, createPayload()); e == nil {
 		t.Fatal("created character twice")
 	}
+	// Walking is buffered; a normal disconnect flushes it before reconnect.
+	s.leaveWorld(c)
 	chars, e := db.Characters(ctx, account.ID)
 	if e != nil || len(chars) != 1 || chars[0].X != 1100 || chars[0].Y != 1200 || chars[0].Bag[0].Count != 50 {
 		t.Fatal(chars, e)

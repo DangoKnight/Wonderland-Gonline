@@ -143,7 +143,8 @@ func (s *Server) stallCommand(ctx context.Context, c *Session, p []byte) error {
 		if err != nil {
 			return c.send(tradeMessage("Purchase failed: " + err.Error() + "."))
 		}
-		*seller.character, *c.character = result.Characters[0], result.Characters[1]
+		s.adoptSavedCharacter(seller, result.Characters[0])
+		s.adoptSavedCharacter(c, result.Characters[1])
 		row.Item.Count -= count
 		row.Item.Item = seller.character.Bag[slot-1]
 		if row.Item.Count == 0 {

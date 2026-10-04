@@ -234,3 +234,12 @@ func (s *Server) tickGathering(ctx context.Context, now time.Time) {
 		s.sendOrClose(c, c.character.Bag.AdditionPacket(adds), tradeMessage(fmt.Sprintf("Gathered item #%d.", id)))
 	}
 }
+
+// Gathering keeps its one-second cadence independently of checkpoint frequency.
+func (s *Server) maintainGathering(ctx context.Context, now time.Time) {
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	ctx, cancel := context.WithTimeout(ctx, autosaveTimeout)
+	defer cancel()
+	s.tickGathering(ctx, now)
+}

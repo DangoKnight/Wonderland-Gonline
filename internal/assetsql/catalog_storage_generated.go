@@ -8,6 +8,57 @@ import (
 	"wonderland-go/internal/game"
 )
 
+type TerrainsRow struct {
+	TerrainsKey       uint16 `gorm:"column:terrains_key;primaryKey;autoIncrement:false"`
+	ValueWidth        uint32
+	ValueHeight       uint32
+	ValueGridWidth    uint16
+	ValueGridHeight   uint16
+	ValueCells        []byte
+	ValueCellsPresent bool
+}
+
+func (TerrainsRow) TableName() string { return "catalog_terrains" }
+func writeTerrains(tx *gorm.DB, values map[uint16]assets.Terrain) error {
+	var rows []TerrainsRow
+	for key, value := range values {
+		row := TerrainsRow{TerrainsKey: key}
+		row.ValueWidth = value.Width
+		row.ValueHeight = value.Height
+		row.ValueGridWidth = value.GridWidth
+		row.ValueGridHeight = value.GridHeight
+		row.ValueCells = value.Cells
+		row.ValueCellsPresent = value.Cells != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTerrains(tx *gorm.DB) (map[uint16]assets.Terrain, error) {
+	result := make(map[uint16]assets.Terrain)
+	var rows []TerrainsRow
+	query := tx
+	if err := query.Order("terrains_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.Terrain
+		value.Width = row.ValueWidth
+		value.Height = row.ValueHeight
+		value.GridWidth = row.ValueGridWidth
+		value.GridHeight = row.ValueGridHeight
+		if row.ValueCellsPresent {
+			value.Cells = append([]byte{}, row.ValueCells...)
+		}
+		result[row.TerrainsKey] = value
+	}
+	return result, nil
+}
+
 type ArcadesRow struct {
 	ArcadesOrdinal            int `gorm:"column:arcades_ordinal;primaryKey;autoIncrement:false"`
 	ValueKind                 uint8
@@ -1411,6 +1462,7 @@ func readStarterItems(tx *gorm.DB) ([]game.StarterGrant, error) {
 
 type SkillsRow struct {
 	SkillsKey               uint16 `gorm:"column:skills_key;primaryKey;autoIncrement:false"`
+	ValueTargetingPresent   bool
 	ValueEffectRefsPresent  bool
 	ValueNativePattern109   uint8
 	ValueNativePattern110   uint8
@@ -1439,6 +1491,7 @@ func writeSkills(tx *gorm.DB, values map[uint16]assets.Skill) error {
 	var rows []SkillsRow
 	for key, value := range values {
 		row := SkillsRow{SkillsKey: key}
+		row.ValueTargetingPresent = value.Targeting != nil
 		row.ValueEffectRefsPresent = value.EffectRefs != nil
 		row.ValueNativePattern109 = value.NativePattern109
 		row.ValueNativePattern110 = value.NativePattern110
@@ -1470,6 +1523,9 @@ func writeSkills(tx *gorm.DB, values map[uint16]assets.Skill) error {
 		}
 	}
 	for key, value := range values {
+		if err := writeSkillsTargeting(tx, value.Targeting, key); err != nil {
+			return err
+		}
 		if err := writeSkillsEffectRefs(tx, value.EffectRefs, key); err != nil {
 			return err
 		}
@@ -1488,6 +1544,13 @@ func readSkills(tx *gorm.DB) (map[uint16]assets.Skill, error) {
 	}
 	for _, row := range rows {
 		var value assets.Skill
+		if row.ValueTargetingPresent {
+			var err error
+			value.Targeting, err = readSkillsTargeting(tx, row.SkillsKey)
+			if err != nil {
+				return result, err
+			}
+		}
 		if row.ValueEffectRefsPresent {
 			var err error
 			value.EffectRefs, err = readSkillsEffectRefs(tx, row.SkillsKey)
@@ -1524,6 +1587,113 @@ func readSkills(tx *gorm.DB) (map[uint16]assets.Skill, error) {
 		value.AdditionalDamage = row.ValueAdditionalDamage
 		value.TableOrder = row.ValueTableOrder
 		result[row.SkillsKey] = value
+	}
+	return result, nil
+}
+
+type SkillsTargetingRow struct {
+	SkillsKey              uint16     `gorm:"column:skills_key;primaryKey;autoIncrement:false"`
+	SkillsTargetingOrdinal int        `gorm:"column:skills_targeting_ordinal;primaryKey;autoIncrement:false"`
+	Parent                 *SkillsRow `gorm:"belongsTo:Parent;foreignKey:SkillsKey;references:SkillsKey;constraint:OnDelete:CASCADE"`
+	ValueMinGrade          uint8
+	ValueMaxGrade          uint8
+	ValueAll               bool
+	ValueOffsetsPresent    bool
+}
+
+func (SkillsTargetingRow) TableName() string { return "catalog_skills_targeting" }
+func writeSkillsTargeting(tx *gorm.DB, values []assets.SkillTargeting, SkillsKey uint16) error {
+	var rows []SkillsTargetingRow
+	for key, value := range values {
+		row := SkillsTargetingRow{SkillsKey: SkillsKey, SkillsTargetingOrdinal: key}
+		row.ValueMinGrade = value.MinGrade
+		row.ValueMaxGrade = value.MaxGrade
+		row.ValueAll = value.All
+		row.ValueOffsetsPresent = value.Offsets != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeSkillsTargetingOffsets(tx, value.Offsets, SkillsKey, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readSkillsTargeting(tx *gorm.DB, SkillsKey uint16) ([]assets.SkillTargeting, error) {
+	result := make([]assets.SkillTargeting, 0)
+	var rows []SkillsTargetingRow
+	query := tx
+	query = query.Where("skills_key = ?", SkillsKey)
+	if err := query.Order("skills_targeting_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.SkillTargeting
+		value.MinGrade = row.ValueMinGrade
+		value.MaxGrade = row.ValueMaxGrade
+		value.All = row.ValueAll
+		if row.ValueOffsetsPresent {
+			var err error
+			value.Offsets, err = readSkillsTargetingOffsets(tx, row.SkillsKey, row.SkillsTargetingOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.SkillsTargetingOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type SkillsTargetingOffsetsRow struct {
+	SkillsKey                     uint16              `gorm:"column:skills_key;primaryKey;autoIncrement:false"`
+	SkillsTargetingOrdinal        int                 `gorm:"column:skills_targeting_ordinal;primaryKey;autoIncrement:false"`
+	SkillsTargetingOffsetsOrdinal int                 `gorm:"column:skills_targeting_offsets_ordinal;primaryKey;autoIncrement:false"`
+	Parent                        *SkillsTargetingRow `gorm:"belongsTo:Parent;foreignKey:SkillsKey,SkillsTargetingOrdinal;references:SkillsKey,SkillsTargetingOrdinal;constraint:OnDelete:CASCADE"`
+	ValueX                        int8
+	ValueY                        int8
+}
+
+func (SkillsTargetingOffsetsRow) TableName() string { return "catalog_skills_targeting_offsets" }
+func writeSkillsTargetingOffsets(tx *gorm.DB, values []assets.FormationOffset, SkillsKey uint16, SkillsTargetingOrdinal int) error {
+	var rows []SkillsTargetingOffsetsRow
+	for key, value := range values {
+		row := SkillsTargetingOffsetsRow{SkillsKey: SkillsKey, SkillsTargetingOrdinal: SkillsTargetingOrdinal, SkillsTargetingOffsetsOrdinal: key}
+		row.ValueX = value.X
+		row.ValueY = value.Y
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readSkillsTargetingOffsets(tx *gorm.DB, SkillsKey uint16, SkillsTargetingOrdinal int) ([]assets.FormationOffset, error) {
+	result := make([]assets.FormationOffset, 0)
+	var rows []SkillsTargetingOffsetsRow
+	query := tx
+	query = query.Where("skills_key = ?", SkillsKey)
+	query = query.Where("skills_targeting_ordinal = ?", SkillsTargetingOrdinal)
+	if err := query.Order("skills_targeting_offsets_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.FormationOffset
+		value.X = row.ValueX
+		value.Y = row.ValueY
+		if row.SkillsTargetingOffsetsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
 	}
 	return result, nil
 }
@@ -4195,6 +4365,7 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	Terrains              bool
 	Arcades               bool
 	CombatTrials          bool
 	QuestVisibility       bool
@@ -4221,6 +4392,7 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&TerrainsRow{},
 		&ArcadesRow{},
 		&ArcadesRewardsRow{},
 		&TentsRow{},
@@ -4247,6 +4419,8 @@ func catalogTables() []any {
 		&NativeItemsRow{},
 		&StarterItemsRow{},
 		&SkillsRow{},
+		&SkillsTargetingRow{},
+		&SkillsTargetingOffsetsRow{},
 		&SkillsEffectRefsRow{},
 		&SkillsEffectsRow{},
 		&SkillsEffectsModifiersRow{},
@@ -4426,6 +4600,12 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&SkillsEffectRefsRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&SkillsTargetingOffsetsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&SkillsTargetingRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&SkillsRow{}).Error; err != nil {
 		return err
 	}
@@ -4504,10 +4684,14 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&ArcadesRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&TerrainsRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.Terrains = c.Terrains != nil
 	presence.Arcades = c.Arcades != nil
 	presence.CombatTrials = c.CombatTrials != nil
 	presence.QuestVisibility = c.QuestVisibility != nil
@@ -4530,6 +4714,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeTerrains(tx, c.Terrains); err != nil {
 		return err
 	}
 	if err := writeArcades(tx, c.Arcades); err != nil {
@@ -4618,6 +4805,10 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.Terrains, err = readTerrains(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Arcades, err = readArcades(tx)
 	if err != nil {
 		return nil, err
@@ -4729,6 +4920,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.Terrains {
+		c.Terrains = nil
 	}
 	if !presence.Arcades {
 		c.Arcades = nil

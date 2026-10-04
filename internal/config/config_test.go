@@ -151,3 +151,17 @@ func TestIdleTimeoutConfiguration(t *testing.T) {
 		t.Fatal("wrong idle defaults", got, err)
 	}
 }
+
+func TestCharacterCheckpointInterval(t *testing.T) {
+	if got, err := Load(""); err != nil || got.CharacterSaveSeconds != 30 {
+		t.Fatal(got, err)
+	}
+	for _, seconds := range []int{-1, 0, 1, 30, 3600, 3601} {
+		c := Default()
+		c.CharacterSaveSeconds = seconds
+		err := Validate(c)
+		if (err == nil) != (seconds >= 1 && seconds <= 3600) {
+			t.Fatal(seconds, err)
+		}
+	}
+}

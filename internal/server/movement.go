@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
 )
 
@@ -23,8 +22,20 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 		return nil
 	}
 	prevX, prevY := c.character.X, c.character.Y
-	if e := s.Store.UpdateCharacter(ctx, c.account.ID, c.character.ID, func(char *game.Character) error { char.X = x; char.Y = y; return nil }); e != nil {
-		return e
+	valid := s.World.CanMove(c.character.Map, prevX, prevY, x, y)
+	// Land collision bits cannot reject legitimate water/air travel. Preserve
+	// native vehicle movement within scene bounds for a validated active item;
+	// unowned or stale riding flags never grant the exception.
+	if _, mounted := c.character.Vehicle(c.character.VehicleSlot, c.character.ActiveVehicle, s.Assets.Items); mounted {
+		valid = s.World.Contains(c.character.Map, x, y)
+	}
+	if !valid {
+		return c.send(c.character.PositionPacket())
+	}
+	// Keep recoverable walking in memory until a guarded checkpoint.
+	if c.autosaveBaseline == nil {
+		baseline := c.character.Clone()
+		c.autosaveBaseline = &baseline
 	}
 	if x != prevX || y != prevY {
 		s.cancelTrade(c)

@@ -268,7 +268,7 @@ func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRo
 	case err != nil:
 		return err
 	}
-	*c.character = next
+	s.adoptSavedCharacter(c, next)
 	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
 	if err := c.send(next.Bag.AdditionPacket(adds)); err != nil {
 		return err

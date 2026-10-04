@@ -251,7 +251,7 @@ func (s *Server) tentFurnitureCommand(ctx context.Context, c *Session, p []byte)
 		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
 			return err
 		}
-		*c.character = next
+		s.adoptSavedCharacter(c, next)
 		s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, []byte{protocol.CommandTentFurniture, protocol.TentPlaceFurniture, protocol.TentFurnitureSucceeded})
 	case protocol.TentMoveFurniture:
 		if len(p) != protocol.TentMoveRequestBytes && len(p) != protocol.TentMoveRotatedRequestBytes {
@@ -302,7 +302,7 @@ func (s *Server) tentChatCommand(ctx context.Context, c *Session, name string, a
 		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
 			return true, err
 		}
-		*c.character = next
+		s.adoptSavedCharacter(c, next)
 		s.sendOrClose(c, next.Bag.AdditionPacket(adds))
 		return true, s.refreshTent(ctx, c.tentOwner)
 	case "tentexit":

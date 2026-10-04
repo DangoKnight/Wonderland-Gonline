@@ -30,6 +30,7 @@ administrator edits. Compiled growth formulas remain in code.
 | `max_connections` | `512` | Maximum concurrent TCP sessions across the game/status services; accepted range 1–100000 |
 | `idle_seconds` | `600` | Incoming-packet inactivity timeout during login, character selection and creation; 0 disables it, otherwise 1–86400 seconds |
 | `world_idle_seconds` | `0` | Incoming-packet inactivity timeout after selecting or creating a character, including map loading and warps; 0 disables idle logout, otherwise 1–86400 seconds |
+| `character_save_seconds` | `30` | Dirty recoverable session checkpoint interval, 1–3600 seconds; fixed until restart. Purchases/rewards and map transitions remain immediate |
 
 Each incoming packet renews the timeout for the current phase. Server replies do
 not renew it. By default, login allows ten minutes of inactivity and gameplay
@@ -460,3 +461,26 @@ Server startup requires structured asset tables. Upgrade existing databases with
 then set `database` and `assets_database` to the verified copies. See
 [ASSET_DATABASE.md](ASSET_DATABASE.md). These paths are startup parameters; content
 definitions and durable settings remain in their respective SQL databases.
+
+## Persistence policy and current scheduling
+
+Purchases, trades, bank/item consumption, rewards and claims must commit in SQL
+before success replies. Ordinary walking updates session memory and saves dirty recoverable fields
+periodically, at disconnect and graceful shutdown. See
+[transaction boundaries](DEVELOPMENT.md#transaction-boundaries-and-session-checkpoints).
+
+`character_save_seconds` sets the startup interval (default 30 seconds). Omitted
+fields keep that default; zero is rejected. Clean sessions skip SQL. Position-only
+saves update X/Y with stale-position checks and do not rewrite owned inventory,
+pets or quests. Committed purchases preserve pending walking in the online copy.
+Warps remain immediately durable, and gathering keeps its one-second cadence.
+
+With healthy checkpoints, a crash can lose up to one interval of ordinary movement;
+failed saves extend that window and are logged/retried. Disconnect/graceful
+shutdown attempts a final flush. Vehicle wear and resource consumption remain
+immediate even when triggered by movement. Checkpoints still hold the world lock
+through a bounded batch; multiplayer load/soak validation remains pending.
+
+GM command coverage is also incomplete: source `/reborn` character class/reset
+workflow is absent. Pet rebirth is a separate implemented operation. `/reload
+quests` refreshes native EVE/visibility, not the missing custom game_quests registry.

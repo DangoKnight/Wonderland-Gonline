@@ -204,9 +204,7 @@ func (s *Server) deliverAdminMail(ctx context.Context, c *Session) error {
 			s.Log.Warn("GM gift retained for later claim", "character", c.character.ID, "mail", message.ID, "error", err)
 			continue
 		}
-		*c.character = next
-		baseline := next.Clone()
-		c.autosaveBaseline = &baseline
+		s.adoptSavedCharacter(c, next)
 		var packets [][]byte
 		if len(adds) > 0 {
 			packets = append(packets, next.Bag.AdditionPacket(adds))

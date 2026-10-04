@@ -10,7 +10,7 @@ import (
 	"wonderland-go/internal/game"
 )
 
-const catalogSchemaVersion = 4
+const catalogSchemaVersion = 6
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -78,40 +78,81 @@ func migrateCatalog(tx *gorm.DB) error {
 			if err = writeTents(tx, tents); err != nil {
 				return err
 			}
-
 		}
-		for _, model := range catalogTables() {
-			if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_arcades") {
-				if err := tx.Migrator().CreateTable(model); err != nil {
+		if schema.Version < 4 {
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_arcades") {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
+			nativeItems, err := readNativeItems(tx)
+			if err != nil {
+				return err
+			}
+			items := map[uint16]game.ItemDefinition{}
+			for id, item := range nativeItems {
+				items[id] = item.Definition
+			}
+			arcades, err := defaultArcades(items)
+			if err != nil {
+				return err
+			}
+			if err = writeArcades(tx, arcades); err != nil {
+				return err
+			}
+			if err = tx.Migrator().AddColumn(&catalogPresence{}, "Arcades"); err != nil {
+				return err
+			}
+			if err = tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("arcades", true).Error; err != nil {
+				return err
+			}
+		}
+		if schema.Version < 5 {
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_terrains") {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
+			terrain, err := importedTerrains(tx)
+			if err != nil {
+				return err
+			}
+			if err = writeTerrains(tx, terrain); err != nil {
+				return err
+			}
+			if err = tx.Migrator().AddColumn(&catalogPresence{}, "Terrains"); err != nil {
+				return err
+			}
+			if err = tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("terrains", true).Error; err != nil {
+				return err
+			}
+		}
+		if schema.Version < 6 {
+			if !tx.Migrator().HasColumn(&SkillsRow{}, "ValueTargetingPresent") {
+				if err := tx.Migrator().AddColumn(&SkillsRow{}, "ValueTargetingPresent"); err != nil {
 					return err
 				}
 			}
-		}
-		nativeItems, err := readNativeItems(tx)
-		if err != nil {
-			return err
-		}
-		items := map[uint16]game.ItemDefinition{}
-		for id, item := range nativeItems {
-			items[id] = item.Definition
-		}
-		arcades, err := defaultArcades(items)
-		if err != nil {
-			return err
-		}
-		if err = writeArcades(tx, arcades); err != nil {
-			return err
-		}
-		if err = tx.Migrator().AddColumn(&catalogPresence{}, "Arcades"); err != nil {
-			return err
-		}
-		if err = tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("arcades", true).Error; err != nil {
-			return err
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_skills_targeting") && !tx.Migrator().HasTable(model) {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
 		}
 
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
+	if err != nil {
+		return err
+	}
+	c.Terrains, err = importedTerrains(tx)
 	if err != nil {
 		return err
 	}
@@ -159,6 +200,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateTerrains(c.Terrains); err != nil {
 		return nil, err
 	}
 	if err = assets.ValidateArcades(c.Arcades, c.Items); err != nil {

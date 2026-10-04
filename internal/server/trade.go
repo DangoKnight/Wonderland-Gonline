@@ -248,7 +248,7 @@ func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
 	// Adopt both results only after their shared transaction has committed.
 	old := [2]game.Character{a.character.Clone(), b.character.Clone()}
 	for i, player := range run.players {
-		*player.character = result.Characters[i]
+		s.adoptSavedCharacter(player, result.Characters[i])
 		player.trade = nil
 	}
 	for i, player := range run.players {

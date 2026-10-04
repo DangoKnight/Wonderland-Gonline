@@ -9,7 +9,9 @@ Follow the server data ownership and initialization policy in DEVELOPMENT.md:
 shared definitions belong in the assets database; durable gameplay state and
 server settings belong in the gameplay database. Prefer structured tables over
 JSON files and virtual documents, preserve existing data during initialization,
-and keep transient process state in memory. Compiled growth formulas remain in code.
+and keep transient process state in memory. Keep sensitive resource changes
+transactional in SQL; buffer explicitly recoverable session fields and checkpoint
+only dirty state according to DEVELOPMENT.md. Compiled growth formulas remain in code.
 
 ## Test scope
 

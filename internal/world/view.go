@@ -50,7 +50,7 @@ func (w *World) coordinates(mapID, click uint16) (uint16, uint16) {
 	if !ok {
 		return 0, 0
 	}
-	if n, ok := m.npc(click); ok {
+	if n, ok := w.NPC(mapID, click); ok {
 		return n.X, n.Y
 	}
 	for _, n := range m.data.NPCs {
