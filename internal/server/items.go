@@ -124,7 +124,7 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 	var adds []game.Addition
 	var e error
 	if known {
-		adds, e = bag.Grant(target.Item, 1, limit)
+		adds, e = bag.Grant(target.Item, 1, limit, s.Assets.Items)
 	}
 	// Unknown IDs cannot enter the bag; C# reports them as a full inventory too.
 	if !known || e != nil {
@@ -194,7 +194,7 @@ func (s *Server) moveItem(ctx context.Context, c *Session, from, count, to byte)
 	if !known {
 		return nil
 	}
-	moved, e := bag.Move(from, to, count, limit)
+	moved, e := bag.Move(from, to, count, limit, s.Assets.Items)
 	if e != nil {
 		return nil
 	}
@@ -255,7 +255,7 @@ func (s *Server) changeEquipment(ctx context.Context, c *Session, from, to byte,
 		e = next.Wear(from, s.Assets.Items)
 		reply = []byte{protocol.CommandInventory, protocol.InventoryPetEquip, from, from}
 	} else {
-		e = next.Unwear(from, to)
+		e = next.Unwear(from, to, s.Assets.Items)
 	}
 	if e != nil {
 		return nil

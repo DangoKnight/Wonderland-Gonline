@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	nativeItemCellWidthOffset  = 406
+	nativeItemCellHeightOffset = 407
 	nativeItemRecordBytes      = 451
 	nativeItemHeaderRecords    = 1
 	nativeItemVersionOffset    = 114
@@ -103,7 +105,7 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		if err != nil {
 			return nil, fmt.Errorf("native item %d description: %w", id, err)
 		}
-		item.Definition = game.ItemDefinition{ID: id, Name: name, Type: b[nativeItemTypeOffset], EquipSlot: uint16(b[nativeItemEquipSlotOffset]), Level: uint16(b[nativeItemLegacyLevelOffset]), Status: [2]uint16{le.Uint16(b[nativeItemStatusOffset:]), le.Uint16(b[nativeItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[nativeItemValueOffset:])), int32(le.Uint32(b[nativeItemValueOffset+4:]))}}
+		item.Definition = game.ItemDefinition{CellWidth: b[nativeItemCellWidthOffset], CellHeight: b[nativeItemCellHeightOffset], ID: id, Name: name, Type: b[nativeItemTypeOffset], EquipSlot: uint16(b[nativeItemEquipSlotOffset]), Level: uint16(b[nativeItemLegacyLevelOffset]), Status: [2]uint16{le.Uint16(b[nativeItemStatusOffset:]), le.Uint16(b[nativeItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[nativeItemValueOffset:])), int32(le.Uint32(b[nativeItemValueOffset+4:]))}}
 		item.Description = description
 		item.Icon = le.Uint16(b[nativeItemIconOffset:])
 		item.LargeIcon = le.Uint16(b[nativeItemLargeIconOffset:])
@@ -118,4 +120,13 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		return nil, fmt.Errorf("native item catalog: no item definitions")
 	}
 	return out, nil
+}
+
+// InitializeInventoryDimensions seeds projections made before dimensions were
+// named. This is an import/migration helper; gameplay reads typed SQL fields.
+func (item *NativeItem) InitializeInventoryDimensions() {
+	if item.Definition.CellWidth == 0 && item.Definition.CellHeight == 0 {
+		item.Definition.CellWidth = item.Record[nativeItemCellWidthOffset]
+		item.Definition.CellHeight = item.Record[nativeItemCellHeightOffset]
+	}
 }

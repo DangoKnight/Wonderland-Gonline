@@ -43,8 +43,8 @@ Game content definitions belong in `assets.db`. Preserve the startup-only
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v14 stores character state in typed tables and owned child rows.
-Structured asset schema v9 stores runtime definitions in generated `catalog_*`
+Gameplay schema v15 stores character state in typed tables and owned child rows.
+Structured asset schema v11 stores runtime definitions in generated `catalog_*`
 tables. Migration retains legacy representations solely as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
@@ -893,3 +893,70 @@ manufacturing escrow. Asset v9 owns full Compound2 formulas, rebirth cape mappin
 and authored recipe fee/chance projections. Debit ingredients/create escrow and
 deliver output/delete escrow transactionally before acknowledging. Recover pending
 jobs once per ready session; never reload or save walking on each timer tick.
+
+
+### World and combat parity
+
+See [world/combat parity](WORLD_COMBAT_PARITY.md). Gameplay v15 extends owned
+shared prop cooldown rows with explicit frames; preserve old broken-frame values
+when upgrading. Scripted frame/reset writes precede broadcasts; quest frames stay
+private. Starter packs are saved with character creation and never refilled on login.
+Explicit Admin grants validate SQL ownership and deliver whole packs atomically.
+Manual mass grants atomically audit each successful recipient and keep pending
+walking; enforce a bounded batch context and report failures individually.
+Clinic rest includes the accompanying roster only. Broadcast accepted action
+ACKs inside the battle, never to map spectators. PvP reward suppression is an
+explicit owner decision; do not restore the source grant while porting handlers.
+
+### Administration and custom quest data
+
+Use optimistic SQL versions for tab-scoped character and linked-prop edits.
+Validate and commit before publishing native updates; preserve unrelated state
+and pending walking through `adoptSavedCharacter`. Block loading, battles,
+scripted interactions, trades, stalls and private tent edits. Full character
+edits retain reconnect; live inventory/stat/settings/quest tabs clear native
+records that overlay rather than replace. Admin actor map scope is visit-local
+and cannot change another viewer's durable quests.
+
+Custom quest definitions use asset schema v10 typed child tables. Native Mark.dat
+text/IDs may seed metadata during explicit offline migration, without guessed
+rewards or destructive regeneration. Keep source reachability clear: registry
+editing/loading and PvE defeat counters are implemented; custom NPC acceptance,
+advance, completion, repeat/daily/cooldown and reward execution remain dormant.
+Count only defeated noncaptured monsters in PvE victory settlement; persist kills
+and ordinary rewards together. Never publish objective notices after a failed save.
+
+### Verified migration compatibility
+
+AC8 uses the legacy greedy amount decoder (4/2/1 available bytes); do not replace
+it with uniform batch widths without native evidence. Skip invalid, unaffordable
+or overflowing attribute allocations independently, preserving remaining points
+for later entries. This matches the pet source guard and deliberately protects
+character allocations from the source's UInt16 wrap.
+
+Keep default replies local to their owning handler. Unknown AC45 subcommands are
+read-only balance queries; PIN/transfer stay unavailable. There is no default
+ACK for unregistered commands. Do not copy AC03's short replies: native AC3 is a
+full self-character/map snapshot. Use the verified AC12/89/92 synchronization.
+Source Tradeable/use-type metadata has no restriction caller in the inspected
+trade/wear paths. Preserve recipe order in typed SQL arrays: authored alchemy
+precedes Compound2 then Compound, and first matching workbench recipe wins.
+See [focused verification](PORTING.md#focused-migration-verification--2026-10-04).
+
+## Inventory footprints
+
+Pass `s.Assets.Items` (or the equivalent SQL-derived catalog) to inventory
+operations. Item `CellWidth`/`CellHeight` come from decrypted native disk offsets
+406/407. Native `TRE_ItemGrid.FUN_0010f8ec` / aLogin `FUN_0011010c` reads object
+offsets 0x19a/0x19b, including the four-byte prefix. `FUN_0010fa2c` derives
+row-major anchor rectangles; the grid has five columns and ten rows. A zero
+in either size field falls back to 1 × 1, matching the native grid helper.
+
+Persist and transmit anchor items only. Derive occupancy with
+`Inventory.Occupancy`; use `Grant` for automatic placement and `CanPlace` when a
+protocol operation requires a particular anchor. Covered cells are unavailable,
+even though their anchor records are empty. Plan debits and delivery together;
+insufficient rectangular space must not consume payments or mark rewards claimed.
+Do not add a global catalog or persist duplicate child item records. SQL asset
+schema v11 explicitly seeds typed sizes from retained SQL bytes; gameplay reads
+the typed sizes exclusively. See [Items and Player State](ITEMS_PLAYER_STATE.md).

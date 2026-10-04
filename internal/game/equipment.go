@@ -180,15 +180,24 @@ func (c *Character) Wear(from byte, items map[uint16]ItemDefinition) error {
 	if c.Equipment[slot-1].Locked {
 		return ErrCannotEquip
 	}
-	c.Bag[from-1] = c.Equipment[slot-1]
+	bag := c.Bag
+	bag[from-1] = Item{}
+	if !c.Equipment[slot-1].Empty() && !bag.CanPlace(from, c.Equipment[slot-1], items) {
+		return ErrInventoryFull
+	}
+	bag[from-1] = c.Equipment[slot-1]
+	c.Bag = bag
 	c.Equipment[slot-1] = item
 	return nil
 }
 
 // Unwear follows Inventory.TryUnequip: the destination bag slot must be empty.
-func (c *Character) Unwear(from, to byte) error {
+func (c *Character) Unwear(from, to byte, definitions ...map[uint16]ItemDefinition) error {
 	if from < 1 || from > 6 || to < 1 || to > BagSize || !c.Bag[to-1].Empty() || c.Bag[to-1].Locked || c.Equipment[from-1].Locked || c.Equipment[from-1].ID == 0 {
 		return ErrCannotEquip
+	}
+	if !c.Bag.CanPlace(to, c.Equipment[from-1], inventoryDefinitions(definitions)) {
+		return ErrInventoryFull
 	}
 	c.Bag[to-1] = c.Equipment[from-1]
 	c.Bag[to-1].Count = 1

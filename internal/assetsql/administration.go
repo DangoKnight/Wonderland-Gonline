@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
+var DefinitionNames = []string{"Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -125,6 +125,9 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 	if err = validateFishingCatalog(c); err != nil {
 		return nil, err
 	}
+	if err = assets.ValidateQuestDefinitions(c); err != nil {
+		return nil, err
+	}
 	if err = validateDefinition(name, c); err != nil {
 		return nil, err
 	}
@@ -133,6 +136,8 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 func validateDefinition(name string, c *assets.Catalog) error {
 	marshal := func(v any) []byte { raw, _ := json.Marshal(v); return raw }
 	switch name {
+	case "QuestDefinitions":
+		return assets.ValidateQuestDefinitions(c)
 	case "Manufacturing":
 		return assets.ValidateManufacturing(c.Manufacturing, c.Items)
 	case "RebornClasses":

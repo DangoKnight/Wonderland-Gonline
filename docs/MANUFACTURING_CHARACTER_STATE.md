@@ -92,4 +92,4 @@ Optional legacy SQLite import still rejects unsupported metadata explicitly;
 these additions do not silently reinterpret old string-packed fields.
 
 Upgrade using [the verified database-copy procedure](ASSET_DATABASE.md). Gameplay
-schema v14 and asset schema v9 are required. Installation databases are not reset.
+schema v15 and asset schema v9 are required. Installation databases are not reset.

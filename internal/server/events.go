@@ -226,7 +226,7 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 		if handled, err := s.harvestProp(ctx, c, npc); handled || err != nil {
 			return err
 		}
-		return release()
+		return s.npcGreeting(c, npc)
 	}
 	// A door object outside interaction range still opens its linked portal.
 	if portal, ok := m.DoorPortal(click); ok {
@@ -241,7 +241,7 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 	if handled, err := s.storyClick(ctx, c, click); handled || err != nil {
 		return handled, err
 	}
-	events := s.World.NPCEvents(mapID, click)
+	events := s.robinsonRecoveryEvents(c.character, click, s.World.NPCEvents(mapID, click))
 	if len(events) == 0 {
 		return false, nil
 	}
@@ -467,7 +467,7 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 		return true
 	}
 	bag := c.character.Bag
-	_, e := bag.ApplyQuestItems(changes, s.stackLimit)
+	_, e := bag.ApplyQuestItems(changes, s.stackLimit, s.Assets.Items)
 	return e == nil
 }
 
@@ -759,7 +759,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 			return s.fallbackDialogue(c, es, op.Index, portrait, speaker, uint32(op.D2)|uint32(op.D3)<<16)
 		}
 	case world.ActionActor:
-		return s.actorAction(c, es, op)
+		return s.actorAction(ctx, c, es, op)
 	case world.ActionQuestMark:
 		return s.questMark(ctx, c, op)
 	case world.ActionCompanion:
@@ -841,7 +841,7 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 		amount = int32(es.chestReward.Count)
 	}
 	next := char.Clone()
-	result, e := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(amount)}}, s.stackLimit)
+	result, e := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(amount)}}, s.stackLimit, s.Assets.Items)
 	if e != nil {
 		if amount > 0 {
 			return false, c.send(headBanner("Cannot receive reward. Check inventory space and item data."))
@@ -923,7 +923,7 @@ func (s *Server) questMark(ctx context.Context, c *Session, op world.Op) (bool, 
 }
 
 // actorAction is opcode 2: animations, paths, prop frames, actor visibility and lines.
-func (s *Server) actorAction(c *Session, es *eventSession, op world.Op) (bool, error) {
+func (s *Server) actorAction(ctx context.Context, c *Session, es *eventSession, op world.Op) (bool, error) {
 	br := es.ev.Branches[es.branch]
 	mapID := es.mapID
 	if cliveAction(mapID, op) {
@@ -962,17 +962,21 @@ func (s *Server) actorAction(c *Session, es *eventSession, op world.Op) (bool, e
 			if op.D3 != 1 || state < 0 || state > 1 {
 				return false, nil
 			}
-			c.view.Props[target] = state
 		}
-		anim := protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(target).U8(byte(state))
-		if e := c.send(anim); e != nil {
-			return false, e
+		if !questEvent(es.ev, es.branch) && c.tentOwner == 0 {
+			if _, exists := s.World.NPC(mapID, target); exists {
+				if err := s.Store.SetMapPropState(ctx, mapID, target, byte(state), time.Now(), scriptedPropResetInterval); err != nil {
+					return false, err
+				}
+				s.publishProp(mapID, target, byte(state))
+				return true, nil
+			}
+			// The source broadcasts an unknown target but has no actor to reset.
+			s.broadcastWorld(c, propFrame(target, byte(state)))
 		}
-		// A renewable prop opens for everyone; quest props are per character.
-		if !questEvent(es.ev, es.branch) {
-			s.broadcastWorld(c, anim)
-		}
-		return true, nil
+		c.view.Props[target] = state
+		return true, c.send(propFrame(target, byte(state)))
+
 	case world.ActorActionHide, world.ActorActionShow:
 		target := es.click
 		if op.D1 > 0 {

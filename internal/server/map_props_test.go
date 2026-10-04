@@ -65,7 +65,7 @@ func TestSharedMapPropClaimsVisibilityRecoveryAndRespawn(t *testing.T) {
 	// An event finish replays a still-broken node after authored prop frames.
 	players[0].tentOwner = 0
 	players[1].view.Hidden[9] = false
-	_, _, err = s.Store.ClaimMapProp(ctx, store.CharacterRef{Account: players[1].account.ID, ID: players[1].character.ID}, mapID, 9, game.Item{ID: 32176, Count: 1}, 50, time.Now(), time.Minute)
+	_, _, err = s.Store.ClaimMapProp(ctx, store.CharacterRef{Account: players[1].account.ID, ID: players[1].character.ID}, mapID, 9, game.Item{ID: 32176, Count: 1}, 50, time.Now(), time.Minute, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

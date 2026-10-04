@@ -132,7 +132,7 @@ func (s *Server) adminPlayerActionLocked(ctx context.Context, id uint32, command
 		}
 		limit, _ := s.stackLimit(id)
 		next := c.character.Clone()
-		adds, err := next.Bag.Grant(game.Item{ID: id}, int(count), limit)
+		adds, err := next.Bag.Grant(game.Item{ID: id}, int(count), limit, s.Assets.Items)
 		if err != nil {
 			return err
 		}
@@ -369,13 +369,7 @@ func (s *Server) AdminSaveAll(ctx context.Context) error {
 	return nil
 }
 func (s *Server) AdminBroadcast(text string) error {
-	if !validChatText(text, chatCommandMaxBytes) {
-		return errors.New("invalid announcement")
-	}
-	s.worldMu.Lock()
-	defer s.worldMu.Unlock()
-	s.notice(text)
-	return nil
+	return s.AdminAnnouncement(text, "notice")
 }
 func (s *Server) AdminScheduleShutdown(seconds int) error {
 	if seconds < 1 || seconds > gmShutdownMaximumSeconds {

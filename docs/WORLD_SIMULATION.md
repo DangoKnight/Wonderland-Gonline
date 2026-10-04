@@ -115,3 +115,9 @@ Unlinked nonservice NPCs release interaction without the reference resolved/defa
 Kelan greeting. Clinic offer/confirmation heals the character, not accompanying
 pets. Native waypoint/emote and some synchronization requests remain absent; see
 PORTING.md. Scene geometry/simulation tests do not establish those command paths.
+
+
+Scripted shared prop frames now use the same durable cooldown store with the
+reference 60-second reset. Linked props replay at entry; quest props remain per
+character. See [world/combat parity](WORLD_COMBAT_PARITY.md) for packet and scope
+rules, clinic healing, starter recovery and battle synchronization.

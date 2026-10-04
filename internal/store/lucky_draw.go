@@ -12,7 +12,7 @@ var ErrLuckyDrawLimit = errors.New("daily Lucky Draw limit reached")
 
 // DrawLucky grants from current durable inventory and consumes the character's
 // allowance in the same transaction. Caller selects a validated static reward.
-func (s *Store) DrawLucky(ctx context.Context, ref CharacterRef, item uint16, quantity int, maxStack byte, now time.Time, reservations ...game.Character) (game.Character, []game.Addition, error) {
+func (s *Store) DrawLucky(ctx context.Context, ref CharacterRef, item uint16, quantity int, maxStack byte, now time.Time, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
 	var next game.Character
 	var adds []game.Addition
 	err := s.transaction(ctx, func(tx *gorm.DB) error {
@@ -27,7 +27,7 @@ func (s *Store) DrawLucky(ctx context.Context, ref CharacterRef, item uint16, qu
 		if !next.LuckyDraw.Consume(now) {
 			return ErrLuckyDrawLimit
 		}
-		adds, err = next.Bag.Grant(game.Item{ID: item}, quantity, maxStack)
+		adds, err = next.Bag.Grant(game.Item{ID: item}, quantity, maxStack, items)
 		if err != nil {
 			return err
 		}

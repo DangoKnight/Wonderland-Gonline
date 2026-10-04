@@ -47,7 +47,7 @@ func (s *Server) challengeTrial(c *Session, stage byte, native bool) error {
 			}
 			copy := m.character.Clone()
 			limit, _ := s.stackLimit(trial.Reward)
-			if _, err := copy.Bag.Grant(game.Item{ID: trial.Reward}, int(trial.Count), limit); err != nil {
+			if _, err := copy.Bag.Grant(game.Item{ID: trial.Reward}, int(trial.Count), limit, s.Assets.Items); err != nil {
 				accepted = false
 				break
 			}
@@ -71,7 +71,7 @@ func (s *Server) challengeTrial(c *Session, stage byte, native bool) error {
 
 func (s *Server) trialReward(next *game.Character, trial *assets.CombatTrial) [][]byte {
 	limit, _ := s.stackLimit(trial.Reward)
-	adds, err := next.Bag.Grant(game.Item{ID: trial.Reward}, int(trial.Count), limit)
+	adds, err := next.Bag.Grant(game.Item{ID: trial.Reward}, int(trial.Count), limit, s.Assets.Items)
 	if err != nil {
 		return [][]byte{headBanner("Trial reward could not fit in your inventory.")}
 	}

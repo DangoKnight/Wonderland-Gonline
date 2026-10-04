@@ -450,3 +450,57 @@ func installedCatalog(t *testing.T) (*assets.Catalog, error) {
 	}
 	return assets.Load(dir, filepath.Join("..", "..", "data", "item_data.json"))
 }
+
+func TestStarterPackCreationDoesNotRefillOnLogin(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	account, err := db.Register(ctx, "tester", "password", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog := creationCatalog()
+	s := New(config.Default(), db, catalog, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	wire := &captureConn{}
+	c := &Session{conn: wire, info: SessionInfo{ID: 1}, account: account, slot: 1}
+	for _, packet := range [][]byte{append([]byte{9, 2}, []byte("Player")...), createPayload()} {
+		if err := s.dispatch(ctx, c, packet); err != nil {
+			t.Fatal(err)
+		}
+	}
+	chars, err := db.Characters(ctx, account.ID)
+	if err != nil || len(chars) != 1 || bagCount(chars[0].Bag, 32176) != 50 || bagCount(c.character.Bag, 32176) != 50 {
+		t.Fatal("starter pack not persisted at creation", chars, err)
+	}
+	s.leaveWorld(c)
+	if err := db.UpdateCharacter(ctx, account.ID, account.CharacterID(1), func(char *game.Character) error {
+		char.Bag = game.Inventory{}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// Editing the pack must not grant new items to an existing character either.
+	catalog.Items[32177] = game.ItemDefinition{ID: 32177, Type: 23}
+	catalog.StarterItems = append(catalog.StarterItems, game.StarterGrant{ID: 32177, Count: 1})
+	for i := uint64(2); i <= 3; i++ {
+		wire.Reset()
+		c = &Session{conn: wire, info: SessionInfo{ID: i}, account: account}
+		if err := s.dispatch(ctx, c, []byte{63, 2, 1}); err != nil {
+			t.Fatal(err)
+		}
+		if c.character == nil || c.character.Level != 1 || c.character.Bag != (game.Inventory{}) {
+			t.Fatal("login refilled starter pack", c.character)
+		}
+		if !contains(wire.packets(t), c.character.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems)) {
+			t.Fatal("login inventory snapshot missing")
+		}
+		s.leaveWorld(c)
+	}
+	chars, err = db.Characters(ctx, account.ID)
+	if err != nil || len(chars) != 1 || chars[0].Bag != (game.Inventory{}) {
+		t.Fatal("login persisted another starter pack", chars, err)
+	}
+}

@@ -45,6 +45,11 @@ func (s *Server) validateAdminState(c game.Character) error {
 			return err
 		}
 	}
+	for _, inventory := range []game.Inventory{c.Bag, c.Storage} {
+		if _, err := inventory.Occupancy(s.Assets.Items); err != nil {
+			return fmt.Errorf("invalid inventory footprint: %w", err)
+		}
+	}
 	seenSkills := map[uint16]bool{}
 	for _, skill := range c.Skills {
 		if _, known := s.Assets.Skills[skill.ID]; !known || seenSkills[skill.ID] || skill.Grade < game.MinSkillGrade || skill.Grade > game.MaxSkillGrade {

@@ -2,9 +2,18 @@ package server
 
 import (
 	"context"
+	"wonderland-go/internal/assets"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
 	"wonderland-go/internal/world"
+)
+
+const (
+	robinsonRecruitmentEvent     = 19
+	robinsonRaftBranch           = 1
+	robinsonDialogueBranch       = 3
+	robinsonRecruitmentMark      = 12047
+	robinsonRecruitmentCompanion = 12178
 )
 
 const (
@@ -92,7 +101,7 @@ func (s *Server) storyContinuation(ctx context.Context, c *Session, es *eventSes
 		mapID == game.MapID11149 && event == 2 && branch == 10,
 		mapID == game.MapID11159 && event == 1 && branch == 1,
 		mapID == game.MapID11157 && (event == 1 || event == 2 || event == 5 || event == 6),
-		(mapID == beachMap || mapID == beachAltMap) && event == 19 && branch == 1:
+		(mapID == beachMap || mapID == beachAltMap) && event == robinsonRecruitmentEvent && (branch == robinsonRaftBranch || branch == robinsonDialogueBranch):
 		follow = true
 	}
 	if !follow {
@@ -113,4 +122,26 @@ func (s *Server) storyContinuation(ctx context.Context, c *Session, es *eventSes
 		return false, nil
 	}
 	return true, s.startEvent(ctx, c, click, ev, next, false)
+}
+
+// robinsonRecoveryEvents ports e63e9fe's candidate rescue. Keep existing linked
+// ordering when Event 19 is already present; otherwise try it ahead of greetings.
+// The ordinary branch, disabled-event, reward and capacity checks still apply.
+func (s *Server) robinsonRecoveryEvents(c *game.Character, click uint16, events []*assets.Event) []*assets.Event {
+	if (c.Map != beachMap && c.Map != beachAltMap) || click != robinsonClick || c.Quests[robinsonRecruitmentMark].State != game.InProgress {
+		return events
+	}
+	if _, recruited := c.Pet(robinsonRecruitmentCompanion); recruited {
+		return events
+	}
+	ev, ok := s.World.Event(c.Map, robinsonRecruitmentEvent)
+	if !ok {
+		return events
+	}
+	for _, candidate := range events {
+		if candidate == ev {
+			return events
+		}
+	}
+	return append([]*assets.Event{ev}, events...)
 }

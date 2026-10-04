@@ -415,6 +415,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	s.mu.Lock()
 	c.info.Map = dst.Map
 	s.mu.Unlock()
+	c.restMap = 0
 	c.ready, c.warped = false, true
 	c.arrived = true
 	s.endEvent(c)

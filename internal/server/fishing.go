@@ -123,7 +123,7 @@ func (s *Server) catchFishing(ctx context.Context, c *Session, now time.Time) er
 			return game.ErrInvalidItem
 		}
 		var err error
-		adds, err = next.Bag.Grant(game.Item{ID: reward.ItemID}, 1, def.StackLimit())
+		adds, err = next.Bag.Grant(game.Item{ID: reward.ItemID}, 1, def.StackLimit(), s.Assets.Items)
 		if errors.Is(err, game.ErrInventoryFull) {
 			discarded = true
 		} else if err != nil {

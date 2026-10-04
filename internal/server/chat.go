@@ -338,7 +338,7 @@ func (s *Server) giveItem(ctx context.Context, c *Session, words []string) error
 		}
 	}
 	bag := c.character.Bag
-	adds, e := bag.Grant(game.Item{ID: uint16(id)}, int(count), def.StackLimit())
+	adds, e := bag.Grant(game.Item{ID: uint16(id)}, int(count), def.StackLimit(), s.Assets.Items)
 	if e != nil {
 		return nil
 	}

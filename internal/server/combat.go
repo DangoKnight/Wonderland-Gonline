@@ -215,6 +215,15 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 }
 
 func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16) error {
+	if i := battlePetIndex(*m.c.character, m); i >= 0 {
+		pet := m.c.character.Pets[i]
+		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items)); err != nil {
+			return err
+		}
+	}
+	if m.c.party != nil {
+		s.partyUpdate(m.c.party)
+	}
 	intro := run.b.Intro(m.self, background)
 	if e := s.sendAll(m.c, intro[:2]); e != nil {
 		return e
@@ -253,8 +262,8 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		if ack == nil {
 			return nil
 		}
-		if e := c.send(ack); e != nil {
-			return e
+		for _, member := range run.active() {
+			s.sendOrClose(member.c, ack)
 		}
 		s.tryRound(run)
 	case protocol.CommandBattleState:
@@ -435,6 +444,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 				break
 			}
 			first = append(first, s.discoverBattleMonsters(&next, run)...)
+			first = append(first, s.customQuestKills(&next, run)...)
 			if run.trial != nil {
 				first = append(first, s.trialReward(&next, run.trial)...)
 			}
@@ -495,7 +505,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		}
 		var completed []uint32
 		for id, q := range next.Quests {
-			if before, exists := previousQuests[id]; !exists || before.State != q.State {
+			if before, exists := previousQuests[id]; !exists || before.State != q.State || before.Step != q.Step || before.Kills != q.Kills {
 				completed = append(completed, id)
 			}
 		}
@@ -533,7 +543,7 @@ func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition
 		}
 		for _, d := range r.RollDrops(s.Assets.Drops[m.Template], native, func(id uint16) bool { _, ok := s.Assets.Items[id]; return ok }) {
 			limit, _ := s.stackLimit(d.Item)
-			if a, e := next.Bag.Grant(game.Item{ID: d.Item}, int(d.Count), limit); e == nil {
+			if a, e := next.Bag.Grant(game.Item{ID: d.Item}, int(d.Count), limit, s.Assets.Items); e == nil {
 				adds = append(adds, a...)
 				dropped = append(dropped, fmt.Sprintf("%s x%d", s.itemName(d.Item), d.Count))
 			}

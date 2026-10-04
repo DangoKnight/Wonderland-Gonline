@@ -10,7 +10,7 @@ import (
 	"wonderland-go/internal/game"
 )
 
-const catalogSchemaVersion = 9
+const catalogSchemaVersion = 11
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -44,6 +44,40 @@ func migrateCatalog(tx *gorm.DB) error {
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
 		}
+
+		// Add dimensions before older upgrades read the expanded typed item row.
+		// Seed from retained SQL record bytes only; no external JSON/native reads.
+		if schema.Version < 11 {
+			for _, column := range []string{"ValueDefinitionCellWidth", "ValueDefinitionCellHeight"} {
+				if !tx.Migrator().HasColumn(&NativeItemsRow{}, column) {
+					if err := tx.Migrator().AddColumn(&NativeItemsRow{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			var rows []NativeItemsRow
+			if err := tx.Find(&rows).Error; err != nil {
+				return err
+			}
+			for _, row := range rows {
+				if row.ValueDefinitionCellWidth != 0 || row.ValueDefinitionCellHeight != 0 {
+					continue
+				}
+				var item assets.NativeItem
+				if len(row.ValueRecord) != len(item.Record) {
+					return fmt.Errorf("item %d: invalid retained record for inventory dimensions", row.NativeItemsKey)
+				}
+				copy(item.Record[:], row.ValueRecord)
+				item.InitializeInventoryDimensions()
+				if err := tx.Model(&NativeItemsRow{}).Where("native_items_key = ?", row.NativeItemsKey).Updates(map[string]any{
+					"value_definition_cell_width":  item.Definition.CellWidth,
+					"value_definition_cell_height": item.Definition.CellHeight,
+				}).Error; err != nil {
+					return err
+				}
+			}
+		}
+
 		if schema.Version == 1 {
 			for _, model := range catalogTables() {
 				named, ok := model.(interface{ TableName() string })
@@ -259,6 +293,42 @@ func migrateCatalog(tx *gorm.DB) error {
 			}
 		}
 
+		if schema.Version < 10 {
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_quest_definitions") {
+					if !tx.Migrator().HasTable(model) {
+						if err := tx.Migrator().CreateTable(model); err != nil {
+							return err
+						}
+					}
+				}
+			}
+			if !tx.Migrator().HasColumn(&catalogPresence{}, "QuestDefinitions") {
+				if err := tx.Migrator().AddColumn(&catalogPresence{}, "QuestDefinitions"); err != nil {
+					return err
+				}
+			}
+			var count int64
+			if err := tx.Model(&QuestDefinitionsRow{}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				marks, err := readMarks(tx)
+				if err != nil {
+					return err
+				}
+				defs, err := importedQuestDefinitions(tx, marks)
+				if err != nil {
+					return err
+				}
+				if err = writeQuestDefinitions(tx, defs); err != nil {
+					return err
+				}
+			}
+			if err := tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("quest_definitions", true).Error; err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -274,6 +344,10 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Tents, err = defaultTents()
+	if err != nil {
+		return err
+	}
+	c.QuestDefinitions, err = importedQuestDefinitions(tx, c.Marks)
 	if err != nil {
 		return err
 	}
@@ -361,6 +435,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = validateDefinition("CombatTrials", c); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateQuestDefinitions(c); err != nil {
 		return nil, err
 	}
 	if err = validateDefinition("QuestVisibility", c); err != nil {

@@ -4,7 +4,7 @@ import "fmt"
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 14
+const schemaVersion = 15
 
 func (s *Store) migrate() error {
 	var version int
@@ -220,7 +220,16 @@ func (s *Store) migrate() error {
 	if _, e = tx.Exec(`CREATE TABLE IF NOT EXISTS manufacture_jobs(character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,bench INTEGER NOT NULL,formula INTEGER NOT NULL,item_id INTEGER NOT NULL,count INTEGER NOT NULL,tent_output INTEGER NOT NULL,floor INTEGER NOT NULL,due_at INTEGER NOT NULL,remaining_millis INTEGER NOT NULL,paused INTEGER NOT NULL);`); e != nil {
 		return e
 	}
-	if _, e = tx.Exec("PRAGMA user_version=14"); e != nil {
+	var propFramePresent int
+	if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('map_props') WHERE name='frame'").Scan(&propFramePresent); e != nil {
+		return e
+	}
+	if propFramePresent == 0 {
+		if _, e = tx.Exec("ALTER TABLE map_props ADD COLUMN frame INTEGER NOT NULL DEFAULT 1 CHECK(frame BETWEEN 0 AND 1)"); e != nil {
+			return e
+		}
+	}
+	if _, e = tx.Exec("PRAGMA user_version=15"); e != nil {
 		return e
 	}
 	return tx.Commit()

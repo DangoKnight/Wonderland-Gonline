@@ -76,7 +76,7 @@ func (s *Server) updateRuntimeSettingsLocked(ctx context.Context, v RuntimeSetti
 	if !validExpRate(v.ExpRate) || math.IsNaN(v.DropRate) || math.IsInf(v.DropRate, 0) || v.DropRate < battle.MinDropRateMultiplier || v.DropRate > battle.MaxDropRateMultiplier {
 		return errors.New("invalid EXP or drop multiplier")
 	}
-	if v.StatusMode != "auto" && v.StatusMode != "green" && v.StatusMode != "yellow" && v.StatusMode != "red" {
+	if v.StatusMode != "auto" && v.StatusMode != "green" && v.StatusMode != "yellow" && v.StatusMode != "red" && v.StatusMode != "offline" {
 		return errors.New("invalid status mode")
 	}
 	if !validLogLevel(v.LogLevel) {
@@ -133,7 +133,7 @@ func (s *Server) LoadRuntimeSettings(ctx context.Context) error {
 		return errors.New("invalid persisted runtime settings")
 	}
 	switch current.StatusMode {
-	case "auto", "green", "yellow", "red":
+	case "auto", "green", "yellow", "red", "offline":
 	default:
 		return errors.New("invalid persisted status mode")
 	}
@@ -163,7 +163,7 @@ func (s *Server) launcherStatusPacket(online int) []byte {
 	s.worldMu.Lock()
 	mode := s.statusMode
 	s.worldMu.Unlock()
-	colors := map[string]byte{"green": protocol.StatusLoadGreen, "yellow": protocol.StatusLoadYellow, "red": protocol.StatusLoadRed}
+	colors := map[string]byte{"offline": protocol.StatusLoadOffline, "green": protocol.StatusLoadGreen, "yellow": protocol.StatusLoadYellow, "red": protocol.StatusLoadRed}
 	if color, ok := colors[mode]; ok {
 		const firstStatusColorOffset = 5
 		const statusEntryBytes = 3

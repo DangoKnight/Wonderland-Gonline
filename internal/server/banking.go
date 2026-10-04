@@ -10,8 +10,9 @@ func bankBalancePacket(character *game.Character, operation byte) []byte {
 	return protocol.Builder{protocol.CommandBank, operation}.U32(character.BankGold).U32(character.Gold)
 }
 
-// bankCommand implements AC45:8/9/10 under worldMu. The registry owns loading,
-// battle/minigame and trade gates; scripted interactions retain their ownership.
+// bankCommand implements AC45:8/9/10 and the read-only default balance reply
+// under worldMu. The registry owns loading, battle/minigame and trade gates;
+// scripted interactions retain their ownership.
 func (s *Server) bankCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
@@ -29,7 +30,9 @@ func (s *Server) bankCommand(ctx context.Context, c *Session, p []byte) error {
 		// These source handlers only acknowledge success; there is no implemented
 		// authentication or transfer to port. Never claim those operations succeeded.
 	default:
-		return ErrUnsupported
+		// AC45 defaults unknown subcommands to a balance query. Ignore their
+		// operands; this path cannot perform a transfer or claim success.
+		p = []byte{protocol.CommandBank, protocol.BankBalance}
 	}
 	if c.event != nil || c.storm || c.beach != nil {
 		return nil

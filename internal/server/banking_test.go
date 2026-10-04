@@ -121,9 +121,6 @@ func TestBankValidatesPacketsAndLeavesPlaceholdersUnavailable(t *testing.T) {
 			t.Fatal(packet, err)
 		}
 	}
-	if err := s.dispatch(context.Background(), c, []byte{45, 99}); !errors.Is(err, ErrUnsupported) {
-		t.Fatal(err)
-	}
 	if w[0].Len() != 0 {
 		t.Fatal("invalid packet emitted success")
 	}

@@ -35,7 +35,7 @@ func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16
 	}
 	next, adds, err := s.Store.GatherWater(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, plan.Timer, plan.Item, limit, now, func(stored *game.Character) bool {
 		return stored.Map == es.mapID && s.World.FindBranchAt(stored, c.view, es.mapID, ev, world.TriggerEntry, 0, 0, -1, now) == branch
-	}, c.character.Clone())
+	}, s.Assets.Items, c.character.Clone())
 	if errors.Is(err, store.ErrGatheringUnavailable) || errors.Is(err, game.ErrInventoryFull) {
 		return reject()
 	}

@@ -39,7 +39,7 @@ func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from,
 		if from < 1 || from > 6 || !s.hasItem(pet.Equipment[from-1].ID) {
 			return nil
 		}
-		err = transfer.Unwear(from, to)
+		err = transfer.Unwear(from, to, s.Assets.Items)
 		packet = []byte{protocol.CommandInventory, protocol.InventoryWireCode22, slot, from, to}
 	}
 	if err != nil {

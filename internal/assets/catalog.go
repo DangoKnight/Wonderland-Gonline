@@ -131,10 +131,11 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
-	Manufacturing map[uint16]ManufacturingFormula
-	RebornClasses []RebornClass
-	Fishing       FishingRules
-	Terrains      map[uint16]Terrain
+	QuestDefinitions map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
+	Manufacturing    map[uint16]ManufacturingFormula
+	RebornClasses    []RebornClass
+	Fishing          FishingRules
+	Terrains         map[uint16]Terrain
 
 	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`

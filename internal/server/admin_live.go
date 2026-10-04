@@ -199,7 +199,7 @@ func (s *Server) deliverAdminMail(ctx context.Context, c *Session) error {
 				continue
 			}
 		}
-		next, adds, err := s.Store.ClaimAdminMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, message.ID, limit, c.character.Clone())
+		next, adds, err := s.Store.ClaimAdminMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, message.ID, limit, s.Assets.Items, c.character.Clone())
 		if err != nil {
 			s.Log.Warn("GM gift retained for later claim", "character", c.character.ID, "mail", message.ID, "error", err)
 			continue

@@ -2,8 +2,8 @@
 
 ## Database upgrade
 
-Current server startup requires gameplay schema **v12** and structured assets
-schema **v6**. Economy/social tables were introduced in earlier versions.
+Current server startup requires gameplay schema **v15** and structured assets
+schema **v10**. Economy/social tables were introduced in earlier versions.
 Use the preserving offline copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,
@@ -53,12 +53,13 @@ Leader-only operations verify database membership and permissions. Leaving or
 deleting a leader elects the lowest-ID remaining member; empty guilds disband.
 Admin edits preserve roles and refresh online rosters and badges.
 
+AC39:1 requests the quest journal, including for characters without a guild.
+Repeated requests replace prior native entries; this is separate from the guild UI.
 AC39:12 requests the roster. Login/map entry restores the roster and badges;
 online/offline roster status updates on connection changes. Native AC2:6 and
 `/guild <message>` deliver guild chat across maps, respecting channel preferences
 and mute status. AC39:8 accepts the reference guild message string. Notices have
-at most 255 bytes and rosters at most 255 members. Job presentation uses the
-existing model's no-job marker until rebirth/job presentation is ported.
+at most 255 bytes and rosters at most 255 members. Persisted character jobs are used in roster presentation.
 
 ## Marriage
 
@@ -170,3 +171,17 @@ Purchases, fees, transfers, rewards and parcel claims stay immediately durable.
 Buffered walking preserves pending position when adopting a committed SQL
 result. Guarded checkpoints must not undo balances, attachments or draw usage.
 See DEVELOPMENT.md for the persistence boundary and remaining concurrency limits.
+
+## Focused migration verification
+
+AC45 retains the reference default: unknown bank subcommands return the private
+AC45:8 bank/wallet snapshot, ignoring any payload and changing no balances. PIN
+and transfer operations continue to report unavailable; no success-only source
+stub is treated as a completed transaction. Existing mutation/loading/trade gates
+still apply. Tests cover all default subcommands, private delivery, rollback,
+overflow and reopen.
+
+Recipe lookup retains authored entries before Compound2 then Compound, including
+first-match priority when inputs have multiple outputs. Typed SQL reload preserves
+this order independently of import snapshots. Manufacturing keeps first matching
+workbench order. See [focused results](PORTING.md#focused-migration-verification--2026-10-04).

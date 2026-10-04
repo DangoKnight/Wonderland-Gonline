@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	propIntactFrame = 0
-	propBrokenFrame = 1
+	propIntactFrame           = 0
+	propBrokenFrame           = 1
+	scriptedPropResetInterval = time.Minute
 )
 
 func propFrame(click uint16, state byte) []byte {
@@ -31,7 +32,7 @@ func (s *Server) harvestProp(ctx context.Context, c *Session, n world.NPC) (bool
 	if !known {
 		return true, s.sendAll(c, [][]byte{headBanner("The node reward is unavailable."), {protocol.CommandEvent, protocol.EventResume}})
 	}
-	next, adds, err := s.Store.ClaimMapProp(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, game.Item{ID: reward.Item, Count: reward.Count}, def.StackLimit(), time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, *c.character)
+	next, adds, err := s.Store.ClaimMapProp(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, game.Item{ID: reward.Item, Count: reward.Count}, def.StackLimit(), time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, s.Assets.Items, *c.character)
 	if errors.Is(err, store.ErrPropEmpty) || errors.Is(err, game.ErrInventoryFull) {
 		return true, s.sendAll(c, [][]byte{headBanner(err.Error()), {protocol.CommandEvent, protocol.EventResume}})
 	}
@@ -62,11 +63,11 @@ func (s *Server) syncMapProps(ctx context.Context, c *Session, now time.Time) er
 		return err
 	}
 	for _, p := range props {
-		if n, ok := s.World.NPC(p.MapID, p.ClickID); !ok || !s.World.GatheringProp(p.MapID, n) || c.view.Hidden[p.ClickID] || !s.World.VisibleIn(c.character, c.view, p.MapID, p.ClickID) {
+		if _, ok := s.World.NPC(p.MapID, p.ClickID); !ok || c.view.Hidden[p.ClickID] || !s.World.VisibleIn(c.character, c.view, p.MapID, p.ClickID) {
 			continue
 		}
-		c.view.Props[p.ClickID] = propBrokenFrame
-		if err = c.send(propFrame(p.ClickID, propBrokenFrame)); err != nil {
+		c.view.Props[p.ClickID] = int32(p.Frame)
+		if err = c.send(propFrame(p.ClickID, p.Frame)); err != nil {
 			return err
 		}
 	}

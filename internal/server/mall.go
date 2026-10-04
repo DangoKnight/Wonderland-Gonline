@@ -243,7 +243,7 @@ func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRo
 			return err
 		}
 		for _, id := range ids {
-			granted, err := character.Bag.Grant(game.Item{ID: id}, amounts[id], s.Assets.Items[id].StackLimit())
+			granted, err := character.Bag.Grant(game.Item{ID: id}, amounts[id], s.Assets.Items[id].StackLimit(), s.Assets.Items)
 			if err != nil {
 				return err
 			}

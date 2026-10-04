@@ -51,7 +51,7 @@ func (s *Store) Marry(ctx context.Context, refs [2]CharacterRef, minimumLevel ui
 				if !known {
 					return errors.New("wedding ring definition is unavailable")
 				}
-				adds[i], err = chars[i].Bag.Grant(game.Item{ID: rings[i]}, 1, item.StackLimit())
+				adds[i], err = chars[i].Bag.Grant(game.Item{ID: rings[i]}, 1, item.StackLimit(), items)
 				if err != nil {
 					return err
 				}

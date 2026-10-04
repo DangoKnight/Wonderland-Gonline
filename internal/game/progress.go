@@ -118,28 +118,31 @@ func ParseStatAllocation(sub byte, data []byte) (target byte, out []StatAllocati
 	return target, out
 }
 
-// Allocate spends stat points on base attributes; each request applies only when
-// enough points remain. It reports whether anything changed.
+// Allocate spends stat points on base attributes. Invalid, overflowing or
+// unaffordable entries are skipped independently, preserving batch order.
 func (c *Character) Allocate(requests []StatAllocation) bool {
 	changed := false
 	for _, r := range requests {
-		if r.Amount == 0 || uint32(c.StatPoints) < r.Amount {
+		var value *uint16
+		switch r.Stat {
+		case StatSTR:
+			value = &c.Base.Strength
+		case StatCON:
+			value = &c.Base.Constitution
+		case StatINT:
+			value = &c.Base.Intelligence
+		case StatWIS:
+			value = &c.Base.Wisdom
+		case StatAGI:
+			value = &c.Base.Agility
+		default:
+			continue
+		}
+		if r.Amount == 0 || uint32(c.StatPoints) < r.Amount || r.Amount > math.MaxUint16-uint32(*value) {
 			continue
 		}
 		c.StatPoints -= uint16(r.Amount)
-		n := uint16(r.Amount)
-		switch r.Stat {
-		case StatSTR:
-			c.Base.Strength += n
-		case StatCON:
-			c.Base.Constitution += n
-		case StatINT:
-			c.Base.Intelligence += n
-		case StatWIS:
-			c.Base.Wisdom += n
-		case StatAGI:
-			c.Base.Agility += n
-		}
+		*value += uint16(r.Amount)
 		changed = true
 	}
 	return changed

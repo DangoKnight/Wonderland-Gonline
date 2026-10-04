@@ -42,14 +42,14 @@ func (q *Quest) Complete(now time.Time) bool {
 
 // GrantQuestReward commits the completed flag and all item rewards together.
 // Persistence must commit the containing character as one transaction.
-func (c *Character) GrantQuestReward(id uint32, rewards []Item, maxStack func(uint16) byte, now time.Time) error {
+func (c *Character) GrantQuestReward(id uint32, rewards []Item, maxStack func(uint16) byte, now time.Time, definitions ...map[uint16]ItemDefinition) error {
 	q, ok := c.Quests[id]
 	if !ok || q.State != InProgress {
 		return errors.New("quest is not in progress")
 	}
 	bag := c.Bag
 	for _, item := range rewards {
-		if e := bag.Add(item, int(item.Count), maxStack(item.ID)); e != nil {
+		if e := bag.Add(item, int(item.Count), maxStack(item.ID), definitions...); e != nil {
 			return e
 		}
 	}

@@ -37,7 +37,7 @@ func (s *Server) gmReborn(ctx context.Context, c *Session, command string, args 
 			return fmt.Errorf("rebirth requires level %d and a character that has not reborn", game.RebornMinimumLevel)
 		}
 		var err error
-		adds, err = next.Bag.Grant(game.Item{ID: cape}, 1, definition.StackLimit())
+		adds, err = next.Bag.Grant(game.Item{ID: cape}, 1, definition.StackLimit(), s.Assets.Items)
 		if err != nil {
 			return err
 		}

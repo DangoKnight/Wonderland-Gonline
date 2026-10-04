@@ -35,7 +35,7 @@ func TestLuckyDrawDurableLimitPerCharacterAndReopen(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today)
+			_, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today, nil)
 			mu.Lock()
 			defer mu.Unlock()
 			if err == nil {
@@ -50,7 +50,7 @@ func TestLuckyDrawDurableLimitPerCharacterAndReopen(t *testing.T) {
 		t.Fatal(successes)
 	}
 	other := CharacterRef{Account: account.ID, ID: account.CharacterID(2)}
-	if next, _, err := db.DrawLucky(ctx, other, 100, 1, 50, today); err != nil || next.LuckyDraw.Used != 1 {
+	if next, _, err := db.DrawLucky(ctx, other, 100, 1, 50, today, nil); err != nil || next.LuckyDraw.Used != 1 {
 		t.Fatal(next, err)
 	}
 	if err := db.Close(); err != nil {
@@ -61,14 +61,14 @@ func TestLuckyDrawDurableLimitPerCharacterAndReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if _, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today); !errors.Is(err, ErrLuckyDrawLimit) {
+	if _, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today, nil); !errors.Is(err, ErrLuckyDrawLimit) {
 		t.Fatal("restart reset allowance", err)
 	}
-	next, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today.Add(time.Second))
+	next, _, err := db.DrawLucky(ctx, ref, 100, 2, 50, today.Add(time.Second), nil)
 	if err != nil || next.LuckyDraw.Used != 1 || next.LuckyDraw.Day != "2026-10-03" || next.Bag[0].Count != 8 {
 		t.Fatal(next, err)
 	}
-	if _, _, err := db.DrawLucky(ctx, CharacterRef{Account: account.ID + 1, ID: ref.ID}, 100, 2, 50, today); err == nil {
+	if _, _, err := db.DrawLucky(ctx, CharacterRef{Account: account.ID + 1, ID: ref.ID}, 100, 2, 50, today, nil); err == nil {
 		t.Fatal("foreign character")
 	}
 }
@@ -85,7 +85,7 @@ func TestLuckyDrawFailedGrantAndSaveRollBackUsage(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.DrawLucky(ctx, refs[0], 100, 1, 50, now); !errors.Is(err, game.ErrInventoryFull) {
+	if _, _, err := db.DrawLucky(ctx, refs[0], 100, 1, 50, now, nil); !errors.Is(err, game.ErrInventoryFull) {
 		t.Fatal(err)
 	}
 	saved, err := db.Characters(ctx, refs[0].Account)
@@ -98,7 +98,7 @@ func TestLuckyDrawFailedGrantAndSaveRollBackUsage(t *testing.T) {
 	if _, err := db.db.Exec(`CREATE TRIGGER fail_lucky_save BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT, 'save failed'); END`); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.DrawLucky(ctx, refs[0], 100, 1, 50, now); err == nil {
+	if _, _, err := db.DrawLucky(ctx, refs[0], 100, 1, 50, now, nil); err == nil {
 		t.Fatal("save failure succeeded")
 	}
 	saved, err = db.Characters(ctx, refs[0].Account)

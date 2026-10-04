@@ -157,7 +157,7 @@ func (s *Store) PickUpTentItem(ctx context.Context, ref CharacterRef, index uint
 		}
 		item := game.Item{ID: row.ItemID, Damage: row.Damage}
 		copy(item.Metadata[:], row.Metadata)
-		adds, err = next.Bag.Grant(item, 1, def.StackLimit())
+		adds, err = next.Bag.Grant(item, 1, def.StackLimit(), items)
 		if err != nil {
 			return err
 		}

@@ -79,7 +79,7 @@ func (s *Server) openGachaPack(ctx context.Context, c *Session, slot byte) (bool
 	if err := next.Bag.Remove(slot, game.GachaPacksPerOpening); err != nil {
 		return true, err
 	}
-	adds, err := next.Bag.Grant(game.Item{ID: reward.ID}, reward.Quantity, limit)
+	adds, err := next.Bag.Grant(game.Item{ID: reward.ID}, reward.Quantity, limit, s.Assets.Items)
 	if err != nil {
 		return true, c.send(headBanner("Please free an inventory slot. Pack retained."))
 	}

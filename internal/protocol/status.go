@@ -7,6 +7,7 @@ const (
 	StatusDefaultCluster  = 1
 	StatusLegacyServerID  = 1
 	StatusDefaultServerID = 101
+	StatusLoadOffline     = 0
 	StatusLoadGreen       = 1
 	StatusLoadYellow      = 2
 	StatusLoadRed         = 3

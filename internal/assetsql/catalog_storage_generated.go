@@ -8,6 +8,970 @@ import (
 	"wonderland-go/internal/game"
 )
 
+type QuestDefinitionsRow struct {
+	QuestDefinitionsKey               uint32 `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	ValueID                           uint32
+	ValueMapID                        uint16
+	ValueTitle                        string
+	ValueDescription                  string
+	ValueType                         assets.QuestType
+	ValueRequiredLevel                uint16
+	ValueNPCTemplateID                uint32
+	ValueNPCNamePattern               string
+	ValueCategory                     string
+	ValueAreaName                     string
+	ValueInProgressMarkID             uint32
+	ValueCompletedMarkID              uint32
+	ValueAllLinkedMarkIDsPresent      bool
+	ValueRequiredItemsPresent         bool
+	ValueRewardGold                   uint32
+	ValueRewardEXP                    uint32
+	ValueRewardItemsPresent           bool
+	ValueRewardCompanionID            uint32
+	ValueRewardCompanionName          string
+	ValueIntroDialogue                string
+	ValueInProgressDialogue           string
+	ValueCompleteDialogue             string
+	ValueAlreadyCompletedDialogue     string
+	ValueBattleMonsterID              uint32
+	ValueBattleMonsterName            string
+	ValueRequiredKillCount            int
+	ValueRepeatable                   bool
+	ValueDaily                        bool
+	ValueCooldownMinutes              int
+	ValuePrerequisiteQuestIDsPresent  bool
+	ValueDespawnNPCClickIDsPresent    bool
+	ValueSpawnNPCClickIDsPresent      bool
+	ValueDespawnNPCTemplateIDsPresent bool
+	ValueSpawnNPCTemplateIDsPresent   bool
+	ValueRelocateToMapID              uint16
+	ValueStepsPresent                 bool
+}
+
+func (QuestDefinitionsRow) TableName() string { return "catalog_quest_definitions" }
+func writeQuestDefinitions(tx *gorm.DB, values map[uint32]assets.QuestDefinition) error {
+	var rows []QuestDefinitionsRow
+	for key, value := range values {
+		row := QuestDefinitionsRow{QuestDefinitionsKey: key}
+		row.ValueID = value.ID
+		row.ValueMapID = value.MapID
+		row.ValueTitle = value.Title
+		row.ValueDescription = value.Description
+		row.ValueType = value.Type
+		row.ValueRequiredLevel = value.RequiredLevel
+		row.ValueNPCTemplateID = value.NPCTemplateID
+		row.ValueNPCNamePattern = value.NPCNamePattern
+		row.ValueCategory = value.Category
+		row.ValueAreaName = value.AreaName
+		row.ValueInProgressMarkID = value.InProgressMarkID
+		row.ValueCompletedMarkID = value.CompletedMarkID
+		row.ValueAllLinkedMarkIDsPresent = value.AllLinkedMarkIDs != nil
+		row.ValueRequiredItemsPresent = value.RequiredItems != nil
+		row.ValueRewardGold = value.Reward.Gold
+		row.ValueRewardEXP = value.Reward.EXP
+		row.ValueRewardItemsPresent = value.Reward.Items != nil
+		row.ValueRewardCompanionID = value.Reward.CompanionID
+		row.ValueRewardCompanionName = value.Reward.CompanionName
+		row.ValueIntroDialogue = value.IntroDialogue
+		row.ValueInProgressDialogue = value.InProgressDialogue
+		row.ValueCompleteDialogue = value.CompleteDialogue
+		row.ValueAlreadyCompletedDialogue = value.AlreadyCompletedDialogue
+		row.ValueBattleMonsterID = value.BattleMonsterID
+		row.ValueBattleMonsterName = value.BattleMonsterName
+		row.ValueRequiredKillCount = value.RequiredKillCount
+		row.ValueRepeatable = value.Repeatable
+		row.ValueDaily = value.Daily
+		row.ValueCooldownMinutes = value.CooldownMinutes
+		row.ValuePrerequisiteQuestIDsPresent = value.PrerequisiteQuestIDs != nil
+		row.ValueDespawnNPCClickIDsPresent = value.DespawnNPCClickIDs != nil
+		row.ValueSpawnNPCClickIDsPresent = value.SpawnNPCClickIDs != nil
+		row.ValueDespawnNPCTemplateIDsPresent = value.DespawnNPCTemplateIDs != nil
+		row.ValueSpawnNPCTemplateIDsPresent = value.SpawnNPCTemplateIDs != nil
+		row.ValueRelocateToMapID = value.RelocateToMapID
+		row.ValueStepsPresent = value.Steps != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeQuestDefinitionsAllLinkedMarkIDs(tx, value.AllLinkedMarkIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsRequiredItems(tx, value.RequiredItems, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsRewardItems(tx, value.Reward.Items, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsPrerequisiteQuestIDs(tx, value.PrerequisiteQuestIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsDespawnNPCClickIDs(tx, value.DespawnNPCClickIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsSpawnNPCClickIDs(tx, value.SpawnNPCClickIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsDespawnNPCTemplateIDs(tx, value.DespawnNPCTemplateIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsSpawnNPCTemplateIDs(tx, value.SpawnNPCTemplateIDs, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsSteps(tx, value.Steps, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitions(tx *gorm.DB) (map[uint32]assets.QuestDefinition, error) {
+	result := make(map[uint32]assets.QuestDefinition)
+	var rows []QuestDefinitionsRow
+	query := tx
+	if err := query.Order("quest_definitions_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestDefinition
+		value.ID = row.ValueID
+		value.MapID = row.ValueMapID
+		value.Title = row.ValueTitle
+		value.Description = row.ValueDescription
+		value.Type = row.ValueType
+		value.RequiredLevel = row.ValueRequiredLevel
+		value.NPCTemplateID = row.ValueNPCTemplateID
+		value.NPCNamePattern = row.ValueNPCNamePattern
+		value.Category = row.ValueCategory
+		value.AreaName = row.ValueAreaName
+		value.InProgressMarkID = row.ValueInProgressMarkID
+		value.CompletedMarkID = row.ValueCompletedMarkID
+		if row.ValueAllLinkedMarkIDsPresent {
+			var err error
+			value.AllLinkedMarkIDs, err = readQuestDefinitionsAllLinkedMarkIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueRequiredItemsPresent {
+			var err error
+			value.RequiredItems, err = readQuestDefinitionsRequiredItems(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.Reward.Gold = row.ValueRewardGold
+		value.Reward.EXP = row.ValueRewardEXP
+		if row.ValueRewardItemsPresent {
+			var err error
+			value.Reward.Items, err = readQuestDefinitionsRewardItems(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.Reward.CompanionID = row.ValueRewardCompanionID
+		value.Reward.CompanionName = row.ValueRewardCompanionName
+		value.IntroDialogue = row.ValueIntroDialogue
+		value.InProgressDialogue = row.ValueInProgressDialogue
+		value.CompleteDialogue = row.ValueCompleteDialogue
+		value.AlreadyCompletedDialogue = row.ValueAlreadyCompletedDialogue
+		value.BattleMonsterID = row.ValueBattleMonsterID
+		value.BattleMonsterName = row.ValueBattleMonsterName
+		value.RequiredKillCount = row.ValueRequiredKillCount
+		value.Repeatable = row.ValueRepeatable
+		value.Daily = row.ValueDaily
+		value.CooldownMinutes = row.ValueCooldownMinutes
+		if row.ValuePrerequisiteQuestIDsPresent {
+			var err error
+			value.PrerequisiteQuestIDs, err = readQuestDefinitionsPrerequisiteQuestIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueDespawnNPCClickIDsPresent {
+			var err error
+			value.DespawnNPCClickIDs, err = readQuestDefinitionsDespawnNPCClickIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueSpawnNPCClickIDsPresent {
+			var err error
+			value.SpawnNPCClickIDs, err = readQuestDefinitionsSpawnNPCClickIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueDespawnNPCTemplateIDsPresent {
+			var err error
+			value.DespawnNPCTemplateIDs, err = readQuestDefinitionsDespawnNPCTemplateIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueSpawnNPCTemplateIDsPresent {
+			var err error
+			value.SpawnNPCTemplateIDs, err = readQuestDefinitionsSpawnNPCTemplateIDs(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.RelocateToMapID = row.ValueRelocateToMapID
+		if row.ValueStepsPresent {
+			var err error
+			value.Steps, err = readQuestDefinitionsSteps(tx, row.QuestDefinitionsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.QuestDefinitionsKey] = value
+	}
+	return result, nil
+}
+
+type QuestDefinitionsAllLinkedMarkIDsRow struct {
+	QuestDefinitionsKey                     uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsAllLinkedMarkIDsOrdinal int                  `gorm:"column:quest_definitions_all_linked_mark_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                  *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                   uint32
+}
+
+func (QuestDefinitionsAllLinkedMarkIDsRow) TableName() string {
+	return "catalog_quest_definitions_all_linked_mark_i_ds"
+}
+func writeQuestDefinitionsAllLinkedMarkIDs(tx *gorm.DB, values []uint32, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsAllLinkedMarkIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsAllLinkedMarkIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsAllLinkedMarkIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsAllLinkedMarkIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []QuestDefinitionsAllLinkedMarkIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_all_linked_mark_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.QuestDefinitionsAllLinkedMarkIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsRequiredItemsRow struct {
+	QuestDefinitionsKey                  uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsRequiredItemsOrdinal int                  `gorm:"column:quest_definitions_required_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                               *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	ValueItemID                          uint16
+	ValueCount                           int
+	ValueName                            string
+}
+
+func (QuestDefinitionsRequiredItemsRow) TableName() string {
+	return "catalog_quest_definitions_required_items"
+}
+func writeQuestDefinitionsRequiredItems(tx *gorm.DB, values []assets.QuestItem, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsRequiredItemsRow
+	for key, value := range values {
+		row := QuestDefinitionsRequiredItemsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsRequiredItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueCount = value.Count
+		row.ValueName = value.Name
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsRequiredItems(tx *gorm.DB, QuestDefinitionsKey uint32) ([]assets.QuestItem, error) {
+	result := make([]assets.QuestItem, 0)
+	var rows []QuestDefinitionsRequiredItemsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_required_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestItem
+		value.ItemID = row.ValueItemID
+		value.Count = row.ValueCount
+		value.Name = row.ValueName
+		if row.QuestDefinitionsRequiredItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsRewardItemsRow struct {
+	QuestDefinitionsKey                uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsRewardItemsOrdinal int                  `gorm:"column:quest_definitions_reward_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                             *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	ValueItemID                        uint16
+	ValueCount                         int
+	ValueName                          string
+}
+
+func (QuestDefinitionsRewardItemsRow) TableName() string {
+	return "catalog_quest_definitions_reward_items"
+}
+func writeQuestDefinitionsRewardItems(tx *gorm.DB, values []assets.QuestItem, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsRewardItemsRow
+	for key, value := range values {
+		row := QuestDefinitionsRewardItemsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsRewardItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueCount = value.Count
+		row.ValueName = value.Name
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsRewardItems(tx *gorm.DB, QuestDefinitionsKey uint32) ([]assets.QuestItem, error) {
+	result := make([]assets.QuestItem, 0)
+	var rows []QuestDefinitionsRewardItemsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_reward_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestItem
+		value.ItemID = row.ValueItemID
+		value.Count = row.ValueCount
+		value.Name = row.ValueName
+		if row.QuestDefinitionsRewardItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsPrerequisiteQuestIDsRow struct {
+	QuestDefinitionsKey                         uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsPrerequisiteQuestIDsOrdinal int                  `gorm:"column:quest_definitions_prerequisite_quest_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                      *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                       uint32
+}
+
+func (QuestDefinitionsPrerequisiteQuestIDsRow) TableName() string {
+	return "catalog_quest_definitions_prerequisite_quest_i_ds"
+}
+func writeQuestDefinitionsPrerequisiteQuestIDs(tx *gorm.DB, values []uint32, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsPrerequisiteQuestIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsPrerequisiteQuestIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsPrerequisiteQuestIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsPrerequisiteQuestIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []QuestDefinitionsPrerequisiteQuestIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_prerequisite_quest_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.QuestDefinitionsPrerequisiteQuestIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsDespawnNPCClickIDsRow struct {
+	QuestDefinitionsKey                       uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsDespawnNPCClickIDsOrdinal int                  `gorm:"column:quest_definitions_despawn_n_p_c_click_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                    *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                     uint16
+}
+
+func (QuestDefinitionsDespawnNPCClickIDsRow) TableName() string {
+	return "catalog_quest_definitions_despawn_n_p_c_click_i_ds"
+}
+func writeQuestDefinitionsDespawnNPCClickIDs(tx *gorm.DB, values []uint16, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsDespawnNPCClickIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsDespawnNPCClickIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsDespawnNPCClickIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsDespawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []QuestDefinitionsDespawnNPCClickIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_despawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.QuestDefinitionsDespawnNPCClickIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsSpawnNPCClickIDsRow struct {
+	QuestDefinitionsKey                     uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsSpawnNPCClickIDsOrdinal int                  `gorm:"column:quest_definitions_spawn_n_p_c_click_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                  *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                   uint16
+}
+
+func (QuestDefinitionsSpawnNPCClickIDsRow) TableName() string {
+	return "catalog_quest_definitions_spawn_n_p_c_click_i_ds"
+}
+func writeQuestDefinitionsSpawnNPCClickIDs(tx *gorm.DB, values []uint16, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsSpawnNPCClickIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsSpawnNPCClickIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsSpawnNPCClickIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsSpawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []QuestDefinitionsSpawnNPCClickIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_spawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.QuestDefinitionsSpawnNPCClickIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsDespawnNPCTemplateIDsRow struct {
+	QuestDefinitionsKey                          uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsDespawnNPCTemplateIDsOrdinal int                  `gorm:"column:quest_definitions_despawn_n_p_c_template_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                       *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                        uint32
+}
+
+func (QuestDefinitionsDespawnNPCTemplateIDsRow) TableName() string {
+	return "catalog_quest_definitions_despawn_n_p_c_template_i_ds"
+}
+func writeQuestDefinitionsDespawnNPCTemplateIDs(tx *gorm.DB, values []uint32, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsDespawnNPCTemplateIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsDespawnNPCTemplateIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsDespawnNPCTemplateIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsDespawnNPCTemplateIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []QuestDefinitionsDespawnNPCTemplateIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_despawn_n_p_c_template_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.QuestDefinitionsDespawnNPCTemplateIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsSpawnNPCTemplateIDsRow struct {
+	QuestDefinitionsKey                        uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsSpawnNPCTemplateIDsOrdinal int                  `gorm:"column:quest_definitions_spawn_n_p_c_template_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                     *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	Value                                      uint32
+}
+
+func (QuestDefinitionsSpawnNPCTemplateIDsRow) TableName() string {
+	return "catalog_quest_definitions_spawn_n_p_c_template_i_ds"
+}
+func writeQuestDefinitionsSpawnNPCTemplateIDs(tx *gorm.DB, values []uint32, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsSpawnNPCTemplateIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsSpawnNPCTemplateIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsSpawnNPCTemplateIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsSpawnNPCTemplateIDs(tx *gorm.DB, QuestDefinitionsKey uint32) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []QuestDefinitionsSpawnNPCTemplateIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_spawn_n_p_c_template_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.QuestDefinitionsSpawnNPCTemplateIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsRow struct {
+	QuestDefinitionsKey            uint32               `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal   int                  `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	Parent                         *QuestDefinitionsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey;references:QuestDefinitionsKey;constraint:OnDelete:CASCADE"`
+	ValueIndex                     int
+	ValueTargetNPCTemplateID       uint32
+	ValueTargetNPCPattern          string
+	ValueType                      assets.QuestType
+	ValuePromptDialogue            string
+	ValueInProgressDialogue        string
+	ValueCompleteDialogue          string
+	ValueRequiredItemsPresent      bool
+	ValueGrantItemsPresent         bool
+	ValueRewardGold                uint32
+	ValueRewardEXP                 uint32
+	ValueRewardItemsPresent        bool
+	ValueRewardCompanionID         uint32
+	ValueRewardCompanionName       string
+	ValueBattleMonsterID           uint32
+	ValueBattleMonsterName         string
+	ValueRequiredKillCount         int
+	ValueSpawnNPCClickIDsPresent   bool
+	ValueDespawnNPCClickIDsPresent bool
+}
+
+func (QuestDefinitionsStepsRow) TableName() string { return "catalog_quest_definitions_steps" }
+func writeQuestDefinitionsSteps(tx *gorm.DB, values []assets.QuestStep, QuestDefinitionsKey uint32) error {
+	var rows []QuestDefinitionsStepsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: key}
+		row.ValueIndex = value.Index
+		row.ValueTargetNPCTemplateID = value.TargetNPCTemplateID
+		row.ValueTargetNPCPattern = value.TargetNPCPattern
+		row.ValueType = value.Type
+		row.ValuePromptDialogue = value.PromptDialogue
+		row.ValueInProgressDialogue = value.InProgressDialogue
+		row.ValueCompleteDialogue = value.CompleteDialogue
+		row.ValueRequiredItemsPresent = value.RequiredItems != nil
+		row.ValueGrantItemsPresent = value.GrantItems != nil
+		row.ValueRewardGold = value.Reward.Gold
+		row.ValueRewardEXP = value.Reward.EXP
+		row.ValueRewardItemsPresent = value.Reward.Items != nil
+		row.ValueRewardCompanionID = value.Reward.CompanionID
+		row.ValueRewardCompanionName = value.Reward.CompanionName
+		row.ValueBattleMonsterID = value.BattleMonsterID
+		row.ValueBattleMonsterName = value.BattleMonsterName
+		row.ValueRequiredKillCount = value.RequiredKillCount
+		row.ValueSpawnNPCClickIDsPresent = value.SpawnNPCClickIDs != nil
+		row.ValueDespawnNPCClickIDsPresent = value.DespawnNPCClickIDs != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeQuestDefinitionsStepsRequiredItems(tx, value.RequiredItems, QuestDefinitionsKey, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsStepsGrantItems(tx, value.GrantItems, QuestDefinitionsKey, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsStepsRewardItems(tx, value.Reward.Items, QuestDefinitionsKey, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsStepsSpawnNPCClickIDs(tx, value.SpawnNPCClickIDs, QuestDefinitionsKey, key); err != nil {
+			return err
+		}
+		if err := writeQuestDefinitionsStepsDespawnNPCClickIDs(tx, value.DespawnNPCClickIDs, QuestDefinitionsKey, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsSteps(tx *gorm.DB, QuestDefinitionsKey uint32) ([]assets.QuestStep, error) {
+	result := make([]assets.QuestStep, 0)
+	var rows []QuestDefinitionsStepsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	if err := query.Order("quest_definitions_steps_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestStep
+		value.Index = row.ValueIndex
+		value.TargetNPCTemplateID = row.ValueTargetNPCTemplateID
+		value.TargetNPCPattern = row.ValueTargetNPCPattern
+		value.Type = row.ValueType
+		value.PromptDialogue = row.ValuePromptDialogue
+		value.InProgressDialogue = row.ValueInProgressDialogue
+		value.CompleteDialogue = row.ValueCompleteDialogue
+		if row.ValueRequiredItemsPresent {
+			var err error
+			value.RequiredItems, err = readQuestDefinitionsStepsRequiredItems(tx, row.QuestDefinitionsKey, row.QuestDefinitionsStepsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueGrantItemsPresent {
+			var err error
+			value.GrantItems, err = readQuestDefinitionsStepsGrantItems(tx, row.QuestDefinitionsKey, row.QuestDefinitionsStepsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.Reward.Gold = row.ValueRewardGold
+		value.Reward.EXP = row.ValueRewardEXP
+		if row.ValueRewardItemsPresent {
+			var err error
+			value.Reward.Items, err = readQuestDefinitionsStepsRewardItems(tx, row.QuestDefinitionsKey, row.QuestDefinitionsStepsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.Reward.CompanionID = row.ValueRewardCompanionID
+		value.Reward.CompanionName = row.ValueRewardCompanionName
+		value.BattleMonsterID = row.ValueBattleMonsterID
+		value.BattleMonsterName = row.ValueBattleMonsterName
+		value.RequiredKillCount = row.ValueRequiredKillCount
+		if row.ValueSpawnNPCClickIDsPresent {
+			var err error
+			value.SpawnNPCClickIDs, err = readQuestDefinitionsStepsSpawnNPCClickIDs(tx, row.QuestDefinitionsKey, row.QuestDefinitionsStepsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueDespawnNPCClickIDsPresent {
+			var err error
+			value.DespawnNPCClickIDs, err = readQuestDefinitionsStepsDespawnNPCClickIDs(tx, row.QuestDefinitionsKey, row.QuestDefinitionsStepsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.QuestDefinitionsStepsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsRequiredItemsRow struct {
+	QuestDefinitionsKey                       uint32                    `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal              int                       `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsRequiredItemsOrdinal int                       `gorm:"column:quest_definitions_steps_required_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                    *QuestDefinitionsStepsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;references:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueItemID                               uint16
+	ValueCount                                int
+	ValueName                                 string
+}
+
+func (QuestDefinitionsStepsRequiredItemsRow) TableName() string {
+	return "catalog_quest_definitions_steps_required_items"
+}
+func writeQuestDefinitionsStepsRequiredItems(tx *gorm.DB, values []assets.QuestItem, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) error {
+	var rows []QuestDefinitionsStepsRequiredItemsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsRequiredItemsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal, QuestDefinitionsStepsRequiredItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueCount = value.Count
+		row.ValueName = value.Name
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsStepsRequiredItems(tx *gorm.DB, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) ([]assets.QuestItem, error) {
+	result := make([]assets.QuestItem, 0)
+	var rows []QuestDefinitionsStepsRequiredItemsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
+	if err := query.Order("quest_definitions_steps_required_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestItem
+		value.ItemID = row.ValueItemID
+		value.Count = row.ValueCount
+		value.Name = row.ValueName
+		if row.QuestDefinitionsStepsRequiredItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsGrantItemsRow struct {
+	QuestDefinitionsKey                    uint32                    `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal           int                       `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsGrantItemsOrdinal int                       `gorm:"column:quest_definitions_steps_grant_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                 *QuestDefinitionsStepsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;references:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueItemID                            uint16
+	ValueCount                             int
+	ValueName                              string
+}
+
+func (QuestDefinitionsStepsGrantItemsRow) TableName() string {
+	return "catalog_quest_definitions_steps_grant_items"
+}
+func writeQuestDefinitionsStepsGrantItems(tx *gorm.DB, values []assets.QuestItem, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) error {
+	var rows []QuestDefinitionsStepsGrantItemsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsGrantItemsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal, QuestDefinitionsStepsGrantItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueCount = value.Count
+		row.ValueName = value.Name
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsStepsGrantItems(tx *gorm.DB, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) ([]assets.QuestItem, error) {
+	result := make([]assets.QuestItem, 0)
+	var rows []QuestDefinitionsStepsGrantItemsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
+	if err := query.Order("quest_definitions_steps_grant_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestItem
+		value.ItemID = row.ValueItemID
+		value.Count = row.ValueCount
+		value.Name = row.ValueName
+		if row.QuestDefinitionsStepsGrantItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsRewardItemsRow struct {
+	QuestDefinitionsKey                     uint32                    `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal            int                       `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsRewardItemsOrdinal int                       `gorm:"column:quest_definitions_steps_reward_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                  *QuestDefinitionsStepsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;references:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueItemID                             uint16
+	ValueCount                              int
+	ValueName                               string
+}
+
+func (QuestDefinitionsStepsRewardItemsRow) TableName() string {
+	return "catalog_quest_definitions_steps_reward_items"
+}
+func writeQuestDefinitionsStepsRewardItems(tx *gorm.DB, values []assets.QuestItem, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) error {
+	var rows []QuestDefinitionsStepsRewardItemsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsRewardItemsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal, QuestDefinitionsStepsRewardItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueCount = value.Count
+		row.ValueName = value.Name
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsStepsRewardItems(tx *gorm.DB, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) ([]assets.QuestItem, error) {
+	result := make([]assets.QuestItem, 0)
+	var rows []QuestDefinitionsStepsRewardItemsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
+	if err := query.Order("quest_definitions_steps_reward_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.QuestItem
+		value.ItemID = row.ValueItemID
+		value.Count = row.ValueCount
+		value.Name = row.ValueName
+		if row.QuestDefinitionsStepsRewardItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsSpawnNPCClickIDsRow struct {
+	QuestDefinitionsKey                          uint32                    `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal                 int                       `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsSpawnNPCClickIDsOrdinal int                       `gorm:"column:quest_definitions_steps_spawn_n_p_c_click_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                       *QuestDefinitionsStepsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;references:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;constraint:OnDelete:CASCADE"`
+	Value                                        uint16
+}
+
+func (QuestDefinitionsStepsSpawnNPCClickIDsRow) TableName() string {
+	return "catalog_quest_definitions_steps_spawn_n_p_c_click_i_ds"
+}
+func writeQuestDefinitionsStepsSpawnNPCClickIDs(tx *gorm.DB, values []uint16, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) error {
+	var rows []QuestDefinitionsStepsSpawnNPCClickIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsSpawnNPCClickIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal, QuestDefinitionsStepsSpawnNPCClickIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsStepsSpawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []QuestDefinitionsStepsSpawnNPCClickIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
+	if err := query.Order("quest_definitions_steps_spawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.QuestDefinitionsStepsSpawnNPCClickIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type QuestDefinitionsStepsDespawnNPCClickIDsRow struct {
+	QuestDefinitionsKey                            uint32                    `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsOrdinal                   int                       `gorm:"column:quest_definitions_steps_ordinal;primaryKey;autoIncrement:false"`
+	QuestDefinitionsStepsDespawnNPCClickIDsOrdinal int                       `gorm:"column:quest_definitions_steps_despawn_n_p_c_click_i_ds_ordinal;primaryKey;autoIncrement:false"`
+	Parent                                         *QuestDefinitionsStepsRow `gorm:"belongsTo:Parent;foreignKey:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;references:QuestDefinitionsKey,QuestDefinitionsStepsOrdinal;constraint:OnDelete:CASCADE"`
+	Value                                          uint16
+}
+
+func (QuestDefinitionsStepsDespawnNPCClickIDsRow) TableName() string {
+	return "catalog_quest_definitions_steps_despawn_n_p_c_click_i_ds"
+}
+func writeQuestDefinitionsStepsDespawnNPCClickIDs(tx *gorm.DB, values []uint16, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) error {
+	var rows []QuestDefinitionsStepsDespawnNPCClickIDsRow
+	for key, value := range values {
+		row := QuestDefinitionsStepsDespawnNPCClickIDsRow{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal, QuestDefinitionsStepsDespawnNPCClickIDsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readQuestDefinitionsStepsDespawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uint32, QuestDefinitionsStepsOrdinal int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []QuestDefinitionsStepsDespawnNPCClickIDsRow
+	query := tx
+	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
+	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
+	if err := query.Order("quest_definitions_steps_despawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.QuestDefinitionsStepsDespawnNPCClickIDsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type ManufacturingRow struct {
 	ManufacturingKey     uint16 `gorm:"column:manufacturing_key;primaryKey;autoIncrement:false"`
 	ValueID              uint16
@@ -1802,24 +2766,26 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 }
 
 type NativeItemsRow struct {
-	NativeItemsKey           uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
-	ValueDefinitionID        uint16
-	ValueDefinitionName      string
-	ValueDefinitionType      uint8
-	ValueDefinitionEquipSlot uint16
-	ValueDefinitionLevel     uint16
-	ValueDefinitionStatus0   uint16
-	ValueDefinitionStatus1   uint16
-	ValueDefinitionValues0   int32
-	ValueDefinitionValues1   int32
-	ValueDescription         string
-	ValueIcon                uint16
-	ValueLargeIcon           uint16
-	ValueSprites0            uint16
-	ValueSprites1            uint16
-	ValueSprites2            uint16
-	ValueSprites3            uint16
-	ValueRecord              []byte
+	NativeItemsKey            uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
+	ValueDefinitionCellWidth  uint8
+	ValueDefinitionCellHeight uint8
+	ValueDefinitionID         uint16
+	ValueDefinitionName       string
+	ValueDefinitionType       uint8
+	ValueDefinitionEquipSlot  uint16
+	ValueDefinitionLevel      uint16
+	ValueDefinitionStatus0    uint16
+	ValueDefinitionStatus1    uint16
+	ValueDefinitionValues0    int32
+	ValueDefinitionValues1    int32
+	ValueDescription          string
+	ValueIcon                 uint16
+	ValueLargeIcon            uint16
+	ValueSprites0             uint16
+	ValueSprites1             uint16
+	ValueSprites2             uint16
+	ValueSprites3             uint16
+	ValueRecord               []byte
 }
 
 func (NativeItemsRow) TableName() string { return "catalog_native_items" }
@@ -1827,6 +2793,8 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	var rows []NativeItemsRow
 	for key, value := range values {
 		row := NativeItemsRow{NativeItemsKey: key}
+		row.ValueDefinitionCellWidth = value.Definition.CellWidth
+		row.ValueDefinitionCellHeight = value.Definition.CellHeight
 		row.ValueDefinitionID = value.Definition.ID
 		row.ValueDefinitionName = value.Definition.Name
 		row.ValueDefinitionType = value.Definition.Type
@@ -1862,6 +2830,8 @@ func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
 	}
 	for _, row := range rows {
 		var value assets.NativeItem
+		value.Definition.CellWidth = row.ValueDefinitionCellWidth
+		value.Definition.CellHeight = row.ValueDefinitionCellHeight
 		value.Definition.ID = row.ValueDefinitionID
 		value.Definition.Name = row.ValueDefinitionName
 		value.Definition.Type = row.ValueDefinitionType
@@ -4833,6 +5803,7 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	QuestDefinitions      bool
 	Manufacturing         bool
 	RebornClasses         bool
 	Terrains              bool
@@ -4862,6 +5833,21 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&QuestDefinitionsRow{},
+		&QuestDefinitionsAllLinkedMarkIDsRow{},
+		&QuestDefinitionsRequiredItemsRow{},
+		&QuestDefinitionsRewardItemsRow{},
+		&QuestDefinitionsPrerequisiteQuestIDsRow{},
+		&QuestDefinitionsDespawnNPCClickIDsRow{},
+		&QuestDefinitionsSpawnNPCClickIDsRow{},
+		&QuestDefinitionsDespawnNPCTemplateIDsRow{},
+		&QuestDefinitionsSpawnNPCTemplateIDsRow{},
+		&QuestDefinitionsStepsRow{},
+		&QuestDefinitionsStepsRequiredItemsRow{},
+		&QuestDefinitionsStepsGrantItemsRow{},
+		&QuestDefinitionsStepsRewardItemsRow{},
+		&QuestDefinitionsStepsSpawnNPCClickIDsRow{},
+		&QuestDefinitionsStepsDespawnNPCClickIDsRow{},
 		&ManufacturingRow{},
 		&RebornClassesRow{},
 		&FishingRow{},
@@ -5189,10 +6175,56 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&ManufacturingRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsDespawnNPCClickIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsSpawnNPCClickIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsRewardItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsGrantItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsRequiredItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsStepsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsSpawnNPCTemplateIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsDespawnNPCTemplateIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsSpawnNPCClickIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsDespawnNPCClickIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsPrerequisiteQuestIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsRewardItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsRequiredItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsAllLinkedMarkIDsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.QuestDefinitions = c.QuestDefinitions != nil
 	presence.Manufacturing = c.Manufacturing != nil
 	presence.RebornClasses = c.RebornClasses != nil
 	presence.Terrains = c.Terrains != nil
@@ -5218,6 +6250,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeQuestDefinitions(tx, c.QuestDefinitions); err != nil {
 		return err
 	}
 	if err := writeManufacturing(tx, c.Manufacturing); err != nil {
@@ -5318,6 +6353,10 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.QuestDefinitions, err = readQuestDefinitions(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Manufacturing, err = readManufacturing(tx)
 	if err != nil {
 		return nil, err
@@ -5445,6 +6484,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.QuestDefinitions {
+		c.QuestDefinitions = nil
 	}
 	if !presence.Manufacturing {
 		c.Manufacturing = nil

@@ -2,8 +2,8 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v12** and structured assets
-schema **v6**. Tents were introduced in earlier schema versions.
+Current server startup requires gameplay schema **v15** and structured assets
+schema **v11**. Tents were introduced in earlier schema versions.
 Follow the preserving copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. Upgrade copies, then select their
 paths in the startup configuration. Source databases remain available for rollback.
@@ -51,6 +51,44 @@ Homes run no overworld events, encounters or PK. Public-map collision and NPC
 movement are implemented separately; see [WORLD_SIMULATION.md](WORLD_SIMULATION.md).
 The reference defines no additional functioning instance type.
 
+## Item acquisition capacity
+
+Every item acquisition must fit its complete quantity before success. Use
+`Inventory.Grant`/`Add` for delivery and `ApplyQuestItems` for ordered hand-ins
+and rewards. These plan on a copy and return `ErrInventoryFull` without partial
+items or additions when capacity is insufficient. Capacity includes compatible,
+unlocked stack space and contiguous unlocked rectangles in a 5 × 10 grid; differing damage or metadata
+cannot share a stack. Dimensions come from typed SQL item definitions
+(`cell_width`/`cell_height`); both raft variants occupy 4 × 3 cells. Only the
+anchor stores an item record. Covered cells cannot receive another item, and
+placement cannot wrap across rows or extend below the bag. A bag with no empty slots may still accept a reward that
+fits entirely in an existing compatible stack.
+
+Failure must preserve payments, consumed packs/materials, claim availability,
+cooldowns and quest completion. Commit delivery and those associated changes
+in the same gameplay transaction before success packets. Quest hand-ins and
+pack consumption may free slots within the planned operation. Ground pickups
+leave the item available when delivery fails. Individual combat drops that
+cannot fit are not acquired; battle EXP and gold remain independent rewards.
+
+Every runtime call to `Grant`, `Add`, `Move`, `Transfer`, `Compound`,
+`ApplyQuestItems`, `GrantQuestReward` and `Unwear` must pass the SQL-derived item
+catalog. Omitting definitions preserves one-cell synthetic test fixtures only.
+Footprints also apply to storage, equipment swaps, forging replacements and
+administrative inventory edits. Moving a whole item may overlap its previous
+footprint; splitting a stack cannot overlap the retained source.
+
+Asset schema v11 seeds dimension columns from retained decrypted SQL record
+bytes during the explicit offline upgrade. Runtime does not decode records or
+read JSON to obtain dimensions. Later SQL edits survive restart. No gameplay
+schema change or automatic inventory repacking is performed. Existing overlapping
+or out-of-bounds layouts are rejected by placement checks; fix their anchors
+through an explicit inventory edit rather than silently removing items.
+
+Regression coverage includes fragmented space, grid boundaries, partial capacity,
+reservations, metadata, multi-cell moves/transfers, whole quest rewards, draw
+rollback, native ground pickup retry and preserving SQL migration.
+
 ## Item use and reservations
 
 Native item use supports the reference's equipment, recovery, pet voucher, gacha,
@@ -86,22 +124,22 @@ selection; binding recipes to verified physical furniture identities remains pen
 
 ## Remaining state and native compatibility
 
-Character titles and separate AC66 reborn-job metadata are persisted in typed
-SQL columns. Actual character job/nickname/potential and pet potential remain
-unmodeled. The
-character `Reborn` flag used by combo calculations does not implement six reborn
-jobs or their 10% stat modifiers. The source GM `/reborn` level-reset/cape/aura
-workflow remains unported. The AC66 request only updates its separate metadata;
-it does not select the actual class or grant advancement rewards. AC68's source potential increment
-has no verified pill debit; persist metadata separately from unfinished training.
+Character title, nickname, actual class, potential and separate AC66 metadata
+persist in typed SQL, along with pet potential. GM rebirth, all six class stat
+modifiers and normalized rebirth progression are implemented. Funded potential
+training remains pending; AC66 changes its metadata without granting advancement.
 
-Home Locked/Enlarged/Type state exists, but Go stores one floor/wallpaper pair
-instead of the source two-floor decoration fields, accepts floor-zero furniture
-and omits source AC32:2 occupant pose replay. Creation grants configured starters;
-level-one world-entry fallback redelivery and mass online starter grants are absent.
-Inventory enum coverage alone does not prove every item-type restriction or special
-effect is implemented. In particular, verify source trade restrictions and their
-callers before imposing a new limitation.
+Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Furniture
+placement stays floor zero; occupant poses replay through AC32:2. Configured
+starters are granted and persisted at creation, without automatic login
+redelivery. Admin offers explicit mass online delivery.
+See [world/combat parity](WORLD_COMBAT_PARITY.md).
+Focused verification covers all stack/drop type values and reachable wear guards.
+The source Tradeable property and use-type metadata have no restriction callers
+in trade/wear, so they do not impose additional rules. Unverified special item
+effects remain on hold. AC8 allocation rejects invalid/overflowing entries without
+spending points; pet overflow matches the reference guard, and character overflow
+is deliberately rejected too. See [verification](PORTING.md#focused-migration-verification--2026-10-04).
 
 Routine walking follows the buffered session policy in DEVELOPMENT.md.
 Furniture transfers, purchases, claims, item wear/consumption and inventory

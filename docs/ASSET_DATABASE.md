@@ -43,10 +43,10 @@ For rollback, stop the server and restore the original configuration paths.
 Progress written to the upgraded database after cutover will not exist in the
 original snapshot. Keep both copies until acceptance testing finishes.
 
-Gameplay schema v14 automatically converts older character rows transactionally
+Gameplay schema v15 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline copy command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 9 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 11 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -190,3 +190,33 @@ v8 content edits remain intact; repeat conversion does not reseed edited tables.
 Gameplay v14 adds nickname, actual class and potential, pet potential,
 second-floor tent decoration metadata, and durable `manufacture_jobs` escrow.
 See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
+
+
+Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
+nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
+Asset schema is now v11. The copy procedure upgrades existing v14 installations
+without resetting accounts, characters, manufacturing jobs or typed content.
+
+### Administration quest registry (asset v10)
+
+The additive v9-to-v10 upgrade creates typed `catalog_quest_definitions*` tables
+for the custom registry, with owned child rows for ordered steps, requirements,
+rewards, prerequisites and actor metadata. Existing content edits remain intact.
+It seeds native Mark.dat metadata from retained imported SQL records, using real
+native IDs and names; it grants no guessed rewards and creates no gameplay state.
+Repeated migration does not overwrite an edited or cleared registry. Runtime
+uses only the typed catalog. See [quest administration](ADMINISTRATION.md#custom-quest-definitions-and-reachable-kill-counters).
+
+### Inventory dimensions (asset v11)
+
+The preserving upgrade adds `value_definition_cell_width` and
+`value_definition_cell_height` to `catalog_native_items`. It seeds them from
+retained SQL `value_record` bytes at disk offsets 406/407. Existing names,
+metadata and other authored definitions remain unchanged. Normal startup reads
+typed dimension columns; it does not regenerate or overwrite them.
+
+Before deploying this version, stop the server and run the copy procedure above
+(`go run ./cmd/database-migrate -config config.local.json -output-dir <new-directory>`),
+then select the verified copied databases in the configuration. Gameplay remains
+schema v15. Inventory anchors are preserved; old overlapping placements require
+an explicit correction and are never silently discarded or repacked.

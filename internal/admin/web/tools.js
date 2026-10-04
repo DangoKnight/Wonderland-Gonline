@@ -6,6 +6,8 @@ const toolTitles = {
 	inventory: "Inventory & equipment",
 	stats: "Stats & skills",
 	player_settings: "Player settings",
+	character_quests: "Character quests",
+	quest_definitions: "Quest definitions",
 	friends: "Friendships",
 	guilds: "Guilds",
 	marriages: "Marriages",
@@ -156,6 +158,7 @@ async function renderAdminTool(target, id) {
 		inventory: "characters",
 		stats: "characters",
 		player_settings: "characters",
+		character_quests: "characters",
 		studio: "sessions",
 		friends: "friends",
 		guilds: "guilds",
@@ -174,14 +177,31 @@ async function renderAdminTool(target, id) {
 	if (id !== requestID) return;
 	content.replaceChildren();
 	if (target === "operations") renderOperations(data);
-	else if (["characters", "inventory", "stats", "player_settings"].includes(target))
+	else if (
+		["characters", "inventory", "stats", "player_settings", "character_quests"].includes(target)
+	)
 		renderCharacters(data, target);
 	else if (target === "studio") renderStudio(data);
 	else if (["catalog", "starters", "chest", "drops"].includes(target))
 		await renderAssetTable(target, id);
 	else if (target === "portals") renderMaps(data);
 	else if (target === "talks") renderTalks(data);
-	else if (target === "assets_editor") renderAssetDirectory(data);
+	else if (target === "quest_definitions") {
+		const doc = await editableAsset("QuestDefinitions");
+		const panel = toolPanel(
+			"Custom quest definitions",
+			"Definitions are SQL content. Native EVE remains the gameplay authority; custom acceptance and rewards remain pending.",
+		);
+		panel.append(
+			toolButton("Edit definitions", () =>
+				jsonEditor("Quest definitions", doc.value ?? {}, (value) =>
+					saveAsset("QuestDefinitions", { version: doc.version, value }),
+				),
+			),
+		);
+		panel.append(element("pre", JSON.stringify(doc.value ?? {}, null, 2)));
+		content.append(panel);
+	} else if (target === "assets_editor") renderAssetDirectory(data);
 	else if (target === "configuration") renderConfiguration(data);
 	else if (target === "friends")
 		content.append(
@@ -236,7 +256,7 @@ function renderOperations(data) {
 					"status_mode",
 					data.status_mode,
 					"text",
-					["auto", "green", "yellow", "red"],
+					["auto", "green", "yellow", "red", "offline"],
 				],
 				[
 					"Log level",
@@ -255,8 +275,19 @@ function renderOperations(data) {
 		),
 	);
 	content.append(
-		toolForm("Broadcast announcement", [["Message", "text", "", "textarea"]], (v) =>
-			toolRequest("operations/broadcast", v),
+		toolForm(
+			"Broadcast announcement",
+			[
+				["Message", "text", "", "textarea"],
+				[
+					"Channel / color",
+					"channel",
+					"notice",
+					"text",
+					["notice", "world", "guild", "whisper", "banner"],
+				],
+			],
+			(v) => toolRequest("operations/broadcast", v),
 		),
 	);
 	const maintenance = toolPanel("Maintenance"),
@@ -265,6 +296,24 @@ function renderOperations(data) {
 		buttons.append(
 			toolButton("Reload " + scope, () => toolRequest("operations/reload", { scope })),
 		);
+	buttons.append(
+		toolButton("Give starter packs to online characters", async () => {
+			if (
+				!confirm(
+					"Grant the full configured starter pack to every loaded, idle online character?",
+				)
+			)
+				return;
+			const rows = await toolRequest("operations/starter-packs", {});
+			content.append(
+				table(rows, [
+					["Character", "name"],
+					["Delivered", "delivered"],
+					["Error", "error"],
+				]),
+			);
+		}),
+	);
 	buttons.append(toolButton("Save all characters", () => toolRequest("operations/save", {})));
 	buttons.append(
 		toolButton(
@@ -371,26 +420,28 @@ function renderCharacters(rows, target) {
 }
 function openCharacter(row, target) {
 	const selected =
-		target === "inventory"
-			? { bag: row.state.bag, equipment: row.state.equipment, storage: row.state.storage }
-			: target === "stats"
-				? {
-						base: row.state.base,
-						skills: row.state.skills,
-						level: row.state.level,
-						exp: row.state.exp,
-						stat_points: row.state.stat_points,
-					}
-				: target === "player_settings"
+		target === "character_quests"
+			? { quests: row.state.quests }
+			: target === "inventory"
+				? { bag: row.state.bag, equipment: row.state.equipment, storage: row.state.storage }
+				: target === "stats"
 					? {
-							settings: row.state.settings ?? {
-								pk_allowed: true,
-								join_allowed: true,
-								trade_allowed: true,
-								channels: 31,
-							},
+							base: row.state.base,
+							skills: row.state.skills,
+							level: row.state.level,
+							exp: row.state.exp,
+							stat_points: row.state.stat_points,
 						}
-					: row.state;
+					: target === "player_settings"
+						? {
+								settings: row.state.settings ?? {
+									pk_allowed: true,
+									join_allowed: true,
+									trade_allowed: true,
+									channels: 31,
+								},
+							}
+						: row.state;
 	jsonEditor(
 		"Edit " + row.state.name,
 		selected,
@@ -398,11 +449,20 @@ function openCharacter(row, target) {
 			const next = target === "characters" ? value : { ...row.state, ...value };
 			await toolRequest(
 				"characters/" + row.state.id,
-				{ version: row.version, state: next },
+				{
+					version: row.version,
+					state: next,
+					scope:
+						target === "characters"
+							? ""
+							: target === "character_quests"
+								? "quests"
+								: target,
+				},
 				"PUT",
 			);
 		},
-		"Identity fields stay fixed. An online character must be idle and will reconnect after a complete state edit. Every saved field uses the same format shown here.",
+		"Identity fields stay fixed. Online characters must be idle. Inventory, stats and settings tabs refresh live; complete state edits require reconnecting. Refresh the editor after saving or a version conflict.",
 	);
 }
 function renderStudio(sessions) {
@@ -755,6 +815,37 @@ function renderMaps(rows) {
 			}),
 		);
 		detail.append(p);
+		const reports = await api("assets/maps/" + id + "/actors");
+		const actorPanel = toolPanel("Actor controls and linked quests");
+		actorPanel.append(
+			toolForm(
+				"Edit actor",
+				[
+					["Character ID", "character", "", "number"],
+					["Click ID", "click_id", 1, "number"],
+					["Action", "action", "show", "text", ["show", "hide", "open", "close"]],
+					["Scope", "scope", "map", "text", ["map", "session"]],
+					["Linked quest ID (0 = automatic)", "linked_quest_id", 0, "number"],
+				],
+				async (v) => {
+					const row = await api("characters/" + v.character);
+					if (Number(row.state.map) !== Number(id))
+						throw new Error("Character is on another map");
+					await toolRequest("characters/" + v.character + "/actors", {
+						version: row.version,
+						click_id: Number(v.click_id),
+						action: v.action,
+						scope: v.scope,
+						linked_quest_id: Number(v.linked_quest_id),
+					});
+				},
+				"Map scope updates current viewers. Linked quest changes belong only to the selected character.",
+			),
+		);
+		detail.append(actorPanel);
+		const reportPanel = toolPanel("Combined placements, linked events and decoded opcodes");
+		reportPanel.append(element("pre", JSON.stringify(reports, null, 2)));
+		detail.append(reportPanel);
 		const pre = element("pre", JSON.stringify(data, null, 2));
 		pre.className = "asset-preview";
 		detail.append(pre);
@@ -819,6 +910,18 @@ function renderTalks(rows) {
 	render(rows);
 }
 function renderAssetDirectory(rows) {
+	const reports = element("div");
+	content.append(
+		toolForm(
+			"NPC placements and event opcodes",
+			[["NPC template ID", "id", 10001, "number"]],
+			async (v) => {
+				const data = await api("assets/npcs/" + v.id + "/report");
+				reports.replaceChildren(element("pre", JSON.stringify(data, null, 2)));
+			},
+		),
+	);
+	content.append(reports);
 	const panel = toolPanel(
 		"Authoritative SQL assets",
 		"Edit server definitions in SQL datasets, or look up individual records by game ID.",
@@ -832,7 +935,7 @@ function renderAssetDirectory(rows) {
 					"asset",
 					"NPCs",
 					"text",
-					["NPCs", "Skills", "Talks", "Marks", "NativeItems"],
+					["NPCs", "Skills", "Talks", "Marks", "NativeItems", "QuestDefinitions"],
 				],
 				["Game ID", "id", 10001, "number"],
 			],

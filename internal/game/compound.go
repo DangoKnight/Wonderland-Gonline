@@ -4,7 +4,7 @@ package game
 // Prefer the lower ingredient slot, matching native Recv14. If it still holds
 // ingredients, use another empty slot; never discard leftovers or their metadata.
 // A separate result slot also preserves AC23:8's fresh one-item record semantics.
-func (b *Inventory) Compound(first, second byte, result uint16) (byte, error) {
+func (b *Inventory) Compound(first, second byte, result uint16, definitions ...map[uint16]ItemDefinition) (byte, error) {
 	if first < 1 || first > BagSize || second < 1 || second > BagSize || first == second || result == 0 {
 		return 0, ErrInvalidItem
 	}
@@ -16,10 +16,10 @@ func (b *Inventory) Compound(first, second byte, result uint16) (byte, error) {
 		return 0, err
 	}
 	target := min(first, second)
-	if !next[target-1].Empty() {
+	if !next.CanPlace(target, Item{ID: result, Count: 1}, inventoryDefinitions(definitions)) {
 		target = 0
 		for index, item := range next {
-			if item.Empty() && !item.Locked {
+			if item.Empty() && next.CanPlace(byte(index+1), Item{ID: result, Count: 1}, inventoryDefinitions(definitions)) {
 				target = byte(index + 1)
 				break
 			}

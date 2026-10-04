@@ -65,7 +65,7 @@ func planManufacturing(c game.Character, r assets.ManufacturingRecipe, items map
 	if !known {
 		return game.Character{}, nil, nil, game.ErrInvalidItem
 	}
-	adds, err := next.Bag.Grant(game.Item{ID: r.Output.ItemID}, int(r.Output.Count), output.StackLimit())
+	adds, err := next.Bag.Grant(game.Item{ID: r.Output.ItemID}, int(r.Output.Count), output.StackLimit(), items)
 	return next, removes, adds, err
 }
 func (s *Server) manufacture(ctx context.Context, c *Session, bench string, inputs [2]assets.ManufacturingInput) (bool, error) {
@@ -101,7 +101,7 @@ func (s *Server) manufacture(ctx context.Context, c *Session, bench string, inpu
 			if !known {
 				return game.ErrInvalidItem
 			}
-			adds, err = stored.Bag.Grant(game.Item{ID: r.Output.ItemID}, int(r.Output.Count), definition.StackLimit())
+			adds, err = stored.Bag.Grant(game.Item{ID: r.Output.ItemID}, int(r.Output.Count), definition.StackLimit(), s.Assets.Items)
 			return err
 		}, *c.character)
 		if err != nil {
@@ -260,7 +260,7 @@ func (s *Server) tickGathering(ctx context.Context, now time.Time) {
 		}
 		next := c.character.Clone()
 		id := pool.Items[rand.IntN(len(pool.Items))]
-		adds, err := next.Bag.Grant(game.Item{ID: id}, 1, s.Assets.Items[id].StackLimit())
+		adds, err := next.Bag.Grant(game.Item{ID: id}, 1, s.Assets.Items[id].StackLimit(), s.Assets.Items)
 		if err != nil {
 			c.gathering = nil
 			s.sendOrClose(c, tradeMessage("Gathering stopped: "+err.Error()+"."))

@@ -12,15 +12,17 @@ import (
 )
 
 const (
-	convertedItemRecordBytes     = 47
-	convertedItemNameOffset      = 1
-	convertedItemNameBytes       = 20
-	convertedItemTypeOffset      = 21
-	convertedItemIDOffset        = 22
-	convertedItemEquipSlotOffset = 28
-	convertedItemLevelOffset     = 30
-	convertedItemStatusOffset    = 35
-	convertedItemValueOffset     = 39
+	convertedItemCellHeightOffset = 33
+	convertedItemCellWidthOffset  = 34
+	convertedItemRecordBytes      = 47
+	convertedItemNameOffset       = 1
+	convertedItemNameBytes        = 20
+	convertedItemTypeOffset       = 21
+	convertedItemIDOffset         = 22
+	convertedItemEquipSlotOffset  = 28
+	convertedItemLevelOffset      = 30
+	convertedItemStatusOffset     = 35
+	convertedItemValueOffset      = 39
 )
 
 // ParseConvertedItems reads the packed PhxItemInfo records used by
@@ -40,7 +42,7 @@ func ParseConvertedItems(data []byte) (map[uint16]game.ItemDefinition, error) {
 		if err != nil {
 			return nil, err
 		}
-		v := game.ItemDefinition{ID: id, Name: name, Type: b[convertedItemTypeOffset], EquipSlot: le.Uint16(b[convertedItemEquipSlotOffset:]), Level: le.Uint16(b[convertedItemLevelOffset:]), Status: [2]uint16{le.Uint16(b[convertedItemStatusOffset:]), le.Uint16(b[convertedItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[convertedItemValueOffset:])), int32(le.Uint32(b[convertedItemValueOffset+4:]))}}
+		v := game.ItemDefinition{CellWidth: b[convertedItemCellWidthOffset], CellHeight: b[convertedItemCellHeightOffset], ID: id, Name: name, Type: b[convertedItemTypeOffset], EquipSlot: le.Uint16(b[convertedItemEquipSlotOffset:]), Level: le.Uint16(b[convertedItemLevelOffset:]), Status: [2]uint16{le.Uint16(b[convertedItemStatusOffset:]), le.Uint16(b[convertedItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[convertedItemValueOffset:])), int32(le.Uint32(b[convertedItemValueOffset+4:]))}}
 		// The C# lookup uses the first matching record.
 		if _, exists := out[id]; !exists {
 			out[id] = v

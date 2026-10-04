@@ -79,6 +79,10 @@ func (s *Server) forgeItem(ctx context.Context, c *Session, slot byte, roll func
 		if needed != 0 {
 			return forgeReject(c, protocol.MallForgeInsufficientScrolls, fmt.Sprintf("This upgrade requires %d Strong Scroll(s).", upgrade.Scrolls))
 		}
+		next.Bag[slot-1] = game.Item{}
+		if !next.Bag.CanPlace(slot, game.Item{ID: upgrade.Next, Count: 1}, s.Assets.Items) {
+			return reject("The upgraded item does not fit. Equipment and scrolls retained.")
+		}
 		next.Bag[slot-1] = game.Item{ID: upgrade.Next, Count: 1, Damage: source.Damage}
 		if err := s.commit(ctx, c, next); err != nil {
 			return err

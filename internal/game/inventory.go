@@ -28,18 +28,24 @@ func (i Item) compatible(other Item) bool {
 // Addition is one slot's share of a grant, as reported by additive AC23:5.
 type Addition struct{ Slot, Count byte }
 
-// Add plans the whole grant before changing the bag. maxStack is supplied from Item.dat.
-func (b *Inventory) Add(item Item, count int, maxStack byte) error {
-	_, e := b.Grant(item, count, maxStack)
+// Add plans the whole grant before changing the bag. Runtime callers supply
+// SQL-derived definitions for footprint dimensions and the item stack limit.
+func (b *Inventory) Add(item Item, count int, maxStack byte, definitions ...map[uint16]ItemDefinition) error {
+	_, e := b.Grant(item, count, maxStack, definitions...)
 	return e
 }
 
-// Grant is Add that also reports the changed slots: existing stacks first, then empty slots.
-func (b *Inventory) Grant(item Item, count int, maxStack byte) ([]Addition, error) {
+// Grant is Add that also reports the changed anchor slots: existing stacks first,
+// then free rectangular footprints. Omitted definitions are for one-cell fixtures.
+func (b *Inventory) Grant(item Item, count int, maxStack byte, definitions ...map[uint16]ItemDefinition) ([]Addition, error) {
 	if item.ID == 0 || count < 1 || count > BagSize*MaxItemStack || maxStack < 1 || maxStack > MaxItemStack {
 		return nil, ErrInvalidItem
 	}
 	next := *b
+	items := inventoryDefinitions(definitions)
+	if _, err := next.Occupancy(items); err != nil {
+		return nil, err
+	}
 	var adds []Addition
 	for j := range next {
 		if count > 0 && !next[j].Locked && !next[j].Empty() && next[j].compatible(item) && next[j].Count < maxStack {
@@ -50,7 +56,7 @@ func (b *Inventory) Grant(item Item, count int, maxStack byte) ([]Addition, erro
 		}
 	}
 	for j := range next {
-		if count > 0 && !next[j].Locked && next[j].Empty() {
+		if count > 0 && next.CanPlace(byte(j+1), Item{ID: item.ID, Count: 1}, items) {
 			n := min(count, int(maxStack))
 			next[j] = item
 			next[j].Count = byte(n)
@@ -95,7 +101,7 @@ func (b *Inventory) Remove(slot byte, count byte) error {
 
 // Move follows Inventory.MoveItem: it moves as much of count as the destination holds
 // and reports the moved amount. Occupied destinations must be a compatible stack.
-func (b *Inventory) Move(from, to, count, maxStack byte) (byte, error) {
+func (b *Inventory) Move(from, to, count, maxStack byte, definitions ...map[uint16]ItemDefinition) (byte, error) {
 	if from < 1 || from > BagSize || to < 1 || to > BagSize || from == to || count == 0 || maxStack < 1 || maxStack > MaxItemStack {
 		return 0, ErrInvalidItem
 	}
@@ -114,13 +120,21 @@ func (b *Inventory) Move(from, to, count, maxStack byte) (byte, error) {
 	if moved == 0 {
 		return 0, ErrInvalidItem
 	}
-	if dst.Empty() {
-		b[to-1] = src
-		b[to-1].Count = moved
-	} else {
-		b[to-1].Count += moved
+	next := *b
+	if err := next.Remove(from, moved); err != nil {
+		return 0, err
 	}
-	return moved, b.Remove(from, moved)
+	if dst.Empty() {
+		if !next.CanPlace(to, src, inventoryDefinitions(definitions)) {
+			return 0, ErrInventoryFull
+		}
+		next[to-1] = src
+		next[to-1].Count = moved
+	} else {
+		next[to-1].Count += moved
+	}
+	*b = next
+	return moved, nil
 }
 
 // Packet serializes the authentic 31-byte records used by AC23:5 and AC30:5.
@@ -136,7 +150,7 @@ func (b Inventory) Packet(action, sub byte) []byte {
 }
 
 // Transfer is atomic for callers holding exclusive ownership of both bags.
-func Transfer(from, to *Inventory, slot, count, maxStack byte) error {
+func Transfer(from, to *Inventory, slot, count, maxStack byte, definitions ...map[uint16]ItemDefinition) error {
 	if from == to || slot < 1 || slot > BagSize {
 		return ErrInvalidItem
 	}
@@ -145,7 +159,7 @@ func Transfer(from, to *Inventory, slot, count, maxStack byte) error {
 	if e := a.Remove(slot, count); e != nil {
 		return e
 	}
-	if e := b.Add(item, int(count), maxStack); e != nil {
+	if e := b.Add(item, int(count), maxStack, definitions...); e != nil {
 		return e
 	}
 	*from, *to = a, b
@@ -167,7 +181,7 @@ type QuestItemResult struct {
 // ApplyQuestItems follows Inventory.TryApplyQuestItems: changes are simulated in order,
 // so a hand-in can free the slot its reward needs. Removals take any copies of the ID.
 // Nothing changes unless every step succeeds. limit reports an item's stack size.
-func (b *Inventory) ApplyQuestItems(changes []ItemChange, limit func(uint16) (byte, bool)) (QuestItemResult, error) {
+func (b *Inventory) ApplyQuestItems(changes []ItemChange, limit func(uint16) (byte, bool), definitions ...map[uint16]ItemDefinition) (QuestItemResult, error) {
 	next := *b
 	for _, change := range changes {
 		maxStack, ok := limit(change.ID)
@@ -175,7 +189,7 @@ func (b *Inventory) ApplyQuestItems(changes []ItemChange, limit func(uint16) (by
 			return QuestItemResult{}, ErrInvalidItem
 		}
 		if change.Count > 0 {
-			if _, e := next.Grant(Item{ID: change.ID}, change.Count, maxStack); e != nil {
+			if _, e := next.Grant(Item{ID: change.ID}, change.Count, maxStack, definitions...); e != nil {
 				return QuestItemResult{}, e
 			}
 			continue

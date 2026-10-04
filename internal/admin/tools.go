@@ -22,6 +22,14 @@ func (a *API) bindTools(m *http.ServeMux) {
 	bind("PUT /api/operations", a.operations)
 	bind("POST /api/operations/broadcast", a.broadcast)
 	bind("POST /api/operations/reload", a.reload)
+	bind("POST /api/operations/starter-packs", func(w http.ResponseWriter, r *http.Request) {
+		rows, err := a.Server.AdminGiveStarterPacks(r.Context())
+		if err != nil {
+			a.result(w, err)
+			return
+		}
+		reply(w, http.StatusOK, rows)
+	})
 	bind("POST /api/operations/save", func(w http.ResponseWriter, r *http.Request) { a.result(w, a.Server.AdminSaveAll(r.Context())) })
 	bind("POST /api/operations/shutdown", a.shutdown)
 	bind("POST /api/operations/kickall", func(w http.ResponseWriter, r *http.Request) { a.Server.AdminKickAll(); a.result(w, nil) })
@@ -110,6 +118,40 @@ func (a *API) bindTools(m *http.ServeMux) {
 	bind("GET /api/assets/documents/{asset}/records", a.assetRecords)
 	bind("PUT /api/assets/documents/{asset}/records/{ordinal}", a.assetRecords)
 	bind("GET /api/assets/maps/{id}", a.mapDetail)
+	bind("GET /api/assets/maps/{id}/actors", func(w http.ResponseWriter, r *http.Request) {
+		id, err := pathID(r)
+		if err != nil || id > 65535 {
+			fail(w, 400, "invalid map ID")
+			return
+		}
+		rows, err := a.Server.AdminMapActors(uint16(id))
+		if err != nil {
+			a.result(w, err)
+			return
+		}
+		reply(w, 200, rows)
+	})
+	bind("GET /api/assets/npcs/{id}/report", func(w http.ResponseWriter, r *http.Request) {
+		id, err := pathID(r)
+		if err != nil {
+			a.result(w, err)
+			return
+		}
+		reply(w, 200, a.Server.AdminNPCReport(id))
+	})
+	bind("POST /api/characters/{id}/actors", func(w http.ResponseWriter, r *http.Request) {
+		id, err := pathID(r)
+		if err != nil {
+			a.result(w, err)
+			return
+		}
+		var edit server.AdminActorEdit
+		if decode(w, r, &edit) != nil {
+			fail(w, 400, "invalid actor edit")
+			return
+		}
+		a.result(w, a.Server.EditAdminActor(r.Context(), id, edit))
+	})
 	bind("GET /api/assets/talks", a.talks)
 	bind("GET /api/configuration", a.configuration)
 	bind("PUT /api/configuration", a.configuration)
@@ -152,13 +194,14 @@ func (a *API) operations(w http.ResponseWriter, r *http.Request) {
 }
 func (a *API) broadcast(w http.ResponseWriter, r *http.Request) {
 	var v struct {
-		Text string `json:"text"`
+		Text    string `json:"text"`
+		Channel string `json:"channel"`
 	}
 	if decode(w, r, &v) != nil {
 		fail(w, 400, "invalid announcement")
 		return
 	}
-	a.result(w, a.Server.AdminBroadcast(v.Text))
+	a.result(w, a.Server.AdminAnnouncement(v.Text, v.Channel))
 }
 func (a *API) reload(w http.ResponseWriter, r *http.Request) {
 	var v struct {
@@ -210,6 +253,7 @@ func (a *API) character(w http.ResponseWriter, r *http.Request) {
 	var v struct {
 		Version string         `json:"version"`
 		State   game.Character `json:"state"`
+		Scope   string         `json:"scope"`
 	}
 	if decodeSized(w, r, &v, assetEditMaxBytes) != nil {
 		fail(w, 400, "invalid character edit")
@@ -217,6 +261,10 @@ func (a *API) character(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == http.MethodDelete {
 		a.result(w, a.Server.DeleteAdminCharacter(r.Context(), id, v.Version))
+		return
+	}
+	if v.Scope != "" {
+		a.result(w, a.Server.EditAdminCharacterFields(r.Context(), id, v.Version, v.State, v.Scope))
 		return
 	}
 	a.result(w, a.Server.EditAdminCharacter(r.Context(), id, v.Version, v.State))

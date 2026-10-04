@@ -75,7 +75,7 @@ func TestRuntimeEXPCommandPersistenceAndRejection(t *testing.T) {
 func TestRuntimeStatusOverrideNativeBytes(t *testing.T) {
 	s, _, _ := chatFixture(t)
 	s.Config.StatusServerIDs = []uint16{101, 102}
-	for mode, color := range map[string]byte{"green": 1, "yellow": 2, "red": 3} {
+	for mode, color := range map[string]byte{"offline": 0, "green": 1, "yellow": 2, "red": 3} {
 		s.statusMode = mode
 		got := s.launcherStatusPacket(0)
 		want := StatusPacket(0, 101, 102)

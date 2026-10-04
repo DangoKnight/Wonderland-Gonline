@@ -62,7 +62,7 @@ func (s *Server) claimXaolanRobbery(ctx context.Context, c *Session, es *eventSe
 		return true, nil
 	}
 	next := c.character.Clone()
-	result, err := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(int32(op.Value()))}, {ID: xaolanRobberyStar, Count: xaolanRobberyStarCount}}, s.stackLimit)
+	result, err := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(int32(op.Value()))}, {ID: xaolanRobberyStar, Count: xaolanRobberyStarCount}}, s.stackLimit, s.Assets.Items)
 	if err != nil {
 		return false, c.send(headBanner("Cannot receive reward. Make room for Shale and Star."))
 	}

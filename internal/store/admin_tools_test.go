@@ -84,7 +84,7 @@ func TestAdminMailAtomicBatchIdempotentClaimAndFullBag(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.ClaimAdminMail(ctx, refs[0], id, 50); !errors.Is(err, game.ErrInventoryFull) {
+	if _, _, err := db.ClaimAdminMail(ctx, refs[0], id, 50, nil); !errors.Is(err, game.ErrInventoryFull) {
 		t.Fatal(err)
 	}
 	if pairGold(t, db, refs)[0] != 100 {
@@ -93,11 +93,11 @@ func TestAdminMailAtomicBatchIdempotentClaimAndFullBag(t *testing.T) {
 	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error { c.Bag[0] = game.Item{}; return nil }); err != nil {
 		t.Fatal(err)
 	}
-	c, adds, err := db.ClaimAdminMail(ctx, refs[0], id, 50)
+	c, adds, err := db.ClaimAdminMail(ctx, refs[0], id, 50, nil)
 	if err != nil || c.Gold != 109 || c.Bag[0].Count != 2 || len(adds) != 1 {
 		t.Fatal(c, adds, err)
 	}
-	c, adds, err = db.ClaimAdminMail(ctx, refs[0], id, 50)
+	c, adds, err = db.ClaimAdminMail(ctx, refs[0], id, 50, nil)
 	if err != nil || c.Gold != 109 || c.Bag[0].Count != 2 || len(adds) != 0 {
 		t.Fatal("duplicate gift", c, adds, err)
 	}

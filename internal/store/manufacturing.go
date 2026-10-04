@@ -150,7 +150,7 @@ func (s *Store) StartManufacturing(ctx context.Context, ref CharacterRef, bench 
 			}
 		} else {
 			probe := next.Bag
-			if _, err = probe.Grant(game.Item{ID: f.Output.ItemID}, int(f.Output.Count), items[f.Output.ItemID].StackLimit()); err != nil {
+			if _, err = probe.Grant(game.Item{ID: f.Output.ItemID}, int(f.Output.Count), items[f.Output.ItemID].StackLimit(), items); err != nil {
 				return err
 			}
 		}
@@ -236,7 +236,7 @@ func (s *Store) CompleteManufacturing(ctx context.Context, ref CharacterRef, now
 				}
 			}
 		} else {
-			adds, err = next.Bag.Grant(game.Item{ID: job.ItemID}, int(job.Count), definition.StackLimit())
+			adds, err = next.Bag.Grant(game.Item{ID: job.ItemID}, int(job.Count), definition.StackLimit(), items)
 			if err != nil {
 				return err
 			}

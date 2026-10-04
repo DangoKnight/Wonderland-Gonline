@@ -14,7 +14,7 @@ const MaxPets = 4
 // MaxHotelPets is the native pet hotel capacity (AC31).
 const MaxHotelPets = 10
 
-// Allocate follows AC08 pet allocation, including UInt16 attribute wrapping.
+// Allocate follows AC08 pet allocation, rejecting UInt16 attribute overflow.
 func (p *Pet) Allocate(requests []StatAllocation) bool {
 	c := Character{Base: p.Base, StatPoints: p.StatPoints}
 	if !c.Allocate(requests) {

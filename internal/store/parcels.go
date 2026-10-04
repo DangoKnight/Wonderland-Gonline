@@ -131,7 +131,7 @@ func (s *Store) ClaimParcel(ctx context.Context, ref CharacterRef, id uint32, it
 			}
 			grant := game.Item{ID: row.ItemID, Count: row.Count, Damage: row.Damage}
 			copy(grant.Metadata[:], row.Metadata)
-			adds, err = next.Bag.Grant(grant, int(row.Count), item.StackLimit())
+			adds, err = next.Bag.Grant(grant, int(row.Count), item.StackLimit(), items)
 			if err != nil {
 				return err
 			}

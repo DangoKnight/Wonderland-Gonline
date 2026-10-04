@@ -30,6 +30,10 @@ func (s *Server) openService(c *Session, action uint16) error {
 	case world.ServiceClinic, world.ServiceClinicAlternate: // Clinic: offer a free rest when HP or SP is missing.
 		full := c.character.Combat(s.Assets.Items)
 		needs := int64(c.character.HP) < int64(full.MaxHP) || int64(c.character.SP) < int64(full.MaxSP)
+		for _, pet := range c.character.Pets {
+			full := pet.Combat(s.Assets.Items)
+			needs = needs || pet.HP < full.MaxHP || pet.SP < full.MaxSP
+		}
 		offer := uint32(0xffffffff)
 		c.restMap = 0
 		if needs {
@@ -42,16 +46,22 @@ func (s *Server) openService(c *Session, action uint16) error {
 
 // confirmRest is Player.ConfirmNpcRest (AC31:1). Caller holds worldMu.
 func (s *Server) confirmRest(ctx context.Context, c *Session) error {
-	if c.restMap == 0 || c.restMap != c.character.Map {
+	if c.restMap == 0 || c.restMap != c.character.Map || c.battle != nil {
 		return nil
 	}
-	c.restMap = 0
 	next := c.character.Clone()
 	next.Refill(s.Assets.Items)
+	for i := range next.Pets {
+		next.Pets[i].Normalize(s.Assets.Items, true)
+	}
 	if e := s.commit(ctx, c, next); e != nil {
 		return e
 	}
+	c.restMap = 0
 	packets := next.StatPackets(s.Assets.Items)
+	for _, pet := range next.Pets {
+		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+	}
 	return s.sendAll(c, append(packets, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRestEffect}.U32(next.ID), []byte{protocol.CommandNPCService, protocol.ClinicRestConfirm, 0}))
 }
 
@@ -193,53 +203,64 @@ func (s *Server) transfer(src, dst *game.Inventory, from, to byte) (byte, []game
 		return 0, nil
 	}
 	item := src[from-1]
-	if item.Empty() {
+	if item.Empty() || item.Locked {
 		return 0, nil
 	}
-	limit, _ := s.stackLimit(item.ID)
-	remaining := int(item.Count)
-	var adds []game.Addition
-	plan := *dst
-	for pass := 0; pass < 2 && remaining > 0; pass++ {
-		for slot := byte(1); slot <= game.BagSize && remaining > 0; slot++ {
-			if (to != 0 && slot != to) || (src == dst && slot == from) {
-				continue
-			}
-			target := plan[slot-1]
-			empty := target.Empty()
-			if empty != (pass == 1) {
-				continue
-			}
-			if !empty && (target.ID != item.ID || limit < 2 || target.Damage != item.Damage || target.Metadata != item.Metadata) {
-				continue
-			}
-			capacity := int(limit)
-			if !empty {
-				capacity = max(0, int(limit)-int(target.Count))
-			}
-			n := min(remaining, capacity)
-			if n == 0 {
-				continue
-			}
-			if empty {
-				plan[slot-1] = item
-				plan[slot-1].Count = byte(n)
-			} else {
-				plan[slot-1].Count += byte(n)
-			}
-			adds = append(adds, game.Addition{Slot: slot, Count: byte(n)})
-			remaining -= n
+	limit, known := s.stackLimit(item.ID)
+	if !known {
+		return 0, nil
+	}
+	if src == dst && to != 0 {
+		moved, err := src.Move(from, to, item.Count, limit, s.Assets.Items)
+		if err != nil {
+			return 0, nil
 		}
+		return moved, []game.Addition{{Slot: to, Count: moved}}
 	}
-	if len(adds) == 0 || (to == 0 && remaining != 0) {
+	source, target := *src, *dst
+	if to == 0 {
+		if err := source.Remove(from, item.Count); err != nil {
+			return 0, nil
+		}
+		if src == dst {
+			target = source
+		}
+		adds, err := target.Grant(item, int(item.Count), limit, s.Assets.Items)
+		if err != nil {
+			return 0, nil
+		}
+		if src != dst {
+			*src = source
+		}
+		*dst = target
+		return item.Count, adds
+	}
+	current := target[to-1]
+	if current.Locked {
 		return 0, nil
 	}
-	moved := item.Count - byte(remaining)
-	*dst = plan
-	if e := src.Remove(from, moved); e != nil {
+	capacity := limit
+	if !current.Empty() {
+		if current.ID != item.ID || current.Damage != item.Damage || current.Metadata != item.Metadata {
+			return 0, nil
+		}
+		capacity -= min(current.Count, limit)
+	}
+	moved := min(item.Count, capacity)
+	if moved == 0 || source.Remove(from, moved) != nil {
 		return 0, nil
 	}
-	return moved, adds
+	if current.Empty() {
+		if !target.CanPlace(to, item, s.Assets.Items) {
+			return 0, nil
+		}
+		target[to-1] = item
+		target[to-1].Count = moved
+	} else {
+		target[to-1].Count += moved
+	}
+	*src, *dst = source, target
+	return moved, []game.Addition{{Slot: to, Count: moved}}
 }
 
 // Menu warp destinations (AC5.Recv17).

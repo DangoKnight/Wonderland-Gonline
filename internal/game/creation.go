@@ -25,13 +25,15 @@ type Appearance struct {
 }
 
 type ItemDefinition struct {
-	ID        uint16    `json:"id"`
-	Name      string    `json:"name"`
-	Type      byte      `json:"type"`
-	EquipSlot uint16    `json:"equip_slot"`
-	Level     uint16    `json:"level"`
-	Status    [2]uint16 `json:"status"`
-	Values    [2]int32  `json:"values"`
+	CellWidth  byte      `json:"cell_width"`
+	CellHeight byte      `json:"cell_height"`
+	ID         uint16    `json:"id"`
+	Name       string    `json:"name"`
+	Type       byte      `json:"type"`
+	EquipSlot  uint16    `json:"equip_slot"`
+	Level      uint16    `json:"level"`
+	Status     [2]uint16 `json:"status"`
+	Values     [2]int32  `json:"values"`
 }
 
 func (d ItemDefinition) StackLimit() byte {
@@ -233,7 +235,7 @@ func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []Star
 		if !ok {
 			return Character{}, fmt.Errorf("starter item %d missing", grant.ID)
 		}
-		if err := c.Bag.Add(Item{ID: grant.ID}, grant.Count, def.StackLimit()); err != nil {
+		if err := c.Bag.Add(Item{ID: grant.ID}, grant.Count, def.StackLimit(), items); err != nil {
 			return Character{}, err
 		}
 	}

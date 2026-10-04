@@ -59,7 +59,7 @@ func Exchange(a, b Character, offers [2]TradeOffer, items map[uint16]ItemDefinit
 	for i := range offers {
 		recipient := &result.Characters[1-i]
 		for _, it := range offers[i].Items {
-			adds, err := recipient.Bag.Grant(it.Item, int(it.Count), items[it.Item.ID].StackLimit())
+			adds, err := recipient.Bag.Grant(it.Item, int(it.Count), items[it.Item.ID].StackLimit(), items)
 			if err != nil {
 				return TradeResult{}, err
 			}

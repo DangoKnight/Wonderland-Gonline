@@ -72,7 +72,7 @@ func (s *Server) synthesize(ctx context.Context, c *Session, first, second byte)
 		}
 		next.Gold -= fee
 		var err error
-		adds, err = next.Bag.Grant(game.Item{ID: output}, alchemyOutputQuantity, s.Assets.Items[output].StackLimit())
+		adds, err = next.Bag.Grant(game.Item{ID: output}, alchemyOutputQuantity, s.Assets.Items[output].StackLimit(), s.Assets.Items)
 		return err
 	}, *c.character)
 	if err != nil {

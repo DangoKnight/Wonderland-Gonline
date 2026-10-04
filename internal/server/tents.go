@@ -139,6 +139,7 @@ func (s *Server) enterTent(ctx context.Context, c *Session, owner uint32) error 
 	s.depart(c, warp)
 	c.character.Map = game.TentMapID
 	c.tentOwner = owner
+	c.restMap = 0
 	c.ready, c.warped, c.arrived = false, true, true
 	c.gathering = nil
 	s.cancelTrade(c)

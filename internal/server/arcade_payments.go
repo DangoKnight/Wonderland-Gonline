@@ -163,12 +163,12 @@ func (s *Server) arcadeCommand(ctx context.Context, c *Session, p []byte) error 
 				return game.ErrInvalidItem
 			}
 			planned := character.Bag
-			if _, err := planned.Grant(game.Item{ID: candidate.ItemID}, int(candidate.Quantity), candidateItem.StackLimit()); err != nil {
+			if _, err := planned.Grant(game.Item{ID: candidate.ItemID}, int(candidate.Quantity), candidateItem.StackLimit(), s.Assets.Items); err != nil {
 				return err
 			}
 		}
 		var err error
-		additions, err = character.Bag.Grant(game.Item{ID: reward.ItemID}, int(reward.Quantity), item.StackLimit())
+		additions, err = character.Bag.Grant(game.Item{ID: reward.ItemID}, int(reward.Quantity), item.StackLimit(), s.Assets.Items)
 		return err
 	})
 	switch {

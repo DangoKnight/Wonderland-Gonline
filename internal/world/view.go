@@ -10,7 +10,7 @@ import (
 )
 
 // View is what one client has been told about its current scene. A session owns it
-// and the server serializes access. Hidden, Markers, Props and Actors reset on each map
+// and the server serializes access. AdminActors, Hidden, Markers, Props and Actors reset on each map
 // entry (Player.CurMap and SendMapInfo in C#); Marks spans the whole login.
 type View struct {
 	AdminActors map[uint16]bool  // Explicit live administrator show/hide decisions.
@@ -32,6 +32,7 @@ func NewView() *View {
 
 // Reset clears the scene state for a new map entry.
 func (v *View) Reset() {
+	v.AdminActors = map[uint16]bool{}
 	v.Hidden, v.Markers, v.Props, v.Actors = map[uint16]bool{}, map[uint32]byte{}, map[uint16]int32{}, map[uint16]bool{}
 }
 

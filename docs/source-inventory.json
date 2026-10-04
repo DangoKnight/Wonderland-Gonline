@@ -367,7 +367,7 @@
         "internal/assets/items_native.go",
         "internal/game/inventory.go"
       ],
-      "notes": "Full item record/game definition replaces limited packed metadata.",
+      "notes": "Full item record/game definition replaces limited packed metadata. Multi-slot follow-up: SQL item cell dimensions now drive contiguous 5-column inventory footprints, anchor-only persistence/packets, grant rollback, movement, storage, equipment, crafting and admin validation. Native TRE_ItemGrid dimensions supplement the legacy single-slot grant implementation; live client acceptance remains pending.",
       "audit_verdict": "replaced"
     },
     {
@@ -420,9 +420,13 @@
       "status": "partial",
       "sha256": "98a7ab8f33a29543e6195e5e698767734b2ecc961cb155c46c632a54d7311a50",
       "go_files": [
-        "internal/game/inventory.go"
+        "internal/game/inventory.go",
+        "internal/game/creation.go",
+        "internal/game/equipment.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/pet_equipment_test.go"
       ],
-      "notes": "Numeric item metadata retained; each usage restriction and special-status behavior must be checked at inventory level, rather than declaring enum migration from names.",
+      "notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
       "audit_verdict": "partial"
     },
     {
@@ -431,9 +435,13 @@
       "status": "partial",
       "sha256": "006cf6a9f6effc4fa96dbec8e13c3ba4b852b7c8113b1511d8cc139ea0d9bebd",
       "go_files": [
-        "internal/game/inventory.go"
+        "internal/game/inventory.go",
+        "internal/game/creation.go",
+        "internal/game/equipment.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/pet_equipment_test.go"
       ],
-      "notes": "Numeric item metadata retained; each usage restriction and special-status behavior must be checked at inventory level, rather than declaring enum migration from names.",
+      "notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
       "audit_verdict": "partial"
     },
     {
@@ -442,9 +450,13 @@
       "status": "partial",
       "sha256": "b731cffce64377c859c1c0495bdc9aa3cc062d310fddf5f2482d122a1f3fa53b",
       "go_files": [
-        "internal/game/inventory.go"
+        "internal/game/inventory.go",
+        "internal/game/creation.go",
+        "internal/game/equipment.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/pet_equipment_test.go"
       ],
-      "notes": "Numeric item metadata retained; each usage restriction and special-status behavior must be checked at inventory level, rather than declaring enum migration from names.",
+      "notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
       "audit_verdict": "partial"
     },
     {
@@ -453,9 +465,13 @@
       "status": "partial",
       "sha256": "02425ba005cb3345ff19548ce484baccab8c2ccac2737c26793546126bd33dd0",
       "go_files": [
-        "internal/game/inventory.go"
+        "internal/game/inventory.go",
+        "internal/game/creation.go",
+        "internal/game/equipment.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/pet_equipment_test.go"
       ],
-      "notes": "Numeric item metadata retained; each usage restriction and special-status behavior must be checked at inventory level, rather than declaring enum migration from names.",
+      "notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
       "audit_verdict": "partial"
     },
     {
@@ -1022,9 +1038,12 @@
         "internal/admin/tools.go",
         "internal/admin/web/tools.js",
         "internal/server/admin_players.go",
-        "internal/store/admin_characters.go"
+        "internal/store/admin_characters.go",
+        "internal/server/admin_character_refresh.go",
+        "internal/server/admin_quest_data.go",
+        "internal/server/admin_quest_port_test.go"
       ],
-      "notes": "Read all six tabs and handlers. SQL character-state editing covers journal flags, roster, inventory, learned skills and unlocks; live GM actions cover grants/heal/skills. General state edits force reconnect instead of the reference's live per-tab reload. Actor hide/show/open/close affects the selected session only in Go, whereas the source broadcasts to the map and break/restore changes linked quest rows. No dedicated custom game_quests registry/step editor counterpart; native marks remain separate. Pet deletion/repair can be done through state editing, not identical button workflows. Reference malformed offline inventory inserts and duplicate live pet insertion are not parity requirements.",
+      "notes": "Versioned inventory/stat/settings/quest tab edits now refresh live, preserving unrelated SQL fields and pending walking. Versioned actor controls support current same-scene map viewers or a selected session; prop break/restore commits the selected character linked quest before publication, without editing peers. Full state/roster edits retain reconnect. Combined actor/event reports replace the desktop display; unsafe offline inserts and duplicate pet insertion remain intentionally replaced.",
       "audit_verdict": "partial"
     },
     {
@@ -1051,9 +1070,10 @@
         "internal/server/admin_players.go",
         "internal/store/admin_social.go",
         "internal/store/admin_mail.go",
-        "internal/server/admin_configuration.go"
+        "internal/server/admin_configuration.go",
+        "internal/server/starter_packs.go"
       ],
-      "notes": "Read all 2917 lines. Sessions, heal/gold/warp/kick, account/IP bans, guild notice/leader/member edits/disband, GM mail single/online/all dispatch/history/delete, battle snapshots/victory/abort and marriage annul/summon have actual Go handlers and SQL persistence. General character edits reconnect. Starter definitions have SQL editing; the one-click configured starter-pack grant to all online players is absent. Reference MySQL connection test, provider configuration and live database reconfiguration have no Go equivalent (Go is SQLite; startup configuration applies after restart). SQLite-to-MySQL action calls a concrete RCLibrary migration routine, so this is an unported provider workflow rather than merely a form placeholder. Source God Mode writes oversized HP/SP; Go provides durable god attributes and normalized vitals instead. Mail name lookup in source uses nonexistent charName column; Go accepts explicit receiver IDs.",
+      "notes": "Read all 2917 lines. Sessions, heal/gold/warp/kick, account/IP bans, guild notice/leader/member edits/disband, GM mail single/online/all dispatch/history/delete, battle snapshots/victory/abort and marriage annul/summon have actual Go handlers and SQL persistence. General character edits reconnect. Starter definitions have SQL editing; the one-click configured starter-pack grant to all online players is absent. Reference MySQL connection test, provider configuration and live database reconfiguration have no Go equivalent (Go is SQLite; startup configuration applies after restart). SQLite-to-MySQL action calls a concrete RCLibrary migration routine, so this is an unported provider workflow rather than merely a form placeholder. Source God Mode writes oversized HP/SP; Go provides durable god attributes and normalized vitals instead. Mail name lookup in source uses nonexistent charName column; Go accepts explicit receiver IDs. Mass online starter delivery now exposed in Operations with authentication, per-recipient audit/results and atomic packs; remaining desktop field/report/editor gaps persist.",
       "audit_verdict": "partial"
     },
     {
@@ -1082,9 +1102,14 @@
         "internal/admin/web/tools.js",
         "internal/server/admin_players.go",
         "internal/server/admin_assets.go",
-        "internal/server/runtime_settings.go"
+        "internal/server/runtime_settings.go",
+        "internal/server/admin_announcements.go",
+        "internal/server/admin_quest_data.go",
+        "internal/assets/quest_definitions.go",
+        "internal/assetsql/quest_definitions.go",
+        "internal/server/admin_quest_port_test.go"
       ],
-      "notes": "Read the entire 6700-line form including startup/shutdown and every event handler. CLI initialization and graceful shutdown replace GUI threads; web endpoints and real SQL handlers cover accounts, password reset/deletion, characters, settings, friendships, bags/stats, chest/monster drops, mall ordering/points, GM authorization/tools, map/portal editing and dialogue dispatch. Missing operational options include offline launcher status and choosing broadcast channels/colors (Go announcements are AC2:4 only). Reference desktop aLogin process launch is platform-specific retired UI. Talk resolution exposes text and lookup methods but not the form's sound/portrait display; NPC world-spawn aggregation and formatted opcode explorer are replaced by raw map/dataset inspection, without equivalent combined reports. Live asset edits reconnect players. Character Job/Potential and custom quest-registry dependencies remain partial; do not infer completion from UI controls.",
+      "notes": "Launcher offline status and notice/world/guild/whisper/banner announcement channels implemented. Combined NPC placement/event/decoded-opcode reports and typed custom quest registry editing are available. Native metadata replaces English-title reward/map/NPC guesses; Windows layout/local launcher and MySQL provider workflows remain architectural replacements.",
       "audit_verdict": "partial"
     },
     {
@@ -1179,9 +1204,10 @@
       "status": "ported",
       "sha256": "48c52d390ff8415d52daf0bc7db1c9200959005ee49c7dd26aab37f0b1606f8c",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/migration_verification_test.go"
       ],
-      "notes": "Handshake status and server uptime plus subcode acknowledgment have registered handlers.",
+      "notes": "Reference generic subcommand acknowledgements and UInt32 uptime handshake are independently verified across all 256 subcommands. No generic fallback is inferred for unregistered commands.",
       "audit_verdict": "migrated"
     },
     {
@@ -1191,22 +1217,27 @@
       "sha256": "6be70b0891226c6cefeaa3bf54ef2107f8a55567c30587a37ab2ef5fbf9fa549",
       "go_files": [
         "internal/server/chat.go",
-        "internal/server/gm_commands.go"
+        "internal/server/gm_commands.go",
+        "internal/server/gm_reload.go"
       ],
-      "notes": "Local chat and every executable source GM command has a Go entry point; source global chat only logs. Definitions-backed quest reload remains absent; individual GM manager semantics require review.",
+      "notes": "Local chat and every executable source GM command has a Go entry point; source global chat only logs. Quest reload now publishes typed custom definitions as well as native events/visibility; individual GM manager semantics require review.",
       "audit_verdict": "partial"
     },
     {
       "source": "Src/Network/ActionCodes/AC03.cs",
       "lines": 47,
-      "status": "partial",
+      "status": "ported",
       "sha256": "340ea59753be97b88fef5a253071d2d1a8e5d7a5593fe60be46dd2c5e8af6ad3",
       "go_files": [
         "internal/server/world_entry.go",
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/game/login_packets.go",
+        "client/wlo/app/app.go",
+        "internal/server/world_entry_test.go",
+        "internal/server/migration_verification_test.go"
       ],
-      "notes": "Scene-ready is implemented with native-specific replies; generic subcode echo and map broadcast differ from the reference.",
-      "audit_verdict": "partial"
+      "notes": "Reference sends [3,sub,1] and [3,sub,character:u32]. These are incompatible with native AC3 self-character/map snapshots (client receive address 0x2dfdb3), so inbound AC3 remains unsupported rather than emitting short malformed appearance packets. Native AC12 publication and AC89/92 readiness are independently tested. This is a deliberate protocol replacement; native capture acceptance remains separate.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "Src/Network/ActionCodes/AC04.cs",
@@ -1268,13 +1299,19 @@
     {
       "source": "Src/Network/ActionCodes/AC08.cs",
       "lines": 306,
-      "status": "partial",
+      "status": "ported",
       "sha256": "0586d836a927e158e3b916609abced1730ea9f3f6547a66eff9e74546a9a47b1",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/game/progress.go",
+        "internal/game/pets.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/items.go",
+        "internal/server/migration_verification_test.go",
+        "internal/server/skill_tree_test.go"
       ],
-      "notes": "Allocation registered; permissive legacy amount widths and batches need decoder comparison.",
-      "audit_verdict": "partial"
+      "notes": "Manually compared direct stat, subcode 1/2, target/header and counted batch layouts. Decoder preserves greedy 4/2/1-byte widths, missing/zero amounts as one, ignored invalid entries and partial batches. Allocation commits before snapshots, preserves HP/SP and resolves session pet slots. Pet attribute overflow now rejects as source requires; player overflow and invalid direct helper entries also reject deliberately to preserve points/state.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC09.cs",
@@ -1636,9 +1673,11 @@
       "status": "ported",
       "sha256": "331833a34923ea8334519b3c60dafffe9523ea8103bec0ad2e93b9f04efd36dc",
       "go_files": [
-        "internal/server/hotel.go"
+        "internal/server/hotel.go",
+        "internal/server/services.go",
+        "internal/server/world_combat_port_test.go"
       ],
-      "notes": "Rest and atomic hotel exchange preserve pet data.",
+      "notes": "Rest and atomic hotel exchange preserve pet data. Clinic confirmation now heals accompanying pets as well as owner, persists before replay, retains pending offer on failure and rejects stale travel/battle requests.",
       "audit_verdict": "migrated"
     },
     {
@@ -1716,25 +1755,31 @@
     {
       "source": "Src/Network/ActionCodes/AC39.cs",
       "lines": 186,
-      "status": "partial",
+      "status": "ported",
       "sha256": "68c77291de9752a7dd5917f150e91cb4ccfea81c0e156ddb03f032b076c4bbf8",
-      "notes": "Guild operations exist; source subcommand 1 also requests quest journal, requiring separate journal parity review.",
+      "notes": "AC39:1 already routes to the native quest journal independently of guild membership. Verified repeated clear/active/250 completion-byte pair snapshots and private delivery. Membership, invitation ownership, ranks, messages, notice and insignia use SQL authorization; success-only vault/alliance/email placeholders remain on hold instead of false success.",
       "go_files": [
         "internal/server/guilds.go",
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/world/view.go",
+        "internal/server/migration_verification_test.go",
+        "internal/server/economy_social_test.go"
       ],
-      "audit_verdict": "partial"
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC40.cs",
       "lines": 67,
-      "status": "partial",
+      "status": "ported",
       "sha256": "d6c90edb55a635cbba6421f478137e1dc4fce4d4b171ab1166408980ea8838e7",
       "go_files": [
-        "internal/server/alchemy.go"
+        "internal/server/alchemy.go",
+        "internal/server/alchemy_test.go",
+        "internal/assets/alchemy.go",
+        "internal/assetsql/migration_verification_test.go"
       ],
-      "notes": "Request registered; recipe manager parity requires review.",
-      "audit_verdict": "partial"
+      "notes": "Direct native synthesis matches the first symmetric SQL recipe and ignores chance/fee as source does; unknown recipe fails without consumption. Verified authored/Compound2/Compound precedence survives SQL reload. Full containers, stale/duplicate requests, locks, ownership and save/receipt failures retain atomic resources and metadata.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC41.cs",
@@ -1778,13 +1823,17 @@
     {
       "source": "Src/Network/ActionCodes/AC45.cs",
       "lines": 117,
-      "status": "partial",
+      "status": "ported",
       "sha256": "fa005d71531803d6d5bc3ffd9b1813c71aea8532ef2dbb898acad9ac051d4e2e",
       "go_files": [
-        "internal/server/services.go"
+        "internal/server/services.go",
+        "internal/server/banking.go",
+        "internal/server/banking_test.go",
+        "internal/server/migration_verification_test.go",
+        "internal/store/banking_test.go"
       ],
-      "notes": "Balance/deposit/withdraw migrated; PIN/transfer are reference success-only stubs. Source default balance response differs from Go unsupported handling.",
-      "audit_verdict": "partial"
+      "notes": "Balance/deposit/withdraw and unknown-subcommand default balance query implemented. Verified all default subcommands with ignored operands, private reply and unchanged balances; restart, rollback, wallet/bank limits and ownership gates pass. PIN/transfer remain truthful unavailable responses because the reference only acknowledges success.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC50.cs",
@@ -1794,7 +1843,7 @@
       "go_files": [
         "internal/server/combat.go"
       ],
-      "notes": "Live path delegates to PvEBattleManager; Go routes AC50 into battle.Submit with owned-actor validation, defend/flee/capture and skill handling. Go sends AC53:5 ACK only to the submitting session, while reference broadcasts it to all participants. Alternate BattleScene path never assigns a skill and is incomplete.",
+      "notes": "Live path delegates to PvEBattleManager; Go routes AC50 into battle.Submit with owned-actor validation, defend/flee/capture and skill handling. Go now broadcasts accepted AC53:5 ACK to all active battle participants; duplicate submissions remain silent. Alternate BattleScene path never assigns a skill and is incomplete.",
       "audit_verdict": "partial"
     },
     {
@@ -1955,13 +2004,15 @@
     {
       "source": "Src/Network/ActionCodes/AC67.cs",
       "lines": 46,
-      "status": "partial",
+      "status": "ported",
       "sha256": "e746d64ecfa4f81224dd9ba35b82f0a7542c4ed19c10bf7515fcc157485265c9",
       "go_files": [
-        "internal/server/pets.go"
+        "internal/server/pets.go",
+        "internal/server/pet_feeding.go",
+        "internal/server/pet_feeding_test.go"
       ],
-      "notes": "Feeding registered; manager-level amity semantics require comparison.",
-      "audit_verdict": "partial"
+      "notes": "Compared FeedPet/TryFeedPet: active registered battle pet, positive status-64 value above 100, capped amity, minimal needed consumption and native result. Strict known request layout and transactional consumption replace permissive unsafe payloads. Reconnect, failed saves, target ownership, locks and world gates tested.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC68.cs",
@@ -1969,21 +2020,27 @@
       "status": "partial",
       "sha256": "1a986e83a3971d6082030cf81867d134e341a72c58fb987f8a2837efb78eabd9",
       "go_files": [
-        "internal/server/pets.go"
+        "internal/server/pets.go",
+        "internal/game/pets.go",
+        "internal/server/pet_training.go",
+        "internal/server/pet_training_test.go"
       ],
-      "notes": "Pet stat allocation is implemented. Reference subcode 1 increments Potential up to 100 for free and sends progression; Go explicitly rejects potential training and has no Potential field. Reference never verifies or consumes the advertised pill, so payment semantics remain unfinished even though a reachable increment exists.",
+      "notes": "Pet stat allocation is implemented. Reference subcode 1 increments Potential up to 100 for free and sends progression; Go explicitly rejects potential training while Potential metadata persists separately in typed gameplay rows. Reference never verifies or consumes the advertised pill, so payment semantics remain unfinished even though a reachable increment exists.",
       "audit_verdict": "partial"
     },
     {
       "source": "Src/Network/ActionCodes/AC69.cs",
       "lines": 96,
-      "status": "partial",
+      "status": "ported",
       "sha256": "05b24dac3ee4c2413fa7e084047b4ff208e9456ec7cd123e36484047da9572d8",
       "go_files": [
-        "internal/server/pets.go"
+        "internal/server/pets.go",
+        "internal/game/pet_rebirth.go",
+        "internal/server/pet_rebirth.go",
+        "internal/server/pet_rebirth_test.go"
       ],
-      "notes": "Pet rebirth registered; eligibility/reset/bonus require comparison.",
-      "audit_verdict": "partial"
+      "notes": "Compared source level 100/amity 100 eligibility, one-time rebirth, level/EXP reset, 50-point bonus and unchanged base/skills/equipment/job. Derived vitals normalize before SQL save. Reject bonus overflow rather than wrapping; native result/list/progression, reload, duplicate/invalid requests and rollback tested.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC70.cs",
@@ -2466,9 +2523,11 @@
         "internal/server/characters.go",
         "internal/server/world.go",
         "internal/server/world_entry.go",
-        "internal/server/autosave.go"
+        "internal/server/autosave.go",
+        "internal/server/server.go",
+        "internal/store/starter_packs.go"
       ],
-      "notes": "Reviewed entire lifecycle, login packet order, map ticking, reference one-second autosave and deferred MOTD. Go implements these through sessions/ticks/commit-before-receipt, with native snapshots and mall sync. Level-one starter redelivery is missing; player job/potential appearance remain absent. Legacy blocked event/assist loops and disabled idle/random-EXP loop have no active behavior to port. Go now buffers ordinary walking and checkpoints dirty state at a startup-configurable interval (default 30 seconds), retaining immediate resource commits and final disconnect saves.",
+      "notes": "Reviewed entire lifecycle, login packet order, map ticking, reference one-second autosave and deferred MOTD. Go implements these through sessions/ticks/commit-before-receipt, with native snapshots and mall sync. Creation-time starter grants and player class/potential appearance are implemented. Legacy blocked event/assist loops and disabled idle/random-EXP loop have no active behavior to port. Go now buffers ordinary walking and checkpoints dirty state at a startup-configurable interval (default 30 seconds), retaining immediate resource commits and final disconnect saves. Starter packs are saved atomically with character creation; the legacy level-one login refill is deliberately removed by user policy.",
       "audit_verdict": "partial"
     },
     {
@@ -2627,9 +2686,11 @@
         "internal/assetsql/database.go",
         "internal/assetsql/catalog_storage_generated.go",
         "internal/assetsql/administration.go",
-        "internal/server/gm_reload.go"
+        "internal/server/gm_reload.go",
+        "internal/assets/quest_definitions.go",
+        "internal/assetsql/quest_definitions.go"
       ],
-      "notes": "Read all 893 source lines. Runtime inventory/equipment, friends, settings, guild membership and party/hotel/reserve pet loading use normalized wonderland.db tables; immutable native templates/spawns/events and configurable rewards use assets.db initialization and administration. Native Npc.dat extraction replaces the reference partial direct SQL import and insecure interpolated template/spawn updates. Original spawns.csv/database overlays are deliberately excluded by user instruction. Missing dependent model: reference pet Potential is neither represented nor persisted in Go; editable game_quests definitions remain absent. Empty mail/tent/skills/quests load regions and commented WriteStorage are not working reference behaviors.",
+      "notes": "Read all 893 source lines. Runtime inventory/equipment, friends, settings, guild membership and party/hotel/reserve pet loading use normalized wonderland.db tables; immutable native templates/spawns/events and configurable rewards use assets.db initialization and administration. Native Npc.dat extraction replaces the reference partial direct SQL import and insecure interpolated template/spawn updates. Original spawns.csv/database overlays are deliberately excluded by user instruction. Pet Potential persists in typed gameplay state. Typed QuestDefinitions now replace game_quests loading/editing without querying an original account database. Empty mail/tent/skills/quests load regions and commented WriteStorage are not working reference behaviors.",
       "audit_verdict": "partial"
     },
     {
@@ -2671,9 +2732,12 @@
       "go_files": [
         "internal/assets/quests.go",
         "internal/assetsql/administration.go",
-        "internal/world/event.go"
+        "internal/world/event.go",
+        "internal/assets/quest_definitions.go",
+        "internal/assetsql/quest_definitions.go",
+        "internal/assetsql/quest_definitions_test.go"
       ],
-      "notes": "Reviewed schema, clean Mark.dat import, definition loading including item requirements/rewards/prerequisites/ordered steps and GUI CRUD. Go stores native marks/EVE maps and visibility in assets.db but exposes no equivalent game_quests definition model/editor. Source exporter StepIndex differs from importer StepNumber and omits several fields; retain that defect distinction from its functioning manual-row loader. Custom quest accept/advance/complete helpers have no external runtime callers in the reference; definition loading, desktop editing and PvE kill-counter updates are reachable. Treat dormant progression separately from missing live integration.",
+      "notes": "Custom QuestDefinitions now load/edit through typed assets SQL with ordered steps, items/rewards, prerequisites, linked marks and actor metadata. Explicit asset v10 migration seeds actual Mark.dat IDs/text without fabricated rewards and preserves operator edits. Unsafe destructive reimport and inconsistent StepIndex/StepNumber regex serialization are replaced by typed child rows. Custom progression integration remains dormant; original private account databases are not imported.",
       "audit_verdict": "partial"
     },
     {
@@ -2816,9 +2880,12 @@
         "internal/server/combat_quests.go",
         "internal/server/encounters.go",
         "internal/battle/targeting.go",
-        "internal/config/config.go"
+        "internal/config/config.go",
+        "internal/server/world_combat_port_test.go",
+        "internal/server/custom_quests.go",
+        "internal/server/admin_quest_port_test.go"
       ],
-      "notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Remaining wire differences: Go sends action ACK only to submitting session instead of every participant; battle intro omits reference explicit teammate HUD and owner pet-progress refresh. Reference editable quest kill counters depend on the missing game_quests engine. Go suppresses PvP EXP/gold (reference attacker victory awards 150/100); needs explicit policy confirmation before treating that as parity. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule.",
+      "notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Battle submit ACK now broadcasts to participants; battle entry refreshes party HUD and owner pet progression. Registered quest kill objectives now increment in victory settlement, with ordered-step/source ID/name matching, captured-monster and PvP exclusions, duplicate prevention and save-before-receipt. The owner explicitly confirmed reward-free PvP, retaining intentional suppression of source 150 EXP/100 gold. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule. Owner pet entry progression and party refresh plus battle-scoped AC53:5 submit ACK broadcast implemented. Owner explicitly retains reward-free PvP rather than source 150 EXP/100 gold; native animation acceptance remains pending.",
       "audit_verdict": "partial"
     },
     {
@@ -2863,9 +2930,11 @@
         "internal/assets/alchemy.go",
         "internal/server/alchemy.go",
         "internal/server/synthesis.go",
-        "internal/assetsql/authored_synthesis.go"
+        "internal/assetsql/authored_synthesis.go",
+        "internal/server/migration_verification_test.go",
+        "internal/assetsql/migration_verification_test.go"
       ],
-      "notes": "Authored input/output recipe chances and fees projected offline into SQL, preserving customized rates. Player compound cost and result commit transactionally; deterministic native paths remain separate.",
+      "notes": "Authored input/output recipe chances and fees projected offline into SQL, preserving customized rates. Player compound cost and result commit transactionally; deterministic native paths remain separate. Focused verification confirms first matching source recipe wins, authored entries precede Compound2 then Compound, and typed SQL ordinals preserve priority after reload without provenance documents.",
       "audit_verdict": "migrated"
     },
     {
@@ -2914,9 +2983,11 @@
       "sha256": "4521afa1b9ffc6207ba6fb88c50e83bcf08bc1d6dffe27ae549c4917bc895b9d",
       "go_files": [
         "internal/server/manufacturing.go",
-        "internal/store/owned_mutation.go"
+        "internal/store/owned_mutation.go",
+        "internal/server/migration_verification_test.go",
+        "internal/assetsql/migration_verification_test.go"
       ],
-      "notes": "Source two-input workbench matching and AC59 retained with authoritative SQL ingredient/fee/output transaction. Authored optional chance/fee handling added; failed attempts consume agreed cost, full output rollback preserves resources.",
+      "notes": "Source two-input workbench matching and AC59 retained with authoritative SQL ingredient/fee/output transaction. Authored optional chance/fee handling added; failed attempts consume agreed cost, full output rollback preserves resources. Focused verification confirms the first matching workbench recipe wins; full bags and failed saves roll back ingredient/fee/output together.",
       "audit_verdict": "migrated"
     },
     {
@@ -3089,7 +3160,7 @@
         "internal/server/items.go",
         "internal/server/services.go"
       ],
-      "notes": "Fifty-slot bag, additive metadata packets, moves, item grants/exchanges, quest changes, character/pet equipment and guarded NPC sale implemented. Go plans whole deliveries, checks full metadata for stacking, preserves locks and commits before success packets instead of source partial AddItem and unsafe destructive slot access. Raft wear lives in vehicle handling. Commented generic onItemUsed is a source placeholder; Go has additional actual consumable handling.",
+      "notes": "Fifty-slot bag, additive metadata packets, moves, item grants/exchanges, quest changes, character/pet equipment and guarded NPC sale implemented. Go plans whole deliveries, checks full metadata for stacking, preserves locks and commits before success packets instead of source partial AddItem and unsafe destructive slot access. Raft wear lives in vehicle handling. Commented generic onItemUsed is a source placeholder; Go has additional actual consumable handling. Multi-slot follow-up: SQL item cell dimensions now drive contiguous 5-column inventory footprints, anchor-only persistence/packets, grant rollback, movement, storage, equipment, crafting and admin validation. Native TRE_ItemGrid dimensions supplement the legacy single-slot grant implementation; live client acceptance remains pending.",
       "audit_verdict": "replaced"
     },
     {
@@ -3101,9 +3172,11 @@
         "internal/game/inventory.go",
         "internal/game/creation.go",
         "internal/game/equipment.go",
-        "internal/game/critical.go"
+        "internal/game/critical.go",
+        "internal/game/migration_verification_test.go",
+        "internal/server/trade_test.go"
       ],
-      "notes": "Checked stack/drop type lists, forge metadata/copy/reset, durability and tent dimensions. Go handles these with typed records, external definitions and transient locks. Parent-slot multi-cell occupancy is replaced by a fixed one-record inventory model. Source Tradeable permits only type 28 but is not enforced by the reviewed Go trade helper; reachability of legacy restriction needs Inventory/Trade comparison. EquipmentCell bonuses are commented-out placeholders; active bonuses live in Equip.",
+      "notes": "Checked stack/drop type lists, forge metadata/copy/reset, durability and tent dimensions. Go handles these with typed records, external definitions and transient locks. Parent-slot multi-cell occupancy is replaced by a fixed one-record inventory model. Source Tradeable permits only type 28, but searching all reference callers confirms this property is never consulted by Trade or Inventory. Do not impose that dormant restriction. All 256 stack/drop type values are independently verified; wear paths use slots 1..6 with no source level/body/use-type enforcement. EquipmentCell bonuses are commented-out placeholders; active bonuses live in Equip. Multi-slot follow-up: SQL item cell dimensions now drive contiguous 5-column inventory footprints, anchor-only persistence/packets, grant rollback, movement, storage, equipment, crafting and admin validation. Native TRE_ItemGrid dimensions supplement the legacy single-slot grant implementation; live client acceptance remains pending.",
       "audit_verdict": "partial"
     },
     {
@@ -3128,9 +3201,12 @@
         "internal/server/monkey.go",
         "internal/server/breillat.go",
         "internal/server/story_continuation.go",
-        "internal/server/combat.go"
+        "internal/server/combat.go",
+        "internal/server/map_props.go",
+        "internal/store/map_props.go",
+        "internal/server/robinson_updates_test.go"
       ],
-      "notes": "Read every action and special sequence. Dialogue, records, rewards, marks, formations, services, minigames, movies, skills and markers implemented; Monkey and Breillat are transactional, starter transition narrowed to fix arcade miswarp. Gap: generic nonquest actor prop-state/hide/show actions do not update shared broken state or schedule the reference 60-second respawn; actor hide/show only changes requesting view. Separate fallback harvestProp SQL path does not replace scripted actor mutations.",
+      "notes": "Read every action and special sequence. Dialogue, records, rewards, marks, formations, services, minigames, movies, skills and markers implemented; Monkey and Breillat are transactional, starter transition narrowed to fix arcade miswarp. Scripted nonquest prop frames now share persisted state with a 60-second reset; actor hide/show continues its source per-character visibility behavior. Scripted shared prop frame now persists and resets after 60 seconds with map-entry replay; mark-conditioned frames remain per character and tents remain isolated. Upstream e63e9fe follow-up ports Robinson Event 19 dialogue-to-recruitment continuation and interrupted-dialogue recovery; see upstream_updates for separately hashed revision evidence.",
       "audit_verdict": "partial"
     },
     {
@@ -3143,9 +3219,10 @@
         "internal/server/story_continuation.go",
         "internal/world/event.go",
         "internal/world/preevent.go",
-        "internal/world/story_rules.go"
+        "internal/world/story_rules.go",
+        "internal/server/robinson_updates_test.go"
       ],
-      "notes": "Branch grouping, callbacks, reward preflight, token isolation, path groups up to ten actors, movie/choice ACK quirks, entry rectangles, region triggers, disabled events, minimap markers, companion reservation and all explicit story continuations present. Native unresolved actions remain rejected before mutations. Region cell indexing follows client decompilation instead of reference off-by-one. Interpreter action gap tracked in EveEventInterpreter separately.",
+      "notes": "Branch grouping, callbacks, reward preflight, token isolation, path groups up to ten actors, movie/choice ACK quirks, entry rectangles, region triggers, disabled events, minimap markers, companion reservation and all explicit story continuations present. Native unresolved actions remain rejected before mutations. Region cell indexing follows client decompilation instead of reference off-by-one. Interpreter action gap tracked in EveEventInterpreter separately. Upstream e63e9fe follow-up ports Robinson Event 19 dialogue-to-recruitment continuation and interrupted-dialogue recovery; see upstream_updates for separately hashed revision evidence.",
       "audit_verdict": "migrated"
     },
     {
@@ -3184,9 +3261,10 @@
         "internal/world/monsters.go",
         "internal/server/service_fallback.go",
         "internal/server/map_props.go",
-        "internal/server/events.go"
+        "internal/server/events.go",
+        "internal/server/npc_greeting.go"
       ],
-      "notes": "All source patrol/bounds/roam timing, wild/static classification, native encounter priority, monster respawn and doctor/storage/bank/hotel/shop fallback flows compared. Go collision-aware actor simulation and transactional shared fallback harvesting replace unsafe reference grants. Generic unlinked nonservice NPC fallback dialogue (ResolveTalkIdForNpc/default Kelan greeting) is absent: Go only releases the client. Scripted shared prop mutation gap recorded under EveEventInterpreter.",
+      "notes": "All source patrol/bounds/roam timing, wild/static classification, native encounter priority, monster respawn and doctor/storage/bank/hotel/shop fallback flows compared. Go collision-aware actor simulation and transactional shared fallback harvesting replace unsafe reference grants. Generic unlinked nonservice NPC native welcome/callback is implemented after ordinary event/service/resource checks; scripted shared frames reset and replay. Generic native welcome fallback and callback now implemented after authored events/services/resource checks. Active, hidden and condition-blocked quests retain their gates.",
       "audit_verdict": "partial"
     },
     {
@@ -3250,9 +3328,10 @@
         "internal/server/world.go",
         "internal/server/items.go",
         "internal/server/map_props.go",
-        "internal/server/tents.go"
+        "internal/server/tents.go",
+        "docs/WORLD_COMBAT_PARITY.md"
       ],
-      "notes": "Read all 1737 source lines and Go scene, portal, pickup/drop and warp bodies. Native actor and ground loading, pickup range/full bag behavior, metadata-preserving drops, respawns, visibility, peer equipment/pets/vehicles/poses, party follow, tent signs/locks/return and map-load acknowledgments exist. DLL spawns and original DB overlays are deliberately replaced by WLRI assets.db. Go uses an arrival guard instead of source 2500/4000-ms bounce guards and publishes peers after load ACK. Nonquest scripted prop mutations still miss shared respawn integration (see interpreter entry). Source special/quest/tool teleport branches contain no movement implementation. The hardcoded Laura exit gift and mark 10035 have no direct Go fallback; native authored events may supply the intended gift and require a content-level check before declaring it missing.",
+      "notes": "Read all 1737 source lines and Go scene, portal, pickup/drop and warp bodies. Native actor and ground loading, pickup range/full bag behavior, metadata-preserving drops, respawns, visibility, peer equipment/pets/vehicles/poses, party follow, tent signs/locks/return and map-load acknowledgments exist. DLL spawns and original DB overlays are deliberately replaced by WLRI assets.db. Go uses an arrival guard instead of source 2500/4000-ms bounce guards and publishes peers after load ACK. Nonquest scripted prop frames now persist their shared reset deadline and replay at map entry. Source special/quest/tool teleport branches contain no movement implementation. The hardcoded Laura exit gift and mark 10035 have no direct Go fallback; WLRI item and typed map-event inspection did not verify a correct replacement; retain the fallback pending verified content. Shared prop entry replay and owner metadata preserved. Laura exit fallback investigated: 32000 absent, 32075 Chocolate, 32001 White Rice in WLRI, Tent 36002; no matching positive reward in map 10000/10001 typed operations. Keep fallback pending verified content rather than granting incorrect IDs.",
       "audit_verdict": "partial"
     },
     {
@@ -3303,24 +3382,31 @@
     {
       "source": "wlo.pserver.core/Game/PetRelated/PetAmityManager.cs",
       "lines": 84,
-      "status": "partial",
+      "status": "ported",
       "sha256": "eed3debcece6b649ce29a3b1e39758b7cbb92c9c6a91dcace8cd439b45dca08d",
       "go_files": [
-        "internal/server/pets.go"
+        "internal/server/pets.go",
+        "internal/server/pet_feeding.go",
+        "internal/server/combat.go",
+        "internal/server/battle_commit_test.go",
+        "internal/server/migration_verification_test.go"
       ],
-      "notes": "Feeding/death loyalty represented in Go; desertion threshold, client slot removal and active-mount clearing require combat outcome review.",
-      "audit_verdict": "partial"
+      "notes": "Compared feeding cap/consumption and defeat loss of one amity per knockout, desertion below 20, active pet/mount cleanup and client-slot removal. Go stages settlement and receipts until SQL commit, preserves an unrelated mount and suppresses PvP loyalty penalties as part of retained PvP policy. Threshold, repeated knockout, flee/defeat, rollback and duplicate settlement regressions pass.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "wlo.pserver.core/Game/PetRelated/PetVoucherManager.cs",
       "lines": 115,
-      "status": "partial",
+      "status": "ported",
       "sha256": "12e0d2e9d75918ea0980f3ba26d552868aeeef5e79c5622afabdbf4a41ce2878",
       "go_files": [
-        "internal/server/items.go"
+        "internal/server/items.go",
+        "internal/server/vouchers.go",
+        "internal/server/vouchers_test.go",
+        "internal/server/migration_verification_test.go"
       ],
-      "notes": "Voucher use routed through item handler; roster capacity/alias/data and initialization require exact voucher implementation comparison.",
-      "audit_verdict": "partial"
+      "notes": "Compared one-item/self-only use, template/item availability, alias duplicate checks, four-pet party/client capacity and level-one/amity-60/full-vital initialization. Consumption and recruitment commit together, with client-slot reservation staged on a clone. Verified failed-save rollback, sparse persistent/client slot differences, duplicate redemption, refusal and persistence.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "wlo.pserver.core/Game/Player.cs",
@@ -3339,7 +3425,7 @@
         "internal/store/character_storage.go",
         "internal/game/login_packets.go"
       ],
-      "notes": "Read all 2107 source lines. Session dispatch, interactions, roster/snapshots, progression, equipment, service windows, record point, party leadership/follow, vehicles, persistence and disconnect cleanup are split across Go modules. Requested pet allocation and compiled elemental formulas replace reference rules. Character/pet potential, actual class/nickname/title metadata and GM rebirth workflow now persist and replay. Clinic pet healing and legacy /stopgather and /inbox aliases remain pending. Literal cheat commands use authenticated GM operations. Source duel/custom quest helpers are placeholder/dormant paths; empty battle-start callback and socket pump are not gameplay targets.",
+      "notes": "Read all 2107 source lines. Session dispatch, interactions, roster/snapshots, progression, equipment, service windows, record point, party leadership/follow, vehicles, persistence and disconnect cleanup are split across Go modules. Requested pet allocation and compiled elemental formulas replace reference rules. Character/pet potential, actual class/nickname/title metadata and GM rebirth workflow now persist and replay. Legacy /stopgather and /inbox aliases remain pending. Literal cheat commands use authenticated GM operations. Source duel/custom quest helpers are placeholder/dormant paths; empty battle-start callback and socket pump are not gameplay targets. Clinic offer and confirmation now include every accompanying pet and replay progression after commit; reserve/hotel excluded. Travel invalidates stale offers.",
       "audit_verdict": "partial"
     },
     {
@@ -3411,7 +3497,7 @@
         "internal/store/accounts.go",
         "internal/admin/admin.go"
       ],
-      "notes": "Read all 926 source lines and corresponding Go command bodies. Online targeting, announcements, summon/warp, pet edits, skill grants, inventory grants, mute/jail, invisibility, repair, restat, mall adjustments, kick and shutdown have concrete implementations with SQL persistence and interaction guards. Name-based default GM identities and gm_list.txt are replaced by authenticated account privileges. Reload quests refreshes native events and visibility but does not implement the reference editable game_quests model; character Job remains absent from information/rebirth. Reference repeated pet rebirth bonus and unsafe grant fallbacks are corrected rather than preserved.",
+      "notes": "Read all 926 source lines and corresponding Go command bodies. Online targeting, announcements, summon/warp, pet edits, skill grants, inventory grants, mute/jail, invisibility, repair, restat, mall adjustments, kick and shutdown have concrete implementations with SQL persistence and interaction guards. Name-based default GM identities and gm_list.txt are replaced by authenticated account privileges. Reload quests refreshes native events, visibility and the SQL custom QuestDefinitions model; character Job remains absent from information/rebirth. Reference repeated pet rebirth bonus and unsafe grant fallbacks are corrected rather than preserved.",
       "audit_verdict": "partial"
     },
     {
@@ -3491,9 +3577,10 @@
       "sha256": "02a0c1c1bc07db0ce91e8e995d4fd2e956e500b788106865b53439d49c92ff6d",
       "go_files": [
         "internal/world/view.go",
-        "internal/server/world_entry.go"
+        "internal/server/world_entry.go",
+        "internal/server/migration_verification_test.go"
       ],
-      "notes": "Checked Mark.dat ID versus completion bit semantics, active mark removal/replacement, 200-mark and 2000-bit limits, packet layouts, and valid book-index filtering with persisted monster discovery before receipts.",
+      "notes": "Checked Mark.dat ID versus completion bit semantics, active mark removal/replacement, 200-mark and 2000-bit limits, packet layouts, and valid book-index filtering with persisted monster discovery before receipts. AC39:1 journal requests, including repeat replacement and no guild membership, now have independent raw packet regression evidence.",
       "audit_verdict": "migrated"
     },
     {
@@ -3552,10 +3639,12 @@
       "sha256": "bc0a6c3467fd28bf0e14f369ca4f5e82ebd09243267ade34254bd27785fe5681",
       "go_files": [
         "internal/server/characters.go",
-        "internal/assetsql/administration.go"
+        "internal/assetsql/administration.go",
+        "internal/store/starter_packs.go",
+        "internal/server/starter_packs.go"
       ],
-      "notes": "Creation uses configured SQL-backed starter grants and administration can edit the definition. Reference also redelivers to level-one players on world entry if none of the configured items remain, and provides mass online delivery; these flows are absent from Go callers found so far.",
-      "audit_verdict": "partial"
+      "notes": "Creation uses configured SQL-backed starter grants and administration can edit the definition. Configured starter packs are persisted at character creation; login never refills them, deliberately replacing legacy level-one recovery by user policy. Authenticated mass online delivery remains explicit. Whole-pack SQL transaction and per-recipient audit replace unchecked partial source writes; busy/full recipients reported.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "wlo.pserver.core/Game/PlayerRelated/Tent/Tent.cs",
@@ -3611,9 +3700,11 @@
       "status": "partial",
       "sha256": "0980e53e4940be2316e6cf2021bd1fe5fae96e45c14fa1030643d62bf05e2293",
       "go_files": [
-        "internal/game/quest.go"
+        "internal/game/quest.go",
+        "internal/server/custom_quests.go",
+        "internal/server/admin_quest_port_test.go"
       ],
-      "notes": "Quest state/step persisted; kill counters/start/completion timestamps and daily cooldown require definition-engine migration.",
+      "notes": "Quest state/step/kills and start/completion timestamps persist in typed gameplay rows. Live PvE kill counters now save with victory rewards and refresh the native journal after commit. Daily/cooldown metadata belongs to typed definitions; dormant acceptance/reset enforcement remains on hold.",
       "audit_verdict": "partial"
     },
     {
@@ -3635,9 +3726,12 @@
       "sha256": "c031ee0a04eb60b15e71e1958e2d6f69dba92f53dfbb0ba63494ae3f7c24a29b",
       "go_files": [
         "internal/assets/quests.go",
-        "internal/world/event.go"
+        "internal/world/event.go",
+        "internal/assets/quest_definitions.go",
+        "internal/assetsql/catalog_storage_generated.go",
+        "internal/assetsql/quest_definitions_test.go"
       ],
-      "notes": "Native EVE quest execution exists; richer ordered definitions with prerequisites/kill objectives/rewards/cooldowns absent as a general Go schema/engine.",
+      "notes": "Full definition/step/item/reward/prerequisite/repeat/daily/cooldown/actor metadata represented by typed assets SQL and validated editor. Runtime custom acceptance/reward progression remains on hold because its source helpers have no external gameplay caller; native EVE remains authoritative.",
       "audit_verdict": "partial"
     },
     {
@@ -3647,9 +3741,11 @@
       "sha256": "99dce2cdf5073899bb5ffca6bff66cc76a803c5b3cba9503a48b25aa437d879b",
       "go_files": [
         "internal/assets/quests.go",
-        "internal/world/event.go"
+        "internal/world/event.go",
+        "internal/assets/quest_definitions.go",
+        "internal/game/quest.go"
       ],
-      "notes": "Native EVE quest execution exists; richer ordered definitions with prerequisites/kill objectives/rewards/cooldowns absent as a general Go schema/engine.",
+      "notes": "Quest state values 0..3 and custom definition types 0..4 represented; typed definition metadata is editable, while dormant progression remains separate.",
       "audit_verdict": "partial"
     },
     {
@@ -3665,9 +3761,13 @@
         "internal/game/pets.go",
         "internal/server/world_entry.go",
         "internal/server/combat_quests.go",
-        "internal/store/character_storage.go"
+        "internal/store/character_storage.go",
+        "internal/assets/quest_definitions.go",
+        "internal/assetsql/quest_definitions.go",
+        "internal/server/custom_quests.go",
+        "internal/server/admin_quest_port_test.go"
       ],
-      "notes": "Read all 1972 source lines and traced callers. Native marks/journal, actor visibility, story constellations, companion identity and first-recruit equipment, reserve/hotel guards, native pet roster/skills/stat packets and persistent quest state have Go bodies. Reference game_quests registry, Mark.dat heuristic master-quest grouping, requirements/prerequisites, repeat/daily/cooldown and kill objectives are not represented by Go. Important reachability distinction: TryHandleNpcQuest and FindQuestForPlayerNpc have no external C# caller, so the apparent full custom dialogue progression engine is dormant; loading/editor and PvE OnMonsterDefeated counters are live. Heuristic English-name reward inference is not a source of verified native quest rules. Accept/advance/complete/reset helper methods also have no external caller. Go native EVE progression is an architectural replacement, not evidence that the custom registry/editor is migrated.",
+      "notes": "Reachable custom registry editing/loading and PvE OnMonsterDefeated counters now implemented with source ID/name/ordered-step matching, capture/PvP exclusions and commit-before-receipt. Native Mark IDs/text seed safe metadata; source English-name grouping/rewards/maps/NPC guesses are intentionally replaced rather than gameplay authority. Custom accept/advance/complete/reset and NPC matching helpers have no external runtime caller and remain on hold. Native EVE and explicit QuestVisibility continue their existing roles.",
       "audit_verdict": "partial"
     },
     {
@@ -3844,9 +3944,11 @@
       "go_files": [
         "internal/server/runtime_settings.go",
         "internal/server/server.go",
-        "internal/store/settings.go"
+        "internal/store/settings.go",
+        "internal/server/admin_runtime_test.go",
+        "internal/protocol/status.go"
       ],
-      "notes": "TCP C9 status and aliases, load colors, rounded/clamped EXP scale, persistent EXP/drop settings and MOTD/name administration exist. Source persists cluster/server identifiers and active offline mode; Go cluster is fixed and offline mode is absent. Source GoldRate and MaxPlayers have no reward/cap enforcement callers, so their absence is not a missing working rate or player-limit feature.",
+      "notes": "Persisted offline launcher load byte zero now implemented alongside existing load colors. It leaves listeners and sessions running. Cluster remains fixed; unused source GoldRate/MaxPlayers knobs still have no enforcement callers.",
       "audit_verdict": "partial"
     },
     {
@@ -5531,9 +5633,11 @@
       "verdict": "partial",
       "evidence": [
         "internal/protocol/status.go",
-        "internal/config/config.go"
+        "internal/config/config.go",
+        "internal/server/runtime_settings.go",
+        "internal/server/admin_runtime_test.go"
       ],
-      "finding": "Read cluster/server IDs and auto/offline/green/yellow/red mode. Go status service/configured aliases cover online colors; explicit offline mode remains absent.",
+      "finding": "Read cluster/server IDs and auto/offline/green/yellow/red mode. Go configured aliases and persisted runtime settings implement all load colors, including offline byte zero; cluster remains fixed.",
       "sha256": "862959537db6e26d90692f187926cef28cf317c6ac123832243e1c138c0b3bc2",
       "lines": 5
     },
@@ -5544,7 +5648,7 @@
         "internal/assetsql/database.go",
         "internal/server/items.go"
       ],
-      "finding": "Read all eight starter items/counts/order. SQL seed and creation grant exist; legacy world-entry fallback/admin bulk grant remain separate gaps.",
+      "finding": "Read all eight starter items/counts/order. SQL seed, atomic creation grants and explicit Admin bulk delivery exist. Legacy world-entry refill is deliberately disabled by user policy.",
       "sha256": "997bc87901cc7e1fdcd7cd580e8161a8f73894cccd64a83f12eabe4960e7c98b",
       "lines": 58
     },
@@ -6265,5 +6369,279 @@
       "Verification scripts reviewed for scenarios and assertions, not executed. Documentation classified by role, not used to prove migration."
     ],
     "hash_normalization": "CRLF to LF; BOM preserved"
-  }
+  },
+  "focused_migration_verification": {
+    "date": "2026-10-04",
+    "source_revision": "bc4a140d5d145e5bad4ec08581aa47f9ce6c066e",
+    "normalized_source_hashes_checked": 25,
+    "unique_top_level_tests_passed": 175,
+    "race_detector": true,
+    "packages": [
+      "internal/game",
+      "internal/assets",
+      "internal/assetsql",
+      "internal/protocol",
+      "internal/world",
+      "internal/server",
+      "internal/store"
+    ],
+    "scope": "Allocation widths/batches and overflow; generic/default replies; private banking and guild journals; inventory type/caller rules; feeding, vouchers, rebirth and desertion; recipe ordering; SQL restart/rollback/replay/ownership/full containers; native scripted stories and scene synchronization.",
+    "native_sql_census": {
+      "maps": 1119,
+      "npcs": 8181,
+      "ground_items": 209,
+      "resolvable_warps": 2790,
+      "manufacturing_formulas": 786,
+      "event_npcs": 7313,
+      "runnable_fresh_character_branches": 4872,
+      "unsupported_fresh_character_branches": 30,
+      "no_matching_fresh_character_branch": 2411
+    },
+    "limits": [
+      "No interactive native aLogin captures or multiplayer acceptance performed.",
+      "Thirty fresh-character branches have shapes unsupported by the ordinary opcode executor; verified complete water branches use a separate controller. The reference also refuses unresolved reward kinds. Census is selection/decoding coverage, not full story execution.",
+      "Load/soak/crash acceptance and unfinished source systems remain on hold.",
+      "Tests used disposable gameplay fixtures and migrated asset database copies; installed databases were unchanged."
+    ]
+  },
+  "upstream_updates": [
+    {
+      "date": "2026-10-04",
+      "base_revision": "bc4a140d5d145e5bad4ec08581aa47f9ce6c066e",
+      "revision": "e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1",
+      "commits": [
+        "63d8c421cd22afd48f27147ad8e58cc1b33b798d",
+        "e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1"
+      ],
+      "reviewed_changed_files": 19,
+      "method": "Read complete two-commit diff, changed scripts and documentation; compared binary SQLite schemas and rows. Historical baseline hashes and counts retained. Fetched remote refs without changing legacy working checkout.",
+      "files": [
+        {
+          "source": ".codex-verify/Check-Map10039.ps1",
+          "change": "A",
+          "sha256": "b2bfcce3c912faef340212dc61b534a195044d75486c3fd7dbae1ba15d8febb3",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Dump-Event19.ps1",
+          "change": "A",
+          "sha256": "bf7c3652fb94c150cd8ddddd57256f07f2669ffa5ef7ffdd989d76dd2b1049da",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Dump-Map10035Events.ps1",
+          "change": "A",
+          "sha256": "e19e81ffb3ff9082d1e106716ded91022c3ad79e561cbaf3c9c14bb98e36a534",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Inspect-Npc1.ps1",
+          "change": "A",
+          "sha256": "7f0da215c1a9f512d2b36f93e30ebe22e3aa551c960e54d363a94c4e46be176b",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Inspect-RobinsonNpc.ps1",
+          "change": "A",
+          "sha256": "4cd106d25891fed41996b390abb13738313d2452e728469980687c72152ce0f9",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Test-CharacterCreationOutfit.ps1",
+          "change": "A",
+          "sha256": "ef796803371eda8dbb739c5163c7a5d7b787bee3c62e9d13ba59fc6f58bfffb8",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Test-RobinsonFindBranch.ps1",
+          "change": "A",
+          "sha256": "ccf79a333fb0e47519007eb8c8169e0d2832b4f3dd9dfe6a67b6e501cc6a71b8",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Test-RobinsonFullChain.ps1",
+          "change": "A",
+          "sha256": "449997701dcf2aa08c30f8ee085f2248ac40c1cc5d3ca20c34c6a8295721d442",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Test-RobinsonStats.ps1",
+          "change": "A",
+          "sha256": "d5182c005ff3a5874a87460140fdde6a6db9c8cf7f3461921ef438bcff5e113b",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": ".codex-verify/Test-RobinsonStep1To3.ps1",
+          "change": "A",
+          "sha256": "e224917c77f29824b3d919f32609a32ec07f577ead6ec31b491304eb15cb8664",
+          "disposition": "reviewed",
+          "finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
+          "go_files": [
+            "internal/server/robinson_updates_test.go",
+            "internal/server/characters_test.go",
+            "internal/server/world_combat_port_test.go"
+          ]
+        },
+        {
+          "source": "Data/ServerDataBase.db",
+          "change": "M",
+          "sha256": "5675d31d3fdd495ec6851d2720bb16e2c9945f9c3ea907e8090ae923cd42439d",
+          "base_sha256": "08394b7e306659a26e1af96406adb279a3434a4a8f8e411411af7866e46d364f",
+          "disposition": "excluded",
+          "finding": "Compared SQLite schemas and rows. Snapshot adds character_monster_book and changes development player/settings state; starter_items unchanged and chest pool contents unchanged excluding generated row IDs. No snapshot or account/player/settings data imported."
+        },
+        {
+          "source": "RCLibrary/RCLibrary.Core/PathHelper.cs",
+          "change": "M",
+          "sha256": "08422787bfb695ff19d90ddd4956df193213019235d0c47cb7a9ab7fe8a05a72",
+          "base_sha256": "c8fde81c0ba1e15e8f70d1d54271b5466f4489efa624d7b9d9257b4b485c4fc7",
+          "disposition": "replaced",
+          "finding": "Converted itemDat.wpdat discovery and loading precedence are superseded by offline native decoding and typed assets.db runtime loading. Windows launcher remains replaced by web administration.",
+          "go_files": [
+            "internal/assets/items_native.go",
+            "internal/assetsql/catalog_storage_generated.go",
+            "internal/admin/admin.go"
+          ]
+        },
+        {
+          "source": "README.md",
+          "change": "M",
+          "sha256": "85f918f9b2307e03afa67bce1d14fd3597303cd8eef0e991520750df71320b65",
+          "base_sha256": "5eea7a307e7da71183e2039c809ef6ef9e610348a3478200fc19fe687011efd9",
+          "disposition": "reviewed",
+          "finding": "Reviewed item formats, starter equipment and companion documentation. Offline native SQL pipeline retained; starter grants remain creation-only under project policy, without login refill."
+        },
+        {
+          "source": "Src/Gui/MainForm1.cs",
+          "change": "M",
+          "sha256": "1399d00be0aa9fbf8fd2fb7d18c16214bd50b201a5af883377c76b5599c5c117",
+          "base_sha256": "77e5955ac2c96d7b69ed0c1c42212b154ba3f9b3afc0d0e7ad2146fa803caf23",
+          "disposition": "replaced",
+          "finding": "Converted itemDat.wpdat discovery and loading precedence are superseded by offline native decoding and typed assets.db runtime loading. Windows launcher remains replaced by web administration.",
+          "go_files": [
+            "internal/assets/items_native.go",
+            "internal/assetsql/catalog_storage_generated.go",
+            "internal/admin/admin.go"
+          ]
+        },
+        {
+          "source": "docs/04_binary_asset_pipeline_and_decoders.md",
+          "change": "M",
+          "sha256": "c22b6e606f33cc3f3438c5c8363126719e6a4232e197ddad6cf11a80391caa77",
+          "base_sha256": "5d5d7e20247f4eb9329c64e1cc177f5b9ba2e889edb0e072a5d8c3be7c3524aa",
+          "disposition": "reviewed",
+          "finding": "Reviewed item formats, starter equipment and companion documentation. Offline native SQL pipeline retained; starter grants remain creation-only under project policy, without login refill."
+        },
+        {
+          "source": "docs/08_companion_pet_lifecycle_and_vehicles.md",
+          "change": "M",
+          "sha256": "06c8ec602fae61c585293b803c09a1039fee9fa5ce3e723bdcd4dd658a520ce5",
+          "base_sha256": "d94fc0408da161851e3350115dc5be83a43ce0e014eec99d9eb25b3954dabecf",
+          "disposition": "reviewed",
+          "finding": "Reviewed item formats, starter equipment and companion documentation. Offline native SQL pipeline retained; starter grants remain creation-only under project policy, without login refill."
+        },
+        {
+          "source": "docs/starter_outfit_and_item_pipeline.md",
+          "change": "A",
+          "sha256": "e6504f8120be2657691cb58288ae37e00967280df9daf1e41504ad8f9df2b89a",
+          "disposition": "reviewed",
+          "finding": "Reviewed item formats, starter equipment and companion documentation. Offline native SQL pipeline retained; starter grants remain creation-only under project policy, without login refill."
+        },
+        {
+          "source": "wlo.pserver.core/Game/Maps/Code/EveEventInterpreter.cs",
+          "change": "M",
+          "sha256": "52a2d01c5efa732e699ffaf61bdc057f434dd732872e877e3f19626a83b64883",
+          "base_sha256": "2d6578e40076869cb8f494a93d524ba0da846a4349cc6c82c56549e898d22b48",
+          "disposition": "migrated",
+          "finding": "Robinson Event 19 recovery candidate on actor 1 when mark 12047 is in progress and companion 12178/12032 is absent. Existing candidate ordering and normal branch/capacity checks retained.",
+          "go_files": [
+            "internal/server/events.go",
+            "internal/server/story_continuation.go",
+            "internal/server/robinson_updates_test.go"
+          ]
+        },
+        {
+          "source": "wlo.pserver.core/Game/Maps/Code/EveEventRuntime.cs",
+          "change": "M",
+          "sha256": "035d4de2cfb8e2625e7df28963bbcf9530c69d317100e3c351a4d2427534c045",
+          "base_sha256": "f20e6fc00c8f95d5a72ddaa732386ba91c38903155b12f18740e43260b981de2",
+          "disposition": "migrated",
+          "finding": "Robinson branches 1 and 3 continue Event 19 on maps 10035 and 10039, allowing raft delivery, dialogue and recruitment to complete together.",
+          "go_files": [
+            "internal/server/story_continuation.go",
+            "internal/server/robinson_updates_test.go"
+          ]
+        }
+      ],
+      "verification": {
+        "race_detector": true,
+        "package": "internal/server",
+        "native_asset_source": "Disposable schema-v11 SQL database copy",
+        "tests": [
+          "TestRobinsonRecoveryCandidateScopeAndOrdering",
+          "TestNativeRobinsonUpstreamFullChainAndRecovery",
+          "TestNativeRobinsonRecoveryCapacityAndFailedSave"
+        ],
+        "limits": [
+          "No interactive native-client acceptance performed.",
+          "Legacy Windows verification scripts reviewed, not executed.",
+          "Installed databases and legacy working checkout unchanged."
+        ]
+      }
+    }
+  ]
 }

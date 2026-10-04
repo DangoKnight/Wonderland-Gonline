@@ -57,7 +57,7 @@ func (s *Server) alchemyCommand(ctx context.Context, c *Session, p []byte) error
 	if err := next.Bag.Remove(second, alchemyUnitsPerIngredient); err != nil {
 		return c.send(reply)
 	}
-	adds, err := next.Bag.Grant(game.Item{ID: result}, alchemyOutputQuantity, limit)
+	adds, err := next.Bag.Grant(game.Item{ID: result}, alchemyOutputQuantity, limit, s.Assets.Items)
 	if err != nil {
 		return c.send(reply)
 	}

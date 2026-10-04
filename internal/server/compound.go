@@ -41,7 +41,7 @@ func (s *Server) compoundCommand(ctx context.Context, c *Session, p []byte) erro
 		return nil
 	}
 	next := c.character.Clone()
-	target, err := next.Bag.Compound(first, second, result)
+	target, err := next.Bag.Compound(first, second, result, s.Assets.Items)
 	if err != nil {
 		return nil
 	}

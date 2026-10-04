@@ -25,11 +25,15 @@ URL alias, with the same typed dataset payloads and record IDs. See
 ## Operations and diagnostics
 
 **Server operations** edits the name, saved MOTD, EXP/drop multipliers, launcher
-traffic color and log level. These settings live in the gameplay database and
+traffic status (including offline) and log level. These settings live in the gameplay database and
 survive restart. MOTD is shown once after native scene-ready synchronization and is limited to
 255 encoded bytes. EXP defaults to 1 and accepts 0.01–1000. See
 [CONFIGURATION.md](CONFIGURATION.md#exp-reward-scaling) for reward semantics.
-Broadcast sends a native notice to connected characters. Maintenance controls
+Broadcast selects native notice/red, world/yellow, guild/blue, whisper/pink or
+head-banner output for connected characters. Newlines and `|` delimit separate
+lines; the whole announcement is validated before any line is sent. Launcher
+offline status advertises load byte zero; it does not stop listeners or kick
+players. Maintenance controls
 reload quests/mall/drops/GM privileges, checkpoint players, disconnect every
 session, or schedule an announced graceful shutdown in 1–300 seconds.
 
@@ -53,17 +57,26 @@ skills**, and **Player settings** provide editors limited to their fields.
 Character ID, name and roster slot cannot change. Edits validate known content,
 stack limits, skill grades and party state. Refresh after a conflict; an older
 version cannot overwrite a later edit. Online edits/deletions require a loaded,
-idle character and disconnect it so the next login receives a complete snapshot.
+idle character. Complete state edits/deletions disconnect it for a coherent
+re-entry. Inventory, stats, settings and character quest tabs instead save only
+their fields and refresh the native UI live. They preserve unrelated SQL state
+and pending walking. Native inventory and skill overlays explicitly clear removed
+records; stale versions and active stalls/interactions reject edits.
 
 **GM studio** acts on a selected online character without granting that account
 GM access. It provides healing (including the companion), gold/points/levels,
 items, skills, repair/reset/god tools, pets/amity/rebirth, warp/summon, mall points,
 invisibility, mute/jail, test battles, forced victory, NPC event triggers and
 inventory cleanup. Character mutations keep gameplay interaction gates. Responses
-show command feedback, including rejected requests. NPC show/hide and prop
-open/close controls affect only the selected session view, not every map viewer
-as in the reference; edit quest state in the
-character editor when changing durable story progression.
+show command feedback, including rejected requests. The GM studio's actor shortcut
+continues to target the selected session. Portals & destinations additionally
+provides versioned actor controls with explicit session/map scope and linked quest
+break/restore. Map scope reaches current viewers of the same scene; private tents
+and other maps are excluded. Durable quest changes belong only to the selected
+character. Visibility/frame overrides last for the visit, and are cleared on map
+entry. Ambiguous linked quests require selecting a reported quest ID. Offline
+linked quest edits are allowed; offline actors without linked state have no live
+recipient. All durable edits commit and audit before publication.
 
 **Friendships** removes durable pairs and informs online peers. **Live battles**
 inspects fighter snapshots, finishes battles with normal victory rewards or
@@ -97,7 +110,10 @@ recipient batches through the API for larger populations.
 editor** finds typed item/NPC/skill/talk/mark records by game ID. **NPC library**
 inspects templates; **Dialogue resolver** searches text and resolves talk IDs,
 byte offsets or record indexes, previews `#n` substitution and sends dialogue to
-an online character. Map inspection exposes NPCs, authored events and warps.
+an online character. Map inspection exposes NPCs, authored events and warps. Combined actor reports
+join placements to linked event branches, decoded conditions/opcodes and resolved
+dialogue. SQL asset editor also reports every map placement for an NPC template.
+Unknown operands retain their numeric fields and are labeled unresolved.
 
 Table editors send typed definitions as JSON API payloads. Monster drops are a
 map from monster ID to ordered rewards with `Item`, `Name`, `Min`, `Max`, `Rate`.
@@ -125,10 +141,10 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v14 and structured asset schema v9.
+Current startup requires gameplay schema v15 and structured asset schema v10.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
-the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 22 new views and checks read-only
-inspectors. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
+the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 24 administration views and checks read-only
+inspectors, including the combined map/quest actor report. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
 transaction behavior, native packet layouts and affected gameplay paths.
 
 
@@ -230,14 +246,13 @@ Gameplay uses the same guild and marriage records displayed by Admin.
 
 ## Remaining desktop parity and checkpoint behavior
 
-The panel does not yet expose reference offline launcher status, broadcast
-channel/color selection, one-click mass starter delivery, custom game_quests
-registry/step editing, or identical combined NPC-spawn/opcode reports. Broadcast
-currently uses AC2:4. Raw typed map/dataset inspection replaces some desktop
-reports but does not establish full report/editor field parity. Dialogue lookup
-lacks the reference sound/portrait display and detailed token-stripping interface.
-General character edits reconnect instead of live per-tab refresh; selected-view
-actor controls do not reproduce map-wide changes or linked quest break/restore.
+Offline launcher status, native announcement channels, combined placement/opcode
+reports, versioned linked-quest actor edits and live inventory/stat/settings/quest
+refresh are implemented. Full character edits and roster-wide changes still use
+reconnect for a complete snapshot. Dialogue lookup lacks the reference
+sound/portrait display and detailed token-stripping interface. Browser layout and
+report formatting differ from the Windows forms; raw decoded fields remain
+available for unresolved operations.
 
 The source MySQL provider test/configuration and SQLite-to-MySQL migration have
 real implementations; Go's SQLite paths are a replacement with no matching
@@ -261,3 +276,80 @@ classes and WLRI cape mappings). Validate and save through the existing optimist
 SQL edit flow. `/reborn <class>` requires GM authority and performs cape grant,
 class/level/EXP reset and vitals in one owned-state transaction. See
 [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
+
+
+### Starter pack delivery
+
+Operations → **Give starter packs to online characters** calls the authenticated
+`POST /api/operations/starter-packs` endpoint. It grants the full SQL `StarterItems`
+pack to each loaded idle online character, with an audit row in the same resource
+transaction. Busy/loading recipients and full bags are skipped and reported by
+character; one failure does not stop the others. The batch has a five-second SQL
+budget. Pending walking is retained. Pack grants are all-or-nothing per recipient;
+this manual operation may intentionally be repeated and is not a daily claim.
+
+## Custom quest definitions and reachable kill counters
+
+**Quest definitions** edits the typed `QuestDefinitions` dataset in `assets.db`.
+GET/PUT `/api/assets/definitions/QuestDefinitions` uses the existing optimistic
+`version`/`value` contract. Values form a map keyed by quest ID. Numeric record
+lookups and edits are also available through the SQL asset editor. Child tables
+retain ordered steps, requirements, grants, rewards, prerequisite IDs, linked
+marks and actor lists; executable rules are not serialized as JSON documents.
+
+Asset schema v10 adds only `catalog_quest_definitions*` tables and its presence
+flag. Explicit offline migration seeds native Mark.dat IDs, names and descriptions
+from imported SQL records when the registry is missing. Default definitions retain numbered `#01`/`#02` text steps and `#99` completion
+summaries as metadata with dialogue type and no rewards. Normal startup/repeated migration
+preserves edits, including an intentionally empty registry. Original private-server
+account databases and runtime asset files are not queried. The source's
+English-name guesses for rewards, NPCs, maps and battle objectives are deliberately
+replaced by native metadata and explicit operator authoring. Existing native EVE
+quest execution continues unchanged.
+
+Example authored definition (use IDs verified in your assets database):
+
+```json
+{
+  "700": {
+    "id": 700,
+    "title": "Slime bounty",
+    "type": 2,
+    "battle_monster_id": 10500,
+    "required_kill_count": 3,
+    "steps": []
+  }
+}
+```
+
+Types are dialogue 0, item collection 1, monster battle 2, delivery 3 and
+exploration 4. Ordered step `index` values begin at 1. Every referenced item,
+NPC, map, mark and prerequisite is validated; editing another dataset cannot
+leave quest references dangling. `/reload quests` reloads these definitions for
+future battles; active interactions keep the existing reload gates.
+
+**Character quests** edits durable progress with a live journal/actor refresh.
+An in-progress registered battle quest counts matching defeated monsters for
+all winning participants. The active ordered step overrides the quest-level
+objective. Matching retains source template-ID/name behavior; zero ID plus empty
+name accepts any defeated monster. Required kills default to one. Captures, PvP,
+defeats and duplicate settlement do not count. Kills and ordinary battle rewards
+commit together before progress notices. Counts can exceed the objective, as in
+the source; reaching it never automatically advances or grants custom rewards.
+
+Custom accept/advance/complete/reset and NPC dialogue matching helpers have no
+external gameplay caller in Private Server. Their integration remains on hold;
+authored repeat/daily/cooldown/reward/actor metadata is retained for that work.
+`QuestVisibility` remains the explicit runtime actor-visibility dataset. Do not
+interpret a stored custom definition as an enabled replacement for native EVE.
+
+Authenticated actor/report endpoints:
+
+- `GET /api/assets/maps/{id}/actors`: placements with linked events and quest IDs.
+- `GET /api/assets/npcs/{id}/report`: all placements for a template, with opcodes.
+- `POST /api/characters/{id}/actors`: `version`, `click_id`, `action`
+  (`show`, `hide`, `open`, `close`), `scope` (`session`, `map`) and optional
+  `linked_quest_id` (zero selects the single verified linked quest).
+- `PUT /api/characters/{id}`: optional `scope` (`inventory`, `stats`,
+  `player_settings`, `quests`) with existing `version` and `state`; only that
+  tab's fields are applied. Omit scope for complete state editing/reconnect.
