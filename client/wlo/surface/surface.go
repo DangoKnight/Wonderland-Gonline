@@ -52,6 +52,25 @@ func (s *Surface) DrawRect(x, y int, r image.Rectangle, src *Surface, transparen
 	}
 }
 
+// DrawStretch is rodraw2's ro_Reduce_ColorKey_Blt: the whole source
+// scaled (nearest pixel) into dst's rectangle r, skipping the key colour
+// when transparent.
+func (s *Surface) DrawStretch(r image.Rectangle, src *Surface, transparent bool) {
+	if r.Dx() <= 0 || r.Dy() <= 0 || src.W == 0 || src.H == 0 {
+		return
+	}
+	for dy := max(r.Min.Y, 0); dy < min(r.Max.Y, s.H); dy++ {
+		sy := (dy - r.Min.Y) * src.H / r.Dy()
+		for dx := max(r.Min.X, 0); dx < min(r.Max.X, s.W); dx++ {
+			v := src.Pix[sy*src.W+(dx-r.Min.X)*src.W/r.Dx()]
+			if transparent && v == src.Key {
+				continue
+			}
+			s.Pix[dy*s.W+dx] = v
+		}
+	}
+}
+
 // LightLevelFull is the light level that adds the whole source.
 const LightLevelFull = 32
 

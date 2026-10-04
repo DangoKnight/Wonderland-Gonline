@@ -44,18 +44,20 @@ type Session struct {
 	autosaveBaseline *game.Character // Last checkpoint; guarded by worldMu.
 	ready            bool
 	// warped marks a portal arrival; peers then receive no AC5:8 login refresh.
-	warped       bool
-	emote        byte // Current AC32 pose; guarded by worldMu.
-	view         *world.View
-	pets         *petRoster
-	event        *eventSession
-	storm        bool // The ship storm movie is playing (PlayingStormCutscene).
-	beachPending bool
-	beach        *beachRun
-	battle       *battleRun
-	encounter    encounterState
-	carnieReturn *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
-	restMap      uint16             // PendingRestMap: the clinic offered a rest on this map.
+	warped               bool
+	emote                byte // Current AC32 pose; guarded by worldMu.
+	view                 *world.View
+	pets                 *petRoster
+	event                *eventSession
+	arcade               *arcadeSession
+	arcadeNextPurchaseAt time.Time
+	storm                bool // The ship storm movie is playing (PlayingStormCutscene).
+	beachPending         bool
+	beach                *beachRun
+	battle               *battleRun
+	encounter            encounterState
+	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
+	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
 	gathering        *gatheringRun     // Guarded by worldMu.
 	marriageProposal *marriageProposal // Guarded by worldMu.
@@ -79,7 +81,11 @@ type Session struct {
 	// arrived is set when the character lands on a map (login or warp) and
 	// cleared by its first move: the client reports the area it lands in
 	// (20/8) before moving, which must not send it back.
-	arrived    bool
+	arrived bool
+	// resultAck is set by a minigame result: the client follows 57/1 with
+	// its own 20/6 (FUN_003bdfa4 marks the event step done), which must not
+	// acknowledge the outcome branch's first step.
+	resultAck  bool
 	info       SessionInfo
 	conn       net.Conn
 	account    store.Account

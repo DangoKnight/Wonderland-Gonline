@@ -8,6 +8,126 @@ import (
 	"wonderland-go/internal/game"
 )
 
+type ArcadesRow struct {
+	ArcadesOrdinal            int `gorm:"column:arcades_ordinal;primaryKey;autoIncrement:false"`
+	ValueKind                 uint8
+	ValueEnabled              bool
+	ValuePointCost            int64
+	ValueTokenCount           uint8
+	ValueCooldownMilliseconds uint32
+	ValueRewardsPresent       bool
+}
+
+func (ArcadesRow) TableName() string { return "catalog_arcades" }
+func writeArcades(tx *gorm.DB, values []assets.ArcadeGame) error {
+	var rows []ArcadesRow
+	for key, value := range values {
+		row := ArcadesRow{ArcadesOrdinal: key}
+		row.ValueKind = value.Kind
+		row.ValueEnabled = value.Enabled
+		row.ValuePointCost = value.PointCost
+		row.ValueTokenCount = value.TokenCount
+		row.ValueCooldownMilliseconds = value.CooldownMilliseconds
+		row.ValueRewardsPresent = value.Rewards != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeArcadesRewards(tx, value.Rewards, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readArcades(tx *gorm.DB) ([]assets.ArcadeGame, error) {
+	result := make([]assets.ArcadeGame, 0)
+	var rows []ArcadesRow
+	query := tx
+	if err := query.Order("arcades_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.ArcadeGame
+		value.Kind = row.ValueKind
+		value.Enabled = row.ValueEnabled
+		value.PointCost = row.ValuePointCost
+		value.TokenCount = row.ValueTokenCount
+		value.CooldownMilliseconds = row.ValueCooldownMilliseconds
+		if row.ValueRewardsPresent {
+			var err error
+			value.Rewards, err = readArcadesRewards(tx, row.ArcadesOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ArcadesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type ArcadesRewardsRow struct {
+	ArcadesOrdinal        int         `gorm:"column:arcades_ordinal;primaryKey;autoIncrement:false"`
+	ArcadesRewardsOrdinal int         `gorm:"column:arcades_rewards_ordinal;primaryKey;autoIncrement:false"`
+	Parent                *ArcadesRow `gorm:"belongsTo:Parent;foreignKey:ArcadesOrdinal;references:ArcadesOrdinal;constraint:OnDelete:CASCADE"`
+	ValueIndex            uint8
+	ValueItemID           uint16
+	ValueQuantity         uint8
+	ValueWeight           int64
+	ValueReels            []byte
+}
+
+func (ArcadesRewardsRow) TableName() string { return "catalog_arcades_rewards" }
+func writeArcadesRewards(tx *gorm.DB, values []assets.ArcadeReward, ArcadesOrdinal int) error {
+	var rows []ArcadesRewardsRow
+	for key, value := range values {
+		row := ArcadesRewardsRow{ArcadesOrdinal: ArcadesOrdinal, ArcadesRewardsOrdinal: key}
+		row.ValueIndex = value.Index
+		row.ValueItemID = value.ItemID
+		row.ValueQuantity = value.Quantity
+		row.ValueWeight = value.Weight
+		row.ValueReels = append([]byte(nil), value.Reels[:]...)
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readArcadesRewards(tx *gorm.DB, ArcadesOrdinal int) ([]assets.ArcadeReward, error) {
+	result := make([]assets.ArcadeReward, 0)
+	var rows []ArcadesRewardsRow
+	query := tx
+	query = query.Where("arcades_ordinal = ?", ArcadesOrdinal)
+	if err := query.Order("arcades_rewards_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.ArcadeReward
+		value.Index = row.ValueIndex
+		value.ItemID = row.ValueItemID
+		value.Quantity = row.ValueQuantity
+		value.Weight = row.ValueWeight
+		if len(row.ValueReels) != len(value.Reels) {
+			return result, fmt.Errorf("invalid ValueReels byte length")
+		}
+		copy(value.Reels[:], row.ValueReels)
+		if row.ArcadesRewardsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type TentsRow struct {
 	TentsKey              int `gorm:"column:tents_key;primaryKey;autoIncrement:false"`
 	ValueSpawnX           uint16
@@ -4075,6 +4195,7 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	Arcades               bool
 	CombatTrials          bool
 	QuestVisibility       bool
 	ChestPools            bool
@@ -4100,6 +4221,8 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&ArcadesRow{},
+		&ArcadesRewardsRow{},
 		&TentsRow{},
 		&TentsFurnitureRow{},
 		&EconomyRow{},
@@ -4375,10 +4498,17 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&TentsRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&ArcadesRewardsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&ArcadesRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.Arcades = c.Arcades != nil
 	presence.CombatTrials = c.CombatTrials != nil
 	presence.QuestVisibility = c.QuestVisibility != nil
 	presence.ChestPools = c.ChestPools != nil
@@ -4400,6 +4530,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeArcades(tx, c.Arcades); err != nil {
 		return err
 	}
 	if err := writeTents(tx, c.Tents); err != nil {
@@ -4485,6 +4618,10 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.Arcades, err = readArcades(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Tents, err = readTents(tx)
 	if err != nil {
 		return nil, err
@@ -4592,6 +4729,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.Arcades {
+		c.Arcades = nil
 	}
 	if !presence.CombatTrials {
 		c.CombatTrials = nil

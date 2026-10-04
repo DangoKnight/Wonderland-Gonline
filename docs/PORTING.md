@@ -323,7 +323,7 @@ The following is a historical checkpoint; later verification above supersedes it
 - Ported EVE opcode 9 and AC57:1. The start packet contains game type and a 24-bit seed (authored dialog2 with high byte one, or 0x012AF8), followed by AC20:9 mode lock. Valid win/loss reports consume the current outcome callback before sending AC57:2 and selecting condition-kind 8 by game type and result. EVE owns dialogue, rewards and movement release; no generic voucher or extra reward is added.
 - AC20:6 cannot advance a running game. Malformed, unknown-result, unsolicited and duplicate reports outside a current game cannot consume or reward. Movement and ordinary item actions are held while the game owns the interaction. Choice cancellation, successful warp and disconnect clear event ownership; retained callbacks of a replaced event are inert. Outcome branches can launch another game without losing its callback. Unsupported game-type operands are refused before a branch mutates state.
 - The native rabbit event (map 12000, event 41, actor 25) asks question 12, routes success to dialogue 20363 and grants ten carrots (32102), and routes loss to dialogue 20364 with no reward. Capacity checks and database commit precede reward receipts. Full bags and failed saves cannot grant a partial reward.
-- The protocol reports client-declared outcomes and carries no per-game identifier. Results are not server-verified scores, and a delayed valid report arriving during a later game cannot be distinguished from that game's report. Arcade tickets/prizes (AC71/72), gathering timers and original-client validation remain pending.
+- The protocol reports client-declared outcomes and carries no per-game identifier. Results are not server-verified scores, and a delayed valid report arriving during a later game cannot be distinguished from that game's report. AC71 egg/slot kinds 6/8/10/19/22 now have atomic points/token/voucher purchases and SQL-weighted rewards; other AC71 kinds, AC72, gathering timers and original-client validation remain pending. See [MINIGAMES.md](MINIGAMES.md).
 - Full native-data race suite, formatting, vet, HTML lint and build pass. Native-data tests cover rabbit outcomes and persistence; synthetic tests cover golden seeds/packets, acknowledgment holds, malformed results, stale callbacks, cancellation/warp/disconnect, chained games, capacity and failed saves. Built-server loopback smoke with temporary accounts/database passes the real actor/question/game/result path, win/loss rewards, replay and reward persistence after restart. SIGTERM shutdown passes. The original game client remains untested.
 
 ## Friendships and presence continuation — 2026-10-01
@@ -1208,7 +1208,10 @@ save-without-live-application are covered by focused regressions. See
 - AC15:19 restores the four reference story constellations from active positive
   completion marks, before final world-ready markers. Quest mark changes send an
   updated collection after commit. Removed marks do not count as earned stars.
-- Native AC89:0 receives captured AC90:1 scene status; AC92:1 acknowledges it.
+- Native six-byte AC89:0 (including its four-byte encoded metadata) and the
+  short two-byte compatibility request receive captured AC90:1 scene status;
+  AC92:1 acknowledges it with either two bytes or three including its native
+  boolean. Native metadata never selects a character or makes the map ready.
   The first request sends the optional saved MOTD as AC23:57 once per character
   login. Sync may occur during loading and does not replace AC12:1 or publish
   world presence. MOTD is limited to 255 encoded bytes.
@@ -1349,3 +1352,19 @@ from the selected v2/v9 copies, preserving both sources. `config.local.json` now
 selects the verified v3/v10 copies. Imported WLRI definitions include Tent 36002,
 Coconut Basin 38027 and Work Platform 38049 with their expected native types.
 Focused race tests, vet and the server build passed. The server remains stopped.
+
+## Paid arcade purchases (AC71)
+
+- `internal/server/arcade_payments.go` implements native egg draws 6/22 and slots
+  8/10/19, with active-machine ownership, a repeat-request throttle and native
+  success/denial layouts. AC57 remains the separate event result/close channel.
+- Points, tokens/vouchers and inventory delivery commit through the existing
+  mall transaction. Failures roll back; success remains durable on socket errors.
+- Structured asset schema v4 adds typed arcade definitions and child rewards.
+  Equal weights, one-item quantities and provisional reel patterns are initial
+  balance choices. Validated SQL administration preserves edits and native
+  prize-index identities. See [MINIGAMES.md](MINIGAMES.md) for fees, assumptions,
+  remaining games and [ASSET_DATABASE.md](ASSET_DATABASE.md) for the upgrade.
+- Focused tests cover native byte layouts, delivery/payment rollback, ownership,
+  duplicate throttling, disconnect-after-commit and preserving schema upgrades.
+  Original-client acceptance remains pending.

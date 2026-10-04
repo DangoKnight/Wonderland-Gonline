@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"wonderland-go/client/wlo/login"
+	"wonderland-go/client/wlo/picdb"
 	"wonderland-go/client/wlo/surface"
 	native "wonderland-go/internal/assets"
 	"wonderland-go/internal/clientassets"
@@ -372,21 +373,25 @@ func (w *World) NPCAt(x, y int) *NPC {
 // drawSmallShadow draws the Shadow cut at feet (sx, sy). FUN_0030120c
 // draws it under players (+0xb1 is 1 or 2) and under NPCs of shadow kind 0.
 func (w *World) drawSmallShadow(sx, sy int) {
-	pics := w.Env.Pics
-	if i := pics.Find(ShadowPicture); i >= 0 {
-		pics.DrawRect(w.Env.Screen, i, sx+smallShadowX, sy+smallShadowY, smallShadowRect, true)
-	}
+	DrawShadow(w.Env.Screen, w.Env.Pics, shadowSmall, sx, sy)
 }
 
 // drawShadow draws an NPC's ground shadow at its feet (sx, sy).
 func (w *World) drawShadow(n *NPC, sx, sy int) {
-	pics := w.Env.Pics
-	switch n.Info.Shadow {
+	DrawShadow(w.Env.Screen, w.Env.Pics, n.Info.Shadow, sx, sy)
+}
+
+// DrawShadow is FUN_0030120c's ground shadow of a template's shadow kind
+// (Npc.dat offset 74) at feet (sx, sy).
+func DrawShadow(dst *surface.Surface, pics *picdb.DB, kind byte, sx, sy int) {
+	switch kind {
 	case shadowSmall:
-		w.drawSmallShadow(sx, sy)
+		if i := pics.Find(ShadowPicture); i >= 0 {
+			pics.DrawRect(dst, i, sx+smallShadowX, sy+smallShadowY, smallShadowRect, true)
+		}
 	case shadowMonster:
 		if i := pics.Find(MonsterShadowPicture); i >= 0 {
-			pics.Draw(w.Env.Screen, i, sx+monsterShadowX, sy+monsterShadowY, true)
+			pics.Draw(dst, i, sx+monsterShadowX, sy+monsterShadowY, true)
 		}
 	}
 }

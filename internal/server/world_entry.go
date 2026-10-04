@@ -77,8 +77,29 @@ func (s *Server) discoverBattleMonsters(c *game.Character, run *battleRun) [][]b
 // AC89:0 requests the scene status. AC92:1 acknowledges it. Both can arrive
 // before AC12:1 and must not publish world presence or mark the map ready.
 func (s *Server) sceneReadyCommand(c *Session, p []byte) error {
-	if len(p) != 2 {
+	if len(p) < protocol.SceneReadyShortRequestBytes {
 		return protocol.ErrMalformed
+	}
+	// FUN_002c2394 at 002dcab0..002dcb3a appends a four-byte native
+	// encoded value to AC89:0. Private Server ignores it; it is synchronization
+	// metadata, never an authenticated character selector. Retain the short
+	// request supported by Go clients and require the exact native layout.
+	switch p[0] {
+	case protocol.CommandSceneReady:
+		if len(p) != protocol.SceneReadyShortRequestBytes && len(p) != protocol.SceneReadyNativeRequestBytes {
+			return protocol.ErrMalformed
+		}
+	case protocol.CommandSceneReadyAck:
+		// FUN_002c2394 at 002dcd61..002dcda5 appends a boolean via
+		// FUN_00113534. It is client metadata, not a map-ready flag.
+		if len(p) != protocol.SceneReadyAckRequestBytes && len(p) != protocol.SceneReadyNativeAckRequestBytes {
+			return protocol.ErrMalformed
+		}
+		if len(p) == protocol.SceneReadyNativeAckRequestBytes && p[2] > 1 {
+			return protocol.ErrMalformed
+		}
+	default:
+		return ErrUnsupported
 	}
 	if (p[0] == protocol.CommandSceneReady && p[1] != protocol.SceneReadyLoaded) ||
 		(p[0] == protocol.CommandSceneReadyAck && p[1] != protocol.SceneReadyAcknowledged) {

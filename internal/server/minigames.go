@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"math"
+	"wonderland-go/internal/assets"
 	"wonderland-go/internal/protocol"
 	"wonderland-go/internal/world"
 )
@@ -9,6 +11,10 @@ import (
 // startMinigame ports EVE opcode 9. The native outcome condition uses the
 // game type as source and 0/1 as result; EVE owns rewards and unlocking.
 func (s *Server) startMinigame(ctx context.Context, c *Session, es *eventSession, op world.Op) error {
+	c.arcade = nil
+	if op.D1 <= math.MaxUint8 && assets.ArcadeKindSupported(byte(op.D1)) {
+		c.arcade = &arcadeSession{kind: byte(op.D1), mapID: c.character.Map, event: es}
+	}
 	seed := uint32(defaultMinigameSeed)
 	if op.D2 > 0 {
 		seed = uint32(op.D2) | minigameSeedHighByte
@@ -40,11 +46,17 @@ func (s *Server) minigameCommand(c *Session, p []byte) error {
 		return nil
 	}
 	es := c.event
+	if c.arcade != nil && c.arcade.event == nil {
+		c.arcade = nil
+		return c.send([]byte{protocol.CommandMinigame, protocol.MinigameEnd})
+	}
 	if es == nil || es.onMinigame == nil || c.character.Map != es.mapID {
 		return nil
 	}
+	c.arcade = nil
 	outcome := es.onMinigame
 	es.onMinigame = nil
+	c.resultAck = true
 	if err := c.send([]byte{protocol.CommandMinigame, protocol.MinigameEnd}); err != nil {
 		return err
 	}

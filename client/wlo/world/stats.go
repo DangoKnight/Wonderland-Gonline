@@ -25,26 +25,34 @@ type Stats struct {
 	HPBonus, SPBonus   int32  // +0x1fd8, +0x1fdc (stats 0xcf, 0xd0)
 	HPExtra, SPExtra   uint16 // +0x1f94, +0x1f96 (5/3's tail); max HP also adds +0x1ff4, not ported
 	Gold               uint32 // +0x3b44
-	Points             uint16 // +0x1fa6
+	Potential          byte
+	Combat             [5]uint16 // +0x1ffc..0x2004: inventory display values
+	Points             uint16    // +0x1fa6
 	Formula            *login.Formula
 }
 
 // Stat IDs of 8/1 (FUN_00416ebc) and of the role accessor FUN_004166e4.
 const (
-	StatElement = 0x18
-	StatHP      = 0x19
-	StatSP      = 0x1a
-	StatINT     = 0x1b
-	StatSTR     = 0x1c
-	StatCON     = 0x1d
-	StatAGI     = 0x1e
-	StatJob     = 0x1f
-	StatWIS     = 0x21
-	StatLevel   = 0x23
-	StatEXP     = 0x24
-	StatPoints  = 0x26
-	StatHPBonus = 0xcf
-	StatSPBonus = 0xd0
+	StatElement   = 0x18
+	StatHP        = 0x19
+	StatSP        = 0x1a
+	StatINT       = 0x1b
+	StatSTR       = 0x1c
+	StatCON       = 0x1d
+	StatAGI       = 0x1e
+	StatJob       = 0x1f
+	StatWIS       = 0x21
+	StatLevel     = 0x23
+	StatEXP       = 0x24
+	StatPotential = 0x25
+	StatATK       = 0x29
+	StatDEF       = 0x2a
+	StatMAT       = 0x2b
+	StatMDF       = 0x2c
+	StatSPD       = 0x2d
+	StatPoints    = 0x26
+	StatHPBonus   = 0xcf
+	StatSPBonus   = 0xd0
 )
 
 // rebirthLevels is FUN_00485490: a rebirth counts as 100 levels.
@@ -130,6 +138,10 @@ func (s *Stats) Apply(id byte, v uint32) {
 		s.Level = byte(v)
 	case StatEXP:
 		s.EXP = v
+	case StatPotential:
+		s.Potential = byte(v)
+	case StatATK, StatDEF, StatMAT, StatMDF, StatSPD:
+		s.Combat[id-StatATK] = uint16(v)
 	case StatPoints:
 		s.Points = uint16(v)
 	case StatHPBonus:
@@ -152,3 +164,7 @@ func (s *Stats) recomputeSP() {
 		s.MaxSP = uint16(s.Formula.SP.Max(s.EffectiveLevel(), s.WIS, int(s.SPBonus)+int(s.SPExtra)))
 	}
 }
+
+// CombatValues are the cached words read by FUN_0035172c, not the derived
+// battle getter FUN_004166e4. AC8 supplies their displayed values directly.
+func (s *Stats) CombatValues() [5]uint16 { return s.Combat }

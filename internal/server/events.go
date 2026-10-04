@@ -89,7 +89,7 @@ func (s *Server) commitState(ctx context.Context, c *Session, next game.Characte
 }
 
 // endEvent is Player.ClearInteraction.
-func (s *Server) endEvent(c *Session) { c.event = nil }
+func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
@@ -122,6 +122,10 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 	case protocol.EventActorClick:
 		return s.npcClick(ctx, c, p[2:])
 	case protocol.EventAcknowledge:
+		if c.resultAck {
+			c.resultAck = false
+			return nil // The minigame result's own acknowledgment.
+		}
 		if c.storm {
 			return s.endStorm(ctx, c)
 		}

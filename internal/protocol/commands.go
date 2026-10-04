@@ -53,6 +53,7 @@ const (
 	CommandPetTraining        = 68
 	CommandPetRebirth         = 69
 	CommandTerritory          = 70
+	CommandArcadeGame         = 71 // Native paid arcade requests and outcomes (AC71).
 	CommandMall               = 75
 	CommandSceneReady         = 89
 	CommandSceneReadyReply    = 90
@@ -704,11 +705,15 @@ const (
 
 // Native login completion and notebook synchronization.
 const (
-	SceneReadyLoaded       = 0
-	SceneReadyStatus       = 1
-	SceneReadyAcknowledged = 1
-	MonsterBookDiscover    = 9
-	StoryConstellationList = 19
+	SceneReadyLoaded                = 0
+	SceneReadyStatus                = 1
+	SceneReadyAcknowledged          = 1
+	SceneReadyShortRequestBytes     = 2
+	SceneReadyNativeRequestBytes    = 6
+	SceneReadyAckRequestBytes       = 2
+	SceneReadyNativeAckRequestBytes = 3
+	MonsterBookDiscover             = 9
+	StoryConstellationList          = 19
 )
 
 // PalaceTrial preserves the AC77 request/reply envelope.

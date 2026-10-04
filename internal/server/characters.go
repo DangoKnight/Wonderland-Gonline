@@ -153,6 +153,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
 	c.event = nil
+	c.arcade = nil
 	c.walkMode = 0
 	c.ready = false
 	c.motdSent = false

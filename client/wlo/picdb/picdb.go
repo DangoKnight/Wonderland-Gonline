@@ -254,6 +254,13 @@ func (db *DB) DrawRect(dst *surface.Surface, i, x, y int, r image.Rectangle, tra
 	}
 }
 
+// DrawStretch is FUN_0046012c: the whole image scaled into r.
+func (db *DB) DrawStretch(dst *surface.Surface, i int, r image.Rectangle, transparent bool) {
+	if src := db.image(i); src != nil {
+		dst.DrawStretch(r, src, transparent)
+	}
+}
+
 // DrawLight is FUN_0045f0f0: the source rectangle r added to dst at the
 // light level (surface.DrawLight).
 func (db *DB) DrawLight(dst *surface.Surface, i, x, y int, r image.Rectangle, level int) {

@@ -1483,8 +1483,20 @@
 		{
 			"source": "Src/Network/ActionCodes/AC71.cs",
 			"lines": 37,
-			"status": "pending",
-			"sha256": "1c11fec919b55d09cdb0a02ae4c1ea402fd4cc36337b9bf736cdbe2e73cbab87"
+			"status": "partial",
+			"sha256": "1c11fec919b55d09cdb0a02ae4c1ea402fd4cc36337b9bf736cdbe2e73cbab87",
+			"go": [
+				"internal/server/arcade_payments.go",
+				"internal/server/arcade.go",
+				"internal/assets/arcade.go",
+				"internal/assetsql/arcade.go"
+			],
+			"tests": [
+				"internal/server/arcade_payments_test.go",
+				"internal/server/arcade_test.go",
+				"internal/assetsql/arcade_test.go"
+			],
+			"notes": "Replaces fixed-score placeholder for native egg kinds 6/22 and slots 8/10/19: active-machine/map ownership, animation throttle, atomic points/token/voucher payment and inventory delivery, native outcome replies. Typed SQL definitions initialize equal reward weights; quantities/reels are provisional and voucher replacement rule inferred from native requests. Other AC71 kinds and native acceptance remain pending. See docs/MINIGAMES.md."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC72.cs",
@@ -1602,7 +1614,7 @@
 				"internal/server/command_registry.go",
 				"internal/protocol/commands.go"
 			],
-			"notes": "AC89:0 returns the captured AC90:1 scene status. First AC89/AC92 synchronization sends saved MOTD once per character login. Exact request validation; does not publish presence or replace AC12:1. Golden captured bytes are independent of production constants; interactive native acceptance remains pending."
+			"notes": "AC89:0 returns the captured AC90:1 scene status. First AC89/AC92 synchronization sends saved MOTD once per character login. Accepts the native six-byte AC89:0 with opaque encoded metadata and the two-byte Go compatibility request; AC92:1 accepts two bytes or the three-byte native boolean layout. Metadata never selects a character. Exact request validation does not publish presence or replace AC12:1. Native socket regression covers synchronization before map-ready on both services. Golden captured bytes are independent of production constants; interactive native acceptance remains pending."
 		},
 		{
 			"source": "Src/Network/ActionCodes/AC90.cs",
@@ -1631,7 +1643,7 @@
 				"internal/server/command_registry.go",
 				"internal/protocol/commands.go"
 			],
-			"notes": "Native AC92:1 scene acknowledgement shares the once-per-character-login MOTD guard with AC89. No fabricated status reply or map publication. Unknown subcommands remain explicitly unsupported. Interactive native acceptance remains pending."
+			"notes": "Native AC92:1 scene acknowledgement accepts the two-byte compatibility request or three-byte native boolean layout (FUN_002c2394/FUN_00113534), and shares the once-per-character-login MOTD guard with AC89. Metadata never marks the map ready. No fabricated status reply or map publication. Unknown subcommands remain explicitly unsupported. Interactive native acceptance remains pending."
 		},
 		{
 			"source": "Src/Network/Client.cs",

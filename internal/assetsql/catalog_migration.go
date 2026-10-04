@@ -7,9 +7,10 @@ import (
 	"strings"
 	"wonderland-go/internal/assetdb"
 	"wonderland-go/internal/assets"
+	"wonderland-go/internal/game"
 )
 
-const catalogSchemaVersion = 3
+const catalogSchemaVersion = 4
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -60,26 +61,61 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
-		// v3 adds only typed tent rules and default furniture; preserve existing data.
+		if schema.Version < 3 {
+			// v3 adds only typed tent rules and default furniture; preserve existing data.
+			for _, model := range catalogTables() {
+				named, ok := model.(interface{ TableName() string })
+				if ok && strings.HasPrefix(named.TableName(), "catalog_tents") {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
+			tents, err := defaultTents()
+			if err != nil {
+				return err
+			}
+			if err = writeTents(tx, tents); err != nil {
+				return err
+			}
+
+		}
 		for _, model := range catalogTables() {
-			named, ok := model.(interface{ TableName() string })
-			if ok && strings.HasPrefix(named.TableName(), "catalog_tents") {
+			if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_arcades") {
 				if err := tx.Migrator().CreateTable(model); err != nil {
 					return err
 				}
 			}
 		}
-		tents, err := defaultTents()
+		nativeItems, err := readNativeItems(tx)
 		if err != nil {
 			return err
 		}
-		if err = writeTents(tx, tents); err != nil {
+		items := map[uint16]game.ItemDefinition{}
+		for id, item := range nativeItems {
+			items[id] = item.Definition
+		}
+		arcades, err := defaultArcades(items)
+		if err != nil {
+			return err
+		}
+		if err = writeArcades(tx, arcades); err != nil {
+			return err
+		}
+		if err = tx.Migrator().AddColumn(&catalogPresence{}, "Arcades"); err != nil {
+			return err
+		}
+		if err = tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("arcades", true).Error; err != nil {
 			return err
 		}
 
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
+	if err != nil {
+		return err
+	}
+	c.Arcades, err = defaultArcades(c.Items)
 	if err != nil {
 		return err
 	}
@@ -123,6 +159,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateArcades(c.Arcades, c.Items); err != nil {
 		return nil, err
 	}
 	if err = validateTents(c.Tents); err != nil {

@@ -64,6 +64,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandSettings:           {handler: (*Server).settingsCommand, policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},
 	protocol.CommandBattleAction:       {handler: withoutContext((*Server).battleCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, RequiresBattle: true}},
 	protocol.CommandMinigame:           {handler: withoutContext((*Server).minigameCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true}},
+	protocol.CommandArcadeGame:         {handler: (*Server).arcadeCommand, policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true, BlockedDuringTrade: true}},
 	protocol.CommandMallCheckout:       {handler: (*Server).mallCheckoutCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandMall:               {handler: (*Server).mallCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.MallRefresh)},
 	protocol.CommandPackContents:       {handler: withoutContext((*Server).packContentsCommand), policy: protocol.CommandPolicy{World: true}},

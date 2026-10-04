@@ -129,10 +129,14 @@ func (g *Game) Update() error {
 	for k, vk := range virtualKeys {
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			ui.KeyDown(vk, keys)
+			if !g.C.SportKey(int(vk), true) && !g.C.InventoryKey(vk) {
+				ui.KeyDown(vk, keys)
+			}
 		}
 		if inpututil.IsKeyJustReleased(k) {
-			ui.KeyUp(vk, keys)
+			if !g.C.SportKey(int(vk), false) {
+				ui.KeyUp(vk, keys)
+			}
 		}
 	}
 	for _, r := range ebiten.AppendInputChars(nil) {

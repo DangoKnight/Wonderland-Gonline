@@ -18,6 +18,11 @@ func TestFormulaMaximums(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Independent Formula.Dat/native getter result also verifies combat field
+	// offsets and stat order when reading the real exported record.
+	if got := f.CombatValues(10, 2, [5]uint16{3, 4, 5, 6, 7}, [5]int32{9, 0, 0, 0, 0}); got != ([5]int32{29, 27, 24, 35, 29}) {
+		t.Fatalf("native combat formulas: %v", got)
+	}
 	t.Logf("HP %+v SP %+v", f.HP, f.SP)
 	for _, tc := range []struct {
 		level, attr, hp, sp int

@@ -60,6 +60,12 @@ func TestMinigameNativeStartResultsAndReplay(t *testing.T) {
 		if wire.Len() != 0 {
 			t.Fatal("result replayed during dialogue")
 		}
+		// The client acknowledges its own result (FUN_003bdfa4 → 20/6)
+		// before the outcome dialogue is answered.
+		tradeDo(t, s, c, []byte{20, 6})
+		if wire.Len() != 0 || c.event == nil {
+			t.Fatal("the result's acknowledgment closed the outcome dialogue")
+		}
 		tradeDo(t, s, c, []byte{20, 6})
 		if c.event != nil || c.character.Gold != 0 {
 			t.Fatal("minigame fell through origin branch")
@@ -133,6 +139,7 @@ func TestMinigameMissingOutcomeAndFailedRewardSave(t *testing.T) {
 	wire.Reset()
 	bag := c.character.Bag
 	tradeDo(t, s, c, []byte{57, 1, 1})
+	tradeDo(t, s, c, []byte{20, 6}) // the result's own acknowledgment
 	wire.Reset()
 	s.Store.Close()
 	if err := s.dispatch(context.Background(), c, []byte{20, 6}); err == nil {
@@ -259,6 +266,7 @@ func TestMinigameFullBagCannotPartiallyReward(t *testing.T) {
 	bag := c.character.Bag
 	wire.Reset()
 	tradeDo(t, s, c, []byte{57, 1, 1})
+	tradeDo(t, s, c, []byte{20, 6}) // the result's own acknowledgment
 	wire.Reset()
 	tradeDo(t, s, c, []byte{20, 6})
 	if c.event != nil || c.character.Bag != bag || contains(wire.packets(t), []byte{20, 10}) {

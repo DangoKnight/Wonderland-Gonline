@@ -24,6 +24,11 @@ func (c *Component) initComponent(self Control, env *Env, owner Control) {
 	c.Cursor, c.Group = 2, 0xff
 }
 
+// InitComponent binds a derived control to its virtual methods.
+func (c *Component) InitComponent(self Control, env *Env, owner Control) {
+	c.initComponent(self, env, owner)
+}
+
 // NewComponent creates a plain TSe_Component.
 func NewComponent(env *Env, owner Control) *Component {
 	c := &Component{}

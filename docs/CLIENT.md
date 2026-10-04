@@ -742,7 +742,24 @@ The weather object (`PTR_DAT_004ca2b0`) keeps particle pools that maps and movie
 
 `TestSceneWeather` checks Hilltop Hot Spring's steam and Frost Peak's snow, `TestSnowMovie` checks 11012.sty's snow overlay, and `client/wlo/weather` tests the spawning, the step and the rising kinds. Not ported: the stars (kind 5, `icon_Star1` missing; scene 11009), the ribbons and their wedding flag, the rain's drops, and the extra conditions that add leaves or snow on castle maps (`FUN_004850b8`, `FUN_004850cc`, `FUN_003eac3c`) and on the `BGM0028` maps (+0x5768, `FUN_004533c0`).
 
+### Minigames (started: `client/wlo/minigame`, `client/wlo/app/minigame.go`)
+
+The sport manager (TSportManage, `PTR_DAT_004c9994`) runs the games the server starts from events. The cabin's two arcade machines (`In-Game/Arcade_Machine_01.png`, `Arcade_Machine_02.png`; events 2 and 3 on every ship cabin map) start type 3, hitting moles, with parameter 11000, and type 4, hunting, with parameter 10000. Playable local games now include types 3, 4, 5, 13 and 15. Egg draws (6/22) and slot machines (8/10/19) have client controls, native AC71 requests and server reply presentation; the server now implements atomic purchases and weighted rewards for these five kinds. Native-client acceptance remains pending. [MINIGAMES.md](MINIGAMES.md) inventories all 22 kinds, references and remaining work. Unsupported types answer a loss so the server's event goes on.
+
+- **Start** (57/1, `FUN_003bd398`: type, u16 parameter, byte): the HUD's forms are hidden, the game object is created, and the start form (`CH_GameStartForm`, constructor `FUN_001b4d0c`, laid out by `FUN_001b5740`) shows the game's explanation picture with Start, Leave and a close button (tags 1–3, handler at 0x1b4f20). Start runs the game and shows its Exit (`CH_GameExplain`, `FUN_001b20c0`); Leave, close and Exit give up with a loss. The server's 20/9 hold follows.
+- **Frame**: the main loop updates the game (`FUN_003be358`) and draws it after the map (`FUN_003bdfc8`); the game's picture covers the screen. Ground clicks go to the game (slot +4, `FUN_003bd32c`) instead of walking.
+- **Result** (`FUN_003bdfa4`): 57/1 with 1 for a win or 0, and the event step is marked done (+0x7108), so the frame loop follows with 20/6. The server absorbs that acknowledgment (`resultAck`), so it doesn't answer the outcome branch's first line.
+- **End** (57/2, `FUN_003bc120`): the forms come back, the game is freed and the map's music plays again.
+
+**Hitting moles** (`minigame/mole.go`, object `FUN_001b3090`, frame `FUN_001b4820`): the parameter picks mice (11000 and 0x4a3f), turtles (0x4608) or rabbits, with their explanation form (`HitMouse_Exp_Form` and its `HitMouse_40s` patch, which half-covers the English "1 minute" line in the original too). Seven holes on `HitMouse` (map.JMG); after a countdown (beeps `Wav1605`, "Go" `Wav1610`, then `BGM0019`) the player has 40 seconds. Targets rise, stay up and sink faster as the clock runs down (`FUN_001b4908`); with fewer than 2–4 busy holes, 1–3 empty ones get a mole (76 %) or a bomb (`FUN_001b4b78`). A hit (`FUN_001b3ce8`, boxes `FUN_001b2b44`) scores 1 with `Wav1611` and the `S10416` sparkle; a bomb costs 3 with `SEB0008` and `Bomb_2`. The hammer cursor swings through shapes 13–15. Three seconds after time runs out, 30 points or more wins. The layout matches `In-Game/Mole_Minigame.png`.
+
+**Hunting** (`minigame/hunter.go`, TSport_Hunter, `FUN_0017e2c8`): monsters (NPC templates 17114, 17174, 17186, 17036, 17064 and 17199, `DAT_004bce04`) spawn on the `59092` forest with the `59091` and `59093` layers, wander at their own pace (0.1–0.22 px/ms, `FUN_0017df40`) with eight-way walking (`FUN_00411fd8`), and after ten walks one goes to the player at (400, 560), shakes the screen (`FUN_0017fc08`) and attacks, costing a life with the body's cry. A click (`FUN_0017f714`, `SEB0057`) takes 50 from every monster under the pointer (250 for the big one); each kill scores 5. The clock ticks every 50 frames from 30; surviving it wins ("You Win"), losing three lives or downing 50 monsters loses. The original runs the update and the draw once each per 30 ms frame, and part of the logic sits in the draw, so the port runs all of it on the game frame and draws at the display rate. `animAtt` (pic\animAtt) and `SEB0090` are missing from this build, so neither shows or plays.
+
+`TestMoleFlow`, `TestHunterFlow`, `TestAdditionalLocalMinigameFlows`, `TestNativeArcadeDispatchAndCleanup` and `TestUnportedMinigame` drive the packets; `client/wlo/minigame` tests the countdown, hits, results, facing, steps, attacks and shots. `MOLE_SNAPSHOT` and `HUNTER_SNAPSHOT` render the games and their start forms. Not ported: a dead monster's last frame (held by time here), the hunt's repeated results until 57/2 (sent once here), and the remaining kinds listed in [MINIGAMES.md](MINIGAMES.md). `ARCADE_SNAPSHOT_DIR` renders the new explanation forms and games.
+
 ### Next steps
+
+The long-term plan is [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md), and [ALOGIN_CATALOG.md](ALOGIN_CATALOG.md) catalogs every region of the original with its port status. The items below are the short-term list.
 
 1. **The game world**: the remaining event kinds, speech bubbles, the HUD's actions, the remaining chat channels, then wandering NPCs.
    - **NPCs turning to the player** when talked to (the original Burke faces the player in `In-Game/Burke_Talk.png`; ours keeps his facing).
@@ -961,3 +978,66 @@ this endpoint. Defaults are `[1, 101]` for existing local lists. This installati
 uses `[1, 101, 301]` to support the local Dango entry too. Missing IDs appear
 offline even when the status socket and login service are working. IDs must be
 unique and in the range 1–9999; the setting does not change login ports or routing.
+
+### Inventory (ported core: `client/wlo/inventory`, `client/wlo/app/inventory.go`)
+
+The Inventory toolbar button opens the native `TSe_EquipForm2`. Its constructor
+(`FUN_0034fad4`), painter (`FUN_0035172c`), five-column/ten-row grid
+(`FUN_003638dc`) and mode switch (`FUN_00356214`) are the layout source of truth.
+`Ship_Deck_Inventory.png` provides the visual check. The combined form is
+386 × 461 pixels; the arrows switch to status-only or inventory-only forms.
+The six worn slots surround a separate character preview in battle-ready
+action 17 (`FUN_00353384`).
+The adjacent arrows select player/pet views in the native client; pet views
+remain pending, so these controls are disabled.
+HP/SP/EXP use the native Panel31–Panel36 artwork. Combat values display the
+cached AC8 words at +0x1ffc–+0x2004 read by
+`FUN_0035172c`. The native battle getter (`FUN_004166e4`) calculates different
+values and must not be substituted for the inventory display. Text is drawn
+transparently with zero paper and skin ink (0x0841), including quantity-one
+bag counters. The element control is at (19,56), as
+in `FUN_0034fad4`.
+
+Double-click or right-click a bag item to use it; drag equipment onto its worn
+slot to equip it. Double-click worn equipment to return it to the first empty
+bag slot. Dragging normally moves one item (`FUN_00350914`). Hold **Ctrl** while
+dragging to choose a quantity (`FUN_003594b8`; the executable's modifier masks
+at 00350e50/00350e54 are Ctrl with left/right mouse). Dragging outside the form
+asks for a drop quantity. The native `Form_ThrowThing` keeps its baked “Moving
+quantity” title for moves; the initial count is the source count limited by
+the destination’s remaining stack capacity. The editor takes focus when clicked.
+A protected-item server reply asks separately before
+sending a destruction request. Escape closes the form and its quantity dialog.
+
+AC23 replies alone update the bag and equipment. Addition records are additive,
+and move/removal/wear/unequip acknowledgments preserve item metadata. Malformed
+known packets leave the state unchanged. Equipment changes refresh both the map
+character and the inventory preview. Character entry clears the previous bag.
+Icons come from the exported picture atlases; names/descriptions come from the
+item catalog and are encoded for the native Big5 bitmap font.
+
+Item hover uses the native name hint and `TSe_ItemInfo` (`FUN_00287e0c`,
+`FUN_00287f58`, `FUN_0028cc74`): a 196-pixel `panel4` frame beside the cell,
+yellow text, type names from `FUN_00485a20`, rank from decoded record byte 45,
+and non-tradeable flags from word 123 (`FUN_0028cbec`). Equipment requirements
+use byte 113, independently of the legacy server Level projection. Descriptions
+wrap by Big5 glyph. Native description sizing reserves extra bottom padding.
+The new tooltip/move screenshot pairs check these interactions. The exported
+WLRI `menu/Skins/default/panel4.bmp.png` includes green transparency markers
+among the blue artwork; the picture cache applies native color-keying.
+Equipment bonus/socket/forge and metadata-dependent tradeability lines still
+need the remaining native item-info rules.
+
+Remaining inventory work includes repair, point allocation/potential dialogs,
+pet equipment and secondary container/crafting forms. These are separate native
+forms and are not implemented by the inventory toolbar window yet.
+
+Focused validation:
+
+```sh
+cd client
+go test ./wlo/inventory ./wlo/world ./wlo/login ./wlo/seui ./wlo/app -run 'TestInventory|TestFormula|TestEditor|TestCombo|Test.*BaseStats'
+INVENTORY_SNAPSHOT=/tmp/inventory.png go test ./wlo/app -run TestInventoryFlow -count=1
+INVENTORY_REFERENCE_SNAPSHOT=/tmp/inventory-reference.png go test ./wlo/app -run TestInventoryOriginalSampleSnapshot -count=1
+INVENTORY_INTERACTION_SNAPSHOT=/tmp/inventory-interactions go test ./wlo/app -run TestInventoryInteractionSamples -count=1
+```

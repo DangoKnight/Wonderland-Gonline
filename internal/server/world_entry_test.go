@@ -138,7 +138,7 @@ func TestWorldEntryMonsterDiscoveryVictoryPersistence(t *testing.T) {
 }
 
 func TestWorldEntrySceneReadyGoldenAndWelcomeOnce(t *testing.T) {
-	for _, first := range [][]byte{{89, 0}, {92, 1}} {
+	for _, first := range [][]byte{{89, 0}, {89, 0, 0x11, 0x27, 0, 0}, {89, 0, 0xff, 0xff, 0xff, 0xff}, {92, 1}, {92, 1, 0}, {92, 1, 1}} {
 		s, players, wires := worldFixture(t)
 		c := players[0]
 		wire := wires[0]
@@ -155,10 +155,10 @@ func TestWorldEntrySceneReadyGoldenAndWelcomeOnce(t *testing.T) {
 		if first[0] == 89 && !contains(got, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {
 			t.Fatal(got)
 		}
-		if c.ready || len(s.world) != 0 {
+		if c.ready || len(s.world) != 0 || c.character.ID != 10001 || c.account.ID != 1 {
 			t.Fatal("scene sync published map readiness")
 		}
-		for _, p := range [][]byte{{89, 0}, {92, 1}} {
+		for _, p := range [][]byte{{89, 0}, {89, 0, 0x11, 0x27, 0, 0}, {92, 1}, {92, 1, 0}, {92, 1, 1}} {
 			if err := s.dispatch(context.Background(), c, p); err != nil {
 				t.Fatal(err)
 			}
@@ -182,7 +182,7 @@ func TestWorldEntrySceneReadyGoldenAndWelcomeOnce(t *testing.T) {
 		if !contains(wire.packets(t), welcome) {
 			t.Fatal("new character login did not reset welcome")
 		}
-		for _, p := range [][]byte{{89}, {92}, {89, 0, 1}, {92, 1, 1}} {
+		for _, p := range [][]byte{{89}, {92}, {89, 0, 1}, {89, 0, 1, 2}, {89, 0, 1, 2, 3}, {89, 0, 1, 2, 3, 4, 5}, {92, 1, 2}, {92, 1, 0xff}, {92, 1, 0, 0}, {92, 1, 1, 2, 3, 4}} {
 			if err := s.dispatch(context.Background(), c, p); !errors.Is(err, protocol.ErrMalformed) {
 				t.Fatal(p, err)
 			}
@@ -276,6 +276,13 @@ func TestWorldEntryKeepsAuthenticatedSocketOnBothServices(t *testing.T) {
 					break
 				}
 			}
+			// Native aLogin sends this six-byte sync while the map is loading.
+			// Its acknowledgment must arrive without closing the authenticated stream.
+			send([]byte{89, 0, 0x11, 0x27, 0, 0})
+			if p := read(); !bytes.Equal(p, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {
+				t.Fatal(p)
+			}
+			send([]byte{92, 1, 0})
 			send([]byte{12, 1})
 			for {
 				if bytes.Equal(read(), []byte{5, 4}) {

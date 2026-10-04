@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
+var DefinitionNames = []string{"Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -206,7 +206,9 @@ func validateDefinition(name string, c *assets.Catalog) error {
 				}
 			}
 		}
-	case "LuckyDraw":
+	case "Arcades":
+ return assets.ValidateArcades(c.Arcades,c.Items)
+ case "LuckyDraw":
 		pool, err := assets.ParseLuckyDrawPool(marshal(c.LuckyDraw.Rewards), c.Items)
 		if err != nil {
 			return err

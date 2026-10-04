@@ -10,6 +10,7 @@ import (
 
 	"wonderland-go/client/wlo/seui"
 	"wonderland-go/client/wlo/surface"
+	"wonderland-go/internal/game"
 )
 
 // Status is the part of TSe_MainStatus (constructor FUN_0025ff84) that the
@@ -217,7 +218,8 @@ func delphiRound(v float64) int { return int(math.RoundToEven(v)) }
 type Formula struct {
 	ExpPower  float64 // record +0xf1
 	ExpOffset int32   // record +0x169
-	HP, SP    gauge   // maximum HP and SP (FUN_0036e674, FUN_0036e704)
+	Combat    [5]CombatFormula
+	HP, SP    gauge // maximum HP and SP (FUN_0036e674, FUN_0036e704)
 }
 
 // gauge is one maximum's constants: level^Power × attribute × PerAttrLevel
@@ -237,10 +239,12 @@ func (g gauge) Max(level int, attr uint16, bonus int) int {
 }
 
 const (
-	formulaRecordBytes = 0x197
-	formulaVersion     = 2
-	formulaExpPower    = 0xf1
-	formulaExpOffset   = 0x169
+	formulaRecordBytes  = 0x197
+	formulaVersion      = 2
+	formulaCombatOffset = 1
+	formulaCombatStride = 32
+	formulaExpPower     = 0xf1
+	formulaExpOffset    = 0x169
 	// Maximum HP and SP constants: per level, per attribute and level,
 	// the level power, per attribute (doubles), then the base (word).
 	formulaHP     = 0xf9
@@ -277,12 +281,18 @@ func LoadFormula(a Assets) (*Formula, error) {
 		return gauge{PerLevel: f64(o), PerAttrLevel: f64(o + 8), Power: f64(o + 16), PerAttr: f64(o + 24),
 			Base: binary.LittleEndian.Uint16(raw[base:])}
 	}
-	return &Formula{
+	f := &Formula{
 		ExpPower:  f64(formulaExpPower),
 		ExpOffset: int32(binary.LittleEndian.Uint32(raw[formulaExpOffset:])),
 		HP:        g(formulaHP, formulaHPBase),
 		SP:        g(formulaSP, formulaSPBase),
-	}, nil
+	}
+	// Five 32-byte records begin immediately after the version byte.
+	for i := range f.Combat {
+		o := formulaCombatOffset + i*formulaCombatStride
+		f.Combat[i] = CombatFormula{f64(o), f64(o + 8), f64(o + 16), f64(o + 24)}
+	}
+	return f, nil
 }
 
 // LevelExp is FUN_0036e78c: the experience to go from level-1 to level.
@@ -317,4 +327,24 @@ func (f *Formula) Progress(level byte, exp uint32, reborn bool) float64 {
 		e = base
 	}
 	return float64(e-base) / float64(f.LevelExp(level+1, reborn))
+}
+
+// CombatFormula is the four doubles per stat in Formula.Dat. The element
+// term applies to Earth DEF, Water MDF, Fire ATK/MAT, and Wind SPD.
+// FUN_004166e4 uses banker's rounding after summing these terms.
+type CombatFormula struct{ PerAttr, PerLevel, PerContribution, ElementLevel float64 }
+
+func (f *Formula) CombatValues(level int, element byte, attrs [5]uint16, contribution [5]int32) (out [5]int32) {
+	elements := [5]byte{byte(game.Fire), byte(game.Earth), byte(game.Fire), byte(game.Water), byte(game.Wind)}
+	if f == nil {
+		return
+	}
+	for i, c := range f.Combat {
+		v := float64(attrs[i])*c.PerAttr + float64(level)*c.PerLevel + float64(contribution[i])*c.PerContribution
+		if element == elements[i] {
+			v += float64(level) * c.ElementLevel
+		}
+		out[i] = int32(delphiRound(v))
+	}
+	return
 }

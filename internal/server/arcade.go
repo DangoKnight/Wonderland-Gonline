@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"wonderland-go/internal/assets"
 	"wonderland-go/internal/protocol"
 )
 
@@ -12,7 +13,7 @@ func (s *Server) mallGameCommand(ctx context.Context, c *Session, p []byte) erro
 	if len(p) != protocol.MallGameRequestBytes {
 		return protocol.ErrMalformed
 	}
-	if c.event != nil || c.storm || c.beach != nil {
+	if c.arcade != nil || c.event != nil || c.storm || c.beach != nil {
 		return nil
 	}
 	balances, err := s.Store.MallBalances(ctx, c.account.ID)
@@ -20,6 +21,9 @@ func (s *Server) mallGameCommand(ctx context.Context, c *Session, p []byte) erro
 		return err
 	}
 	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
+	if assets.ArcadeKindSupported(p[2]) {
+		c.arcade = &arcadeSession{kind: p[2], mapID: c.character.Map}
+	}
 	start := protocol.Builder{protocol.CommandMinigame, protocol.MinigameStart, p[2]}.U8(protocol.MallGameSeed).U8(protocol.MallGameSeed).U8(protocol.MallGameSeed)
 	return s.sendAll(c, append([][]byte{start}, mallBalancePackets(balances)...))
 }

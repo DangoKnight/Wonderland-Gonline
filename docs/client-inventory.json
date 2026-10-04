@@ -1,0 +1,5274 @@
+{
+ "build": "ca19ee087b60",
+ "functions": 12130,
+ "classes": 937,
+ "regions": [
+  {
+   "region": 0,
+   "start": "011280",
+   "end": "0172d8",
+   "functions": 368,
+   "cited": 3,
+   "classes": [
+    "TGraphic",
+    "TStrings",
+    "TStream",
+    "TFiler",
+    "TAbstractSocket",
+    "TDXDrawDriver",
+    "TCustomWaveStream",
+    "TCustomMemoryStream"
+   ],
+   "strings": [
+    "FPUMaskValue",
+    "SOFTWARE\\\\Borland\\\\Delphi\\\\RTL",
+    "GetLongPathNameA"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 1,
+   "start": "0173d0",
+   "end": "0174d8",
+   "functions": 10,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 2,
+   "start": "017544",
+   "end": "018128",
+   "functions": 357,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "MSH_SCROLL_LINES_MSG",
+    "MSH_WHEELSUPPORT_MSG"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 3,
+   "start": "018258",
+   "end": "018258",
+   "functions": 1,
+   "cited": 0,
+   "classes": [
+    "Exception",
+    "EAbort",
+    "EHeapException",
+    "EOutOfMemory",
+    "EInOutError",
+    "EExternal",
+    "EExternalException",
+    "EIntError"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 5,
+   "start": "0190b0",
+   "end": "01e5d4",
+   "functions": 187,
+   "cited": 1,
+   "classes": [],
+   "strings": [
+    "AM/PM",
+    " AMPM",
+    ":mm"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 6,
+   "start": "01e894",
+   "end": "01e8ec",
+   "functions": 12,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 8,
+   "start": "01edcc",
+   "end": "01f684",
+   "functions": 33,
+   "cited": 0,
+   "classes": [
+    "EStreamError",
+    "EFCreateError",
+    "EFOpenError",
+    "EFilerError",
+    "EReadError",
+    "EWriteError",
+    "EClassNotFound",
+    "EInvalidImage"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 9,
+   "start": "020cd4",
+   "end": "029c50",
+   "functions": 398,
+   "cited": 1,
+   "classes": [
+    "TStringList",
+    "TExStringList",
+    "TSubItems",
+    "TStrings",
+    "TMemoStrings",
+    "TTabStrings",
+    "TBasicAction",
+    "TComboBoxStrings",
+    "TIntConst",
+    "TPropFixup"
+   ],
+   "strings": [
+    "%s[%d]",
+    "Owner",
+    "False"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 10,
+   "start": "02acf4",
+   "end": "033798",
+   "functions": 294,
+   "cited": 0,
+   "classes": [
+    "TBitmap",
+    "TMetafile",
+    "TIcon",
+    "TGraphic",
+    "TOleGraphic",
+    "TDIB",
+    "TJPEGImage",
+    "TCanvas",
+    "TResourceManager",
+    "TFileFormatsList"
+   ],
+   "strings": [
+    "Default"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 11,
+   "start": "033a78",
+   "end": "033b20",
+   "functions": 5,
+   "cited": 0,
+   "classes": [
+    "TStack",
+    "TMenuItemStack",
+    "TOrderedList"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 12,
+   "start": "033b64",
+   "end": "034330",
+   "functions": 98,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "InitCommonControlsEx",
+    "comctl32.dll"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 13,
+   "start": "034368",
+   "end": "034a50",
+   "functions": 11,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "GetMonitorInfoA",
+    "MonitorFromRect",
+    "USER32.DLL"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 14,
+   "start": "034afc",
+   "end": "034afc",
+   "functions": 1,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 15,
+   "start": "034b34",
+   "end": "034cdc",
+   "functions": 10,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 18,
+   "start": "034d90",
+   "end": "034dec",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TCustomGroupBox",
+    "TGroupBox",
+    "TCustomLabel",
+    "TLabel",
+    "TCustomEdit",
+    "TEdit",
+    "TCustomMemo",
+    "TMemo"
+   ],
+   "strings": [
+    "FlatSB_EnableScrollBar",
+    "FlatSB_GetScrollInfo"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 19,
+   "start": "039f9c",
+   "end": "03dd20",
+   "functions": 129,
+   "cited": 0,
+   "classes": [
+    "TCustomMemo",
+    "TMemo",
+    "TCustomEdit",
+    "TEdit",
+    "TCustomMaskEdit",
+    "TInplaceEdit",
+    "TComboBoxStrings",
+    "TCustomComboBox",
+    "TMemoStrings",
+    "TClipboard"
+   ],
+   "strings": [
+    ",param_2[1],param_2[3],param_2[4]                           ",
+    "BUTTON",
+    "BUTTON"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 20,
+   "start": "03df38",
+   "end": "03e570",
+   "functions": 17,
+   "cited": 0,
+   "classes": [
+    "TClipboard",
+    "THintAction"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 21,
+   "start": "03e6ec",
+   "end": "03e6ec",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "THintAction",
+    "TDragObject",
+    "TBaseDragControlObject",
+    "TDragControlObject",
+    "TDragDockObject",
+    "TControlCanvas",
+    "TControlActionLink",
+    "TSizeConstraints",
+    "TControl"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 22,
+   "start": "0403dc",
+   "end": "04da1c",
+   "functions": 473,
+   "cited": 0,
+   "classes": [
+    "THintWindow",
+    "TCustomControl",
+    "TWinControl",
+    "TButtonControl",
+    "TCustomGroupBox",
+    "TGroupBox",
+    "TScrollBar",
+    "TTabSheet",
+    "TSiteList",
+    "TContainedAction"
+   ],
+   "strings": [
+    "IsControl",
+    "IMM32.DLL",
+    "ImmGetCompositionStringA"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 23,
+   "start": "04df48",
+   "end": "04e990",
+   "functions": 43,
+   "cited": 0,
+   "classes": [
+    "TActionLink",
+    "TControlActionLink",
+    "TWinControlActionLink",
+    "TCustomAction",
+    "THintAction",
+    "TButtonActionLink",
+    "TCustomActionList",
+    "TContainedAction",
+    "TChangeLink",
+    "TCustomImageList"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 24,
+   "start": "04eb14",
+   "end": "04fe08",
+   "functions": 42,
+   "cited": 0,
+   "classes": [
+    "TCustomImageList",
+    "TDragImageList",
+    "EMenuError"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 25,
+   "start": "050006",
+   "end": "055f74",
+   "functions": 155,
+   "cited": 0,
+   "classes": [
+    "TMenuActionLink",
+    "TMenuItem",
+    "TPopupMenu",
+    "TMenu",
+    "TMainMenu",
+    "TCustomCheckBox",
+    "TScrollingWinControl",
+    "TPopupList",
+    "TMenuItemStack",
+    "TControlScrollBar"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 26,
+   "start": "058540",
+   "end": "0621c4",
+   "functions": 275,
+   "cited": 0,
+   "classes": [
+    "TCustomForm",
+    "TForm",
+    "TCustomDockForm",
+    "TMessageForm",
+    "TNewMessageForm",
+    "TForm3",
+    "TGmForm",
+    "TForm5"
+   ],
+   "strings": [
+    "System\\\\CurrentControlSet\\\\Control\\\\Keyboard Layouts\\\\%.8x",
+    "layout text",
+    "MAINICON"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 27,
+   "start": "062270",
+   "end": "062270",
+   "functions": 4,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 30,
+   "start": "062320",
+   "end": "062320",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TImage",
+    "TTimer",
+    "TCustomPanel",
+    "TPanel"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 33,
+   "start": "06347c",
+   "end": "0642c8",
+   "functions": 26,
+   "cited": 0,
+   "classes": [
+    "TCustomPanel",
+    "TPanel",
+    "TImage",
+    "TTimer"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 35,
+   "start": "064338",
+   "end": "064cb8",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TMessageForm"
+   ],
+   "strings": [
+    "Image",
+    "Message",
+    "WndProcPtr%.8X%.8X"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 36,
+   "start": "064e84",
+   "end": "064f04",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "EDirectXError",
+    "TDirectX",
+    "TControlSubClass"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 39,
+   "start": "0658c8",
+   "end": "065b2c",
+   "functions": 12,
+   "cited": 0,
+   "classes": [
+    "TDirectX",
+    "TDirectDraw",
+    "TDirectDrawClipper",
+    "TDirectDrawPalette",
+    "TDirectDrawSurface",
+    "TDirectSound",
+    "TDXSoundDirectSound",
+    "TDIBSharedImage",
+    "TDIB"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 40,
+   "start": "065d68",
+   "end": "0680dc",
+   "functions": 63,
+   "cited": 0,
+   "classes": [
+    "TDIB",
+    "TDIBSharedImage",
+    "TPaletteItem",
+    "TPaletteManager",
+    "TGlobalMemoryStream",
+    "TDXRMachine"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 42,
+   "start": "068290",
+   "end": "070354",
+   "functions": 83,
+   "cited": 0,
+   "classes": [
+    "EDirectDrawError",
+    "EDirectDrawPaletteError",
+    "EDirectDrawClipperError",
+    "EDirectDrawSurfaceError",
+    "TDirectDraw",
+    "TDirectDrawClipper",
+    "TDirectDrawPalette",
+    "TDirectDrawSurfaceCanvas"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 43,
+   "start": "071624",
+   "end": "0787bc",
+   "functions": 152,
+   "cited": 1,
+   "classes": [
+    "TCustomDXDraw",
+    "TDXDraw",
+    "TDXDrawDriverBlt",
+    "TDXDrawDriverFlip",
+    "TDXDrawDriver",
+    "TDirectDrawSurface",
+    "TDirectDrawSurfaceCanvas",
+    "TDXDrawDisplay"
+   ],
+   "strings": [
+    "DDraw.dll",
+    "DirectDrawEnumerateA",
+    "DDraw.dll"
+   ],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 47,
+   "start": "078900",
+   "end": "0789c8",
+   "functions": 26,
+   "cited": 0,
+   "classes": [
+    "TSynchroObject",
+    "TCriticalSection"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 48,
+   "start": "078ad4",
+   "end": "078b6c",
+   "functions": 8,
+   "cited": 0,
+   "classes": [
+    "TSynchroObject",
+    "TCriticalSection",
+    "ESocketError",
+    "TCustomWinSocket",
+    "TClientWinSocket",
+    "TAbstractSocket",
+    "TCustomSocket",
+    "TClientSocket"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 49,
+   "start": "079238",
+   "end": "07aa9c",
+   "functions": 50,
+   "cited": 0,
+   "classes": [
+    "TCustomWinSocket",
+    "TClientWinSocket",
+    "TClientSocket",
+    "TCustomSocket",
+    "TAbstractSocket",
+    "TWave",
+    "EWaveStreamError",
+    "TCustomWaveStream",
+    "TCustomWaveStream2",
+    "TWaveStream"
+   ],
+   "strings": [
+    "WSAStartup",
+    "WSACleanup",
+    "WSAASyncGetHostByName"
+   ],
+   "subsystem": "transport"
+  },
+  {
+   "region": 50,
+   "start": "07ad54",
+   "end": "07b7ac",
+   "functions": 37,
+   "cited": 0,
+   "classes": [
+    "TCustomWaveStream2",
+    "TWaveStream",
+    "TCustomWaveStream",
+    "TOggStream",
+    "TOggMemStream",
+    "Twb_WaveStream",
+    "Twb_WaveFileStream",
+    "TWave",
+    "EDirectSoundError",
+    "EDirectSoundBufferError"
+   ],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 51,
+   "start": "07bdec",
+   "end": "07e030",
+   "functions": 74,
+   "cited": 0,
+   "classes": [
+    "TCustomDXSound",
+    "TDXSound",
+    "TDirectSoundBuffer",
+    "TDirectSound",
+    "TAudioStreamNotify",
+    "TDXSoundDirectSound"
+   ],
+   "strings": [
+    "DSound.dll",
+    "DirectSoundCreate",
+    "IDirectSound"
+   ],
+   "subsystem": "audio"
+  },
+  {
+   "region": 52,
+   "start": "07e0dc",
+   "end": "07e0dc",
+   "functions": 2,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 53,
+   "start": "07e1d4",
+   "end": "07e32c",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TJPEGData",
+    "TJPEGImage"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 55,
+   "start": "07e690",
+   "end": "091c8c",
+   "functions": 326,
+   "cited": 0,
+   "classes": [
+    "TJPEGImage",
+    "TJPEGData",
+    "EJPEG",
+    "Twb_TexPicRects"
+   ],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 58,
+   "start": "092458",
+   "end": "092458",
+   "functions": 2,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "dat\\\\cuts.dat"
+   ],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 59,
+   "start": "092538",
+   "end": "0927e4",
+   "functions": 8,
+   "cited": 1,
+   "classes": [],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 60,
+   "start": "0f0001",
+   "end": "0f0001",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TGraphicControl",
+    "TCustomControl",
+    "TCustomTabControl",
+    "TTabControl",
+    "TTabSheet",
+    "TPageControl",
+    "TTreeNode",
+    "TTreeNodes",
+    "ETreeViewError",
+    "TCustomTreeView"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 65,
+   "start": "0f8fcc",
+   "end": "104a34",
+   "functions": 375,
+   "cited": 0,
+   "classes": [
+    "TCustomListView",
+    "TCustomTreeView",
+    "TTreeView",
+    "TPageControl",
+    "TTabStrings",
+    "TCustomTabControl",
+    "TTabControl",
+    "TListColumn",
+    "TSubItems"
+   ],
+   "strings": [
+    "comctl32.dll",
+    "TDBEdit",
+    "TDBMemo"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 66,
+   "start": "104b58",
+   "end": "104bb0",
+   "functions": 10,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "graphics"
+  },
+  {
+   "region": 67,
+   "start": "10535c",
+   "end": "105374",
+   "functions": 5,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 68,
+   "start": "1053b4",
+   "end": "105a20",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TSinThreadIntfObj",
+    "TSmallRecordPool",
+    "TDynNodePool"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 69,
+   "start": "105d14",
+   "end": "105f04",
+   "functions": 8,
+   "cited": 0,
+   "classes": [
+    "TDynNodePool",
+    "TSmallRecordPool",
+    "TDbLinkList",
+    "TDbLinkListIterator"
+   ],
+   "strings": [
+    "Small record pool free record error !"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 70,
+   "start": "106204",
+   "end": "106638",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "EOleError",
+    "EOleSysError",
+    "EOleException"
+   ],
+   "strings": [
+    "Assertion failure",
+    "Remove bi direction list end error !"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 72,
+   "start": "10681c",
+   "end": "1073e8",
+   "functions": 21,
+   "cited": 0,
+   "classes": [
+    "TCustomAdapter",
+    "TAdapterNotifier",
+    "TFontAdapter",
+    "TPictureAdapter",
+    "TOleGraphic"
+   ],
+   "strings": [
+    "CoAddRefServerProcess",
+    "CoCreateInstanceEx"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 74,
+   "start": "107af4",
+   "end": "108d58",
+   "functions": 43,
+   "cited": 0,
+   "classes": [
+    "TOleGraphic",
+    "TFontAdapter",
+    "TPictureAdapter",
+    "TCustomAdapter",
+    "TEventDispatch",
+    "TOleControl"
+   ],
+   "strings": [
+    "OleCreateFontIndirect",
+    "OleCreatePictureIndirect"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 76,
+   "start": "109668",
+   "end": "10c1b4",
+   "functions": 106,
+   "cited": 0,
+   "classes": [
+    "TOleControl",
+    "TWebBrowser"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 78,
+   "start": "10cf98",
+   "end": "10d150",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TWebBrowser"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 79,
+   "start": "10d2c0",
+   "end": "10d5ec",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TNewMessageForm"
+   ],
+   "strings": [
+    "Image",
+    "Message"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 80,
+   "start": "10dbe0",
+   "end": "10dc08",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "Twb_WaveStream",
+    "Twb_WaveFileStream",
+    "Twb_AudioFileStream"
+   ],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 81,
+   "start": "10ddd0",
+   "end": "10e880",
+   "functions": 18,
+   "cited": 0,
+   "classes": [
+    "Twb_WaveStream",
+    "Twb_WaveFileStream"
+   ],
+   "strings": [
+    "Assertion failure",
+    "Open stream failed !",
+    "Prepare header failed !"
+   ],
+   "subsystem": "audio"
+  },
+  {
+   "region": 82,
+   "start": "10e994",
+   "end": "10e994",
+   "functions": 1,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 83,
+   "start": "10e9cc",
+   "end": "10eeec",
+   "functions": 10,
+   "cited": 2,
+   "classes": [
+    "TCY_WmgData"
+   ],
+   "strings": [],
+   "subsystem": "assets"
+  },
+  {
+   "region": 90,
+   "start": "10f2c8",
+   "end": "10f384",
+   "functions": 4,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 91,
+   "start": "10f420",
+   "end": "10f420",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TRE_ItemGrid"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 94,
+   "start": "11010c",
+   "end": "110acc",
+   "functions": 15,
+   "cited": 0,
+   "classes": [
+    "TServerDetect"
+   ],
+   "strings": [],
+   "subsystem": "login"
+  },
+  {
+   "region": 96,
+   "start": "110b9c",
+   "end": "110b9c",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TServerDetect"
+   ],
+   "strings": [],
+   "subsystem": "login"
+  },
+  {
+   "region": 97,
+   "start": "110e28",
+   "end": "111e80",
+   "functions": 37,
+   "cited": 2,
+   "classes": [
+    "TErrorLog"
+   ],
+   "strings": [
+    "AES key must be 32 bytes",
+    "jma-enc:",
+    "jma-mac:"
+   ],
+   "subsystem": "assets"
+  },
+  {
+   "region": 98,
+   "start": "112400",
+   "end": "1130d8",
+   "functions": 15,
+   "cited": 0,
+   "classes": [
+    "TBasicConnect"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 99,
+   "start": "113288",
+   "end": "113b14",
+   "functions": 18,
+   "cited": 1,
+   "classes": [
+    "EDXInputError",
+    "TForceFeedbackEffectObject",
+    "TForceFeedbackEffect",
+    "TForceFeedbackEffects",
+    "TCustomInput",
+    "TKeyboard",
+    "TMouse",
+    "TJoystick"
+   ],
+   "strings": [],
+   "subsystem": "input"
+  },
+  {
+   "region": 100,
+   "start": "114680",
+   "end": "117b74",
+   "functions": 90,
+   "cited": 0,
+   "classes": [
+    "TKeyboard",
+    "TMouse",
+    "TJoystick",
+    "TCustomInput",
+    "TForceFeedbackEffectItem",
+    "TForceFeedbackEffects",
+    "TCustomDXInput",
+    "TDXInput",
+    "TForceFeedbackEffectComponent",
+    "TMPEGAudio"
+   ],
+   "strings": [
+    "Effects",
+    "Aissgns",
+    "Assigns"
+   ],
+   "subsystem": "input"
+  },
+  {
+   "region": 101,
+   "start": "117f54",
+   "end": "11b594",
+   "functions": 57,
+   "cited": 0,
+   "classes": [
+    "EMCIDeviceError",
+    "TMediaPlayer"
+   ],
+   "strings": [
+    "Error converting long filename to short.",
+    "[not found: ",
+    " association error!!! "
+   ],
+   "subsystem": "audio"
+  },
+  {
+   "region": 102,
+   "start": "11f5ac",
+   "end": "1218e0",
+   "functions": 31,
+   "cited": 0,
+   "classes": [
+    "TMediaPlayer",
+    "TSe_CloudManage"
+   ],
+   "strings": [],
+   "subsystem": "ground"
+  },
+  {
+   "region": 103,
+   "start": "1219dc",
+   "end": "121ba0",
+   "functions": 10,
+   "cited": 0,
+   "classes": [
+    "Tft_CheckBmp"
+   ],
+   "strings": [
+    "cloud"
+   ],
+   "subsystem": "ground"
+  },
+  {
+   "region": 108,
+   "start": "1221c8",
+   "end": "1221c8",
+   "functions": 1,
+   "cited": 0,
+   "classes": [
+    "TRE_ZMChessPlayer"
+   ],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 109,
+   "start": "122264",
+   "end": "122998",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TRE_ZMChessPlayer",
+    "TRe_DrawBmp"
+   ],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 111,
+   "start": "122a60",
+   "end": "122a60",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TRE_DrawFurniture"
+   ],
+   "strings": [],
+   "subsystem": "housing"
+  },
+  {
+   "region": 112,
+   "start": "122b4c",
+   "end": "123d6c",
+   "functions": 10,
+   "cited": 0,
+   "classes": [
+    "TNpcDoll",
+    "TDollManage"
+   ],
+   "strings": [],
+   "subsystem": "housing"
+  },
+  {
+   "region": 113,
+   "start": "123e70",
+   "end": "1243e0",
+   "functions": 13,
+   "cited": 0,
+   "classes": [
+    "TNMReg",
+    "ESockError",
+    "EAbortError",
+    "TThreadTimer",
+    "TPowersock"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 115,
+   "start": "124998",
+   "end": "126e68",
+   "functions": 38,
+   "cited": 0,
+   "classes": [
+    "TPowersock",
+    "TNMHTTP",
+    "TThreadTimer",
+    "TExStringList"
+   ],
+   "strings": [
+    "Create",
+    "SectionFlags",
+    "Destroy"
+   ],
+   "subsystem": "transport"
+  },
+  {
+   "region": 116,
+   "start": "127048",
+   "end": "1271ac",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TNMUUProcessor"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 117,
+   "start": "127424",
+   "end": "127498",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TNMUUProcessor",
+    "TNMURL"
+   ],
+   "strings": [],
+   "subsystem": "transport"
+  },
+  {
+   "region": 118,
+   "start": "1279c4",
+   "end": "127bdc",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TNMURL",
+    "THeaderInfo",
+    "TNMHTTP"
+   ],
+   "strings": [
+    "%%%.2x"
+   ],
+   "subsystem": "transport"
+  },
+  {
+   "region": 119,
+   "start": "12814c",
+   "end": "129c3c",
+   "functions": 20,
+   "cited": 0,
+   "classes": [
+    "TNMHTTP"
+   ],
+   "strings": [
+    "CONTENT-LENGTH:",
+    "ENGTH:"
+   ],
+   "subsystem": "transport"
+  },
+  {
+   "region": 120,
+   "start": "129ff8",
+   "end": "12a0b4",
+   "functions": 5,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 122,
+   "start": "12a1ac",
+   "end": "12a2b8",
+   "functions": 11,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 124,
+   "start": "12a3c0",
+   "end": "12a4c4",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TForm3"
+   ],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 126,
+   "start": "12a85c",
+   "end": "12b644",
+   "functions": 14,
+   "cited": 0,
+   "classes": [
+    "EDBEditError",
+    "TCustomMaskEdit"
+   ],
+   "strings": [
+    "16-bit MP4 can be used to play audio and video.",
+    "Game requires 16-bit color mode to run. Change it?",
+    "Main.exe"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 127,
+   "start": "12bcc8",
+   "end": "12e41c",
+   "functions": 55,
+   "cited": 0,
+   "classes": [
+    "TCustomMaskEdit",
+    "TInplaceEdit",
+    "EInvalidGridOperation",
+    "TCustomGrid",
+    "TDrawGrid",
+    "TStringGridStrings",
+    "TStringGrid"
+   ],
+   "strings": [],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 128,
+   "start": "12f8d4",
+   "end": "1372fc",
+   "functions": 236,
+   "cited": 0,
+   "classes": [
+    "TDrawGrid",
+    "TStringGrid",
+    "TStringGridStrings",
+    "TCustomGrid",
+    "TStringSparseList",
+    "TInplaceEdit",
+    "TSparsePointerArray",
+    "TSparseList",
+    "TGmForm"
+   ],
+   "strings": [
+    "ColWidths",
+    "RowHeights"
+   ],
+   "subsystem": "rtl"
+  },
+  {
+   "region": 129,
+   "start": "138268",
+   "end": "1389b4",
+   "functions": 68,
+   "cited": 0,
+   "classes": [
+    "TCY_BeeMenu"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 130,
+   "start": "138b58",
+   "end": "138cf0",
+   "functions": 3,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    " 1 Pc "
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 131,
+   "start": "138dd8",
+   "end": "138de0",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TSheep_role",
+    "Tsport_SheepDream"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 132,
+   "start": "138f3c",
+   "end": "13a510",
+   "functions": 15,
+   "cited": 3,
+   "classes": [
+    "Tsport_SheepDream"
+   ],
+   "strings": [
+    "59087",
+    "59090",
+    "Num_White5_1"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 133,
+   "start": "13a548",
+   "end": "13a548",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TWS_TestForm1",
+    "TWS_Compute",
+    "TWS_TransmiForm",
+    "TUseCarCaseForm",
+    "TFNPC_MakeForm",
+    "TGPSForm",
+    "TGlobaForm"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 134,
+   "start": "13af7c",
+   "end": "140168",
+   "functions": 35,
+   "cited": 0,
+   "classes": [
+    "TFNPC_MakeForm",
+    "TUseCarCaseForm",
+    "TGPSForm",
+    "TWS_TransmiForm",
+    "TGlobaForm",
+    "TCatchDollForm",
+    "TSportCatchDoll"
+   ],
+   "strings": [
+    "Full, can\\'t store more",
+    "Already 5 semi-finished crafts",
+    "Bathing, unable to make"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 135,
+   "start": "14033c",
+   "end": "142590",
+   "functions": 28,
+   "cited": 0,
+   "classes": [
+    "TCatchDollForm",
+    "TBoxingForm",
+    "TBoxingNum",
+    "TBoxingGrade",
+    "TSportBoxing"
+   ],
+   "strings": [
+    "BackGroundMask",
+    "CD_BackGround",
+    "Exchange doll for?"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 136,
+   "start": "14282c",
+   "end": "144a08",
+   "functions": 32,
+   "cited": 0,
+   "classes": [
+    "TBoxingForm",
+    "TMarioForm",
+    "TMarioSecForm",
+    "TMarioThirdForm",
+    "TSportMario",
+    "TSportMarioSec",
+    "TSportMarioThird"
+   ],
+   "strings": [
+    "BoxingNumber",
+    "BoxerKo",
+    "BoxerLose"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 137,
+   "start": "1450d4",
+   "end": "14a090",
+   "functions": 50,
+   "cited": 0,
+   "classes": [
+    "TSportMario",
+    "TSportMarioThird",
+    "TSportMarioSec",
+    "TMarioForm",
+    "TMarioSecForm",
+    "TMarioThirdForm",
+    "TMemoryGameForm",
+    "TSport_UnitMemoryGame",
+    "TSport_MemoryGame",
+    "TFrameEffect"
+   ],
+   "strings": [
+    "MarioGround",
+    "Mario_Bingo",
+    "sound\\\\wav0152.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 138,
+   "start": "14a558",
+   "end": "14f880",
+   "functions": 56,
+   "cited": 4,
+   "classes": [
+    "TTurnGameForm",
+    "TSport_MemoryGame",
+    "TReferToMaterial"
+   ],
+   "strings": [
+    "CJ_BG1",
+    "Icon_O_1",
+    "Num_White5_1"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 139,
+   "start": "150210",
+   "end": "151328",
+   "functions": 15,
+   "cited": 0,
+   "classes": [
+    "TReferToMaterial",
+    "TForm5"
+   ],
+   "strings": [
+    "Can\\'t be placed",
+    "Can\\'t fix in battle",
+    "Can\\'t queue this"
+   ],
+   "subsystem": "items"
+  },
+  {
+   "region": 140,
+   "start": "151a98",
+   "end": "151b48",
+   "functions": 19,
+   "cited": 0,
+   "classes": [
+    "TOggStream",
+    "TOggMemStream",
+    "TAudioOggMemStream"
+   ],
+   "strings": [],
+   "subsystem": "audio"
+  },
+  {
+   "region": 141,
+   "start": "151d04",
+   "end": "152584",
+   "functions": 16,
+   "cited": 0,
+   "classes": [
+    "TOggStream",
+    "TOggMemStream",
+    "TWlOggPlayer"
+   ],
+   "strings": [
+    "Open ogg file failed !",
+    "Data\\\\odd.dat",
+    "Data\\\\odd_d01.dat"
+   ],
+   "subsystem": "audio"
+  },
+  {
+   "region": 142,
+   "start": "152770",
+   "end": "152a2c",
+   "functions": 4,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "Data\\\\odd.dat",
+    "Data\\\\odd_d01.dat"
+   ],
+   "subsystem": "audio"
+  },
+  {
+   "region": 143,
+   "start": "152a64",
+   "end": "154dec",
+   "functions": 18,
+   "cited": 0,
+   "classes": [
+    "TNJ_PlayerTitleManager"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 144,
+   "start": "1552f4",
+   "end": "1553c8",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TNJ_PKManager"
+   ],
+   "strings": [
+    "Title_"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 145,
+   "start": "155770",
+   "end": "159844",
+   "functions": 66,
+   "cited": 0,
+   "classes": [
+    "TAbilityUpgradeManage"
+   ],
+   "strings": [
+    "Respawn chest: %d sec",
+    "Respawn open chest in %d s",
+    "Opponent Search"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 146,
+   "start": "1599a8",
+   "end": "159c70",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TLa_LotteryOLViewForm",
+    "TLa_LotteryOLForm",
+    "TExchangeLockChangForm",
+    "TExchangeLockCancelForm",
+    "TExchangeLockForm",
+    "TSetAccountForm"
+   ],
+   "strings": [
+    "sound\\\\wav0150.wav",
+    "ATK Up",
+    "DEF Up"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 147,
+   "start": "15a3c0",
+   "end": "15db98",
+   "functions": 37,
+   "cited": 0,
+   "classes": [
+    "TLa_LotteryOLViewForm",
+    "TLa_LotteryOLForm",
+    "TExchangeLockChangForm",
+    "TExchangeLockCancelForm",
+    "TExchangeLockForm",
+    "TSetAccountForm",
+    "TMusicCenter",
+    "TLD_BodyOffForm"
+   ],
+   "strings": [
+    "Inventory is full",
+    "No draws remains. Come again tomorrow",
+    "Btn_Close_1"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 149,
+   "start": "15df98",
+   "end": "161750",
+   "functions": 20,
+   "cited": 0,
+   "classes": [
+    "TMusicCenter",
+    "TLD_BodyOffForm",
+    "TGhost",
+    "TBomb",
+    "TPumpkinForm",
+    "TobjManage",
+    "TPumpkin",
+    "TAnteForm",
+    "TGobangForm",
+    "TGobang"
+   ],
+   "strings": [
+    "Default",
+    "9911.WAV",
+    "BGM0011"
+   ],
+   "subsystem": "sound"
+  },
+  {
+   "region": 150,
+   "start": "161cf8",
+   "end": "167958",
+   "functions": 48,
+   "cited": 1,
+   "classes": [
+    "TGobangForm",
+    "TPumpkinForm",
+    "TAnteForm",
+    "TDigHoleForm",
+    "TDigHole"
+   ],
+   "strings": [
+    "59027",
+    "59028",
+    "Num_White5_1"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 151,
+   "start": "167c60",
+   "end": "168f9c",
+   "functions": 23,
+   "cited": 0,
+   "classes": [
+    "TDigHoleForm",
+    "TPokeForm",
+    "TPoke"
+   ],
+   "strings": [
+    "DigHole",
+    "DigHole_Finger",
+    " pcs "
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 152,
+   "start": "16913c",
+   "end": "16afc4",
+   "functions": 22,
+   "cited": 0,
+   "classes": [
+    "TPokeForm",
+    "TPoke",
+    "TTobj"
+   ],
+   "strings": [
+    "Icon_Currect_1",
+    "Icon_Miss_1",
+    "Sound\\\\Wav1609.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 153,
+   "start": "16b0ec",
+   "end": "16b17c",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TPic",
+    "TPicNormal",
+    "TPicMoving",
+    "TPicCatching",
+    "TPicDroping"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 154,
+   "start": "16b448",
+   "end": "16bcec",
+   "functions": 24,
+   "cited": 0,
+   "classes": [
+    "TPicCatching",
+    "TPic",
+    "TPicNormal",
+    "TPicDroping",
+    "TPicMoving",
+    "TCatcher"
+   ],
+   "strings": [
+    "CatcherDroping",
+    "CatcherBasic",
+    "CatcherMoving"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 155,
+   "start": "16bd7c",
+   "end": "16c1a0",
+   "functions": 13,
+   "cited": 0,
+   "classes": [
+    "TLuckeyForm",
+    "TobjManage",
+    "TLuckey"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 156,
+   "start": "16c398",
+   "end": "16d4c8",
+   "functions": 21,
+   "cited": 6,
+   "classes": [
+    "TLuckeyForm",
+    "TConundrumGame",
+    "TWaterMelonGame"
+   ],
+   "strings": [
+    "59001",
+    "59016",
+    "Game Over"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 157,
+   "start": "16d958",
+   "end": "171098",
+   "functions": 32,
+   "cited": 0,
+   "classes": [
+    "TConundrumGame",
+    "TWaterMelonGame",
+    "TMk_ComputerForm1"
+   ],
+   "strings": [
+    "Apologize:",
+    "Arranging ranks..",
+    "sound\\\\wav0145.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 158,
+   "start": "171210",
+   "end": "172c08",
+   "functions": 17,
+   "cited": 0,
+   "classes": [
+    "TAllFormManager"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 159,
+   "start": "172e18",
+   "end": "1737c0",
+   "functions": 6,
+   "cited": 1,
+   "classes": [
+    "TEffectLight",
+    "THL_EffectManage"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 160,
+   "start": "173930",
+   "end": "1740dc",
+   "functions": 12,
+   "cited": 0,
+   "classes": [
+    "TTrunEggGame",
+    "TTrunEggForm",
+    "TSlotmachGame",
+    "TSlotmach2Game",
+    "TSlotmach3Game"
+   ],
+   "strings": [
+    "S10241",
+    "S10767"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 161,
+   "start": "1743d0",
+   "end": "17bca4",
+   "functions": 50,
+   "cited": 5,
+   "classes": [
+    "TTrunEggForm",
+    "TScotd_role",
+    "TSport_scotd"
+   ],
+   "strings": [
+    "TrunEggA",
+    "TrunEggBG",
+    "Sound\\\\BGM0019.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 162,
+   "start": "17be1c",
+   "end": "17dda0",
+   "functions": 21,
+   "cited": 2,
+   "classes": [
+    "TSport_scotd",
+    "THunter_role",
+    "TSport_Hunter"
+   ],
+   "strings": [
+    "59082",
+    "59087",
+    "You Lose"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 163,
+   "start": "17df40",
+   "end": "17fd14",
+   "functions": 17,
+   "cited": 14,
+   "classes": [
+    "TSport_Hunter",
+    "TBrManage",
+    "TCastleManage",
+    "TTimeEffectStatusForm",
+    "TCreateDupSelectList",
+    "TDupOrderList",
+    "TDupMisForm",
+    "TEnterDupMsgForm",
+    "TCreateDupMisForm"
+   ],
+   "strings": [
+    "You Lose",
+    "You Win",
+    "Num_White5_1"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 165,
+   "start": "180f64",
+   "end": "198668",
+   "functions": 267,
+   "cited": 1,
+   "classes": [
+    "TBeforeCareerForm",
+    "TCareerForm",
+    "TDupMisForm",
+    "TFurMailBoxForm",
+    "TChangeRoleName",
+    "TCreateDupMisForm",
+    "TReadFurMailBoxForm",
+    "TDupOrderList",
+    "TPianoForm",
+    "TGasCanForm"
+   ],
+   "strings": [
+    " min ",
+    "Btn_ArrowL_5",
+    "Btn_ArrowR_5"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 166,
+   "start": "1995dc",
+   "end": "1ae464",
+   "functions": 182,
+   "cited": 0,
+   "classes": [
+    "TActionListForm",
+    "TMemCardForm1",
+    "TPianoForm",
+    "TInsteadEcisForm",
+    "TGasCanForm",
+    "TSmallGasForm",
+    "TConfuseStoneForm",
+    "TEnterMsgForm2",
+    "CH_GameStartForm",
+    "CH_GameExplain"
+   ],
+   "strings": [
+    "sound\\\\WAV9904.wav",
+    "sound\\\\WAV9905.wav",
+    ", untransform?"
+   ],
+   "subsystem": "pets"
+  },
+  {
+   "region": 167,
+   "start": "1ae788",
+   "end": "1b742c",
+   "functions": 82,
+   "cited": 20,
+   "classes": [
+    "CH_GameExplain",
+    "CH_GameStartForm",
+    "TRe_Camp",
+    "TRe_CampManage"
+   ],
+   "strings": [
+    "Icon_Element_3_1",
+    "Icon_Heart",
+    "Sound\\\\BGM0018.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 168,
+   "start": "1b75b4",
+   "end": "1b87fc",
+   "functions": 14,
+   "cited": 0,
+   "classes": [
+    "THL_WorldMapForm",
+    "THL_MethodKey",
+    "THL_AutoPlayFormPlus",
+    "THL_MagnetForm",
+    "THL_FixTrafficForm",
+    "THL_IceBoxForm",
+    "THL_StallCaseForm",
+    "THL_SewingKitForm"
+   ],
+   "strings": [
+    "\\n recovered",
+    "Collecting, can\\'t act",
+    "Fishing, can\\'t act"
+   ],
+   "subsystem": "minimap"
+  },
+  {
+   "region": 169,
+   "start": "1b9ca8",
+   "end": "1d8a58",
+   "functions": 229,
+   "cited": 0,
+   "classes": [
+    "TMailSaveBoxForm",
+    "TPotentialForm",
+    "TPotentialReturnForm",
+    "THL_FixTrafficForm",
+    "THL_StallCaseForm",
+    "THL_SewingKitForm",
+    "TReinforceForm",
+    "TRightClickForm",
+    "TTH_ChangeColorForm",
+    "TTH_CellectionForm"
+   ],
+   "strings": [
+    "Btn_Minimize_1",
+    "Can only be used on Voyage Map",
+    ";             local_20 = (char *)0x1d6766;             FUN_0"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 170,
+   "start": "1da0d8",
+   "end": "1f2f2c",
+   "functions": 177,
+   "cited": 0,
+   "classes": [
+    "TTH_BankItemForm",
+    "TTH_ExpressForm",
+    "TTH_AutoPlayForm",
+    "TTH_UseBedForm",
+    "TH_BlackBoardForm",
+    "TTH_ChangeColorForm",
+    "TTH_MsgSkinsForm",
+    "TTH_StallItemInFurForm",
+    "TMZ_CalForm"
+   ],
+   "strings": [
+    "Btn_Close_3",
+    "Btn_Close_s_2",
+    "BankItem"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 171,
+   "start": "1f38f8",
+   "end": "1f44e0",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "TMK_plierForm",
+    "TUseApronForm",
+    "TBubble",
+    "TBubbleManage",
+    "TFish",
+    "TFishManage",
+    "TFood",
+    "TFoodManage"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 172,
+   "start": "1f6b3c",
+   "end": "212aa0",
+   "functions": 306,
+   "cited": 0,
+   "classes": [
+    "TNoticeBoardForm",
+    "TOrgNoticeForm",
+    "TReadNoticeForm",
+    "TOrgReadNoticeForm",
+    "TForageForm",
+    "TSendNoticeForm",
+    "TOrgSendNoticeForm",
+    "TNoticeForm",
+    "TRE_GalaxyRankForm",
+    "TRE_FurAdjust"
+   ],
+   "strings": [
+    "Can\\'t fix in battle",
+    "Free 1 inventory slot to use",
+    "Can\\'t be placed"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 173,
+   "start": "213ad8",
+   "end": "22a864",
+   "functions": 166,
+   "cited": 22,
+   "classes": [
+    "TRe_CompoundForm",
+    "TRe_MiniThingGridForm",
+    "TRE_CreateCharacter",
+    "TRe_MakeThingForm",
+    "TRe_MakeThingInfoForm",
+    "TRe_InnForm",
+    "TRe_RebornForm",
+    "TRE_GalaxyRankForm",
+    "TRE_Col",
+    "TRE_Line"
+   ],
+   "strings": [
+    " Event",
+    "[PVP Rank 1]",
+    "Arrow_L2"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 174,
+   "start": "22b2a0",
+   "end": "22edb0",
+   "functions": 39,
+   "cited": 0,
+   "classes": [
+    "TRE_ZMChessResult",
+    "TRE_ZMChessWait",
+    "TRE_ZMChessBackGrd",
+    "TRE_SGBtn",
+    "TRE_Bet",
+    "TRE_Readme",
+    "TRE_BiDaXiaoHelp",
+    "TRE_BackGround"
+   ],
+   "strings": [
+    "money",
+    " offline",
+    " lost"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 175,
+   "start": "22f3ac",
+   "end": "230364",
+   "functions": 16,
+   "cited": 0,
+   "classes": [
+    "TRE_Bet",
+    "TRE_BackGround",
+    "TRE_BiDaXiaoHelp",
+    "TRE_SGHelp",
+    "TRE_Readme",
+    "TMR_LottoHelp",
+    "TLottoMain",
+    "TLottoMachineMain"
+   ],
+   "strings": [
+    "Max gold",
+    "Reset your bet"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 177,
+   "start": "2306c0",
+   "end": "231ed0",
+   "functions": 24,
+   "cited": 0,
+   "classes": [
+    "TLottoMain",
+    "TLottoMachineMain",
+    "TMR_LottoHelp",
+    "TMR_ShiBaDouHelp",
+    "TStakesMoeny",
+    "TShiBaDoMain"
+   ],
+   "strings": [
+    "Btn_ClearN",
+    "Btn_LHelp",
+    "Bet failed"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 178,
+   "start": "2322a8",
+   "end": "2334e8",
+   "functions": 20,
+   "cited": 0,
+   "classes": [
+    "TShiBaDoMain",
+    "TMR_ShiBaDouHelp",
+    "TStakesMoeny",
+    "TCY_WareImage",
+    "TCY_WareMenu"
+   ],
+   "strings": [
+    "CPU rolled!"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 180,
+   "start": "233724",
+   "end": "234060",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TCY_WareMenu",
+    "TCY_WareImage",
+    "TSe_NPCUpgradeForm"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 181,
+   "start": "234190",
+   "end": "234fc0",
+   "functions": 12,
+   "cited": 0,
+   "classes": [
+    "TSe_NPCUpgradeForm",
+    "TSe_DonateItem",
+    "TSe_DonateForm",
+    "TSe_ArmyWeaponBank"
+   ],
+   "strings": [
+    "Arrow_L2",
+    "Arrow_R2",
+    "icon_sk"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 182,
+   "start": "23541c",
+   "end": "236fe8",
+   "functions": 19,
+   "cited": 0,
+   "classes": [
+    "TSe_DonateForm",
+    "TSe_ArmyWeaponBank",
+    "TSe_DonateItem",
+    "TSe_BlockMsgList"
+   ],
+   "strings": [
+    "Can\\'t donate now",
+    "Btn_Close_1",
+    "Btn_Close_s_1"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 183,
+   "start": "2372c0",
+   "end": "237fbc",
+   "functions": 12,
+   "cited": 0,
+   "classes": [
+    "TSe_BlockMsgList",
+    "TSe_WeddingFriendList",
+    "TSe_CoupleList",
+    "TSe_CashGiftForm",
+    "TSe_Invatation"
+   ],
+   "strings": [
+    "Btn_Close_1",
+    "Btn_Close_s_1",
+    "\\\\BlkLst"
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 184,
+   "start": "238498",
+   "end": "23a794",
+   "functions": 25,
+   "cited": 0,
+   "classes": [
+    "TSe_WeddingFriendList",
+    "TSe_CoupleList",
+    "TSe_Invatation",
+    "TSe_CashGiftForm",
+    "TFT_OfficerView"
+   ],
+   "strings": [
+    "btn_Check",
+    "btn_UnCheck_1",
+    "Btn_Close_1"
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 185,
+   "start": "23aae4",
+   "end": "23bbc0",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TFT_OfficerView",
+    "Tft_Agree"
+   ],
+   "strings": [],
+   "subsystem": "social"
+  },
+  {
+   "region": 186,
+   "start": "23be34",
+   "end": "23be34",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TSe_TreeNodeBtn",
+    "TSe_SkillTreeForm",
+    "TSe_NPCSkillTreeForm"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 187,
+   "start": "23c730",
+   "end": "23fe80",
+   "functions": 27,
+   "cited": 0,
+   "classes": [
+    "TSe_SkillTreeForm",
+    "TSe_TreeNodeBtn",
+    "TSe_NPCSkillTreeForm",
+    "THL_ShoppingManager",
+    "THL_ShoppingCarForm",
+    "THL_ShoppingForm"
+   ],
+   "strings": [
+    "Can\\'t learn Earth skill",
+    "Can\\'t learn Fire skill",
+    ", press to upgrade"
+   ],
+   "subsystem": "shop"
+  },
+  {
+   "region": 188,
+   "start": "240218",
+   "end": "24e58c",
+   "functions": 59,
+   "cited": 0,
+   "classes": [
+    "THL_ShoppingForm",
+    "THL_ShoppingCarForm",
+    "THL_BlackNameListForm"
+   ],
+   "strings": [
+    "Buy [",
+    " success. Spent: ",
+    "IM Points: "
+   ],
+   "subsystem": "shop"
+  },
+  {
+   "region": 189,
+   "start": "24ecb8",
+   "end": "24fdb0",
+   "functions": 14,
+   "cited": 0,
+   "classes": [
+    "THL_BlackNameListForm",
+    "TLoadingThread"
+   ],
+   "strings": [
+    "Failed",
+    "You\\'ve been blacklisted",
+    "Added ["
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 190,
+   "start": "250250",
+   "end": "2502a4",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TLoadingThread",
+    "TSe_Mp3PlayerForm"
+   ],
+   "strings": [],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 191,
+   "start": "25042c",
+   "end": "252e28",
+   "functions": 27,
+   "cited": 0,
+   "classes": [
+    "TSe_Mp3PlayerForm",
+    "TCY_ThingMenu",
+    "TCY_DebugGetItem"
+   ],
+   "strings": [
+    "*.mp3",
+    "                                                    ",
+    "Unknown Title"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 192,
+   "start": "253044",
+   "end": "2536f8",
+   "functions": 5,
+   "cited": 0,
+   "classes": [
+    "THL_MaidManager"
+   ],
+   "strings": [
+    "10008",
+    "btn_module_1",
+    "sound\\\\SEB0300.wav"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 193,
+   "start": "253b24",
+   "end": "254a38",
+   "functions": 5,
+   "cited": 0,
+   "classes": [
+    "TJK_RoleImage",
+    "TJK_mansel"
+   ],
+   "strings": [],
+   "subsystem": "creation"
+  },
+  {
+   "region": 194,
+   "start": "255494",
+   "end": "258d98",
+   "functions": 22,
+   "cited": 4,
+   "classes": [
+    "TJK_RoleImage",
+    "TJK_mansel",
+    "TCY_FNpcTeamMenu",
+    "TCY_EditNameMenu",
+    "TCY_GoFightNpcMenu",
+    "TCY_RidingMenu",
+    "TCY_GarrisonMenu",
+    "TCY_AskTeamMenu",
+    "TCY_FNpcManageMenu",
+    "TCY_InviteTeamMenu"
+   ],
+   "strings": [
+    "Allocate all points",
+    "Confirm Del Pwd",
+    "form_NewRole_1"
+   ],
+   "subsystem": "creation"
+  },
+  {
+   "region": 195,
+   "start": "259760",
+   "end": "25b1ac",
+   "functions": 18,
+   "cited": 0,
+   "classes": [
+    "TCY_AskTeamMenu",
+    "TCY_InviteTeamMenu",
+    "TCY_MoneyMenu",
+    "TCY_ThrowMoenyMenu"
+   ],
+   "strings": [
+    "In troubled world, act anonymously",
+    "btn_module_1"
+   ],
+   "subsystem": "hud"
+  },
+  {
+   "region": 196,
+   "start": "25b454",
+   "end": "25d0ec",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TCY_ThrowMoenyMenu",
+    "TCY_MoneyMenu",
+    "Tse_SkillButton",
+    "THotKeyImage",
+    "TRe_MiniPetInfo",
+    "TSe_MainStatus",
+    "TRE_BattleMainForm",
+    "TRe_BattleSkillForm",
+    "TRE_MainBtnForm",
+    "TRE_FuncBtnForm"
+   ],
+   "strings": [
+    "Arrow_L3",
+    "Arrow_R3"
+   ],
+   "subsystem": "hud"
+  },
+  {
+   "region": 197,
+   "start": "25fea0",
+   "end": "2a7258",
+   "functions": 465,
+   "cited": 46,
+   "classes": [
+    "TSe_TeamForm",
+    "THotKeyImage",
+    "TSe_EmotiomForm",
+    "Tse_SkillButton",
+    "TSe_HotKeyForm",
+    "TSe_StatusInfoForm",
+    "TSe_MainStatus",
+    "THL_MethodKey",
+    "tOneCooperateEventFightData",
+    "TCooperateFightManager"
+   ],
+   "strings": [
+    "Icon_Asn",
+    "Icon_Asn_2",
+    "Okey3"
+   ],
+   "subsystem": "hud"
+  },
+  {
+   "region": 198,
+   "start": "2a739c",
+   "end": "2a863c",
+   "functions": 24,
+   "cited": 0,
+   "classes": [
+    "TUH_SaveTradePassSetForm",
+    "TUH_SaveTradeUnLockForm",
+    "TNJ_PkForm",
+    "TIN_CooperateFightForm",
+    "TCreateCooperateFightSelectList",
+    "TIN_CooperateFightInfoForm",
+    "TIN_CooperateFightShowOneInfoForm",
+    "TIN_CooperateTeamForm"
+   ],
+   "strings": [
+    "In another team",
+    "Lack Pts, can\\'t do this",
+    "Created"
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 199,
+   "start": "2a8fb0",
+   "end": "2b1b98",
+   "functions": 109,
+   "cited": 0,
+   "classes": [
+    "TNJ_PkForm",
+    "TIN_CooperateFightForm",
+    "TCreateCooperateFightSelectList",
+    "TIN_CooperateFightInfoForm",
+    "TIN_CooperateFightShowOneInfoForm",
+    "TIN_CooperateTeamForm",
+    "TIN_CooperateChestForm",
+    "TUH_SaveTradePassSetForm",
+    "TBK_BiImgList",
+    "TBK_RoleImgList"
+   ],
+   "strings": [
+    "Code doesn\\'t match, try again",
+    "Set the Security Code",
+    "Num_White3_1"
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 200,
+   "start": "2b2d00",
+   "end": "2bbfe0",
+   "functions": 114,
+   "cited": 0,
+   "classes": [
+    "TBK_RoleImgList",
+    "TThingSaleForm",
+    "TMoneyAccountForm",
+    "TINNFNpcForm",
+    "TBK_AttrRegressForm",
+    "TBK_BiImgList",
+    "TBK_LeaveWordForm",
+    "TBK_ChartOrderForm",
+    "TFCompound2"
+   ],
+   "strings": [
+    "arrow_dw1",
+    "arrow_up1",
+    "Btn_Close_s_1"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 201,
+   "start": "2bc2d8",
+   "end": "2bc318",
+   "functions": 6,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 203,
+   "start": "2bc824",
+   "end": "2bc824",
+   "functions": 2,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 204,
+   "start": "2bc920",
+   "end": "2bca44",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "Tjo_SelectText",
+    "Tjo_TaskView",
+    "Tjo_GetTask",
+    "Tjo_MixItem",
+    "Tjo_OnLineTip",
+    "Tjo_Charge"
+   ],
+   "strings": [],
+   "subsystem": "services"
+  },
+  {
+   "region": 205,
+   "start": "2bd674",
+   "end": "2c1380",
+   "functions": 25,
+   "cited": 0,
+   "classes": [
+    "Tjo_SelectText",
+    "Tjo_OnLineTip",
+    "Tjo_TaskView",
+    "Tjo_Charge",
+    "TJK_sound_vol_Form"
+   ],
+   "strings": [
+    "Arrow_L3",
+    "Arrow_R3",
+    "icon_nopass_1"
+   ],
+   "subsystem": "services"
+  },
+  {
+   "region": 206,
+   "start": "2c155c",
+   "end": "2c2224",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TJK_sound_vol_Form",
+    "TFConnect"
+   ],
+   "strings": [],
+   "subsystem": "sound"
+  },
+  {
+   "region": 207,
+   "start": "2c2394",
+   "end": "2f2fd0",
+   "functions": 5,
+   "cited": 3,
+   "classes": [
+    "TAC_Twinkle",
+    "TAC_FaceSel"
+   ],
+   "strings": [],
+   "subsystem": "protocol"
+  },
+  {
+   "region": 209,
+   "start": "2f36c4",
+   "end": "2f3e0c",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TAC_FaceSel",
+    "TSe_ArmyForm",
+    "TSe_ArmyList",
+    "TSe_ArmyCommand",
+    "TSe_ArmyCreateForm",
+    "TCY_ModifyMemo",
+    "TSe_ChangeDeclareForm",
+    "TSe_ArmyDuty",
+    "TSe_ArmyRecruit"
+   ],
+   "strings": [],
+   "subsystem": "social"
+  },
+  {
+   "region": 210,
+   "start": "2f4a64",
+   "end": "2fd8f0",
+   "functions": 90,
+   "cited": 0,
+   "classes": [
+    "TSe_ArmyForm",
+    "TSe_AllyListForm",
+    "TSe_ArmyList",
+    "TSe_ArmyCreateForm",
+    "TSe_ChangeDeclareForm",
+    "TSe_ArmyRecruit",
+    "TSe_ArmyWeaponInfo",
+    "TSe_ArmyDuty",
+    "Trole_show"
+   ],
+   "strings": [
+    "Disband your Guild?",
+    "Founded: ",
+    "Members: "
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 211,
+   "start": "2fdc40",
+   "end": "302cf8",
+   "functions": 27,
+   "cited": 9,
+   "classes": [
+    "TBKSimServer"
+   ],
+   "strings": [
+    ".jxan"
+   ],
+   "subsystem": "events"
+  },
+  {
+   "region": 212,
+   "start": "302d90",
+   "end": "302e00",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TBKSimServer",
+    "TEveTreasureLight",
+    "TEventManage"
+   ],
+   "strings": [],
+   "subsystem": "events"
+  },
+  {
+   "region": 213,
+   "start": "3030ec",
+   "end": "30a510",
+   "functions": 41,
+   "cited": 11,
+   "classes": [
+    "CH_TTrafficMenu",
+    "CH_TMiniMapForm",
+    "CH_TMiniMapForm_World",
+    "CH_PetStatusForm",
+    "CH_StarSysExit",
+    "CH_StarSystem",
+    "CH_NoteBook"
+   ],
+   "strings": [
+    "DoorLight",
+    "SmallDoorLight",
+    "Collecting, can\\'t act"
+   ],
+   "subsystem": "events"
+  },
+  {
+   "region": 214,
+   "start": "30add4",
+   "end": "312d24",
+   "functions": 48,
+   "cited": 0,
+   "classes": [
+    "CH_TMiniMapForm",
+    "CH_TMiniMapForm_World",
+    "CH_PetStatusForm",
+    "CH_NoteBook",
+    "CH_StarSysExit",
+    "Tse_MapFrame",
+    "TSe_SmallMap"
+   ],
+   "strings": [
+    "MiniMap_1",
+    "MiniMap_2",
+    "Btn_Minimize_1"
+   ],
+   "subsystem": "minimap"
+  },
+  {
+   "region": 215,
+   "start": "312f74",
+   "end": "314b00",
+   "functions": 23,
+   "cited": 0,
+   "classes": [
+    "Tse_MapFrame"
+   ],
+   "strings": [
+    "Icon_ThrowDown",
+    ".MapData",
+    "user\\\\Map\\\\"
+   ],
+   "subsystem": "minimap"
+  },
+  {
+   "region": 216,
+   "start": "314bf4",
+   "end": "314bf4",
+   "functions": 2,
+   "cited": 1,
+   "classes": [
+    "TGmManage"
+   ],
+   "strings": [],
+   "subsystem": "gm"
+  },
+  {
+   "region": 217,
+   "start": "315390",
+   "end": "318d94",
+   "functions": 33,
+   "cited": 0,
+   "classes": [
+    "TCY_TradeImage",
+    "TCY_TradeMenu",
+    "TCY_PopFNpcInfoForm",
+    "TCY_TradeFNpcMenu",
+    "TCY_VenderBody",
+    "TCY_VenderImage",
+    "TCY_VenderMenu",
+    "TCY_VendeCardMenu"
+   ],
+   "strings": [
+    " GMID:",
+    "Forbidden: ",
+    "Channel: "
+   ],
+   "subsystem": "trade"
+  },
+  {
+   "region": 218,
+   "start": "319ea0",
+   "end": "332c4c",
+   "functions": 145,
+   "cited": 0,
+   "classes": [
+    "TCY_TradeFNpcMenu",
+    "TCY_VenderMenu",
+    "TTH_PetStallForm",
+    "TTH_BuyPetSallForm",
+    "TCY_BuyVenderMenu",
+    "TTH_BuyUtensilForm",
+    "TCY_TradeMenu",
+    "TRe_ItemStallForm",
+    "TFTalk"
+   ],
+   "strings": [
+    "Close Stall first",
+    "Target uses Stall",
+    "Already changed"
+   ],
+   "subsystem": "trade"
+  },
+  {
+   "region": 219,
+   "start": "332eac",
+   "end": "33360c",
+   "functions": 5,
+   "cited": 1,
+   "classes": [
+    "TSteam",
+    "TLeaf",
+    "TLeaf2",
+    "TSnow",
+    "TRain",
+    "TStar",
+    "TBribe",
+    "TBubble"
+   ],
+   "strings": [],
+   "subsystem": "movies"
+  },
+  {
+   "region": 220,
+   "start": "333998",
+   "end": "338aa4",
+   "functions": 85,
+   "cited": 19,
+   "classes": [
+    "Tft_Ground",
+    "Tft_Role",
+    "Tft_Picture",
+    "Tft_Talk",
+    "Tft_Crunode",
+    "Tft_Efficacy",
+    "TMovie"
+   ],
+   "strings": [
+    "icon_leaves",
+    "icon_Snow1",
+    "icon_Snow2"
+   ],
+   "subsystem": "movies"
+  },
+  {
+   "region": 221,
+   "start": "338e88",
+   "end": "34397c",
+   "functions": 42,
+   "cited": 16,
+   "classes": [
+    "TSe_SkinSelectForm"
+   ],
+   "strings": [
+    "50041",
+    "Menu\\\\Skins\\\\default\\\\",
+    "data\\\\"
+   ],
+   "subsystem": "movies"
+  },
+  {
+   "region": 222,
+   "start": "343b10",
+   "end": "3440c0",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TSe_SkinSelectForm",
+    "TFightForm1",
+    "TCY_PoseListMenu",
+    "TCY_ActionListMenu",
+    "TCY_SkillListMenu",
+    "TCY_FightPlayerMenu",
+    "TCY_FightEnemyMenu",
+    "TCY_SoundListMenu"
+   ],
+   "strings": [
+    "Btn_Close_1",
+    "Btn_Close_s_1"
+   ],
+   "subsystem": "movies"
+  },
+  {
+   "region": 223,
+   "start": "34479c",
+   "end": "34a4bc",
+   "functions": 14,
+   "cited": 0,
+   "classes": [
+    "TCY_FightPlayerMenu",
+    "TSe_TalkMsgFormPlus",
+    "TRe_TalkMsgFormPlus_1",
+    "TRe_TalkMsgFormPlus_2",
+    "THL_TalkMsgFormPlus_1",
+    "THL_TalkMsgFormPlus_2"
+   ],
+   "strings": [
+    "Panel3",
+    "btn_module_1",
+    "Panel3"
+   ],
+   "subsystem": "talk"
+  },
+  {
+   "region": 224,
+   "start": "34b9e4",
+   "end": "34e70c",
+   "functions": 34,
+   "cited": 12,
+   "classes": [
+    "TRe_TalkMsgFormPlus_1",
+    "TRe_TalkMsgFormPlus_2",
+    "TCY_BeeMenu",
+    "CH_TTrafficMenu",
+    "TSe_TalkMsgFormPlus",
+    "THL_TalkMsgFormPlus_1",
+    "THL_TalkMsgFormPlus_2",
+    "TCY_AskTeamMenu",
+    "TFT_PopHumanInfoForm",
+    "TCY_ThrowThingNumMenu"
+   ],
+   "strings": [
+    "Btn_Close_1",
+    "Icon_Nextone_1",
+    "_1010"
+   ],
+   "subsystem": "talk"
+  },
+  {
+   "region": 225,
+   "start": "34fad4",
+   "end": "36e008",
+   "functions": 202,
+   "cited": 7,
+   "classes": [
+    "TRe_GarageForm",
+    "TSe_EquipForm2",
+    "TRe_ThingGrid25Form",
+    "TRe_TradeUtensilForm",
+    "TRe_SaleToNpcForm",
+    "TRe_ItemGridForm",
+    "TRe_TradeItemForm",
+    "TRe_ItemStallForm",
+    "TFormula",
+    "TCalculator"
+   ],
+   "strings": [
+    "Can\\'t be placed",
+    "Can\\'t send, wrong data",
+    "Delivery canceled"
+   ],
+   "subsystem": "items"
+  },
+  {
+   "region": 227,
+   "start": "36e674",
+   "end": "36e9e4",
+   "functions": 11,
+   "cited": 4,
+   "classes": [
+    "CH_TMotionSkill",
+    "CH_TBattleSound",
+    "CH_TBattleGround",
+    "CH_TLight",
+    "CH_TBattleMotion"
+   ],
+   "strings": [],
+   "subsystem": "battle"
+  },
+  {
+   "region": 228,
+   "start": "36f144",
+   "end": "377054",
+   "functions": 90,
+   "cited": 0,
+   "classes": [
+    "TAvoid",
+    "TEnterFight",
+    "TRE_Skill",
+    "TSkill",
+    "TAttack"
+   ],
+   "strings": [],
+   "subsystem": "battle"
+  },
+  {
+   "region": 230,
+   "start": "378620",
+   "end": "388fac",
+   "functions": 69,
+   "cited": 0,
+   "classes": [
+    "TFightHum",
+    "TFightField",
+    "TFightManage",
+    "TNumber"
+   ],
+   "strings": [
+    "_bt21",
+    "_bt22",
+    "S60000"
+   ],
+   "subsystem": "battle"
+  },
+  {
+   "region": 231,
+   "start": "389174",
+   "end": "3a4258",
+   "functions": 186,
+   "cited": 3,
+   "classes": [
+    "TFightHum",
+    "TDZ_TestForm1",
+    "TDZ_WillCloseForm1",
+    "TBK_GameFormRoot",
+    "TBK_GamePlatform",
+    "TBK_GamePopupMenu",
+    "TBK_GameFight",
+    "TBK_GameSystem",
+    "TAC_ICQSystem"
+   ],
+   "strings": [
+    "SpecEffectBg",
+    "Icon_Asn_2",
+    "Icon_Clergyman_2"
+   ],
+   "subsystem": "battle"
+  },
+  {
+   "region": 232,
+   "start": "3a4ee4",
+   "end": "3ac9b4",
+   "functions": 52,
+   "cited": 1,
+   "classes": [
+    "TCY_OptionForm",
+    "TFT_ChannelForm",
+    "TCY_SystemTeam",
+    "TDZ_WillCloseForm1",
+    "TLD_Top100Form"
+   ],
+   "strings": [
+    "Leave this team to join another",
+    "sound\\\\wav0151.wav",
+    "sound\\\\wav0151.wav"
+   ],
+   "subsystem": "system"
+  },
+  {
+   "region": 234,
+   "start": "3acbe0",
+   "end": "3b2fb4",
+   "functions": 34,
+   "cited": 0,
+   "classes": [
+    "TLD_Top100Form",
+    "TINNManage"
+   ],
+   "strings": [
+    "Num_MainInfo",
+    "Icon_Asn",
+    "Icon_Clergyman"
+   ],
+   "subsystem": "system"
+  },
+  {
+   "region": 235,
+   "start": "3b3044",
+   "end": "3b420c",
+   "functions": 9,
+   "cited": 0,
+   "classes": [
+    "TCY_OrganManage"
+   ],
+   "strings": [],
+   "subsystem": "system"
+  },
+  {
+   "region": 237,
+   "start": "3b4328",
+   "end": "3b9660",
+   "functions": 66,
+   "cited": 0,
+   "classes": [],
+   "strings": [
+    "Unable to apply, player is busy",
+    "Player ",
+    "Name already used"
+   ],
+   "subsystem": "system"
+  },
+  {
+   "region": 238,
+   "start": "3b9c00",
+   "end": "3ba800",
+   "functions": 6,
+   "cited": 3,
+   "classes": [
+    "Tjo_Cursor",
+    "TMouseInfo"
+   ],
+   "strings": [],
+   "subsystem": "cursor"
+  },
+  {
+   "region": 239,
+   "start": "3ba9d8",
+   "end": "3bbfb0",
+   "functions": 9,
+   "cited": 4,
+   "classes": [
+    "TSportManage",
+    "TBaseSport"
+   ],
+   "strings": [
+    "Cursor15",
+    "Cursor17"
+   ],
+   "subsystem": "cursor"
+  },
+  {
+   "region": 240,
+   "start": "3bc120",
+   "end": "3be64c",
+   "functions": 17,
+   "cited": 6,
+   "classes": [
+    "Tsport_SheepDream",
+    "TSportCatchDoll",
+    "TSportBoxing",
+    "TSportMario",
+    "TSportMarioSec",
+    "TSportMarioThird",
+    "TSport_MemoryGame",
+    "TPumpkin"
+   ],
+   "strings": [
+    "11021"
+   ],
+   "subsystem": "minigames"
+  },
+  {
+   "region": 241,
+   "start": "3be684",
+   "end": "3bedb8",
+   "functions": 9,
+   "cited": 0,
+   "classes": [
+    "TAC_ICQList",
+    "TAC_ICQFuncJoin",
+    "TSe_SendMailForm",
+    "TSe_ReadMailForm"
+   ],
+   "strings": [],
+   "subsystem": "social"
+  },
+  {
+   "region": 242,
+   "start": "3bf274",
+   "end": "3c62dc",
+   "functions": 69,
+   "cited": 1,
+   "classes": [
+    "TAC_ICQList",
+    "TSe_SendMailForm",
+    "TSe_ReadMailForm",
+    "TAC_ICQFuncJoin",
+    "TTradeManage",
+    "TTradeFNpcManage",
+    "TTradeUtensilManage",
+    "TVenderManage"
+   ],
+   "strings": [
+    "sound\\\\wav0151.wav",
+    "Already your friendW",
+    "Can\\'t add to friends"
+   ],
+   "subsystem": "social"
+  },
+  {
+   "region": 243,
+   "start": "3c674c",
+   "end": "3c84cc",
+   "functions": 9,
+   "cited": 0,
+   "classes": [
+    "TLight"
+   ],
+   "strings": [
+    "Can\\'t trade here",
+    "Close Stall first",
+    "Can\\'t have few trades"
+   ],
+   "subsystem": "trade"
+  },
+  {
+   "region": 244,
+   "start": "3c856c",
+   "end": "3c9420",
+   "functions": 21,
+   "cited": 3,
+   "classes": [
+    "TRE_FurnitureMng"
+   ],
+   "strings": [
+    "Shadow",
+    "SkillLight\\\\"
+   ],
+   "subsystem": "housing"
+  },
+  {
+   "region": 245,
+   "start": "3c96f8",
+   "end": "3cd798",
+   "functions": 51,
+   "cited": 1,
+   "classes": [
+    "TFItem"
+   ],
+   "strings": [],
+   "subsystem": "items"
+  },
+  {
+   "region": 246,
+   "start": "3cd920",
+   "end": "3d39a8",
+   "functions": 157,
+   "cited": 5,
+   "classes": [
+    "TSe_itemObject",
+    "TSe_ItemImage",
+    "TSe_DragItem"
+   ],
+   "strings": [],
+   "subsystem": "items"
+  },
+  {
+   "region": 247,
+   "start": "3d3c3c",
+   "end": "3d5fb8",
+   "functions": 24,
+   "cited": 0,
+   "classes": [
+    "TShop_ItemImage",
+    "TArticleImage",
+    "TFT_ItemImage",
+    "TCY_ItemImage",
+    "TCY_WebImage",
+    "TSe_ItemImage",
+    "TSe_DonateItem",
+    "TCY_CheckImage",
+    "TBankThing",
+    "TThing"
+   ],
+   "strings": [
+    "TSe_itemObject",
+    "blink",
+    "TSe_ItemImage"
+   ],
+   "subsystem": "items"
+  },
+  {
+   "region": 248,
+   "start": "3d73b8",
+   "end": "3f5a6c",
+   "functions": 213,
+   "cited": 4,
+   "classes": [
+    "TGdThing",
+    "TStallInFurItem",
+    "TGdUtensil",
+    "TVenderItem",
+    "THomePillar",
+    "TUtensilManage",
+    "TPillarManage",
+    "TExhibitFurItem",
+    "TGroundObj"
+   ],
+   "strings": [
+    "Can\\'t do while fishing",
+    "Can\\'t perform during remote control",
+    "\\t Confirm?"
+   ],
+   "subsystem": "housing"
+  },
+  {
+   "region": 249,
+   "start": "3f5ba8",
+   "end": "3f710c",
+   "functions": 9,
+   "cited": 3,
+   "classes": [
+    "TGroundObj",
+    "TMap"
+   ],
+   "strings": [],
+   "subsystem": "ground"
+  },
+  {
+   "region": 250,
+   "start": "3f7478",
+   "end": "3fb960",
+   "functions": 37,
+   "cited": 4,
+   "classes": [
+    "TEquip",
+    "TEquipManage"
+   ],
+   "strings": [
+    "Fairy Whisper expansion not found",
+    "King\\'s Glory exnapsion not found",
+    "Dark Spell expansion not found"
+   ],
+   "subsystem": "items"
+  },
+  {
+   "region": 251,
+   "start": "3fbb18",
+   "end": "3fda04",
+   "functions": 16,
+   "cited": 2,
+   "classes": [
+    "TAccountList",
+    "TSe_SelectServer",
+    "TSe_IDPassored",
+    "TSe_SelectCharacter"
+   ],
+   "strings": [
+    "Can\\'t change equips",
+    "Can\\'t use on it",
+    "Can\\'t change equips"
+   ],
+   "subsystem": "login"
+  },
+  {
+   "region": 252,
+   "start": "3fde2c",
+   "end": "402d48",
+   "functions": 39,
+   "cited": 28,
+   "classes": [
+    "TSe_SelectServer",
+    "TSe_IDPassored",
+    "TSe_SelectCharacter",
+    "TAccountList",
+    "TAC_GMForm",
+    "TAC_Question"
+   ],
+   "strings": [
+    "TopLine",
+    "user\\\\save.dat",
+    "TopLine"
+   ],
+   "subsystem": "login"
+  },
+  {
+   "region": 253,
+   "start": "403044",
+   "end": "403728",
+   "functions": 9,
+   "cited": 0,
+   "classes": [
+    "TAC_Question",
+    "TCY_DoorLight",
+    "TCY_Door"
+   ],
+   "strings": [],
+   "subsystem": "events"
+  },
+  {
+   "region": 254,
+   "start": "403910",
+   "end": "403c80",
+   "functions": 11,
+   "cited": 3,
+   "classes": [
+    "Tsound"
+   ],
+   "strings": [],
+   "subsystem": "events"
+  },
+  {
+   "region": 255,
+   "start": "403e50",
+   "end": "405e88",
+   "functions": 23,
+   "cited": 5,
+   "classes": [
+    "TFMark"
+   ],
+   "strings": [
+    "Sound\\\\BGM0003.wav",
+    "Sound\\\\BGM0014.wav"
+   ],
+   "subsystem": "sound"
+  },
+  {
+   "region": 256,
+   "start": "405f80",
+   "end": "405f8c",
+   "functions": 5,
+   "cited": 0,
+   "classes": [
+    "TCY_TeamManage",
+    "TFNpcManage"
+   ],
+   "strings": [],
+   "subsystem": "system"
+  },
+  {
+   "region": 257,
+   "start": "406848",
+   "end": "40c1f0",
+   "functions": 31,
+   "cited": 1,
+   "classes": [
+    "TGround"
+   ],
+   "strings": [
+    "\\n disbanded",
+    "\\n left team",
+    "In fishing"
+   ],
+   "subsystem": "ground"
+  },
+  {
+   "region": 258,
+   "start": "40c27c",
+   "end": "40c3c8",
+   "functions": 3,
+   "cited": 0,
+   "classes": [
+    "TForm2"
+   ],
+   "strings": [
+    "LogPic",
+    "Icon_LoginLogo_1"
+   ],
+   "subsystem": "login"
+  },
+  {
+   "region": 259,
+   "start": "40c684",
+   "end": "40c998",
+   "functions": 4,
+   "cited": 0,
+   "classes": [
+    "CH_TRidePet"
+   ],
+   "strings": [],
+   "subsystem": "pets"
+  },
+  {
+   "region": 260,
+   "start": "40cb70",
+   "end": "40f394",
+   "functions": 13,
+   "cited": 0,
+   "classes": [
+    "TSe_HInputDevice"
+   ],
+   "strings": [
+    "\\\\Data\\\\AdjustRidePetPos.txt",
+    "fixedposonfirst"
+   ],
+   "subsystem": "pets"
+  },
+  {
+   "region": 262,
+   "start": "40f4b8",
+   "end": "40f988",
+   "functions": 12,
+   "cited": 7,
+   "classes": [
+    "THuman",
+    "TBaseNpc",
+    "TMapNpc",
+    "TFollowNpc",
+    "TBasePlayer",
+    "TPlayers",
+    "TWorldPlayer",
+    "TWorldPKPlayers"
+   ],
+   "strings": [],
+   "subsystem": "roles"
+  },
+  {
+   "region": 263,
+   "start": "41010c",
+   "end": "458cd8",
+   "functions": 525,
+   "cited": 38,
+   "classes": [
+    "TPlayers",
+    "TBasePlayer",
+    "TWorldPKPlayers",
+    "TPlayer",
+    "CH_TTrafficTool",
+    "TBaseNpc",
+    "TMapNpc",
+    "TstallPet"
+   ],
+   "strings": [
+    "icon_HP2",
+    "icon_rail2",
+    "Can\\'t do in battle!"
+   ],
+   "subsystem": "roles"
+  },
+  {
+   "region": 264,
+   "start": "458ddc",
+   "end": "45d090",
+   "functions": 30,
+   "cited": 2,
+   "classes": [
+    "TIJL_JpgToBmp"
+   ],
+   "strings": [
+    "Can\\'t do from a transport",
+    "Can\\'t do in trading",
+    "Trade is locked"
+   ],
+   "subsystem": "roles"
+  },
+  {
+   "region": 265,
+   "start": "45d1d8",
+   "end": "45dbdc",
+   "functions": 11,
+   "cited": 0,
+   "classes": [
+    "TSe_MrgData",
+    "TMrgDataList",
+    "TSe_CachePicDB"
+   ],
+   "strings": [
+    "Assertion failure"
+   ],
+   "subsystem": "seui"
+  },
+  {
+   "region": 266,
+   "start": "45e048",
+   "end": "464d74",
+   "functions": 67,
+   "cited": 5,
+   "classes": [
+    "TSe_UIHandler",
+    "TSe_GrBasic",
+    "TSe_Component",
+    "TSe_ScrollButton",
+    "TSe_ProcessBar",
+    "TSe_SelectText",
+    "TSe_SelectTextPlus",
+    "TBK_ImgListBox"
+   ],
+   "strings": [
+    "*.bmp",
+    "icon_sk",
+    "No file "
+   ],
+   "subsystem": "seui"
+  },
+  {
+   "region": 267,
+   "start": "4663b8",
+   "end": "47b8d8",
+   "functions": 403,
+   "cited": 212,
+   "classes": [
+    "TSe_ShortMsgPanel",
+    "TBK_ImgListBox",
+    "TCJ_ComboBox",
+    "TTH_VendingItem",
+    "TPropertyList",
+    "TBK_BiImgList",
+    "TAccountList",
+    "TSe_SelectText",
+    "TDupMisManage"
+   ],
+   "strings": [
+    "Tse_GrBasic",
+    "TRe_CompoundForm",
+    "button"
+   ],
+   "subsystem": "seui"
+  },
+  {
+   "region": 268,
+   "start": "47bb08",
+   "end": "47bc88",
+   "functions": 7,
+   "cited": 0,
+   "classes": [
+    "TFSceneData"
+   ],
+   "strings": [],
+   "subsystem": "ground"
+  },
+  {
+   "region": 269,
+   "start": "47be24",
+   "end": "47c7fc",
+   "functions": 6,
+   "cited": 2,
+   "classes": [
+    "TResultData",
+    "TBasePart",
+    "TConvey",
+    "TCvyMng",
+    "TCdnData",
+    "TEveData",
+    "TEveVender",
+    "TRe_Npc"
+   ],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 270,
+   "start": "47d1e8",
+   "end": "47fcc0",
+   "functions": 30,
+   "cited": 0,
+   "classes": [
+    "TRe_Npc",
+    "TEveData",
+    "TCdnData",
+    "TResultData",
+    "TEveVender",
+    "TBasePart",
+    "TRE_Scene",
+    "TRE_Goods",
+    "TResult",
+    "TLogic"
+   ],
+   "strings": [
+    "Fail!! When ",
+    "Read Battle.",
+    "Read Battle."
+   ],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 271,
+   "start": "48039c",
+   "end": "480a40",
+   "functions": 9,
+   "cited": 0,
+   "classes": [
+    "TFSkill"
+   ],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 272,
+   "start": "480b74",
+   "end": "4816d8",
+   "functions": 16,
+   "cited": 0,
+   "classes": [
+    "TFNpc"
+   ],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 273,
+   "start": "4817fc",
+   "end": "48269c",
+   "functions": 19,
+   "cited": 1,
+   "classes": [],
+   "strings": [],
+   "subsystem": "gamedata"
+  },
+  {
+   "region": 275,
+   "start": "4827a8",
+   "end": "485d44",
+   "functions": 46,
+   "cited": 5,
+   "classes": [
+    "Twb_MemSur",
+    "Twb_PlainPic"
+   ],
+   "strings": [
+    "icon_svip_",
+    "icon_vip_",
+    "Axe      "
+   ],
+   "subsystem": "text"
+  },
+  {
+   "region": 276,
+   "start": "4868b8",
+   "end": "486aac",
+   "functions": 10,
+   "cited": 2,
+   "classes": [
+    "Twb_MemSur",
+    "Twb_PlainPic",
+    "Twb_Chinese"
+   ],
+   "strings": [],
+   "subsystem": "text"
+  },
+  {
+   "region": 277,
+   "start": "486e64",
+   "end": "489ca0",
+   "functions": 32,
+   "cited": 5,
+   "classes": [
+    "TSe_SizeBtn",
+    "TSe_CharMsg",
+    "TTalkMsgForm"
+   ],
+   "strings": [],
+   "subsystem": "chat"
+  },
+  {
+   "region": 278,
+   "start": "48ac28",
+   "end": "491138",
+   "functions": 46,
+   "cited": 6,
+   "classes": [
+    "TSe_CharMsg",
+    "TSe_SizeBtn",
+    "TTalkMsgForm",
+    "TfMouse"
+   ],
+   "strings": [
+    "(Bouquet):",
+    "(System):",
+    "Bomb Slots"
+   ],
+   "subsystem": "chat"
+  },
+  {
+   "region": 279,
+   "start": "4913a4",
+   "end": "4913cc",
+   "functions": 2,
+   "cited": 0,
+   "classes": [
+    "TForm1",
+    "TFPSCounter",
+    "TFCtrl"
+   ],
+   "strings": [],
+   "subsystem": "mainform"
+  },
+  {
+   "region": 280,
+   "start": "492ac4",
+   "end": "4abccc",
+   "functions": 183,
+   "cited": 17,
+   "classes": [
+    "TForm4"
+   ],
+   "strings": [],
+   "subsystem": "mainform"
+  },
+  {
+   "region": 281,
+   "start": "4abfa0",
+   "end": "4ac61c",
+   "functions": 7,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "mainform"
+  },
+  {
+   "region": 283,
+   "start": "4ac6d4",
+   "end": "4ac6d4",
+   "functions": 1,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "mainform"
+  },
+  {
+   "region": 284,
+   "start": "4acfe4",
+   "end": "4acfe4",
+   "functions": 1,
+   "cited": 0,
+   "classes": [],
+   "strings": [],
+   "subsystem": "mainform"
+  }
+ ],
+ "subsystems": [
+  {
+   "key": "rtl",
+   "title": "Delphi RTL and VCL",
+   "go": "Go standard library",
+   "status": "replaced",
+   "notes": "System, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ComCtrls, Grids, OLE and TWebBrowser. Only behaviour the game relies on is reproduced (string handling, Delphi date doubles, VCL click order).",
+   "regions": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    30,
+    33,
+    35,
+    60,
+    65,
+    67,
+    68,
+    69,
+    70,
+    72,
+    74,
+    76,
+    78,
+    79,
+    82,
+    90,
+    91,
+    120,
+    126,
+    127,
+    128
+   ],
+   "functions": 3879,
+   "cited": 5,
+   "ranges": [
+    "011280-0172d8",
+    "0173d0-0174d8",
+    "017544-018128",
+    "018258-018258",
+    "0190b0-01e5d4",
+    "01e894-01e8ec",
+    "01edcc-01f684",
+    "020cd4-029c50",
+    "02acf4-033798",
+    "033a78-033b20",
+    "033b64-034330",
+    "034368-034a50",
+    "034afc-034afc",
+    "034b34-034cdc",
+    "034d90-034dec",
+    "039f9c-03dd20",
+    "03df38-03e570",
+    "03e6ec-03e6ec",
+    "0403dc-04da1c",
+    "04df48-04e990",
+    "04eb14-04fe08",
+    "050006-055f74",
+    "058540-0621c4",
+    "062270-062270",
+    "062320-062320",
+    "06347c-0642c8",
+    "064338-064cb8",
+    "0f0001-0f0001",
+    "0f8fcc-104a34",
+    "10535c-105374",
+    "1053b4-105a20",
+    "105d14-105f04",
+    "106204-106638",
+    "10681c-1073e8",
+    "107af4-108d58",
+    "109668-10c1b4",
+    "10cf98-10d150",
+    "10d2c0-10d5ec",
+    "10e994-10e994",
+    "10f2c8-10f384",
+    "10f420-10f420",
+    "129ff8-12a0b4",
+    "12a85c-12b644",
+    "12bcc8-12e41c",
+    "12f8d4-1372fc"
+   ]
+  },
+  {
+   "key": "graphics",
+   "title": "Graphics backend (DelphiX, DirectDraw, JPEG, rodraw2)",
+   "go": "client/wlo/surface, Ebitengine",
+   "status": "replaced",
+   "notes": "TDXDraw and DirectDraw surfaces become surface.Surface (RGB565) presented by Ebitengine. rodraw2.dll blits are ported one by one as they are met: colour key, light alpha, alpha fill.",
+   "regions": [
+    36,
+    39,
+    40,
+    42,
+    43,
+    53,
+    55,
+    58,
+    59,
+    66
+   ],
+   "functions": 670,
+   "cited": 2,
+   "ranges": [
+    "064e84-064f04",
+    "0658c8-065b2c",
+    "065d68-0680dc",
+    "068290-070354",
+    "071624-0787bc",
+    "07e1d4-07e32c",
+    "07e690-091c8c",
+    "092458-092458",
+    "092538-0927e4",
+    "104b58-104bb0"
+   ]
+  },
+  {
+   "key": "audio",
+   "title": "Audio backend (DirectSound, Ogg, MCI)",
+   "go": "client/wlo/app (sound.go, music.go), Ebitengine audio",
+   "status": "replaced",
+   "notes": "TDXSound buffers, Ogg streams and TMediaPlayer become Ebitengine audio players over the exported PCM WAV files.",
+   "regions": [
+    50,
+    51,
+    52,
+    80,
+    81,
+    101,
+    122,
+    124,
+    140,
+    141,
+    142
+   ],
+   "functions": 256,
+   "cited": 0,
+   "ranges": [
+    "07ad54-07b7ac",
+    "07bdec-07e030",
+    "07e0dc-07e0dc",
+    "10dbe0-10dc08",
+    "10ddd0-10e880",
+    "117f54-11b594",
+    "12a1ac-12a2b8",
+    "12a3c0-12a4c4",
+    "151a98-151b48",
+    "151d04-152584",
+    "152770-152a2c"
+   ]
+  },
+  {
+   "key": "input",
+   "title": "Input backend (DXInput)",
+   "go": "Ebitengine input",
+   "status": "replaced",
+   "notes": "Keyboard, mouse and joystick devices.",
+   "regions": [
+    99,
+    100
+   ],
+   "functions": 108,
+   "cited": 1,
+   "ranges": [
+    "113288-113b14",
+    "114680-117b74"
+   ]
+  },
+  {
+   "key": "transport",
+   "title": "Network transport (sockets, HTTP)",
+   "go": "client/wlo/login (net.go), Go net",
+   "status": "replaced",
+   "notes": "TClientSocket and the NetMasters HTTP components. The packet framing and XOR are ported in login.",
+   "regions": [
+    47,
+    48,
+    49,
+    98,
+    113,
+    115,
+    116,
+    117,
+    118,
+    119
+   ],
+   "functions": 180,
+   "cited": 0,
+   "ranges": [
+    "078900-0789c8",
+    "078ad4-078b6c",
+    "079238-07aa9c",
+    "112400-1130d8",
+    "123e70-1243e0",
+    "124998-126e68",
+    "127048-1271ac",
+    "127424-127498",
+    "1279c4-127bdc",
+    "12814c-129c3c"
+   ]
+  },
+  {
+   "key": "assets",
+   "title": "Asset decryption and data files",
+   "go": "internal/clientassets, internal/assets",
+   "status": "ported",
+   "notes": "JMA/JXAN decryption, .wmg data; the exports under data/ replace runtime decoding.",
+   "regions": [
+    97,
+    83
+   ],
+   "functions": 47,
+   "cited": 4,
+   "ranges": [
+    "110e28-111e80",
+    "10e9cc-10eeec"
+   ]
+  },
+  {
+   "key": "mainform",
+   "title": "Main form and frame loop (TForm4)",
+   "go": "client/wlo/app (app.go, window.go)",
+   "status": "partial",
+   "notes": "FormCreate, the 30 ms frame timer (timeSetEvent \u2192 message 0x8002 \u2192 FUN_004a1d60), the sound table, music start. Ported: the frame order for login and world, map music, ambience. Not yet: the remaining FormCreate steps, window modes, most per-frame managers.",
+   "regions": [
+    279,
+    280,
+    281,
+    283,
+    284
+   ],
+   "functions": 194,
+   "cited": 17,
+   "ranges": [
+    "4913a4-4913cc",
+    "492ac4-4abccc",
+    "4abfa0-4ac61c",
+    "4ac6d4-4ac6d4",
+    "4acfe4-4acfe4"
+   ]
+  },
+  {
+   "key": "protocol",
+   "title": "Packet dispatch (send and receive)",
+   "go": "client/wlo/app (app.go dispatch), internal/protocol",
+   "status": "partial",
+   "notes": "FUN_002c2394 sends, FUN_002dde1c receives. See the command coverage table.",
+   "regions": [
+    206,
+    207
+   ],
+   "functions": 16,
+   "cited": 3,
+   "ranges": [
+    "2c155c-2c2224",
+    "2c2394-2f2fd0"
+   ]
+  },
+  {
+   "key": "seui",
+   "title": "UI framework (se_UI, picture database)",
+   "go": "client/wlo/seui, client/wlo/picdb",
+   "status": "ported",
+   "notes": "TSe_UIHandler, TSe_GrBasic and the components, buttons, editors, lists, scroll bars, forms; TSe_CachePicDB. Components still unported are noted where met (chat log hit test, item grids).",
+   "regions": [
+    265,
+    266,
+    267
+   ],
+   "functions": 481,
+   "cited": 217,
+   "ranges": [
+    "45d1d8-45dbdc",
+    "45e048-464d74",
+    "4663b8-47b8d8"
+   ]
+  },
+  {
+   "key": "text",
+   "title": "Text rendering",
+   "go": "client/wlo/text",
+   "status": "ported",
+   "notes": "Twb_MemSur, Twb_PlainPic, Twb_Chinese bitmap fonts.",
+   "regions": [
+    275,
+    276
+   ],
+   "functions": 56,
+   "cited": 7,
+   "ranges": [
+    "4827a8-485d44",
+    "4868b8-486aac"
+   ]
+  },
+  {
+   "key": "login",
+   "title": "Login, server and character selection",
+   "go": "client/wlo/login",
+   "status": "ported",
+   "notes": "Server list and health checks (TServerDetect), account and password forms, character selection, deletion, notices.",
+   "regions": [
+    94,
+    96,
+    251,
+    252,
+    258
+   ],
+   "functions": 75,
+   "cited": 30,
+   "ranges": [
+    "11010c-110acc",
+    "110b9c-110b9c",
+    "3fbb18-3fda04",
+    "3fde2c-402d48",
+    "40c27c-40c3c8"
+   ]
+  },
+  {
+   "key": "creation",
+   "title": "Character creation",
+   "go": "client/wlo/login (createrole.go, rolepanel.go)",
+   "status": "ported",
+   "notes": "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173).",
+   "regions": [
+    193,
+    194
+   ],
+   "functions": 27,
+   "cited": 4,
+   "ranges": [
+    "253b24-254a38",
+    "255494-258d98"
+   ]
+  },
+  {
+   "key": "roles",
+   "title": "Roles: players, NPCs, sprites",
+   "go": "client/wlo/role, client/wlo/world",
+   "status": "partial",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping. Not yet: emotes and poses, riding, transforms, follow NPCs, wandering NPCs, NPC turning.",
+   "regions": [
+    262,
+    263,
+    264
+   ],
+   "functions": 567,
+   "cited": 47,
+   "ranges": [
+    "40f4b8-40f988",
+    "41010c-458cd8",
+    "458ddc-45d090"
+   ]
+  },
+  {
+   "key": "ground",
+   "title": "Ground, scene objects and map data",
+   "go": "client/wlo/world",
+   "status": "partial",
+   "notes": "TGround, TGroundObj, TMap, TFSceneData. Ported: scene layers, walk grid, objects and depth order, sound zones, camera. Not yet: translucent objects, the map's other lists (sub-regions, the optional grid).",
+   "regions": [
+    249,
+    257,
+    268,
+    102,
+    103
+   ],
+   "functions": 88,
+   "cited": 4,
+   "ranges": [
+    "3f5ba8-3f710c",
+    "406848-40c1f0",
+    "47bb08-47bc88",
+    "11f5ac-1218e0",
+    "1219dc-121ba0"
+   ]
+  },
+  {
+   "key": "gamedata",
+   "title": "Game data tables (eve, Npc.dat, scenes, skills)",
+   "go": "internal/assets, client/wlo/world",
+   "status": "ported",
+   "notes": "TEveData, TRe_Npc, TRE_Scene, TFSkill, TFNpc and the Npc.dat lookup; read from the data/ exports.",
+   "regions": [
+    108,
+    109,
+    201,
+    203,
+    269,
+    270,
+    271,
+    272,
+    273
+   ],
+   "functions": 96,
+   "cited": 3,
+   "ranges": [
+    "1221c8-1221c8",
+    "122264-122998",
+    "2bc2d8-2bc318",
+    "2bc824-2bc824",
+    "47be24-47c7fc",
+    "47d1e8-47fcc0",
+    "48039c-480a40",
+    "480b74-4816d8",
+    "4817fc-48269c"
+   ]
+  },
+  {
+   "key": "events",
+   "title": "Events, NPC clicks, doors and areas",
+   "go": "client/wlo/app (events.go, areas.go), client/wlo/world",
+   "status": "partial",
+   "notes": "TEventManage: map NPC creation, clicks, the event interpreter (kinds 1, 5, 6), area triggers (20/8), door lights, sprite placement (FUN_002fe8e8). Not yet: event kinds 2-4 and 7+, NPC walk-in areas (20/2, 20/3), the treasure light.",
+   "regions": [
+    211,
+    212,
+    213,
+    253,
+    254
+   ],
+   "functions": 90,
+   "cited": 23,
+   "ranges": [
+    "2fdc40-302cf8",
+    "302d90-302e00",
+    "3030ec-30a510",
+    "403044-403728",
+    "403910-403c80"
+   ]
+  },
+  {
+   "key": "movies",
+   "title": "Movies, weather and scene effects",
+   "go": "client/wlo/movie, client/wlo/weather",
+   "status": "partial",
+   "notes": "TMovie (.sty): actors, camera, lines, pictures, stage effects, music. Weather particles. Not yet: weather overlays 1-3 and 10 in movies, actor trails and draw modes.",
+   "regions": [
+    219,
+    220,
+    221,
+    222
+   ],
+   "functions": 139,
+   "cited": 36,
+   "ranges": [
+    "332eac-33360c",
+    "333998-338aa4",
+    "338e88-34397c",
+    "343b10-3440c0"
+   ]
+  },
+  {
+   "key": "talk",
+   "title": "Talk and question windows",
+   "go": "client/wlo/hud (talk.go)",
+   "status": "partial",
+   "notes": "TSe_TalkMsgFormPlus and its variants: faces, bodies, markup, questions, the wide form. Not yet: item and trade question forms, OK-only mode, scrolling and typing, the talk cursor.",
+   "regions": [
+    223,
+    224
+   ],
+   "functions": 48,
+   "cited": 12,
+   "ranges": [
+    "34479c-34a4bc",
+    "34b9e4-34e70c"
+   ]
+  },
+  {
+   "key": "chat",
+   "title": "Chat log and input bar",
+   "go": "client/wlo/hud (chatlog.go, inputbar.go), client/wlo/app (chat.go)",
+   "status": "partial",
+   "notes": "TTalkMsgForm, TSe_CharMsg. Not yet: click-through hit test, scrolling, lock, resizing, modes, emoticons, whispers.",
+   "regions": [
+    277,
+    278
+   ],
+   "functions": 78,
+   "cited": 11,
+   "ranges": [
+    "486e64-489ca0",
+    "48ac28-491138"
+   ]
+  },
+  {
+   "key": "hud",
+   "title": "HUD: status, hot keys, buttons, team, emotes",
+   "go": "client/wlo/hud",
+   "status": "partial",
+   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Drawn; most actions not wired.",
+   "regions": [
+    195,
+    196,
+    197
+   ],
+   "functions": 490,
+   "cited": 46,
+   "ranges": [
+    "259760-25b1ac",
+    "25b454-25d0ec",
+    "25fea0-2a7258"
+   ]
+  },
+  {
+   "key": "minimap",
+   "title": "Minimap, world map and map frame",
+   "go": "",
+   "status": "todo",
+   "notes": "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data.",
+   "regions": [
+    214,
+    215,
+    168
+   ],
+   "functions": 85,
+   "cited": 0,
+   "ranges": [
+    "30add4-312d24",
+    "312f74-314b00",
+    "1b75b4-1b87fc"
+   ]
+  },
+  {
+   "key": "cursor",
+   "title": "Cursor and mouse state",
+   "go": "client/wlo/cursor, client/wlo/app (cursor.go)",
+   "status": "ported",
+   "notes": "Tjo_Cursor and the cursor states; native cursors through the patched Ebitengine.",
+   "regions": [
+    238,
+    239
+   ],
+   "functions": 15,
+   "cited": 7,
+   "ranges": [
+    "3b9c00-3ba800",
+    "3ba9d8-3bbfb0"
+   ]
+  },
+  {
+   "key": "sound",
+   "title": "Sound effects, music centre, volume",
+   "go": "client/wlo/app (sound.go, music.go, ambient.go)",
+   "status": "partial",
+   "notes": "Tsound effect list, TFMark, TMusicCenter (jukebox), the volume form. Ported: effects, map music, ambience, movie music. Not yet: the jukebox, sound options and volume sliders.",
+   "regions": [
+    149,
+    255,
+    206
+   ],
+   "functions": 54,
+   "cited": 5,
+   "ranges": [
+    "15df98-161750",
+    "403e50-405e88",
+    "2c155c-2c2224"
+   ]
+  },
+  {
+   "key": "items",
+   "title": "Items, inventory and equipment",
+   "go": "client/wlo/inventory, client/wlo/app (inventory.go)",
+   "status": "partial",
+   "notes": "TFItem, TSe_itemObject, TSe_ItemImage, item grids, TEquip, equip forms, crafting materials. Item data and sprite layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, use, equipment swaps and AC23 updates are ported. Remaining: full equipment bonus/socket/forge tooltip rules, repair, stat allocation/potential dialogs, pet equipment, secondary item containers and crafting.",
+   "regions": [
+    225,
+    245,
+    246,
+    247,
+    250,
+    139
+   ],
+   "functions": 486,
+   "cited": 17,
+   "ranges": [
+    "34fad4-36e008",
+    "3c96f8-3cd798",
+    "3cd920-3d39a8",
+    "3d3c3c-3d5fb8",
+    "3f7478-3fb960",
+    "150210-151328"
+   ]
+  },
+  {
+   "key": "battle",
+   "title": "Battle",
+   "go": "",
+   "status": "todo",
+   "notes": "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. The server side is ported.",
+   "regions": [
+    227,
+    228,
+    230,
+    231
+   ],
+   "functions": 356,
+   "cited": 7,
+   "ranges": [
+    "36e674-36e9e4",
+    "36f144-377054",
+    "378620-388fac",
+    "389174-3a4258"
+   ]
+  },
+  {
+   "key": "system",
+   "title": "Options, teams, organisations, rankings",
+   "go": "",
+   "status": "todo",
+   "notes": "TCY_OptionForm, TCY_SystemTeam, TLD_Top100Form, TCY_OrganManage, TCY_TeamManage.",
+   "regions": [
+    232,
+    234,
+    235,
+    237,
+    256
+   ],
+   "functions": 166,
+   "cited": 1,
+   "ranges": [
+    "3a4ee4-3ac9b4",
+    "3acbe0-3b2fb4",
+    "3b3044-3b420c",
+    "3b4328-3b9660",
+    "405f80-405f8c"
+   ]
+  },
+  {
+   "key": "trade",
+   "title": "Trade, stalls and vendors",
+   "go": "",
+   "status": "todo",
+   "notes": "TCY_TradeMenu, vendor and stall forms, TTradeManage.",
+   "regions": [
+    217,
+    218,
+    243
+   ],
+   "functions": 187,
+   "cited": 0,
+   "ranges": [
+    "315390-318d94",
+    "319ea0-332c4c",
+    "3c674c-3c84cc"
+   ]
+  },
+  {
+   "key": "social",
+   "title": "Friends, mail, guilds, weddings, PK",
+   "go": "",
+   "status": "todo",
+   "notes": "TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights.",
+   "regions": [
+    241,
+    242,
+    209,
+    210,
+    183,
+    184,
+    185,
+    189,
+    198,
+    199
+   ],
+   "functions": 370,
+   "cited": 1,
+   "ranges": [
+    "3be684-3bedb8",
+    "3bf274-3c62dc",
+    "2f36c4-2f3e0c",
+    "2f4a64-2fd8f0",
+    "2372c0-237fbc",
+    "238498-23a794",
+    "23aae4-23bbc0",
+    "24ecb8-24fdb0",
+    "2a739c-2a863c",
+    "2a8fb0-2b1b98"
+   ]
+  },
+  {
+   "key": "shop",
+   "title": "Shops, IM mall and skill trees",
+   "go": "",
+   "status": "todo",
+   "notes": "THL_ShoppingForm, THL_ShoppingCarForm, TSe_SkillTreeForm.",
+   "regions": [
+    187,
+    188
+   ],
+   "functions": 86,
+   "cited": 0,
+   "ranges": [
+    "23c730-23fe80",
+    "240218-24e58c"
+   ]
+  },
+  {
+   "key": "services",
+   "title": "NPC services and feature forms",
+   "go": "",
+   "status": "started",
+   "notes": "Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, crafting (TRe_CompoundForm), inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported.",
+   "regions": [
+    143,
+    144,
+    145,
+    146,
+    147,
+    158,
+    159,
+    165,
+    169,
+    170,
+    171,
+    172,
+    173,
+    180,
+    181,
+    182,
+    186,
+    200,
+    204,
+    205
+   ],
+   "functions": 1493,
+   "cited": 24,
+   "ranges": [
+    "152a64-154dec",
+    "1552f4-1553c8",
+    "155770-159844",
+    "1599a8-159c70",
+    "15a3c0-15db98",
+    "171210-172c08",
+    "172e18-1737c0",
+    "180f64-198668",
+    "1b9ca8-1d8a58",
+    "1da0d8-1f2f2c",
+    "1f38f8-1f44e0",
+    "1f6b3c-212aa0",
+    "213ad8-22a864",
+    "233724-234060",
+    "234190-234fc0",
+    "23541c-236fe8",
+    "23be34-23be34",
+    "2b2d00-2bbfe0",
+    "2bc920-2bca44",
+    "2bd674-2c1380"
+   ]
+  },
+  {
+   "key": "housing",
+   "title": "Housing and furniture",
+   "go": "",
+   "status": "todo",
+   "notes": "TRE_FurnitureMng, TGdThing, home pillars, furniture drawing, NPC dolls.",
+   "regions": [
+    244,
+    248,
+    111,
+    112
+   ],
+   "functions": 246,
+   "cited": 7,
+   "ranges": [
+    "3c856c-3c9420",
+    "3d73b8-3f5a6c",
+    "122a60-122a60",
+    "122b4c-123d6c"
+   ]
+  },
+  {
+   "key": "pets",
+   "title": "Pets and riding",
+   "go": "",
+   "status": "todo",
+   "notes": "CH_TRidePet, ride pet positions (Data\\AdjustRidePetPos.txt), pet forms.",
+   "regions": [
+    166,
+    259,
+    260
+   ],
+   "functions": 199,
+   "cited": 0,
+   "ranges": [
+    "1995dc-1ae464",
+    "40c684-40c998",
+    "40cb70-40f394"
+   ]
+  },
+  {
+   "key": "minigames",
+   "title": "Minigames and casino games",
+   "go": "client/wlo/minigame, client/wlo/app (minigame.go)",
+   "status": "started",
+   "notes": "Sports (sheep, catch doll, boxing, Mario, memory, turn, gobang, pumpkin, dig hole, poke, catcher, lucky, conundrum, watermelon, egg, slot machines, scotd, hunter), chess, dice, lotto, the MP3 player. The sport manager, scotd (2), moles (3), hunting (4), dreams (5), lucky (13), numbered memory (15) and pumpkin (17) are playable; scotd/pumpkin native collision and animation fidelity remains partial. Egg draws (6/22) and slots (8/10/19) have native client AC71 flows; these five kinds have atomic server purchases and weighted rewards. Other paid kinds remain pending. See docs/MINIGAMES.md.",
+   "regions": [
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    160,
+    161,
+    162,
+    163,
+    167,
+    174,
+    175,
+    177,
+    178,
+    190,
+    191,
+    192,
+    240
+   ],
+   "functions": 811,
+   "cited": 61,
+   "ranges": [
+    "138268-1389b4",
+    "138b58-138cf0",
+    "138dd8-138de0",
+    "138f3c-13a510",
+    "13a548-13a548",
+    "13af7c-140168",
+    "14033c-142590",
+    "14282c-144a08",
+    "1450d4-14a090",
+    "14a558-14f880",
+    "161cf8-167958",
+    "167c60-168f9c",
+    "16913c-16afc4",
+    "16b0ec-16b17c",
+    "16b448-16bcec",
+    "16bd7c-16c1a0",
+    "16c398-16d4c8",
+    "16d958-171098",
+    "173930-1740dc",
+    "1743d0-17bca4",
+    "17be1c-17dda0",
+    "17df40-17fd14",
+    "1ae788-1b742c",
+    "22b2a0-22edb0",
+    "22f3ac-230364",
+    "2306c0-231ed0",
+    "2322a8-2334e8",
+    "250250-2502a4",
+    "25042c-252e28",
+    "253044-2536f8",
+    "3bc120-3be64c"
+   ]
+  },
+  {
+   "key": "gm",
+   "title": "GM tools",
+   "go": "",
+   "status": "todo",
+   "notes": "TGmManage and the GM form.",
+   "regions": [
+    216
+   ],
+   "functions": 2,
+   "cited": 1,
+   "ranges": [
+    "314bf4-314bf4"
+   ]
+  }
+ ],
+ "receive_commands": [
+  {
+   "command": 0,
+   "name": "Discovery",
+   "client": true
+  },
+  {
+   "command": 1,
+   "name": "Handshake",
+   "client": true
+  },
+  {
+   "command": 2,
+   "name": "Chat",
+   "client": true
+  },
+  {
+   "command": 3,
+   "name": "MapLoad",
+   "client": true
+  },
+  {
+   "command": 4,
+   "name": "Appearance",
+   "client": true
+  },
+  {
+   "command": 5,
+   "name": "CharacterState",
+   "client": true
+  },
+  {
+   "command": 6,
+   "name": "Movement",
+   "client": true
+  },
+  {
+   "command": 7,
+   "name": "Position",
+   "client": true
+  },
+  {
+   "command": 8,
+   "name": "Stats",
+   "client": true
+  },
+  {
+   "command": 9,
+   "name": "CharacterCreation",
+   "client": true
+  },
+  {
+   "command": 10,
+   "name": "Presence",
+   "client": false
+  },
+  {
+   "command": 11,
+   "name": "BattleState",
+   "client": false
+  },
+  {
+   "command": 12,
+   "name": "MapAcknowledgment",
+   "client": true
+  },
+  {
+   "command": 13,
+   "name": "Team",
+   "client": false
+  },
+  {
+   "command": 14,
+   "name": "Friends",
+   "client": false
+  },
+  {
+   "command": 15,
+   "name": "StoryConstellation",
+   "client": false
+  },
+  {
+   "command": 16,
+   "name": "DirectSettings",
+   "client": false
+  },
+  {
+   "command": 19,
+   "name": "BattlePet",
+   "client": false
+  },
+  {
+   "command": 20,
+   "name": "Event",
+   "client": true
+  },
+  {
+   "command": 21,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 22,
+   "name": "Scene",
+   "client": true
+  },
+  {
+   "command": 23,
+   "name": "Inventory",
+   "client": true
+  },
+  {
+   "command": 24,
+   "name": "Quest",
+   "client": false
+  },
+  {
+   "command": 25,
+   "name": "Trade",
+   "client": false
+  },
+  {
+   "command": 26,
+   "name": "Gold",
+   "client": true
+  },
+  {
+   "command": 27,
+   "name": "Shop",
+   "client": false
+  },
+  {
+   "command": 29,
+   "name": "LegacyStorage",
+   "client": false
+  },
+  {
+   "command": 30,
+   "name": "Storage",
+   "client": false
+  },
+  {
+   "command": 31,
+   "name": "NPCService",
+   "client": false
+  },
+  {
+   "command": 32,
+   "name": "Pose",
+   "client": false
+  },
+  {
+   "command": 33,
+   "name": "Settings",
+   "client": false
+  },
+  {
+   "command": 34,
+   "name": "MallCheckout",
+   "client": false
+  },
+  {
+   "command": 35,
+   "name": "CharacterSelection",
+   "client": true
+  },
+  {
+   "command": 36,
+   "name": "EquipmentRepair",
+   "client": false
+  },
+  {
+   "command": 37,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 38,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 39,
+   "name": "Guild",
+   "client": false
+  },
+  {
+   "command": 40,
+   "name": "Alchemy",
+   "client": false
+  },
+  {
+   "command": 41,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 43,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 44,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 45,
+   "name": "Bank",
+   "client": false
+  },
+  {
+   "command": 50,
+   "name": "BattleAction",
+   "client": false
+  },
+  {
+   "command": 51,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 52,
+   "name": "BattleReady",
+   "client": false
+  },
+  {
+   "command": 53,
+   "name": "MonsterBook",
+   "client": false
+  },
+  {
+   "command": 54,
+   "name": "DiscoveryChannels",
+   "client": false
+  },
+  {
+   "command": 55,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 56,
+   "name": "Stall",
+   "client": false
+  },
+  {
+   "command": 57,
+   "name": "Minigame",
+   "client": true
+  },
+  {
+   "command": 58,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 59,
+   "name": "Manufacture",
+   "client": false
+  },
+  {
+   "command": 60,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 61,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 62,
+   "name": "Wire62",
+   "client": false
+  },
+  {
+   "command": 63,
+   "name": "Login",
+   "client": true
+  },
+  {
+   "command": 64,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 65,
+   "name": "Tent",
+   "client": false
+  },
+  {
+   "command": 66,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 67,
+   "name": "PetFeeding",
+   "client": false
+  },
+  {
+   "command": 68,
+   "name": "PetTraining",
+   "client": false
+  },
+  {
+   "command": 69,
+   "name": "PetRebirth",
+   "client": false
+  },
+  {
+   "command": 70,
+   "name": "Territory",
+   "client": false
+  },
+  {
+   "command": 71,
+   "name": "ArcadeGame",
+   "client": true
+  },
+  {
+   "command": 72,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 74,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 75,
+   "name": "Mall",
+   "client": false
+  },
+  {
+   "command": 76,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 77,
+   "name": "PalaceTrial",
+   "client": false
+  },
+  {
+   "command": 78,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 79,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 80,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 81,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 82,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 83,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 84,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 85,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 86,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 87,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 88,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 89,
+   "name": "SceneReady",
+   "client": false
+  },
+  {
+   "command": 90,
+   "name": "SceneReadyReply",
+   "client": false
+  },
+  {
+   "command": 91,
+   "name": "PackContents",
+   "client": false
+  },
+  {
+   "command": 92,
+   "name": "SceneReadyAck",
+   "client": false
+  },
+  {
+   "command": 104,
+   "name": "LuckyDraw",
+   "client": false
+  },
+  {
+   "command": 105,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 107,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 183,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 184,
+   "name": "",
+   "client": false
+  },
+  {
+   "command": 186,
+   "name": "Movie",
+   "client": false
+  },
+  {
+   "command": 199,
+   "name": "",
+   "client": false
+  }
+ ],
+ "cited_functions": 603
+}

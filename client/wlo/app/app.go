@@ -12,6 +12,7 @@ import (
 
 	"wonderland-go/client/wlo/cursor"
 	"wonderland-go/client/wlo/hud"
+	"wonderland-go/client/wlo/inventory"
 	"wonderland-go/client/wlo/login"
 	"wonderland-go/client/wlo/picdb"
 	"wonderland-go/client/wlo/role"
@@ -69,30 +70,33 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World        *world.World
-	Stats        *world.Stats     // the player's values (5/3, 8/1, 26/4)
-	MainStatus   *hud.MainStatus  // the status panel over the world
-	FuncButtons  *hud.FuncBtnForm // the toolbar at the top right
-	MainButtons  *hud.MainBtnForm // the menu at the bottom right
-	HotKeys      *hud.HotKeyForm  // the F1–F8 bar
-	ChatBar      *hud.InputBar    // the chat bar
-	groundHeld   bool             // the left button went down on the ground
-	groundSince  time.Time        // when it went down
-	uiHovered    bool             // a control was under the pointer last frame
-	nextWalk     time.Time        // next re-plan while a button or arrow is held
-	Chat         *hud.ChatLog     // the chat log over the map
-	npcTemplates map[uint32]world.NPCTemplate
-	Talk         *hud.Talk // the event talk window
-	Music        *Music    // background music, nil without audio
-	movie        *moviePlay
-	sceneMusic   map[uint16]string
-	talks        map[uint16]string
-	event        eventState
-	pendingNPC   *world.NPC // clicked out of reach, sent on arrival
-	areas        areaWatch
-	sounds       []string // the sound table (soundtable.go)
-	sfx          *Sounds  // the effects player (set by Run)
-	ambient      ambience
+	World          *world.World
+	Inventory      *inventory.Form
+	InventoryState *inventory.State
+	Stats          *world.Stats     // the player's values (5/3, 8/1, 26/4)
+	MainStatus     *hud.MainStatus  // the status panel over the world
+	FuncButtons    *hud.FuncBtnForm // the toolbar at the top right
+	MainButtons    *hud.MainBtnForm // the menu at the bottom right
+	HotKeys        *hud.HotKeyForm  // the F1–F8 bar
+	ChatBar        *hud.InputBar    // the chat bar
+	groundHeld     bool             // the left button went down on the ground
+	groundSince    time.Time        // when it went down
+	uiHovered      bool             // a control was under the pointer last frame
+	nextWalk       time.Time        // next re-plan while a button or arrow is held
+	Chat           *hud.ChatLog     // the chat log over the map
+	npcTemplates   map[uint32]world.NPCTemplate
+	Talk           *hud.Talk // the event talk window
+	Music          *Music    // background music, nil without audio
+	movie          *moviePlay
+	sport          *sportPlay // the running minigame
+	sceneMusic     map[uint16]string
+	talks          map[uint16]string
+	event          eventState
+	pendingNPC     *world.NPC // clicked out of reach, sent on arrival
+	areas          areaWatch
+	sounds         []string // the sound table (soundtable.go)
+	sfx            *Sounds  // the effects player (set by Run)
+	ambient        ambience
 	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
 	// the map load is acknowledged. Until then prop sounds and area
 	// triggers stay silent, so the arrival's replay of opened props does
@@ -258,6 +262,7 @@ func New(o Options) (*Client, error) {
 			c.Create.Role.Painter = role.NewCreator(lib, items)
 		}
 	}
+	c.initInventory()
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
 	c.UI.Add(c.Create)
@@ -291,6 +296,7 @@ func (c *Client) Frame() {
 			c.World.Draw()
 			c.Talk.Draw()
 		}
+		c.sportFrame()
 	} else if c.fade.frozen == nil {
 		c.drawBackground()
 	}
@@ -306,6 +312,9 @@ func (c *Client) Frame() {
 	if c.movie == nil {
 		c.UI.Tick()
 		c.UI.Draw()
+		if c.Inventory != nil {
+			c.Inventory.DrawDragged()
+		}
 	}
 	c.Notices.Draw(c.Env, now)
 	c.uiHovered = c.Input.Hovered != nil
@@ -373,6 +382,8 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateWireCode3:
 		// 5/3 (FUN_004381c4) fills the player's values.
 		c.Stats.ParseBaseStats(s)
+	case p[0] == protocol.CommandInventory:
+		c.inventoryPacket(p)
 	case p[0] == protocol.CommandStats && sub == protocol.StatsStatUpdate && len(s) >= statUpdateBytes:
 		// 8/1 (FUN_00416ebc): stat ID, a kind byte, then the value.
 		c.Stats.Apply(s[1], binary.LittleEndian.Uint32(s[3:]))
@@ -407,6 +418,16 @@ func (c *Client) dispatch(p []byte) {
 		// acknowledges it with 20/6, which moves server-driven sequences
 		// such as the beach rescue along.
 		c.event.done = true
+	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameStart:
+		c.startSport(s)
+	case p[0] == protocol.CommandArcadeGame:
+		if c.sport != nil {
+			if g, ok := c.sport.game.(interface{ Receive([]byte, time.Time) bool }); ok {
+				g.Receive(s, c.Now())
+			}
+		}
+	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameEnd:
+		c.endSport()
 	case p[0] == protocol.CommandPosition:
 		if id, _, x, y, ok := world.ParsePlace(s); ok && c.World != nil && id != c.World.Player.ID {
 			c.World.PlacePeer(id, x, y)
@@ -474,6 +495,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.G.InGame = true
 	c.UI.HideAll()
 	c.World = w
+	c.resetInventory(pl)
 	c.playMapMusic()
 	c.MainStatus.Show()
 	c.FuncButtons.Show()

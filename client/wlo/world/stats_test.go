@@ -60,3 +60,25 @@ func TestBonusRecomputesMaxima(t *testing.T) {
 		t.Fatal("HP update")
 	}
 }
+
+// Independent values from UI/Inventory_Original_01.png and the corresponding
+// AC8 display fields. Adding Formula.Dat growth again produced 22/5/6/6/4.
+func TestInventoryAuthoritativeCombatValues(t *testing.T) {
+	s := Stats{Level: 1, Element: 3, STR: 5, INT: 1, WIS: 1, AGI: 1}
+	for i, v := range []uint32{10, 3, 2, 2, 1} {
+		s.Apply(byte(41+i), v)
+	}
+	if got := s.CombatValues(); got != ([5]uint16{10, 3, 2, 2, 1}) {
+		t.Fatal(got)
+	}
+	s.Level = 100
+	s.Rebirth = 1
+	s.STR = 99
+	if got := s.CombatValues(); got != ([5]uint16{10, 3, 2, 2, 1}) {
+		t.Fatal("UI recomputed confirmed values", got)
+	}
+	s.Apply(41, 27)
+	if s.CombatValues()[0] != 27 {
+		t.Fatal("updated value")
+	}
+}

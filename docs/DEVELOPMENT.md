@@ -41,7 +41,7 @@ Game content definitions belong in `assets.db`. Preserve the startup-only
 `pet_growth_formula` selector as a server initialization parameter.
 
 Gameplay schema v10 stores character state in typed tables and owned child rows.
-Structured asset schema v3 stores runtime definitions in generated `catalog_*`
+Structured asset schema v4 stores runtime definitions in generated `catalog_*`
 tables. Migration retains legacy representations solely as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
@@ -158,6 +158,15 @@ source to the Go implementation and its tests, and describe implemented behavior
 and remaining work in the notes. Preserve the recorded source revision and
 hashes; verify the files used against those hashes after CRLF normalization.
 Keep the inventory and the current scope in `docs/PORTING.md` consistent.
+
+## Client port catalog
+
+Rerun `python3 tools/decompile/catalog.py` after client porting work. It reads the
+local decompile in `var/decompiled` and the Go sources, and regenerates
+`docs/ALOGIN_CATALOG.md` and `docs/client-inventory.json`. Cite ported functions
+by address (`FUN_xxxxxxxx`) so the catalog counts them, and update a subsystem's
+status in the script's `SUBSYSTEMS` table when it moves. The plan is in
+`docs/CLIENT_ROADMAP.md`.
 
 ## Editable picture assets
 
@@ -702,7 +711,9 @@ UI order. Updating a story mark publishes its collection after commit.
 
 AC89:0 and AC92:1 are scene-ready synchronization, independent of AC12:1 map
 publication. Share their once-per-login MOTD flag, validate their complete
-request layouts and keep world interaction gates unchanged. Do not introduce a
+request layouts (AC89:0 supports two or six bytes; AC92:1 supports two or three)
+and keep world interaction gates unchanged. The four-byte native AC89 metadata
+must never select or authenticate a character. Do not introduce a
 socket transfer/token protocol without native evidence: the reference queues
 its existing authenticated connection into WorldServer.
 
