@@ -3,6 +3,7 @@ package world
 import (
 	"sort"
 	"sync/atomic"
+	"time"
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
@@ -12,11 +13,12 @@ import (
 // and the server serializes access. Hidden, Markers, Props and Actors reset on each map
 // entry (Player.CurMap and SendMapInfo in C#); Marks spans the whole login.
 type View struct {
-	Hidden  map[uint16]bool  // HiddenNpcClickIDs
-	Markers map[uint32]byte  // SentQuestMinimapMarkers, keyed (kind-1)<<16 | target
-	Props   map[uint16]int32 // NativePropStates on mechanism maps
-	Actors  map[uint16]bool  // NativeActorVisibility on mechanism maps
-	Marks   map[uint16]bool  // SentNotebookMarks
+	AdminActors map[uint16]bool  // Explicit live administrator show/hide decisions.
+	Hidden      map[uint16]bool  // HiddenNpcClickIDs
+	Markers     map[uint32]byte  // SentQuestMinimapMarkers, keyed (kind-1)<<16 | target
+	Props       map[uint16]int32 // NativePropStates on mechanism maps
+	Actors      map[uint16]bool  // NativeActorVisibility on mechanism maps
+	Marks       map[uint16]bool  // SentNotebookMarks
 	// Team is the player's team size beyond itself; the server updates it
 	// from another session's commands, so it is atomic.
 	Team atomic.Int32
@@ -242,6 +244,25 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 			}
 		}
 	}
+	for _, q := range w.catalog.QuestVisibility {
+		if q.Map != mapID {
+			continue
+		}
+		for _, id := range q.Spawn {
+			ids[id] = true
+		}
+		for _, id := range q.Despawn {
+			ids[id] = true
+		}
+		for _, step := range q.Steps {
+			for _, id := range step.Spawn {
+				ids[id] = true
+			}
+			for _, id := range step.Despawn {
+				ids[id] = true
+			}
+		}
+	}
 	for id := range v.Hidden {
 		ids[id] = true
 	}
@@ -280,6 +301,20 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 					out = append(out, w.actionBlock(v, mapID, a)...)
 				}
 			}
+		}
+	}
+	// Administrator chest cooldowns override authored one-time prop frames.
+	for _, ev := range m.data.Events {
+		if expiry, ok := c.ChestRespawns[ChestKey(mapID, ev.ClickID)]; ok {
+			state := int32(0)
+			if time.Now().Before(expiry) {
+				state = 1
+			}
+			old, known := v.Props[ev.ClickID]
+			if force || !known || old != state {
+				out = append(out, protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(ev.ClickID).U8(byte(state)))
+			}
+			v.Props[ev.ClickID] = state
 		}
 	}
 	return append(out, w.Markers(c, v, force)...)

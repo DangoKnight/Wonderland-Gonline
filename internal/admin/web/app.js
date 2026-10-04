@@ -65,6 +65,10 @@ async function refresh() {
 		target = view;
 	message("");
 	try {
+		if (typeof renderAdminTool === "function" && toolViews.has(target)) {
+			await renderAdminTool(target, id);
+			return true;
+		}
 		const path =
 			{ overview: "status", npcs: "assets/npcs", maps: "assets/maps" }[target] || target;
 		const [data, sessions] = await Promise.all([
@@ -206,13 +210,25 @@ async function refresh() {
 			content.append(results);
 			const render = (rows) =>
 				results.replaceChildren(
-					table(rows, [
-						["ID", "id"],
-						["Name", "name"],
-						["Level", "level"],
-						["HP", "hp"],
-						["Element", "element"],
-					]),
+					table(
+						rows,
+						[
+							["ID", "id"],
+							["Name", "name"],
+							["Level", "level"],
+							["HP", "hp"],
+							["Element", "element"],
+						],
+						(row) =>
+							toolButton("Inspect", () =>
+								jsonEditor(
+									"NPC " + row.id,
+									row,
+									null,
+									"NPC template from the current asset catalog.",
+								),
+							),
+					),
 				);
 			render(data);
 			let timer,

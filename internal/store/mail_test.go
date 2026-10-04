@@ -116,7 +116,7 @@ func TestTextMailVersionFiveUpgradePreservesPlayerState(t *testing.T) {
 		t.Fatal(friends, err)
 	}
 	var version int
-	if err := migrated.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 6 {
+	if err := migrated.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != schemaVersion {
 		t.Fatal(version, err)
 	}
 	if _, err := migrated.SendTextMail(ctx, refs[0], refs[1].ID, 0, []byte("after upgrade"), time.Now()); err != nil {

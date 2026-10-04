@@ -17,11 +17,11 @@ func (c *Character) RepairBagItem(slot byte) (toolSlot byte, repaired bool) {
 		return 0, false
 	}
 	item := c.Bag[slot-1]
-	if item.Empty() || item.Damage == 0 {
+	if item.Empty() || item.Locked || item.Damage == 0 {
 		return 0, false
 	}
 	for i, tool := range c.Bag {
-		if tool.Empty() || tool.ID != RepairWrenchItemID {
+		if tool.Empty() || tool.Locked || tool.ID != RepairWrenchItemID {
 			continue
 		}
 		if byte(i+1) == slot && tool.Count <= RepairToolsPerItem {

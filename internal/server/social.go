@@ -65,7 +65,7 @@ func socialStatusPacket(character *Session) ([]byte, error) {
 
 func (s *Server) addLocalContact(ctx context.Context, c *Session, id uint32, notifyStatus bool) error {
 	other := s.friendPlayer(id)
-	if other == nil || other == c || !other.ready || other.character.Map != c.character.Map {
+	if other == nil || other == c || !other.ready || !sameScene(other, c) {
 		return nil
 	}
 	friends, err := s.Store.Friends(ctx, c.character.ID)

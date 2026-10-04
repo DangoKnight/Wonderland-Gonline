@@ -31,7 +31,7 @@ func (c Character) Vehicle(slot byte, id uint16, items map[uint16]ItemDefinition
 	}
 	item := c.Bag[slot-1]
 	def, known := items[id]
-	return item, known && !item.Empty() && item.ID == id && def.Type == VehicleType && item.Damage < VehicleWreckDamage
+	return item, known && !item.Locked && !item.Empty() && item.ID == id && def.Type == VehicleType && item.Damage < VehicleWreckDamage
 }
 
 // NormalizeVehicle clears stale riding state after a bag mutation or on login.

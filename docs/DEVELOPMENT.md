@@ -1,5 +1,54 @@
 # Development conventions
 
+## Server data ownership and initialization
+
+All persistent server data must be managed through the databases. Shared game
+definitions, read-only during gameplay, belong in `assets.db`. Accounts,
+characters, mutable gameplay state and persistent server settings belong in
+`wonderland.db`. These are the default database names; the startup configuration
+may select other paths. Read-only during gameplay does not prevent validated
+administrator edits to shared definitions.
+
+JSON may seed initial defaults in either database. Initialization must preserve
+existing data, including administrator edits, and must be safe to repeat. Seed
+only missing defaults; use explicit, versioned migrations for existing records.
+Do not reload seed files on restart to overwrite database values. Deliberate
+reset/rebuild operations are separate operator actions, never normal startup
+initialization.
+
+Runtime reads and administrative edits must use database interfaces. Prefer
+structured tables, typed columns, relationships and indexes for fields queried
+or edited independently. Avoid JSON files and filename-based virtual JSON
+documents wherever practical, except for server initialization parameters such
+as listener addresses, database paths and startup-only policy selectors. JSON
+columns may hold genuinely nested data when relational storage adds no useful
+querying or integrity guarantees; they must not become a substitute for an
+entire queryable schema. SQL-derived, validated in-memory catalogs are allowed.
+
+Sockets, timers, locks and pending actions remain in memory. Persist only the
+state needed for reconnects or recovery, such as cooldown expiry timestamps,
+durable player progress and recoverable operation records. Do not serialize
+process handles or synchronization objects into either database.
+
+Binary assets remain outside the server databases. Store only metadata required
+by the server; do not import images, audio or video payloads for client rendering.
+Client asset formats, offline extraction/export artifacts and API serialization
+are outside this server persistence policy.
+
+Executable rules belong in code. Compiled growth formulas and their coefficients
+remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
+Game content definitions belong in `assets.db`. Preserve the startup-only
+`pet_growth_formula` selector as a server initialization parameter.
+
+Gameplay schema v10 stores character state in typed tables and owned child rows.
+Structured asset schema v3 stores runtime definitions in generated `catalog_*`
+tables. Migration retains legacy representations solely as snapshots/provenance;
+runtime and administration must not consult them. Use the offline copy procedure
+in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
+Regenerate asset models after changing catalog types with
+`go run ./tools/asset-schema-generator`, bump the structured schema version and
+provide an explicit preserving migration for installations using earlier versions.
+
 ## Give numeric values names
 
 Use named constants for values that encode a protocol command, event operation,
@@ -58,10 +107,13 @@ Explain semantic exceptions in nearby comments when their role is unclear.
 Prefer named packet builders when an entire layout is repeated or difficult to
 read. Avoid inventing wrappers for every one-line packet just to hide its bytes.
 
-Run the affected tests after a small naming change. For changes across protocol or
-event handling, run the native-data suite with the race detector and the normal
-formatting, lint and build checks described in the README. Review namespaces as
-well as values: byte-for-byte tests cannot detect a misleading name.
+During development, run only tests relevant to the modified modules and affected
+integrations. Use focused test selections within large packages; protocol or event
+changes should include their relevant native-data compatibility tests. Use the
+race detector when changing concurrent behavior. Reserve full test-suite runs for
+pre-commit validation. Run formatting, lint and build checks appropriate to the
+change. Review namespaces as well as values: byte-for-byte tests cannot detect a
+misleading name.
 
 ## Editable sprite assets
 
@@ -80,8 +132,9 @@ and keep the loader and exporter compatible. See
 ## Server asset queries
 
 Use `assetsql.LoadDatabase` at startup and the resulting catalog in gameplay
-handlers. Route new static content through `internal/assetdb` with GORM and add
-its runtime projection to `internal/assetsql/database.go`. Keep
+handlers. Follow [the database ownership policy](#server-data-ownership-and-initialization).
+Route new static content through structured tables in `internal/assetdb` with
+GORM and add its runtime projection to `internal/assetsql/database.go`. Keep
 `internal/assets` free of GORM and SQL imports: the client links it for the
 native file decoders and must not pull in the database. Never add a runtime
 JSON/native-file fallback. Use the gameplay store for player-owned state. Exclude original account
@@ -91,8 +144,10 @@ which SQL fields are authoritative when adding a projection, and validate before
 publishing the startup snapshot. Keep file decoders for offline tools and
 independent compatibility tests.
 
-Run the gameplay suite against imported assets with
-`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
+Run relevant gameplay tests against imported assets with
+`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test ./internal/<package> -run <tests>`.
+Add `-race` for concurrent behavior. At pre-commit validation, run the full suite
+with `WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
 format tests still accept `WONDERLAND_TEST_DATA` and
 `WONDERLAND_TEST_CLIENT_DATA`.
 
@@ -304,7 +359,8 @@ effects in order and validate the final list, including trigger consistency.
 Identifiers must be unique; missing or duplicate references fail startup. The
 SQL loader clones resolved effects so skills do not share mutable modifier lists.
 
-The asset importer indexes definitions under `skill_effects.json/records`; the
+The current compatibility importer indexes definitions under
+`skill_effects.json/records`; the
 `asset_skill_effects` SQL view exposes IDs and names. Indexed SQL rows are
 authoritative for definitions and skill references. The server reads only SQL.
 Every SQL skill must explicitly provide `effects` or `effect_refs`, including an
@@ -325,10 +381,11 @@ and reference tests; SQL gameplay loading never consults it.
 
 For a one-off alternate conversion policy, use `go run ./cmd/skill-effects-export
 -skills <fresh-native-skill-json> -effects <output-json> -rules <policy-json>`.
-For an existing installation, edit the derived `data/skill_effects.json` definitions
-(or indexed SQL rows) and rebuild/reload as appropriate; those definitions are
-runtime-authoritative. Source regeneration uses the authored conversion policy
-and replaces derived edits, so transfer permanent tuning to the policy first.
+For an existing installation, edit the authoritative SQL definitions through
+the validated database interface and reload/restart as appropriate. Offline
+conversion policies supply reproducible seeds and source projections. A deliberate
+source rebuild replaces the asset database, so preserve administrator edits
+separately before rebuilding; normal initialization must not replace them.
 Do not use an old exported asset as an original decompilation input.
 
 Fresh source-only exports annotate skills automatically. To refresh only skills
@@ -503,10 +560,8 @@ entire affected pool and produce an explicit diagnostic. Keep other complete
 pools available. Never drop unavailable rewards or redistribute their weights.
 Remember disabled configured pack IDs for item use and mall filtering.
 
-Indexed `asset_records` rows for `gacha_packs.json/value` are authoritative.
-`asset_gacha_packs` and `asset_gacha_rewards` expose ordered query projections;
-edit indexed record JSON and restart to load a new snapshot. The views include
-unavailable pools for inspection. Rebuild the database to create new views.
+Runtime uses typed `catalog_gacha_packs` and ordered child reward rows.
+Use the `GachaPacks` administration dataset; legacy import views are provenance.
 Preserve atomic pack removal and reward grant before publishing native receipts;
 use fresh reward metadata and cryptographic uniform rolls. Changes to source
 pools belong in sibling inputs; exported data remains derived.
@@ -515,7 +570,7 @@ pools belong in sibling inputs; exported data remains derived.
 ## Daily Lucky Draw
 
 Use `game.LuckyDrawState` for three draws per character per UTC calendar day.
-Keep usage in durable character JSON. Reset eligibility follows its saved date;
+Keep usage in `character_state.lucky_day` and `lucky_used`. Reset eligibility follows its saved date;
 do not refill a session counter on login, accrue missed days or replenish draws
 after clock rollback. Grant inventory and consume allowance in `Store.DrawLucky`
 using one transaction against current durable state. Publish receipts after
@@ -531,10 +586,12 @@ rolls across the total. Different quantities of one item are separate outcomes.
 Defaults give all 14 outcomes weight 1. Missing definitions, invalid quantities,
 missing/out-of-order slots, more than 20 rewards and overflow fail startup; an explicit empty pool disables draws.
 
-Indexed `asset_records` rows under `lucky_draw.json/value` are authoritative.
-Use `asset_lucky_draw_rewards` for inspection; edit indexed JSON and restart to
-reload. Durable tuning belongs in `internal/assets/lucky_draw_rules.json`, the
-offline compatibility policy. Regenerate with `python3 tools/data_export/lucky_draw.py
+Runtime uses `catalog_lucky_draw_rewards` and the `LuckyDraw` administration
+dataset. Edit typed SQL rows and restart or reload the snapshot.
+Initialization defaults belong in
+`internal/assets/lucky_draw_rules.json`, the offline compatibility policy.
+Updating defaults does not replace existing database edits during normal
+initialization. For an explicit source rebuild, regenerate with `python3 tools/data_export/lucky_draw.py
 --output data --overwrite`, rebuild the assets database, then restart. Full
 source-only export includes the projection. Generation reads fresh sibling
 Item.dat, never saved item exports. Item mappings remain compatibility choices; catalog order determines native
@@ -585,3 +642,100 @@ changes. Never clear equipment to imitate a reference handler with missing or
 misclassified item IDs. Unsupported model conversions remain rejected before
 ordinary branch mutations. See the Breillat regression suite for the ten-talk
 unlock, decline, stale state and failed delivery cases.
+
+## Character growth settings
+
+Keep player growth tuning in `internal/game/growth_parameters.go`, in the
+compiled `DefaultElementalGrowth()` table. Each element has its own complete
+level, attribute and vital coefficients. Standard combat coefficients follow the
+saved WLRI Japanese wiki in docs/References; HP/SP follow Formula.Dat. Keep
+independent reference-value and formula-export tests to detect accidental drift.
+Edit the table and rebuild to change
+gameplay; do not expose these values in startup JSON or web administration.
+Use the shared character creation, combat, refill, recalculation and stat-packet
+helpers in gameplay handlers instead of duplicating formulas. HP/SP bases and
+equipment bonuses stay outside the growth multiplier. `baselineGrowth()` and
+`nativeElementGrowth()` are fixed native-client compatibility references;
+keep them independent of gameplay tuning so packet adjustments still work after
+rebuilding with different coefficients. Growth arguments on low-level helpers
+allow isolated formula tests; production server handlers use the compiled table.
+Run focused growth tests after edits, including validation of finite coefficients
+and bounds. Pet and monster growth are separate policies. See
+[CONFIGURATION.md](CONFIGURATION.md#elemental-stat-growth) for field meanings and
+build instructions.
+
+## Pet level-up stat distribution
+
+Pet automatic growth allocates one attribute point per gained level. Keep all
+five attributes eligible and weight them through `Pet.growthWeights`; do not
+restrict candidates to the strongest attributes. `PetGrowthBaseStats` uses known
+NPC template stats or current attributes when the template is missing.
+`PetGrowthCombatStats` maps STR/CON/INT/WIS/AGI to current ATK/DEF/MAT/MDF/SPD from
+`Pet.Combat`, including equipment and existing elemental modifiers. Recalculate
+weights for each point after increasing the level. Vitals and temporary battle
+effects are separate and do not add weights.
+
+The formula selector is startup JSON `pet_growth_formula`, captured by `Server.New`
+and immutable for that process. Do not expose it through live runtime operations
+or persisted database settings. Route automatic EXP growth through `gainPetExp`
+so battle rewards and GM pet EXP use the same selection and catalog. Pass an
+explicit roll function for independent interval tests. Retain minimum weight one,
+exclude capped attributes before summing weights, and skip the draw if all are
+capped. Keep manual AC8/AC68 spending separate. Test exact intervals, equipment
+bonuses/penalties, elemental behavior, per-level recalculation and startup-save
+immutability; avoid probabilistic sampling tests.
+
+
+## World Entry policy
+
+Validate `Appearance.ValidateCreationAllocation` on incoming creation requests:
+exactly `game.CreationStatPoints` (five) base points, excluding model bonuses.
+Do not impose creation budgets on stored characters, GM edits or level-up
+allocation. Low-level appearance decoding preserves fields independently.
+
+Keep entry synchronization read-only: restore durable monster discoveries and
+story completion marks before final ready markers. Discoveries are character
+state saved together with victory rewards. AC53:9 carries the NPC template ID,
+not its book index. Unknown/out-of-range book entries are omitted from snapshots
+without rewriting the saved discoveries. AC15:19 lists earned star IDs in native
+UI order. Updating a story mark publishes its collection after commit.
+
+AC89:0 and AC92:1 are scene-ready synchronization, independent of AC12:1 map
+publication. Share their once-per-login MOTD flag, validate their complete
+request layouts and keep world interaction gates unchanged. Do not introduce a
+socket transfer/token protocol without native evidence: the reference queues
+its existing authenticated connection into WorldServer.
+
+The current optional `quest_visibility.json` compatibility interface stores an
+authored SQL document with
+`schema_version: 1` and ordered `value` rows. Preserve reference registration
+order: completed quest despawns precede quest spawns; active-step despawns precede
+step spawns. Spawn lists own visibility even when inactive. Native story/party
+and explicit administrator visibility retain their earlier precedence. Rebuild
+or `/reload quests` publishes a fresh immutable collection; no runtime file
+fallback is allowed. The reference loader has no populated lists to extract.
+
+## Combat sides, AI and trial content
+
+- Resolve allies and opponents with `battle.Teams(side)`. Player/pet commands,
+  menus, timeouts and disconnect accounting cover both formations. Avoid using
+  `Defenders` as a synonym for monsters. Gate captures and PvE economy/notebook/
+  quest rewards by battle kind and fighter kind. PvP grants no EXP, gold, drops
+  or captures; proficiency still uses the ordinary executed-action path.
+- Monster skill lists come from the SQL `npc.dat` skill slots captured when an
+  encounter starts. `monster_ai.go` selects distinct affordable skills, using
+  generic effect targets and the shared damage/support implementation. Keep
+  ability IDs/names out of buff/debuff decisions. Healing retains the existing
+  name-based compatibility classification. No new ability-specific exception
+  belongs in the AI.
+- Palace definitions currently use operator-authored SQL rows through the
+  `combat_trials.json` compatibility interface.
+  They are not decrypted external assets and must not be generated into `data/`.
+  Validate all identities against the SQL catalog and freeze the definition for
+  the battle. The C# stage placeholders are invalid for WLRI; do not restore
+  its immediate free-reward behavior. See [ADMINISTRATION.md](ADMINISTRATION.md#palace-trials).
+- Legacy monster-ID quest fallbacks run only for a PvE victory without an EVE
+  callback or trial owner. Stage completion, companion recruitment and currency
+  in the same character clone as battle settlement. Captures are not defeats;
+  completed quests cannot pay twice. Keep failed saves from changing client
+  rosters, quest visibility or success packets.

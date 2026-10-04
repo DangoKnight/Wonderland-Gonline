@@ -50,7 +50,7 @@ func loginPayload(name string) []byte {
 	return p
 }
 func createPayload() []byte {
-	return protocol.Builder{9, 1}.U16(1).U16(0).U16(1).U16(2).U16(3).U16(4).U8(3).Bytes([]byte{5, 5, 5, 5, 5})
+	return protocol.Builder{9, 1}.U16(1).U16(0).U16(1).U16(2).U16(3).U16(4).U8(3).Bytes([]byte{1, 1, 1, 1, 1})
 }
 
 func TestCreateEnterAcknowledgeAndReconnect(t *testing.T) {
@@ -239,7 +239,7 @@ func TestNativeCreationPersistsSeparateDeletionPassword(t *testing.T) {
 		t.Fatal("name reservation failed", err)
 	}
 	// Native request, including account confirmation and distinct deletion code.
-	payload := []byte{9, 1, 1, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 5, 5, 5, 5, 5, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
+	payload := []byte{9, 1, 1, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 1, 1, 1, 1, 1, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
 	if err = s.dispatch(ctx, c, payload); err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +285,7 @@ func TestNativeCreationWrongConfirmationDoesNotPersist(t *testing.T) {
 	if ok, err := s.reserveName(ctx, c, "NativeHero"); err != nil || !ok {
 		t.Fatal(err)
 	}
-	payload := []byte{9, 1, 1, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 5, 5, 5, 5, 5, 8, 'w', 'r', 'o', 'n', 'g', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
+	payload := []byte{9, 1, 1, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 1, 1, 1, 1, 1, 8, 'w', 'r', 'o', 'n', 'g', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
 	if err = s.dispatch(ctx, c, payload); err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +326,7 @@ func TestNativeCharacterCreationWithInstalledAssets(t *testing.T) {
 	if ok, err := s.reserveName(ctx, c, "NativeHero"); err != nil || !ok {
 		t.Fatal(err)
 	}
-	payload := []byte{9, 1, 4, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 5, 5, 5, 5, 5, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
+	payload := []byte{9, 1, 4, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 1, 1, 1, 1, 1, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
 	if err = s.dispatch(ctx, c, payload); err != nil {
 		t.Fatal(err)
 	}

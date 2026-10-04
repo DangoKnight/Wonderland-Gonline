@@ -1,10 +1,9 @@
 package store
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
+	"reflect"
 
 	"gorm.io/gorm"
 	"wonderland-go/internal/game"
@@ -22,17 +21,10 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 	if err := next.Validate(); err != nil {
 		return false, err
 	}
-	// Clone normalizes nil/empty collections consistently for all three snapshots.
-	before, err := json.Marshal(baseline.Clone())
-	if err != nil {
-		return false, err
-	}
-	after, err := json.Marshal(next.Clone())
-	if err != nil {
-		return false, err
-	}
+	before := canonicalCharacter(baseline)
+	after := canonicalCharacter(next)
 	written := false
-	err = s.transaction(ctx, func(tx *gorm.DB) error {
+	err := s.transaction(ctx, func(tx *gorm.DB) error {
 		current, err := loadCharacter(tx, ref)
 		if err != nil {
 			return err
@@ -40,14 +32,11 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		if current.ID != next.ID || current.Slot != next.Slot || current.Name != next.Name {
 			return ErrAutosaveConflict
 		}
-		durable, err := json.Marshal(current.Clone())
-		if err != nil {
-			return err
-		}
-		if bytes.Equal(durable, after) || bytes.Equal(before, after) {
+		durable := canonicalCharacter(current)
+		if reflect.DeepEqual(durable, after) || reflect.DeepEqual(before, after) {
 			return nil
 		}
-		if !bytes.Equal(durable, before) {
+		if !reflect.DeepEqual(durable, before) {
 			return ErrAutosaveConflict
 		}
 		if err := saveCharacter(tx, ref, next); err != nil {
@@ -57,4 +46,41 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		return nil
 	})
 	return written && err == nil, err
+}
+
+// Canonicalize representation details that JSON comparisons previously ignored.
+func canonicalCharacter(c game.Character) game.Character {
+	c = c.Clone()
+	c.ClearItemLocks()
+	c.MutedUntil = c.MutedUntil.Round(0).UTC()
+	if len(c.EventTimers) == 0 {
+		c.EventTimers = nil
+	}
+	for id, t := range c.EventTimers {
+		c.EventTimers[id] = t.Round(0).UTC()
+	}
+	if len(c.ChestRespawns) == 0 {
+		c.ChestRespawns = nil
+	}
+	for id, t := range c.ChestRespawns {
+		c.ChestRespawns[id] = t.Round(0).UTC()
+	}
+	for id, q := range c.Quests {
+		q.StartedAt = q.StartedAt.Round(0).UTC()
+		if q.CompletedAt != nil {
+			t := q.CompletedAt.Round(0).UTC()
+			q.CompletedAt = &t
+		}
+		c.Quests[id] = q
+	}
+	if len(c.Pets) == 0 {
+		c.Pets = nil
+	}
+	if len(c.ReservePets) == 0 {
+		c.ReservePets = nil
+	}
+	if len(c.HotelPets) == 0 {
+		c.HotelPets = nil
+	}
+	return c
 }

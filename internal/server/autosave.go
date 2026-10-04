@@ -30,6 +30,7 @@ func (s *Server) autosaveCharacters(ctx context.Context) {
 	defer s.worldMu.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, autosaveTimeout)
 	defer cancel()
+	s.tickGathering(ctx, time.Now())
 	// Presence retains characters during warp loading; include those sessions.
 	seen := make(map[*Session]bool)
 	save := func(c *Session) {

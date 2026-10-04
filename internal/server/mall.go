@@ -239,6 +239,9 @@ func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRo
 	}
 	var adds []game.Addition
 	next, balances, err := s.Store.PurchaseMall(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, bonus, cost, func(character *game.Character) error {
+		if err := game.PreserveItemLocks(*c.character, character); err != nil {
+			return err
+		}
 		for _, id := range ids {
 			granted, err := character.Bag.Grant(game.Item{ID: id}, amounts[id], s.Assets.Items[id].StackLimit())
 			if err != nil {

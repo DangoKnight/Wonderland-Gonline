@@ -41,7 +41,7 @@ func (s *Server) forgeItem(ctx context.Context, c *Session, slot byte, roll func
 		return reject("Select equipment in your inventory.")
 	}
 	source := c.character.Bag[slot-1]
-	if source.Empty() || source.Count != 1 {
+	if source.Empty() || source.Locked || source.Count != 1 {
 		return reject("Select one equipment item in your inventory.")
 	}
 	if c.character.ActiveVehicle != 0 && slot == c.character.VehicleSlot {
@@ -98,6 +98,9 @@ func (s *Server) forgeItem(ctx context.Context, c *Session, slot byte, roll func
 	}
 	var success bool
 	next, balances, err := s.Store.PurchaseMall(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, false, game.PointForgeCost, func(character *game.Character) error {
+		if err := game.PreserveItemLocks(*c.character, character); err != nil {
+			return err
+		}
 		if character.Bag[slot-1] != source {
 			return game.ErrInvalidItem
 		}

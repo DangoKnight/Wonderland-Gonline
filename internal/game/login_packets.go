@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math"
 	"wonderland-go/internal/protocol"
 )
 
@@ -91,13 +92,26 @@ func (c Character) PositionPacket() []byte {
 }
 
 // StatPackets follows Equip.Send8_1 ordering: maxima follow CON/WIS, then current HP/SP.
-func (c Character) StatPackets(items map[uint16]ItemDefinition) [][]byte {
+func (c Character) StatPackets(items map[uint16]ItemDefinition, growth ...ElementalGrowth) [][]byte {
 	a := c.Attributes()
 	b := c.Equipment.Bonuses(items)
+	// Native AC8 values are contributions: aLogin adds its own level formulas.
+	// Send rounded differences from those native formulas to avoid double-counting.
+	g := characterGrowth(c.Element, growth)
+	native := nativeElementGrowth(c.Element)
+	level := float64(c.Level)
+	delta := func(x, y float64) int32 { return int32(math.RoundToEven(x)) - int32(math.RoundToEven(y)) }
+	atk := delta(g.ATK.value(level, a), native.ATK.value(level, a))
+	def := delta(g.DEF.value(level, a), native.DEF.value(level, a))
+	mat := delta(g.MAT.value(level, a), native.MAT.value(level, a))
+	mdf := delta(g.MDF.value(level, a), native.MDF.value(level, a))
+	spd := delta(g.SPD.value(level, a), native.SPD.value(level, a))
+	hp := delta(g.HP.value(level, a), native.HP.value(level, a))
+	sp := delta(g.SP.value(level, a), native.SP.value(level, a))
 	stats := []struct {
 		id    byte
 		value int32
-	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK)}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF)}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT)}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF)}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD)}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatPotential, 0}, {StatHPBonus, b.HP}, {StatSPBonus, b.SP}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
+	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK) + atk}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF) + def}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT) + mat}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF) + mdf}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD) + spd}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatPotential, 0}, {StatHPBonus, b.HP + hp}, {StatSPBonus, b.SP + sp}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
 	out := make([][]byte, 0, len(stats))
 	for _, v := range stats {
 		out = append(out, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, v.id, protocol.StatsValueAbsolute}.U32(uint32(v.value)).U32(0))

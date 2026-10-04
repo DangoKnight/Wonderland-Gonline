@@ -10,6 +10,7 @@ import (
 	"testing"
 	"wonderland-go/internal/assets"
 
+	"gorm.io/gorm"
 	"wonderland-go/internal/assetdb"
 )
 
@@ -95,7 +96,7 @@ func runtimeDatabaseFixture(t *testing.T) string {
 
 func TestRuntimeCatalogUsesSQLWithoutSourceFiles(t *testing.T) {
 	path := runtimeDatabaseFixture(t)
-	c, err := LoadDatabase(path)
+	c, err := loadLegacyFixture(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +138,7 @@ func TestRuntimeCatalogUsesSQLWithoutSourceFiles(t *testing.T) {
 	if err := writer.Model(&assetdb.Record{}).Where("asset = ? AND collection = ?", "item.dat", "items").Update("json", string(raw)).Error; err != nil {
 		t.Fatal(err)
 	}
-	updated, err := LoadDatabase(path)
+	updated, err := loadLegacyFixture(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +148,7 @@ func TestRuntimeCatalogUsesSQLWithoutSourceFiles(t *testing.T) {
 	if err := writer.Where("asset = ?", "npc.dat").Delete(&assetdb.Document{}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if got, err := LoadDatabase(path); err == nil || got != nil {
+	if got, err := loadLegacyFixture(path); err == nil || got != nil {
 		t.Fatal("missing required SQL asset accepted")
 	}
 }
@@ -267,7 +268,7 @@ func TestRuntimeCatalogRejectsInvalidDatabaseContent(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if c, err := LoadDatabase(path); err == nil || c != nil {
+			if c, err := loadLegacyFixture(path); err == nil || c != nil {
 				t.Fatal("invalid SQL content accepted")
 			}
 		})
@@ -323,7 +324,7 @@ func TestSQLSkillEffectDefinitions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			c, err := LoadDatabase(path)
+			c, err := loadLegacyFixture(path)
 			if tc.bad {
 				if err == nil || c != nil {
 					t.Fatal("invalid effect catalog published")
@@ -411,7 +412,7 @@ func TestSQLNamedEffectRowsAreAuthoritative(t *testing.T) {
 	if err := db.Model(&skill).Update("json", string(raw)).Error; err != nil {
 		t.Fatal(err)
 	}
-	catalog, err := LoadDatabase(path)
+	catalog, err := loadLegacyFixture(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +422,7 @@ func TestSQLNamedEffectRowsAreAuthoritative(t *testing.T) {
 	if err := db.Delete(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := LoadDatabase(path); err == nil {
+	if _, err := loadLegacyFixture(path); err == nil {
 		t.Fatal("dangling SQL reference silently fell back to native")
 	}
 }
@@ -443,7 +444,7 @@ func TestSQLGachaUsesIndexedPoolsAndDisablesMissingItems(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	c, err := LoadDatabase(path)
+	c, err := loadLegacyFixture(path)
 	if err != nil || len(c.GachaPacks) != 1 || len(c.UnavailableGachaPacks) != 2 {
 		t.Fatal(c, err)
 	}
@@ -454,7 +455,7 @@ func TestSQLGachaUsesIndexedPoolsAndDisablesMissingItems(t *testing.T) {
 	if err := writer.Model(&assetdb.Record{}).Where("asset = ? AND ordinal = ?", "gacha_packs.json", 0).Update("json", `{"item_id":10002,"rewards":[{"item_id":10002,"quantity":3,"weight":10000}]}`).Error; err != nil {
 		t.Fatal(err)
 	}
-	updated, err := LoadDatabase(path)
+	updated, err := loadLegacyFixture(path)
 	if err != nil || updated.GachaPacks[10002].Rewards[0].Quantity != 3 || c.GachaPacks[10002].Rewards[0].Quantity != 2 {
 		t.Fatal("reload snapshot", err)
 	}
@@ -462,7 +463,7 @@ func TestSQLGachaUsesIndexedPoolsAndDisablesMissingItems(t *testing.T) {
 	if err := writer.Model(&assetdb.Record{}).Where("asset = ? AND ordinal = ?", "gacha_packs.json", 1).Update("json", `{"item_id":1234,"rewards":[{"item_id":10002,"quantity":1,"weight":9999}]}`).Error; err != nil {
 		t.Fatal(err)
 	}
-	if catalog, err := LoadDatabase(path); err == nil || catalog != nil {
+	if catalog, err := loadLegacyFixture(path); err == nil || catalog != nil {
 		t.Fatal("malformed table published", catalog, err)
 	}
 }
@@ -475,7 +476,7 @@ func TestInstalledSQLGachaCompatibility(t *testing.T) {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join("..", "..", path)
 	}
-	c, err := LoadDatabase(path)
+	c, err := loadLegacyFixture(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -505,21 +506,21 @@ func TestSQLLuckyDrawRewardsAndReload(t *testing.T) {
 	if err := db.Create(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	c, err := LoadDatabase(path)
+	c, err := loadLegacyFixture(path)
 	if err != nil || c.LuckyDraw.TotalWeight != 7 || len(c.LuckyDraw.Rewards) != 1 || c.LuckyDraw.Rewards[0].Quantity != 2 {
 		t.Fatal(c, err)
 	}
 	if err := db.Model(&assetdb.Record{}).Where("asset = ?", "lucky_draw.json").Update("json", `{"item_id":10002,"quantity":3,"weight":9,"slot":1}`).Error; err != nil {
 		t.Fatal(err)
 	}
-	updated, err := LoadDatabase(path)
+	updated, err := loadLegacyFixture(path)
 	if err != nil || updated.LuckyDraw.TotalWeight != 9 || updated.LuckyDraw.Rewards[0].Quantity != 3 || c.LuckyDraw.Rewards[0].Quantity != 2 {
 		t.Fatal("SQL snapshot reload", err)
 	}
 	if err := db.Model(&assetdb.Record{}).Where("asset = ?", "lucky_draw.json").Update("json", `{"item_id":999,"quantity":3,"weight":9,"slot":1}`).Error; err != nil {
 		t.Fatal(err)
 	}
-	if c, err := LoadDatabase(path); err == nil || c != nil {
+	if c, err := loadLegacyFixture(path); err == nil || c != nil {
 		t.Fatal("unknown reward accepted", c, err)
 	}
 }
@@ -532,7 +533,7 @@ func TestInstalledSQLLuckyDrawEqualDefaults(t *testing.T) {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join("..", "..", path)
 	}
-	c, err := LoadDatabase(path)
+	c, err := loadLegacyFixture(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -545,4 +546,20 @@ func TestInstalledSQLLuckyDrawEqualDefaults(t *testing.T) {
 			t.Fatal(r)
 		}
 	}
+}
+
+// Legacy decoding remains covered independently of the structured runtime.
+func loadLegacyFixture(path string) (*assets.Catalog, error) {
+	db, err := assetdb.OpenReadOnly(path)
+	if err != nil {
+		return nil, err
+	}
+	defer assetdb.Close(db)
+	var c *assets.Catalog
+	err = db.Transaction(func(tx *gorm.DB) error { var err error; c, err = loadLegacyTransaction(tx); return err })
+	if err != nil {
+		return nil, err
+	}
+	c.AssetsDatabase = path
+	return c, nil
 }

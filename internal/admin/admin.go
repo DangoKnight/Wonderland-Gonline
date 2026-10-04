@@ -53,7 +53,8 @@ func New(s *server.Server, token string) (http.Handler, error) {
 	m.Handle("PUT /api/settings", a.auth(http.HandlerFunc(a.settings)))
 	m.Handle("GET /api/assets/npcs", a.auth(http.HandlerFunc(a.npcs)))
 	m.Handle("GET /api/assets/maps", a.auth(http.HandlerFunc(a.maps)))
-	m.Handle("GET /api/catalog", a.auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { reply(w, 200, s.Assets.Mall) })))
+	a.bindTools(m)
+	m.Handle("GET /api/catalog", a.auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { reply(w, 200, s.AssetSnapshot().Mall) })))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
@@ -78,7 +79,10 @@ func reply(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) error {
-	r.Body = http.MaxBytesReader(w, r.Body, 16384)
+	return decodeSized(w, r, v, 16384)
+}
+func decodeSized(w http.ResponseWriter, r *http.Request, v any, limit int64) error {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	if e := d.Decode(v); e != nil {
@@ -98,9 +102,9 @@ func (a *API) status(w http.ResponseWriter, r *http.Request) {
 	reply(w, 200, map[string]any{
 		"name": a.Server.Name(), "uptime_seconds": int(time.Since(a.Server.Started).Seconds()),
 		"connections": len(a.Server.Sessions()), "packets_received": received, "unsupported_packets": unsupported,
-		"assets": a.Server.Assets.Summary(), "parity": "incomplete",
+		"assets": a.Server.AssetSnapshot().Summary(), "parity": "incomplete",
 		"services":    map[string]string{"login": a.Server.Config.Login, "world": a.Server.Config.World, "status": a.Server.Config.Status},
-		"implemented": []string{"TCP framing, launcher status and handshake", "Account authentication and character roster", "Character creation, starter inventory and deletion codes", "Map synchronization, NPC visibility and portal warps", "Ground item pickup, drop and respawn; bag moves, equipment, native compound synthesis and atomic bag-item repairs", "Map chat, poses and core GM commands", "NPC events, quest marks, journal and starter story", "Native quest minigames and rabbit rewards", "PvE quest and field battles with EXP, levels and loot", "Stat allocation, recovery items, shops, storage and clinics", "Companions, battle pets, capture and Pet Hotel", "Companion mounts and item vehicles with raft wear", "Skill proficiency and evolution", "Teams and team battles", "Atomic player trading", "Item-mall catalogs, balances, atomic purchases and audited point/bonus adjustments", "Configured gacha pack previews and atomic opening", "Persistent AC14 friendships and online/offline presence", "Persisted player preferences and team/trade request controls", "Peer visibility and persisted movement", "SQLite account and character persistence", "Native NPC, dialogue, skill and EVE readers; exclusive JSON item catalog", "Web accounts, sessions, settings and asset browser"},
+		"implemented": []string{"TCP framing, launcher status and handshake", "Account authentication and character roster", "Character creation, starter inventory and deletion codes", "Map synchronization, NPC visibility and portal warps", "Ground item pickup, drop and respawn; bag moves, equipment, native compound synthesis and atomic bag-item repairs", "Map chat, poses and core GM commands", "NPC events, quest marks, journal and starter story", "Native quest minigames and rabbit rewards", "PvE quest and field battles with EXP, levels and loot", "Stat allocation, recovery items, shops, storage and clinics", "Companions, battle pets, capture and Pet Hotel", "Companion mounts and item vehicles with raft wear", "Skill proficiency and evolution", "Teams and team battles", "Atomic player trading", "Item-mall catalogs, balances, atomic purchases and audited point/bonus adjustments", "Configured gacha pack previews and atomic opening", "Persistent AC14 friendships and online/offline presence", "Persisted player preferences and team/trade request controls", "Peer visibility and persisted movement", "SQLite account and character persistence", "Exclusive SQL asset catalog with native offline decoders", "Web accounts, characters, GM studio, operations, asset editors and diagnostics"},
 		"pending":     []string{"NPC services, region scripts and story-specific patches", "PvP and trials", "Arcade tickets/prizes and remaining event actions", "Item locks, advanced alchemy and pet rebirth", "Housing and crafting", "Player shops, legacy social handlers, mail and guilds", "Forging and remaining special-item use", "Legacy database migration and MySQL"},
 	})
 }
@@ -187,11 +191,10 @@ func (a *API) gm(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, "invalid request")
 		return
 	}
-	if e = a.Server.Store.SetGMLevel(r.Context(), uint32(id), in.Level); e != nil {
+	if e = a.Server.ChangeGMLevel(r.Context(), uint32(id), in.Level); e != nil {
 		fail(w, 400, "could not update account")
 		return
 	}
-	a.Server.SetGMLevel(uint32(id), in.Level)
 	reply(w, 200, map[string]bool{"ok": true})
 }
 func (a *API) kick(w http.ResponseWriter, r *http.Request) {
@@ -214,12 +217,9 @@ func (a *API) settings(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400, "invalid request")
 			return
 		}
-		if e := a.Server.Store.SaveSettings(r.Context(), v); e != nil {
+		if err := a.Server.UpdateIdentitySettings(r.Context(), v); err != nil {
 			fail(w, 400, "invalid settings")
 			return
-		}
-		if name, ok := v["server_name"]; ok {
-			a.Server.SetName(name)
 		}
 	}
 	v, e := a.Server.Store.Settings(r.Context())
@@ -235,7 +235,7 @@ func (a *API) settings(w http.ResponseWriter, r *http.Request) {
 func (a *API) npcs(w http.ResponseWriter, r *http.Request) {
 	q := strings.ToLower(r.URL.Query().Get("q"))
 	out := []assets.NPC{}
-	for _, n := range a.Server.Assets.NPCs {
+	for _, n := range a.Server.AssetSnapshot().NPCs {
 		if strings.Contains(strings.ToLower(n.Name), q) || strings.Contains(strconv.Itoa(int(n.ID)), q) {
 			out = append(out, n)
 		}
@@ -255,7 +255,7 @@ func (a *API) maps(w http.ResponseWriter, r *http.Request) {
 		Warps  int    `json:"warps"`
 	}
 	out := []row{}
-	for _, m := range a.Server.Assets.Maps {
+	for _, m := range a.Server.AssetSnapshot().Maps {
 		out = append(out, row{m.ID, m.Scene, len(m.NPCs), len(m.Events), len(m.Warps)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

@@ -32,6 +32,9 @@ func (s *Store) DeleteAccount(ctx context.Context, id uint32) error {
 		if err := tx.Where(map[string]any{"account_id": id}).Delete(&characterRow{}).Error; err != nil {
 			return err
 		}
+		if err := repairGuildLeaders(tx); err != nil {
+			return err
+		}
 		if err := tx.Where(map[string]any{"account_id": id}).Delete(&securityRow{}).Error; err != nil {
 			return err
 		}

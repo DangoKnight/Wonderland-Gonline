@@ -54,7 +54,7 @@ func TestRoundDamageAndOutcomes(t *testing.T) {
 	steps, outcome := b.Round(lowest)
 	m := b.Defenders[0]
 	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*1.2+3) = 9.
-	// Basic damage = 12*2 - 9 + roll 1 = 16; slime ATK 12 hits for max(5, 14 - DEF 12) = 5.
+	// Basic damage = 12*2 - 9 + roll 1 = 16; slime ATK 12 hits for max(5, 14 - DEF 11) = 5.
 	if outcome != Continue || m.HP != 1000-16 || self.HP != 95 || len(steps) != 2 {
 		t.Fatal(outcome, m.HP, self.HP, len(steps))
 	}

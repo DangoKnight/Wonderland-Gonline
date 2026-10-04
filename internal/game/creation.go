@@ -82,6 +82,18 @@ func (a Appearance) Validate() error {
 	return nil
 }
 
+// CreationStatPoints matches native TRE_CreateCharacter.reset/statArrow:
+// five distributable points, with model bonuses calculated separately.
+const CreationStatPoints = 5
+
+func (a Appearance) ValidateCreationAllocation() error {
+	total := uint32(a.Base.Strength) + uint32(a.Base.Constitution) + uint32(a.Base.Intelligence) + uint32(a.Base.Wisdom) + uint32(a.Base.Agility)
+	if total != CreationStatPoints {
+		return fmt.Errorf("creation attributes must total %d points", CreationStatPoints)
+	}
+	return nil
+}
+
 const (
 	creationDeletionCodeMinBytes = 6
 	creationDeletionCodeMaxBytes = 14
@@ -188,7 +200,7 @@ func StarterSkills(body, head uint16, element byte) []LearnedSkill {
 	return out
 }
 
-func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []StarterGrant, items map[uint16]ItemDefinition, now time.Time) (Character, error) {
+func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []StarterGrant, items map[uint16]ItemDefinition, now time.Time, growth ...ElementalGrowth) (Character, error) {
 	if err := ValidateCharacterName(name); err != nil {
 		return Character{}, err
 	}
@@ -205,8 +217,9 @@ func NewCharacter(id uint32, slot byte, name string, a Appearance, grants []Star
 	}
 	stats := c.Attributes()
 	level := float64(c.Level)
-	hp := math.RoundToEven(math.Pow(level, .35)*float64(stats.Constitution)*2 + level + float64(stats.Constitution)*2 + 180)
-	sp := math.RoundToEven(math.Pow(level, .3)*float64(stats.Wisdom)*3.2 + level + float64(stats.Wisdom)*2 + 94)
+	g := characterGrowth(c.Element, growth)
+	hp := math.RoundToEven(g.HP.value(level, stats))
+	sp := math.RoundToEven(g.SP.value(level, stats))
 	bonus := c.Equipment.Bonuses(items)
 	hp += float64(bonus.HP)
 	sp += float64(bonus.SP)

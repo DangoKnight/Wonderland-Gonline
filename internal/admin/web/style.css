@@ -314,3 +314,43 @@ dialog.panel {
 dialog::backdrop {
 	background: #0008;
 }
+
+nav {
+	max-height: calc(100vh - 200px);
+	overflow-y: auto;
+}
+.tool-form {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	align-items: end;
+}
+.tool-form button {
+	align-self: end;
+}
+.editor-dialog {
+	max-width: 1000px !important;
+}
+.json-editor {
+	font-family: monospace;
+	min-height: 50vh;
+	width: 100%;
+	white-space: pre;
+}
+.asset-preview {
+	max-height: 60vh;
+	overflow: auto;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+button.danger {
+	color: #a82525;
+}
+@media (max-width: 600px) {
+	nav {
+		max-height: none;
+	}
+	.tool-form {
+		grid-template-columns: 1fr;
+	}
+}

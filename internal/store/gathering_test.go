@@ -115,7 +115,7 @@ func TestWaterGatheringFailureRollbackAndOwnership(t *testing.T) {
 	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error { c.Bag = game.Inventory{}; return nil }); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.db.Exec("CREATE TRIGGER fail_gather BEFORE UPDATE ON characters BEGIN SELECT RAISE(ABORT,'injected failure'); END"); err != nil {
+	if _, err := db.db.Exec("CREATE TRIGGER fail_gather BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'injected failure'); END"); err != nil {
 		t.Fatal(err)
 	}
 	if _, adds, err := db.GatherWater(ctx, refs[0], 11009, 60001, 50, now, yes); err == nil || adds != nil {

@@ -13,7 +13,7 @@ import (
 func (s *Server) peers(c *Session) []*Session {
 	var peers []*Session
 	for _, peer := range s.world {
-		if peer != c && peer.character.Map == c.character.Map {
+		if peer != c && sameScene(peer, c) {
 			peers = append(peers, peer)
 		}
 	}
@@ -29,7 +29,7 @@ func peerPackets(char game.Character, arriving, login bool) ([][]byte, error) {
 	}
 	packets := [][]byte{appearance, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(char.ID).Bytes(char.WornEquipment())}
 	if arriving {
-		packets = append(packets, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(char.ID).U8(255))
+		packets = append(packets, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(char.ID).U8(protocol.PresenceMapAvailable))
 		if login {
 			packets = append(packets, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
 		}
@@ -73,6 +73,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	peers := s.peers(c)
 	// Finish the entrant's snapshot before publishing it to existing players.
 	for _, peer := range peers {
+		if peer.invisible {
+			continue
+		}
 		packets, err := peerPackets(*peer.character, false, false)
 		if err != nil {
 			return err
@@ -102,11 +105,53 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	c.ready = true
 	s.Log.Info("map load acknowledged", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map)
 	for _, peer := range peers {
+		if c.invisible {
+			break
+		}
 		for _, packet := range arrival {
 			if err := peer.send(packet); err != nil {
 				// A failed recipient must not disconnect the player causing the update.
 				peer.conn.Close()
 				break
+			}
+		}
+	}
+	if c.tentOwner != 0 {
+		if err := s.tentSnapshot(context.Background(), c); err != nil {
+			return err
+		}
+		for _, peer := range peers {
+			s.sendOrClose(peer, protocol.Builder{protocol.CommandInventory, protocol.InventoryTentPlayer}.U32(c.character.ID))
+		}
+	}
+	if err := s.syncGuild(context.Background(), c); err != nil {
+		return err
+	}
+	for _, peer := range peers {
+		guild, err := s.Store.GuildForCharacter(context.Background(), peer.character.ID)
+		if err != nil {
+			return err
+		}
+		if guild != nil && !peer.invisible {
+			if err := c.send(guildBadge(peer.character.ID, guild)); err != nil {
+				return err
+			}
+		}
+		if peer.stall != nil {
+			if err := c.send(stallSign(peer, peer.stall.Title)); err != nil {
+				return err
+			}
+		}
+	}
+	if err := s.guildPresence(context.Background(), c.character.ID); err != nil {
+		return err
+	}
+	if c.tentOwner == 0 {
+		for _, peer := range s.world {
+			if peer.openTent != nil && peer.openTent.Map == c.character.Map {
+				if err := c.send(tentSign(peer)); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -129,12 +174,18 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 	}
+	if err := s.deliverAdminMail(context.Background(), c); err != nil {
+		return err
+	}
 	// AC12:1 also starts the authored arrival script.
 	return s.arrivalScript(c)
 }
 
 // broadcastWorld sends to map peers, excluding the actor. Caller holds worldMu.
 func (s *Server) broadcastWorld(c *Session, packet []byte) {
+	if c.invisible {
+		return
+	}
 	for _, peer := range s.peers(c) {
 		if err := peer.send(packet); err != nil {
 			peer.conn.Close()
@@ -145,6 +196,11 @@ func (s *Server) broadcastWorld(c *Session, packet []byte) {
 func (s *Server) leaveWorld(c *Session) {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if c.openTent != nil {
+		if err := s.closePlayerTent(context.Background(), c); err != nil {
+			s.Log.Error("tent close on logout failed", "error", err)
+		}
+	}
 	if c.autosaveBaseline != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
 		if err := s.autosaveSession(ctx, c); err != nil {
@@ -158,7 +214,21 @@ func (s *Server) leaveWorld(c *Session) {
 	if c.character != nil && s.friendSessions[c.character.ID] == c {
 		delete(s.friendSessions, c.character.ID)
 	}
+	c.marriageProposal = nil
+	for _, peer := range s.world {
+		if peer.marriageProposal != nil && peer.marriageProposal.From == c {
+			peer.marriageProposal = nil
+		}
+	}
+	c.guildInvitation = nil
+	for _, peer := range s.world {
+		if peer.guildInvitation != nil && peer.guildInvitation.From == c {
+			peer.guildInvitation = nil
+		}
+	}
 	s.clearFriendRequests(c)
+	c.gathering = nil
+	s.closeStall(c)
 	s.cancelTrade(c)
 	s.abandonBattle(c)
 	s.endEvent(c)
@@ -167,7 +237,20 @@ func (s *Server) leaveWorld(c *Session) {
 	if s.world[c.info.ID] == c {
 		s.depart(c, protocol.Builder{protocol.CommandMapAcknowledgment}.U32(c.character.ID).U16(0).U16(0).U16(0).U16(0).U8(0))
 	}
+	if c.character != nil && c.character.TentReturn != nil {
+		next := c.character.Clone()
+		recoverTentCharacter(&next)
+		if err := s.Store.UpdateCharacter(context.Background(), c.account.ID, c.character.ID, func(stored *game.Character) error { *stored = next; return nil }); err != nil {
+			s.Log.Error("tent return save failed", "error", err)
+		} else {
+			*c.character = next
+		}
+	}
+	c.tentOwner = 0
 	if published {
+		if err := s.guildPresence(context.Background(), c.character.ID); err != nil {
+			s.Log.Error("guild logout presence failed", "character", c.character.ID, "error", err)
+		}
 		s.friendPresence(c, false)
 	}
 }
@@ -208,6 +291,15 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	// A GM summon may move this character from another session; read it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if c.tentOwner != 0 {
+		if !gmIdle(c) {
+			return nil
+		}
+		if portal == 1 {
+			return s.exitTent(ctx, c)
+		}
+		return nil
+	}
 	if c.battle != nil || c.event != nil {
 		return nil
 	}
@@ -286,15 +378,31 @@ func (s *Server) teleportPrelude(c *Session) error {
 // holds worldMu.
 func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination, portal byte) error {
 	char := c.character
+	if c.openTent != nil && (c.tentOwner == 0 || dst.Map != c.openTent.Map) {
+		if err := s.closePlayerTent(ctx, c); err != nil {
+			return err
+		}
+	}
 	if e := s.Store.UpdateCharacter(ctx, c.account.ID, char.ID, func(stored *game.Character) error {
 		stored.Map, stored.X, stored.Y = dst.Map, dst.X, dst.Y
+		stored.TentReturn = nil
 		return nil
 	}); e != nil {
 		return e
 	}
+	return s.teleportAfterSave(c, dst, portal)
+}
+
+// teleportAfterSave publishes an already durable destination. Caller holds worldMu.
+func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byte) error {
+	char := c.character
+	c.gathering = nil
+	s.closeStall(c)
 	s.cancelTrade(c)
 	// Old-map peers see the departure as a load command toward the destination.
 	s.depart(c, protocol.Builder{protocol.CommandMapAcknowledgment}.U32(char.ID).U16(dst.Map).U16(dst.X).U16(dst.Y).U16(uint16(portal)).U8(0))
+	c.tentOwner = 0
+	char.TentReturn = nil
 	char.Map, char.X, char.Y = dst.Map, dst.X, dst.Y
 	s.mu.Lock()
 	c.info.Map = dst.Map

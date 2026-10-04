@@ -34,6 +34,11 @@ type SessionInfo struct {
 	Connected     time.Time `json:"connected"`
 }
 type Session struct {
+	openTent         *openTent // Guarded by worldMu.
+	tentOwner        uint32    // Private scene identity; guarded by worldMu.
+	motdSent         bool      // One welcome popup per character login, guarded by worldMu.
+	adminFeedback    *[]string // Scoped to a web action under worldMu.
+	invisible        bool      // GM ghost mode; guarded by worldMu.
 	pendingName      string
 	character        *game.Character
 	autosaveBaseline *game.Character // Last checkpoint; guarded by worldMu.
@@ -52,11 +57,15 @@ type Session struct {
 	carnieReturn *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
 	restMap      uint16             // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
-	trade          *tradeSession // Guarded by worldMu.
-	tradeRequest   *tradeRequest
-	friendRequests map[uint32]time.Time // Guarded by worldMu.
-	friendOnline   bool                 // Presence survives the map-loading phase of a warp.
-	walkMode       byte                 // AC16:4 runtime setting; guarded by worldMu.
+	gathering        *gatheringRun     // Guarded by worldMu.
+	marriageProposal *marriageProposal // Guarded by worldMu.
+	guildInvitation  *guildInvitation  // Guarded by worldMu.
+	stall            *playerStall      // Session-owned; guarded by worldMu.
+	trade            *tradeSession     // Guarded by worldMu.
+	tradeRequest     *tradeRequest
+	friendRequests   map[uint32]time.Time // Guarded by worldMu.
+	friendOnline     bool                 // Presence survives the map-loading phase of a warp.
+	walkMode         byte                 // AC16:4 runtime setting; guarded by worldMu.
 	// Team state, guarded by worldMu: the team, pending join requests by
 	// requester ID, and the vitals last reported to teammates.
 	party         *party
@@ -96,8 +105,16 @@ func (s *Session) send(p []byte) error {
 }
 
 type Server struct {
+	configPath string // Set before HTTP starts; protected by adminEditMu thereafter.
+	bannedIPs  atomic.Value
+	ipBanMu    sync.Mutex
 	// accountMu orders credential verification/publication against admin changes.
-	accountMu sync.RWMutex
+	accountMu    sync.RWMutex
+	privilegeMu  sync.Mutex   // Orders persisted and live GM permissions.
+	catalogMu    sync.RWMutex // Pre-world and administration snapshots versus reload.
+	shutdown     chan struct{}
+	shutdownOnce sync.Once
+	shutdownAt   time.Time // Guarded by worldMu.
 	// worldMu orders visibility, movement, and logout packets across sessions.
 	worldMu        sync.Mutex
 	world          map[uint64]*Session
@@ -119,11 +136,26 @@ type Server struct {
 	unsupported    atomic.Uint64
 	name           atomic.Value
 
+	logs               *logBuffer
+	petGrowthFormula   game.PetGrowthFormula // Immutable startup selection, captured by New.
+	expRateMultiplier  float64
+	motd               string
+	statusMode         string
+	adminEditMu        sync.Mutex
 	dropRateMultiplier float64 // Live GM setting; guarded by worldMu.
 }
 
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {
-	s := &Server{world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
+	s := &Server{petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
+	s.logs = &logBuffer{}
+	if log.Enabled(context.Background(), slog.LevelDebug) {
+		s.logs.SetLevel("debug")
+	} else {
+		s.logs.SetLevel("info")
+	}
+	s.Log = slog.New(&adminLogHandler{base: log.Handler(), buffer: s.logs})
+	s.bannedIPs.Store(map[string]bool{})
+	s.shutdown = make(chan struct{})
 	s.name.Store(c.Name)
 	return s
 }
@@ -189,6 +221,8 @@ func (s *Server) Run(ctx context.Context) error {
 	go func() { defer s.wg.Done(); s.runLuckyDrawResets(ctx) }()
 	s.wg.Add(1)
 	go func() { defer s.wg.Done(); s.runAutosave(ctx) }()
+	s.wg.Add(1)
+	go func() { defer s.wg.Done(); s.runShutdown(ctx) }()
 	errs := make(chan error, len(services))
 	for i, v := range services {
 		s.Log.Info("TCP service listening", "service", v.name, "address", s.listeners[i].Addr())
@@ -198,6 +232,7 @@ func (s *Server) Run(ctx context.Context) error {
 	var err error
 	select {
 	case <-ctx.Done():
+	case <-s.shutdown:
 	case err = <-errs:
 	}
 	cancel()
@@ -220,6 +255,10 @@ func (s *Server) accept(ctx context.Context, service string, l net.Listener) err
 		conn, e := l.Accept()
 		if e != nil {
 			return e
+		}
+		if s.ipBanned(conn.RemoteAddr()) {
+			conn.Close()
+			continue
 		}
 		s.mu.Lock()
 		if ctx.Err() != nil || len(s.sessions) >= s.Config.MaxConnections {
@@ -252,11 +291,11 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 		online := len(s.accounts)
 		s.mu.Unlock()
 		c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		io.Copy(c.conn, bytes.NewReader(StatusPacket(online, s.Config.StatusServerIDs...)))
+		io.Copy(c.conn, bytes.NewReader(s.launcherStatusPacket(online)))
 		return
 	}
 	for {
-		if e := c.conn.SetReadDeadline(time.Now().Add(s.Config.IdleTimeout())); e != nil {
+		if e := c.conn.SetReadDeadline(s.idleReadDeadline(c, time.Now())); e != nil {
 			return
 		}
 		p, e := protocol.Read(c.conn)
@@ -398,6 +437,8 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 		}
 		return s.returnToAccount(c)
 	case protocol.LoginSelectAlternate:
+		s.catalogMu.RLock()
+		defer s.catalogMu.RUnlock()
 		if len(p) != protocol.LoginSelectionPacketBytes || c.account.ID == 0 || c.character != nil {
 			return protocol.ErrMalformed
 		}
@@ -415,6 +456,8 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 		for _, char := range chars {
 			if char.Slot == slot {
 				char = char.Clone()
+				tentRecovered := recoverTentCharacter(&char)
+				vitalsChanged := char.RecalculateVitals(s.Assets.Items)
 				vehicleChanged := char.NormalizeVehicle(s.Assets.Items)
 				unlocks := char.UnlockQualifiedSkills(false, s.hasSkill)
 				view, pets := world.NewView(), newPetRoster()
@@ -422,7 +465,7 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 				if e != nil {
 					return e
 				}
-				if len(unlocks) > 0 || vehicleChanged {
+				if len(unlocks) > 0 || vehicleChanged || vitalsChanged || tentRecovered {
 					if e = s.Store.UpdateCharacter(ctx, c.account.ID, char.ID, func(stored *game.Character) error { *stored = char; return nil }); e != nil {
 						return e
 					}

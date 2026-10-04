@@ -113,6 +113,7 @@ func (e Equipment) Bonuses(items map[uint16]ItemDefinition) Bonuses {
 // Element values follow the C# Affinity enum.
 const (
 	Earth byte = 1
+	Water byte = 2
 	Fire  byte = 3
 	Wind  byte = 4
 )
@@ -121,25 +122,20 @@ const (
 // ported, so no job multiplier applies.
 type Combat struct{ MaxHP, MaxSP, ATK, DEF, MAT, MDF, SPD int32 }
 
-func (c Character) Combat(items map[uint16]ItemDefinition) Combat {
+func (c Character) Combat(items map[uint16]ItemDefinition, growth ...ElementalGrowth) Combat {
 	a := c.Attributes()
 	level := float64(c.Level)
+	g := characterGrowth(c.Element, growth)
 	round := func(v float64) int32 { return int32(uint16(math.RoundToEven(v))) }
-	atk, mat, def, spd := round(level*1.4+float64(a.Strength)*2), round(level*1.4+float64(a.Intelligence)*2), round(level*2+float64(a.Constitution)*2), round(level*1.6+float64(a.Agility)*2.2)
-	switch c.Element {
-	case Fire:
-		atk, mat = round(level*2+float64(a.Strength)*2), round(level*1.6+float64(a.Intelligence)*2)
-	case Earth:
-		def = round(level*3 + float64(a.Constitution)*2)
-	case Wind:
-		spd = round(level*2.1 + float64(a.Agility)*2.2)
-	}
 	b := c.Equipment.Bonuses(items)
 	return Combat{
-		MaxHP: int32(uint32(math.RoundToEven(math.Pow(level, .35)*float64(a.Constitution)*2+level+float64(a.Constitution)*2+180))) + b.HP,
-		MaxSP: int32(uint16(math.RoundToEven(math.Pow(level, .3)*float64(a.Wisdom)*3.2+level+float64(a.Wisdom)*2+94))) + b.SP,
-		ATK:   atk + int32(b.ATK), DEF: def + int32(b.DEF), MAT: mat + int32(b.MAT),
-		MDF: round(level*2+float64(a.Wisdom)*2) + int32(b.MDF), SPD: spd + int32(b.SPD),
+		MaxHP: int32(uint32(math.RoundToEven(g.HP.value(level, a)))) + b.HP,
+		MaxSP: round(g.SP.value(level, a)) + b.SP,
+		ATK:   round(g.ATK.value(level, a)) + int32(b.ATK),
+		DEF:   round(g.DEF.value(level, a)) + int32(b.DEF),
+		MAT:   round(g.MAT.value(level, a)) + int32(b.MAT),
+		MDF:   round(g.MDF.value(level, a)) + int32(b.MDF),
+		SPD:   round(g.SPD.value(level, a)) + int32(b.SPD),
 	}
 }
 
@@ -177,7 +173,10 @@ func (c *Character) Wear(from byte, items map[uint16]ItemDefinition) error {
 	}
 	item := c.Bag[from-1]
 	slot := items[item.ID].EquipSlot
-	if item.Empty() || item.Count != 1 || slot < 1 || slot > 6 {
+	if item.Empty() || item.Locked || item.Count != 1 || slot < 1 || slot > 6 {
+		return ErrCannotEquip
+	}
+	if c.Equipment[slot-1].Locked {
 		return ErrCannotEquip
 	}
 	c.Bag[from-1] = c.Equipment[slot-1]
@@ -187,7 +186,7 @@ func (c *Character) Wear(from byte, items map[uint16]ItemDefinition) error {
 
 // Unwear follows Inventory.TryUnequip: the destination bag slot must be empty.
 func (c *Character) Unwear(from, to byte) error {
-	if from < 1 || from > 6 || to < 1 || to > BagSize || !c.Bag[to-1].Empty() || c.Equipment[from-1].ID == 0 {
+	if from < 1 || from > 6 || to < 1 || to > BagSize || !c.Bag[to-1].Empty() || c.Bag[to-1].Locked || c.Equipment[from-1].Locked || c.Equipment[from-1].ID == 0 {
 		return ErrCannotEquip
 	}
 	c.Bag[to-1] = c.Equipment[from-1]

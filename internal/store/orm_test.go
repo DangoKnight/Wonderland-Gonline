@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"wonderland-go/internal/game"
@@ -76,8 +75,14 @@ func TestORMOpensExistingDatabaseWithoutChangingSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if !reflect.DeepEqual(before, schema(db.db)) {
-		t.Fatal("ORM changed an existing schema")
+	after := schema(db.db)
+	for name, ddl := range before {
+		if after[name] != ddl {
+			t.Fatalf("ORM changed existing table %s", name)
+		}
+	}
+	if after["admin_mail"] == "" || after["banned_ips"] == "" {
+		t.Fatal("administration tables missing after upgrade")
 	}
 	a, err := db.Authenticate(ctx, "legacy", "old-secret")
 	if err != nil || a.ID != 7 || a.GMLevel != 2 {

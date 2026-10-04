@@ -83,3 +83,17 @@ func (s *Store) updateAccount(ctx context.Context, id uint32, column string, val
 		return tx.Create(&auditRow{At: time.Now().UTC().Format(time.RFC3339), Action: action, Subject: fmt.Sprint(id)}).Error
 	})
 }
+
+// GMLevels reads every account's privileges, without the administration list's
+// display limit. Reload must also revoke sessions absent from this snapshot.
+func (s *Store) GMLevels(ctx context.Context) (map[uint32]byte, error) {
+	var rows []accountRow
+	if err := s.orm.WithContext(ctx).Select("id", "gm_level").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	levels := make(map[uint32]byte, len(rows))
+	for _, row := range rows {
+		levels[row.ID] = row.GMLevel
+	}
+	return levels, nil
+}

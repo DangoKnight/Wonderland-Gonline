@@ -393,3 +393,9 @@ func (s *Server) hasSkill(id uint16) bool { _, ok := s.Assets.Skills[id]; return
 
 // petGrowth is the weighted roll for a pet's level-up stat.
 func petGrowth(n int) int { return rand.IntN(n) }
+
+// gainPetExp is called with worldMu held to serialize pet progression with gameplay mutations.
+func (s *Server) gainPetExp(pet *game.Pet, amount uint32, roll func(int) int) int {
+	template, known := s.World.Template(game.BroadcastID(pet.ID))
+	return pet.GainExp(amount, template, known, roll, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
+}

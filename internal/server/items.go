@@ -23,8 +23,8 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	switch p[1] {
 	case protocol.InventoryStallListRequest:
-		// No player stalls are implemented. AC23.Recv77 sends an empty list and
-		// its completion marker; the native client needs both replies while loading.
+		// AC23.Recv77 supplies only the empty global-list layout. Keep both
+		// native loading replies; actual player shops use AC56 map signs/view.
 		return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryStallList, 0}, {protocol.CommandInventory, protocol.InventoryStallListComplete}})
 	case protocol.InventoryOpenPack, protocol.InventoryOpenPackAlternate:
 		return s.openPackCommand(ctx, c, p)
@@ -195,7 +195,7 @@ func (s *Server) moveItem(ctx context.Context, c *Session, from, count, to byte)
 // broadcastMap sends to every published character on a map. Caller holds worldMu.
 func (s *Server) broadcastMap(mapID uint16, packet []byte) {
 	for _, peer := range s.world {
-		if peer.character.Map == mapID {
+		if peer.character.Map == mapID && peer.tentOwner == 0 {
 			if err := peer.send(packet); err != nil {
 				peer.conn.Close()
 			}
@@ -223,6 +223,7 @@ func (s *Server) runRespawns(ctx context.Context) {
 			return
 		case now := <-t.C:
 			s.respawnGround(now)
+			s.respawnChests(now)
 			s.reviveMonsters(now)
 		}
 	}
@@ -314,10 +315,13 @@ func systemLine(text string) []byte {
 }
 
 // useItem is AC23.Recv96: equipment is worn, the Star explains itself, and anything
-// else must be a recovery item, gacha pack or pet voucher. Tents remain pending.
+// else uses the recovery, gacha, voucher or tent workflow.
 func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 	if slot < 1 || slot > game.BagSize || c.character.Bag[slot-1].Empty() {
 		return nil
+	}
+	if c.character.Bag[slot-1].Locked {
+		return c.send(headBanner(game.ErrItemLocked.Error()))
 	}
 	if handled, err := s.redeemVoucher(ctx, c, slot, 1, 0); handled || err != nil {
 		return err
@@ -328,7 +332,7 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 	id := c.character.Bag[slot-1].ID
 	switch def := s.Assets.Items[id]; {
 	case id == tentItem:
-		return nil
+		return s.openPlayerTent(ctx, c, slot)
 	case def.EquipSlot >= 1 && def.EquipSlot <= 6:
 		return s.changeEquipment(ctx, c, slot, 0, true)
 	case id == starItem:
@@ -343,9 +347,27 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 
 // useItemOn is AC23.Recv15: use count items on a target (0 is the character).
 func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, target uint16) error {
-	if slot < 1 || slot > game.BagSize || c.character.Bag[slot-1].ID == tentItem {
+	if slot < 1 || slot > game.BagSize {
 		return nil
 	}
+	if c.character.Bag[slot-1].ID == tentItem {
+		if count == 1 && target == 0 {
+			return s.openPlayerTent(ctx, c, slot)
+		}
+		return nil
+	}
+	if c.character.Bag[slot-1].Locked {
+		return c.send(headBanner(game.ErrItemLocked.Error()))
+	}
+	id := c.character.Bag[slot-1].ID
+	if s.Assets.IsGachaPack(id) {
+		if count != 1 || target != 0 {
+			return c.send(headBanner("Open one pack at a time on your character."))
+		}
+		_, err := s.openGachaPack(ctx, c, slot)
+		return err
+	}
+
 	if handled, err := s.redeemVoucher(ctx, c, slot, count, target); handled || err != nil {
 		return err
 	}

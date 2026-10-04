@@ -55,7 +55,7 @@ func TestLiveDropRateReachesVictoryLoot(t *testing.T) {
 	const monsterID = 999
 	s.Assets.NPCs = map[uint16]assets.NPC{monsterID: {Drops: [5]uint16{32176}}}
 	s.Assets.Drops = map[uint32][]assets.Drop{monsterID: {{Item: 32176, Min: 1, Max: 1, Rate: 10}}}
-	run := &battleRun{b: &battle.Battle{Defenders: []*battle.Fighter{{Template: monsterID}, {Template: monsterID, Captured: true}}}}
+	run := &battleRun{b: &battle.Battle{Defenders: []*battle.Fighter{{Kind: battle.Monster, Template: monsterID}, {Kind: battle.Monster, Template: monsterID, Captured: true}}}}
 	next := players[0].character.Clone()
 	next.Bag = game.Inventory{}
 	s.worldMu.Lock()

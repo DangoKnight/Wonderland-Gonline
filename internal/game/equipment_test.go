@@ -34,7 +34,7 @@ func TestCombatAndBonuses(t *testing.T) {
 	}
 	// Body 1 head 0 adds INT 2 and AGI 1 to a base of 5.
 	c := Character{Level: 1, Element: Fire, Body: 1, Base: Attributes{5, 5, 5, 5, 5}}
-	if got := c.Combat(items); got != (Combat{201, 121, 12, 12, 16, 12, 15}) {
+	if got := c.Combat(items); got != (Combat{201, 121, 12, 11, 16, 13, 12}) {
 		t.Fatalf("base: %+v", got)
 	}
 	weapon := Item{ID: 30000, Count: 1}
@@ -43,7 +43,7 @@ func TestCombatAndBonuses(t *testing.T) {
 	c.Equipment[1] = Item{ID: 30001, Count: 1}
 	got := c.Combat(items)
 	// The DEF penalty wraps like the C# UInt16 total; HP adds the second status.
-	if got.ATK != 21 || got.DEF != 12+65531 || got.MaxHP != 221 {
+	if got.ATK != 21 || got.DEF != 11+65531 || got.MaxHP != 221 {
 		t.Fatalf("equipped: %+v", got)
 	}
 	if b := ChangeBanner("Equipment: ", Combat{ATK: 12, SPD: 15}, Combat{ATK: 21, SPD: 14}); b != "Equipment: ATK +9, SPD -1" {
@@ -123,5 +123,30 @@ func TestStatAllocation(t *testing.T) {
 	}
 	if c.Allocate([]StatAllocation{{StatSTR, 1}}) {
 		t.Fatal("allocated without points")
+	}
+}
+
+func TestCombatElementalDefenseContributions(t *testing.T) {
+	c := Character{Level: 40, Base: Attributes{20, 20, 20, 20, 20}}
+	for _, tc := range []struct {
+		element                 byte
+		atk, mat, def, mdf, spd int32
+	}{
+		{Earth, 96, 96, 139, 132, 100},
+		{Water, 96, 96, 115, 124, 100},
+		{Fire, 120, 104, 115, 124, 100},
+		{Wind, 96, 96, 115, 124, 120},
+	} {
+		c.Element = tc.element
+		got := c.Combat(nil)
+		if got.ATK != tc.atk || got.MAT != tc.mat || got.DEF != tc.def || got.MDF != tc.mdf || got.SPD != tc.spd {
+			t.Errorf("element %d: %+v", tc.element, got)
+		}
+	}
+	items := map[uint16]ItemDefinition{30000: {ID: 30000, EquipSlot: 2, Status: [2]uint16{216, 0}, Values: [2]int32{107, 0}}}
+	c.Equipment[1] = Item{ID: 30000, Count: 1}
+	c.Element = Water
+	if got := c.Combat(items).MDF; got != 131 {
+		t.Fatalf("equipped Water MDF = %d, want 131", got)
 	}
 }

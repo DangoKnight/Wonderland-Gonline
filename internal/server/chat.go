@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
 	"wonderland-go/internal/world"
@@ -19,6 +20,9 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 	if c.character == nil || !c.ready {
 		return nil
 	}
+	if time.Now().Before(c.character.MutedUntil) {
+		return s.chatFeedback(c, "Your chat privileges are temporarily muted.")
+	}
 	text := string(p[2:])
 	switch p[1] {
 	case protocol.ChatWorldMessage:
@@ -31,6 +35,7 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 			if handled, err := s.chatChannelCommand(c, text); handled {
 				return err
 			}
+			s.closeStall(c)
 			return s.command(ctx, c, text)
 		}
 		if !validChatText(text, chatMessageMaxBytes) {
@@ -48,8 +53,7 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 	case protocol.ChatTeamMessage:
 		return s.teamChat(c, text)
 	case protocol.ChatGuildMessage:
-		// Guilds are not ported; the client refuses the channel without one.
-		return nil
+		return s.guildChat(ctx, c, text)
 	}
 	return ErrUnsupported
 }
@@ -57,9 +61,34 @@ func (s *Server) chat(ctx context.Context, c *Session, p []byte) error {
 // command runs a chat command. GM rights come only from an administrator-granted account level;
 // the C# default names and gm_list.txt are deliberately not trusted.
 func (s *Server) command(ctx context.Context, c *Session, text string) error {
-	words := strings.Split(text, " ")
+	words := strings.Fields(text)
+	if len(words) == 0 || len(words[0]) < 2 {
+		return nil
+	}
 	name := strings.ToLower(words[0])
+	if handled, err := s.tentChatCommand(ctx, c, name[1:], words[1:]); handled {
+		return err
+	}
+	if handled, err := s.socialChatCommand(ctx, c, name[1:], words[1:], text); handled {
+		return err
+	}
+	if handled, err := s.craftingChatCommand(ctx, c, name[1:], words[1:], text); handled {
+		return err
+	}
 	switch name[1:] {
+	case "guildcreate":
+		if !commandTravelAvailable(c) || c.trade != nil {
+			return nil
+		}
+		guildName := strings.TrimSpace(strings.TrimPrefix(text, words[0]))
+		if err := s.Store.CreateGuild(ctx, c.character.ID, guildName); err != nil {
+			return s.chatFeedback(c, err.Error())
+		}
+		return s.refreshGuilds(ctx)
+	case "guild":
+		return s.guildChat(ctx, c, strings.TrimSpace(strings.TrimPrefix(text, words[0])))
+	case "help", "cmds", "cmd":
+		return s.commandHelp(c)
 	case "unride", "dismount", "carnie":
 		if !commandTravelAvailable(c) || c.trade != nil {
 			return nil
@@ -73,6 +102,12 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 		return nil
 	}
 	s.Log.Info("GM command", "account", c.account.Username, "character", c.character.Name, "command", text)
+	if spec, ok := gmCommandRegistry[name[1:]]; ok {
+		if spec.idle && !gmIdle(c) {
+			return s.chatFeedback(c, "Finish active interactions before using this command.")
+		}
+		return spec.handle(s, ctx, c, name[1:], words[1:])
+	}
 	switch name[1:] {
 	case "town", "summonall", "warp", "goto", "tp", "summon", "bring":
 		if !commandTravelAvailable(c) {
@@ -82,6 +117,8 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 	switch name[1:] {
 	case "level", "lvl", "points", "sp", "statpoint", "statpoints", "stats", "stat", "exp", "skill":
 		return s.gmProgress(ctx, c, name[1:], words)
+	case "clearskills", "resetskills":
+		return s.gmClearSkills(ctx, c, words[1:])
 	case "restat", "resetstats":
 		return s.gmRestat(ctx, c, words[1:])
 	case "repair", "fixall":
@@ -128,7 +165,8 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 		}
 		if target := s.findOnline(words[1]); target != nil {
 			s.Log.Info("GM kick", "target", target.character.Name)
-			target.conn.Close()
+			reason := strings.Join(words[2:], " ")
+			s.gmKick(target, reason)
 		}
 	case "b", "broadcast", "notice":
 		if len(words) >= 2 {

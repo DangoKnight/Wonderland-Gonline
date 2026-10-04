@@ -183,13 +183,10 @@ func (p Pet) ClientTotalExp() uint32 {
 	return uint32(min(total, math.MaxUint32))
 }
 
-// grow adds one point per level to one of the template's three strongest stats,
-// chosen with weights proportional to them (server policy in C#).
-func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int) {
-	weights := []int{int(p.Base.Strength), int(p.Base.Constitution), int(p.Base.Intelligence), int(p.Base.Wisdom), int(p.Base.Agility)}
-	if known {
-		weights = []int{int(t.Stats.Strength), int(t.Stats.Constitution), int(t.Stats.Intelligence), int(t.Stats.Wisdom), int(t.Stats.Agility)}
-	}
+// grow adds one point per level using the selected five-attribute weight formula.
+// Zero weights retain a minimum chance of one; capped attributes are excluded.
+func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int, options ...PetGrowthOptions) {
+	weights := p.growthWeights(t, known, options)
 	values := []*uint16{&p.Base.Strength, &p.Base.Constitution, &p.Base.Intelligence, &p.Base.Wisdom, &p.Base.Agility}
 	var candidates []int
 	for i := range values {
@@ -197,13 +194,6 @@ func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int) {
 			candidates = append(candidates, i)
 		}
 	}
-	// Stable descending order by weight, then the first three.
-	for i := 1; i < len(candidates); i++ {
-		for j := i; j > 0 && weights[candidates[j]] > weights[candidates[j-1]]; j-- {
-			candidates[j], candidates[j-1] = candidates[j-1], candidates[j]
-		}
-	}
-	candidates = candidates[:min(3, len(candidates))]
 	if len(candidates) == 0 {
 		return
 	}
@@ -221,7 +211,7 @@ func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int) {
 }
 
 // GainExp adds EXP and levels the pet up to MaxLevel, growing one stat per level.
-func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) int) int {
+func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) int, options ...PetGrowthOptions) int {
 	p.Exp = uint32(min(uint64(p.Exp)+uint64(amount), math.MaxUint32))
 	before := p.Level
 	p.Level = max(p.Level, 1)
@@ -232,7 +222,7 @@ func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) i
 		}
 		p.Exp -= uint32(need)
 		p.Level++
-		p.grow(t, known, roll)
+		p.grow(t, known, roll, options...)
 	}
 	return int(p.Level) - int(before)
 }

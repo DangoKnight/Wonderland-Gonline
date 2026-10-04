@@ -81,7 +81,7 @@ func TestMallPurchaseRollbackAndOwnership(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "character-write":
-				if _, err := s.db.Exec("CREATE TRIGGER fail_mall BEFORE UPDATE ON characters BEGIN SELECT RAISE(ABORT,'test'); END;"); err != nil {
+				if _, err := s.db.Exec("CREATE TRIGGER fail_mall BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'test'); END;"); err != nil {
 					t.Fatal(err)
 				}
 			case "owner":

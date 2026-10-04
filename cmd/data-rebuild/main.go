@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"wonderland-go/internal/assetdb"
+	"wonderland-go/internal/assetsql"
 	"wonderland-go/internal/config"
 )
 
@@ -23,7 +24,7 @@ func main() {
 	if *assetsDB == "" {
 		*assetsDB = settings.AssetsDatabase
 	}
-	options := assetdb.RebuildOptions{DataDirectory: *data, AssetsDB: *assetsDB, Progress: func(asset string) { fmt.Println("Imported", asset) }}
+	options := assetdb.RebuildOptions{DataDirectory: *data, AssetsDB: *assetsDB, PrepareAssets: assetsql.MigrateDatabase, Progress: func(asset string) { fmt.Println("Imported", asset) }}
 	if *resetGameplay {
 		options.GameplayDB = settings.Database
 	}

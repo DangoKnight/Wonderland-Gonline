@@ -53,6 +53,9 @@ func (s *Server) openGachaPack(ctx context.Context, c *Session, slot byte) (bool
 	if !s.Assets.IsGachaPack(item.ID) {
 		return false, nil
 	}
+	if item.Locked {
+		return true, c.send(headBanner(game.ErrItemLocked.Error()))
+	}
 	if item.Empty() || c.event != nil || c.battle != nil || c.storm || c.beach != nil || (c.character.ActiveVehicle != 0 && c.character.VehicleSlot == slot) {
 		return true, nil
 	}

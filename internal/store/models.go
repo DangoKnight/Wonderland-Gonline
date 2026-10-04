@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 
 	"gorm.io/gorm"
@@ -11,7 +10,7 @@ import (
 	"wonderland-go/internal/game"
 )
 
-// Persistence models map the existing schema; game state remains its JSON blob.
+// Identity models preserve existing constraints. Gameplay state lives in typed tables.
 type accountRow struct {
 	Account      `gorm:"embedded"`
 	PasswordHash string
@@ -25,7 +24,8 @@ type characterRow struct {
 	AccountID uint32
 	Slot      byte
 	Name      string
-	State     []byte
+	// State is an inert migration snapshot, never runtime state.
+	State []byte
 }
 
 func (characterRow) TableName() string { return "characters" }
@@ -70,32 +70,26 @@ func (s *Store) transaction(ctx context.Context, fn func(*gorm.DB) error) error 
 }
 func loadCharacter(tx *gorm.DB, ref CharacterRef) (game.Character, error) {
 	var row characterRow
-	if err := tx.Where(map[string]any{"id": ref.ID, "account_id": ref.Account}).Take(&row).Error; err != nil {
+	if err := tx.Omit("state").Where(map[string]any{"id": ref.ID, "account_id": ref.Account}).Take(&row).Error; err != nil {
 		return game.Character{}, persistenceError(err)
 	}
-	var c game.Character
-	err := json.Unmarshal(row.State, &c)
-	return c, err
+	return readCharacterState(tx, row)
 }
 func saveCharacter(tx *gorm.DB, ref CharacterRef, c game.Character) error {
-	raw, err := json.Marshal(c)
-	if err != nil {
-		return err
+	var row characterRow
+	if err := tx.Select("id", "slot", "name").Where(map[string]any{"id": ref.ID, "account_id": ref.Account}).Take(&row).Error; err != nil {
+		return persistenceError(err)
 	}
-	result := tx.Model(&characterRow{}).Where(map[string]any{"id": ref.ID, "account_id": ref.Account}).Update("state", raw)
-	if result.Error != nil {
-		return result.Error
+	if c.ID != row.ID || c.Slot != row.Slot || c.Name != row.Name {
+		return errors.New("identity mutation is not allowed")
 	}
-	if result.RowsAffected != 1 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return writeCharacterState(tx, c)
 }
-func decodeCharacters(rows []characterRow) ([]game.Character, error) {
+func decodeCharacters(tx *gorm.DB, rows []characterRow) ([]game.Character, error) {
 	result := make([]game.Character, 0, len(rows))
 	for _, row := range rows {
-		var c game.Character
-		if err := json.Unmarshal(row.State, &c); err != nil {
+		c, err := readCharacterState(tx, row)
+		if err != nil {
 			return nil, err
 		}
 		result = append(result, c)

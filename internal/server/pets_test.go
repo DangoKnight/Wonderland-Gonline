@@ -124,7 +124,12 @@ func TestPetGrowthAndConditions(t *testing.T) {
 	if p.ClientTotalExp() != 6 {
 		t.Fatal(p.ClientTotalExp())
 	}
-	if gained := p.GainExp(14+35, tpl, true, func(int) int { return 0 }); gained != 2 || p.Level != 3 || p.Base.Constitution != 11 {
+	if gained := p.GainExp(14+35, tpl, true, func(total int) int {
+		if total != 13 {
+			t.Fatalf("growth total = %d, want 13", total)
+		}
+		return 1 // STR occupies roll 0; CON occupies rolls 1 through 9.
+	}); gained != 2 || p.Level != 3 || p.Base.Constitution != 11 {
 		t.Fatal("growth", gained, p.Level, p.Base)
 	}
 	if p.ClientTotalExp() != 6+14+35 {

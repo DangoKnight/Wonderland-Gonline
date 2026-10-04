@@ -14,6 +14,7 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
+	chestReward  *assets.ChestReward
 	mapID, click uint16
 	ev           *assets.Event
 	branch       int
@@ -68,6 +69,9 @@ func (s *Server) commit(ctx context.Context, c *Session, next game.Character) er
 // commitState saves and adopts state without publishing packets. The raft wreck
 // path supplies its own break/dismount order. Callers hold worldMu.
 func (s *Server) commitState(ctx context.Context, c *Session, next game.Character) error {
+	if err := game.PreserveItemLocks(*c.character, &next); err != nil {
+		return err
+	}
 	next.NormalizeVehicle(s.Assets.Items)
 	if e := s.Store.UpdateCharacter(ctx, c.account.ID, next.ID, func(stored *game.Character) error {
 		*stored = next
@@ -78,6 +82,7 @@ func (s *Server) commitState(ctx context.Context, c *Session, next game.Characte
 	changedOfferState := c.character.Bag != next.Bag || c.character.Gold != next.Gold
 	*c.character = next
 	if changedOfferState {
+		s.closeStall(c)
 		s.cancelTrade(c)
 	}
 	return nil
@@ -325,6 +330,7 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 	ops := es.ev.Branches[es.branch].Operations
 	gold := int64(c.character.Gold)
 	var changes []game.ItemChange
+	chestPlanned := false
 	party := make([]uint32, 0, len(c.character.Pets))
 	for _, p := range c.character.Pets {
 		party = append(party, p.ID)
@@ -396,6 +402,20 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 		amount := int32(op.Value())
 		switch {
 		case op.D2 == 1 || op.D2 == 7:
+			if amount > 0 && world.DecodeCond(es.ev.Branches[es.branch].Condition).Kind == 3 {
+				if pool := s.chestPool(es.mapID, es.click); pool != nil {
+					expiry := c.character.ChestRespawns[world.ChestKey(es.mapID, es.ev.ClickID)]
+					if chestPlanned || (!expiry.IsZero() && time.Now().Before(expiry)) {
+						continue
+					}
+					chestPlanned = true
+					if es.chestReward == nil {
+						reward := rollChestReward(*pool)
+						es.chestReward = &reward
+					}
+					op.D3, amount = es.chestReward.Item, int32(es.chestReward.Count)
+				}
+			}
 			if op.D3 == 0 {
 				return false
 			}
@@ -771,8 +791,21 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	if amount == 0 {
 		return true, nil
 	}
-	if amount > 0 && replacementHeld(char, es.ev, es.branch, op.D3) {
+	chest := world.DecodeCond(es.ev.Branches[es.branch].Condition).Kind == 3 && amount > 0
+	pool := s.chestPool(es.mapID, es.click)
+	if amount > 0 && (!chest || pool == nil) && replacementHeld(char, es.ev, es.branch, op.D3) {
 		return true, nil
+	}
+	if chest && pool != nil {
+		if expiry, configured := char.ChestRespawns[world.ChestKey(es.mapID, es.ev.ClickID)]; configured && time.Now().Before(expiry) {
+			return true, nil
+		}
+		if es.chestReward == nil {
+			reward := rollChestReward(*pool)
+			es.chestReward = &reward
+		}
+		op.D3 = es.chestReward.Item
+		amount = int32(es.chestReward.Count)
 	}
 	next := char.Clone()
 	result, e := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(amount)}}, s.stackLimit)
@@ -782,8 +815,13 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 		}
 		return false, nil
 	}
-	chest := world.DecodeCond(es.ev.Branches[es.branch].Condition).Kind == 3 && amount > 0
 	if chest {
+		if pool != nil {
+			if next.ChestRespawns == nil {
+				next.ChestRespawns = map[uint32]time.Time{}
+			}
+			next.ChestRespawns[world.ChestKey(es.mapID, es.ev.ClickID)] = time.Now().UTC().Add(time.Duration(pool.RespawnSeconds) * time.Second)
+		}
 		next.Quests[world.ChestKey(es.mapID, es.ev.ClickID)] = game.Quest{ID: world.ChestKey(es.mapID, es.ev.ClickID), State: game.Completed, Step: 1, StartedAt: time.Now().UTC()}
 	}
 	if e = s.commit(ctx, c, next); e != nil {
@@ -802,6 +840,9 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	}
 	packets = append(packets, headBanner(fmt.Sprintf("Obtain %s x%d", s.itemName(op.D3), amount)), []byte{protocol.CommandEvent, protocol.EventStepComplete})
 	if chest {
+		if c.view != nil && pool != nil {
+			c.view.Props[es.ev.ClickID] = 1
+		}
 		packets = append(packets, protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(es.ev.ClickID).U8(1))
 	}
 	return true, s.sendAll(c, packets)
@@ -838,7 +879,14 @@ func (s *Server) questMark(ctx context.Context, c *Session, op world.Op) (bool, 
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
-	return true, s.sendAll(c, s.World.QuestUpdate(c.view, id, q))
+	packets := s.World.QuestUpdate(c.view, id, q)
+	for _, reward := range storyStars {
+		if id == reward.mark {
+			packets = append(packets, storyConstellations(c.character))
+			break
+		}
+	}
+	return true, s.sendAll(c, packets)
 }
 
 // actorAction is opcode 2: animations, paths, prop frames, actor visibility and lines.

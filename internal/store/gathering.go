@@ -12,7 +12,7 @@ var ErrGatheringUnavailable = errors.New("resource gathering conditions are not 
 
 // GatherWater rechecks the branch against current durable state and commits the
 // item, timer and quest mark atomically. eligible must be read-only.
-func (s *Store) GatherWater(ctx context.Context, ref CharacterRef, timer, item uint16, maxStack byte, now time.Time, eligible func(*game.Character) bool) (game.Character, []game.Addition, error) {
+func (s *Store) GatherWater(ctx context.Context, ref CharacterRef, timer, item uint16, maxStack byte, now time.Time, eligible func(*game.Character) bool, reservations ...game.Character) (game.Character, []game.Addition, error) {
 	expected, supported := game.WaterGatheringItem(timer)
 	if !supported || item != expected || maxStack == 0 || maxStack > game.MaxItemStack || eligible == nil {
 		return game.Character{}, nil, ErrGatheringUnavailable
@@ -23,6 +23,9 @@ func (s *Store) GatherWater(ctx context.Context, ref CharacterRef, timer, item u
 		var err error
 		next, err = loadCharacter(tx, ref)
 		if err != nil {
+			return err
+		}
+		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
 		}
 		free := false

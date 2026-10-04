@@ -71,11 +71,11 @@ func (s *Store) Friends(ctx context.Context, id uint32) ([]game.Character, error
 			ids = append(ids, other)
 		}
 		var rows []characterRow
-		if err := tx.Where(clause.IN{Column: "id", Values: ids}).Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}}).Find(&rows).Error; err != nil {
+		if err := tx.Omit("state").Where(clause.IN{Column: "id", Values: ids}).Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}}).Find(&rows).Error; err != nil {
 			return err
 		}
 		var err error
-		result, err = decodeCharacters(rows)
+		result, err = decodeCharacters(tx, rows)
 		return err
 	})
 	return result, err

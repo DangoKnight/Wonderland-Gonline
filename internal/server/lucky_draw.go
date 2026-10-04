@@ -58,7 +58,7 @@ func (s *Server) drawLucky(ctx context.Context, c *Session, now time.Time) error
 	if !known {
 		return errors.New("unknown Lucky Draw reward")
 	}
-	next, adds, err := s.Store.DrawLucky(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, reward.ID, reward.Quantity, limit, now)
+	next, adds, err := s.Store.DrawLucky(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, reward.ID, reward.Quantity, limit, now, c.character.Clone())
 	if errors.Is(err, store.ErrLuckyDrawLimit) {
 		s.Log.Debug("Lucky Draw refused", "session", c.info.ID, "reason", "daily limit")
 		c.character.LuckyDraw = next.LuckyDraw

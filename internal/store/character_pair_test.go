@@ -46,7 +46,7 @@ func pairGold(t *testing.T, db *Store, refs [2]CharacterRef) [2]uint32 {
 
 func TestCharacterPairRollsBackSecondRowFailure(t *testing.T) {
 	db, refs := pairFixture(t)
-	statement := fmt.Sprintf("CREATE TRIGGER reject_second BEFORE UPDATE ON characters WHEN NEW.id=%d BEGIN SELECT RAISE(ABORT,'injected second-row failure'); END", refs[1].ID)
+	statement := fmt.Sprintf("CREATE TRIGGER reject_second BEFORE UPDATE ON character_state WHEN NEW.character_id=%d BEGIN SELECT RAISE(ABORT,'injected second-row failure'); END", refs[1].ID)
 	if _, err := db.db.Exec(statement); err != nil {
 		t.Fatal(err)
 	}

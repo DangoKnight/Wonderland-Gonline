@@ -186,3 +186,15 @@ func sortedSlots(m map[byte]droppedItem) []byte {
 	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
 	return out
 }
+
+// ClearDropped removes player drops without changing native ground respawns.
+func (w *World) ClearDropped(mapID uint16) [][]byte {
+	w.ground.mu.Lock()
+	defer w.ground.mu.Unlock()
+	var packets [][]byte
+	for _, slot := range sortedSlots(w.ground.dropped[mapID]) {
+		packets = append(packets, protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(slot)).U8(0))
+	}
+	delete(w.ground.dropped, mapID)
+	return packets
+}

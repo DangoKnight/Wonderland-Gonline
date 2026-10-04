@@ -36,6 +36,9 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	if e := c.send(packet); e != nil {
 		return e
 	}
+	if c.tentOwner != 0 {
+		return nil
+	}
 	if ran, e := s.tryRegion(ctx, c, prevX, prevY, true); ran || e != nil {
 		return e
 	}

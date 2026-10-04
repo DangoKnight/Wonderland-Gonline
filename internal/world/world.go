@@ -128,6 +128,9 @@ func (w *World) idleFrame(template uint32) uint16 {
 // Static props outside the template ranges below are classified by name in C#; those
 // heuristics are not ported, so such props keep their idle frame.
 func questPropOpened(m *Map, n NPC, c *game.Character) bool {
+	if expiry, ok := c.ChestRespawns[ChestKey(c.Map, n.ClickID)]; ok {
+		return time.Now().Before(expiry)
+	}
 	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= 12000 && n.Template <= 12999)) {
 		return false
 	}
@@ -191,3 +194,27 @@ func (w *World) MapInfo(c *game.Character, v *View, players []uint32) [][]byte {
 }
 
 func le16(b []byte, i int) uint16 { return uint16(b[i]) | uint16(b[i+1])<<8 }
+
+// ReloadEvents replaces authored quest definitions while preserving spawn geometry,
+// ground respawn timers and defeated monsters. The owner must exclude all World
+// readers while calling this method and must not retain active event sessions.
+func (w *World) ReloadEvents(maps map[uint16]assets.Map) {
+	for id, updated := range maps {
+		if old, ok := w.maps[id]; ok {
+			copy := *old
+			copy.data.Events, copy.data.PreEvents = updated.Events, updated.PreEvents
+			w.maps[id] = &copy
+		}
+	}
+}
+
+// ReloadCatalog changes definitions while preserving runtime item/monster state.
+// The caller excludes World readers and retains all existing maps.
+func (w *World) ReloadCatalog(c *assets.Catalog) {
+	maps := make(map[uint16]*Map, len(c.Maps))
+	for id, m := range c.Maps {
+		maps[id] = newMap(m)
+	}
+	w.maps = maps
+	w.catalog = c
+}

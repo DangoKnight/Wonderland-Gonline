@@ -28,6 +28,13 @@ func withoutContext(handler func(*Server, *Session, []byte) error) commandHandle
 // commandRegistry is immutable after initialization. Register each inbound command
 // once, together with its handler and exceptions to the default interaction gates.
 var commandRegistry = map[byte]commandRegistration{
+	protocol.CommandTent:               {handler: (*Server).tentCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandTentFurniture:      {handler: (*Server).tentFurnitureCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandManufacture:        {handler: (*Server).manufactureCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandGuild:              {handler: (*Server).guildCommand, policy: protocol.CommandPolicy{World: true}},
+	protocol.CommandStall:              {handler: (*Server).stallCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandSceneReady:         {handler: withoutContext((*Server).sceneReadyCommand), policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},
+	protocol.CommandSceneReadyAck:      {handler: withoutContext((*Server).sceneReadyCommand), policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},
 	protocol.CommandLuckyDraw:          {handler: (*Server).luckyDrawCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandDiscovery:          {handler: (*Server).discoveryCommand, policy: protocol.CommandPolicy{}},
 	protocol.CommandHandshake:          {handler: (*Server).handshakeCommand, policy: protocol.CommandPolicy{}},
@@ -39,7 +46,8 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandCharacterState:     {handler: (*Server).menuCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.CharacterStateRefreshRequest, protocol.CharacterStateRefresh)},
 	protocol.CommandMovement:           {handler: (*Server).movementCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandStats:              {handler: (*Server).allocateStats, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandBattleState:        {handler: withoutContext((*Server).battleCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, RequiresBattle: true}},
+	protocol.CommandPalaceTrial:        {handler: withoutContext((*Server).palaceTrialCommand), policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandBattleState:        {handler: withoutContext((*Server).battleStateCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true}},
 	protocol.CommandMapAcknowledgment:  {handler: (*Server).mapAcknowledgmentCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandSocialRelations:    {handler: (*Server).socialCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandFriends:            {handler: (*Server).friendCommand, policy: protocol.CommandPolicy{World: true}},
