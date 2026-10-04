@@ -30,7 +30,19 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return s.openPackCommand(ctx, c, p)
 	case protocol.InventoryCompound:
 		return s.compoundCommand(ctx, c, p)
+	case protocol.InventoryFishingStart:
+		if len(p) != 2 {
+			return protocol.ErrMalformed
+		}
+		return s.startFishing(ctx, c, 0)
 	case protocol.InventoryMallBalance, protocol.InventoryMallCatalog, protocol.InventoryMallBuy:
+		if p[1] == protocol.InventoryFishingStop && c.fishing != nil {
+			if len(p) != 2 {
+				return protocol.ErrMalformed
+			}
+			c.fishing = nil
+			return nil
+		}
 		return s.legacyMallCommand(ctx, c, p)
 	case protocol.InventoryPickup:
 		if len(p) < 3 {
@@ -326,6 +338,9 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 	if c.character.Bag[slot-1].Locked {
 		return c.send(headBanner(game.ErrItemLocked.Error()))
 	}
+	if _, ok := s.Assets.Fishing.Rod(c.character.Bag[slot-1].ID); ok {
+		return s.startFishing(ctx, c, slot)
+	}
 	if handled, err := s.redeemVoucher(ctx, c, slot, 1, 0); handled || err != nil {
 		return err
 	}
@@ -351,6 +366,12 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 // useItemOn is AC23.Recv15: use count items on a target (0 is the character).
 func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, target uint16) error {
 	if slot < 1 || slot > game.BagSize {
+		return nil
+	}
+	if _, ok := s.Assets.Fishing.Rod(c.character.Bag[slot-1].ID); ok {
+		if count == 1 && target == 0 {
+			return s.startFishing(ctx, c, slot)
+		}
 		return nil
 	}
 	if c.character.Bag[slot-1].ID == tentItem {

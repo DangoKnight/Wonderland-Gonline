@@ -33,13 +33,16 @@ func (c Character) AppearancePacket(other bool) ([]byte, error) {
 	worn := c.WornEquipment()
 	p = p.U8(byte(len(worn) / 2)).Bytes(worn).U32(0)
 	if other {
-		p = p.U8(0).U8(0).U8(0)
+		p = p.U8(0).U8(c.RebornByte()).U8(c.Job)
 	}
 	p, e := p.String(c.Name)
 	if e != nil {
 		return nil, e
 	}
-	p = p.U8(0) // empty nickname
+	p, e = p.String(c.Nickname)
+	if e != nil {
+		return nil, e
+	}
 	if other {
 		p = p.U8(255).U32(0).U8(1)
 	} else {
@@ -69,7 +72,7 @@ func (c Character) BaseStatsPacket(tableOrder func(uint16) (uint16, bool)) ([]by
 		}
 		p = p.U16(order).U8(skill.Grade).U32(skill.EXP)
 	}
-	return p.U16(0).U16(0).U8(0).U8(0).U8(0).U8(0), nil
+	return p.U16(0).U16(0).U8(0).U8(c.RebornByte()).U8(byte(c.Potential)).U8(c.Job), nil
 }
 
 func (c Character) EquipmentPacket() []byte {
@@ -106,12 +109,21 @@ func (c Character) StatPackets(items map[uint16]ItemDefinition, growth ...Elemen
 	mat := delta(g.MAT.value(level, a), native.MAT.value(level, a))
 	mdf := delta(g.MDF.value(level, a), native.MDF.value(level, a))
 	spd := delta(g.SPD.value(level, a), native.SPD.value(level, a))
+
+	innate := func(v float64) int32 { return int32(uint16(math.RoundToEven(v))) }
+	baseATK, baseDEF, baseMAT, baseMDF, baseSPD := innate(g.ATK.value(level, a)), innate(g.DEF.value(level, a)), innate(g.MAT.value(level, a)), innate(g.MDF.value(level, a)), innate(g.SPD.value(level, a))
+	classATK, classDEF, classMAT, classMDF, classSPD := c.classStats(baseATK, baseDEF, baseMAT, baseMDF, baseSPD)
+	atk += classATK - baseATK
+	def += classDEF - baseDEF
+	mat += classMAT - baseMAT
+	mdf += classMDF - baseMDF
+	spd += classSPD - baseSPD
 	hp := delta(g.HP.value(level, a), native.HP.value(level, a))
 	sp := delta(g.SP.value(level, a), native.SP.value(level, a))
 	stats := []struct {
 		id    byte
 		value int32
-	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK) + atk}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF) + def}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT) + mat}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF) + mdf}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD) + spd}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatPotential, 0}, {StatHPBonus, b.HP + hp}, {StatSPBonus, b.SP + sp}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
+	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK) + atk}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF) + def}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT) + mat}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF) + mdf}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD) + spd}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatPotential, int32(c.Potential)}, {StatHPBonus, b.HP + hp}, {StatSPBonus, b.SP + sp}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
 	out := make([][]byte, 0, len(stats))
 	for _, v := range stats {
 		out = append(out, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, v.id, protocol.StatsValueAbsolute}.U32(uint32(v.value)).U32(0))

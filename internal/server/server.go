@@ -45,7 +45,10 @@ type Session struct {
 	ready            bool
 	// warped marks a portal arrival; peers then receive no AC5:8 login refresh.
 	warped               bool
-	emote                byte // Current AC32 pose; guarded by worldMu.
+	manufacturing        *store.ManufactureJob
+	manufacturingLoaded  bool
+	fishing              *fishingRun // Transient cast; guarded by worldMu.
+	emote                byte        // Current AC32 pose; guarded by worldMu.
 	view                 *world.View
 	pets                 *petRoster
 	event                *eventSession
@@ -142,17 +145,18 @@ type Server struct {
 	unsupported    atomic.Uint64
 	name           atomic.Value
 
-	logs               *logBuffer
-	petGrowthFormula   game.PetGrowthFormula // Immutable startup selection, captured by New.
-	expRateMultiplier  float64
-	motd               string
-	statusMode         string
-	adminEditMu        sync.Mutex
-	dropRateMultiplier float64 // Live GM setting; guarded by worldMu.
+	logs                      *logBuffer
+	comboDamagePerParticipant bool                  // Immutable startup selection, captured by New.
+	petGrowthFormula          game.PetGrowthFormula // Immutable startup selection, captured by New.
+	expRateMultiplier         float64
+	motd                      string
+	statusMode                string
+	adminEditMu               sync.Mutex
+	dropRateMultiplier        float64 // Live GM setting; guarded by worldMu.
 }
 
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {
-	s := &Server{petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
+	s := &Server{comboDamagePerParticipant: c.ComboDamagePerParticipant, petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
 	s.logs = &logBuffer{}
 	if log.Enabled(context.Background(), slog.LevelDebug) {
 		s.logs.SetLevel("debug")

@@ -28,7 +28,7 @@ though the fastest and slowest differ by 194.
 - Roll once per eligible chain against its actual target before executing it.
   Failed chains execute as single attacks in their existing speed order, without
   a combo damage bonus or additional rolls for smaller subsets.
-- Apply the shared 30 percent combo damage bonus, individual critical rolls,
+- Apply the configured combo damage bonus, individual critical rolls,
   protection effects, and reward calculation.
 
 ## Evidence and remaining parity
@@ -81,3 +81,17 @@ Character rebirth is represented by optional saved `reborn` metadata; pets use
 their existing flag. Missing flags mean non-reborn. This supports combo level
 calculation; character rebirth progression, jobs and roster presentation remain
 unported.
+
+
+## Optional participant damage bonus
+
+Set `"combo_damage_per_participant": true` in `config.local.json` and restart the
+server to replace the fixed 30% combo bonus with `1 + 0.1 × participantCount`.
+Two attackers give ×1.2, three ×1.3, and eight ×1.8. Players and pets both count;
+only eligible attackers in the actual successful chain count. Support actions,
+unavailable fighters and attacks separated by speed/turn barriers do not inflate
+it. A participant that misses still belongs to the chain; its own miss deals no
+damage. Singles and failed combos get no bonus. This rule applies to PvE and PvP,
+before individual critical rolls and defensive reductions. The bonuses do not
+stack. Omitted/false preserves the fixed ×1.3 rule. This startup setting is not a
+live administration operation and never changes combo eligibility or probability.

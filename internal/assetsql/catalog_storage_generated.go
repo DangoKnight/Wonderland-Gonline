@@ -8,6 +8,458 @@ import (
 	"wonderland-go/internal/game"
 )
 
+type ManufacturingRow struct {
+	ManufacturingKey     uint16 `gorm:"column:manufacturing_key;primaryKey;autoIncrement:false"`
+	ValueID              uint16
+	ValueOutputItemID    uint16
+	ValueOutputCount     uint8
+	ValueInputs0ItemID   uint16
+	ValueInputs0Count    uint8
+	ValueInputs1ItemID   uint16
+	ValueInputs1Count    uint8
+	ValueInputs2ItemID   uint16
+	ValueInputs2Count    uint8
+	ValueInputs3ItemID   uint16
+	ValueInputs3Count    uint8
+	ValueInputs4ItemID   uint16
+	ValueInputs4Count    uint8
+	ValuePlanID          uint16
+	ValueToolID          uint16
+	ValueDurationSeconds uint32
+	ValueTentOutput      bool
+}
+
+func (ManufacturingRow) TableName() string { return "catalog_manufacturing" }
+func writeManufacturing(tx *gorm.DB, values map[uint16]assets.ManufacturingFormula) error {
+	var rows []ManufacturingRow
+	for key, value := range values {
+		row := ManufacturingRow{ManufacturingKey: key}
+		row.ValueID = value.ID
+		row.ValueOutputItemID = value.Output.ItemID
+		row.ValueOutputCount = value.Output.Count
+		row.ValueInputs0ItemID = value.Inputs[0].ItemID
+		row.ValueInputs0Count = value.Inputs[0].Count
+		row.ValueInputs1ItemID = value.Inputs[1].ItemID
+		row.ValueInputs1Count = value.Inputs[1].Count
+		row.ValueInputs2ItemID = value.Inputs[2].ItemID
+		row.ValueInputs2Count = value.Inputs[2].Count
+		row.ValueInputs3ItemID = value.Inputs[3].ItemID
+		row.ValueInputs3Count = value.Inputs[3].Count
+		row.ValueInputs4ItemID = value.Inputs[4].ItemID
+		row.ValueInputs4Count = value.Inputs[4].Count
+		row.ValuePlanID = value.PlanID
+		row.ValueToolID = value.ToolID
+		row.ValueDurationSeconds = value.DurationSeconds
+		row.ValueTentOutput = value.TentOutput
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readManufacturing(tx *gorm.DB) (map[uint16]assets.ManufacturingFormula, error) {
+	result := make(map[uint16]assets.ManufacturingFormula)
+	var rows []ManufacturingRow
+	query := tx
+	if err := query.Order("manufacturing_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.ManufacturingFormula
+		value.ID = row.ValueID
+		value.Output.ItemID = row.ValueOutputItemID
+		value.Output.Count = row.ValueOutputCount
+		value.Inputs[0].ItemID = row.ValueInputs0ItemID
+		value.Inputs[0].Count = row.ValueInputs0Count
+		value.Inputs[1].ItemID = row.ValueInputs1ItemID
+		value.Inputs[1].Count = row.ValueInputs1Count
+		value.Inputs[2].ItemID = row.ValueInputs2ItemID
+		value.Inputs[2].Count = row.ValueInputs2Count
+		value.Inputs[3].ItemID = row.ValueInputs3ItemID
+		value.Inputs[3].Count = row.ValueInputs3Count
+		value.Inputs[4].ItemID = row.ValueInputs4ItemID
+		value.Inputs[4].Count = row.ValueInputs4Count
+		value.PlanID = row.ValuePlanID
+		value.ToolID = row.ValueToolID
+		value.DurationSeconds = row.ValueDurationSeconds
+		value.TentOutput = row.ValueTentOutput
+		result[row.ManufacturingKey] = value
+	}
+	return result, nil
+}
+
+type RebornClassesRow struct {
+	RebornClassesOrdinal int `gorm:"column:reborn_classes_ordinal;primaryKey;autoIncrement:false"`
+	ValueJob             uint8
+	ValueName            string
+	ValueCapeID          uint16
+	ValueEnabled         bool
+}
+
+func (RebornClassesRow) TableName() string { return "catalog_reborn_classes" }
+func writeRebornClasses(tx *gorm.DB, values []assets.RebornClass) error {
+	var rows []RebornClassesRow
+	for key, value := range values {
+		row := RebornClassesRow{RebornClassesOrdinal: key}
+		row.ValueJob = value.Job
+		row.ValueName = value.Name
+		row.ValueCapeID = value.CapeID
+		row.ValueEnabled = value.Enabled
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readRebornClasses(tx *gorm.DB) ([]assets.RebornClass, error) {
+	result := make([]assets.RebornClass, 0)
+	var rows []RebornClassesRow
+	query := tx
+	if err := query.Order("reborn_classes_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.RebornClass
+		value.Job = row.ValueJob
+		value.Name = row.ValueName
+		value.CapeID = row.ValueCapeID
+		value.Enabled = row.ValueEnabled
+		if row.RebornClassesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type FishingRow struct {
+	FishingKey                    int `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	ValueEnabled                  bool
+	ValueIntervalSeconds          uint32
+	ValueSkillBonusPercent        uint32
+	ValueSkillsPresent            bool
+	ValueCatchRequirementsPresent bool
+	ValueRodsPresent              bool
+	ValueMapsPresent              bool
+	ValueRewardsPresent           bool
+}
+
+func (FishingRow) TableName() string { return "catalog_fishing" }
+func writeFishing(tx *gorm.DB, values assets.FishingRules) error {
+	var rows []FishingRow
+	{
+		key, value := 1, values
+		row := FishingRow{FishingKey: key}
+		row.ValueEnabled = value.Enabled
+		row.ValueIntervalSeconds = value.IntervalSeconds
+		row.ValueSkillBonusPercent = value.SkillBonusPercent
+		row.ValueSkillsPresent = value.Skills != nil
+		row.ValueCatchRequirementsPresent = value.CatchRequirements != nil
+		row.ValueRodsPresent = value.Rods != nil
+		row.ValueMapsPresent = value.Maps != nil
+		row.ValueRewardsPresent = value.Rewards != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	{
+		key, value := 1, values
+		if err := writeFishingSkills(tx, value.Skills, key); err != nil {
+			return err
+		}
+		if err := writeFishingCatchRequirements(tx, value.CatchRequirements, key); err != nil {
+			return err
+		}
+		if err := writeFishingRods(tx, value.Rods, key); err != nil {
+			return err
+		}
+		if err := writeFishingMaps(tx, value.Maps, key); err != nil {
+			return err
+		}
+		if err := writeFishingRewards(tx, value.Rewards, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishing(tx *gorm.DB) (assets.FishingRules, error) {
+	var result assets.FishingRules
+	var rows []FishingRow
+	query := tx
+	if err := query.Order("fishing_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	if len(rows) != 1 {
+		return result, fmt.Errorf("missing singleton catalog row")
+	}
+	for _, row := range rows {
+		var value assets.FishingRules
+		value.Enabled = row.ValueEnabled
+		value.IntervalSeconds = row.ValueIntervalSeconds
+		value.SkillBonusPercent = row.ValueSkillBonusPercent
+		if row.ValueSkillsPresent {
+			var err error
+			value.Skills, err = readFishingSkills(tx, row.FishingKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueCatchRequirementsPresent {
+			var err error
+			value.CatchRequirements, err = readFishingCatchRequirements(tx, row.FishingKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueRodsPresent {
+			var err error
+			value.Rods, err = readFishingRods(tx, row.FishingKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueMapsPresent {
+			var err error
+			value.Maps, err = readFishingMaps(tx, row.FishingKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueRewardsPresent {
+			var err error
+			value.Rewards, err = readFishingRewards(tx, row.FishingKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result = value
+	}
+	return result, nil
+}
+
+type FishingSkillsRow struct {
+	FishingKey           int         `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	FishingSkillsOrdinal int         `gorm:"column:fishing_skills_ordinal;primaryKey;autoIncrement:false"`
+	Parent               *FishingRow `gorm:"belongsTo:Parent;foreignKey:FishingKey;references:FishingKey;constraint:OnDelete:CASCADE"`
+	Value                uint16
+}
+
+func (FishingSkillsRow) TableName() string { return "catalog_fishing_skills" }
+func writeFishingSkills(tx *gorm.DB, values []uint16, FishingKey int) error {
+	var rows []FishingSkillsRow
+	for key, value := range values {
+		row := FishingSkillsRow{FishingKey: FishingKey, FishingSkillsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishingSkills(tx *gorm.DB, FishingKey int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []FishingSkillsRow
+	query := tx
+	query = query.Where("fishing_key = ?", FishingKey)
+	if err := query.Order("fishing_skills_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.FishingSkillsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type FishingCatchRequirementsRow struct {
+	FishingKey                      int         `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	FishingCatchRequirementsOrdinal int         `gorm:"column:fishing_catch_requirements_ordinal;primaryKey;autoIncrement:false"`
+	Parent                          *FishingRow `gorm:"belongsTo:Parent;foreignKey:FishingKey;references:FishingKey;constraint:OnDelete:CASCADE"`
+	Value                           uint32
+}
+
+func (FishingCatchRequirementsRow) TableName() string { return "catalog_fishing_catch_requirements" }
+func writeFishingCatchRequirements(tx *gorm.DB, values []uint32, FishingKey int) error {
+	var rows []FishingCatchRequirementsRow
+	for key, value := range values {
+		row := FishingCatchRequirementsRow{FishingKey: FishingKey, FishingCatchRequirementsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishingCatchRequirements(tx *gorm.DB, FishingKey int) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []FishingCatchRequirementsRow
+	query := tx
+	query = query.Where("fishing_key = ?", FishingKey)
+	if err := query.Order("fishing_catch_requirements_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.FishingCatchRequirementsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type FishingRodsRow struct {
+	FishingKey         int         `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	FishingRodsOrdinal int         `gorm:"column:fishing_rods_ordinal;primaryKey;autoIncrement:false"`
+	Parent             *FishingRow `gorm:"belongsTo:Parent;foreignKey:FishingKey;references:FishingKey;constraint:OnDelete:CASCADE"`
+	ValueItemID        uint16
+	ValueMaxGrade      uint8
+}
+
+func (FishingRodsRow) TableName() string { return "catalog_fishing_rods" }
+func writeFishingRods(tx *gorm.DB, values []assets.FishingRod, FishingKey int) error {
+	var rows []FishingRodsRow
+	for key, value := range values {
+		row := FishingRodsRow{FishingKey: FishingKey, FishingRodsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueMaxGrade = value.MaxGrade
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishingRods(tx *gorm.DB, FishingKey int) ([]assets.FishingRod, error) {
+	result := make([]assets.FishingRod, 0)
+	var rows []FishingRodsRow
+	query := tx
+	query = query.Where("fishing_key = ?", FishingKey)
+	if err := query.Order("fishing_rods_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.FishingRod
+		value.ItemID = row.ValueItemID
+		value.MaxGrade = row.ValueMaxGrade
+		if row.FishingRodsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type FishingMapsRow struct {
+	FishingKey         int         `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	FishingMapsOrdinal int         `gorm:"column:fishing_maps_ordinal;primaryKey;autoIncrement:false"`
+	Parent             *FishingRow `gorm:"belongsTo:Parent;foreignKey:FishingKey;references:FishingKey;constraint:OnDelete:CASCADE"`
+	Value              uint16
+}
+
+func (FishingMapsRow) TableName() string { return "catalog_fishing_maps" }
+func writeFishingMaps(tx *gorm.DB, values []uint16, FishingKey int) error {
+	var rows []FishingMapsRow
+	for key, value := range values {
+		row := FishingMapsRow{FishingKey: FishingKey, FishingMapsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishingMaps(tx *gorm.DB, FishingKey int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []FishingMapsRow
+	query := tx
+	query = query.Where("fishing_key = ?", FishingKey)
+	if err := query.Order("fishing_maps_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.FishingMapsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type FishingRewardsRow struct {
+	FishingKey            int         `gorm:"column:fishing_key;primaryKey;autoIncrement:false"`
+	FishingRewardsOrdinal int         `gorm:"column:fishing_rewards_ordinal;primaryKey;autoIncrement:false"`
+	Parent                *FishingRow `gorm:"belongsTo:Parent;foreignKey:FishingKey;references:FishingKey;constraint:OnDelete:CASCADE"`
+	ValueItemID           uint16
+	ValueGrade            uint8
+	ValueWeight           uint32
+}
+
+func (FishingRewardsRow) TableName() string { return "catalog_fishing_rewards" }
+func writeFishingRewards(tx *gorm.DB, values []assets.FishingReward, FishingKey int) error {
+	var rows []FishingRewardsRow
+	for key, value := range values {
+		row := FishingRewardsRow{FishingKey: FishingKey, FishingRewardsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueGrade = value.Grade
+		row.ValueWeight = value.Weight
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readFishingRewards(tx *gorm.DB, FishingKey int) ([]assets.FishingReward, error) {
+	result := make([]assets.FishingReward, 0)
+	var rows []FishingRewardsRow
+	query := tx
+	query = query.Where("fishing_key = ?", FishingKey)
+	if err := query.Order("fishing_rewards_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.FishingReward
+		value.ItemID = row.ValueItemID
+		value.Grade = row.ValueGrade
+		value.Weight = row.ValueWeight
+		if row.FishingRewardsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type TerrainsRow struct {
 	TerrainsKey       uint16 `gorm:"column:terrains_key;primaryKey;autoIncrement:false"`
 	ValueWidth        uint32
@@ -396,6 +848,7 @@ type EconomySynthesisRatesRow struct {
 	ValueInput2                  uint16
 	ValueOutput                  uint16
 	ValueSuccessPercent          float64
+	ValueFee                     uint32
 }
 
 func (EconomySynthesisRatesRow) TableName() string { return "catalog_economy_synthesis_rates" }
@@ -407,6 +860,7 @@ func writeEconomySynthesisRates(tx *gorm.DB, values []assets.SynthesisRate, Econ
 		row.ValueInput2 = value.Input2
 		row.ValueOutput = value.Output
 		row.ValueSuccessPercent = value.SuccessPercent
+		row.ValueFee = value.Fee
 		rows = append(rows, row)
 	}
 	if len(rows) > 0 {
@@ -430,6 +884,7 @@ func readEconomySynthesisRates(tx *gorm.DB, EconomyKey int) ([]assets.SynthesisR
 		value.Input2 = row.ValueInput2
 		value.Output = row.ValueOutput
 		value.SuccessPercent = row.ValueSuccessPercent
+		value.Fee = row.ValueFee
 		if row.EconomySynthesisRatesOrdinal != len(result) {
 			return result, fmt.Errorf("invalid catalog ordinal")
 		}
@@ -442,6 +897,9 @@ type EconomyManufacturingRow struct {
 	EconomyKey                  int         `gorm:"column:economy_key;primaryKey;autoIncrement:false"`
 	EconomyManufacturingOrdinal int         `gorm:"column:economy_manufacturing_ordinal;primaryKey;autoIncrement:false"`
 	Parent                      *EconomyRow `gorm:"belongsTo:Parent;foreignKey:EconomyKey;references:EconomyKey;constraint:OnDelete:CASCADE"`
+	ValueSuccessPercentPresent  bool
+	ValueSuccessPercent         float64
+	ValueFee                    uint32
 	ValueWorkbench              string
 	ValueInputs0ItemID          uint16
 	ValueInputs0Count           uint8
@@ -456,6 +914,11 @@ func writeEconomyManufacturing(tx *gorm.DB, values []assets.ManufacturingRecipe,
 	var rows []EconomyManufacturingRow
 	for key, value := range values {
 		row := EconomyManufacturingRow{EconomyKey: EconomyKey, EconomyManufacturingOrdinal: key}
+		if value.SuccessPercent != nil {
+			row.ValueSuccessPercentPresent = true
+			row.ValueSuccessPercent = (*value.SuccessPercent)
+		}
+		row.ValueFee = value.Fee
 		row.ValueWorkbench = value.Workbench
 		row.ValueInputs0ItemID = value.Inputs[0].ItemID
 		row.ValueInputs0Count = value.Inputs[0].Count
@@ -482,6 +945,11 @@ func readEconomyManufacturing(tx *gorm.DB, EconomyKey int) ([]assets.Manufacturi
 	}
 	for _, row := range rows {
 		var value assets.ManufacturingRecipe
+		if row.ValueSuccessPercentPresent {
+			value.SuccessPercent = new(float64)
+			(*value.SuccessPercent) = row.ValueSuccessPercent
+		}
+		value.Fee = row.ValueFee
 		value.Workbench = row.ValueWorkbench
 		value.Inputs[0].ItemID = row.ValueInputs0ItemID
 		value.Inputs[0].Count = row.ValueInputs0Count
@@ -4365,6 +4833,8 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	Manufacturing         bool
+	RebornClasses         bool
 	Terrains              bool
 	Arcades               bool
 	CombatTrials          bool
@@ -4392,6 +4862,14 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&ManufacturingRow{},
+		&RebornClassesRow{},
+		&FishingRow{},
+		&FishingSkillsRow{},
+		&FishingCatchRequirementsRow{},
+		&FishingRodsRow{},
+		&FishingMapsRow{},
+		&FishingRewardsRow{},
 		&TerrainsRow{},
 		&ArcadesRow{},
 		&ArcadesRewardsRow{},
@@ -4687,10 +5165,36 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&TerrainsRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&FishingRewardsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&FishingMapsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&FishingRodsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&FishingCatchRequirementsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&FishingSkillsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&FishingRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&RebornClassesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&ManufacturingRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.Manufacturing = c.Manufacturing != nil
+	presence.RebornClasses = c.RebornClasses != nil
 	presence.Terrains = c.Terrains != nil
 	presence.Arcades = c.Arcades != nil
 	presence.CombatTrials = c.CombatTrials != nil
@@ -4714,6 +5218,15 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeManufacturing(tx, c.Manufacturing); err != nil {
+		return err
+	}
+	if err := writeRebornClasses(tx, c.RebornClasses); err != nil {
+		return err
+	}
+	if err := writeFishing(tx, c.Fishing); err != nil {
 		return err
 	}
 	if err := writeTerrains(tx, c.Terrains); err != nil {
@@ -4805,6 +5318,18 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.Manufacturing, err = readManufacturing(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.RebornClasses, err = readRebornClasses(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.Fishing, err = readFishing(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Terrains, err = readTerrains(tx)
 	if err != nil {
 		return nil, err
@@ -4920,6 +5445,12 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.Manufacturing {
+		c.Manufacturing = nil
+	}
+	if !presence.RebornClasses {
+		c.RebornClasses = nil
 	}
 	if !presence.Terrains {
 		c.Terrains = nil

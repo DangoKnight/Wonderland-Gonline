@@ -12,8 +12,13 @@ type Character struct {
 	MutedUntil         time.Time            `json:"muted_until,omitempty"`
 	EventTimers        map[uint16]time.Time `json:"event_timers,omitempty"`
 	LuckyDraw          LuckyDrawState       `json:"lucky_draw,omitempty"`
-	// Reborn supplies combo effective-level metadata. Rebirth progression and
-	// character roster/job presentation remain unported.
+	Nickname           string               `json:"nickname,omitempty"`
+	Job                byte                 `json:"job,omitempty"`
+	Potential          uint16               `json:"potential,omitempty"`
+	Title              uint16               `json:"title,omitempty"`
+	// RebornJob is AC66 metadata, distinct from the actual class used by growth.
+	RebornJob byte `json:"reborn_job,omitempty"`
+	// Reborn selects rebirth progression, class bonuses and combo effective level.
 	Reborn   bool            `json:"reborn,omitempty"`
 	Settings *ClientSettings `json:"settings,omitempty"`
 	Base     Attributes      `json:"base"`
@@ -104,6 +109,9 @@ func (c Character) Clone() Character {
 }
 
 func (c Character) Validate() error {
+	if c.Job > JobSeer || len(c.Nickname) > protocol.MaxStringBytes {
+		return errors.New("invalid character metadata")
+	}
 	for id, expiry := range c.EventTimers {
 		if id == 0 || expiry.IsZero() {
 			return errors.New("invalid event timer")
@@ -135,7 +143,7 @@ func (c Character) SelectionRecord() ([]byte, error) {
 		return nil, e
 	}
 	p = p.U8(c.Level).U8(c.Element).U32(c.MaxHP).U32(c.HP).U32(c.MaxSP).U32(c.SP).U32(c.EXP).U32(c.Gold).U16(c.Body).U16(c.Head).U32(c.Color1).U32(c.Color2)
-	p = p.U8(RosterNotReborn).U8(RosterNoJob)
+	p = p.U8(c.RebornByte()).U8(c.Job)
 	for _, item := range c.Equipment {
 		p = p.U16(item.ID)
 	}

@@ -1,0 +1,42 @@
+[
+  {
+    "ItemID": 41091,
+    "Grade": 2,
+    "Weight": 2500
+  },
+  {
+    "ItemID": 41092,
+    "Grade": 2,
+    "Weight": 2500
+  },
+  {
+    "ItemID": 41094,
+    "Grade": 3,
+    "Weight": 1111
+  },
+  {
+    "ItemID": 41096,
+    "Grade": 5,
+    "Weight": 400
+  },
+  {
+    "ItemID": 41097,
+    "Grade": 6,
+    "Weight": 277
+  },
+  {
+    "ItemID": 41098,
+    "Grade": 7,
+    "Weight": 204
+  },
+  {
+    "ItemID": 41100,
+    "Grade": 4,
+    "Weight": 625
+  },
+  {
+    "ItemID": 41101,
+    "Grade": 5,
+    "Weight": 400
+  }
+]

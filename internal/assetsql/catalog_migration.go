@@ -10,7 +10,7 @@ import (
 	"wonderland-go/internal/game"
 )
 
-const catalogSchemaVersion = 6
+const catalogSchemaVersion = 9
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -146,6 +146,119 @@ func migrateCatalog(tx *gorm.DB) error {
 			}
 		}
 
+		if schema.Version < 7 {
+			missing := !tx.Migrator().HasTable(&FishingRow{})
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && strings.HasPrefix(named.TableName(), "catalog_fishing") && !tx.Migrator().HasTable(model) {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
+			if missing {
+				native, err := readNativeItems(tx)
+				if err != nil {
+					return err
+				}
+				items := map[uint16]game.ItemDefinition{}
+				for id, n := range native {
+					items[id] = n.Definition
+				}
+				f, err := defaultFishing(items)
+				if err != nil {
+					return err
+				}
+				if err = writeFishing(tx, f); err != nil {
+					return err
+				}
+			}
+		}
+		if schema.Version < 8 {
+			if err := migrateFishingWeights(tx); err != nil {
+				return err
+			}
+		}
+
+		if schema.Version < 9 {
+			native, err := readNativeItems(tx)
+			if err != nil {
+				return err
+			}
+			items := map[uint16]game.ItemDefinition{}
+			for id, n := range native {
+				items[id] = n.Definition
+			}
+			for _, model := range catalogTables() {
+				if named, ok := model.(interface{ TableName() string }); ok && (strings.HasPrefix(named.TableName(), "catalog_manufacturing") || strings.HasPrefix(named.TableName(), "catalog_reborn_classes")) && !tx.Migrator().HasTable(model) {
+					if err := tx.Migrator().CreateTable(model); err != nil {
+						return err
+					}
+				}
+			}
+			for _, column := range []string{"Manufacturing", "RebornClasses"} {
+				if !tx.Migrator().HasColumn(&catalogPresence{}, column) {
+					if err := tx.Migrator().AddColumn(&catalogPresence{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			var count int64
+			if err = tx.Model(&ManufacturingRow{}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				formulas, err := importedManufacturing(tx, items)
+				if err != nil {
+					return err
+				}
+				if err = writeManufacturing(tx, formulas); err != nil {
+					return err
+				}
+			}
+			if err = tx.Model(&RebornClassesRow{}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				classes, err := defaultRebornClasses(items)
+				if err != nil {
+					return err
+				}
+				if err = writeRebornClasses(tx, classes); err != nil {
+					return err
+				}
+			}
+			if err = tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Updates(map[string]any{"manufacturing": true, "reborn_classes": true}).Error; err != nil {
+				return err
+			}
+			for _, column := range []struct {
+				Model any
+				Name  string
+			}{
+				{&EconomyManufacturingRow{}, "ValueSuccessPercentPresent"}, {&EconomyManufacturingRow{}, "ValueSuccessPercent"}, {&EconomyManufacturingRow{}, "ValueFee"}, {&EconomySynthesisRatesRow{}, "ValueFee"},
+			} {
+				if !tx.Migrator().HasColumn(column.Model, column.Name) {
+					if err := tx.Migrator().AddColumn(column.Model, column.Name); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if schema.Version < 9 {
+			economy, err := readEconomy(tx)
+			if err != nil {
+				return err
+			}
+			if err = applyAuthoredSynthesis(tx, &economy); err != nil {
+				return err
+			}
+			if err = tx.Where("economy_key = ?", catalogMetadataID).Delete(&EconomyRow{}).Error; err != nil {
+				return err
+			}
+			if err = writeEconomy(tx, economy); err != nil {
+				return err
+			}
+		}
+
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -164,8 +277,23 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	c.Manufacturing, err = importedManufacturing(tx, c.Items)
+	if err != nil {
+		return err
+	}
+	c.RebornClasses, err = defaultRebornClasses(c.Items)
+	if err != nil {
+		return err
+	}
+	c.Fishing, err = defaultFishing(c.Items)
+	if err != nil {
+		return err
+	}
 	c.Economy, err = defaultEconomy()
 	if err != nil {
+		return err
+	}
+	if err = applyAuthoredSynthesis(tx, &c.Economy); err != nil {
 		return err
 	}
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
@@ -202,6 +330,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = assets.ValidateManufacturing(c.Manufacturing, c.Items); err != nil {
+		return nil, err
+	}
 	if err = assets.ValidateTerrains(c.Terrains); err != nil {
 		return nil, err
 	}
@@ -211,11 +342,17 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	if err = validateTents(c.Tents); err != nil {
 		return nil, err
 	}
+	if err = validateFishingCatalog(c); err != nil {
+		return nil, err
+	}
 	if err = validateEconomy(c.Economy); err != nil {
 		return nil, err
 	}
 	if len(c.NativeItems) == 0 || len(c.NPCs) == 0 || len(c.Skills) == 0 || len(c.Maps) == 0 {
 		return nil, fmt.Errorf("required structured definitions are empty")
+	}
+	if err = validateDefinition("RebornClasses", c); err != nil {
+		return nil, err
 	}
 	if err = validateDefinition("Skills", c); err != nil {
 		return nil, err

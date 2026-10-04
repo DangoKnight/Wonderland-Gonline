@@ -2,7 +2,7 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v11** and structured assets
+Current server startup requires gameplay schema **v12** and structured assets
 schema **v6**. Tents were introduced in earlier schema versions.
 Follow the preserving copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. Upgrade copies, then select their
@@ -86,10 +86,13 @@ selection; binding recipes to verified physical furniture identities remains pen
 
 ## Remaining state and native compatibility
 
-Character job/nickname/potential/title and pet potential are not modeled. The
+Character titles and separate AC66 reborn-job metadata are persisted in typed
+SQL columns. Actual character job/nickname/potential and pet potential remain
+unmodeled. The
 character `Reborn` flag used by combo calculations does not implement six reborn
 jobs or their 10% stat modifiers. The source GM `/reborn` level-reset/cape/aura
-workflow and AC66 job request remain unported. AC68's source potential increment
+workflow remains unported. The AC66 request only updates its separate metadata;
+it does not select the actual class or grant advancement rewards. AC68's source potential increment
 has no verified pill debit; persist metadata separately from unfinished training.
 
 Home Locked/Enlarged/Type state exists, but Go stores one floor/wallpaper pair
@@ -103,3 +106,13 @@ callers before imposing a new limitation.
 Routine walking follows the buffered session policy in DEVELOPMENT.md.
 Furniture transfers, purchases, claims, item wear/consumption and inventory
 mutations retain immediate SQL transactions.
+
+
+## Manufacturing and extended character state
+
+Native AC64 now persists timed output escrow and checks owned plans/tools and all
+five materials. Character nickname/class/potential, pet potential and both tent
+decoration pairs live in typed gameplay v14 rows. GM rebirth, class bonuses and
+tent peer pose replay are implemented. See [manufacturing and character
+state](MANUFACTURING_CHARACTER_STATE.md) for packet layouts, SQL upgrade steps,
+recovery and explicitly pending socket/training/upstairs rules.

@@ -15,11 +15,12 @@ of the port completed.
 
 [Source inventory](source-inventory.json) retains every file's finding, normalized
 source hash and Go evidence paths. `files` holds C# records; `supporting_files`
-holds project metadata, scripts, data, binaries and documentation. Evidence links
-identify implementations reviewed, not tests executed. For C# files the review
-found 43 migrated, 110 replaced, 74 partial, 13 missing, 53 legacy stubs, seven
-legacy incomplete, 23 retired and eight metadata records. These categories are
-a dated baseline; update per-file findings as implementation advances.
+holds project metadata, scripts, data, binaries and documentation. Evidence links identify implementations reviewed, not tests
+executed. Current C# findings
+are 57 migrated, 114 replaced, 67 partial, 2 missing,
+53 legacy stubs, 7 legacy incomplete, 23 retired and
+8 metadata records. Update findings as implementations advance; these
+categories are not a completion percentage.
 
 C# bodies and dispatch/callers were checked independently of old documentation.
 Supporting artifacts received format/structure/consumer review. The large native
@@ -32,22 +33,22 @@ Historical verification reports are not evidence that current tests passed.
 
 | Area | Current implementation | Remaining reference differences |
 | --- | --- | --- |
-| Transport and login | Framing/XOR, bounded readers, native login/roster/creation/deletion, duplicate-login protection, configurable phase idle timers, status service | Native appearance lacks character job/nickname/potential/title; some generic synchronization replies differ |
+| Transport and login | Framing/XOR, bounded readers, native login/roster/creation/deletion, duplicate-login protection, configurable phase idle timers, status service | Job/nickname/potential now replay; native HUD acceptance remains pending; title uses separate native replay |
 | Launcher status | C9 replies, configured server IDs, load colors, persisted name/MOTD/EXP/drop rates | Cluster is fixed; offline mode absent. Source GoldRate/MaxPlayers are stored but not enforced |
 | Persistence | GORM/SQLite stores, normalized owned state, atomic reward/exchange paths, optimistic edits, buffered walking and dirty periodic/disconnect checkpoints | SQLite-only provider; optional import rejects unsupported state; checkpoints still serialize under the global world lock and load/soak acceptance is pending |
-| Asset pipeline | WLRI native decoding offline, typed SQL runtime catalogs and validated administration; no runtime native/JSON fallback | Full editor coverage and sound/portrait/token inspection differ. Compound2 projection omits manufacturing fields |
-| World entry and maps | Native snapshots, scene-ready gate, peer visibility, movement, portals, map-local packets, terrain validation, actor simulation and respawns | Inbound self-spawn/waypoint/emote and several sync requests absent; exact entry HUD sequence and tent pose replay differ |
+| Asset pipeline | WLRI native decoding offline, typed SQL runtime catalogs and validated administration; no runtime native/JSON fallback | Full editor coverage and sound/portrait/token inspection differ. Compound2 manufacturing and authored chances/fees now have typed projections |
+| World entry and maps | Native snapshots, scene-ready gate, peer visibility, movement, portals, map-local packets, terrain validation, actor simulation and respawns | Native request handlers implemented; exact entry HUD sequence, inferred waypoint map hint and tent pose replay need acceptance |
 | Events and quests | Native EVE branches, callbacks, choices, marks, journal, atomic rewards, story continuations, minigames, companion identity and visibility | Custom game_quests definition loading/editor/kill counters absent; dormant progression is additional integration. Scripted shared prop timers and generic NPC greeting fallback differ |
 | Combat | PvE/PvP formations, action ownership, turns/timeouts, capture, damage/elements/criticals, effects, shields, combos, loot/progression and authored continuations | Action ACK broadcast and owner/party entry refresh differ; PvP rewards differ; native animation/area acceptance remains pending |
-| Companions and vehicles | Party/hotel/reserve rosters, vouchers, skills, gear, feeding/amity, pet rebirth, mounts, vehicle ownership/wear and travel | Pet potential absent; clinic omits accompanying-pet healing. Character reborn jobs, bonuses and GM workflow absent |
-| Items and tents | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Type restrictions and remaining special items need verification; one floor/wallpaper pair, floor-zero placement; native AC64 manufacturing incomplete |
-| Economy | Atomic mall/forging/gacha/Lucky Draw, bank balances, trades, stalls, synthesis, two-input manufacture, gathering and parcel escrow | AC21/226 mall compatibility, AC37/59 requests, native formula/tool/timer manufacturing, recipe fee/chance preservation and some legacy aliases absent |
-| Social | Chat/preferences, friendships, parties, guild membership/ranks/insignia/rosters, marriage, mail and SQL administration | Job/nickname presentation absent; Cupid model is absent but reference excludes it from transmitted lists; several request aliases/default replies differ |
+| Companions and vehicles | Party/hotel/reserve rosters, vouchers, skills, gear, feeding/amity, pet rebirth, mounts, vehicle ownership/wear and travel | Character/pet potential metadata and GM rebirth/classes implemented; clinic omits accompanying-pet healing; funded training remains pending |
+| Items and tents | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Type restrictions and remaining special items need verification; two-floor decoration metadata persisted; placement remains floor zero; upstairs access pending |
+| Economy | Atomic mall/forging/gacha/Lucky Draw, bank balances, trades, stalls, synthesis, two-input manufacture, gathering and parcel escrow | AC59 and timed AC64 implemented; AC37 socket effects remain unfinished in the reference; some legacy aliases absent |
+| Social | Chat/preferences, friendships, parties, guild membership/ranks/insignia/rosters, marriage, mail and SQL administration | Job/nickname presentation implemented; Cupid model is absent but reference excludes it from transmitted lists; several request aliases/default replies differ |
 | Administration | Accounts/security, sessions/bans, mall balances, character editors, GM studio, content editors, logs/audit, guilds/marriages/mail, operations/config editing | Offline status, broadcast channel/color, live tab refresh, mass starter delivery, custom quest editor and MySQL workflows absent; NPC controls affect selected session |
 | Compatibility | Read-only offline SQLite import with preserving output, explicit unsupported-state failures and validation | Jobs/nickname/potential/socket/bomb/sewing data, guild/mail mappings, forum hashes and MySQL conversion remain separate work |
 
 See [world simulation](WORLD_SIMULATION.md), [items/player state](ITEMS_PLAYER_STATE.md),
-[economy/social](ECONOMY_SOCIAL.md), [combat targeting](COMBAT_TARGETING.md),
+[economy/social](ECONOMY_SOCIAL.md), [manufacturing/character state](MANUFACTURING_CHARACTER_STATE.md), [combat targeting](COMBAT_TARGETING.md),
 [administration](ADMINISTRATION.md), [legacy import](LEGACY_IMPORT.md) and
 [configuration](CONFIGURATION.md) for behavior, commands and remaining limits.
 
@@ -57,30 +58,19 @@ Port reachable reference implementations first. Keep empty handlers and unfinish
 source systems on hold. A request being registered or an enum being copied does
 not prove its dependent behavior works.
 
-1. **Missing native commands:** AC4 self-spawn; AC7 waypoint update/ACK; AC18
-   emote; AC183:17 and AC186:9 synchronization; AC13:238 mall refresh; AC21
-   mall window/buy/balance; AC22 generic acknowledgement; AC226:255 matrix/claim
-   state; AC44 title; AC66 reborn job; AC87 bath recovery; AC90 fishing.
-   Complete AC32:3 interaction cleanup even when the pose is already zero.
-2. **Manufacturing and character state:** native AC64 start/continue/stop,
-   formula IDs, up to five materials, plans/tools, duration and bag/tent output;
-   direct AC37 and AC59 paths; authored recipe chance/fee handling. Add character
-   job/nickname/potential/title and pet potential metadata without inventing
-   finished training rules. Port the source GM reborn class/reset/cape/aura flow
-   and class stat modifiers. Preserve two-floor tent metadata and pose replay.
-3. **World and combat:** scripted shared prop changes and 60-second reset,
+1. **World and combat:** scripted shared prop changes and 60-second reset,
    generic NPC greeting fallback, clinic offer/healing for pets, level-one
    starter redelivery and administration mass starter grant. Compare explicit
    battle entry owner/party refreshes and broadcast action ACKs. Decide whether
    source PvP attacker-victory rewards (150 EXP/100 gold) should be retained;
    Go currently awards neither. Check the Laura exit gift/mark against native
    authored content before adding a duplicate fallback.
-4. **Administration and reachable quest data:** offline launcher state,
+2. **Administration and reachable quest data:** offline launcher state,
    announcement channel/color, map-wide versus selected-session actor controls,
    linked quest changes, live character refresh, combined spawn/opcode reports
    and custom game_quests definition editing/loading/kill counters. Preserve
    optimistic SQL edits and permission checks while extending coverage.
-5. **Focused migration verification:** compare allocation packet widths/batches,
+3. **Focused migration verification:** compare allocation packet widths/batches,
    generic/default acknowledgements, bank defaults, guild journal requests,
    inventory restrictions, pet outcomes, source recipe order and applicable
    story/protocol scenarios. Test restart, rollback, duplicate requests, ownership
@@ -91,6 +81,14 @@ not prove its dependent behavior works.
 ## On hold: unfinished source and further development
 
 These do not block porting reachable implemented reference behavior:
+
+- **Native command acceptance and fishing parity:** synchronization, appearance,
+  waypoint, gesture, mall aliases, title, reborn-job metadata, bath and pose-stop
+  cleanup are implemented. Verify with aLogin captures, especially the inferred
+  AC7 map hint. Fishing now has native AC23/AC90 paths and transactional weighted catches.
+  Exact original probabilities and live-client acceptance remain research; see
+  [fishing](FISHING.md) and
+  [native commands](NATIVE_COMMANDS.md).
 
 - **Custom quest progression:** accept/advance/complete/reset and NPC matching
   helpers have no external runtime callers in the reference. Definitions/editor
@@ -107,6 +105,11 @@ These do not block porting reachable implemented reference behavior:
   guild vault/alliance operations, nonempty market browser/history and unresolved
   native parcel requests. Source AC71 fixed score is a stub; Go paid arcade
   payments/rewards are an additional implementation with inferred rules.
+- **Manufacturing and rebirth acceptance:** timer units and native HUD class
+  contributions require aLogin verification. AC37 has no implemented socket
+  effect in the reference and its gem IDs identify WLRI oil; reject without
+  consuming items. Reborn class skills are absent from the source; default cape
+  variants are authored WLRI mappings. See [details](MANUFACTURING_CHARACTER_STATE.md).
 - **Housing:** source AC60 decoration purchase, AC61 upstairs and AC62:4 special
   placement are empty/success-only. Garage/team/pet/RiceBall blocks are commented
   or incomplete. Verified upgrade/purchase rules require further work.

@@ -43,10 +43,10 @@ For rollback, stop the server and restore the original configuration paths.
 Progress written to the upgraded database after cutover will not exist in the
 original snapshot. Keep both copies until acceptance testing finishes.
 
-Gameplay schema v11 automatically converts older character rows transactionally
+Gameplay schema v14 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline copy command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 6 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 9 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -176,3 +176,17 @@ sessions need no SQL transaction. Gathering/world ticks remain independent.
 Stop the server
 before snapshots/upgrades so pending session state can flush and both databases
 represent the same installation.
+
+Fishing rules are available through the `Fishing` dataset; see [FISHING.md](FISHING.md).
+
+
+## Manufacturing and character metadata upgrade
+
+Asset v9 adds typed `Manufacturing` and `RebornClasses` datasets. Compound2
+records retain their original formula ordinals and all five ingredients, plan,
+tool and duration fields. Conversion imports authored synthesis chances/fees and
+preserves customized rates. Runtime reads only the typed catalog. Existing
+v8 content edits remain intact; repeat conversion does not reseed edited tables.
+Gameplay v14 adds nickname, actual class and potential, pet potential,
+second-floor tent decoration metadata, and durable `manufacture_jobs` escrow.
+See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).

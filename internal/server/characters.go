@@ -141,6 +141,12 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	for slot := byte(1); slot <= 10; slot++ {
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode24, slot, 0, 0})
 	}
+	if char.Title != 0 {
+		packets = append(packets, protocol.Builder{protocol.CommandTitle, protocol.TitleBroadcast}.U16(char.Title))
+	}
+	if char.RebornJob != 0 {
+		packets = append(packets, []byte{protocol.CommandRebornJob, protocol.RebornJobMetadata, char.RebornJob, protocol.NativeActive})
+	}
 	packets = append(packets, storyConstellations(&char))
 	packets = append(packets, []byte{protocol.CommandHandshake, protocol.HandshakeWorldReady}, []byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionReady}, protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint}.U32(char.ID).U8(0))
 	return packets, nil
@@ -155,6 +161,9 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.event = nil
 	c.arcade = nil
 	c.walkMode = 0
+	c.fishing = nil
+	c.manufacturing = nil
+	c.manufacturingLoaded = false
 	c.ready = false
 	c.motdSent = false
 	c.warped = false

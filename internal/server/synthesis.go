@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
+	"wonderland-go/internal/store"
 )
 
 const synthesisPercentScale = 100
@@ -32,9 +34,11 @@ func (s *Server) synthesize(ctx context.Context, c *Session, first, second byte)
 	rules := s.Assets.Economy.Synthesis
 	output, matched := s.Assets.AlchemyResult(a.ID, b.ID)
 	chance := rules.DefaultSuccessPercent
+	var fee uint32
 	for _, r := range rules.Rates {
 		if r.Output == output && ((r.Input1 == a.ID && r.Input2 == b.ID) || (r.Input1 == b.ID && r.Input2 == a.ID)) {
 			chance = r.SuccessPercent
+			fee = r.Fee
 			break
 		}
 	}
@@ -51,20 +55,34 @@ func (s *Server) synthesize(ctx context.Context, c *Session, first, second byte)
 	if !success {
 		output = rules.FailureItemID
 	}
-	next := c.character.Clone()
-	if err := next.Bag.Remove(first, alchemyUnitsPerIngredient); err != nil {
+
+	var adds []game.Addition
+	next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(next *game.Character) error {
+		if next.Bag[first-1] != a || next.Bag[second-1] != b {
+			return game.ErrTradeChanged
+		}
+		if next.Gold < fee {
+			return fmt.Errorf("not enough gold")
+		}
+		if err := next.Bag.Remove(first, alchemyUnitsPerIngredient); err != nil {
+			return err
+		}
+		if err := next.Bag.Remove(second, alchemyUnitsPerIngredient); err != nil {
+			return err
+		}
+		next.Gold -= fee
+		var err error
+		adds, err = next.Bag.Grant(game.Item{ID: output}, alchemyOutputQuantity, s.Assets.Items[output].StackLimit())
 		return err
-	}
-	if err := next.Bag.Remove(second, alchemyUnitsPerIngredient); err != nil {
-		return err
-	}
-	adds, err := next.Bag.Grant(game.Item{ID: output}, alchemyOutputQuantity, s.Assets.Items[output].StackLimit())
+	}, *c.character)
 	if err != nil {
 		return s.chatFeedback(c, "Synthesis failed: "+err.Error()+".")
 	}
-	if err = s.commit(ctx, c, next); err != nil {
-		return err
+	s.adoptSavedCharacter(c, next)
+	if fee > 0 {
+		s.sendOrClose(c, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold))
 	}
+
 	if err = s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, first, alchemyUnitsPerIngredient}, {protocol.CommandInventory, protocol.InventoryRemove, second, alchemyUnitsPerIngredient}, next.Bag.AdditionPacket(adds)}); err != nil {
 		return err
 	}

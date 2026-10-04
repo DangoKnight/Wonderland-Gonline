@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
+var DefinitionNames = []string{"Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -119,6 +119,12 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 			c.Items[id] = item.Definition
 		}
 	}
+	if err = assets.ValidateManufacturing(c.Manufacturing, c.Items); err != nil {
+		return nil, err
+	}
+	if err = validateFishingCatalog(c); err != nil {
+		return nil, err
+	}
 	if err = validateDefinition(name, c); err != nil {
 		return nil, err
 	}
@@ -127,6 +133,24 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 func validateDefinition(name string, c *assets.Catalog) error {
 	marshal := func(v any) []byte { raw, _ := json.Marshal(v); return raw }
 	switch name {
+	case "Manufacturing":
+		return assets.ValidateManufacturing(c.Manufacturing, c.Items)
+	case "RebornClasses":
+		seen := map[byte]bool{}
+		for _, r := range c.RebornClasses {
+			if r.Job < game.JobKiller || r.Job > game.JobSeer || r.Name == "" || seen[r.Job] {
+				return fmt.Errorf("invalid reborn class")
+			}
+			seen[r.Job] = true
+			if r.Enabled {
+				if _, ok := c.Items[r.CapeID]; !ok {
+					return fmt.Errorf("missing reborn cape")
+				}
+			}
+		}
+		return nil
+	case "Fishing":
+		return validateFishingCatalog(c)
 	case "Terrains":
 		return assets.ValidateTerrains(c.Terrains)
 	case "Tents":

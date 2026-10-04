@@ -28,6 +28,9 @@ func peerPackets(char game.Character, arriving, login bool) ([][]byte, error) {
 		return nil, err
 	}
 	packets := [][]byte{appearance, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(char.ID).Bytes(char.WornEquipment())}
+	if char.Title != 0 {
+		packets = append(packets, protocol.Builder{protocol.CommandTitle, protocol.TitleBroadcast}.U32(char.ID).U16(char.Title))
+	}
 	if arriving {
 		packets = append(packets, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(char.ID).U8(protocol.PresenceMapAvailable))
 		if login {
@@ -231,6 +234,7 @@ func (s *Server) leaveWorld(c *Session) {
 	}
 	s.clearFriendRequests(c)
 	c.gathering = nil
+	c.fishing = nil
 	s.closeStall(c)
 	s.cancelTrade(c)
 	s.abandonBattle(c)
@@ -400,6 +404,7 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byte) error {
 	char := c.character
 	c.gathering = nil
+	c.fishing = nil
 	s.closeStall(c)
 	s.cancelTrade(c)
 	// Old-map peers see the departure as a load command toward the destination.

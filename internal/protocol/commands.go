@@ -562,6 +562,8 @@ const (
 const (
 	InventoryMallBalance   = 25
 	InventoryMallBuy       = 26
+	InventoryFishingStart  = 53
+	InventoryFishingStop   = 54 // Same request code as mall refresh; disambiguated by active cast.
 	InventoryMallCatalog   = 54
 	MallBuyPoints          = 1
 	MallPointsCatalog      = 1
@@ -594,6 +596,51 @@ const (
 
 const MallCatalogHeaderBytes = 4
 const MallStatusEnabled = 1
+
+// Missing reference-native request envelopes. Request and response opcodes may
+// differ; unresolved matrix rows retain explicit compatibility names.
+const (
+	CommandGesture                = 18
+	CommandNativeMall             = 21
+	CommandTitle                  = 44
+	CommandRebornJob              = 66
+	CommandBath                   = 87
+	CommandFishing                = 90 // Inbound; outbound AC90 also acknowledges scene readiness.
+	CommandHeartbeatSync          = 183
+	CommandMallClaimState         = 225
+	CommandMallMatrixRequest      = 226
+	CommandMallMatrix             = 238
+	TeamMallRefresh               = 238
+	TeamMallConfirmed             = 42
+	NativeMallWindow              = 1
+	NativeMallBuy                 = 2
+	NativeMallBalance             = 3
+	NativeMallWindowSlots         = 21
+	HeartbeatSyncRequest          = 17
+	HeartbeatSyncStatus           = 11
+	HeartbeatSyncStatusWireValue9 = 9
+	HeartbeatSyncStatusWireValue2 = 2
+	MoviePlaybackAcknowledgment   = 9
+	NativeDefaultEntityID         = 0
+	NativeDefaultGestureID        = 1
+	NativeDefaultMovieID          = 1
+	NativeActive                  = 1
+	MallMatrixQuery               = 255
+	MallMatrixRows                = 183
+	MallMatrixRowWireID27         = 27
+	MallMatrixRowWireID29         = 29
+	MallMatrixRowWireID24         = 24
+	MallClaimSnapshot             = 252
+	MallClaimReservedBytes        = 10
+	TitleBroadcast                = 1
+	FishingStart                  = 1
+	FishingCatch                  = 2
+	FishingStop                   = 3
+	NativeInactive                = 0
+)
+
+const NativeDefaultRebornJob = 1
+const RebornJobMetadata = 11
 
 // LoginSelect is retained for older callers; AC63:0 returns to the account form.
 // Deprecated: use LoginReturn. Character selection uses LoginSelectAlternate.
@@ -763,10 +810,20 @@ const (
 
 // Native manufacturing (AC59). The reference wire handler selects Forge.
 const (
-	CommandManufacture      = 59
-	ManufactureRequestBytes = 8
-	ManufactureFailed       = 0
-	ManufactureSucceeded    = 1
+	CommandGemSocket            = 37
+	GemSocketRequestBytes       = 4
+	CommandTentManufacture      = 64
+	TentManufactureStart        = 1
+	TentManufactureContinue     = 2
+	TentManufactureStop         = 3
+	TentManufactureStopped      = 4
+	TentManufactureBagComplete  = 9
+	TentManufactureStartBytes   = 5
+	TentManufactureControlBytes = 3
+	CommandManufacture          = 59
+	ManufactureRequestBytes     = 8
+	ManufactureFailed           = 0
+	ManufactureSucceeded        = 1
 )
 
 // Fixed Economy/Social inbound payload sizes include command and subcommand.

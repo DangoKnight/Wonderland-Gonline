@@ -187,3 +187,20 @@ func TestTentReadyResyncsFurnitureChangedDuringLoad(t *testing.T) {
 		t.Fatal("ready snapshot missed changed furniture")
 	}
 }
+
+func TestTentSnapshotReplaysPeerPose(t *testing.T) {
+	s, players, wires := tentFixture(t)
+	owner, guest := players[0], players[2]
+	tradeDo(t, s, owner, []byte{23, 96, 1})
+	enterTestTent(t, s, owner, owner.character.ID)
+	enterTestTent(t, s, guest, owner.character.ID)
+	owner.emote = 3
+	wires[2].Reset()
+	if err := s.tentSnapshot(context.Background(), guest); err != nil {
+		t.Fatal(err)
+	}
+	want := protocol.Builder{32, 2}.U32(owner.character.ID).U8(3)
+	if !contains(wires[2].packets(t), want) {
+		t.Fatal("missing native peer pose replay")
+	}
+}

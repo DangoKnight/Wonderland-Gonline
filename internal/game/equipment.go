@@ -118,8 +118,8 @@ const (
 	Wind  byte = 4
 )
 
-// Combat is EquipManager.Full*: calculated stats plus equipment. Reborn jobs are not
-// ported, so no job multiplier applies.
+// Combat is EquipManager.Full*: rounded innate stats with reborn class bonuses,
+// followed by equipment bonuses.
 type Combat struct{ MaxHP, MaxSP, ATK, DEF, MAT, MDF, SPD int32 }
 
 func (c Character) Combat(items map[uint16]ItemDefinition, growth ...ElementalGrowth) Combat {
@@ -128,14 +128,15 @@ func (c Character) Combat(items map[uint16]ItemDefinition, growth ...ElementalGr
 	g := characterGrowth(c.Element, growth)
 	round := func(v float64) int32 { return int32(uint16(math.RoundToEven(v))) }
 	b := c.Equipment.Bonuses(items)
+	atk, def, mat, mdf, spd := c.classStats(round(g.ATK.value(level, a)), round(g.DEF.value(level, a)), round(g.MAT.value(level, a)), round(g.MDF.value(level, a)), round(g.SPD.value(level, a)))
 	return Combat{
 		MaxHP: int32(uint32(math.RoundToEven(g.HP.value(level, a)))) + b.HP,
 		MaxSP: round(g.SP.value(level, a)) + b.SP,
-		ATK:   round(g.ATK.value(level, a)) + int32(b.ATK),
-		DEF:   round(g.DEF.value(level, a)) + int32(b.DEF),
-		MAT:   round(g.MAT.value(level, a)) + int32(b.MAT),
-		MDF:   round(g.MDF.value(level, a)) + int32(b.MDF),
-		SPD:   round(g.SPD.value(level, a)) + int32(b.SPD),
+		ATK:   atk + int32(b.ATK),
+		DEF:   def + int32(b.DEF),
+		MAT:   mat + int32(b.MAT),
+		MDF:   mdf + int32(b.MDF),
+		SPD:   spd + int32(b.SPD),
 	}
 }
 

@@ -65,7 +65,7 @@ func (run *battleRun) active() []*battleMember {
 }
 
 func (s *Server) rules() battle.Rules {
-	return battle.Rules{Skills: s.Assets.Skills, Timing: s.Assets.AnimationTiming, Critical: s.Assets.Critical,
+	return battle.Rules{ComboDamagePerParticipant: s.comboDamagePerParticipant, Skills: s.Assets.Skills, Timing: s.Assets.AnimationTiming, Critical: s.Assets.Critical,
 		Next: func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
 }
 

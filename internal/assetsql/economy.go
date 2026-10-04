@@ -34,7 +34,7 @@ func validateEconomy(e assets.Economy) error {
 	rates := map[[3]uint16]bool{}
 	for _, r := range e.Synthesis.Rates {
 		key := [3]uint16{min(r.Input1, r.Input2), max(r.Input1, r.Input2), r.Output}
-		if r.Input1 == 0 || r.Input2 == 0 || r.Output == 0 || !validPercent(r.SuccessPercent) || rates[key] {
+		if r.Input1 == 0 || r.Input2 == 0 || r.Output == 0 || r.Fee > game.MaxGold || !validPercent(r.SuccessPercent) || rates[key] {
 			return fmt.Errorf("invalid or duplicate synthesis rate")
 		}
 		rates[key] = true
@@ -45,6 +45,9 @@ func validateEconomy(e assets.Economy) error {
 	}
 	seen := map[string]bool{}
 	for _, r := range e.Manufacturing {
+		if r.Fee > game.MaxGold || (r.SuccessPercent != nil && !validPercent(*r.SuccessPercent)) {
+			return fmt.Errorf("invalid manufacturing chance or fee")
+		}
 		if strings.TrimSpace(r.Workbench) == "" || r.Output.ItemID == 0 || r.Output.Count == 0 || r.Inputs[0].ItemID == 0 || r.Inputs[0].Count == 0 {
 			return fmt.Errorf("invalid manufacturing recipe")
 		}

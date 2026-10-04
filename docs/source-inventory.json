@@ -986,10 +986,11 @@
       "sha256": "2394bf2e0ba220c6be3e91d26495b5e5c4869961b64d1ce12a2a6c9c11a28706",
       "go_files": [
         "internal/assets/alchemy.go",
-        "internal/assetsql/database.go"
+        "internal/assetsql/database.go",
+        "internal/assetsql/manufacturing.go"
       ],
-      "notes": "Read all 65-byte fields and XOR decoders. Go's alchemy projection decodes output and first two ingredient IDs, but this legacy class also exposes plans/tools, five ingredient quantities and build times. Those fields are not in the Go alchemy schema; manufacturing handlers require a separate comparison.",
-      "audit_verdict": "partial"
+      "notes": "Offline Compound2 projection preserves original ordinal IDs, all five ingredients, plans/tools and duration in typed SQL manufacturing catalog; invalid headers/obsolete definitions are nonexecutable. Runtime never reads source documents.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "Src/Debugging/Debug.cs",
@@ -1215,9 +1216,11 @@
       "go_files": [
         "internal/server/world.go",
         "internal/game/character.go",
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Peer appearance is implemented; inbound self-spawn query has no registration. Job, nickname and GM-bot appearance require separate parity review.",
+      "notes": "Inbound self-spawn now uses the native appearance serializer. Job, nickname and GM-bot presentation remain separate parity work.",
       "audit_verdict": "partial"
     },
     {
@@ -1251,14 +1254,16 @@
     {
       "source": "Src/Network/ActionCodes/AC07.cs",
       "lines": 53,
-      "status": "pending",
+      "status": "ported",
       "sha256": "4539902f10914a23c47e9cd6562ad9480da4376cb58a035a2b34e2e657f3d0ab",
       "go_files": [
         "internal/server/command_registry.go",
-        "internal/game/character.go"
+        "internal/game/character.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Executable inbound waypoint update and ACK have no AC7 registration; outbound PositionPacket does not implement this request.",
-      "audit_verdict": "missing"
+      "notes": "Inbound waypoint synchronization is registered; reference X/Y and inferred map/X/Y forms use validated buffered movement, vehicle checks and encounter processing before the ACK. Native map-hint acceptance still needs captures.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "Src/Network/ActionCodes/AC08.cs",
@@ -1347,14 +1352,17 @@
     {
       "source": "Src/Network/ActionCodes/AC13.cs",
       "lines": 214,
-      "status": "partial",
+      "status": "ported",
       "sha256": "eb7f391522cfcb014fc5c788558ed57b44f7eb2f12697feb01535e3f1421dde4",
       "go_files": [
         "internal/server/party.go",
-        "internal/server/mall.go"
+        "internal/server/mall.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "internal/server/command_registry.go"
       ],
-      "notes": "Party invite/accept/leave/kick/leadership implemented; legacy 238 mall-refresh subcommand absent.",
-      "audit_verdict": "partial"
+      "notes": "Party handlers and AC13:238 mall confirmation, authoritative balances and both catalogs are implemented.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC14.cs",
@@ -1395,24 +1403,28 @@
     {
       "source": "Src/Network/ActionCodes/AC18.cs",
       "lines": 52,
-      "status": "pending",
+      "status": "ported",
       "sha256": "df439e3f4b4e68f6e8691750d07bfe12662f7bb87d221ec20c656291fbfe976f",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Executable emote broadcast has no AC18 registration.",
-      "audit_verdict": "missing"
+      "notes": "Inbound gesture broadcasts preserve the reference envelope and scene isolation, including sender echo.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC183.cs",
       "lines": 43,
-      "status": "pending",
+      "status": "ported",
       "sha256": "2eaa58772dd1c3c86ef2616bd0055cfc574c1cc52cb634f95cc557d1554e744c",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Heartbeat 17 dual synchronization response absent.",
-      "audit_verdict": "missing"
+      "notes": "AC183:17 emits both reference synchronization replies, including during loading/battle.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC184.cs",
@@ -1428,13 +1440,15 @@
     {
       "source": "Src/Network/ActionCodes/AC186.cs",
       "lines": 61,
-      "status": "pending",
+      "status": "ported",
       "sha256": "8d0d0498cbc890dcfd52965eaba0bc9ad5931ffe7590f5d52cd387c57d664951",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Cutscene 9 completion echo absent.",
-      "audit_verdict": "missing"
+      "notes": "AC186:9 echoes the optional cutscene ID with active status and reserved padding. Script/movie progression remains independently owned by events.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC19.cs",
@@ -1484,37 +1498,44 @@
     {
       "source": "Src/Network/ActionCodes/AC21.cs",
       "lines": 94,
-      "status": "pending",
+      "status": "ported",
       "sha256": "1ef85d1b4bb3f0ca1a9b0e7c44085379c66fefe71566c02f66e931d1c37ca6d8",
       "go_files": [
         "internal/server/command_registry.go",
-        "internal/server/mall.go"
+        "internal/server/mall.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "AC21 mall window/buy/balance inbound handler absent though purchase backend exists.",
-      "audit_verdict": "missing"
+      "notes": "Native mall window, slot purchase and balance aliases use SQL-backed catalog and atomic debit/delivery. One slot purchase delivers one bundle; invalid/full/funded failures do not charge.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "Src/Network/ActionCodes/AC22.cs",
       "lines": 266,
-      "status": "partial",
+      "status": "ported",
       "sha256": "7798ba5f816c473081a0be73e738e22d2c0634574bfa238e2a5776bc75e2411a",
       "go_files": [
         "internal/server/simulation.go",
-        "internal/world/world.go"
+        "internal/world/world.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "internal/server/command_registry.go"
       ],
-      "notes": "NPC packets/simulation implemented; generic inbound active response absent.",
-      "audit_verdict": "partial"
+      "notes": "Existing NPC packets and simulation plus generic inbound entity-active acknowledgement are implemented.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC226.cs",
       "lines": 61,
-      "status": "pending",
+      "status": "ported",
       "sha256": "d720e4a70f03db4fda77e5a510b52c55715d0e77eae7f1eb02ef550417f10e1b",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Mall matrix and claim-state response to 226:255 absent.",
-      "audit_verdict": "missing"
+      "notes": "AC226:255 sends the reference fixed matrix and zero claim-state snapshot. No claim/reward mutation is inferred from this synchronization request.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC23.cs",
@@ -1523,9 +1544,12 @@
       "sha256": "a88a64a832d804cbf0c5a574334fcc7055fe61695a5264065390ac60f8d04fdb",
       "go_files": [
         "internal/server/items.go",
-        "internal/server/mall.go"
+        "internal/server/mall.go",
+        "internal/server/fishing.go",
+        "internal/server/fishing_test.go",
+        "docs/FISHING.md"
       ],
-      "notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison.",
+      "notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison. Native fishing AC23:53/54 now routes to the rod/shoreline and transactional catch system; 54 retains mall refresh when casting is inactive.",
       "audit_verdict": "partial"
     },
     {
@@ -1620,13 +1644,16 @@
     {
       "source": "Src/Network/ActionCodes/AC32.cs",
       "lines": 83,
-      "status": "partial",
+      "status": "ported",
       "sha256": "9641cac19a33f7c5a669695a8968e20b18ea99df7fc75046f26f72132f9878f7",
       "go_files": [
-        "internal/server/chat.go"
+        "internal/server/chat.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "internal/server/command_registry.go"
       ],
-      "notes": "Pose set/broadcast/stop implemented; source Recv3 also clears active interaction, but Go emote does not.",
-      "audit_verdict": "partial"
+      "notes": "Pose set/broadcast/stop and unconditional interaction callback cleanup on AC32:3 are implemented; cleanup also works at pose zero and through minigame/loading gates.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC33.cs",
@@ -1680,9 +1707,10 @@
       "sha256": "1ab33a785b8e10f0f5bde720c1947d6ad7989baa2c3e5867f37f70dbf1ae8835",
       "go_files": [
         "internal/server/forging.go",
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/tent_manufacturing.go"
       ],
-      "notes": "Forging backend exists via mall; direct AC37 equip/gem-slot request has no registration.",
+      "notes": "Strict direct gem socket request registered; truthful failure retains resources. Reference ForgeGem consumes IDs that map to WLRI oil without changing equipment; socket effects and verified gems remain pending.",
       "audit_verdict": "partial"
     },
     {
@@ -1733,14 +1761,19 @@
     {
       "source": "Src/Network/ActionCodes/AC44.cs",
       "lines": 52,
-      "status": "pending",
+      "status": "ported",
       "sha256": "97bde68f17629ed4883e1978d8edd45f1cfa0417e1ad70ad491545d4c8b261c1",
       "go_files": [
         "internal/server/command_registry.go",
-        "internal/game/character.go"
+        "internal/game/character.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "internal/store/character_storage.go",
+        "internal/store/migrations.go",
+        "internal/store/native_metadata_test.go"
       ],
-      "notes": "Source assigns title and broadcasts it; AC44 inbound request and title state absent.",
-      "audit_verdict": "missing"
+      "notes": "Title assignments are persisted in a typed SQL column before ACK/map broadcast, with login/peer replay and pending movement preserved. Reference has no unlock ownership validation.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC45.cs",
@@ -1825,10 +1858,11 @@
       "status": "partial",
       "sha256": "94120df0ec90db3a6d7296578a112724364c3e28a3e0a89b24ff622c03baba7f",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/manufacturing.go"
       ],
-      "notes": "Direct two-input Forge request unregistered; AC64 manufacture is separate. Manager semantics need review.",
-      "audit_verdict": "partial"
+      "notes": "Native two-input Forge request registered with strict payload layout and source reply; atomic SQL recipe execution.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC60.cs",
@@ -1882,10 +1916,13 @@
       "sha256": "49176f495ea633defd354591b1c3005b48a60913f6ffde6f91d93aef89ff4685",
       "go_files": [
         "internal/server/manufacturing.go",
-        "internal/assets/alchemy.go"
+        "internal/assets/alchemy.go",
+        "internal/server/tent_manufacturing.go",
+        "internal/store/manufacturing.go",
+        "internal/assetsql/manufacturing.go"
       ],
-      "notes": "Reference native start takes bench byte plus formula UInt16, consumes up to five ingredient quantities, grants special tools to bag or places output in tent, and sends 64:1/2/4/9. Go AC64 instead expects two item/count pairs and uses the chat manufacturing recipe model; native start/continue/stop and formula-indexed output placement are not ported.",
-      "audit_verdict": "partial"
+      "notes": "Native start/control layouts, original formula IDs, five materials, owned plans/tools and bag/tent delivery implemented. Timed durable escrow replaces instant source completion; stop pauses, continue resumes; rollback and restart coverage. Minutes-to-seconds timing is inferred and requires native acceptance.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC65.cs",
@@ -1901,14 +1938,19 @@
     {
       "source": "Src/Network/ActionCodes/AC66.cs",
       "lines": 43,
-      "status": "pending",
+      "status": "ported",
       "sha256": "8055538601ec81be787d1933d5de3f6721e3c45d3011be08c4cb80081cff2f67",
       "go_files": [
         "internal/server/command_registry.go",
-        "internal/game/character.go"
+        "internal/game/character.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "internal/store/character_storage.go",
+        "internal/store/migrations.go",
+        "internal/store/native_metadata_test.go"
       ],
-      "notes": "Source sets RebornJob and replies; class field and request absent.",
-      "audit_verdict": "missing"
+      "notes": "AC66 stores the separate RebornJob metadata and replies, matching the source field assignment. It does not call advancement, set actual class/rebirth or change stats. Full rebirth workflow remains separate.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "Src/Network/ActionCodes/AC67.cs",
@@ -2123,13 +2165,15 @@
     {
       "source": "Src/Network/ActionCodes/AC87.cs",
       "lines": 40,
-      "status": "pending",
+      "status": "ported",
       "sha256": "58ff1d3bba337b068f8b9e1a257fb55fb57d6954f31abeac86f2d33dc18cda4a",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go"
       ],
-      "notes": "Source really restores HP/SP; AC87 registration absent.",
-      "audit_verdict": "missing"
+      "notes": "Bath request restores authoritative HP/SP transactionally through shared vital recalculation, then publishes stats and native ACK. Source has no bath-location eligibility checks.",
+      "audit_verdict": "replaced"
     },
     {
       "source": "Src/Network/ActionCodes/AC88.cs",
@@ -2156,13 +2200,23 @@
     {
       "source": "Src/Network/ActionCodes/AC90.cs",
       "lines": 63,
-      "status": "pending",
+      "status": "partial",
       "sha256": "4146b3f5ac336224ee4cad21d0a4a72a108a6bdad29c7165fa85e160754f94e6",
       "go_files": [
-        "internal/server/command_registry.go"
+        "internal/server/command_registry.go",
+        "internal/server/native_commands.go",
+        "internal/server/native_commands_test.go",
+        "docs/NATIVE_COMMANDS.md",
+        "internal/server/fishing.go",
+        "internal/server/fishing_test.go",
+        "internal/store/fishing.go",
+        "internal/store/fishing_test.go",
+        "internal/assets/fishing.go",
+        "internal/assetsql/fishing.go",
+        "docs/FISHING.md"
       ],
-      "notes": "Source sets fishing state and grants fish on reel-in; no AC90 handler. Source lacks cast/payment checks.",
-      "audit_verdict": "missing"
+      "notes": "Native AC23:53/54 start/stop plus AC90 compatibility now use validated SQL rods, beach shoreline geometry, timed weighted rewards and learned-skill catch proficiency. Gameplay fishing_progress atomically guards deadlines and catches alongside inventory/skills, including full-bag discard with proficiency. Default weights, rod ceilings and progression interpretation are authored from saved references; asset schema v8 increases unchanged fish/seafood seed weights tenfold while preserving custom weights and grades; exact native odds, boat fishing and live aLogin acceptance remain research. Sky Sword Box is excluded.",
+      "audit_verdict": "partial"
     },
     {
       "source": "Src/Network/ActionCodes/AC91.cs",
@@ -2760,9 +2814,11 @@
         "internal/server/combat.go",
         "internal/server/combat_pvp.go",
         "internal/server/combat_quests.go",
-        "internal/server/encounters.go"
+        "internal/server/encounters.go",
+        "internal/battle/targeting.go",
+        "internal/config/config.go"
       ],
-      "notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Remaining wire differences: Go sends action ACK only to submitting session instead of every participant; battle intro omits reference explicit teammate HUD and owner pet-progress refresh. Reference editable quest kill counters depend on the missing game_quests engine. Go suppresses PvP EXP/gold (reference attacker victory awards 150/100); needs explicit policy confirmation before treating that as parity. Unsafe partial loot grants and broken defender targeting are improved.",
+      "notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Remaining wire differences: Go sends action ACK only to submitting session instead of every participant; battle intro omits reference explicit teammate HUD and owner pet-progress refresh. Reference editable quest kill counters depend on the missing game_quests engine. Go suppresses PvP EXP/gold (reference attacker victory awards 150/100); needs explicit policy confirmation before treating that as parity. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule.",
       "audit_verdict": "partial"
     },
     {
@@ -2805,10 +2861,12 @@
       "sha256": "515e93035cc90308f1a1bcdd4d3b549f84039f4c1932ec71be559c60632e9512",
       "go_files": [
         "internal/assets/alchemy.go",
-        "internal/server/alchemy.go"
+        "internal/server/alchemy.go",
+        "internal/server/synthesis.go",
+        "internal/assetsql/authored_synthesis.go"
       ],
-      "notes": "AC40 deterministic recipe lookup implemented; separate probabilistic CompoundItems method/default recipes and failure charcoal require chat crafting comparison. Native reference recipe offsets themselves heuristic.",
-      "audit_verdict": "partial"
+      "notes": "Authored input/output recipe chances and fees projected offline into SQL, preserving customized rates. Player compound cost and result commit transactionally; deterministic native paths remain separate.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "wlo.pserver.core/Game/Crafting/EquipmentRepairManager.cs",
@@ -2827,9 +2885,10 @@
       "status": "pending",
       "sha256": "6d48918072e4d17ced887f70df54bfc85c3d0e3ea959a84e38d2a2127b4f2a45",
       "go_files": [
-        "internal/server/forging.go"
+        "internal/server/forging.go",
+        "internal/server/tent_manufacturing.go"
       ],
-      "notes": "Gem consumption/effect exists but no equipment stat/metadata change in source. Direct AC37 handler absent in Go; mall point forging is a separate implemented system.",
+      "notes": "Gem consumption/effect exists but no equipment stat/metadata change in source. Direct AC37 handler absent in Go; mall point forging is a separate implemented system. Direct AC37 safely rejects unfinished socket effects without consuming source oil IDs; mall forging unchanged.",
       "audit_verdict": "legacy_incomplete"
     },
     {
@@ -2839,9 +2898,13 @@
       "sha256": "7705dd9cc5a92e2763d90e232765da0fef23bafd86b581b5f1db3fd47e992416",
       "go_files": [
         "internal/server/manufacturing.go",
-        "internal/assets/economy.go"
+        "internal/assets/economy.go",
+        "internal/server/fishing.go",
+        "internal/server/fishing_test.go",
+        "internal/store/fishing.go",
+        "internal/assets/fishing.go"
       ],
-      "notes": "Timed one-item gathering pools and fish/mine/chop exist with SQL definitions, durable capacity checks and cancel-on-movement. Reference /stopgather alias is absent (/stop replaces it), and native gathering animation packets are intentionally pending because source short AC5 payloads conflict with verified client layouts.",
+      "notes": "Timed SQL mining/woodcutting retain one-item pools and cancellation. /fish now shares native fishing rod/shoreline checks, weighted SQL rewards and durable proficiency/deadline transactions; /stop cancels either. Short source AC5 animations remain excluded due to verified model-transform layout conflict. /stopgather alias remains absent.",
       "audit_verdict": "partial"
     },
     {
@@ -2850,10 +2913,11 @@
       "status": "partial",
       "sha256": "4521afa1b9ffc6207ba6fb88c50e83bcf08bc1d6dffe27ae549c4917bc895b9d",
       "go_files": [
-        "internal/server/manufacturing.go"
+        "internal/server/manufacturing.go",
+        "internal/store/owned_mutation.go"
       ],
-      "notes": "Fixed two-material bench recipes have chat/native paths; exact seeded recipes and input order need comparison.",
-      "audit_verdict": "partial"
+      "notes": "Source two-input workbench matching and AC59 retained with authoritative SQL ingredient/fee/output transaction. Authored optional chance/fee handling added; failed attempts consume agreed cost, full output rollback preserves resources.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "wlo.pserver.core/Game/Delegates.cs",
@@ -3272,9 +3336,10 @@
         "internal/server/services.go",
         "internal/server/chat.go",
         "internal/server/social_commands.go",
-        "internal/store/character_storage.go"
+        "internal/store/character_storage.go",
+        "internal/game/login_packets.go"
       ],
-      "notes": "Read all 2107 source lines. Concrete session dispatch, interaction queues/tokens, roster identity and snapshots, progression, equipment, service windows, record point, party HUD/leadership/follow, vehicles, persistence and disconnect cleanup are split across Go modules. Requested pet growth and elemental formulas replace reference top-three weights and incorrect hardcoded pet affinities. Actual gaps: pet/character Potential and character Job/nickname/title fields; GM /reborn class workflow; clinic offer and confirmation omit injured pets and their refill packets. Legacy /stopgather and /inbox aliases are absent (/stop and /mail exist). Several literal greater-than cheat commands are replaced by authenticated GM operations. Source duel chat helpers only provide placeholder battle setup; custom quest dialogue helpers are dormant. Empty OnBattle_Start and callback socket pump are not migration targets.",
+      "notes": "Read all 2107 source lines. Session dispatch, interactions, roster/snapshots, progression, equipment, service windows, record point, party leadership/follow, vehicles, persistence and disconnect cleanup are split across Go modules. Requested pet allocation and compiled elemental formulas replace reference rules. Character/pet potential, actual class/nickname/title metadata and GM rebirth workflow now persist and replay. Clinic pet healing and legacy /stopgather and /inbox aliases remain pending. Literal cheat commands use authenticated GM operations. Source duel/custom quest helpers are placeholder/dormant paths; empty battle-start callback and socket pump are not gameplay targets.",
       "audit_verdict": "partial"
     },
     {
@@ -3284,9 +3349,10 @@
       "sha256": "eb26a850767419bc7b989e5b980b5ba234f7a69097e895b44c200ea1d81ceca1",
       "go_files": [
         "internal/game/character.go",
-        "internal/game/login_packets.go"
+        "internal/game/login_packets.go",
+        "internal/store/character_storage.go"
       ],
-      "notes": "Compared character roster, AC3/AC4 appearance and AC5:3 fields. Go preserves names, positions, colors, equipment and skills, but nickname/job/potential are absent and rebirth/guild appearance bytes use zero defaults (guild badge is sent separately). Spouse state is normalized into SQL relationships rather than embedded mutable names. PropertyChanged/legacy string data are replaced.",
+      "notes": "Compared roster, AC3/AC4 appearance and AC5:3 fields. Typed owned state preserves names, nickname, actual class, potential, positions, colors, equipment and skills. Native packets include rebirth/class and nickname; potential has stat37 replay. Guild appearance retains separate badge presentation. Spouse state uses SQL relationships; PropertyChanged/string serialization are replaced. Funded potential training and optional legacy metadata conversion remain pending.",
       "audit_verdict": "partial"
     },
     {
@@ -3298,9 +3364,10 @@
         "internal/game/equipment.go",
         "internal/game/character.go",
         "internal/game/elemental_growth.go",
-        "internal/server/items.go"
+        "internal/server/items.go",
+        "internal/game/reborn.go"
       ],
-      "notes": "Reviewed all equipment/stat methods, six-slot bonuses, forge contributions, native stat/outfit packets and EXP leveling. Go covers equipment and explicitly approved growth changes, but lacks player job and potential state, the six reborn-class 10% stat multipliers and source reborn progression. Reborn bool currently supplies combo metadata only. Legacy string serialization is replaced by typed SQL state.",
+      "notes": "Reviewed equipment/stat methods, six-slot bonuses, forge contributions, native stat/outfit packets and EXP leveling. Go preserves approved compiled growth and now applies all six reborn-class innate multipliers before gear, with normalized reborn EXP progression and durable potential/class fields. Legacy string serialization is replaced by typed SQL. Native class HUD contribution acceptance remains pending.",
       "audit_verdict": "partial"
     },
     {
@@ -3312,7 +3379,7 @@
         "internal/server/friends.go",
         "internal/server/social.go"
       ],
-      "notes": "Friend list/add/delete, appearance fields and persistence are implemented; Go emits empty player job/rebirth/nickname fields even when combo Reborn metadata exists. Source reserves slot zero for Cupid but excludes Cupid from transmitted lists, so absence of a visible assistant is not itself a friend-list omission.",
+      "notes": "Friend list/add/delete, appearance fields and SQL persistence are implemented. Native presentation includes saved nickname, actual class and rebirth flag. Source reserves Cupid slot zero but excludes it from transmitted lists; no visible assistant is itself a wire omission. Guild appearance remains separate.",
       "audit_verdict": "partial"
     },
     {
@@ -3447,10 +3514,13 @@
       "sha256": "9d68e9eb0068a97b9c241cbb1541831310f248c87f1831b522fb58366906b23c",
       "go_files": [
         "internal/game/character.go",
-        "internal/server/gm_commands.go"
+        "internal/server/gm_commands.go",
+        "internal/server/gm_reborn.go",
+        "internal/game/reborn.go",
+        "internal/assetsql/reborn_defaults.json"
       ],
-      "notes": "Reference is reachable through the GM-only /reborn chat branch in Player.cs: requires level 100, assigns one of six jobs, resets level and grants cape plus aura. Go has neither player jobs nor this command. The reference derives Reborn from nonzero Job in Equip.cs; it is not a separate boolean assignment.",
-      "audit_verdict": "missing"
+      "notes": "GM class reset, level requirement, aura and atomic cape grant implemented. WLRI cape defaults replace incorrect source glove IDs. Source advertises but implements no class skill. Displayed reborn EXP normalized to avoid source level wrap; native acceptance pending.",
+      "audit_verdict": "migrated"
     },
     {
       "source": "wlo.pserver.core/Game/PlayerRelated/RiceBall.cs",
@@ -3496,7 +3566,7 @@
         "internal/server/tents.go",
         "internal/store/tents.go"
       ],
-      "notes": "Opening signs, private instance, entry/exit/close eviction, return recovery, default furniture, native item snapshots and owner furniture moves implemented with durable SQL and item conservation. Go restricts placement/movement to floor zero; reference TentItem stores arbitrary floor. Tent snapshot omits reference AC32:2 occupant emote replay. Reference wallpaper packets disabled and garage/team/pet/RiceBall blocks commented out, so those are source placeholders.",
+      "notes": "Opening signs, private instances, entry/exit/close eviction, return recovery, default furniture, item snapshots and owner moves are implemented with durable SQL/item conservation. Both floor/wallpaper pairs persist and snapshots replay nonzero peer poses. Placement/movement stays floor zero; upper-floor access is a source stub. Wallpaper packets are disabled and garage/team/pet/RiceBall blocks commented in the reference.",
       "audit_verdict": "partial"
     },
     {

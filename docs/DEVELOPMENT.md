@@ -39,10 +39,12 @@ are outside this server persistence policy.
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
 Game content definitions belong in `assets.db`. Preserve the startup-only
-`pet_growth_formula` selector as a server initialization parameter.
+`pet_growth_formula` selector and `combo_damage_per_participant` switch as server
+initialization parameters. Capture combo damage selection at startup; only actual
+successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v11 stores character state in typed tables and owned child rows.
-Structured asset schema v6 stores runtime definitions in generated `catalog_*`
+Gameplay schema v14 stores character state in typed tables and owned child rows.
+Structured asset schema v9 stores runtime definitions in generated `catalog_*`
 tables. Migration retains legacy representations solely as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
@@ -863,3 +865,31 @@ actors. Preserve private tent isolation, actor concealment, companion ownership,
 battle/event reservations and recipient failure isolation. Ambient patrol cursors,
 positions and deadlines remain transient; monster respawn returns to its authored
 spawn and resets its patrol with the reference three-second grace.
+
+## Native compatibility handlers
+
+Keep native aliases in the command registry and reuse the owning subsystem's
+validation and transactions. AC7 waypoints must pass the ordinary terrain,
+vehicle and event checks and remain buffered like AC6 walking. Read-only
+synchronization may run during loading/battle; paid AC21 purchases retain all
+world/trade/battle gates. AC32:3 clears callbacks even when no pose changed.
+
+Title and AC66 reborn-job metadata belong in typed gameplay columns (schema v12).
+Commit them before packets and update only their corresponding checkpoint fields;
+never advance the saved position merely because metadata was committed. AC66
+metadata is distinct from actual rebirth/class advancement and stat modifiers.
+Fishing cast state stays in memory. Fishing deadlines/catch counts live in
+`fishing_progress` (gameplay schema v13); SQL rod ownership, reward delivery and
+skill proficiency commit together. Read rules from the structured `Fishing`
+dataset (asset schema v8), with no runtime seed fallback. Full-bag fishing
+retains proficiency and discards the catch. See [FISHING.md](FISHING.md).
+
+
+### Manufacturing and character state
+
+See [manufacturing/character state](MANUFACTURING_CHARACTER_STATE.md). Gameplay
+v14 owns nickname/class/potential, pet potential, second-floor tent metadata and
+manufacturing escrow. Asset v9 owns full Compound2 formulas, rebirth cape mappings
+and authored recipe fee/chance projections. Debit ingredients/create escrow and
+deliver output/delete escrow transactionally before acknowledging. Recover pending
+jobs once per ready session; never reload or save walking on each timer tick.

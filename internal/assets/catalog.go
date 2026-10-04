@@ -131,7 +131,10 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
-	Terrains map[uint16]Terrain
+	Manufacturing map[uint16]ManufacturingFormula
+	RebornClasses []RebornClass
+	Fishing       FishingRules
+	Terrains      map[uint16]Terrain
 
 	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`

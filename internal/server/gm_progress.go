@@ -63,7 +63,7 @@ func (s *Server) gmProgress(ctx context.Context, c *Session, name string, words 
 			return nil
 		}
 		next.EXP = uint32(max(exp, 0))
-		next.Level = game.LevelForExp(uint64(next.EXP))
+		next.Level = next.LevelFromEXP(uint64(next.EXP))
 		// Direct assignment grants no points (AC02 sets TotalExp, not AddExp).
 		packets = append(packets, next.ExpPacket())
 	case "skill":

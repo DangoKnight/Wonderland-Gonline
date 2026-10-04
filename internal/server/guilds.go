@@ -56,7 +56,7 @@ func (s *Server) guildRosterPacket(guild *store.GuildInfo) ([]byte, error) {
 		if s.onlineByID(char.ID) != nil {
 			online = 1
 		}
-		p = p.U8(byte(char.Level)).U8(game.RosterNoJob).U8(byte(char.Element)).U8(member.Rank).U8(online)
+		p = p.U8(byte(char.Level)).U8(char.Job).U8(byte(char.Element)).U8(member.Rank).U8(online)
 	}
 	return p.String(guild.Notice)
 }

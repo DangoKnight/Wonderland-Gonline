@@ -84,6 +84,9 @@ func (s *Server) tentSnapshot(ctx context.Context, c *Session) error {
 		if peer.invisible {
 			continue
 		}
+		if peer.emote != 0 {
+			packets = append(packets, protocol.Builder{protocol.CommandPose, protocol.PoseBroadcast}.U32(peer.character.ID).U8(peer.emote))
+		}
 		packets = append(packets, protocol.Builder{protocol.CommandInventory, protocol.InventoryTentPlayer}.U32(peer.character.ID), protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(peer.character.ID).U8(protocol.PresenceMapAvailable), protocol.Builder{protocol.CommandInventory, protocol.InventoryTentPlayerComplete}.U32(peer.character.ID))
 	}
 	packets = append(packets, []byte{protocol.CommandInventory, protocol.InventoryStallListComplete}, []byte{protocol.CommandEvent, protocol.EventPortal})

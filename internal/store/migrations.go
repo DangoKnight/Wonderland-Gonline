@@ -4,7 +4,7 @@ import "fmt"
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 11
+const schemaVersion = 14
 
 func (s *Store) migrate() error {
 	var version int
@@ -91,6 +91,43 @@ func (s *Store) migrate() error {
  PRAGMA user_version=7;`); e != nil {
 		return e
 	}
+	// v12: native title and AC66 metadata. Existing typed rows receive zero
+	// defaults; create-time v8 projection uses the complete current model.
+	if version >= 8 && version < 12 {
+		for _, column := range []struct{ Name, DDL string }{
+			{"title", "ALTER TABLE character_state ADD COLUMN title INTEGER NOT NULL DEFAULT 0 CHECK(title BETWEEN 0 AND 65535)"},
+			{"reborn_job", "ALTER TABLE character_state ADD COLUMN reborn_job INTEGER NOT NULL DEFAULT 0 CHECK(reborn_job BETWEEN 0 AND 255)"},
+		} {
+			var present int
+			if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('character_state') WHERE name=?", column.Name).Scan(&present); e != nil {
+				return e
+			}
+			if present == 0 {
+				if _, e = tx.Exec(column.DDL); e != nil {
+					return e
+				}
+			}
+		}
+	}
+
+	if version >= 8 && version < 14 {
+		for _, column := range []struct{ Table, Name, DDL string }{
+			{"character_state", "nickname", "ALTER TABLE character_state ADD COLUMN nickname TEXT NOT NULL DEFAULT ''"},
+			{"character_state", "job", "ALTER TABLE character_state ADD COLUMN job INTEGER NOT NULL DEFAULT 0"},
+			{"character_state", "potential", "ALTER TABLE character_state ADD COLUMN potential INTEGER NOT NULL DEFAULT 0"},
+			{"character_pets", "potential", "ALTER TABLE character_pets ADD COLUMN potential INTEGER NOT NULL DEFAULT 0"},
+		} {
+			var present int
+			if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info(?) WHERE name=?", column.Table, column.Name).Scan(&present); e != nil {
+				return e
+			}
+			if present == 0 {
+				if _, e = tx.Exec(column.DDL); e != nil {
+					return e
+				}
+			}
+		}
+	}
 	// v8: typed character state and owned collections; retain the legacy snapshot.
 	if e = migrateCharacterState(tx); e != nil {
 		return e
@@ -160,6 +197,31 @@ func (s *Store) migrate() error {
  PRAGMA user_version=11;`); e != nil {
 			return e
 		}
+	}
+
+	if _, e = tx.Exec(`CREATE TABLE IF NOT EXISTS fishing_progress (
+ character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
+ catches INTEGER NOT NULL DEFAULT 0 CHECK(catches>=0),
+ next_at INTEGER NOT NULL DEFAULT 0);`); e != nil {
+		return e
+	}
+
+	for _, column := range []string{"floor2", "wallpaper2"} {
+		var present int
+		if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('tents') WHERE name=?", column).Scan(&present); e != nil {
+			return e
+		}
+		if present == 0 {
+			if _, e = tx.Exec("ALTER TABLE tents ADD COLUMN " + column + " INTEGER NOT NULL DEFAULT 0"); e != nil {
+				return e
+			}
+		}
+	}
+	if _, e = tx.Exec(`CREATE TABLE IF NOT EXISTS manufacture_jobs(character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,bench INTEGER NOT NULL,formula INTEGER NOT NULL,item_id INTEGER NOT NULL,count INTEGER NOT NULL,tent_output INTEGER NOT NULL,floor INTEGER NOT NULL,due_at INTEGER NOT NULL,remaining_millis INTEGER NOT NULL,paused INTEGER NOT NULL);`); e != nil {
+		return e
+	}
+	if _, e = tx.Exec("PRAGMA user_version=14"); e != nil {
+		return e
 	}
 	return tx.Commit()
 }

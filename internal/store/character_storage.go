@@ -49,6 +49,11 @@ type characterStateRow struct {
 	ActiveVehicle     uint16
 	VehicleSlot       byte
 	ActiveMount       uint32
+	Title             uint16
+	Nickname          string
+	Job               byte
+	Potential         uint16
+	RebornJob         byte
 	Reborn            bool
 	MutedUntil        time.Time
 	SettingsPresent   bool
@@ -141,6 +146,7 @@ type characterPetRow struct {
 	Amity      byte
 	Battle     bool
 	Reborn     bool
+	Potential  uint16
 	Job        byte
 }
 
@@ -165,7 +171,7 @@ func characterTables() []any {
 // The caller owns the transaction: scalar state and all collections commit together.
 func writeCharacterState(tx *gorm.DB, c game.Character) error {
 	owner := CharacterOwner{CharacterID: c.ID}
-	state := characterStateRow{CharacterOwner: owner, Base: c.Base, Level: c.Level, Element: c.Element, HP: c.HP, MaxHP: c.MaxHP, SP: c.SP, MaxSP: c.MaxSP, EXP: c.EXP, StatPoints: c.StatPoints, Gold: c.Gold, BankGold: c.BankGold, Body: c.Body, Head: c.Head, Color1: c.Color1, Color2: c.Color2, Map: c.Map, X: c.X, Y: c.Y, ActivePet: c.ActivePet, ActiveVehicle: c.ActiveVehicle, VehicleSlot: c.VehicleSlot, ActiveMount: c.ActiveMount, Reborn: c.Reborn, MutedUntil: c.MutedUntil, LuckyDay: c.LuckyDraw.Day, LuckyUsed: c.LuckyDraw.Used}
+	state := characterStateRow{CharacterOwner: owner, Base: c.Base, Level: c.Level, Element: c.Element, HP: c.HP, MaxHP: c.MaxHP, SP: c.SP, MaxSP: c.MaxSP, EXP: c.EXP, StatPoints: c.StatPoints, Gold: c.Gold, BankGold: c.BankGold, Body: c.Body, Head: c.Head, Color1: c.Color1, Color2: c.Color2, Map: c.Map, X: c.X, Y: c.Y, ActivePet: c.ActivePet, ActiveVehicle: c.ActiveVehicle, VehicleSlot: c.VehicleSlot, ActiveMount: c.ActiveMount, Title: c.Title, Nickname: c.Nickname, Job: c.Job, Potential: c.Potential, RebornJob: c.RebornJob, Reborn: c.Reborn, MutedUntil: c.MutedUntil, LuckyDay: c.LuckyDraw.Day, LuckyUsed: c.LuckyDraw.Used}
 	if c.Settings != nil {
 		state.SettingsPresent = true
 		state.PKAllowed = c.Settings.PKAllowed
@@ -231,7 +237,7 @@ func writeCharacterState(tx *gorm.DB, c game.Character) error {
 		pets     []game.Pet
 	}{{petParty, c.Pets}, {petReserve, c.ReservePets}, {petHotel, c.HotelPets}} {
 		for i, p := range group.pets {
-			pets = append(pets, characterPetRow{CharacterOwner: owner, Location: group.location, Ordinal: i, Base: p.Base, Slot: p.Slot, PetID: p.ID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job})
+			pets = append(pets, characterPetRow{CharacterOwner: owner, Location: group.location, Ordinal: i, Base: p.Base, Slot: p.Slot, PetID: p.ID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential})
 			addItems(group.location, i, p.Equipment[:])
 			for j, s := range p.Skills {
 				petSkills = append(petSkills, characterPetSkillRow{CharacterOwner: owner, Location: group.location, PetOrdinal: i, Ordinal: j, SkillID: s.ID, Grade: s.Grade, EXP: s.Exp})
@@ -256,7 +262,7 @@ func readCharacterState(tx *gorm.DB, row characterRow) (game.Character, error) {
 	if err := tx.Where("character_id = ?", row.ID).Take(&state).Error; err != nil {
 		return game.Character{}, err
 	}
-	c := game.Character{ID: row.ID, Slot: row.Slot, Name: row.Name, Base: state.Base, Level: state.Level, Element: state.Element, HP: state.HP, MaxHP: state.MaxHP, SP: state.SP, MaxSP: state.MaxSP, EXP: state.EXP, StatPoints: state.StatPoints, Gold: state.Gold, BankGold: state.BankGold, Body: state.Body, Head: state.Head, Color1: state.Color1, Color2: state.Color2, Map: state.Map, X: state.X, Y: state.Y, ActivePet: state.ActivePet, ActiveVehicle: state.ActiveVehicle, VehicleSlot: state.VehicleSlot, ActiveMount: state.ActiveMount, Reborn: state.Reborn, MutedUntil: state.MutedUntil, LuckyDraw: game.LuckyDrawState{Day: state.LuckyDay, Used: state.LuckyUsed}, Quests: make(map[uint32]game.Quest)}
+	c := game.Character{ID: row.ID, Slot: row.Slot, Name: row.Name, Base: state.Base, Level: state.Level, Element: state.Element, HP: state.HP, MaxHP: state.MaxHP, SP: state.SP, MaxSP: state.MaxSP, EXP: state.EXP, StatPoints: state.StatPoints, Gold: state.Gold, BankGold: state.BankGold, Body: state.Body, Head: state.Head, Color1: state.Color1, Color2: state.Color2, Map: state.Map, X: state.X, Y: state.Y, ActivePet: state.ActivePet, ActiveVehicle: state.ActiveVehicle, VehicleSlot: state.VehicleSlot, ActiveMount: state.ActiveMount, Title: state.Title, Nickname: state.Nickname, Job: state.Job, Potential: state.Potential, RebornJob: state.RebornJob, Reborn: state.Reborn, MutedUntil: state.MutedUntil, LuckyDraw: game.LuckyDrawState{Day: state.LuckyDay, Used: state.LuckyUsed}, Quests: make(map[uint32]game.Quest)}
 	if state.SettingsPresent {
 		c.Settings = &game.ClientSettings{PKAllowed: state.PKAllowed, JoinAllowed: state.JoinAllowed, TradeAllowed: state.TradeAllowed, Channels: state.Channels}
 	}
@@ -324,7 +330,7 @@ func readCharacterState(tx *gorm.DB, row characterRow) (game.Character, error) {
 		if p.Ordinal != len(*group) {
 			return game.Character{}, fmt.Errorf("invalid pet ordinal %d", p.Ordinal)
 		}
-		*group = append(*group, game.Pet{Base: p.Base, Slot: p.Slot, ID: p.PetID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job})
+		*group = append(*group, game.Pet{Base: p.Base, Slot: p.Slot, ID: p.PetID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential})
 	}
 	findPet := func(location string, ordinal int) *game.Pet {
 		var group []game.Pet

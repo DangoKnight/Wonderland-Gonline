@@ -10,13 +10,15 @@ import (
 const TentItemLimit = 65535
 
 type Tent struct {
-	OwnerID   uint32 `gorm:"primaryKey;autoIncrement:false"`
-	Locked    bool
-	Enlarged  bool
-	Type      byte
-	Floor     uint16
-	Wallpaper uint16
-	Items     []TentItem `gorm:"-"`
+	OwnerID    uint32 `gorm:"primaryKey;autoIncrement:false"`
+	Locked     bool
+	Enlarged   bool
+	Type       byte
+	Floor      uint16
+	Floor2     uint16
+	Wallpaper2 uint16
+	Wallpaper  uint16
+	Items      []TentItem `gorm:"-"`
 }
 
 func (Tent) TableName() string { return "tents" }

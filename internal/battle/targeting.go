@@ -106,7 +106,7 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 		if !r.attackMisses(a.Actor, target, a.Skill) {
 			result.result = protocol.BattleHitLanded
 			result.defended = defending[target.key()]
-			result.amount, result.mode = r.strikeDamage(a, target, result.defended, false)
+			result.amount, result.mode = r.strikeDamage(a, target, result.defended, 1)
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
 			if target.Dead() {
@@ -123,13 +123,13 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 	return steps
 }
 
-func (r Rules) strikeDamage(a Action, target *Fighter, defending, combo bool) (int, byte) {
+func (r Rules) strikeDamage(a Action, target *Fighter, defending bool, participants int) (int, byte) {
 	actor := a.Actor
 	dmg := r.baseDamage(actor, target, a.Skill, r.Next(1, 6))
 	dmg = max(1, int(min(float64(dmg)*Elemental(actor.Element, target.Element), math.MaxInt32)))
 	dmg = max(1, actor.modified(assets.EffectDamageDealt, dmg))
-	if combo {
-		dmg = int(min(float64(dmg)*comboDamageMultiplier, math.MaxInt32))
+	if participants > 1 {
+		dmg = int(min(float64(dmg)*r.comboDamageMultiplier(participants), math.MaxInt32))
 	}
 	// Players and pets use their own equipment's critical chance.
 	crit := false

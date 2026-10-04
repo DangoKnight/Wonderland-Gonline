@@ -10,9 +10,11 @@ import (
 	"wonderland-go/internal/assets"
 	"wonderland-go/internal/game"
 	"wonderland-go/internal/protocol"
+	"wonderland-go/internal/store"
 )
 
 const (
+	manufactureChanceScale      = 100
 	manufactureSparkleEffect    = 60018
 	manufactureDefaultWorkbench = "Forge"
 )
@@ -74,15 +76,47 @@ func (s *Server) manufacture(ctx context.Context, c *Session, bench string, inpu
 		if !strings.EqualFold(r.Workbench, bench) || r.Inputs[0].ItemID != inputs[0].ItemID || r.Inputs[1].ItemID != inputs[1].ItemID || inputs[0].Count < r.Inputs[0].Count || inputs[1].Count < r.Inputs[1].Count {
 			continue
 		}
-		next, removes, adds, err := planManufacturing(*c.character, r, s.Assets.Items)
+
+		var removes, adds []game.Addition
+		var succeeded bool
+		next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(stored *game.Character) error {
+			if stored.Gold < r.Fee {
+				return fmt.Errorf("not enough gold")
+			}
+			var err error
+			removes, err = store.RemoveManufacturingInputs(stored, r.Inputs[:])
+			if err != nil {
+				return err
+			}
+			stored.Gold -= r.Fee
+			chance := float64(manufactureChanceScale)
+			if r.SuccessPercent != nil {
+				chance = *r.SuccessPercent
+			}
+			succeeded = rand.Float64()*manufactureChanceScale < chance
+			if !succeeded {
+				return nil
+			}
+			definition, known := s.Assets.Items[r.Output.ItemID]
+			if !known {
+				return game.ErrInvalidItem
+			}
+			adds, err = stored.Bag.Grant(game.Item{ID: r.Output.ItemID}, int(r.Output.Count), definition.StackLimit())
+			return err
+		}, *c.character)
 		if err != nil {
 			return false, s.chatFeedback(c, "Manufacturing failed: "+err.Error()+".")
 		}
-		if err = s.commit(ctx, c, next); err != nil {
-			return false, err
-		}
+		s.adoptSavedCharacter(c, next)
+
 		for _, remove := range removes {
 			s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, remove.Slot, remove.Count})
+		}
+		if r.Fee > 0 {
+			s.sendOrClose(c, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(c.character.Gold))
+		}
+		if !succeeded {
+			return false, s.chatFeedback(c, "Manufacturing attempt failed; materials and fee were consumed.")
 		}
 		s.sendOrClose(c, c.character.Bag.AdditionPacket(adds))
 		sparkle := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRepairEffect}.U32(c.character.ID).U16(manufactureSparkleEffect)
@@ -141,7 +175,12 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 			return true, s.chatFeedback(c, "Finish active interactions before compounding.")
 		}
 		return true, s.synthesize(ctx, c, byte(a), byte(b))
-	case "fish", "mine", "chop":
+	case "fish":
+		if len(args) != 0 {
+			return true, s.chatFeedback(c, "Usage: /fish")
+		}
+		return true, s.startFishing(ctx, c, 0)
+	case "mine", "chop":
 		if len(args) != 0 {
 			return true, s.chatFeedback(c, "Usage: /"+name)
 		}
@@ -162,6 +201,7 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 		if !s.validGatheringPool(pool) {
 			return true, s.chatFeedback(c, "The gathering pool contains unavailable item definitions.")
 		}
+		c.fishing = nil
 		c.gathering = &gatheringRun{Kind: kind, Map: c.character.Map, X: c.character.X, Y: c.character.Y, NextAt: time.Now().Add(time.Duration(pool.IntervalSeconds) * time.Second)}
 		// The reference's short AC5:12 fishing animation conflicts with the
 		// verified native model-transform payload. Keep animations pending until
@@ -173,6 +213,7 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 			return true, s.chatFeedback(c, "Usage: /stop")
 		}
 		c.gathering = nil
+		c.fishing = nil
 		return true, s.chatFeedback(c, "Gathering stopped.")
 	}
 	return false, nil
@@ -242,4 +283,6 @@ func (s *Server) maintainGathering(ctx context.Context, now time.Time) {
 	ctx, cancel := context.WithTimeout(ctx, autosaveTimeout)
 	defer cancel()
 	s.tickGathering(ctx, now)
+	s.tickFishing(ctx, now)
+	s.tickManufacturing(ctx, now)
 }

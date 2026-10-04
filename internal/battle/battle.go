@@ -110,6 +110,8 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
+	// Selects 10 percent per actual combo participant instead of the fixed bonus.
+	ComboDamagePerParticipant bool
 	// Zero retains the default multiplier for existing rule constructors.
 	DropRateMultiplier float64
 	Skills             map[uint16]assets.Skill
@@ -903,7 +905,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				}
 				landed = append(landed, a)
 				guarded := defending[target.key()]
-				dmg, mode := r.strikeDamage(a, target, guarded, len(combo) > 1)
+				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
 				skill := a.Skill
 				if skill == 0 {

@@ -48,6 +48,7 @@ type Pet struct {
 	Amity      byte       `json:"amity"`
 	Battle     bool       `json:"battle,omitempty"`
 	Reborn     bool       `json:"reborn,omitempty"`
+	Potential  uint16     `json:"potential,omitempty"`
 	Job        byte       `json:"job,omitempty"`
 	Equipment  Equipment  `json:"equipment"`
 	Skills     []PetSkill `json:"skills,omitempty"`
@@ -364,7 +365,7 @@ func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition
 	b := p.Equipment.Bonuses(items)
 	c := p.Combat(items)
 	out := [][]byte{
-		PetStat(clientSlot, 35, int64(p.Level)), PetStat(clientSlot, 37, int64(max(0, int(p.Level)-1))),
+		PetStat(clientSlot, 35, int64(p.Level)), PetStat(clientSlot, StatPotential, int64(p.Potential)),
 		PetStat(clientSlot, 38, int64(p.StatPoints)), PetStat(clientSlot, 36, int64(p.ClientTotalExp())),
 		PetStat(clientSlot, 28, int64(p.Base.Strength)), PetStat(clientSlot, 29, int64(p.Base.Constitution)),
 		PetStat(clientSlot, 30, int64(p.Base.Agility)), PetStat(clientSlot, 27, int64(p.Base.Intelligence)),

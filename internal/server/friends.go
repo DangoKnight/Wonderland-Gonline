@@ -129,11 +129,12 @@ func (s *Server) removeFriend(ctx context.Context, c *Session, id uint32) error 
 	return nil
 }
 
-// friendEntry is AC14.PackFriendEntry. Rebirth/job/nickname/guild are absent in
-// current Go state, so they use the native empty defaults. Colors retain their words.
+// friendEntry is AC14.PackFriendEntry, including saved class and nickname.
+// Guild presentation retains its existing empty defaults. Colors retain their words.
 func friendEntry(c game.Character, tab bool, online bool) []byte {
 	p, _ := protocol.Builder{}.U32(c.ID).String(c.Name)
-	p = p.U8(c.Level).U8(0).U8(0).U8(c.Element).U8(byte(c.Body)).U8(byte(c.Head)).U16(uint16(c.Color1)).U16(uint16(c.Color1 >> 16)).U16(uint16(c.Color2)).U16(uint16(c.Color2 >> 16)).U8(0)
+	p = p.U8(c.Level).U8(c.RebornByte()).U8(c.Job).U8(c.Element).U8(byte(c.Body)).U8(byte(c.Head)).U16(uint16(c.Color1)).U16(uint16(c.Color1 >> 16)).U16(uint16(c.Color2)).U16(uint16(c.Color2 >> 16))
+	p, _ = p.String(c.Nickname)
 	if !tab {
 		p = p.U8(0)
 		flag := byte(0)

@@ -8,7 +8,8 @@ const (
 	comboRebirthLevelBonus  = 99
 	comboEqualLevelChance   = 0.5
 	// Shared damage bonus for every participant in an eligible combo.
-	comboDamageMultiplier = 1.3
+	comboDamageMultiplier       = 1.3
+	comboParticipantDamageBonus = 0.1
 )
 
 func (a Action) scheduledSpeed() int {
@@ -103,4 +104,16 @@ func (f *Fighter) comboLevel() int {
 		level += comboRebirthLevelBonus
 	}
 	return level
+}
+
+// Count only fighters admitted to this successful chain, including players and
+// pets. Singles and failed chains receive no bonus under either system.
+func (r Rules) comboDamageMultiplier(participants int) float64 {
+	if participants <= 1 {
+		return 1
+	}
+	if r.ComboDamagePerParticipant {
+		return 1 + comboParticipantDamageBonus*float64(participants)
+	}
+	return comboDamageMultiplier
 }

@@ -18,6 +18,7 @@ type gmCommandDefinition struct {
 // Every alias shares the same ownership policy and handler. The usage list also
 // drives /help so it cannot advertise commands without implementations.
 var gmCommandDefinitions = []gmCommandDefinition{
+	{[]string{"reborn"}, "reborn <Killer|Warrior|Knight|Wit|Priest|Seer>", true, (*Server).gmReborn},
 	{[]string{"palace"}, "palace <stage>", true, (*Server).gmPalace},
 	{[]string{"exprate", "experience"}, "exprate [multiplier]", false, (*Server).gmExpRate},
 	{[]string{"allskills", "maxskills"}, "allskills [grade]", true, (*Server).gmPlayerEdit},

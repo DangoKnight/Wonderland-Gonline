@@ -5,7 +5,8 @@
   "status_address": "127.0.0.1:6416",
   "status_server_ids": [
     1,
-    101
+    101,
+    301
   ],
   "http_address": "127.0.0.1:8080",
   "database": "var/wonderland.db",
@@ -14,5 +15,6 @@
   "world_idle_seconds": 0,
   "character_save_seconds": 30,
   "assets_database": "var/assets.db",
+  "combo_damage_per_participant": false,
   "pet_growth_formula": "base_stats"
 }

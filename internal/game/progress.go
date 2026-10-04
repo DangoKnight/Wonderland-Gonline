@@ -28,15 +28,15 @@ func LevelForExp(total uint64) byte {
 }
 
 // AddExp is EquipManager.AddExp: total EXP grows, levels follow it, and each level
-// gained grants three stat points. It returns the levels gained. Reborn characters
-// are not ported.
+// gained grants three stat points. Reborn characters use their own EXP curve.
+// It returns the levels gained.
 func (c *Character) AddExp(amount uint64) int {
 	if amount == 0 {
 		return 0
 	}
 	before := c.Level
 	c.EXP = uint32(min(uint64(c.EXP)+amount, math.MaxUint32))
-	c.Level = LevelForExp(uint64(c.EXP))
+	c.Level = c.LevelFromEXP(uint64(c.EXP))
 	gained := max(0, int(c.Level)-int(before))
 	c.StatPoints = uint16(min(int(c.StatPoints)+gained*StatPointsPerLevel, math.MaxUint16))
 	return gained

@@ -125,7 +125,7 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v11 and structured asset schema v6.
+Current startup requires gameplay schema v14 and structured asset schema v9.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
 the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 22 new views and checks read-only
 inspectors. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
@@ -251,3 +251,13 @@ position-only saves do not rewrite owned item/pet/quest rows. Administrators mus
 not bypass version
 checks with direct live-player SQL edits. A pending position save must never undo
 an administration edit, purchase or ownership change. See DEVELOPMENT.md.
+
+Fishing rules are available through the `Fishing` dataset; see [FISHING.md](FISHING.md).
+
+
+The definition editor also exposes `Manufacturing` (native formula IDs, five
+materials, plan/tool, duration and destination) and `RebornClasses` (enabled
+classes and WLRI cape mappings). Validate and save through the existing optimistic
+SQL edit flow. `/reborn <class>` requires GM authority and performs cape grant,
+class/level/EXP reset and vitals in one owned-state transaction. See
+[manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).

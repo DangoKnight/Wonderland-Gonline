@@ -2,7 +2,7 @@
 
 ## Database upgrade
 
-Current server startup requires gameplay schema **v11** and structured assets
+Current server startup requires gameplay schema **v12** and structured assets
 schema **v6**. Economy/social tables were introduced in earlier versions.
 Use the preserving offline copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
@@ -100,8 +100,9 @@ native-client requests are captured.
 `/manufacture <workbench> <item1> <count1> <item2> <count2>` uses the configured
 recipe order. Workbench names may contain spaces. Use `0 0` for an absent second
 ingredient. Native AC59 preserves the reference's Forge workbench and reply.
-Costs and output are planned before saving; a full bag or missing material
-consumes nothing. Repeated input IDs consume the combined recipe cost. These
+Fees, ingredients and output commit in one authoritative SQL transaction; a full
+bag on a successful attempt or missing material consumes nothing. An authored
+failed attempt consumes ingredients and its fee without granting output. Repeated input IDs consume the combined recipe cost. These
 handlers follow the reference's workbench-name selection. Tent furniture now
 lives in isolated homes; linking manufacturing recipes to verified physical
 workbench item identities remains pending.
@@ -114,13 +115,12 @@ the configured charcoal item. Both ingredient removals and the output commit
 together. Native AC23/AC40 retain their verified deterministic behavior.
 `AlchemyRecipes` and `Economy` can both be edited through Admin.
 
-`/fish`, `/mine` and `/chop` start source gathering; `/stop` stops it. SQL pools
-set the reward IDs and interval (source default: five seconds). Each maintenance
-tick grants at most one reward per session, with no catch-up burst. Movement,
-travel, battle, active interactions, disconnect, unavailable definitions or a
-full bag stop gathering. Rewards persist before packets are sent. Source fishing
-animations remain pending: its short AC5:12 packet conflicts with the verified
-native model-transform payload, so the server sends status/reward feedback only.
+`/mine` and `/chop` retain SQL gathering pools and their configured interval.
+Movement, travel, battle, active interactions, disconnect and full bags stop
+these gathering runs. `/fish` uses the rod/shoreline/proficiency system described
+in [FISHING.md](FISHING.md); `/stop` stops either activity. Fishing retains
+proficiency when a full bag discards a catch. No incompatible short AC5 animation
+packets are emitted.
 
 ## Shared resource nodes
 
@@ -139,26 +139,26 @@ the reference or verified native-client requests. Their success-only C# stubs do
 not prove a transaction exists. They remain pending and do not return invented
 successes. Tent placement, movement and recovery are implemented; see
 [ITEMS_PLAYER_STATE.md](ITEMS_PLAYER_STATE.md). Tent upgrades, decoration
-purchases and verified manufacturing workbench ownership remain pending.
+purchases remain pending. AC64 checks owned bench/tool identities; the older
+two-input recipe path retains its source workbench-name matching.
 Live aLogin acceptance remains pending
 for the newly ported packets.
 
 ## Implemented backends versus native requests
 
-Mall checkout/forging and AC71 paid arcade purchases have SQL transaction paths,
-but native AC21 and AC226:255 compatibility replies are absent. Direct AC37
-requests are not covered by mall forging. Direct AC59 handling differs from the
-chat recipe path; its protocol registration/layout needs completion. Native AC64
-requires bench/formula IDs, up to five materials, plans/tools, build duration,
-continue/stop and bag/tent output. The current two-input operation is not a full
-native manufacturing port. Compound2 extraction's two-input projection does not
-represent all those source fields; source recipe fee/chance preservation also
-needs verification. Validated SQL AlchemyRecipes editing is already available.
+Mall checkout/forging, native AC21 slot purchases and AC71 paid arcade purchases
+have SQL transaction paths. AC13:238 and AC226:255 compatibility replies are
+implemented; see [native commands](NATIVE_COMMANDS.md). Native AC59 retains
+its two-input Forge layout. AC64 implements the original formula IDs, five
+materials, owned plans/tools, timed start/continue/stop and bag/tent output.
+Authored synthesis chances and fees are projected into SQL during conversion.
+See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md) for
+recovery, defaults and the deliberately pending AC37 socket effects.
 
 `/stopgather` and `/inbox` source aliases are absent; use `/stop` and `/mail`.
-AC90 fishing toggle/reel-in and AC87 bath recovery remain missing even though
-other gathering/healing backends exist. Job/nickname fields in friend/guild
-presentation are empty. Source Cupid is excluded from transmitted friend lists;
+AC87 bath recovery, native AC23 fishing and AC90 compatibility are implemented.
+Fishing uses authored SQL defaults for unresolved weights and progression;
+see [FISHING.md](FISHING.md). Friend lists include saved class/nickname and guild lists include class. Source Cupid is excluded from transmitted friend lists;
 absence of a visible contact alone does not establish a wire gap.
 
 The source player-facing HTTP mall page and form-urlencoded registration routes

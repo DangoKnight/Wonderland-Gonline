@@ -130,8 +130,8 @@ func TestManufacturingAtomicCostsAndGatheringStops(t *testing.T) {
 	if c.character.Bag[0].Count != before-3 || c.character.Bag[1].Count != 1 || !contains(wires[0].packets(t), []byte{59, 1, 1}) {
 		t.Fatal("manufacturing inventory/wire", c.character.Bag)
 	}
-	s.Assets.Economy.Gathering = []assets.GatheringPool{{Kind: 1, IntervalSeconds: 5, Items: []uint16{32176}}}
-	tradeDo(t, s, c, append([]byte{2, 2}, []byte("/fish")...))
+	s.Assets.Economy.Gathering = []assets.GatheringPool{{Kind: assets.GatheringMining, IntervalSeconds: 5, Items: []uint16{32176}}}
+	tradeDo(t, s, c, append([]byte{2, 2}, []byte("/mine")...))
 	if c.gathering == nil {
 		t.Fatal("gathering did not start")
 	}
@@ -252,11 +252,11 @@ func TestAdminGuildRefreshAndGatheringNativeSafety(t *testing.T) {
 	if !contains(wires[0].packets(t), []byte{39, 1, 0}) || !contains(wires[1].packets(t), cleared) {
 		t.Fatal("admin guild disband did not clear native UI")
 	}
-	s.Assets.Economy.Gathering = []assets.GatheringPool{{Kind: 1, IntervalSeconds: 5, Items: []uint16{32176}}}
+	s.Assets.Economy.Gathering = []assets.GatheringPool{{Kind: assets.GatheringMining, IntervalSeconds: 5, Items: []uint16{32176}}}
 	for _, wire := range wires {
 		wire.Reset()
 	}
-	tradeDo(t, s, a, append([]byte{2, 2}, []byte("/fish")...))
+	tradeDo(t, s, a, append([]byte{2, 2}, []byte("/mine")...))
 	if a.gathering == nil {
 		t.Fatal("gathering not started")
 	}

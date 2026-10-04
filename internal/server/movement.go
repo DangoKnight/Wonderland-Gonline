@@ -38,6 +38,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 		c.autosaveBaseline = &baseline
 	}
 	if x != prevX || y != prevY {
+		c.fishing = nil
 		s.cancelTrade(c)
 		c.arrived = false
 	}

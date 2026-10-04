@@ -366,6 +366,10 @@ func (s *Server) emote(c *Session, p []byte) error {
 			pose = p[2]
 		}
 	case protocol.PoseStop:
+		if len(p) != 2 {
+			return protocol.ErrMalformed
+		}
+		s.endEvent(c) // Clear callbacks even when the pose is already zero.
 		// Stopping a pose is reported as AC32:2 with pose zero.
 		sub = protocol.PoseBroadcast
 	default:

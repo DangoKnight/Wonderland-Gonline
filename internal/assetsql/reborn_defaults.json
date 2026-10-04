@@ -1,0 +1,38 @@
+[
+  {
+    "Job": 1,
+    "Name": "Killer",
+    "CapeID": 25231,
+    "Enabled": true
+  },
+  {
+    "Job": 2,
+    "Name": "Warrior",
+    "CapeID": 25281,
+    "Enabled": true
+  },
+  {
+    "Job": 3,
+    "Name": "Knight",
+    "CapeID": 25331,
+    "Enabled": true
+  },
+  {
+    "Job": 4,
+    "Name": "Wit",
+    "CapeID": 25381,
+    "Enabled": true
+  },
+  {
+    "Job": 5,
+    "Name": "Priest",
+    "CapeID": 25431,
+    "Enabled": true
+  },
+  {
+    "Job": 6,
+    "Name": "Seer",
+    "CapeID": 25481,
+    "Enabled": true
+  }
+]

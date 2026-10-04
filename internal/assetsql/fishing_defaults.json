@@ -1,0 +1,182 @@
+{
+  "Enabled": true,
+  "IntervalSeconds": 60,
+  "SkillBonusPercent": 5,
+  "Skills": [
+    15993,
+    15994
+  ],
+  "CatchRequirements": [
+    14,
+    35,
+    79,
+    152,
+    263,
+    422,
+    635,
+    913,
+    1264,
+    1697,
+    2220,
+    2844,
+    3578,
+    4430,
+    5410
+  ],
+  "Rods": [
+    {
+      "ItemID": 37105,
+      "MaxGrade": 6
+    },
+    {
+      "ItemID": 37011,
+      "MaxGrade": 8
+    },
+    {
+      "ItemID": 37082,
+      "MaxGrade": 10
+    }
+  ],
+  "Maps": [
+    11016,
+    10035,
+    10039
+  ],
+  "Rewards": [
+    {
+      "ItemID": 41091,
+      "Grade": 2,
+      "Weight": 25000
+    },
+    {
+      "ItemID": 41092,
+      "Grade": 2,
+      "Weight": 25000
+    },
+    {
+      "ItemID": 41094,
+      "Grade": 3,
+      "Weight": 11110
+    },
+    {
+      "ItemID": 41096,
+      "Grade": 5,
+      "Weight": 4000
+    },
+    {
+      "ItemID": 41097,
+      "Grade": 6,
+      "Weight": 2770
+    },
+    {
+      "ItemID": 41098,
+      "Grade": 7,
+      "Weight": 2040
+    },
+    {
+      "ItemID": 41100,
+      "Grade": 4,
+      "Weight": 6250
+    },
+    {
+      "ItemID": 41101,
+      "Grade": 5,
+      "Weight": 4000
+    },
+    {
+      "ItemID": 42019,
+      "Grade": 8,
+      "Weight": 156
+    },
+    {
+      "ItemID": 42038,
+      "Grade": 1,
+      "Weight": 10000
+    },
+    {
+      "ItemID": 42039,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 42040,
+      "Grade": 3,
+      "Weight": 1111
+    },
+    {
+      "ItemID": 42041,
+      "Grade": 4,
+      "Weight": 625
+    },
+    {
+      "ItemID": 42043,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 42056,
+      "Grade": 5,
+      "Weight": 400
+    },
+    {
+      "ItemID": 42058,
+      "Grade": 5,
+      "Weight": 400
+    },
+    {
+      "ItemID": 43002,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44001,
+      "Grade": 1,
+      "Weight": 10000
+    },
+    {
+      "ItemID": 44002,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44003,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44004,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44005,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44006,
+      "Grade": 2,
+      "Weight": 2500
+    },
+    {
+      "ItemID": 44007,
+      "Grade": 3,
+      "Weight": 1111
+    },
+    {
+      "ItemID": 46099,
+      "Grade": 1,
+      "Weight": 10000
+    },
+    {
+      "ItemID": 46100,
+      "Grade": 1,
+      "Weight": 10000
+    },
+    {
+      "ItemID": 41115,
+      "Grade": 10,
+      "Weight": 100
+    }
+  ]
+}

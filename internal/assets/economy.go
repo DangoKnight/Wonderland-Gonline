@@ -18,9 +18,11 @@ type ManufacturingInput struct {
 	Count  byte   `json:"count"`
 }
 type ManufacturingRecipe struct {
-	Workbench string                `json:"workbench"`
-	Inputs    [2]ManufacturingInput `json:"inputs"`
-	Output    ManufacturingInput    `json:"output"`
+	SuccessPercent *float64              `json:"success_percent,omitempty"`
+	Fee            uint32                `json:"fee"`
+	Workbench      string                `json:"workbench"`
+	Inputs         [2]ManufacturingInput `json:"inputs"`
+	Output         ManufacturingInput    `json:"output"`
 }
 type GatheringPool struct {
 	Kind            byte     `json:"kind"`
@@ -38,6 +40,7 @@ type SynthesisRate struct {
 	Input2         uint16  `json:"input2"`
 	Output         uint16  `json:"output"`
 	SuccessPercent float64 `json:"success_percent"`
+	Fee            uint32  `json:"fee"`
 }
 
 const (

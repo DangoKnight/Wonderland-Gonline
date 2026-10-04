@@ -36,6 +36,18 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 	r := protocol.NewReader(p[2:])
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if p[1] == protocol.TeamMallRefresh {
+		if len(p) != 2 || c.character == nil {
+			return protocol.ErrMalformed
+		}
+		if err := c.send(protocol.Builder{protocol.CommandTeam, protocol.TeamMallConfirmed}.U32(c.character.ID)); err != nil {
+			return err
+		}
+		if err := s.sendMallBalances(ctx, c); err != nil {
+			return err
+		}
+		return s.sendAll(c, [][]byte{s.mallCatalogPacket(false), s.mallCatalogPacket(true)})
+	}
 	if !c.ready {
 		return nil
 	}

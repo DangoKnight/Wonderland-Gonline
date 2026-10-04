@@ -13,11 +13,11 @@ func (c *Character) SetLevel(request byte) {
 	target := min(max(int(request), 1), MaxRequestedGMLevel)
 	var total uint64
 	for level := 1; level < target; level++ {
-		total += LevelExp(level)
+		total += c.LevelRequirement(level)
 	}
 	gained := max(target-int(c.Level), 0)
 	c.EXP = uint32(min(total, math.MaxUint32))
-	c.Level = LevelForExp(uint64(c.EXP))
+	c.Level = c.LevelFromEXP(uint64(c.EXP))
 	c.StatPoints = uint16(min(int(c.StatPoints)+gained*StatPointsPerLevel, math.MaxUint16))
 }
 

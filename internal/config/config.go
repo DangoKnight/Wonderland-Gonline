@@ -20,19 +20,20 @@ const (
 )
 
 type Config struct {
-	CharacterSaveSeconds int                   `json:"character_save_seconds"`
-	PetGrowthFormula     game.PetGrowthFormula `json:"pet_growth_formula"`
-	StatusServerIDs      []uint16              `json:"status_server_ids"`
-	Name                 string                `json:"name"`
-	Login                string                `json:"login_address"`
-	World                string                `json:"world_address"`
-	Status               string                `json:"status_address"`
-	HTTP                 string                `json:"http_address"`
-	Database             string                `json:"database"`
-	AssetsDatabase       string                `json:"assets_database"`
-	MaxConnections       int                   `json:"max_connections"`
-	IdleSeconds          int                   `json:"idle_seconds"`
-	WorldIdleSeconds     int                   `json:"world_idle_seconds"`
+	ComboDamagePerParticipant bool                  `json:"combo_damage_per_participant"`
+	CharacterSaveSeconds      int                   `json:"character_save_seconds"`
+	PetGrowthFormula          game.PetGrowthFormula `json:"pet_growth_formula"`
+	StatusServerIDs           []uint16              `json:"status_server_ids"`
+	Name                      string                `json:"name"`
+	Login                     string                `json:"login_address"`
+	World                     string                `json:"world_address"`
+	Status                    string                `json:"status_address"`
+	HTTP                      string                `json:"http_address"`
+	Database                  string                `json:"database"`
+	AssetsDatabase            string                `json:"assets_database"`
+	MaxConnections            int                   `json:"max_connections"`
+	IdleSeconds               int                   `json:"idle_seconds"`
+	WorldIdleSeconds          int                   `json:"world_idle_seconds"`
 }
 
 func Default() Config {
