@@ -120,3 +120,18 @@ func TestNativeMovementTraceBoundsPayload(t *testing.T) {
 		t.Fatal("unbounded movement trace", logs.String())
 	}
 }
+
+func TestPotentialPillTraceBoundsPayload(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger.Debug("request", packetTraceAttrs(append([]byte{23, 126, 50, 2}, bytes.Repeat([]byte{255}, 100)...), false)...)
+	logger.Debug("reply", packetTraceAttrs([]byte{23, 213, 1, 2, 12}, true)...)
+	for _, want := range []string{`"payload_hex":"177e3202"`, `"payload_truncated":true`, `"payload_hex":"17d501020c"`} {
+		if !strings.Contains(logs.String(), want) {
+			t.Fatal(want, logs.String())
+		}
+	}
+	if strings.Contains(logs.String(), "ffffffff") {
+		t.Fatal("unbounded potential trace")
+	}
+}

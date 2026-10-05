@@ -3,7 +3,7 @@ package game
 import "wonderland-go/internal/protocol"
 
 // UnlockQualifiedSkills ports the stat tree and, when requested, grade-ten
-// evolutions. Attributes include avatar bonuses, not equipment combat bonuses.
+// evolutions. Attributes include avatar and potential bonuses, not equipment combat bonuses.
 // Missing catalog entries are left unlearned rather than breaking login snapshots.
 // The caller saves the character before sending the returned incremental packets.
 func (c *Character) UnlockQualifiedSkills(evolve bool, available func(uint16) bool) [][]byte {
@@ -51,4 +51,39 @@ func (c *Character) UnlockQualifiedSkills(evolve bool, available func(uint16) bo
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	}
 	return packets
+}
+
+// ForgetUnqualifiedSkills follows the native Potential Pill warning: a normal
+// failure can forget stat-tree skills. Preserve unrelated quest/avatar skills;
+// remove evolutions of a forgotten prerequisite as well. Run only for explicit
+// attribute-losing operations, never to strip stored skills during login.
+func (c *Character) ForgetUnqualifiedSkills() bool {
+	a := c.Attributes()
+	removed := map[uint16]bool{}
+	for _, rule := range progressionSkills {
+		b := rule.minimum
+		if c.Element == rule.element && (a.Strength < b.Strength || a.Constitution < b.Constitution || a.Intelligence < b.Intelligence || a.Wisdom < b.Wisdom || a.Agility < b.Agility) {
+			removed[rule.id] = true
+		}
+	}
+	for changed := true; changed; {
+		changed = false
+		for prerequisite, evolution := range skillEvolutions {
+			if removed[prerequisite] && !removed[evolution] {
+				removed[evolution] = true
+				changed = true
+			}
+		}
+	}
+	kept := make([]LearnedSkill, 0, len(c.Skills))
+	for _, skill := range c.Skills {
+		if !removed[skill.ID] {
+			kept = append(kept, skill)
+		}
+	}
+	if len(kept) == len(c.Skills) {
+		return false
+	}
+	c.Skills = kept
+	return true
 }

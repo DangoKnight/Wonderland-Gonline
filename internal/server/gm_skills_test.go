@@ -213,3 +213,25 @@ func TestGMClearSkillsInstalledCatalog(t *testing.T) {
 		})
 	}
 }
+
+func TestGMClearSkillsWaterDoesNotRestoreUnqualifiedIcicle(t *testing.T) {
+	s, players, wires := clearSkillsFixture(t)
+	c := players[0]
+	next := c.character.Clone()
+	next.Element, next.Base = game.Water, game.Attributes{Strength: 1}
+	next.Skills = []game.LearnedSkill{{ID: 11075, Grade: 1}, {ID: 11001, Grade: 1}}
+	for _, id := range []uint16{15091, 15097, 15100, 11001} {
+		s.Assets.Skills[id] = assets.Skill{ID: id, TableOrder: id}
+	}
+	if err := s.commit(context.Background(), c, next); err != nil {
+		t.Fatal(err)
+	}
+	s.SetGMLevel(c.account.ID, 1)
+	wires[0].Reset()
+	say(t, s, c, "/clearskills")
+	want := []game.LearnedSkill{{ID: 11075, Grade: 1}, {ID: 15091, Grade: 1}, {ID: 15097, Grade: 1}, {ID: 15100, Grade: 1}}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || !reflect.DeepEqual(c.character.Skills, want) || !reflect.DeepEqual(stored[0].Skills, want) {
+		t.Fatal("reset retained unqualified Icicle", c.character.Skills, stored, err)
+	}
+}

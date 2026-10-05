@@ -123,7 +123,7 @@ func (c Character) StatPackets(items map[uint16]ItemDefinition, growth ...Elemen
 	stats := []struct {
 		id    byte
 		value int32
-	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK) + atk}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF) + def}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT) + mat}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF) + mdf}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD) + spd}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatPotential, int32(c.Potential)}, {StatHPBonus, b.HP + hp}, {StatSPBonus, b.SP + sp}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
+	}{{StatAttack, int32(a.Strength)*2 + int32(b.ATK) + atk}, {StatDefense, int32(a.Constitution)*2 + int32(b.DEF) + def}, {StatMagicAttack, int32(a.Intelligence)*2 + int32(b.MAT) + mat}, {StatMagicDefense, int32(a.Wisdom)*2 + int32(b.MDF) + mdf}, {StatSpeed, int32(a.Agility)*2 + int32(b.SPD) + spd}, {StatSTR, int32(a.Strength)}, {StatCON, int32(a.Constitution)}, {StatINT, int32(a.Intelligence)}, {StatWIS, int32(a.Wisdom)}, {StatAGI, int32(a.Agility)}, {StatUnallocatedPoints, int32(c.StatPoints)}, {StatHPBonus, b.HP + hp}, {StatSPBonus, b.SP + sp}, {StatCurrentHP, int32(c.HP)}, {StatCurrentSP, int32(c.SP)}}
 	out := make([][]byte, 0, len(stats))
 	for _, v := range stats {
 		out = append(out, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, v.id, protocol.StatsValueAbsolute}.U32(uint32(v.value)).U32(0))

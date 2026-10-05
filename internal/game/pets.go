@@ -111,16 +111,17 @@ func roundStat(v float64) int32 { return int32(math.RoundToEven(v)) }
 
 // Calculated stats (PlayerPetData.Calculated*).
 func (p Pet) CalculatedMaxHP() int32 {
-	l, con := float64(p.Level), float64(p.Base.Constitution)
+	l, con := float64(p.Level), float64(p.Attributes().Constitution)
 	return max(1, roundStat(math.Pow(l, .35)*con*2+l+con*2+180))
 }
 func (p Pet) CalculatedMaxSP() int32 {
-	l, wis := float64(p.Level), float64(p.Base.Wisdom)
+	l, wis := float64(p.Level), float64(p.Attributes().Wisdom)
 	return max(0, roundStat(math.Pow(l, .3)*wis*3.2+l+wis*2+94))
 }
 
 // Combat is the pet's derived battle stats with its equipment.
 func (p Pet) Combat(items map[uint16]ItemDefinition) Combat {
+	a := p.Attributes()
 	l := float64(p.Level)
 	e := p.Element()
 	pick := func(water, other float64) float64 {
@@ -140,11 +141,11 @@ func (p Pet) Combat(items map[uint16]ItemDefinition) Combat {
 	b := p.Equipment.Bonuses(items)
 	return Combat{
 		MaxHP: max(1, p.CalculatedMaxHP()+b.HP), MaxSP: max(0, p.CalculatedMaxSP()+b.SP),
-		ATK: max(0, roundStat(l*pick(2, 1.4)+float64(p.Base.Strength)*2)+int32(int16(b.ATK))),
-		DEF: max(0, roundStat(l*defLevel+float64(p.Base.Constitution)*1.75)+int32(int16(b.DEF))),
-		MAT: max(0, roundStat(l*pick(1.6, 1.4)+float64(p.Base.Intelligence)*2)+int32(int16(b.MAT))),
-		MDF: max(0, roundStat(l*pick(2.2, 2)+float64(p.Base.Wisdom)*2.2)+int32(int16(b.MDF))),
-		SPD: max(0, roundStat(l*spdLevel+float64(p.Base.Agility)*2.2)+int32(int16(b.SPD))),
+		ATK: max(0, roundStat(l*pick(2, 1.4)+float64(a.Strength)*2)+int32(int16(b.ATK))),
+		DEF: max(0, roundStat(l*defLevel+float64(a.Constitution)*1.75)+int32(int16(b.DEF))),
+		MAT: max(0, roundStat(l*pick(1.6, 1.4)+float64(a.Intelligence)*2)+int32(int16(b.MAT))),
+		MDF: max(0, roundStat(l*pick(2.2, 2)+float64(a.Wisdom)*2.2)+int32(int16(b.MDF))),
+		SPD: max(0, roundStat(l*spdLevel+float64(a.Agility)*2.2)+int32(int16(b.SPD))),
 	}
 }
 
@@ -292,22 +293,25 @@ func (p Pet) packSkills(b protocol.Builder, t PetTemplate) protocol.Builder {
 
 // RecruitPacket is CreatePetPacket (AC15:1), the one-time "joined" notification.
 func (p Pet) RecruitPacket(owner uint32, t PetTemplate) []byte {
+	a := p.Attributes()
 	b := protocol.Builder{protocol.CommandPetControl, protocol.PetControlWireCode1}.U32(owner).U32(BroadcastID(p.ID)).U8(1).
-		U16(p.Base.Strength).U16(p.Base.Constitution).U16(p.Base.Intelligence).U16(p.Base.Wisdom).U16(p.Base.Agility).
+		U16(a.Strength).U16(a.Constitution).U16(a.Intelligence).U16(a.Wisdom).U16(a.Agility).
 		U8(max(p.Level, 1)).U32(p.ClientTotalExp())
 	b = p.packSkills(b, t)
 	reborn := byte(0)
 	if p.Reborn {
 		reborn = 1
 	}
-	return b.U8(p.Amity).U16(0).U8(0).U8(reborn).U8(p.Job).U8(0).U8(0).U8(0).U16(0).U16(0)
+	// FUN_00409820 reads rebirth, potential and job in that order.
+	return b.U8(p.Amity).U16(0).U8(0).U8(reborn).U8(byte(p.Potential)).U8(p.Job).U8(0).U8(0).U16(0).U16(0)
 }
 
 // ListRecord is one CreatePetListPacket (AC15:8) record.
 func (p Pet) ListRecord(b protocol.Builder, clientSlot byte, name string, t PetTemplate) protocol.Builder {
+	a := p.Attributes()
 	b = b.U8(clientSlot).U16(uint16(BroadcastID(p.ID))).U32(p.ClientTotalExp()).U8(p.Level).U32(uint32(max(0, p.HP))).
 		U16(uint16(min(max(0, p.SP), math.MaxUint16))).
-		U16(p.Base.Intelligence).U16(p.Base.Strength).U16(p.Base.Constitution).U16(p.Base.Agility).U16(p.Base.Wisdom).
+		U16(a.Intelligence).U16(a.Strength).U16(a.Constitution).U16(a.Agility).U16(a.Wisdom).
 		U8(0).U8(p.Amity).U8(1).U16(p.StatPoints)
 	n := []byte(name)[:min(16, len(name))]
 	b = b.U8(byte(len(n))).Bytes(n)
@@ -321,19 +325,21 @@ func (p Pet) ListRecord(b protocol.Builder, clientSlot byte, name string, t PetT
 	if p.Reborn {
 		reborn = 1
 	}
-	return b.U8(0).U8(0).U8(reborn).U8(p.Job).U8(0).U8(0).U8(0).U16(0).U16(0)
+	// FUN_0040b1e0 populates native potential from the byte after rebirth.
+	return b.U8(0).U8(0).U8(reborn).U8(byte(p.Potential)).U8(p.Job).U8(0).U8(0).U16(0).U16(0)
 }
 
 // PetStat is AC8:2 for a pet: the pet collection (4), client slot, stat, sign, value.
 // HotelRecord is Player.SendPetHotelList's 64-byte record plus its name bytes.
 func (p Pet) HotelRecord(b protocol.Builder, t PetTemplate) protocol.Builder {
+	a := p.Attributes()
 	reborn := byte(0)
 	if p.Reborn {
 		reborn = 1
 	}
 	b = b.U8(p.Slot).U16(uint16(BroadcastID(p.ID))).U32(p.ClientTotalExp()).U8(p.Level).
 		U32(uint32(max(0, p.HP))).U16(uint16(min(max(0, p.SP), math.MaxUint16))).
-		U16(p.Base.Intelligence).U16(p.Base.Strength).U16(p.Base.Constitution).U16(p.Base.Agility).U16(p.Base.Wisdom).
+		U16(a.Intelligence).U16(a.Strength).U16(a.Constitution).U16(a.Agility).U16(a.Wisdom).
 		U8(reborn).U8(p.Job).U8(0).U16(p.StatPoints)
 	var name []byte
 	for _, v := range p.Name {
@@ -362,14 +368,15 @@ func PetStat(clientSlot, stat byte, value int64) []byte {
 
 // ProgressionPackets are SendPetProgression plus SendPetEquipmentStats.
 func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition) [][]byte {
+	a := p.Attributes()
 	b := p.Equipment.Bonuses(items)
 	c := p.Combat(items)
 	out := [][]byte{
-		PetStat(clientSlot, 35, int64(p.Level)), PetStat(clientSlot, StatPotential, int64(p.Potential)),
+		PetStat(clientSlot, 35, int64(p.Level)),
 		PetStat(clientSlot, 38, int64(p.StatPoints)), PetStat(clientSlot, 36, int64(p.ClientTotalExp())),
-		PetStat(clientSlot, 28, int64(p.Base.Strength)), PetStat(clientSlot, 29, int64(p.Base.Constitution)),
-		PetStat(clientSlot, 30, int64(p.Base.Agility)), PetStat(clientSlot, 27, int64(p.Base.Intelligence)),
-		PetStat(clientSlot, 33, int64(p.Base.Wisdom)),
+		PetStat(clientSlot, 28, int64(a.Strength)), PetStat(clientSlot, 29, int64(a.Constitution)),
+		PetStat(clientSlot, 30, int64(a.Agility)), PetStat(clientSlot, 27, int64(a.Intelligence)),
+		PetStat(clientSlot, 33, int64(a.Wisdom)),
 		PetStat(clientSlot, 210, int64(int16(b.ATK))), PetStat(clientSlot, 211, int64(int16(b.DEF))),
 		PetStat(clientSlot, 215, int64(int16(b.MAT))), PetStat(clientSlot, 216, int64(int16(b.MDF))),
 		PetStat(clientSlot, 214, int64(int16(b.SPD))),

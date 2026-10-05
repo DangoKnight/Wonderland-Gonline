@@ -81,3 +81,35 @@ func TestSkillTreeAvatarBonusAndMissingCatalog(t *testing.T) {
 		t.Fatal("missing skill catalog entry learned")
 	}
 }
+
+func TestFormerStarterSkillsRequireTheirStatThresholds(t *testing.T) {
+	for _, tc := range []struct {
+		element byte
+		id      uint16
+		below   Attributes
+		at      Attributes
+	}{
+		{Water, 11001, Attributes{Strength: 12}, Attributes{Strength: 13}},
+		{Earth, 11017, Attributes{Strength: 15}, Attributes{Strength: 16}},
+		{Wind, 15079, Attributes{Strength: 5, Agility: 9}, Attributes{Strength: 5, Agility: 10}},
+		{Wind, 15079, Attributes{Strength: 4, Agility: 10}, Attributes{Strength: 5, Agility: 10}},
+	} {
+		c := Character{Body: 1, Head: 0, Element: tc.element, Base: tc.below, Skills: StarterSkills(1, 0, tc.element)}
+		// This avatar has no STR bonus and one AGI bonus; compare effective stats.
+		if tc.element == Wind {
+			c.Base.Agility--
+		}
+		c.UnlockQualifiedSkills(false, nil)
+		if knows(c, tc.id) {
+			t.Fatal("skill granted below threshold", tc, c.Skills)
+		}
+		c.Base = tc.at
+		if tc.element == Wind {
+			c.Base.Agility--
+		}
+		c.UnlockQualifiedSkills(false, nil)
+		if !knows(c, tc.id) {
+			t.Fatal("skill not granted at threshold", tc, c.Skills)
+		}
+	}
+}

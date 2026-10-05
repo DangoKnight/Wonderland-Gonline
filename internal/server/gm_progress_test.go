@@ -35,7 +35,7 @@ func TestGMLevelPointsAttributesAndEXP(t *testing.T) {
 		t.Fatal("level progression incorrect")
 	}
 	packets := wires[0].packets(t)
-	if len(packets) != 17 || !bytes.Equal(packets[0], []byte{8, 1, 36, 1, 49, 0, 0, 0, 0, 0, 0, 0}) {
+	if len(packets) != 16 || !bytes.Equal(packets[0], []byte{8, 1, 36, 1, 49, 0, 0, 0, 0, 0, 0, 0}) {
 		t.Fatal("level EXP synchronization", packets)
 	}
 	assertProgressSaved(t, s, c)
@@ -60,14 +60,14 @@ func TestGMLevelPointsAttributesAndEXP(t *testing.T) {
 	}
 	got := wires[0].packets(t)
 	// This avatar adds two INT points; command values are stored base values.
-	if len(got) != 16 || !bytes.Equal(got[7], []byte{8, 1, 27, 1, 32, 0, 0, 0, 0, 0, 0, 0}) || c.character.HP != c.character.MaxHP {
+	if len(got) != 15 || !bytes.Equal(got[7], []byte{8, 1, 27, 1, 32, 0, 0, 0, 0, 0, 0, 0}) || c.character.HP != c.character.MaxHP {
 		t.Fatal("avatar bonuses or refill incorrect", got)
 	}
 	assertProgressSaved(t, s, c)
 	points := c.character.StatPoints
 	say(t, s, c, "/exp 14")
 	got = wires[0].packets(t)
-	if c.character.Level != 2 || c.character.EXP != 14 || c.character.StatPoints != points || len(got) != 17 {
+	if c.character.Level != 2 || c.character.EXP != 14 || c.character.StatPoints != points || len(got) != 16 {
 		t.Fatal("direct EXP assignment granted points")
 	}
 	assertProgressSaved(t, s, c)

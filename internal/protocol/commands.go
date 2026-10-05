@@ -333,9 +333,16 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	InventoryWireCode112 = 112
 	// Unresolved wire meaning; retain the numeric code until verified.
-	InventoryWireCode122       = 122
-	InventoryDestroy           = 124
-	InventoryOpenPackAlternate = 128
+	InventoryWireCode122         = 122
+	InventoryDestroy             = 124
+	InventoryOpenPackAlternate   = 128
+	InventoryPotentialPill       = 126
+	InventoryPotentialPillResult = 213
+	PotentialPillRequestBytes    = 4
+	PotentialPillResultBytes     = 5
+	PotentialPillRejected        = 0
+	PotentialPillProcessed       = 1
+	PotentialPillPlayerTarget    = 0
 	// Unresolved wire meaning; retain the numeric code until verified.
 	InventoryWireCode132 = 132
 	InventorySceneBegin  = 138

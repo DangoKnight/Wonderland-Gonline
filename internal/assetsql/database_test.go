@@ -533,14 +533,17 @@ func TestInstalledSQLLuckyDrawEqualDefaults(t *testing.T) {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join("..", "..", path)
 	}
-	c, err := loadLegacyFixture(path)
+	c, err := LoadDatabase(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.LuckyDraw.Rewards) != 14 || c.LuckyDraw.TotalWeight != 14 {
+	if len(c.LuckyDraw.Rewards) != 9 || c.LuckyDraw.TotalWeight != 9 {
 		t.Fatal(c.LuckyDraw)
 	}
-	for roll := int64(0); roll < 14; roll++ {
+	if reward := c.LuckyDraw.Rewards[8]; reward.ID != 34008 || reward.Quantity != 3 {
+		t.Fatal("missing Fun Token default", reward)
+	}
+	for roll := int64(0); roll < 9; roll++ {
 		r, ok := c.LuckyDraw.RewardForRoll(roll)
 		if !ok || r.Weight != 1 || int64(r.Slot) != roll+1 {
 			t.Fatal(r)

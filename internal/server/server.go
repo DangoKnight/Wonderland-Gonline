@@ -23,6 +23,12 @@ import (
 
 var ErrUnsupported = errors.New("action is not ported")
 
+// actorPursuit is transient and guarded by worldMu.
+type actorPursuit struct {
+	target   uint32
+	nextScan time.Time
+}
+
 type SessionInfo struct {
 	CharacterID   uint32    `json:"character_id,omitempty"`
 	CharacterName string    `json:"character_name,omitempty"`
@@ -133,6 +139,7 @@ type Server struct {
 	Store          *store.Store
 	Assets         *assets.Catalog
 	World          *world.World
+	actorPursuits  map[uint16]map[uint16]*actorPursuit
 	Log            *slog.Logger
 	Started        time.Time
 	mu             sync.Mutex

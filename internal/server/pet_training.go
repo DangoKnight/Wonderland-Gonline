@@ -7,7 +7,7 @@ import (
 )
 
 // petTrainingCommand ports AC68:2. Caller holds worldMu and enforces world
-// loading/battle/trade gates. Potential pills require a verified item-use rule.
+// loading/battle/trade gates. Potential pills use the separate native AC23:126 handler.
 func (s *Server) petTrainingCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) != protocol.PetTrainingRequestBytes {
 		return protocol.ErrMalformed
@@ -28,7 +28,7 @@ func (s *Server) petTrainingCommand(ctx context.Context, c *Session, p []byte) e
 		return c.send(reply)
 	}
 	if p[1] == protocol.PetTrainingPotential {
-		return s.sendAll(c, [][]byte{reply, systemLine("Potential training is not available yet.")})
+		return s.sendAll(c, [][]byte{reply, systemLine("Use a Potential Pill from inventory; free potential training is disabled.")})
 	}
 	var stat byte
 	switch selector {

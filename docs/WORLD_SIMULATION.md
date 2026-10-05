@@ -6,11 +6,21 @@
 
 - Behavior 1 and static props stay at their authored spawn.
 - Behaviors 2/5 follow EVE waypoints. One waypoint alternates with the spawn;
-  multiple waypoints loop in order. Authored delays have a two-second minimum.
+  multiple waypoints loop in order. All stationary waits use the common 1–3 seconds.
 - Behavior 3 wanders within signed EVE offsets, bounded to ±300 pixels.
-- Behavior 4 and eligible wild monsters roam field maps with a 60-pixel leash.
+- Behavior 4 and eligible wild monsters roam field maps with a 150-pixel leash.
   The native town classification is separate from random encounter safety.
-- Initial movement waits 1–8 seconds. Ambient movement uses native AC22:2
+- Behaviors 2–5 begin movement after 1–3 seconds and wait 1–3 seconds after
+  estimated arrival before choosing another route. This replaces authored
+  waypoint delays and the previous 5–10-second random roaming schedule.
+- Hostile actors search every three seconds when no eligible player is retained,
+  including while wandering or patrolling. Acquiring a player can interrupt
+  those routes or their stationary waits. A valid player target and active
+  pursuit leg remain selected; losing a target restarts the search interval.
+  Bounded/random roamers restrict acquisition and pursuit to fixed spawn areas.
+- NPC snapshots interpolate the estimated current position at the native
+  speed of 40 pixels per second. Interruptions start from that position.
+- Ambient movement uses native AC22:2
   `[22,2,click:uint16,x:uint16,y:uint16,speed:byte]`, with walking speed 2.
 - Defeated monsters stay still and respawn at their authored position, restarting
   their patrol after three seconds. Existing ground-item/chest ticks remain active.
@@ -22,7 +32,9 @@ Private tent occupants and players on other maps receive no public-map movement.
 Failed recipients do not stop other viewers' updates.
 
 Map-entry snapshots, actor show packets, NPC click reach and proximity encounters
-all use current simulated positions. Original EVE spawns remain immutable.
+all use announced simulation destinations. Arrival gating uses native speed byte
+2 (40 pixels/second); coordinates are not yet interpolated during the leg.
+Original EVE spawns remain immutable.
 Positions, patrol cursors and deadlines stay in memory and reset after restart;
 ordinary character walking stays in session memory, then checkpoints to
 `wonderland.db` at the configured interval and disconnect. See the
@@ -34,7 +46,6 @@ Private Server's `MapType` defines only RegularMap and Tent. Go already supports
 owner-isolated tents and their saved return points. There is no additional
 implemented instance type in that reference to invent for this port. Shared
 static resource props now use durable cooldowns as described below.
-
 
 ## Shared resource props
 
@@ -115,7 +126,6 @@ Unlinked nonservice NPCs release interaction without the reference resolved/defa
 Kelan greeting. Clinic offer/confirmation heals the character, not accompanying
 pets. Native waypoint/emote and some synchronization requests remain absent; see
 PORTING.md. Scene geometry/simulation tests do not establish those command paths.
-
 
 Scripted shared prop frames now use the same durable cooldown store with the
 reference 60-second reset. Linked props replay at entry; quest props remain per

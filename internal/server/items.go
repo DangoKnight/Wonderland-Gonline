@@ -28,6 +28,8 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryStallList, 0}, {protocol.CommandInventory, protocol.InventoryStallListComplete}})
 	case protocol.InventoryOpenPack, protocol.InventoryOpenPackAlternate:
 		return s.openPackCommand(ctx, c, p)
+	case protocol.InventoryPotentialPill:
+		return s.potentialPillCommand(ctx, c, p)
 	case protocol.InventoryCompound:
 		return s.compoundCommand(ctx, c, p)
 	case protocol.InventoryFishingStart:

@@ -312,45 +312,49 @@ func TestNativeCharacterCreationWithInstalledAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
-	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	account, err := db.Register(ctx, "native", "login123", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wire := &captureConn{}
-	s := New(config.Default(), db, catalog, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	c := &Session{conn: wire, info: SessionInfo{ID: 1}, account: account, slot: 1}
-	if ok, err := s.reserveName(ctx, c, "NativeHero"); err != nil || !ok {
-		t.Fatal(err)
-	}
-	payload := []byte{9, 1, 4, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 1, 1, 1, 1, 1, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
-	if err = s.dispatch(ctx, c, payload); err != nil {
-		t.Fatal(err)
-	}
-	chars, err := db.Characters(ctx, account.ID)
-	if err != nil || len(chars) != 1 || c.character == nil {
-		t.Fatal("native assets did not complete creation", err)
-	}
-	ready := false
-	for _, packet := range wire.packets(t) {
-		if bytes.Equal(packet, []byte{0, 30}) {
-			t.Fatal("native creation rejected")
-		}
-		if bytes.Equal(packet, []byte{1, 11}) {
-			ready = true
-		}
-	}
-	if !ready {
-		t.Fatal("native world entry did not reach ready marker")
+	for _, element := range []byte{1, 2, 3, 4} {
+		t.Run(map[byte]string{1: "earth", 2: "water", 3: "fire", 4: "wind"}[element], func(t *testing.T) {
+			ctx := context.Background()
+			db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			account, err := db.Register(ctx, "native", "login123", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			wire := &captureConn{}
+			s := New(config.Default(), db, catalog, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			c := &Session{conn: wire, info: SessionInfo{ID: 1}, account: account, slot: 1}
+			if ok, err := s.reserveName(ctx, c, "NativeHero"); err != nil || !ok {
+				t.Fatal(err)
+			}
+			payload := []byte{9, 1, 4, 0, 0, 0, 0x1c, 0xaf, 0x7d, 0x1a, 0x1c, 0xaf, 0x7d, 0x1a, 3, 1, 1, 1, 1, 1, 8, 'l', 'o', 'g', 'i', 'n', '1', '2', '3', 9, 'd', 'e', 'l', 'e', 't', 'e', '4', '5', '6'}
+			payload[14] = element
+			if err = s.dispatch(ctx, c, payload); err != nil {
+				t.Fatal(err)
+			}
+			chars, err := db.Characters(ctx, account.ID)
+			if err != nil || len(chars) != 1 || c.character == nil {
+				t.Fatal("native assets did not complete creation", err)
+			}
+			ready := false
+			for _, packet := range wire.packets(t) {
+				if bytes.Equal(packet, []byte{0, 30}) {
+					t.Fatal("native creation rejected")
+				}
+				if bytes.Equal(packet, []byte{1, 11}) {
+					ready = true
+				}
+			}
+			if !ready {
+				t.Fatal("native world entry did not reach ready marker")
+			}
+		})
 	}
 }
 
-// Reconnecting uses the stored character rather than the creation request.
 func TestNativeCharacterReconnectWithInstalledAssets(t *testing.T) {
 	catalog, err := installedCatalog(t)
 	if err != nil {
@@ -502,5 +506,87 @@ func TestStarterPackCreationDoesNotRefillOnLogin(t *testing.T) {
 	chars, err = db.Characters(ctx, account.ID)
 	if err != nil || len(chars) != 1 || chars[0].Bag != (game.Inventory{}) {
 		t.Fatal("login persisted another starter pack", chars, err)
+	}
+}
+
+func TestCharacterCreationPersistsQualifiedStarterSkills(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		element byte
+		ids     []uint16
+		gated   uint16
+	}{
+		{"earth", 1, []uint16{15085, 12006, 11057}, 11017},
+		{"water", 2, []uint16{15091, 15097, 15100}, 11001},
+		{"fire", 3, []uint16{11016, 11166, 11056}, 15101},
+		{"wind", 4, []uint16{11007, 30002, 11052}, 15079},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			account, err := db.Register(ctx, "tester", "password", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			catalog := creationCatalog()
+			for i, id := range tc.ids {
+				catalog.Skills[id] = assets.Skill{ID: id, TableOrder: uint16(101 + i)}
+			}
+			catalog.Skills[tc.gated] = assets.Skill{ID: tc.gated, TableOrder: 201}
+			s := New(config.Default(), db, catalog, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			wire := &captureConn{}
+			c := &Session{conn: wire, info: SessionInfo{ID: 1}, account: account, slot: 1}
+			if ok, err := s.reserveName(ctx, c, "FreshHero"); err != nil || !ok {
+				t.Fatal(err)
+			}
+			payload := createPayload()
+			payload[14] = tc.element
+			if err := s.dispatch(ctx, c, payload); err != nil {
+				t.Fatal(err)
+			}
+			stored, err := db.Characters(ctx, account.ID)
+			if err != nil || len(stored) != 1 || c.character == nil {
+				t.Fatal("creation failed", stored, err)
+			}
+			want := append([]uint16{11075}, tc.ids...)
+			for _, character := range []game.Character{stored[0], *c.character} {
+				if len(character.Skills) != len(want) {
+					t.Fatal("wrong skill count", character.Skills)
+				}
+				for i, id := range want {
+					if character.Skills[i] != (game.LearnedSkill{ID: id, Grade: 1}) {
+						t.Fatal("wrong persisted/session skill", character.Skills)
+					}
+				}
+			}
+			found := false
+			for _, packet := range wire.packets(t) {
+				if len(packet) < 2 || packet[0] != 5 || packet[1] != 3 {
+					continue
+				}
+				found = true
+				// Native AC5:3 puts skill count at byte 62 and seven-byte records
+				// after it. Stunt uses wire order 188, then the three starter skills.
+				if len(packet) < 92 {
+					t.Fatal("truncated base stats", packet)
+				}
+				r := protocol.NewReader(packet[62:])
+				if r.U16() != 4 {
+					t.Fatal("wrong wire skill count")
+				}
+				for _, order := range []uint16{188, 101, 102, 103} {
+					if r.U16() != order || r.U8() != 1 || r.U32() != 0 {
+						t.Fatal("wrong wire skill record", packet)
+					}
+				}
+			}
+			if !found {
+				t.Fatal("missing initial skill snapshot")
+			}
+		})
 	}
 }

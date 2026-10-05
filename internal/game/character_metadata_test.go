@@ -21,14 +21,10 @@ func TestCharacterMetadataNativePackets(t *testing.T) {
 	if !bytes.Contains(peer, []byte{0, 1, 3, 1, 'C', 1, 'N', 255}) {
 		t.Fatal(peer)
 	}
-	found := false
 	for _, packet := range c.StatPackets(nil) {
-		if bytes.Equal(packet, []byte{8, 1, 37, 1, 44, 1, 0, 0, 0, 0, 0, 0}) {
-			found = true
+		if packet[2] == 37 {
+			t.Fatal("potential incorrectly sent to native field 0x1fa4", packet)
 		}
-	}
-	if !found {
-		t.Fatal("wide potential missing from stat 37")
 	}
 	roster, err := c.SelectionRecord()
 	if err != nil {
@@ -38,14 +34,14 @@ func TestCharacterMetadataNativePackets(t *testing.T) {
 		t.Fatal(roster)
 	}
 	p := Pet{ID: 1, Level: 1, Potential: 77}
-	found = false
 	for _, packet := range p.ProgressionPackets(1, nil) {
-		if bytes.Equal(packet, []byte{8, 2, 4, 1, 0, 37, 1, 77, 0, 0, 0, 0, 0, 0, 0}) {
-			found = true
+		if packet[5] == 37 {
+			t.Fatal("pet potential incorrectly sent to native field 0x1fa4", packet)
 		}
 	}
-	if !found {
-		t.Fatal("pet potential stat missing")
+	record := p.ListRecord(nil, 1, "", PetTemplate{})
+	if record[len(record)-8] != 77 {
+		t.Fatal("pet potential missing from native roster footer", record)
 	}
 }
 func TestRebornClassInnateStatModifiers(t *testing.T) {

@@ -10,7 +10,6 @@ const (
 	StatAGI               byte = 30
 	StatWIS               byte = 33
 	StatTotalEXP          byte = 36
-	StatPotential         byte = 37
 	StatUnallocatedPoints byte = 38
 	StatAttack            byte = 41
 	StatDefense           byte = 42

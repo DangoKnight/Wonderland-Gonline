@@ -44,7 +44,10 @@ func (e *encounterState) battleOver() {
 }
 
 func (e *encounterState) resting() bool {
-	now := time.Now()
+	return e.restingAt(time.Now())
+}
+
+func (e *encounterState) restingAt(now time.Time) bool {
 	return (!e.battleEnd.IsZero() && now.Sub(e.battleEnd) < e.cooldown) || now.Sub(e.mapEnter) < mapGrace
 }
 
@@ -74,6 +77,9 @@ func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 		return nil
 	}
 	for _, n := range s.World.NPCs(char.Map) {
+		if area, limited := s.World.ActorTargetArea(char.Map, n.ClickID); limited && !area.Contains(char.X, char.Y) {
+			continue
+		}
 		if !s.World.Wild(char.Map, n) || s.World.Defeated(char.Map, n.ClickID) || c.view.Hidden[n.ClickID] ||
 			!s.World.VisibleIn(char, c.view, char.Map, n.ClickID) ||
 			math.Hypot(float64(int(char.X)-int(n.X)), float64(int(char.Y)-int(n.Y))) > proximityRadius {
@@ -163,11 +169,12 @@ func (s *Server) wildClick(c *Session, n world.NPC) (bool, error) {
 	return true, s.startBattle(c, &battleRun{encounter: n.ClickID, wild: true}, []battle.Enemy{enemy})
 }
 
-// defeatMonster is DefeatOverworldMonster: hide the actor from everyone on the map.
-func (s *Server) defeatMonster(mapID, click uint16) {
-	s.World.Defeat(mapID, click, time.Now())
+// holdEncounterMonster removes the actor for every public-scene viewer while
+// the battle owns it. Completion or last-member disconnect schedules respawn.
+func (s *Server) holdEncounterMonster(mapID, click uint16) {
+	s.World.HoldEncounter(mapID, click)
 	for _, peer := range s.world {
-		if peer.character.Map == mapID && peer.tentOwner == 0 {
+		if peer.ready && peer.character != nil && peer.character.Map == mapID && peer.tentOwner == 0 {
 			if peer.send(s.World.HideActor(peer.view, mapID, click)) != nil {
 				peer.conn.Close()
 			}
@@ -181,7 +188,7 @@ func (s *Server) reviveMonsters(now time.Time) {
 	defer s.worldMu.Unlock()
 	for mapID, clicks := range s.World.Revive(now) {
 		for _, peer := range s.world {
-			if peer.character.Map != mapID || peer.tentOwner != 0 {
+			if !peer.ready || peer.character == nil || peer.character.Map != mapID || peer.tentOwner != 0 {
 				continue
 			}
 			for _, click := range clicks {

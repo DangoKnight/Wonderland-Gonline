@@ -120,3 +120,59 @@ func TestNativeCreationTwoPasswordsGolden(t *testing.T) {
 		}
 	}
 }
+
+func TestStarterSkillsOnlyUnconditionalElementalSkills(t *testing.T) {
+	for _, tc := range []struct {
+		element byte
+		want    []uint16
+	}{
+		{Earth, []uint16{15085, 12006, 11057}},
+		{Water, []uint16{15091, 15097, 15100}},
+		{Fire, []uint16{11016, 11166, 11056}},
+		{Wind, []uint16{11007, 30002, 11052}},
+	} {
+		for body, heads := range map[uint16]uint16{1: 1, 2: 2, 3: 4, 4: 8} {
+			for head := uint16(0); head < heads; head++ {
+				got := StarterSkills(body, head, tc.element)
+				if len(got) != 4 || got[0].ID != StarterStunt(body, head) {
+					t.Fatalf("body %d head %d element %d: %v", body, head, tc.element, got)
+				}
+				for i, id := range tc.want {
+					if got[i+1].ID != id || got[i+1].Grade != 1 || got[i+1].EXP != 0 {
+						t.Fatalf("wrong elemental starter skill: %v, want %v", got, tc.want)
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestFreshCharacterSkillsAcrossCreationAllocations(t *testing.T) {
+	for _, element := range []byte{Earth, Water, Fire, Wind} {
+		for body, heads := range map[uint16]uint16{1: 1, 2: 2, 3: 4, 4: 8} {
+			for head := uint16(0); head < heads; head++ {
+				items := map[uint16]ItemDefinition{}
+				for i, id := range StarterOutfit(body, head) {
+					items[id] = ItemDefinition{ID: id, EquipSlot: uint16(i + 1)}
+				}
+				for str := uint16(0); str <= CreationStatPoints; str++ {
+					for con := uint16(0); con <= CreationStatPoints-str; con++ {
+						for intelligence := uint16(0); intelligence <= CreationStatPoints-str-con; intelligence++ {
+							for wis := uint16(0); wis <= CreationStatPoints-str-con-intelligence; wis++ {
+								a := Appearance{Body: body, Head: head, Element: element, Base: Attributes{str, con, intelligence, wis, CreationStatPoints - str - con - intelligence - wis}}
+								c, err := NewCharacter(10001, 1, "FreshHero", a, nil, items, time.Unix(0, 0))
+								if err != nil {
+									t.Fatal(a, err)
+								}
+								c.UnlockQualifiedSkills(false, nil)
+								if len(c.Skills) != 4 || knows(c, 11001) || knows(c, 11017) || knows(c, 15079) {
+									t.Fatalf("unqualified skill on fresh character: appearance %+v skills %+v", a, c.Skills)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

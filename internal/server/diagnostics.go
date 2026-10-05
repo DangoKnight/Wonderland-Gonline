@@ -40,6 +40,13 @@ func packetTraceAttrs(p []byte, sent bool) []any {
 			attrs = append(attrs, "lucky_draw_intent", intent, "expected_request_bytes", protocol.LuckyDrawRequestBytes)
 		}
 	}
+	if len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryPotentialPill || p[1] == protocol.InventoryPotentialPillResult) {
+		limit := protocol.PotentialPillRequestBytes
+		if sent {
+			limit = protocol.PotentialPillResultBytes
+		}
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), limit)]), "payload_truncated", len(p) > limit)
+	}
 	if !sent && len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryFishingStart || p[1] == protocol.InventoryFishingStop) {
 		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), nativeFishingRequestBytes)]), "payload_truncated", len(p) > nativeFishingRequestBytes)
 	}

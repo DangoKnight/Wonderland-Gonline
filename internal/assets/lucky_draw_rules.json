@@ -1,21 +1,69 @@
 {
-  "reference": "https://forum.gamer.com.tw/G2.php?bsn=8897&sn=6764",
-  "reference_date": "2013-08-09",
-  "notes": "Compatibility item mappings for the supplied reward announcement. Slots follow its display order and need native-client verification. Weights are authored equal defaults, not recovered official probabilities.",
-  "rewards": [
-    {"item_id":35114,"quantity":1,"weight":1,"slot":1,"reference_label":"強力補血輕便包"},
-    {"item_id":35115,"quantity":1,"weight":1,"slot":2,"reference_label":"強力補魔輕便包"},
-    {"item_id":30436,"quantity":1,"weight":1,"slot":3,"reference_label":"七夕詩籤"},
-    {"item_id":30436,"quantity":3,"weight":1,"slot":4,"reference_label":"七夕詩籤×3"},
-    {"item_id":30436,"quantity":5,"weight":1,"slot":5,"reference_label":"七夕詩籤×5"},
-    {"item_id":30437,"quantity":1,"weight":1,"slot":6,"reference_label":"中元兌換卷"},
-    {"item_id":30437,"quantity":3,"weight":1,"slot":7,"reference_label":"中元兌換卷×3"},
-    {"item_id":30437,"quantity":5,"weight":1,"slot":8,"reference_label":"中元兌換卷×5"},
-    {"item_id":34087,"quantity":1,"weight":1,"slot":9,"reference_label":"金菩薩像"},
-    {"item_id":34147,"quantity":1,"weight":1,"slot":10,"reference_label":"2.5倍經驗聖水"},
-    {"item_id":34085,"quantity":1,"weight":1,"slot":11,"reference_label":"黑巧克力"},
-    {"item_id":34269,"quantity":1,"weight":1,"slot":12,"reference_label":"潛能激發丸"},
-    {"item_id":61062,"quantity":1,"weight":1,"slot":13,"reference_label":"混沌結晶"},
-    {"item_id":34136,"quantity":1,"weight":1,"slot":14,"reference_label":"1%經驗膠囊"}
-  ]
+	"reference": "https://forum.gamer.com.tw/G2.php?bsn=8897&sn=6764",
+	"reference_date": "2013-08-09",
+	"notes": "Compatibility item mappings for the supplied reward announcement, excluding obsolete 2013 Tanabata and Ghost Festival exchange items (30436 and 30437). Slots follow the remaining display order, followed by Fun Token (34008), added by project policy. Weights are authored equal defaults, not recovered official probabilities.",
+	"rewards": [
+		{
+			"item_id": 35114,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 1,
+			"reference_label": "強力補血輕便包"
+		},
+		{
+			"item_id": 35115,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 2,
+			"reference_label": "強力補魔輕便包"
+		},
+		{
+			"item_id": 34087,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 3,
+			"reference_label": "金菩薩像"
+		},
+		{
+			"item_id": 34147,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 4,
+			"reference_label": "2.5倍經驗聖水"
+		},
+		{
+			"item_id": 34085,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 5,
+			"reference_label": "黑巧克力"
+		},
+		{
+			"item_id": 34269,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 6,
+			"reference_label": "潛能激發丸"
+		},
+		{
+			"item_id": 61062,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 7,
+			"reference_label": "混沌結晶"
+		},
+		{
+			"item_id": 34136,
+			"quantity": 1,
+			"weight": 1,
+			"slot": 8,
+			"reference_label": "1%經驗膠囊"
+		},
+		{
+			"item_id": 34008,
+			"quantity": 3,
+			"weight": 1,
+			"slot": 9
+		}
+	]
 }

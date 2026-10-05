@@ -57,7 +57,7 @@ func TestLuckyDrawRejectsInvalidWholePool(t *testing.T) {
 	}
 }
 
-func TestLuckyDrawAuthoredDefaultsMatchReference(t *testing.T) {
+func TestLuckyDrawAuthoredDefaultsExcludeSeasonalRewards(t *testing.T) {
 	data, err := os.ReadFile("lucky_draw_rules.json")
 	if err != nil {
 		t.Fatal(err)
@@ -68,9 +68,9 @@ func TestLuckyDrawAuthoredDefaultsMatchReference(t *testing.T) {
 	if err := json.Unmarshal(data, &policy); err != nil {
 		t.Fatal(err)
 	}
-	ids := []uint16{35114, 35115, 30436, 30436, 30436, 30437, 30437, 30437, 34087, 34147, 34085, 34269, 61062, 34136}
-	quantities := []int{1, 1, 1, 3, 5, 1, 3, 5, 1, 1, 1, 1, 1, 1}
-	if len(policy.Rewards) != 14 {
+	ids := []uint16{35114, 35115, 34087, 34147, 34085, 34269, 61062, 34136, 34008}
+	quantities := []int{1, 1, 1, 1, 1, 1, 1, 1, 3}
+	if len(policy.Rewards) != len(ids) {
 		t.Fatal(policy)
 	}
 	for i, r := range policy.Rewards {

@@ -655,10 +655,10 @@
       "source_sha256": "f85cbee375e3918e337e6579b6731ba1396e16063b86a85cda9a86ffc5e826b0",
       "asset": "lucky_draw.json",
       "status": "derived-compatibility-rewards",
-      "records": 14,
+      "records": 9,
       "output": "lucky_draw.json",
-      "output_bytes": 3048,
-      "output_sha256": "86d286218868f3accbe67f896ca738f68dac3c2f6d73edec7597f8c44b815f35"
+      "output_bytes": 2268,
+      "output_sha256": "4793f265d60a06e3e9300b7bd9e88d07139c00de6f33fd6ce583d317b5f6a398"
     }
   ]
 }

@@ -12,6 +12,10 @@ import (
 // MonsterRespawn is how long a defeated overworld monster stays away.
 const MonsterRespawn = 60 * time.Second
 
+// EncounterRespawn is the pause after a visible actor's battle ends, including
+// fleeing or the last participant disconnecting.
+const EncounterRespawn = 30 * time.Second
+
 type monsters struct {
 	mu       sync.Mutex
 	defeated map[uint16]map[uint16]time.Time // Map to click ID to respawn time.
@@ -101,6 +105,27 @@ func (w *World) Defeat(mapID, click uint16, now time.Time) {
 	w.monsters.defeated[mapID][click] = now.Add(MonsterRespawn)
 }
 
+// HoldEncounter hides and reserves an actor until its battle releases it. A zero
+// deadline represents an active reservation and is never revived by the ticker.
+func (w *World) HoldEncounter(mapID, click uint16) {
+	w.monsters.mu.Lock()
+	defer w.monsters.mu.Unlock()
+	if w.monsters.defeated[mapID] == nil {
+		w.monsters.defeated[mapID] = map[uint16]time.Time{}
+	}
+	w.monsters.defeated[mapID][click] = time.Time{}
+}
+
+// ReleaseEncounter starts the short respawn delay once, preserving an existing
+// scheduled respawn when completion and disconnection cleanup race.
+func (w *World) ReleaseEncounter(mapID, click uint16, now time.Time) {
+	w.monsters.mu.Lock()
+	defer w.monsters.mu.Unlock()
+	if at, exists := w.monsters.defeated[mapID][click]; exists && at.IsZero() {
+		w.monsters.defeated[mapID][click] = now.Add(EncounterRespawn)
+	}
+}
+
 // Defeated reports a wild monster that has not respawned yet.
 func (w *World) Defeated(mapID, click uint16) bool {
 	w.monsters.mu.Lock()
@@ -115,7 +140,7 @@ func (w *World) Revive(now time.Time) map[uint16][]uint16 {
 	out := map[uint16][]uint16{}
 	for mapID, clicks := range w.monsters.defeated {
 		for click, at := range clicks {
-			if !now.Before(at) {
+			if !at.IsZero() && !now.Before(at) {
 				delete(clicks, click)
 				out[mapID] = append(out[mapID], click)
 			}

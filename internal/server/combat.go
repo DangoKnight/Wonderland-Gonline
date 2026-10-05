@@ -31,10 +31,11 @@ type battleRun struct {
 	flee    bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
 	timer   *time.Timer
 	turn    int // Increments per round so a stale timer cannot fire into a new round.
-	// encounter is the overworld monster this battle consumes on victory.
-	encounter uint16
-	wild      bool
-	trial     *assets.CombatTrial
+	// encounter is the visible overworld actor reserved for this battle.
+	encounter    uint16
+	encounterMap uint16
+	wild         bool
+	trial        *assets.CombatTrial
 }
 
 // battleMember is one participant: its character fighter and battle pet, if any.
@@ -209,6 +210,13 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 			}
 			m.c.conn.Close()
 		}
+	}
+	if run.encounter == 0 && run.event != nil && s.World.RoamingBattle(run.event.mapID, run.event.click) {
+		run.encounter = run.event.click
+	}
+	if run.encounter != 0 {
+		run.encounterMap = c.character.Map
+		s.holdEncounterMonster(run.encounterMap, run.encounter)
 	}
 	s.armTurnTimer(run)
 	return nil
@@ -594,8 +602,8 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 		}
 		s.broadcastWorld(c, state)
 	}
-	if outcome == battle.Victory && run.wild {
-		s.defeatMonster(run.members[0].c.character.Map, run.encounter)
+	if run.encounter != 0 {
+		s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
 	}
 	es := run.event
 	if leader == nil || es == nil || leader.event != es {
@@ -630,6 +638,9 @@ func (s *Server) abandonBattle(c *Session) {
 	c.battle = nil
 	run.b.Leave(c.character.ID)
 	if len(run.active()) == 0 {
+		if run.encounter != 0 {
+			s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
+		}
 		run.b.Finished = true
 		if run.timer != nil {
 			run.timer.Stop()

@@ -59,14 +59,14 @@ current recoverable state in memory. Persistence ownership does not require a
 SQL write for every packet. SQL-derived asset catalogs already follow this model
 for immutable gameplay reads.
 
-| State/operation | Required persistence boundary |
-| --- | --- |
-| Purchases, sales, trades, bank transfers, fees and resource consumption | Validate authoritative balances/ownership and commit debit plus delivery in one database transaction before success replies |
-| Loot, gacha/Lucky Draw, quest rewards, mail claims and shared-node claims | Commit reward and consumption/claim/cooldown together; concurrent or repeated claims must not duplicate rewards |
-| Account/security, administrator edits, durable relationships and ownership | Validate permissions/version and commit immediately; publish the result after commit |
-| Walking and other explicitly classified recoverable session fields | Update memory, mark dirty, periodically checkpoint only those fields; also flush at character handoff, disconnect and graceful shutdown |
-| Map transitions and recovery destinations | Persist the destination/return state before publishing a transition until a recoverable transition protocol is implemented |
-| Sockets, timers, locks, pending actions and presentation state | Keep in memory; persist only recovery timestamps/results where needed |
+| State/operation                                                            | Required persistence boundary                                                                                                           |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Purchases, sales, trades, bank transfers, fees and resource consumption    | Validate authoritative balances/ownership and commit debit plus delivery in one database transaction before success replies             |
+| Loot, gacha/Lucky Draw, quest rewards, mail claims and shared-node claims  | Commit reward and consumption/claim/cooldown together; concurrent or repeated claims must not duplicate rewards                         |
+| Account/security, administrator edits, durable relationships and ownership | Validate permissions/version and commit immediately; publish the result after commit                                                    |
+| Walking and other explicitly classified recoverable session fields         | Update memory, mark dirty, periodically checkpoint only those fields; also flush at character handoff, disconnect and graceful shutdown |
+| Map transitions and recovery destinations                                  | Persist the destination/return state before publishing a transition until a recoverable transition protocol is implemented              |
+| Sockets, timers, locks, pending actions and presentation state             | Keep in memory; persist only recovery timestamps/results where needed                                                                   |
 
 Do not move inventory, currency, item durability/consumption, paid draws or scarce
 resource claims into periodic snapshots. A precomputed session copy alone cannot
@@ -234,7 +234,6 @@ on hold in PORTING.md. Trace callers before treating a pending source entry as a
 missing feature. Port reachable implementations and their regression evidence;
 separate new Gonline gameplay and native-client parity research from that queue.
 
-
 Update `docs/source-inventory.json` when porting a legacy subsystem. Map the C#
 source to the Go implementation and its tests, and describe implemented behavior
 and remaining work in the notes. Preserve the recorded source revision and
@@ -341,7 +340,6 @@ user state separate and preserve it during layout migrations. Missing exports
 must fail clearly rather than use original native files. Native inspection
 modes require an explicit sibling source directory.
 
-
 ## Battle buffs and debuffs
 
 Define temporary ability effects through `assets.Skill.Effects`. Each definition
@@ -387,7 +385,6 @@ implemented. Pure cast effects cost SP and award proficiency once. Presentation
 labels describe visual intent and do not imply undiscovered immunity or targeting
 rules. Add those behaviors explicitly when verified.
 
-
 Use `miss_physical_attacks` and `miss_area_attacks` for effect-driven protection.
 Any active matching protection forces a zero-damage miss before damage floors,
 critical rolls or on-hit application. Missed casts still spend SP and retain
@@ -401,7 +398,6 @@ native thresholds are verified. Explicit `targeting` grade ranges take precedenc
 over classification and drive recipient expansion. Keep shapes in SQL metadata,
 not skill-ID conditionals. See [COMBAT_TARGETING.md](COMBAT_TARGETING.md).
 
-
 Use `physical_damage_taken` and `magical_damage_taken` for modifiers restricted
 to an attack category. Aggregate the applicable category with `damage_taken` in
 one pass, using the existing named-group policy and rounding once. Non-basic
@@ -414,7 +410,6 @@ Shield (protection layer 4/code 105) reduces magical damage by 50%. Authored
 physical protection uses `physical_damage_taken`. Authored generic `damage_taken`
 effects continue to protect against both attack types.
 
-
 ## Party combo grouping
 
 Use the shared `Rules.comboGroups` eligibility and adjacent speed-gap rules for
@@ -425,13 +420,11 @@ exceptions; area eligibility comes from the SQL skill metadata at learned grade.
 Keep SP costs, hit protection and durable proficiency per participant. See
 [COMBOS.md](COMBOS.md) for evidence and compatibility limits.
 
-
 Combo probability is an execution decision, separate from speed-chain grouping.
 Use the whole present player/pet roster's fractional average level, with a linear
 curve from 0% at −25 through 50% at equal level to 100% at +25 against the actual
 target. Roll once per eligible chain; a failed chain executes as singles without
 rerolling subsets. Skip random draws for singles and the 0%/100% endpoints.
-
 
 For combo calculations, add `comboRebirthLevelBonus` (99) to each reborn player
 or pet before averaging. Use `Fighter.comboLevel` for both roster participants
@@ -439,7 +432,6 @@ and the target. Keep the result as an integer; never write it into native
 byte-sized levels or persisted EXP. Characters store optional `reborn` metadata;
 pets retain their existing flag. Rebirth progression and character roster/job
 presentation require separate migration work.
-
 
 ## Skill JSON and reusable effects
 
@@ -515,7 +507,6 @@ format with explicit channel/name text. Dedicated native channel receive layouts
 guild membership and client channel controls require separate migration work.
 Keep their framing documented rather than inventing unverified wire codes.
 
-
 ## Pet rebirth
 
 Use `game.Pet.Rebirth` for the reference AC69 ascension transition. Eligibility,
@@ -528,7 +519,6 @@ only after the save succeeds. Keep rebirth inside world interaction gates so it
 cannot change a collected battle roster or bypass trade/event ownership. Quest
 and model evolution are separate mechanics until their source semantics are
 ported; do not invent new NPC IDs or grant additional skills during ascension.
-
 
 ## Companion training
 
@@ -543,7 +533,6 @@ Potential training remains unavailable until item consumption, combat behavior
 and native display are verified. The reference's free increment and stat-37
 level-minus-one display do not establish these semantics. Do not add a second
 point budget or invent pill IDs/costs to fill this gap.
-
 
 ## Battle-pet feeding
 
@@ -572,7 +561,6 @@ gate ordering when adding policies. Avoid new parallel opcode lists in dispatch
 or interaction gates; keep switches that decode distinct operations inside a
 handler. Tests retain independent raw opcode tables to verify routing parity.
 
-
 ## Native text mail
 
 Use the gameplay store's `SendTextMail` transaction for AC14:1 text mail. Verify
@@ -592,7 +580,6 @@ from reaching a newly created character that reuses an ID. Parcel attachments,
 mailbox management and the ambiguous AC14:1 short name fallback need separate
 verified operations; do not implement them through the text-mail type byte.
 
-
 ## Native contact compatibility
 
 Keep inbound AC10 social operations and outbound AC10 presence names separate.
@@ -607,7 +594,6 @@ maintain a second in-memory contact roster. Isolate recipient write failures fro
 the actor, including removal refreshes. Retain independent raw native status and
 removal packet expectations and cross-protocol tests. Keep actual-client capture
 acceptance separate from source and synthetic-packet verification.
-
 
 ## Bank currency
 
@@ -627,7 +613,6 @@ service operand from unused numeric slots or route deposits through AC29's unsaf
 legacy item-storage code. Keep actual-client activation and packet acceptance
 separate from synthetic protocol verification.
 
-
 ## Native mall checkout
 
 AC34:1 reads current account points and returns AC75:3/9 followed by AC35:4 to
@@ -642,7 +627,6 @@ the shared world gates; trade may allow this read-only query while the eventual
 purchase retains its mutation gate. Balance read failures cannot publish success
 or overwrite the session cache. Preserve independent raw resume bytes and tests
 that submit the existing cart after the query.
-
 
 ## SQL gacha pools
 
@@ -664,7 +648,6 @@ Preserve atomic pack removal and reward grant before publishing native receipts;
 use fresh reward metadata and cryptographic uniform rolls. Changes to source
 pools belong in sibling inputs; exported data remains derived.
 
-
 ## Daily Lucky Draw
 
 Use `game.LuckyDrawState` for three draws per character per UTC calendar day.
@@ -681,7 +664,11 @@ Slots must follow SQL row order consecutively from 1; the native UI supports at
 most 20 rewards.
 Weights are relative and their total must fit int64; use cryptographic uniform
 rolls across the total. Different quantities of one item are separate outcomes.
-Defaults give all 14 outcomes weight 1. Missing definitions, invalid quantities,
+Defaults give all nine outcomes weight 1 (approximately 11.11% each), including
+three Fun Tokens (34008). Obsolete seasonal
+exchange items Qiqiao Poems (30436) and Ghost Fest Voucher (30437), including
+their quantity variants, are excluded from the default pool. Replacement rewards
+require an explicit content choice; keep slots consecutive after edits. Missing definitions, invalid quantities,
 missing/out-of-order slots, more than 20 rewards and overflow fail startup; an explicit empty pool disables draws.
 
 Runtime uses `catalog_lucky_draw_rewards` and the `LuckyDraw` administration
@@ -783,13 +770,20 @@ capped. Keep manual AC8/AC68 spending separate. Test exact intervals, equipment
 bonuses/penalties, elemental behavior, per-level recalculation and startup-save
 immutability; avoid probabilistic sampling tests.
 
-
 ## World Entry policy
 
 Validate `Appearance.ValidateCreationAllocation` on incoming creation requests:
 exactly `game.CreationStatPoints` (five) base points, excluding model bonuses.
 Do not impose creation budgets on stored characters, GM edits or level-up
 allocation. Low-level appearance decoding preserves fields independently.
+
+Derive elemental starter skills from the zero-requirement entries in
+`internal/game/skill_tree_data.go` through `game.StarterSkills`, plus the avatar
+stunt. Creation and `/clearskills` then use `UnlockQualifiedSkills` with actual
+attributes for gated skills. Do not maintain a separate elemental starter ID
+list: the legacy starter helper incorrectly bypasses its own progression gates
+for Water Icicle Attack, Earth Attack and Wind Air Attack. Preserve existing
+learned skills during startup/login; explicit skill reset is a separate action.
 
 Keep entry synchronization read-only: restore durable monster discoveries and
 story completion marks before final ready markers. Discoveries are character
@@ -866,6 +860,67 @@ battle/event reservations and recipient failure isolation. Ambient patrol cursor
 positions and deadlines remain transient; monster respawn returns to its authored
 spawn and resets its patrol with the reference three-second grace.
 
+Bounded wandering, random roaming, patrols and pursuit wait a random 1–3 seconds
+after estimated arrival before choosing the next route. Their first movement
+uses the same 1–3-second startup delay; acquiring a player can interrupt that
+wait. Bounded and random wandering pick the longest walkable leg among four
+random candidates. Bounded wandering retains its authored spawn-relative
+rectangle, 300-pixel offset cap and coordinate limits. Random roaming uses a fixed
+rectangle extending up to 150 pixels per axis from its authored spawn; its area
+never follows the moving actor. Patrols retain their authored waypoint order,
+but use the common stationary wait instead of authored waypoint delays.
+Tune these compiled values in `internal/world/simulation.go`; rebuild the server
+after changes.
+
+Hostile bounded, random roaming and patrol actors search for the nearest eligible
+player every three seconds, within 200 pixels of their current position. Bounded
+and random roaming actors acquire and chase players only inside their fixed
+areas. Pathless patrols use the random roaming area; authored patrols may pursue
+nearby players throughout their scene. Existing town restrictions still prevent
+random roaming there. Cached targets are revalidated each tick and discarded as
+soon as they become ineligible or leave the area or detection radius. Pursuit uses
+legs of at most 100 pixels. Patrol cursors pause while chasing and resume afterward.
+Keep the chosen player while eligible, even when a nearer player appears. A
+monster without a player target searches every three seconds, including while
+walking toward a wandering or patrol destination. Acquiring a player interrupts
+that nonplayer leg or its stationary wait immediately. Losing a target starts a
+fresh three-second search interval. Failed pursuit routes retry after the common
+1–3-second wait.
+
+Hold an active pursuit destination until estimated arrival. Native WLRI AC22:2
+dispatch calls `FUN_0041869c`; its speed helper `FUN_00482980` computes
+`speed / 8 * 0.16` pixels per millisecond, and `FUN_004126b8` advances along
+the direction using elapsed milliseconds. The server's speed byte 2 therefore
+gives a nominal 40 pixels per second. Estimate arrival from straight-line distance
+at this rate, rounded up to milliseconds. NPC snapshots interpolate positions,
+and interrupted paths start from the estimated current position. The protocol
+supplies no NPC arrival acknowledgement, so client frame rounding, latency and
+pauses can still affect visual timing. Ambient contact checks wait for estimated
+arrival and run before issuing another walking leg. Respawn clears the previous
+leg's arrival deadline.
+
+Collision checks allow an axis-aligned approach when a diagonal is blocked; this
+does not implement navigation around arbitrary obstacles. A battle starts within
+the existing 72-pixel encounter radius only when the intervening terrain is clear.
+Movement-triggered proximity encounters also respect the actor's target area;
+explicit clicks retain their existing interaction rules. Native roaming actors
+run their authored EVE battle formations. Map-entry grace, post-battle cooldowns,
+concealment, owned companions, private tents, GM invisibility and active
+interactions prevent ambient targeting. Target scans and detection radius are
+compiled constants in `internal/server/simulation.go`. Actor positions, targets
+and timers remain in memory; no movement or target scan writes to SQL.
+
+Clicking a wild enemy or starting a proximity/native roaming encounter hides
+and reserves its overworld actor for all public-scene viewers when battle starts.
+The player's existing fighting animation remains on the map. Victory, defeat,
+fleeing or the last participant disconnecting releases the reservation and starts
+a 30-second respawn delay (`world.EncounterRespawn` in
+`internal/world/monsters.go`). Leaving one member of a party battle does not release
+the actor while others remain. Respawn restores the authored spawn position and
+the normal three-second movement grace. The reservation and delay are transient;
+a server restart restores the map actors. These rules extend the legacy behavior,
+which hid ordinary wild actors only after victory for 60 seconds.
+
 ## Native compatibility handlers
 
 Keep native aliases in the command registry and reuse the owning subsystem's
@@ -884,7 +939,6 @@ skill proficiency commit together. Read rules from the structured `Fishing`
 dataset (asset schema v8), with no runtime seed fallback. Full-bag fishing
 retains proficiency and discards the catch. See [FISHING.md](FISHING.md).
 
-
 ### Manufacturing and character state
 
 See [manufacturing/character state](MANUFACTURING_CHARACTER_STATE.md). Gameplay
@@ -893,7 +947,6 @@ manufacturing escrow. Asset v9 owns full Compound2 formulas, rebirth cape mappin
 and authored recipe fee/chance projections. Debit ingredients/create escrow and
 deliver output/delete escrow transactionally before acknowledging. Recover pending
 jobs once per ready session; never reload or save walking on each timer tick.
-
 
 ### World and combat parity
 
@@ -975,3 +1028,17 @@ committed to SQL before sending arrival packets. A narrow location update must
 not declare unrelated pending session fields durable. Carnie's authored EVE exit
 must apply the same saved return point as its regular portal; its raw WLRI warp
 record leads to Underground Maze and cannot be used directly for this exit.
+
+### Potential Pill consumption
+
+Route native AC23:126 through `potentialPillCommand` and
+`Store.MutateOwnedCharacter`; never debit a session-only inventory snapshot.
+Validate current SQL ownership, target, pill ID, limits and live reservations,
+then commit consumption and potential-derived state together before AC23:213 or
+stat receipts. Keep pending walking buffered. Effective attributes include the
+compiled native bonus table in `internal/game/potential.go`; never rewrite base
+allocation to bake in potential. Compiled enhancement coefficients in that
+module follow the official WLRI potential table for normal/golden attempts;
+Super Pills are guaranteed. A normal failure loses one level and forgets newly
+unqualified stat-tree skills; a golden failure retains potential. Consume one
+pill on either outcome, but none on a rejected request or failed persistence. See [native Potential Pills](NATIVE_COMMANDS.md#potential-pills).

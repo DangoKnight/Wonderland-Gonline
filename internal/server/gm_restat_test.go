@@ -41,7 +41,7 @@ func TestGMRestatPersistencePacketsAndReplay(t *testing.T) {
 		t.Fatal("reset changed unrelated state", *c.character)
 	}
 	packets := w[0].packets(t)
-	if len(packets) != 18 || !bytes.Equal(packets[10], []byte{8, 1, 38, 1, 107, 0, 0, 0, 0, 0, 0, 0}) || packets[16][0] != 5 || packets[16][1] != 3 {
+	if len(packets) != 17 || !bytes.Equal(packets[10], []byte{8, 1, 38, 1, 107, 0, 0, 0, 0, 0, 0, 0}) || packets[15][0] != 5 || packets[15][1] != 3 {
 		t.Fatal("reset synchronization", packets)
 	}
 	// This avatar's permanent INT +2 remains after resetting its base to ten.
@@ -84,7 +84,7 @@ func TestGMRestatTargetAuthorizationAndFailure(t *testing.T) {
 	}
 	w[2].Reset()
 	say(t, s, actor, "/resetstats "+strconv.FormatUint(uint64(target.character.ID), 10))
-	if target.character.StatPoints != 107 || len(w[0].packets(t)) != 17 || len(w[2].packets(t)) != 1 || w[1].Len() != 0 {
+	if target.character.StatPoints != 107 || len(w[0].packets(t)) != 16 || len(w[2].packets(t)) != 1 || w[1].Len() != 0 {
 		t.Fatal("target reset synchronization")
 	}
 	assertProgressSaved(t, s, target)

@@ -89,7 +89,7 @@ func TestGMCommands(t *testing.T) {
 	}
 	gm.character.HP = 1
 	say(t, s, gm, ":heal")
-	if p := wires[0].packets(t); len(p) != 17 || gm.character.HP != gm.character.MaxHP {
+	if p := wires[0].packets(t); len(p) != 16 || gm.character.HP != gm.character.MaxHP {
 		t.Fatal("heal", len(p), gm.character.HP)
 	}
 

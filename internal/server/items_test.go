@@ -110,15 +110,15 @@ func TestWearAndRemoveEquipment(t *testing.T) {
 			t.Fatal(err)
 		}
 		got := wires[0].packets(t)
-		want := 17
+		want := 16
 		if banner != "" {
 			want++
 		}
 		if len(got) != want || !bytes.Equal(got[0], reply) || got[1][0] != 8 {
 			t.Fatalf("%v: %v", p, got)
 		}
-		if banner != "" && !bytes.Equal(got[17], headBanner(banner)) {
-			t.Fatalf("banner: %q", got[17])
+		if banner != "" && !bytes.Equal(got[16], headBanner(banner)) {
+			t.Fatalf("banner: %q", got[16])
 		}
 	}
 	step([]byte{23, 12, 2, 2}, []byte{23, 16, 2, 2}, "")
@@ -153,7 +153,7 @@ func TestStatAllocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := wires[0].packets(t)
-	if len(got) != 16 || !bytes.Equal(got[10], protocol.Builder{8, 1, 38, 1}.U32(1).U32(0)) {
+	if len(got) != 15 || !bytes.Equal(got[10], protocol.Builder{8, 1, 38, 1}.U32(1).U32(0)) {
 		t.Fatal("stat block", got)
 	}
 	chars, err := s.Store.Characters(ctx, c.account.ID)

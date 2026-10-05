@@ -108,7 +108,7 @@ func TestClinicRest(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := wires[0].packets(t)
-	if len(got) != 18 || !bytes.Equal(got[17], []byte{31, 1, 0}) || c.character.HP != c.character.MaxHP {
+	if len(got) != 17 || !bytes.Equal(got[16], []byte{31, 1, 0}) || c.character.HP != c.character.MaxHP {
 		t.Fatal("rest", got)
 	}
 	if err := s.worldCommand(ctx, c, []byte{31, 1}); err != nil || wires[0].Len() != 0 {

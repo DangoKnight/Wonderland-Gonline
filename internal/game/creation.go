@@ -171,7 +171,7 @@ func (c Character) Attributes() Attributes {
 	b.Intelligence += c.Base.Intelligence
 	b.Wisdom += c.Base.Wisdom
 	b.Agility += c.Base.Agility
-	return b
+	return b.withPotential(c.Potential)
 }
 
 func StarterOutfit(body, head uint16) []uint16 {
@@ -192,12 +192,16 @@ func StarterStunt(body, head uint16) uint16 {
 	}
 	return skills[body][head]
 }
+
+// StarterSkills includes the character stunt and elemental skills with no stat
+// requirements. Keep creation and skill resets on the same progression rules;
+// stat-gated skills are added later by UnlockQualifiedSkills using actual stats.
 func StarterSkills(body, head uint16, element byte) []LearnedSkill {
-	elements := map[byte][]uint16{1: {15085, 11017, 11057}, 2: {15091, 11001, 15100}, 3: {11016, 11166, 11056}, 4: {11007, 15079, 11052}}
-	ids := append([]uint16{StarterStunt(body, head)}, elements[element]...)
-	out := make([]LearnedSkill, 0, len(ids))
-	for _, id := range ids {
-		out = append(out, LearnedSkill{ID: id, Grade: 1})
+	out := []LearnedSkill{{ID: StarterStunt(body, head), Grade: 1}}
+	for _, requirement := range progressionSkills {
+		if requirement.element == element && requirement.minimum == (Attributes{}) {
+			out = append(out, LearnedSkill{ID: requirement.id, Grade: 1})
+		}
 	}
 	return out
 }

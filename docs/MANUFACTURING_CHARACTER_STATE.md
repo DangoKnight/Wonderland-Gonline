@@ -52,14 +52,17 @@ socket effects and verified gems remain pending; mall forging is separate.
 
 Gameplay schema v14 stores character nickname, actual class and potential,
 plus potential on party, reserve and hotel pets. Login selection/appearance/base
-state, stat37 updates and social rosters replay applicable metadata. Potential
-is preserved independently of level. Its native base-state byte is accompanied
-by the full uint16 stat37 update. Unknown pet footer fields retain their prior
-values; they are not claimed as a verified potential encoding.
+state and social rosters replay applicable metadata. Potential is preserved
+independently of level in SQL; native snapshots carry a byte. Player AC5:3 and
+pet AC15:1/8 snapshots encode rebirth, potential and job in their verified order.
+Do not send potential as stat37: native stat37 addresses another field (0x1fa4).
+AC23:213 publishes pill results. Other unverified pet metadata retains its prior
+values; hotel record potential semantics remain pending native verification.
 
 Actual `Job` selects class growth. `RebornJob` remains distinct AC66 metadata.
-Potential training remains pending: the source grants potential without consuming
-its advertised pill. This port does not manufacture a complete training rule.
+Native inventory potential use is AC23:126; free AC68:1 training remains rejected.
+See [Potential Pills](NATIVE_COMMANDS.md#potential-pills) for funded consumption,
+stat bonuses and the pending level-dependent normal/golden success rates.
 
 ## GM rebirth
 
