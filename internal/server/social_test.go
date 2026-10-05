@@ -228,3 +228,73 @@ func TestSocialFullRecipientDoesNotCreateOneSidedContact(t *testing.T) {
 		t.Fatal("full list published success", packets)
 	}
 }
+
+func TestNativeSocialProfileSavesAndPreservesPendingWalking(t *testing.T) {
+	s, players, wires := friendFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	baseline := c.character.Clone()
+	c.autosaveBaseline = &baseline
+	c.character.X++
+	walkedX := c.character.X
+	// Actual native nickname layout, including a three-character six-byte frame.
+	for _, packet := range [][]byte{{10, 1, 3, 'A', 'B', 'C'}, {10, 1, 5, 'H', 'e', 'l', 'l', 'o'}, {10, 2, 9, 2, 100, 2, 29}} {
+		if err := s.dispatch(ctx, c, packet); err != nil {
+			t.Fatal(packet, err)
+		}
+	}
+	if c.character.Nickname != "Hello" || c.character.BloodType != 2 || c.character.BirthYearOffset != 100 || c.character.BirthMonth != 2 || c.character.BirthDay != 29 || c.character.SocialProfileCode != 9 || c.character.X != walkedX {
+		t.Fatal("native profile or walking lost", c.character)
+	}
+	if c.autosaveBaseline.X != baseline.X || c.autosaveBaseline.Nickname != "Hello" {
+		t.Fatal("checkpoint baseline overwritten")
+	}
+	friends, err := s.Store.Friends(ctx, c.character.ID)
+	if err != nil || len(friends) != 0 {
+		t.Fatal("profile created friendship", friends, err)
+	}
+	chars, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || chars[0].Nickname != "Hello" || chars[0].BloodType != 2 || chars[0].BirthDay != 29 || chars[0].X != baseline.X {
+		t.Fatal("profile not durable or walking prematurely saved", chars, err)
+	}
+	appearance, err := chars[0].AppearancePacket(false)
+	if err != nil || !bytes.Equal(appearance[len(appearance)-4:], []byte{2, 100, 2, 29}) {
+		t.Fatal("profile reconnect bytes", appearance, err)
+	}
+	peerPackets := wires[1].packets(t)
+	want := protocol.Builder{10, 1}.U32(c.character.ID).U8(5).Bytes([]byte("Hello"))
+	if !contains(peerPackets, want) || !contains(peerPackets, protocol.Builder{10, 2}.U32(c.character.ID).U8(9)) {
+		t.Fatal("native profile peer update", peerPackets)
+	}
+	if wires[2].Len() != 0 {
+		t.Fatal("profile leaked across maps")
+	}
+	s.autosaveCharacters(ctx)
+	chars, err = s.Store.Characters(ctx, c.account.ID)
+	if err != nil || chars[0].Nickname != "Hello" || chars[0].X != walkedX {
+		t.Fatal("walking checkpoint clobbered profile", chars, err)
+	}
+}
+
+func TestNativeSocialMissingFieldsStayConnectedAndDoNotSave(t *testing.T) {
+	s, players, wires := friendFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	for _, packet := range [][]byte{{10, 2, 9, 0, 100, 2, 29}, {10, 2, 9, 2, 100, 0, 29}, {10, 2, 9, 2, 101, 2, 29}, {10, 2, 9, 2, 100, 2, 0}} {
+		if err := s.dispatch(ctx, c, packet); err != nil {
+			t.Fatal("incomplete form rejected connection", packet, err)
+		}
+	}
+	chars, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || chars[0].BloodType != 0 || c.character.BloodType != 0 {
+		t.Fatal("invalid profile saved", chars, err)
+	}
+	for _, packet := range wires[0].packets(t) {
+		if packet[0] != 2 || packet[1] != 16 {
+			t.Fatal("invalid profile success reply", packet)
+		}
+	}
+	if wires[1].Len() != 0 || wires[2].Len() != 0 {
+		t.Fatal("invalid profile broadcast")
+	}
+}

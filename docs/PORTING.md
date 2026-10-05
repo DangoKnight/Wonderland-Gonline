@@ -139,9 +139,16 @@ These do not block porting reachable implemented reference behavior:
   waypoint, gesture, mall aliases, title, reborn-job metadata, bath and pose-stop
   cleanup are implemented. Verify with aLogin captures, especially the inferred
   AC7 map hint. Fishing now has native AC23/AC90 paths and transactional weighted catches.
-  Exact original probabilities and live-client acceptance remain research; see
+  Fishing Skilled 02, Unskilled, Full Bag, Advancement and Carnie Return 02
+  have tester-reported live passes. Native movement and poses pass; AC7 remains
+  unobserved. The tester confirms friend requests, Social Setup/profile settings
+  and emotes now work correctly, correcting the earlier failure report.
+  The AC6:2 stopped-position handler still needs live verification.
+  Exact original probabilities and remaining live-client checks remain research; see
   [fishing](FISHING.md) and
-  [native commands](NATIVE_COMMANDS.md).
+  [native commands](NATIVE_COMMANDS.md). The [live-test framework](LIVE_TESTING.md)
+  prepares isolated characters, credentials and manual acceptance checklists;
+  preparation does not establish live acceptance.
 
 - **Custom quest progression:** accept/advance/complete/reset and NPC matching
   helpers have no external runtime callers in the reference. Definitions/editor

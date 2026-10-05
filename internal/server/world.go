@@ -86,6 +86,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		// A peer's battle pet follows its appearance, before its position.
 		position := packets[len(packets)-1]
 		packets = append(append(packets[:len(packets)-1], s.peerPetPackets(peer.character)...), position)
+		if peer.fishing != nil {
+			packets = append(packets, fishingStartedPacket(peer))
+		}
 		if peer.emote != 0 {
 			// SendMapInfo replays a peer's held pose.
 			packets = append(packets, protocol.Builder{protocol.CommandPose, protocol.PoseBroadcast}.U32(peer.character.ID).U8(peer.emote))
@@ -234,7 +237,7 @@ func (s *Server) leaveWorld(c *Session) {
 	}
 	s.clearFriendRequests(c)
 	c.gathering = nil
-	c.fishing = nil
+	s.stopFishing(c)
 	s.closeStall(c)
 	s.cancelTrade(c)
 	s.abandonBattle(c)
@@ -344,10 +347,7 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 	if e := s.teleportPrelude(c); e != nil {
 		return e
 	}
-	dst, ok := s.World.Portal(char.Map, portal, char.X, char.Y)
-	if char.Map == carnie.Map && c.carnieReturn != nil {
-		dst, ok = *c.carnieReturn, true // Carnie's exit returns where the visit began.
-	}
+	dst, ok := s.portalDestination(c, portal)
 	if ok {
 		_, ok = s.World.Map(dst.Map)
 	}
@@ -366,6 +366,16 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 		}
 	}
 	return s.partyFollow(ctx, c, from)
+}
+
+// portalDestination applies session return points to both regular and scripted
+// Carnie exits. Its authored warp points at Underground Maze, not the visit origin.
+func (s *Server) portalDestination(c *Session, portal uint16) (world.Destination, bool) {
+	char := c.character
+	if char.Map == carnie.Map && c.carnieReturn != nil && c.carnieReturn.Map != 0 {
+		return *c.carnieReturn, true
+	}
+	return s.World.Portal(char.Map, portal, char.X, char.Y)
 }
 
 // teleportPrelude is GameMap.Teleport's freeze and companion/vehicle reset for regular
@@ -390,13 +400,18 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 			return err
 		}
 	}
+	var saved game.Character
 	if e := s.Store.UpdateCharacter(ctx, c.account.ID, char.ID, func(stored *game.Character) error {
 		stored.Map, stored.X, stored.Y = dst.Map, dst.X, dst.Y
 		stored.TentReturn = nil
+		saved = stored.Clone()
 		return nil
 	}); e != nil {
 		return e
 	}
+	// The narrow SQL warp committed a new location; retain its full durable
+	// checkpoint without treating other pending session fields as already saved.
+	c.autosaveBaseline = &saved
 	return s.teleportAfterSave(c, dst, portal)
 }
 
@@ -404,7 +419,7 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byte) error {
 	char := c.character
 	c.gathering = nil
-	c.fishing = nil
+	s.stopFishing(c)
 	s.closeStall(c)
 	s.cancelTrade(c)
 	// Old-map peers see the departure as a load command toward the destination.

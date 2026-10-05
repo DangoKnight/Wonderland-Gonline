@@ -43,7 +43,7 @@ Game content definitions belong in `assets.db`. Preserve the startup-only
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v15 stores character state in typed tables and owned child rows.
+Gameplay schema v16 stores character state in typed tables and owned child rows.
 Structured asset schema v11 stores runtime definitions in generated `catalog_*`
 tables. Migration retains legacy representations solely as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
@@ -960,3 +960,18 @@ insufficient rectangular space must not consume payments or mark rewards claimed
 Do not add a global catalog or persist duplicate child item records. SQL asset
 schema v11 explicitly seeds typed sizes from retained SQL bytes; gameplay reads
 the typed sizes exclusively. See [Items and Player State](ITEMS_PLAYER_STATE.md).
+
+## Live legacy-client acceptance fixtures
+
+Use [LIVE_TESTING.md](LIVE_TESTING.md) and `cmd/live-test` to prepare a fresh
+isolated gameplay database with scenario-specific characters. Load assets
+read-only from SQL; never alter the regular gameplay database or active sessions
+for fixture setup. Generated credentials and startup config belong under ignored
+`var/` with private permissions. Preparation and automated fixture tests must not
+be reported as passing native-client acceptance.
+
+Map transitions must refresh the session checkpoint from the state actually
+committed to SQL before sending arrival packets. A narrow location update must
+not declare unrelated pending session fields durable. Carnie's authored EVE exit
+must apply the same saved return point as its regular portal; its raw WLRI warp
+record leads to Underground Maze and cannot be used directly for this exit.

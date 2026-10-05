@@ -129,11 +129,16 @@ const (
 // Movement subcommands (AC6).
 const (
 	MovementMove         = 1
+	MovementStop         = 2 // Incoming current-position report when native movement stops.
 	MovementMovementLock = 2
 	// AC6:1 needs command, subcommand, direction and two uint16 coordinates.
 	// Native clients append additional movement metadata, ignored by AC06.Recv1.
-	MovementRequestMinBytes = 7
-	MovementDirectionMax    = 7
+	MovementRequestMinBytes    = 7
+	MovementNativeRequestBytes = 15 // Destination/stop report plus eight native verification bytes.
+	MovementDirectionMax       = 7
+	// FUN_00427150 recognizes packed pose/facing values in native stop reports.
+	MovementStopPoseMax    = 73
+	MovementStopWirePose99 = 99 // Recognized native pose; display meaning unresolved.
 )
 
 // Stats subcommands (AC8).
@@ -321,6 +326,9 @@ const (
 	InventoryWireCode76        = 76
 	InventoryUse               = 96
 	InventoryCompoundAnimation = 122
+	InventoryFishingStopped    = 122
+	InventoryFishingStarted    = 123
+	InventoryAcquisitionNotice = 51
 	InventorySceneComplete     = 102
 	// Unresolved wire meaning; retain the numeric code until verified.
 	InventoryWireCode112 = 112
@@ -531,7 +539,8 @@ const (
 	EventFrame                 = 1
 	EventPortal                = 8
 	EventHold                  = 9
-	PoseSet                    = 1
+	PoseEmote                  = 1         // Temporary expression; independent of the held AC32:2 pose.
+	PoseSet                    = PoseEmote // Historical name retained for compatibility.
 	PoseStop                   = 3
 	ClinicRestConfirm          = 1
 	ClinicRestOffer            = 2
@@ -861,4 +870,12 @@ const (
 	TentMoveRequestBytes        = 16
 	TentMoveRotatedRequestBytes = 17
 	TentCoordinateMax           = 65535
+)
+
+// Native AC10 profile operations share codes with legacy contact adapters.
+const (
+	SocialNicknameUpdate      = 1
+	SocialProfileUpdate       = 2
+	SocialProfileRequestBytes = 7
+	SocialNicknameMaxBytes    = 14 // Native fixed nickname buffer in AC3/AC10 receive handlers.
 )

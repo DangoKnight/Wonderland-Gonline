@@ -31,7 +31,7 @@ func (s *Server) gmClearSkills(ctx context.Context, actor *Session, arguments []
 	next.UnlockQualifiedSkills(false, s.hasSkill)
 
 	snapshotCharacter := skillSnapshotWithRemovals(*target.character, next)
-	snapshot, err := snapshotCharacter.BaseStatsPacket(func(id uint16) (uint16, bool) {
+	snapshot, err := s.nativeStatsSnapshot(snapshotCharacter).BaseStatsPacket(func(id uint16) (uint16, bool) {
 		skill, ok := s.Assets.Skills[id]
 		return skill.TableOrder, ok
 	})

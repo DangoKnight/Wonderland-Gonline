@@ -31,17 +31,22 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 	case protocol.InventoryCompound:
 		return s.compoundCommand(ctx, c, p)
 	case protocol.InventoryFishingStart:
-		if len(p) != 2 {
-			return protocol.ErrMalformed
+		slot, err := fishingStartSlot(p)
+		if err != nil {
+			return err
 		}
-		return s.startFishing(ctx, c, 0)
+		return s.startFishing(ctx, c, slot)
 	case protocol.InventoryMallBalance, protocol.InventoryMallCatalog, protocol.InventoryMallBuy:
-		if p[1] == protocol.InventoryFishingStop && c.fishing != nil {
-			if len(p) != 2 {
-				return protocol.ErrMalformed
+		if p[1] == protocol.InventoryFishingStop {
+			if err := fishingStopRequest(p); err != nil {
+				return err
 			}
-			c.fishing = nil
-			return nil
+			if c.fishing != nil {
+				s.stopFishing(c)
+				return nil
+			}
+			// Native stop and legacy mall balance share this subcommand.
+			p = p[:2]
 		}
 		return s.legacyMallCommand(ctx, c, p)
 	case protocol.InventoryPickup:

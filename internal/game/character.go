@@ -12,6 +12,11 @@ type Character struct {
 	MutedUntil         time.Time            `json:"muted_until,omitempty"`
 	EventTimers        map[uint16]time.Time `json:"event_timers,omitempty"`
 	LuckyDraw          LuckyDrawState       `json:"lucky_draw,omitempty"`
+	BloodType          byte                 `json:"blood_type,omitempty"`
+	BirthYearOffset    byte                 `json:"birth_year_offset,omitempty"`
+	BirthMonth         byte                 `json:"birth_month,omitempty"`
+	BirthDay           byte                 `json:"birth_day,omitempty"`
+	SocialProfileCode  byte                 `json:"social_profile_code,omitempty"`
 	Nickname           string               `json:"nickname,omitempty"`
 	Job                byte                 `json:"job,omitempty"`
 	Potential          uint16               `json:"potential,omitempty"`

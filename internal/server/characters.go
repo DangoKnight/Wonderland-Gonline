@@ -128,7 +128,7 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	if e != nil {
 		return nil, e
 	}
-	base, e := char.BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
+	base, e := s.nativeStatsSnapshot(char).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
 	if e != nil {
 		return nil, e
 	}

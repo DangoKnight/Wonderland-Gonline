@@ -139,9 +139,11 @@ func (f FishingRules) Select(rod FishingRod, skill byte, roll uint64) (FishingRe
 
 // Native FUN_0046a354 searches a 14x14 neighborhood for water; the
 // legacy grid's one-cell border translates to offsets -7 through +6.
-func (t Terrain) FishingShore(x, y uint16) bool {
+// FishingWater locates the same water cell used to validate casting. Its center
+// provides a bounded source position for native catch presentation.
+func (t Terrain) FishingWater(x, y uint16) (uint16, uint16, bool) {
 	if !t.Walkable(int(x), int(y)) {
-		return false
+		return 0, 0, false
 	}
 	cx, cy := int(x)/TerrainCellSize, int(y)/TerrainCellSize
 	for dx := -fishingWaterRadiusCells; dx < fishingWaterRadiusCells; dx++ {
@@ -149,11 +151,16 @@ func (t Terrain) FishingShore(x, y uint16) bool {
 			gx, gy := cx+dx, cy+dy
 			if gx >= 0 && gy >= 0 && gx < int(t.GridWidth) && gy < int(t.GridHeight) {
 				at := gx*int(t.GridHeight) + gy
-				if at < len(t.Cells) && t.Cells[at] == FishingWaterCell {
-					return true
+				wx, wy := gx*TerrainCellSize+TerrainCellSize/2, gy*TerrainCellSize+TerrainCellSize/2
+				if at < len(t.Cells) && t.Cells[at] == FishingWaterCell && t.Contains(wx, wy) {
+					return uint16(wx), uint16(wy), true
 				}
 			}
 		}
 	}
-	return false
+	return 0, 0, false
+}
+func (t Terrain) FishingShore(x, y uint16) bool {
+	_, _, ok := t.FishingWater(x, y)
+	return ok
 }

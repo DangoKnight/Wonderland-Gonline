@@ -64,6 +64,14 @@ Use Go 1.25 or newer for both programs (the server alone requires Go 1.24).
 
 ## Register an account
 
+Open `/register` on the server's HTTP address. With `config.local.json`, use
+`http://127.0.0.1:8081/register`. The public page needs no administrator token.
+It accepts 8–10 character usernames/passwords for the original client's limits,
+confirms the password, and shows registration errors or successful creation.
+Start the server first; the page is embedded in the server binary.
+
+The existing JSON API is also available:
+
 Linux Bash:
 
 ```bash
@@ -79,7 +87,7 @@ $body = @{ username = 'tester'; password = 'change-me'; email = '' } | ConvertTo
 Invoke-RestMethod -Uri http://127.0.0.1:8080/register -Method Post -ContentType 'application/json' -Body $body
 ```
 
-Account names accept 4–14 ASCII letters, digits or underscores. Passwords accept 4–14 printable ASCII bytes to match the game client. Passwords are stored as salted PBKDF2-SHA256 hashes. Registration does not grant administrator or GM access. Grant in-game GM commands from the web interface's account list; legacy default GM names are not trusted.
+Account names accept 4–14 ASCII letters, digits or underscores. The JSON API accepts passwords of 4–14 printable ASCII bytes; use at most 10 characters with the original client. Passwords are stored as salted PBKDF2-SHA256 hashes. Registration does not grant administrator or GM access. Grant in-game GM commands from the web interface's account list; legacy default GM names are not trusted.
 
 ## Validate
 
@@ -349,3 +357,12 @@ startup `character_save_seconds` (default 30 seconds), plus disconnect flushing.
 Purchases and rewards remain immediately durable; checkpoints preserve those
 committed results. See the
 [persistence policy](docs/DEVELOPMENT.md#transaction-boundaries-and-session-checkpoints).
+
+## Live legacy-client acceptance
+
+Use the [live-test framework](docs/LIVE_TESTING.md) to prepare isolated scenario
+characters, legacy-client login credentials and feature checklists:
+
+```sh
+go run ./cmd/live-test -list
+```

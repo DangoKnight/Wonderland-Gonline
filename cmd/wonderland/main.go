@@ -30,7 +30,7 @@ func main() {
 func run() error {
 	path := flag.String("config", "", "configuration JSON (defaults if omitted)")
 	inspect := flag.Bool("inspect-data", false, "inspect SQL asset counts without starting listeners")
-	debug := flag.Bool("debug", false, "log packet metadata and decoded Lucky Draw packets")
+	debug := flag.Bool("debug", false, "log packet metadata, Lucky Draw packets and native fishing controls")
 	logPath := flag.String("log-file", "", "append server logs to this file as well as stderr")
 	flag.Parse()
 	c, e := config.Load(*path)

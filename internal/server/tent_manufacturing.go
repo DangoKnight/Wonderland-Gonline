@@ -41,7 +41,7 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 		c.manufacturing = job
 		c.manufacturingLoaded = true
 		c.gathering = nil
-		c.fishing = nil
+		s.stopFishing(c)
 		for _, remove := range removes {
 			s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, remove.Slot, remove.Count})
 		}

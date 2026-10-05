@@ -3329,9 +3329,10 @@
         "internal/server/items.go",
         "internal/server/map_props.go",
         "internal/server/tents.go",
-        "docs/WORLD_COMBAT_PARITY.md"
+        "docs/WORLD_COMBAT_PARITY.md",
+        "internal/server/live_regressions_test.go"
       ],
-      "notes": "Read all 1737 source lines and Go scene, portal, pickup/drop and warp bodies. Native actor and ground loading, pickup range/full bag behavior, metadata-preserving drops, respawns, visibility, peer equipment/pets/vehicles/poses, party follow, tent signs/locks/return and map-load acknowledgments exist. DLL spawns and original DB overlays are deliberately replaced by WLRI assets.db. Go uses an arrival guard instead of source 2500/4000-ms bounce guards and publishes peers after load ACK. Nonquest scripted prop frames now persist their shared reset deadline and replay at map entry. Source special/quest/tool teleport branches contain no movement implementation. The hardcoded Laura exit gift and mark 10035 have no direct Go fallback; WLRI item and typed map-event inspection did not verify a correct replacement; retain the fallback pending verified content. Shared prop entry replay and owner metadata preserved. Laura exit fallback investigated: 32000 absent, 32075 Chocolate, 32001 White Rice in WLRI, Tent 36002; no matching positive reward in map 10000/10001 typed operations. Keep fallback pending verified content rather than granting incorrect IDs.",
+      "notes": "Read all 1737 source lines and Go scene, portal, pickup/drop and warp bodies. Native actor and ground loading, pickup range/full bag behavior, metadata-preserving drops, respawns, visibility, peer equipment/pets/vehicles/poses, party follow, tent signs/locks/return and map-load acknowledgments exist. DLL spawns and original DB overlays are deliberately replaced by WLRI assets.db. Go uses an arrival guard instead of source 2500/4000-ms bounce guards and publishes peers after load ACK. Nonquest scripted prop frames now persist their shared reset deadline and replay at map entry. Source special/quest/tool teleport branches contain no movement implementation. The hardcoded Laura exit gift and mark 10035 have no direct Go fallback; WLRI item and typed map-event inspection did not verify a correct replacement; retain the fallback pending verified content. Shared prop entry replay and owner metadata preserved. Laura exit fallback investigated: 32000 absent, 32075 Chocolate, 32001 White Rice in WLRI, Tent 36002; no matching positive reward in map 10000/10001 typed operations. Keep fallback pending verified content rather than granting incorrect IDs. Live-client follow-up: Carnie scripted scene exit now shares the saved return/fallback used by regular portals; narrow teleports checkpoint their committed SQL state before arrival packets, preventing later walking/disconnect conflicts.",
       "audit_verdict": "partial"
     },
     {
@@ -3986,7 +3987,33 @@
     ],
     "asset_installation": "Cross-platform cmd/client-assets -unpack validates package checksums before extraction, checks resource checksums and paths, retains verified files, repairs missing/damaged files and verifies the complete local tree. No external ZIP utility required.",
     "asset_distribution": "4,070 native resource files staged in ignored client/assets from Wonderland-Client; 13 upload ZIPs in var/client-assets-upload. Tracked client/assets-manifest.json and client/asset-packages.json record SHA-256 and sizes. Runtime defaults to local assets, including terrain; no sibling installation is required. See CLIENT.md.",
-    "verification": "Terrain prefix, image directory bounds/signatures and base-archive image decoding tested; native Ebitengine frame visually verified. Three client variants supported. See CLIENT.md for the malformed native BMP exception and pending animation/scene/network work."
+    "verification": "Terrain prefix, image directory bounds/signatures and base-archive image decoding tested; native Ebitengine frame visually verified. Three client variants supported. See CLIENT.md for the malformed native BMP exception and pending animation/scene/network work.",
+    "public_account_registration": {
+      "status": "Implemented; focused HTTP race tests, Go lint, HTML lint, JavaScript syntax and formatting checks passed; server rebuilt",
+      "routes": [
+        "GET /register",
+        "POST /register"
+      ],
+      "behavior": "Public embedded registration page with password confirmation, optional email, 8–10 character native-client compatible credentials, duplicate/in-flight submission handling and success/error messages. Reuses existing validated SQL registration and password hashing; does not grant administrator access or persist browser credentials. Existing JSON API credential limits unchanged.",
+      "go_files": [
+        "internal/admin/admin.go",
+        "internal/admin/admin_test.go",
+        "internal/admin/web/register.html",
+        "internal/admin/web/register.css",
+        "internal/admin/web/register.js",
+        "internal/admin/web/index.html"
+      ],
+      "verification": [
+        "TestPublicAccountRegistrationPage",
+        "TestAdministrationAccessAndSettings",
+        "Focused internal/admin race tests passed (1.939s)",
+        "golangci-lint internal/admin passed",
+        "node --check register.js passed",
+        "HTMLHint register.html passed",
+        "Prettier modified web files passed",
+        "Server rebuilt; interactive browser verification pending"
+      ]
+    }
   },
   "supporting_files": [
     {
@@ -6643,5 +6670,209 @@
         ]
       }
     }
-  ]
+  ],
+  "live_acceptance_framework": {
+    "status": "implemented; fishing live passes reported; native acceptance partial with observer expression retest pending",
+    "command": "cmd/live-test",
+    "documentation": "docs/LIVE_TESTING.md",
+    "go_files": [
+      "internal/livetest/scenarios.go",
+      "internal/livetest/prepare.go",
+      "internal/livetest/scenarios_test.go"
+    ],
+    "scope": "Isolated gameplay database, read-only SQL assets, tester/observer ten-character credentials and manual native-command, Carnie-return, fishing, raft and Robinson checklists. Historical review evidence unchanged.",
+    "follow_up": "Native capture 17350101 and WLRI ca19ee sender disassembly at 0x2c9ea8 establish AC23:53 bag slot plus presentation byte; 0x2c9f8e emits two-byte stop. Parser now validates the selected owned rod while keeping animation hints separate from SQL rules. Exact-capture, alternate slot, empty/locked rod, malformed frame and catch regressions passed; Tester reported Carnie Return 02 and Fishing Skilled 02 working properly on 2026-10-04; earlier runs were blocked by unspecified outside forces. Carnie return and warp checkpoint regressions remain implemented.",
+    "fishing_feedback_follow_up": {
+      "status": "implemented; focused race tests passed; Fishing Skilled 02 tester-reported live pass; individual visual checklist observations not supplied",
+      "evidence": "WLRI ca19ee dispatcher AC23:122/123 peer rod flags; FUN_003cfaf0 native record byte 45; FUN_003d9984 AC23:51 acquisition chat; FUN_003dc408/FUN_003d74d4/FUN_003e0548 incremental ground pickup renderer; AC8:1 stat 111 setter disassembly at 0x417ebb; FUN_00453018 cumulative fishing overlay and FUN_0036e96c/FUN_0036e9b8 Formula.Dat requirements. Existing fishing-skilled-02 SQL row confirms grade 1, EXP 3 before the UI correction.",
+      "implementation": "Peer start/stop replay and interruption cleanup; SQL rod presentation; post-commit owner catch chat, private AC2:16 named catch notification (no observer broadcast or discarded-catch success), and transient pickup flight; cumulative fishing EXP conversion on catches and login/admin/GM base-stat snapshots. Flight is a presentation adapter, not a captured original fishing sequence; crowded or reserved client ground slots skip the visual. No shared drops or duplicate claims created.",
+      "go_files": [
+        "internal/server/fishing.go",
+        "internal/server/fishing_feedback_test.go",
+        "internal/assets/fishing.go",
+        "internal/server/world.go",
+        "internal/server/characters.go",
+        "internal/game/stat_ids.go",
+        "internal/protocol/commands.go"
+      ],
+      "tests": [
+        "TestFishingNativeFeedbackAndCumulativeProgress",
+        "TestFishingPeerRodVisibilityAndCancellation",
+        "TestFishingLateArrivalReplaysRod",
+        "TestFishingFullBagFeedbackAndRollback",
+        "TestFishingVisualSkipsReservedClientSlot"
+      ]
+    },
+    "recorded_live_outcomes": {
+      "date": "2026-10-04",
+      "source": "Tester report in session; no individual checklist observations supplied",
+      "runs": [
+        {
+          "run": "Carnie Return 02",
+          "result": "PASS (tester-reported)"
+        },
+        {
+          "run": "Fishing Skilled 02",
+          "result": "PASS (tester-reported)"
+        },
+        {
+          "run": "Carnie Return 01",
+          "result": "BLOCKED (external conditions; cause unspecified)"
+        },
+        {
+          "run": "Fishing Skilled First",
+          "result": "BLOCKED (external conditions; cause unspecified)"
+        },
+        {
+          "run": "Fishing Unskilled",
+          "result": "PASS (all checks, tester-reported)",
+          "notes": "All scenario tests pass."
+        },
+        {
+          "run": "Fishing Full Bag",
+          "result": "PASS (all checks, tester-reported)",
+          "notes": "All scenario tests pass."
+        },
+        {
+          "run": "Fishing Advancement",
+          "result": "PASS (all checks, tester-reported)",
+          "notes": "Native level-up animation and voice line play."
+        }
+      ]
+    },
+    "native_fishing_acceptance_batch": {
+      "date": "2026-10-04",
+      "status": "Fishing scenarios PASS; native steps 5/6 PASS; social setup and native retargeting corrections implemented, live retests pending; AC7 requests unobserved.",
+      "runs": [
+        "native-commands-01",
+        "fishing-unskilled-01",
+        "fishing-full-bag-01",
+        "fishing-advancement-01"
+      ],
+      "implementation": "Expanded native capture and observer checklist; owner-only fishing notifications/timing/no-auto-learn checks; SQL threshold-minus-one advancement fixture; private reports include rods and per-grade requirements/progress. Existing runs and installed gameplay database preserved.",
+      "limits": "Title/job/bath and other naturally unreached requests stay NOT TESTED. No fabricated client packets or unlocks. Exact native probability parity is unresolved.",
+      "go_files": [
+        "internal/livetest/scenarios.go",
+        "internal/livetest/prepare.go",
+        "internal/livetest/scenarios_test.go"
+      ],
+      "tests": [
+        "TestScenarioPrerequisites",
+        "TestFishingAdvancementFixtureAndPersistence",
+        "TestPrepareIsolationCredentialsAndRefuseOverwrite",
+        "TestInstalledNativeScenarios"
+      ]
+    },
+    "native_expression_follow_up": {
+      "status": "Implemented; focused race tests and lint passed; binary rebuilt; live observer retest pending",
+      "evidence": "Tester reports pose/movement pass, AC7 not observed and observer expressions fail. native-commands-01 logs: ten received AC32:1, one sent AC32:1. WLRI FUN_00432478/FUN_00430700 resets transient expression; FUN_00438684 AC32:2 controls held pose.",
+      "implementation": "Separate repeated transient AC32:1 broadcasts from persistent AC32:2 pose deduplication/replay; bound AC32 diagnostics; clarify tester UI instructions and optional developer packet checks.",
+      "go_files": [
+        "internal/server/chat.go",
+        "internal/server/chat_test.go",
+        "internal/server/diagnostics.go",
+        "internal/server/diagnostics_test.go",
+        "internal/livetest/scenarios.go"
+      ],
+      "tests": [
+        "TestEmotes",
+        "TestNativeExpressionsRepeatWithoutChangingHeldPose",
+        "TestNativePoseTraceShowsOwnerAndExpression"
+      ],
+      "verification": "Focused internal/server expression, pose, fishing and diagnostic privacy tests passed under -race; internal/livetest passed under -race; server/livetest/protocol lint and server build passed."
+    },
+    "native_social_movement_follow_up": {
+      "status": "Implemented; focused race tests passed; live retests pending",
+      "evidence": "Tester confirms mall/reconnect steps 5/6. native-commands-01 rejected AC10:1 lengths 8/10 and sends AC7 resets during AC6 movement. WLRI sender 0x2c3ddb emits length-prefixed nickname; 0x2c3ea0 emits five social-profile bytes. Native birth UI adds 1900. AC6 sender 0x2c35e6 announces destination before walking; AC7 receiver resets local avatar immediately.",
+      "implementation": "Native nickname/profile updates commit through SQL and preserve pending walking/baseline. Schema v16 preserving defaults and typed columns; reconnect profile bytes. Missing blood type/date warns without disconnect. Native 15-byte movement validates endpoint and skips forced resets on invalid clicks; short request and NPC straight-leg checks remain. Checklist 7 is developer-only; 8 is screenshot/reconnect comparison; 9 now covers actual Social Setup.",
+      "go_files": [
+        "internal/server/social.go",
+        "internal/server/movement.go",
+        "internal/game/character.go",
+        "internal/game/login_packets.go",
+        "internal/store/character_storage.go",
+        "internal/store/migrations.go",
+        "internal/livetest/scenarios.go"
+      ],
+      "tests": [
+        "TestNativeSocialProfileSavesAndPreservesPendingWalking",
+        "TestNativeSocialMissingFieldsStayConnectedAndDoNotSave",
+        "TestSocialProfilePreservingV15UpgradeAndReopen",
+        "TestNativeMovementRetargetAcrossBlockedRouteDoesNotSnap"
+      ],
+      "limits": "Live fixes require retest. Native profile code semantics unresolved; nickname and profile commit separately. Native endpoint validation is not server pathfinding/speed enforcement.",
+      "verification": "Focused server/store/game social, appearance, schema preserving upgrade/reopen and movement tests passed under -race; affected waypoint, vehicle and livetest integrations passed under -race. Modified modules linted successfully; server rebuilt. Installed databases were not opened or reset during development; startup performs the preserving schema upgrade."
+    },
+    "native_movement_code2_follow_up": {
+      "status": "Native stopped-position handling implemented; focused race tests and module lint passed; server rebuilt; live retest pending",
+      "evidence": "native-commands-01 server-diagnostics.jsonl: 2026-10-04T21:53:20.307220239-03:00, session 2, account 1, character 10001, map 11016, incoming AC6:2 length 15 then malformed rejection. Previous accepted AC6:1 moved to (962,575). Private Server AC06.ProcessPkt disables Recv2 and ignores it.",
+      "implementation": "Parse native 15-byte AC6:2 current-position prefix, accepting decompiled packed pose/facing values 0–73 and 99. Validate endpoint and active vehicle bounds; preserve event locks. Buffer position until guarded checkpoint; broadcast corrected endpoint as AC6:1 to visible peers without sender echo. Do not repeat regions/encounters/vehicle wear. Retain bounded AC6 payload logging.",
+      "limits": "Original failure trace has no operands or UI input. Decompilation confirms stop semantics and packed pose/facing values; eight trailing check-byte validation and live behavior remain pending.",
+      "go_files": [
+        "internal/server/movement.go",
+        "internal/server/diagnostics.go",
+        "internal/server/world_test.go",
+        "internal/server/diagnostics_test.go",
+        "internal/protocol/commands.go",
+        "internal/server/simulation_test.go"
+      ],
+      "tests": [
+        "TestNativeMovementStopUpdatesPeersAndCheckpoint",
+        "TestNativeMovementStopRejectsMalformedWithoutMutation",
+        "TestNativeMovementStopPreservesEventLock",
+        "TestNativeMovementStopPackedPoseValues",
+        "TestNativeMovementRetargetAcrossBlockedRouteDoesNotSnap",
+        "TestNativeMovementTraceBoundsPayload"
+      ],
+      "decompilation_follow_up": {
+        "sender": "FUN_004263e4 at 0x4263e4; assembly at 0x42642a/0x42642c selects CL=2/DL=6 and calls FUN_002c2394 at 0x42642e",
+        "meaning": "Stop current movement: clear path counters, replace target with rendered current X/Y, copy current facing. Sends only when movement flags allow and position differs from last sent coordinates.",
+        "triggers": [
+          "Server AC6:2 movement-lock reception",
+          "Local pose/action changes via FUN_00430f90, including pose-selection UI",
+          "Facing changes through FUN_0043b6ac, including map clicks while a pose/action is active"
+        ],
+        "payload": "15 bytes: action 6, code 2, direction, current X u16LE, current Y u16LE, eight movement-check bytes",
+        "sources": [
+          "var/decompiled/aLogin_ca19ee087b60_full.c",
+          "var/ghidra/aLogin.exe"
+        ],
+        "documentation": "docs/NATIVE_COMMANDS.md"
+      },
+      "verification": {
+        "focused_race_tests": "go test -race ./internal/server -run TestNativeMovement|TestNativePoseTrace|TestLuckyDrawTrace|TestWorldSimulationMovement -count=1: passed (4.827s)",
+        "lint": "golangci-lint run ./internal/server/... ./internal/protocol/...: passed",
+        "build": "go build -o bin/wonderland ./cmd/wonderland: passed",
+        "live": "Pending; follow docs/LIVE_TESTING.md native movement disconnect follow-up"
+      }
+    },
+    "latest_native_acceptance_correction": {
+      "status": "Tester corrected earlier failure report; friend requests, profile settings and emotes work properly",
+      "reported_passes": [
+        "Friend requests",
+        "Social Setup/profile settings",
+        "Emotes"
+      ],
+      "scope": "Functional tester confirmation; no new detailed results for each persistence, rejection or observer subcase supplied",
+      "pending": [
+        "Explicit AC6:2 stop observer/reconnect acceptance",
+        "AC7 native request not observed",
+        "Unreached title, reborn-job and bath flows"
+      ],
+      "fishing": "Previously reported fishing live passes retained; exact original probabilities remain separate research"
+    }
+  },
+  "pre_merge_verification": {
+    "verified_at_utc": "2026-10-05T01:53:25.004251+00:00",
+    "status": "Passed before commit and merge into main",
+    "checks": [
+      "go test -race ./... passed; server package 278.491s",
+      "27 optional SQL-backed server integration tests passed against rebuilt var/assets.db, 315.877s",
+      "Native world integration tests passed against rebuilt var/assets.db, 15.478s",
+      "golangci-lint run ./... passed",
+      "Go formatting, Prettier and HTMLHint checks passed",
+      "Staged and working-tree whitespace checks passed"
+    ],
+    "scope": "Root Go module and embedded web assets. Nested client module unchanged and not rerun. Native raw-file tests requiring WONDERLAND_TEST_DATA were not enabled; optional SQL-backed server/world coverage was enabled separately. Interactive native-client checks retain their recorded status."
+  }
 }

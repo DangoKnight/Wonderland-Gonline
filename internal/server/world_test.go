@@ -292,3 +292,102 @@ func TestNativeMovementTrailingData(t *testing.T) {
 		t.Fatal("invalid movement changed coordinates")
 	}
 }
+
+func TestNativeMovementStopUpdatesPeersAndCheckpoint(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	for _, player := range players {
+		if err := s.worldCommand(ctx, player, []byte{12, 1}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// First announce a destination, then stop before reaching it.
+	if err := s.dispatch(ctx, c, []byte{6, 1, 2, 0xb0, 0x04, 0x14, 0x05, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
+		t.Fatal(err)
+	}
+	baseline := c.autosaveBaseline.Clone()
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	packet := []byte{6, 2, 11, 0x4c, 0x04, 0xb0, 0x04, 1, 2, 3, 4, 5, 6, 7, 8}
+	if err := s.dispatch(ctx, c, packet); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.X != 1100 || c.character.Y != 1200 || store.CharacterVersion(*c.autosaveBaseline) != store.CharacterVersion(baseline) {
+		t.Fatal("stop did not preserve dirty checkpoint baseline")
+	}
+	want := []byte{6, 1, 0x11, 0x27, 0, 0, 11, 0x4c, 0x04, 0xb0, 0x04}
+	if got := wires[1].packets(t); len(got) != 1 || !bytes.Equal(got[0], want) {
+		t.Fatalf("peer stop position: %x", got)
+	}
+	if wires[0].Len() != 0 || wires[2].Len() != 0 {
+		t.Fatal("stop echoed to sender or leaked to another map")
+	}
+	stored, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || stored[0].X != baseline.X || stored[0].Y != baseline.Y {
+		t.Fatal("stop wrote through before checkpoint", stored, err)
+	}
+	s.autosaveCharacters(ctx)
+	stored, err = s.Store.Characters(ctx, c.account.ID)
+	if err != nil || stored[0].X != 1100 || stored[0].Y != 1200 {
+		t.Fatal("stopped position not checkpointed", stored, err)
+	}
+}
+
+func TestNativeMovementStopRejectsMalformedWithoutMutation(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	before := store.CharacterVersion(*c.character)
+	packet := []byte{6, 2, 2, 0x4c, 0x04, 0xb0, 0x04, 1, 2, 3, 4, 5, 6, 7, 8}
+	invalidDirection := append([]byte(nil), packet...)
+	invalidDirection[2] = 74
+	for _, invalid := range [][]byte{{6, 2}, packet[:14], append(append([]byte(nil), packet...), 0), invalidDirection} {
+		if err := s.dispatch(ctx, c, invalid); !errors.Is(err, protocol.ErrMalformed) {
+			t.Fatal("malformed stop accepted", invalid, err)
+		}
+	}
+	if store.CharacterVersion(*c.character) != before || c.autosaveBaseline != nil {
+		t.Fatal("malformed stop mutated state")
+	}
+	for _, wire := range wires {
+		if wire.Len() != 0 {
+			t.Fatal("malformed stop published packets")
+		}
+	}
+}
+
+func TestNativeMovementStopPreservesEventLock(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	before := store.CharacterVersion(*c.character)
+	c.event = &eventSession{}
+	if err := s.movementCommand(context.Background(), c, []byte{6, 2, 3, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
+		t.Fatal(err)
+	}
+	if store.CharacterVersion(*c.character) != before || c.autosaveBaseline != nil {
+		t.Fatal("stop overrode event-held position")
+	}
+	for _, wire := range wires {
+		if wire.Len() != 0 {
+			t.Fatal("event-held stop published movement")
+		}
+	}
+}
+
+func TestNativeMovementStopPackedPoseValues(t *testing.T) {
+	s, players, _ := worldFixture(t)
+	for _, pose := range []byte{0, 7, 8, 15, 16, 17, 18, 45, 46, 53, 54, 61, 62, 65, 66, 73, 99} {
+		packet := []byte{6, 2, pose, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}
+		if err := s.movementCommand(context.Background(), players[0], packet); err != nil {
+			t.Fatalf("native packed pose %d rejected: %v", pose, err)
+		}
+	}
+	for _, pose := range []byte{74, 98, 100, 255} {
+		packet := []byte{6, 2, pose, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}
+		if err := s.movementCommand(context.Background(), players[0], packet); !errors.Is(err, protocol.ErrMalformed) {
+			t.Fatalf("unknown packed pose %d accepted: %v", pose, err)
+		}
+	}
+}

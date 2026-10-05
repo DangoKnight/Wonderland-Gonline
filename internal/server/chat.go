@@ -279,7 +279,7 @@ func (s *Server) heal(ctx context.Context, c *Session, words []string) error {
 		}
 	}
 	next.MaxHP, next.MaxSP, next.HP, next.SP = maxHP, maxSP, hp, sp
-	base, e := next.BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
+	base, e := s.nativeStatsSnapshot(next).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
 	if e != nil {
 		return nil
 	}
@@ -348,19 +348,23 @@ func (s *Server) giveItem(ctx context.Context, c *Session, words []string) error
 	return c.send(bag.AdditionPacket(adds))
 }
 
-// emote handles AC32. Reference: AC32.Recv1-3. Only a changed pose is broadcast, and the
-// sender does not receive its own. The caller holds worldMu.
+// emote handles AC32. Native AC32:1 is a temporary expression, while AC32:2
+// is a held pose. Expressions repeat independently of the saved pose and are
+// never replayed on arrival. The sender renders locally. Caller holds worldMu.
 func (s *Server) emote(c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
 	}
 	sub, pose := p[1], byte(0)
 	switch sub {
-	case protocol.PoseSet:
-		if len(p) < 3 {
-			return nil
+	case protocol.PoseEmote:
+		if len(p) != 3 {
+			return protocol.ErrMalformed
 		}
-		pose = p[2]
+		// FUN_00432478 -> FUN_00430700 starts a fresh, timed expression.
+		// Do not suppress repeated selections or overwrite the held pose.
+		s.broadcastWorld(c, protocol.Builder{protocol.CommandPose, protocol.PoseEmote}.U32(c.character.ID).U8(p[2]))
+		return nil
 	case protocol.PoseBroadcast:
 		if len(p) > 2 {
 			pose = p[2]

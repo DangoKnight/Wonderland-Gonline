@@ -4,7 +4,7 @@ import "fmt"
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 15
+const schemaVersion = 16
 
 func (s *Store) migrate() error {
 	var version int
@@ -128,6 +128,20 @@ func (s *Store) migrate() error {
 			}
 		}
 	}
+	// v16: native social profile; preserve all existing characters and positions.
+	if version >= 8 && version < 16 {
+		for _, column := range []string{"blood_type", "birth_year_offset", "birth_month", "birth_day", "social_profile_code"} {
+			var present int
+			if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('character_state') WHERE name=?", column).Scan(&present); e != nil {
+				return e
+			}
+			if present == 0 {
+				if _, e = tx.Exec("ALTER TABLE character_state ADD COLUMN " + column + " INTEGER NOT NULL DEFAULT 0 CHECK(" + column + " BETWEEN 0 AND 255)"); e != nil {
+					return e
+				}
+			}
+		}
+	}
 	// v8: typed character state and owned collections; retain the legacy snapshot.
 	if e = migrateCharacterState(tx); e != nil {
 		return e
@@ -229,7 +243,7 @@ func (s *Store) migrate() error {
 			return e
 		}
 	}
-	if _, e = tx.Exec("PRAGMA user_version=15"); e != nil {
+	if _, e = tx.Exec("PRAGMA user_version=16"); e != nil {
 		return e
 	}
 	return tx.Commit()

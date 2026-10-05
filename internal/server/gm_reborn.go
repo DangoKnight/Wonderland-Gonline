@@ -53,7 +53,7 @@ func (s *Server) gmReborn(ctx context.Context, c *Session, command string, args 
 	}
 	s.adoptSavedCharacter(c, next)
 	packets := append([][]byte{next.Bag.AdditionPacket(adds), next.ExpPacket()}, next.StatPackets(s.Assets.Items)...)
-	base, err := next.BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
+	base, err := s.nativeStatsSnapshot(next).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
 	if err != nil {
 		return err
 	}

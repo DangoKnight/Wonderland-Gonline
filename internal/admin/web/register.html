@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Create an account · Wonderland</title>
+		<link rel="stylesheet" href="/register.css" />
+		<script src="/register.js" defer></script>
+	</head>
+	<body>
+		<main class="card">
+			<p class="brand">WONDERLAND</p>
+			<h1>Create your account</h1>
+			<p class="intro">
+				Your next adventure starts here. Use this account to log in to the game.
+			</p>
+			<form id="registration">
+				<label for="username">Username</label>
+				<input
+					id="username"
+					name="username"
+					autocomplete="username"
+					minlength="8"
+					maxlength="10"
+					pattern="[A-Za-z0-9_]+"
+					aria-describedby="username-help"
+					required
+				/>
+				<p class="hint" id="username-help">8–10 letters, numbers or underscores.</p>
+				<label for="password">Password</label>
+				<input
+					id="password"
+					name="password"
+					type="password"
+					autocomplete="new-password"
+					minlength="8"
+					maxlength="10"
+					aria-describedby="password-help"
+					required
+				/>
+				<p class="hint" id="password-help">
+					8–10 printable ASCII characters. The original client accepts up to 10.
+				</p>
+				<label for="confirmation">Confirm password</label>
+				<input
+					id="confirmation"
+					name="confirmation"
+					type="password"
+					autocomplete="new-password"
+					minlength="8"
+					maxlength="10"
+					required
+				/>
+				<label for="email">Email <span class="optional">(optional)</span></label>
+				<input id="email" name="email" type="email" autocomplete="email" maxlength="254" />
+				<button id="submit" type="submit">Create account</button>
+			</form>
+			<p id="result" role="status" aria-live="polite" tabindex="-1" hidden></p>
+			<noscript><p>Please enable JavaScript to create an account on this page.</p></noscript>
+			<p class="footer">Already registered? Open the game and log in.</p>
+		</main>
+	</body>
+</html>

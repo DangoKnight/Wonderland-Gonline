@@ -58,17 +58,82 @@ skill bonus still apply. SQL weights remain editable.
 
 ## Protocol and persistence
 
-The aLogin decompilation's `FUN_0046a354` sends **AC23:53** to start and
-`FUN_0046a8e4` sends **AC23:54** to stop. Both have no payload. AC23:54 still
-serves legacy mall refresh when there is no active cast. Native starts select
-the strongest available configured rod because the request omits its bag slot;
-AC23 item-use requests retain their explicit slot. AC90:1/2/3 remain compatible
+The aLogin decompilation's `FUN_0046a354` starts fishing and
+`FUN_0046a8e4` stops it (WLRI equivalents `FUN_00450700`/`FUN_00450c90`).
+The generic sender's AC23 dispatch was not recovered by the old decompilation.
+Inspection of WLRI build `ca19ee087b60` resolves its AC23:53 arm at
+`0x2c9ea8`: it writes **[23, 53, bagSlot, presentation]**, reading client fields
+`0x20b6` and `0x20b7`. The former indexes the inventory; the latter selects
+fishing animation frames. The live capture `17 35 01 01` selects bag slot 1.
+
+Native starts use that explicit slot and validate the owned, unlocked rod.
+The presentation byte does not select catch grades, weights or rewards; SQL rod
+rules remain authoritative. Historical two-byte starts choose the strongest
+available configured rod; the previous four-byte zero-word adapter is retained
+with the same behavior. Partial operands, out-of-range slots and extra bytes are
+rejected. An empty/non-rod/locked valid slot declines casting without disconnecting.
+
+The native stop sender at `0x2c9f8e` emits **[23, 54]** without operands.
+The older zero-word stop adapter remains accepted. AC23:54 still serves legacy
+mall refresh when no cast is active. Debug diagnostics include bounded hex bytes
+for received fishing controls. AC23 item-use requests retain their explicit slot.
+AC90:1/2/3 remain compatible
 start/attempt-catch/stop requests. Successful legacy casts also receive the source
 AC90:2 item/count receipt after each committed catch (count zero when discarded).
 A catch request cannot bypass the deadline.
-The client owns its native casting animation; the incompatible short AC5:12
-reference animation is not emitted. Proficiency uses AC5:11 and grade changes
-use AC8:1 stat 110 after persistence. Live aLogin acceptance remains to verify.
+### Native feedback and progress
+
+Rod visibility uses peer-only **AC23:123 + character ID + presentation byte**
+and **AC23:122 + character ID** on stop. The WLRI receive dispatcher sets and
+clears fishing flags for those IDs; late map entrants receive the held rod state.
+The presentation comes from the SQL native item record's byte 45, as recovered
+from `FUN_003cfaf0`; malformed client animation hints cannot select arbitrary
+frames. Movement, logout, warp, lost rods and other fishing interruptions clear
+peer state. The owner updates its selected rod slot locally before sending these
+requests, so start/stop replies are not echoed to it: its stop handler dereferences
+the selected slot, which the native sender has already cleared.
+
+Successful delivered catches send **AC23:51 [petSlot=0, itemID:u16, count=1]**.
+`FUN_003d9984` uses the client's item name and logs the acquisition in chat.
+The catcher also receives a private AC2:16 notification:
+`Fishing: caught [item name] x1.` The name comes from the SQL-derived item
+catalog. Both messages go directly to the catching session after the reward
+transaction commits; observers receive neither.
+Full bags retain their warning and proficiency, without a false receipt or flight.
+
+The catch flight reuses the recovered native ground pickup renderer:
+`FUN_003dc408`/`FUN_003d73b8` creates one temporary visual with AC23:3; the
+immediately paired AC23:2 animated removal calls `FUN_003e0548`, which flies
+its item icon to the catcher. The source is a nearby SQL water-cell center.
+Only the catcher sees these packets. No shared ground item, claim or second
+reward is created. Both writes remain ordered under the world lock. The adapter
+checks the client's first-free-slot allocation against available server ground
+slots; if they disagree or all slots are occupied, it skips the visual while
+retaining the catch and chat notice. It avoids replacing the full ground snapshot.
+This is reuse of a verified renderer, **not a captured original fishing reward
+sequence**; live visual acceptance remains required.
+
+Fishing EXP now uses **AC8:1 stat 111**, with stat 110 for grade changes. The
+previous AC5:11 reply was incorrect: `FUN_0029c5d0` reads three UI operands and
+does not update skill EXP. `FUN_00453018` renders the fishing overlay using raw,
+cumulative skill EXP and subtracts the previous level's cumulative requirement.
+`FUN_0036e96c`/`FUN_0036e9b8` calculate those native requirements; the installed
+Formula.Dat gives `round(level^3.1) + 5` from level two, matching the seeded
+14, 35, 79 … table. SQL still stores per-grade progress. Catch packets and all
+login/GM/admin base-stat snapshots add completed requirements when serializing
+fishing skills. This keeps reconnect displays consistent without changing saved
+values or combat-skill progression. Custom requirements may differ from the
+native client's compiled/Formula.Dat percentage display.
+
+These addresses refer to the recovered WLRI build with SHA-256
+`ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`.
+Focused packet tests pass. On 2026-10-04, the tester reported Fishing Skilled
+02 working properly; the first run was blocked by external conditions. See
+[recorded live outcomes](LIVE_TESTING.md#recorded-live-outcomes). Individual rod,
+flight, notification and overlay checklist observations were not supplied.
+The subsequent Fishing Unskilled, Full Bag and Advancement runs were reported
+with all checks passing. Advancement played the native level-up animation and
+voice line. Exact original probability parity is still unresolved.
 
 The SQL-derived Ground.MMG collision grid provides eligibility: walkable land
 with water cell 2 in the native 14×14 neighborhood. Missing terrain fails closed.

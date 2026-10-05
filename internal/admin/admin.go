@@ -36,6 +36,9 @@ func New(s *server.Server, token string) (http.Handler, error) {
 	m := http.NewServeMux()
 	static, _ := fs.Sub(web, "web")
 	m.Handle("GET /", http.FileServer(http.FS(static)))
+	m.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "register.html")
+	})
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		reply(w, 200, map[string]string{"status": "ok", "parity": "incomplete"})
 	})

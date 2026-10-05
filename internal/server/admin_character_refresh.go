@@ -69,7 +69,7 @@ func (s *Server) EditAdminCharacterFields(ctx context.Context, id uint32, versio
 		packets = append(packets, next.StatPackets(s.Assets.Items)...)
 	case "stats":
 		snapshot := skillSnapshotWithRemovals(row.State, next)
-		base, err := snapshot.BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
+		base, err := s.nativeStatsSnapshot(snapshot).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
 		if err != nil {
 			return err
 		}

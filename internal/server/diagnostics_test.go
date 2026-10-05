@@ -91,3 +91,32 @@ func TestLuckyDrawTraceKeepsSensitivePacketsPrivateAndBoundsMalformedDraws(t *te
 		t.Fatal("unbounded malformed trace", logs.String())
 	}
 }
+
+func TestNativePoseTraceShowsOwnerAndExpression(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger.Debug("request", packetTraceAttrs([]byte{32, 1, 9}, false)...)
+	logger.Debug("reply", packetTraceAttrs([]byte{32, 1, 17, 39, 0, 0, 9}, true)...)
+	for _, want := range []string{`"payload_hex":"200109"`, `"payload_hex":"20011127000009"`} {
+		if !strings.Contains(logs.String(), want) {
+			t.Fatal("missing expression trace", logs.String())
+		}
+	}
+	logger.Debug("malformed", packetTraceAttrs(append([]byte{32, 1}, bytes.Repeat([]byte{255}, 100)...), false)...)
+	if !strings.Contains(logs.String(), `"payload_truncated":true`) || strings.Contains(logs.String(), strings.Repeat("ff", 100)) {
+		t.Fatal("unbounded expression trace", logs.String())
+	}
+}
+
+func TestNativeMovementTraceBoundsPayload(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger.Debug("movement", packetTraceAttrs([]byte{6, 2, 255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, false)...)
+	if !strings.Contains(logs.String(), `"payload_hex":"0602ff0102030405060708090a0b0c"`) {
+		t.Fatal("missing AC6:2 trace", logs.String())
+	}
+	logger.Debug("oversized", packetTraceAttrs(append([]byte{6, 2}, bytes.Repeat([]byte{255}, 100)...), false)...)
+	if !strings.Contains(logs.String(), `"payload_truncated":true`) || strings.Contains(logs.String(), strings.Repeat("ff", 100)) {
+		t.Fatal("unbounded movement trace", logs.String())
+	}
+}

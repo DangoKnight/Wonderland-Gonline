@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	luckyDrawTraceBytes = 64
+	luckyDrawTraceBytes  = 64
+	nativePoseTraceBytes = 7 // AC32 subcommand, character ID and expression/pose.
 )
 
 // General packet diagnostics contain no payload bytes: authentication,
@@ -22,7 +23,7 @@ func packetLogAttrs(p []byte) []any {
 	return attrs
 }
 
-// Only Lucky Draw exposes decoded bytes. All other commands retain metadata;
+// Lucky Draw and received fishing controls expose decoded bytes. Other commands retain metadata;
 // AC35 in particular also carries deletion credentials. Bound malformed traces.
 func packetTraceAttrs(p []byte, sent bool) []any {
 	attrs := packetLogAttrs(p)
@@ -38,6 +39,15 @@ func packetTraceAttrs(p []byte, sent bool) []any {
 			}
 			attrs = append(attrs, "lucky_draw_intent", intent, "expected_request_bytes", protocol.LuckyDrawRequestBytes)
 		}
+	}
+	if !sent && len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryFishingStart || p[1] == protocol.InventoryFishingStop) {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), nativeFishingRequestBytes)]), "payload_truncated", len(p) > nativeFishingRequestBytes)
+	}
+	if len(p) >= 2 && p[0] == protocol.CommandMovement && (p[1] == protocol.MovementMove || p[1] == protocol.MovementStop) {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), protocol.MovementNativeRequestBytes)]), "payload_truncated", len(p) > protocol.MovementNativeRequestBytes)
+	}
+	if len(p) >= 2 && p[0] == protocol.CommandPose && (p[1] == protocol.PoseEmote || p[1] == protocol.PoseBroadcast || p[1] == protocol.PoseStop) {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), nativePoseTraceBytes)]), "payload_truncated", len(p) > nativePoseTraceBytes)
 	}
 	if sent && len(p) >= 5 && p[0] == protocol.CommandLuckyDraw && p[1] == protocol.LuckyDrawMode {
 		switch p[2] {

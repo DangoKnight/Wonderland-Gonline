@@ -694,7 +694,11 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 				c.beachPending = true
 				return true, s.commandTeleport(ctx, c, beachDestination)
 			}
-			if dst, ok := s.World.WarpEntry(char.Map, op.D2); ok {
+			dst, ok := s.World.WarpEntry(char.Map, op.D2)
+			if char.Map == carnie.Map {
+				dst, ok = s.portalDestination(c, op.D2)
+			}
+			if ok {
 				s.Log.Debug("scene transition", "session", c.info.ID, "map", char.Map, "warp", op.D2, "destination", dst.Map)
 				return true, s.commandTeleport(ctx, c, dst)
 			}

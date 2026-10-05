@@ -56,7 +56,7 @@ func (s *Server) gmPlayerEdit(ctx context.Context, c *Session, command string, a
 		}
 		packets = append(packets, next.StatPackets(s.Assets.Items)...)
 	}
-	snapshot, err := next.BaseStatsPacket(func(id uint16) (uint16, bool) { sk, ok := s.Assets.Skills[id]; return sk.TableOrder, ok })
+	snapshot, err := s.nativeStatsSnapshot(next).BaseStatsPacket(func(id uint16) (uint16, bool) { sk, ok := s.Assets.Skills[id]; return sk.TableOrder, ok })
 	if err != nil {
 		return err
 	}

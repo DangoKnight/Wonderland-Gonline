@@ -201,7 +201,7 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 		if !s.validGatheringPool(pool) {
 			return true, s.chatFeedback(c, "The gathering pool contains unavailable item definitions.")
 		}
-		c.fishing = nil
+		s.stopFishing(c)
 		c.gathering = &gatheringRun{Kind: kind, Map: c.character.Map, X: c.character.X, Y: c.character.Y, NextAt: time.Now().Add(time.Duration(pool.IntervalSeconds) * time.Second)}
 		// The reference's short AC5:12 fishing animation conflicts with the
 		// verified native model-transform payload. Keep animations pending until
@@ -213,7 +213,7 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 			return true, s.chatFeedback(c, "Usage: /stop")
 		}
 		c.gathering = nil
-		c.fishing = nil
+		s.stopFishing(c)
 		return true, s.chatFeedback(c, "Gathering stopped.")
 	}
 	return false, nil

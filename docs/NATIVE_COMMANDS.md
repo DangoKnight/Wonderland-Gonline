@@ -22,7 +22,7 @@ Native-client acceptance is still required; unit tests establish handler behavio
 | AC44 with subcommand and optional title:u16 | Persist title, reply `[44,sub,title:u16]`, then map broadcast `[44,1,character:u32,title:u16]`; absent title clears it |
 | AC66 with subcommand and optional job:byte | Persist separate reborn-job metadata, reply `[66,sub,job,1]`; absent job defaults to 1 |
 | AC87 with subcommand | Restore HP/SP through transactional vital recalculation, send stat synchronization, then `[87,sub,1]` |
-| AC23:53 / AC23:54 | Native fishing start/stop; stop code retains mall refresh when idle |
+| AC23:53 / AC23:54 | Native start `[23,53,bagSlot,presentation]` validates the selected rod; two-byte auto-select remains supported. Stop `[23,54]` retains mall refresh when idle |
 | AC90:1 / AC90:3 | Validated start/stop; reply with actual active state |
 | AC90:2 | Attempt a due, transactional catch; early/replayed requests grant nothing |
 | AC32:3 | Clear event callbacks and arcade interaction even at pose zero; broadcast a changed pose as before |
@@ -146,5 +146,106 @@ box pools and crafting windows separate from ordinary fishing definitions.
 
 Fishing now uses SQL rods, weighted catches, shoreline checks, timed delivery and
 learned-skill progression. Full bags retain proficiency and discard catches.
-Native AC23:53/54 start/stop and legacy AC90 are supported. Authored defaults and
+Native AC23:53/54 start/stop and legacy AC90 are supported. Peer rods use
+AC23:123/122; catches send native acquisition chat and reuse the pickup flight
+renderer. Fishing progression uses cumulative AC8:1 stat 111 on the wire,
+including reconnect snapshots. These visual changes still need live acceptance.
+Authored defaults and
 remaining exact-parity questions are documented in [FISHING.md](FISHING.md).
+
+### Live acceptance runs
+
+The expanded `native-commands` checklist separates naturally captured requests
+from unreached handlers and checks observer replay, pose cleanup and mall aliases.
+Fishing fixtures cover unlearned, full-bag and threshold-minus-one advancement
+states. See the [prepared acceptance batch](LIVE_TESTING.md#native-command-acceptance-and-fishing-parity-batch)
+for run directories and evidence requirements. Preparation is not live acceptance.
+
+### Expressions and held poses
+
+The live native-command run emits expressions as AC32:1 (not AC18). WLRI
+`FUN_00432478` calls `FUN_00430700` to restart a temporary expression animation;
+AC32:2 `FUN_00438684` sets the held pose. Expressions are now forwarded on every
+request to same-scene observers without overwriting or replaying the held pose.
+Only changed held poses are deduplicated. Debug logs include bounded AC32 payloads
+for verifying expression IDs and recipients. The tester's original observer
+failure is recorded; the correction still needs live retesting.
+
+### Native Social Setup and movement destination recovery
+
+WLRI Social Setup uses AC10:1 length-prefixed custom title/nickname and AC10:2
+five profile bytes. This differs from the Private Server AC10 contact adapter.
+Go accepts the native forms and persists the profile in typed schema-v16 columns;
+existing recognizable contact-ID adapters remain supported. Birth year is stored
+as the native offset from 1900; zero/missing blood type or invalid birthday does
+not disconnect the client or overwrite the previous profile. Native owner updates
+its form locally; observers receive nickname/code updates after commit. Reconnect
+appearance carries blood type and birthday. The profile code is kept by its wire
+name because its complete semantics are unresolved.
+
+Native 15-byte AC6 announces a destination before walking. Checking a straight
+leg from a previous destination can incorrectly reject a client-routed path;
+AC7 correction then snaps the avatar ahead to that destination. Native requests
+now validate destination walkability/bounds without imposing that straight leg,
+and invalid endpoints receive no snap packet. Short requests and NPC movement
+retain straight-leg collision validation. This fixes the diagnosed correction
+path; live retargeting acceptance remains pending.
+
+### Incoming AC6:2 during native walking
+
+On 2026-10-04 at 21:53:20 (America/Santiago), Native Commands tester session 2,
+character 10001 on Starter Beach, disconnected after a 15-byte AC6:2 was
+rejected as malformed. The preceding AC6:1 destinations were accepted.
+Private Server's AC06 switch leaves incoming Recv2 disabled, so it ignores this
+request. Go now handles exactly the native 15-byte AC6:2 as a stopped-position
+report. Valid coordinates replace the session's announced destination and are
+checkpointed with ordinary buffered walking. Nearby visible players receive
+AC6:1 with the corrected endpoint; the sender receives no movement echo or
+movement-lock reply. Stop corrections do not run regions, encounters or vehicle
+wear again. Active event locks remain authoritative, and invalid coordinates
+are ignored without an AC7 snap. Malformed lengths or unknown pose/facing bytes
+remain rejected. Bounded AC6 traces capture up to 15 bytes.
+
+Unlike walking's direction range 0–7, stops copy the current packed pose/facing
+byte. `FUN_00427150`/`FUN_0042646c` recognize values 0–73 and 99; the stop handler
+accepts and preserves those values when publishing the corrected endpoint.
+The eight trailing check bytes remain opaque, as for AC6:1. Focused tests cover
+checkpointing, peer isolation, no sender echo, packed pose values, invalid
+coordinates/lengths and event locks.
+
+#### Decompilation: what sends AC6:2
+
+The native movement-stop routine `FUN_004263e4` (address `0x4263e4`) sends it.
+It clears the path counters at role offsets `0x140`/`0x144`, replaces the movement
+target (`0x84`/`0x88`) with the current rendered position (`0x20`/`0x24`), and
+copies current facing (`0x121`) into the outgoing direction (`0x122`). Assembly
+at `0x42642a`–`0x42642e` explicitly selects subcode 2 and action 6 before calling
+`FUN_002c2394`; the decompiler obscures this register-based call.
+
+Confirmed callers are:
+
+- Receiving server AC6:2 calls this routine with the supplied movement-lock byte.
+  The server command and client response have different payload layouts.
+- `FUN_00430f90` changes the local player's pose/action, stops movement through
+  this routine, then normally sends AC32:2. The pose-selection UI calls it.
+- `FUN_0043b6ac` changes facing while preserving the current pose and calls
+  `FUN_00430f90`. Map-click handling routes some clicks through this path when
+  a pose/action is active, so a click can produce AC6:2 without selecting a new
+  pose. Several gameplay action paths also use the same pose routine.
+
+The common AC6 sender builds a 15-byte frame:
+`[6, 2, direction, x:u16LE, y:u16LE, eight movement-check bytes]`.
+For AC6:2, X/Y are the stopped current position rather than a future destination.
+The last eight bytes combine random selectors, derived check values and reset
+state; their full validation rules remain pending. Sending is conditional:
+role flag `0x123` must be zero, the sender's `0x212e` flag must be zero, and the
+coordinates must differ from the last sent coordinates (`0x94`/`0x98`). A pose
+change at an unchanged position therefore need not emit AC6:2.
+
+Evidence: `var/decompiled/aLogin_ca19ee087b60_full.c`, functions
+`FUN_004263e4`, `FUN_00430f90`, `FUN_0043b6ac`, `FUN_00438684`, and the AC6
+branches of the sender/dispatcher; verified against `var/ghidra/aLogin.exe`.
+The exact click/action behind the 21:53:20 disconnect cannot be recovered from
+that trace: it contains neither operands nor UI input, and rejection prevented
+any following AC32:2 from being recorded. Go now applies the stopped position as described above; native-client live
+verification remains pending.

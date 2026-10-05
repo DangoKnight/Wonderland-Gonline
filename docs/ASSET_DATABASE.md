@@ -43,7 +43,7 @@ For rollback, stop the server and restore the original configuration paths.
 Progress written to the upgraded database after cutover will not exist in the
 original snapshot. Keep both copies until acceptance testing finishes.
 
-Gameplay schema v15 automatically converts older character rows transactionally
+Gameplay schema v16 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline copy command is the recommended
 upgrade procedure because it leaves a complete original database available.
 Asset conversion is explicit: runtime requires `catalog_schema` version 11 and
@@ -218,5 +218,5 @@ typed dimension columns; it does not regenerate or overwrite them.
 Before deploying this version, stop the server and run the copy procedure above
 (`go run ./cmd/database-migrate -config config.local.json -output-dir <new-directory>`),
 then select the verified copied databases in the configuration. Gameplay remains
-schema v15. Inventory anchors are preserved; old overlapping placements require
+schema v16. Inventory anchors are preserved; old overlapping placements require
 an explicit correction and are never silently discarded or repacked.

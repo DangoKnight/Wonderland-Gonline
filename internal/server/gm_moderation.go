@@ -80,6 +80,8 @@ func (s *Server) gmModeration(ctx context.Context, c *Session, command string, a
 		if err = s.Store.UpdateCharacter(ctx, target.account.ID, next.ID, func(stored *game.Character) error { *stored = next; return nil }); err != nil {
 			return err
 		}
+		baseline := next.Clone()
+		target.autosaveBaseline = &baseline
 		target.character.MutedUntil = next.MutedUntil
 		if err = s.teleportPrelude(target); err == nil {
 			err = s.teleportAfterSave(target, dst, 0)

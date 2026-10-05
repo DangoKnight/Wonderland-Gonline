@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"wonderland-go/internal/assets"
@@ -184,7 +185,7 @@ func TestEmotes(t *testing.T) {
 		}
 	}
 	got := wires[1].packets(t)
-	want := [][]byte{protocol.Builder{32, 1}.U32(alice).U8(9), protocol.Builder{32, 2}.U32(alice).U8(4), protocol.Builder{32, 2}.U32(alice).U8(0)}
+	want := [][]byte{protocol.Builder{32, 1}.U32(alice).U8(9), protocol.Builder{32, 1}.U32(alice).U8(9), protocol.Builder{32, 2}.U32(alice).U8(4), protocol.Builder{32, 2}.U32(alice).U8(0)}
 	if len(got) != len(want) {
 		t.Fatal(got)
 	}
@@ -197,7 +198,7 @@ func TestEmotes(t *testing.T) {
 		t.Fatal("pose echoed to sender")
 	}
 	// A held pose is replayed to a character arriving later.
-	if err := s.worldCommand(ctx, players[0], []byte{32, 1, 7}); err != nil {
+	if err := s.worldCommand(ctx, players[0], []byte{32, 2, 7}); err != nil {
 		t.Fatal(err)
 	}
 	s.leaveWorld(players[1])
@@ -208,5 +209,45 @@ func TestEmotes(t *testing.T) {
 	got = wires[1].packets(t)
 	if len(got) != 5 || !bytes.Equal(got[3], protocol.Builder{32, 2}.U32(alice).U8(7)) {
 		t.Fatal("pose not replayed", got)
+	}
+}
+
+func TestNativeExpressionsRepeatWithoutChangingHeldPose(t *testing.T) {
+	s, players, wires := chatFixture(t)
+	ctx := context.Background()
+	c := players[0]
+	if err := s.worldCommand(ctx, c, []byte{32, 2, 9}); err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	for i := 0; i < 2; i++ {
+		if err := s.worldCommand(ctx, c, []byte{32, 1, 9}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := protocol.Builder{32, 1}.U32(c.character.ID).U8(9)
+	got := wires[1].packets(t)
+	if len(got) != 2 || !bytes.Equal(got[0], want) || !bytes.Equal(got[1], want) {
+		t.Fatal("repeated expression suppressed", got)
+	}
+	if c.emote != 9 || wires[0].Len() != 0 || wires[2].Len() != 0 {
+		t.Fatal("expression altered pose or leaked recipients")
+	}
+	for _, p := range [][]byte{{32, 1}, {32, 1, 9, 0}} {
+		if err := s.worldCommand(ctx, c, p); !errors.Is(err, protocol.ErrMalformed) {
+			t.Fatal("malformed expression accepted", p, err)
+		}
+	}
+	s.leaveWorld(players[1])
+	wires[1].Reset()
+	if err := s.worldCommand(ctx, players[1], []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range wires[1].packets(t) {
+		if len(p) >= 2 && p[0] == 32 && p[1] == 1 {
+			t.Fatal("transient expression replayed", p)
+		}
 	}
 }

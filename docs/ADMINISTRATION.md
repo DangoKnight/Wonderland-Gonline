@@ -3,7 +3,9 @@
 Start the server with `WONDERLAND_ADMIN_TOKEN` set, then open its configured HTTP
 address (default `http://127.0.0.1:8080`). Enter that token. It remains in browser
 memory until reload; every administration API route checks it. The public
-registration endpoint creates ordinary accounts. Node is needed only for web
+registration page at `/register` creates ordinary accounts through `POST /register`.
+It accepts 8–10 character usernames/passwords for the original client, confirms
+the password, and accepts an optional email. It needs no administrator token. Node is needed only for web
 formatting and lint; the Go binary embeds the interface.
 
 ## Database ownership

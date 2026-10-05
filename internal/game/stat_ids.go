@@ -18,6 +18,7 @@ const (
 	StatMagicDefense      byte = 44
 	StatSpeed             byte = 45
 	StatSkillGrade        byte = 110
+	StatSkillEXP          byte = 111
 	StatHPBonus           byte = 207
 	StatSPBonus           byte = 208
 )

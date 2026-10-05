@@ -147,3 +147,66 @@ func TestWorldSimulationVehicleTravelKeepsSceneBounds(t *testing.T) {
 		t.Fatal("stale vehicle bypassed collision")
 	}
 }
+
+func TestNativeMovementRetargetAcrossBlockedRouteDoesNotSnap(t *testing.T) {
+	for _, code := range []byte{1, 2} {
+		t.Run(map[byte]string{1: "destination", 2: "stop"}[code], func(t *testing.T) {
+			testNativeMovementRetargetAcrossBlockedRouteDoesNotSnap(t, code)
+		})
+	}
+}
+
+func testNativeMovementRetargetAcrossBlockedRouteDoesNotSnap(t *testing.T, code byte) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	terrain := assets.Terrain{Width: 2000, Height: 2000, GridWidth: 100, GridHeight: 100, Cells: make([]byte, 10000)}
+	terrain.Cells[60*100+65] = 23
+	s.Assets.Terrains = map[uint16]assets.Terrain{c.character.Map: terrain}
+	s.World = world.New(s.Assets)
+	for i, player := range players {
+		if err := s.worldCommand(ctx, player, []byte{12, 1}); err != nil {
+			t.Fatal(err)
+		}
+		wires[i].Reset()
+	}
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	native := func(x, y uint16) []byte { return protocol.Builder{6, code, 2}.U16(x).U16(y).Bytes(make([]byte, 8)) }
+	// The client can reroute around a blocked cell; the old announced destination
+	// does not describe the avatar's current location or the full walkable route.
+	if err := s.dispatch(ctx, c, native(1400, 1500)); err != nil {
+		t.Fatal(err)
+	}
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	if err := s.dispatch(ctx, c, native(1100, 1100)); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.X != 1100 || c.character.Y != 1100 {
+		t.Fatal("native retarget rejected")
+	}
+	for _, packet := range wires[0].packets(t) {
+		if packet[0] == 7 {
+			t.Fatal("valid retarget snapped client", packet)
+		}
+	}
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	for _, packet := range [][]byte{native(1200, 1300), native(2500, 2500)} {
+		if err := s.dispatch(ctx, c, packet); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.character.X != 1100 || c.character.Y != 1100 {
+		t.Fatal("invalid destination accepted")
+	}
+	for _, wire := range wires {
+		if wire.Len() != 0 {
+			t.Fatal("invalid click snapped client or broadcast false movement")
+		}
+	}
+}

@@ -44,9 +44,9 @@ func (c Character) AppearancePacket(other bool) ([]byte, error) {
 		return nil, e
 	}
 	if other {
-		p = p.U8(255).U32(0).U8(1)
+		p = p.U8(255).U8(c.BloodType).U8(c.BirthYearOffset).U8(c.BirthMonth).U8(c.BirthDay).U8(1)
 	} else {
-		p = p.U32(0)
+		p = p.U8(c.BloodType).U8(c.BirthYearOffset).U8(c.BirthMonth).U8(c.BirthDay)
 	}
 	return p, nil
 }

@@ -50,6 +50,11 @@ type characterStateRow struct {
 	VehicleSlot       byte
 	ActiveMount       uint32
 	Title             uint16
+	BloodType         byte
+	BirthYearOffset   byte
+	BirthMonth        byte
+	BirthDay          byte
+	SocialProfileCode byte
 	Nickname          string
 	Job               byte
 	Potential         uint16
@@ -171,7 +176,7 @@ func characterTables() []any {
 // The caller owns the transaction: scalar state and all collections commit together.
 func writeCharacterState(tx *gorm.DB, c game.Character) error {
 	owner := CharacterOwner{CharacterID: c.ID}
-	state := characterStateRow{CharacterOwner: owner, Base: c.Base, Level: c.Level, Element: c.Element, HP: c.HP, MaxHP: c.MaxHP, SP: c.SP, MaxSP: c.MaxSP, EXP: c.EXP, StatPoints: c.StatPoints, Gold: c.Gold, BankGold: c.BankGold, Body: c.Body, Head: c.Head, Color1: c.Color1, Color2: c.Color2, Map: c.Map, X: c.X, Y: c.Y, ActivePet: c.ActivePet, ActiveVehicle: c.ActiveVehicle, VehicleSlot: c.VehicleSlot, ActiveMount: c.ActiveMount, Title: c.Title, Nickname: c.Nickname, Job: c.Job, Potential: c.Potential, RebornJob: c.RebornJob, Reborn: c.Reborn, MutedUntil: c.MutedUntil, LuckyDay: c.LuckyDraw.Day, LuckyUsed: c.LuckyDraw.Used}
+	state := characterStateRow{CharacterOwner: owner, Base: c.Base, Level: c.Level, Element: c.Element, HP: c.HP, MaxHP: c.MaxHP, SP: c.SP, MaxSP: c.MaxSP, EXP: c.EXP, StatPoints: c.StatPoints, Gold: c.Gold, BankGold: c.BankGold, Body: c.Body, Head: c.Head, Color1: c.Color1, Color2: c.Color2, Map: c.Map, X: c.X, Y: c.Y, ActivePet: c.ActivePet, ActiveVehicle: c.ActiveVehicle, VehicleSlot: c.VehicleSlot, ActiveMount: c.ActiveMount, Title: c.Title, Nickname: c.Nickname, BloodType: c.BloodType, BirthYearOffset: c.BirthYearOffset, BirthMonth: c.BirthMonth, BirthDay: c.BirthDay, SocialProfileCode: c.SocialProfileCode, Job: c.Job, Potential: c.Potential, RebornJob: c.RebornJob, Reborn: c.Reborn, MutedUntil: c.MutedUntil, LuckyDay: c.LuckyDraw.Day, LuckyUsed: c.LuckyDraw.Used}
 	if c.Settings != nil {
 		state.SettingsPresent = true
 		state.PKAllowed = c.Settings.PKAllowed
@@ -262,7 +267,7 @@ func readCharacterState(tx *gorm.DB, row characterRow) (game.Character, error) {
 	if err := tx.Where("character_id = ?", row.ID).Take(&state).Error; err != nil {
 		return game.Character{}, err
 	}
-	c := game.Character{ID: row.ID, Slot: row.Slot, Name: row.Name, Base: state.Base, Level: state.Level, Element: state.Element, HP: state.HP, MaxHP: state.MaxHP, SP: state.SP, MaxSP: state.MaxSP, EXP: state.EXP, StatPoints: state.StatPoints, Gold: state.Gold, BankGold: state.BankGold, Body: state.Body, Head: state.Head, Color1: state.Color1, Color2: state.Color2, Map: state.Map, X: state.X, Y: state.Y, ActivePet: state.ActivePet, ActiveVehicle: state.ActiveVehicle, VehicleSlot: state.VehicleSlot, ActiveMount: state.ActiveMount, Title: state.Title, Nickname: state.Nickname, Job: state.Job, Potential: state.Potential, RebornJob: state.RebornJob, Reborn: state.Reborn, MutedUntil: state.MutedUntil, LuckyDraw: game.LuckyDrawState{Day: state.LuckyDay, Used: state.LuckyUsed}, Quests: make(map[uint32]game.Quest)}
+	c := game.Character{ID: row.ID, Slot: row.Slot, Name: row.Name, Base: state.Base, Level: state.Level, Element: state.Element, HP: state.HP, MaxHP: state.MaxHP, SP: state.SP, MaxSP: state.MaxSP, EXP: state.EXP, StatPoints: state.StatPoints, Gold: state.Gold, BankGold: state.BankGold, Body: state.Body, Head: state.Head, Color1: state.Color1, Color2: state.Color2, Map: state.Map, X: state.X, Y: state.Y, ActivePet: state.ActivePet, ActiveVehicle: state.ActiveVehicle, VehicleSlot: state.VehicleSlot, ActiveMount: state.ActiveMount, Title: state.Title, Nickname: state.Nickname, BloodType: state.BloodType, BirthYearOffset: state.BirthYearOffset, BirthMonth: state.BirthMonth, BirthDay: state.BirthDay, SocialProfileCode: state.SocialProfileCode, Job: state.Job, Potential: state.Potential, RebornJob: state.RebornJob, Reborn: state.Reborn, MutedUntil: state.MutedUntil, LuckyDraw: game.LuckyDrawState{Day: state.LuckyDay, Used: state.LuckyUsed}, Quests: make(map[uint32]game.Quest)}
 	if state.SettingsPresent {
 		c.Settings = &game.ClientSettings{PKAllowed: state.PKAllowed, JoinAllowed: state.JoinAllowed, TradeAllowed: state.TradeAllowed, Channels: state.Channels}
 	}

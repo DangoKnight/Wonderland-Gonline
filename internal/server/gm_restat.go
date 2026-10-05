@@ -26,7 +26,7 @@ func (s *Server) gmRestat(ctx context.Context, actor *Session, arguments []strin
 	next := target.character.Clone()
 	refund := next.ResetAttributes()
 	next.Refill(s.Assets.Items)
-	snapshot, err := next.BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
+	snapshot, err := s.nativeStatsSnapshot(next).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
 	if err != nil {
 		return err
 	}
