@@ -27,55 +27,56 @@ type CharacterOwner struct {
 }
 type characterStateRow struct {
 	CharacterOwner
-	Base              game.Attributes `gorm:"embedded;embeddedPrefix:base_"`
-	Level             byte
-	Element           byte
-	HP                uint32
-	MaxHP             uint32
-	SP                uint32
-	MaxSP             uint32
-	EXP               uint32
-	StatPoints        uint16
-	Gold              uint32
-	BankGold          uint32
-	Body              uint16
-	Head              uint16
-	Color1            uint32
-	Color2            uint32
-	Map               uint16
-	X                 uint16
-	Y                 uint16
-	ActivePet         uint32
-	ActiveVehicle     uint16
-	VehicleSlot       byte
-	ActiveMount       uint32
-	Title             uint16
-	BloodType         byte
-	BirthYearOffset   byte
-	BirthMonth        byte
-	BirthDay          byte
-	SocialProfileCode byte
-	Nickname          string
-	Job               byte
-	Potential         uint16
-	RebornJob         byte
-	Reborn            bool
-	MutedUntil        time.Time
-	SettingsPresent   bool
-	PKAllowed         bool
-	JoinAllowed       bool
-	TradeAllowed      bool
-	Channels          byte
-	TentReturnPresent bool
-	TentReturnMap     uint16
-	TentReturnX       uint16
-	TentReturnY       uint16
-	RecordPresent     bool
-	RecordMap         uint16
-	RecordX           uint16
-	RecordY           uint16
-	LuckyDay          string
-	LuckyUsed         byte
+	Base                game.Attributes `gorm:"embedded;embeddedPrefix:base_"`
+	Level               byte
+	Element             byte
+	HP                  uint32
+	MaxHP               uint32
+	SP                  uint32
+	MaxSP               uint32
+	EXP                 uint32
+	StatPoints          uint16
+	Gold                uint32
+	BankGold            uint32
+	Body                uint16
+	Head                uint16
+	Color1              uint32
+	Color2              uint32
+	Map                 uint16
+	X                   uint16
+	Y                   uint16
+	ActivePet           uint32
+	ActiveVehicle       uint16
+	VehicleSlot         byte
+	ActiveMount         uint32
+	Title               uint16
+	BloodType           byte
+	BirthYearOffset     byte
+	BirthMonth          byte
+	BirthDay            byte
+	SocialProfileCode   byte
+	Nickname            string
+	Job                 byte
+	Potential           uint16
+	RebornJob           byte
+	Reborn              bool
+	MutedUntil          time.Time
+	SettingsPresent     bool
+	PKAllowed           bool
+	PartyInvitesBlocked bool
+	JoinAllowed         bool
+	TradeAllowed        bool
+	Channels            byte
+	TentReturnPresent   bool
+	TentReturnMap       uint16
+	TentReturnX         uint16
+	TentReturnY         uint16
+	RecordPresent       bool
+	RecordMap           uint16
+	RecordX             uint16
+	RecordY             uint16
+	LuckyDay            string
+	LuckyUsed           byte
 }
 
 func (characterStateRow) TableName() string { return "character_state" }
@@ -181,6 +182,7 @@ func writeCharacterState(tx *gorm.DB, c game.Character) error {
 		state.SettingsPresent = true
 		state.PKAllowed = c.Settings.PKAllowed
 		state.JoinAllowed = c.Settings.JoinAllowed
+		state.PartyInvitesBlocked = c.Settings.PartyInvitesBlocked
 		state.TradeAllowed = c.Settings.TradeAllowed
 		state.Channels = c.Settings.Channels
 	}
@@ -269,7 +271,7 @@ func readCharacterState(tx *gorm.DB, row characterRow) (game.Character, error) {
 	}
 	c := game.Character{ID: row.ID, Slot: row.Slot, Name: row.Name, Base: state.Base, Level: state.Level, Element: state.Element, HP: state.HP, MaxHP: state.MaxHP, SP: state.SP, MaxSP: state.MaxSP, EXP: state.EXP, StatPoints: state.StatPoints, Gold: state.Gold, BankGold: state.BankGold, Body: state.Body, Head: state.Head, Color1: state.Color1, Color2: state.Color2, Map: state.Map, X: state.X, Y: state.Y, ActivePet: state.ActivePet, ActiveVehicle: state.ActiveVehicle, VehicleSlot: state.VehicleSlot, ActiveMount: state.ActiveMount, Title: state.Title, Nickname: state.Nickname, BloodType: state.BloodType, BirthYearOffset: state.BirthYearOffset, BirthMonth: state.BirthMonth, BirthDay: state.BirthDay, SocialProfileCode: state.SocialProfileCode, Job: state.Job, Potential: state.Potential, RebornJob: state.RebornJob, Reborn: state.Reborn, MutedUntil: state.MutedUntil, LuckyDraw: game.LuckyDrawState{Day: state.LuckyDay, Used: state.LuckyUsed}, Quests: make(map[uint32]game.Quest)}
 	if state.SettingsPresent {
-		c.Settings = &game.ClientSettings{PKAllowed: state.PKAllowed, JoinAllowed: state.JoinAllowed, TradeAllowed: state.TradeAllowed, Channels: state.Channels}
+		c.Settings = &game.ClientSettings{PKAllowed: state.PKAllowed, JoinAllowed: state.JoinAllowed, PartyInvitesBlocked: state.PartyInvitesBlocked, TradeAllowed: state.TradeAllowed, Channels: state.Channels}
 	}
 	if state.TentReturnPresent {
 		c.TentReturn = &game.Location{Map: state.TentReturnMap, X: state.TentReturnX, Y: state.TentReturnY}

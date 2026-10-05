@@ -97,7 +97,7 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 func (s *Server) mapPlayer(c *Session, id uint32) *Session {
 	var shifted *Session
 	for _, peer := range s.world {
-		if !sameScene(peer, c) {
+		if !s.samePlayerScene(peer, c) {
 			continue
 		}
 		if peer.character.ID == id {
@@ -127,7 +127,7 @@ func (p *party) member(id uint32) *Session {
 // A requester already in a team must leave it first (C# would overwrite it).
 func (s *Server) partyRequest(c *Session, id uint32) error {
 	target := s.mapPlayer(c, id)
-	if target == nil || target == c || !target.character.Preferences().JoinAllowed || (c.party != nil && len(c.party.members) > 1) {
+	if target == nil || target == c || target.character.Preferences().PartyInvitesBlocked || (c.party != nil && len(c.party.members) > 1) {
 		return nil
 	}
 	packet, err := protocol.Builder{protocol.CommandTeam, protocol.TeamRequest}.U32(c.character.ID).String(c.character.Name)
@@ -153,7 +153,7 @@ func (s *Server) partyAccept(c *Session, id uint32) error {
 	}
 	at, ok := c.partyRequests[requester.character.ID]
 	delete(c.partyRequests, requester.character.ID)
-	if !ok || time.Since(at) > partyRequestTTL || requester == c || !c.character.Preferences().JoinAllowed {
+	if !ok || time.Since(at) > partyRequestTTL || requester == c || c.character.Preferences().PartyInvitesBlocked {
 		return nil
 	}
 	if requester.party != nil && len(requester.party.members) > 1 {
@@ -294,7 +294,7 @@ func (s *Server) partyArrival(c *Session) {
 	}
 	leader := p.leader()
 	for _, m := range p.members {
-		if m == leader || !sameScene(leader, m) || !m.ready || !leader.ready || (c != leader && m != c) {
+		if m == leader || !s.samePlayerScene(leader, m) || !m.ready || !leader.ready || (c != leader && m != c) {
 			continue
 		}
 		s.sendMap(leader.character.Map, protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(leader.character.ID).U32(m.character.ID), leader)
@@ -324,8 +324,11 @@ func (s *Server) partyFollow(ctx context.Context, c *Session, from uint16) error
 
 // sendMap sends to every published character on a map except skip. Caller holds worldMu.
 func (s *Server) sendMap(mapID uint16, packet []byte, skip *Session) {
+	if skip == nil && s.World.HideOtherPlayers(mapID) {
+		return
+	}
 	for _, peer := range s.world {
-		if peer != skip && peer.character.Map == mapID && (skip == nil && peer.tentOwner == 0 || skip != nil && sameScene(peer, skip)) {
+		if peer != skip && peer.character.Map == mapID && (skip == nil && peer.tentOwner == 0 || skip != nil && s.samePlayerScene(peer, skip)) {
 			s.sendOrClose(peer, packet)
 		}
 	}

@@ -24,8 +24,8 @@ import (
 // of its range (FUN_004057c8). A map load or a movie stops them all
 // (FUN_004057c8(-1, -1)).
 //
-// Not ported: the sound options (+0x20c, the effects volume slider), and
-// FUN_004057c8's early return, which leaves later channels playing when an
+// Sound preferences apply through settings.go. Not ported: FUN_004057c8's
+// early return, which leaves later channels playing when an
 // earlier one is in range.
 const (
 	ambientInterval   = 500 * time.Millisecond
@@ -56,7 +56,7 @@ func (c *Client) ambientTick() {
 	if c.World == nil || c.World.Scene == nil || c.sfx == nil {
 		return
 	}
-	if c.movie != nil {
+	if c.movie != nil || c.effectsGain() == 0 {
 		c.stopAmbience()
 		return
 	}
@@ -92,6 +92,7 @@ func (c *Client) playZone(z world.SoundZone, px, py int) {
 		}
 		if dist < rng {
 			ch.set(srcX-px, dist)
+			ch.player.SetVolume(fromHundredths(ambientFalloff*dist) * c.effectsGain())
 		} else {
 			ch.player.Close()
 			a.ch[i] = nil
@@ -116,6 +117,7 @@ func (c *Client) playZone(z world.SoundZone, px, py int) {
 		}
 		ch = &ambientChannel{srcX: srcX, srcY: srcY, rng: rng, player: p, stream: stream}
 		ch.set(srcX-px, dist)
+		ch.player.SetVolume(fromHundredths(ambientFalloff*dist) * c.effectsGain())
 		p.Play()
 		a.ch[i] = ch
 		return

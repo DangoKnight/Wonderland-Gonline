@@ -10,8 +10,7 @@ import (
 //
 // Positions follow the original: Caret is the number of bytes before the
 // caret and the helpers take 1-based byte positions as Delphi strings do.
-// The chat editor's emoticon handling (FUN_0045cbbc, only for the control
-// at the chat form's +0x134) is not part of the login client.
+// Chat-specific tokens use optional hooks; ordinary fields retain Big5 editing.
 type Editor struct {
 	Panel
 	Align      byte      // +0x121: 0 left, 2 right
@@ -43,6 +42,12 @@ type Editor struct {
 	blinkAt    time.Time // +0x118
 	Now        func() time.Time
 
+	// TokenWidth recognizes extra two-byte units, such as chat emoticons.
+	TokenWidth func([]byte) int
+	// DrawText optionally renders visible non-password text at screen coordinates.
+	DrawText func(x, y int, text []byte)
+
+	OnBlur   func() // validation when the editor loses keyboard focus
 	OnEnter  func() // +0x1d0
 	OnTab    func() // +0x1d8
 	OnChange func() // +0x1e0
@@ -172,12 +177,16 @@ func (e *Editor) at(pos int) byte {
 	return e.Text[pos-1]
 }
 
+func (e *Editor) tokenAt(pos int) bool {
+	return e.TokenWidth != nil && pos >= 1 && pos <= len(e.Text) && e.TokenWidth(e.Text[pos-1:]) == 2
+}
+
 // walk steps over whole characters from position 1 while short of pos and
 // returns where it stops.
 func (e *Editor) walk(pos int) int {
 	i := 1
 	for i < pos {
-		if e.at(i) < 0x80 {
+		if e.at(i) < 0x80 && !e.tokenAt(i) {
 			i++
 		} else {
 			i += 2
@@ -203,7 +212,7 @@ func (e *Editor) single(pos int) bool {
 	if e.walk(pos) == pos+1 {
 		return true
 	}
-	return e.at(pos) < 0x80
+	return e.at(pos) < 0x80 && !e.tokenAt(pos)
 }
 
 // sizeBefore is FUN_00468f70: the size of the character ending at byte pos.
@@ -236,7 +245,7 @@ func (e *Editor) colBack() int {
 		if e.Caret <= 4 {
 			return e.Caret
 		}
-		if e.at(e.Caret-1) < 0x7f {
+		if e.at(e.Caret-1) < 0x7f && !e.tokenAt(e.Caret-1) {
 			return 1
 		}
 		return 2
@@ -259,7 +268,7 @@ func (e *Editor) colForward(n int) int {
 			i := uint16(1)
 			if end > 1 {
 				for i < end {
-					if e.at(int(i)) < 0x7f {
+					if e.at(int(i)) < 0x7f && !e.tokenAt(int(i)) {
 						i++
 					} else {
 						i += 2
@@ -274,7 +283,7 @@ func (e *Editor) colForward(n int) int {
 		s := e.Caret - n - e.CaretCol
 		i, end := uint16(s+1), uint16(s+5)
 		for i < end {
-			if e.at(int(i)) < 0x81 {
+			if e.at(int(i)) < 0x81 && !e.tokenAt(int(i)) {
 				i++
 			} else {
 				i += 2
@@ -650,7 +659,11 @@ func (e *Editor) Paint() {
 			draw(e.LabelX+o.X, e.LabelY+o.Y, e.Label, 0, e.Color3)
 		}
 		if len(shown) > 0 {
-			draw(o.X+textAt(shown), e.TextY+o.Y, shown, e.Color2, e.Color)
+			if e.DrawText != nil {
+				e.DrawText(o.X+textAt(shown), e.TextY+o.Y, shown)
+			} else {
+				draw(o.X+textAt(shown), e.TextY+o.Y, shown, e.Color2, e.Color)
+			}
 		}
 	} else {
 		stars := make([]byte, len(e.Text))
@@ -688,7 +701,11 @@ func (e *Editor) Update(in *Input) {
 		in.Hovered = e.self
 	}
 	if !e.Blocked() && !e.ReadOnly {
+		wasFocused := e.Focused
 		e.Focused = in.Focused == e.self
+		if wasFocused && !e.Focused && e.OnBlur != nil {
+			e.OnBlur()
+		}
 	}
 	e.self.Paint()
 	e.updateChildren(in)

@@ -9,11 +9,17 @@ import (
 	"wonderland-go/internal/world"
 )
 
+// samePlayerScene prevents starter-scene players from discovering each other.
+// Shared tent interiors retain their existing owner-based visibility.
+func (s *Server) samePlayerScene(a, b *Session) bool {
+	return sameScene(a, b) && (a == b || a.tentOwner != 0 || !s.World.HideOtherPlayers(a.character.Map))
+}
+
 // peers must be called with worldMu held. Only acknowledged characters are visible.
 func (s *Server) peers(c *Session) []*Session {
 	var peers []*Session
 	for _, peer := range s.world {
-		if peer != c && sameScene(peer, c) {
+		if peer != c && s.samePlayerScene(peer, c) {
 			peers = append(peers, peer)
 		}
 	}
@@ -157,7 +163,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	}
 	if c.tentOwner == 0 {
 		for _, peer := range s.world {
-			if peer.openTent != nil && peer.openTent.Map == c.character.Map {
+			if peer.openTent != nil && peer.openTent.Map == c.character.Map && s.samePlayerScene(peer, c) {
 				if err := c.send(tentSign(peer)); err != nil {
 					return err
 				}

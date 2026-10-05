@@ -125,11 +125,18 @@ func (g *Game) Update() error {
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight) {
 		ui.MouseUp(seui.ButtonRight, mouse, x, y)
 	}
+	_, wheel := ebiten.Wheel()
+	for ; wheel >= 1; wheel-- {
+		g.C.scrollWheel(true)
+	}
+	for ; wheel <= -1; wheel++ {
+		g.C.scrollWheel(false)
+	}
 	keys := g.shift()
 	for k, vk := range virtualKeys {
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			if !g.C.SportKey(int(vk), true) && !g.C.InventoryKey(vk) {
+			if !g.C.SportKey(int(vk), true) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
 				ui.KeyDown(vk, keys)
 			}
 		}
@@ -210,6 +217,7 @@ func Run(c *Client) error {
 	c.Env.Sound = sounds.Play
 	c.sfx = sounds
 	c.Music = &Music{Root: c.Assets.Media, Context: sounds.Context}
+	c.applyLocalSettings()
 	c.Music.Play(loginMusic) // CheckStartMusic
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
 	ebiten.SetWindowTitle(WindowTitle)

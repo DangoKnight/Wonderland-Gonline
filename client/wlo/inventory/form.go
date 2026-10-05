@@ -5,6 +5,7 @@ import (
 	"image"
 	"math"
 	"strconv"
+	"time"
 	"wonderland-go/client/wlo/login"
 	"wonderland-go/client/wlo/seui"
 	"wonderland-go/client/wlo/world"
@@ -48,6 +49,12 @@ type Form struct {
 	Slots                                                           [game.BagSize]*slotControl
 	Worn                                                            [EquipmentSlots]*slotControl
 	Mode                                                            byte
+	Now                                                             func() time.Time
+	Increase                                                        [allocationAttributes]*seui.FixedButton
+	Allocate, CancelAllocation                                      *seui.FixedButton
+	PendingPoints                                                   [allocationAttributes]uint16
+	AllocationWaiting                                               bool
+	allocationSent                                                  time.Time
 	drag                                                            *dragItem
 	itemInfo                                                        *seui.Panel
 	Dialog                                                          *actionDialog
@@ -102,6 +109,7 @@ func NewForm(env *seui.Env, state *State, stats *world.Stats) *Form {
 	for i := range f.Worn {
 		f.Worn[i] = f.slot(i+1, true)
 	}
+	f.initAllocation()
 	f.SetMode(0)
 	return f
 }
@@ -148,6 +156,7 @@ func (f *Form) SetMode(mode byte) {
 	}
 	f.StatusOnly.SetHint([]byte("Status only / combined"))
 	f.BagOnly.SetHint([]byte("Inventory only / combined"))
+	f.syncAllocationControls()
 	f.RotateLeft.SetVisible(mode != 2)
 	f.RotateRight.SetVisible(mode != 2)
 	for i, c := range f.Slots {
@@ -164,6 +173,7 @@ func (f *Form) SetMode(mode byte) {
 	}
 }
 func (f *Form) Hide() {
+	f.CancelPoints()
 	f.drag = nil
 	if f.Dialog != nil {
 		f.Dialog.Hide()
@@ -176,6 +186,7 @@ func (f *Form) KeyDown(key uint16, shift byte) {
 	}
 }
 func (f *Form) Paint() {
+	f.syncAllocationControls()
 	f.Env.Pics.Draw(f.Env.Screen, f.Image, f.Left, f.Top, true)
 	if f.Mode == 2 {
 		return
@@ -201,14 +212,14 @@ func (f *Form) Paint() {
 	f.label(100, 287, fmt.Sprintf("%d/%d", f.Stats.SP, f.Stats.MaxSP))
 	f.label(100, 301, fmt.Sprintf("%.0f%%", ratio*100))
 	f.label(45, 318, strconv.Itoa(int(f.Stats.Gold)))
-	f.label(160, 317, strconv.Itoa(int(f.Stats.Points)))
+	f.label(160, 317, strconv.Itoa(int(uint32(f.Stats.Points)-f.draftTotal())))
 	combat := f.Stats.CombatValues()
 	for i, v := range combat {
 		f.label(44, 337+i*16, strconv.Itoa(int(v)))
 	}
-	attrs := [5]uint16{f.Stats.STR, f.Stats.CON, f.Stats.INT, f.Stats.WIS, f.Stats.AGI}
+	attrs := f.Attributes()
 	for i, v := range attrs {
-		f.label(130, 337+i*16, strconv.Itoa(int(v)))
+		f.label(130, 337+i*16, strconv.Itoa(int(v)+int(f.PendingPoints[i])))
 	}
 }
 func (f *Form) label(x, y int, s string) {

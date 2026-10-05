@@ -19,11 +19,13 @@ const sampleRate = 44100
 // Sounds plays the client's wave files (FUN_00404fa4), given paths relative
 // to the client directory with backslashes.
 type Sounds struct {
-	Root  string
-	once  sync.Once
-	ctx   *audio.Context
-	mu    sync.Mutex
-	cache map[string][]byte
+	Root       string
+	once       sync.Once
+	ctx        *audio.Context
+	mu         sync.Mutex
+	cache      map[string][]byte
+	volume     float64
+	configured bool
 }
 
 // Context is the process's one audio context, made on first use.
@@ -37,8 +39,19 @@ func (s *Sounds) Context() *audio.Context {
 
 // Play starts a sound; missing or unreadable files are ignored.
 func (s *Sounds) Play(path string) {
+	s.mu.Lock()
+	v := 1.0
+	if s.configured {
+		v = s.volume
+	}
+	s.mu.Unlock()
+	if v == 0 {
+		return
+	}
 	if pcm := s.PCM(path); len(pcm) > 0 {
-		s.ctx.NewPlayerFromBytes(pcm).Play()
+		p := s.ctx.NewPlayerFromBytes(pcm)
+		p.SetVolume(v)
+		p.Play()
 	}
 }
 
@@ -59,4 +72,12 @@ func (s *Sounds) PCM(path string) []byte {
 		s.cache[path] = pcm
 	}
 	return pcm
+}
+
+// SetVolume controls subsequent sound effects; ambient loops are updated by Client.
+func (s *Sounds) SetVolume(v float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.volume = max(0, min(1, v))
+	s.configured = true
 }

@@ -9,7 +9,7 @@ import (
 // The walk marker (FUN_0049bbf4, drawn by the main loop after the map):
 // a mouse walk (0x4a1d60's click and held-button branches) shows it at the
 // walk's destination (+0x84, +0x88: the route's last waypoint, or the
-// clicked point when no route was found) and restarts it. Every 120 ms it
+// player's position when no route was found) and restarts it. Every 120 ms it
 // steps to the next picture, Arrow2, Arrow3, Arrow4 of the skin, and hides
 // after Arrow4. A 64 × 64 cut is drawn centred on the destination. A step
 // that comes within 120 ms of the previous one keeps the previous picture
@@ -68,12 +68,12 @@ func (w *World) drawMarker(cx, cy int, now time.Time) {
 	pics.DrawRect(w.Env.Screen, m.pic, m.at.X-cx-markerSize/2, m.at.Y-cy-markerSize/2, image.Rect(0, 0, markerSize, markerSize), true)
 }
 
-// MarkWalk shows the marker for a mouse walk toward a scene point: at the
-// planned route's end when routed, otherwise at the point itself, kept
-// within the scene.
-func (w *World) MarkWalk(x, y int, routed bool) {
-	at := image.Pt(min(max(x, 0), w.Scene.Width-1), min(max(y, 0), w.Scene.Height-1))
-	if end, ok := w.walker.destination(); ok && routed {
+// MarkWalk shows the marker at the active route's end, or at the player's
+// position when no route is active. A repeated blocked click at the walkable
+// edge must not move the marker back to the unreachable mouse coordinates.
+func (w *World) MarkWalk() {
+	at := image.Pt(w.Player.X, w.Player.Y)
+	if end, ok := w.walker.destination(); ok {
 		at = end
 	}
 	w.Marker.Show(at)

@@ -11,7 +11,8 @@ func TestSettingsNativeSnapshotGolden(t *testing.T) {
 		settings ClientSettings
 		want     []byte
 	}{
-		{"all on", ClientSettings{true, true, true, 31}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
+		{"all on", ClientSettings{PKAllowed: true, JoinAllowed: true, TradeAllowed: true, Channels: 31}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
+		{"invitations off", ClientSettings{PartyInvitesBlocked: true}, []byte{33, 2, 2, 2, 2, 2, 0, 0}},
 		{"all off", ClientSettings{}, []byte{33, 2, 2, 2, 2, 1, 0, 0}},
 		{"local only", ClientSettings{Channels: ChatChannelLocal}, []byte{33, 2, 2, 2, 2, 1, 1, 0}},
 		{"whisper and world", ClientSettings{Channels: ChatChannelWhisper | ChatChannelWorld}, []byte{33, 2, 2, 2, 2, 1, 18, 0}},

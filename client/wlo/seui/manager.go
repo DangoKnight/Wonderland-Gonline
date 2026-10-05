@@ -252,3 +252,25 @@ func (m *Manager) Char(c byte) {
 func (m *Manager) Focus(c Control) {
 	m.Input.Hovered, m.Input.Focused = c, c
 }
+
+// Wheel routes the native wheel slots through the hovered control's owners.
+// Modal forms keep the wheel from reaching controls behind them.
+func (m *Manager) Wheel(up bool) bool {
+	for c := m.Input.Hovered; c != nil; c = c.Base().Parent {
+		if m.Modal != nil && c.Base().Root() != m.Modal {
+			return false
+		}
+		if w, ok := c.(interface {
+			WheelUp()
+			WheelDown()
+		}); ok {
+			if up {
+				w.WheelUp()
+			} else {
+				w.WheelDown()
+			}
+			return true
+		}
+	}
+	return false
+}

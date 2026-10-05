@@ -25,7 +25,7 @@ func TestChatLogWrap(t *testing.T) {
 		t.Fatalf("local line %q %#x", last.Text, last.Ink)
 	}
 	// A double-byte character is not split across rows.
-	l.Lines = nil
+	l.Clear()
 	l.Add(append(bytes.Repeat([]byte{'b'}, 49), 0xa4, 0x40, 'c'), ChannelWorld)
 	if len(l.Lines[0].Text) != 49 || !bytes.Equal(l.Lines[1].Text, []byte{0xa4, 0x40, 'c'}) {
 		t.Fatalf("rows %q %q", l.Lines[0].Text, l.Lines[1].Text)

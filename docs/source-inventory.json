@@ -1129,9 +1129,12 @@
 				"internal/game/migration_verification_test.go",
 				"internal/server/items.go",
 				"internal/server/migration_verification_test.go",
-				"internal/server/skill_tree_test.go"
+				"internal/server/skill_tree_test.go",
+				"client/wlo/inventory/allocation.go",
+				"client/wlo/inventory/allocation_test.go",
+				"client/wlo/app/presentation_test.go"
 			],
-			"notes": "Manually compared direct stat, subcode 1/2, target/header and counted batch layouts. Decoder preserves greedy 4/2/1-byte widths, missing/zero amounts as one, ignored invalid entries and partial batches. Allocation commits before snapshots, preserves HP/SP and resolves session pet slots. Pet attribute overflow now rejects as source requires; player overflow and invalid direct helper entries also reject deliberately to preserve points/state.",
+			"notes": "Manually compared direct stat, subcode 1/2, target/header and counted batch layouts. Decoder preserves greedy 4/2/1-byte widths, missing/zero amounts as one, ignored invalid entries and partial batches. Allocation commits before snapshots, preserves HP/SP and resolves session pet slots. Pet attribute overflow now rejects as source requires; player overflow and invalid direct helper entries also reject deliberately to preserve points/state. Go client now previews/cancels player allocations, sends native counted AC8 requests and waits for authoritative replies; pet-targeted replies cannot overwrite player stats. Native class/rebirth UI caps and pet allocation dialogs remain pending.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1155,9 +1158,12 @@
 			"go_files": [
 				"internal/server/social.go",
 				"internal/server/friends.go",
-				"internal/store/friends.go"
+				"internal/store/friends.go",
+				"client/wlo/app/presentation.go",
+				"client/wlo/app/presentation_test.go",
+				"client/wlo/world/peers.go"
 			],
-			"notes": "Friend operations use persisted symmetric relationships rather than one-sided source removal.",
+			"notes": "Friend operations use persisted symmetric relationships rather than one-sided source removal. Go client now handles inbound name/nickname changes and presentation presence metadata; friend/profile interfaces remain pending.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1194,10 +1200,13 @@
 			"sha256": "0b4bbffe49230dc1219ece3692f0984346121a39cb21f099769a6393c6578798",
 			"go_files": [
 				"internal/server/world.go",
+				"internal/world/player_visibility.go",
+				"internal/world/player_visibility_test.go",
+				"internal/server/player_visibility_test.go",
 				"internal/server/story.go",
 				"internal/server/events.go"
 			],
-			"notes": "Load release, vehicle restore, beach rescue callbacks and story arrivals have owned Go paths.",
+			"notes": "Load release, vehicle restore, beach rescue callbacks and story arrivals have owned Go paths. User-requested starter-scene player privacy uses SQL EVE scene IDs 10001/10002/10003 across every Ship Deck, Cabin and Robinson Island variant; peer snapshots, broadcasts, local lookup, battle teams, team formations and other players' tent signs are filtered. NPC/event visibility and shared tent interiors retain their existing rules.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1475,9 +1484,13 @@
 				"internal/server/chat.go",
 				"internal/server/native_commands.go",
 				"internal/server/native_commands_test.go",
-				"internal/server/command_registry.go"
+				"internal/server/command_registry.go",
+				"client/wlo/app/presentation.go",
+				"client/wlo/world/presentation.go",
+				"client/wlo/world/presentation_test.go",
+				"client/wlo/app/presentation_test.go"
 			],
-			"notes": "Pose set/broadcast/stop and unconditional interaction callback cleanup on AC32:3 are implemented; cleanup also works at pose zero and through minigame/loading gates.",
+			"notes": "Pose set/broadcast/stop and unconditional interaction callback cleanup on AC32:3 are implemented; cleanup also works at pose zero and through minigame/loading gates. Go client now renders timed native expressions independently of held poses, supports batched pose records and repeated expression restart; gesture selection UI remains pending.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1486,7 +1499,7 @@
 			"status": "ported",
 			"sha256": "78492e3a4d1292a0ad962b68a0a8d22c1e41433e5f63c814dbba7ab950f4c0f2",
 			"go_files": ["internal/server/settings.go"],
-			"notes": "Toggle, channels, snapshot and follow implemented.",
+			"notes": "Native desired-state AC33 requests verified against WLRI sender 0x2d1594 and System callback 0x284310: PK=1, Joining Battle=2, Channels=3, Trading=4, Party Invites=5. Three-byte AC33:2 updates Joining Battle; two-byte AC33:2 queries settings. Success sends the eight-byte snapshot; AC33:1 replies are native rejection notices. Party Invites persist separately in schema v17 and gate party requests. Focused golden/persistence/permission tests cover the native client disconnect regression.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -3248,7 +3261,7 @@
 			"status": "ported",
 			"sha256": "e5af44c69bd6b2e7b5d3114f793ff288f816fefad68c0a0d83fb14ce600f1cee",
 			"go_files": ["internal/game/settings.go", "internal/server/settings.go"],
-			"notes": "Preferences/channels/native snapshot and mutations implemented with persisted settings rather than text blobs.",
+			"notes": "Native preferences/channels/eight-byte snapshot and desired-state mutations persist in typed gameplay rows. v17 separates Party Invites from Joining Battle and preserves old invitation restrictions during upgrade; local Go client display/audio preferences stay outside server persistence.",
 			"audit_verdict": "migrated"
 		},
 		{

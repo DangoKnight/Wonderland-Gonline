@@ -16,6 +16,7 @@ import (
 	"wonderland-go/client/wlo/login"
 	"wonderland-go/client/wlo/picdb"
 	"wonderland-go/client/wlo/role"
+	"wonderland-go/client/wlo/settings"
 	"wonderland-go/client/wlo/seui"
 	"wonderland-go/client/wlo/sprites"
 	"wonderland-go/client/wlo/surface"
@@ -70,33 +71,37 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World          *world.World
-	Inventory      *inventory.Form
-	InventoryState *inventory.State
-	Stats          *world.Stats     // the player's values (5/3, 8/1, 26/4)
-	MainStatus     *hud.MainStatus  // the status panel over the world
-	FuncButtons    *hud.FuncBtnForm // the toolbar at the top right
-	MainButtons    *hud.MainBtnForm // the menu at the bottom right
-	HotKeys        *hud.HotKeyForm  // the F1–F8 bar
-	ChatBar        *hud.InputBar    // the chat bar
-	groundHeld     bool             // the left button went down on the ground
-	groundSince    time.Time        // when it went down
-	uiHovered      bool             // a control was under the pointer last frame
-	nextWalk       time.Time        // next re-plan while a button or arrow is held
-	Chat           *hud.ChatLog     // the chat log over the map
-	npcTemplates   map[uint32]world.NPCTemplate
-	Talk           *hud.Talk // the event talk window
-	Music          *Music    // background music, nil without audio
-	movie          *moviePlay
-	sport          *sportPlay // the running minigame
-	sceneMusic     map[uint16]string
-	talks          map[uint16]string
-	event          eventState
-	pendingNPC     *world.NPC // clicked out of reach, sent on arrival
-	areas          areaWatch
-	sounds         []string // the sound table (soundtable.go)
-	sfx            *Sounds  // the effects player (set by Run)
-	ambient        ambience
+	World              *world.World
+	Settings           *settings.Form
+	SettingsState      *settings.State
+	settingsPromptForm *seui.Form
+	settingsPath       string
+	Inventory          *inventory.Form
+	InventoryState     *inventory.State
+	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
+	MainStatus         *hud.MainStatus  // the status panel over the world
+	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
+	MainButtons        *hud.MainBtnForm // the menu at the bottom right
+	HotKeys            *hud.HotKeyForm  // the F1–F8 bar
+	ChatBar            *hud.InputBar    // the chat bar
+	groundHeld         bool             // the left button went down on the ground
+	groundSince        time.Time        // when it went down
+	uiHovered          bool             // a control was under the pointer last frame
+	nextWalk           time.Time        // next re-plan while a button or arrow is held
+	Chat               *hud.ChatLog     // the chat log over the map
+	npcTemplates       map[uint32]world.NPCTemplate
+	Talk               *hud.Talk // the event talk window
+	Music              *Music    // background music, nil without audio
+	movie              *moviePlay
+	sport              *sportPlay // the running minigame
+	sceneMusic         map[uint16]string
+	talks              map[uint16]string
+	event              eventState
+	pendingNPC         *world.NPC // clicked out of reach, sent on arrival
+	areas              areaWatch
+	sounds             []string // the sound table (soundtable.go)
+	sfx                *Sounds  // the effects player (set by Run)
+	ambient            ambience
 	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
 	// the map load is acknowledged. Until then prop sounds and area
 	// triggers stay silent, so the arrival's replay of opened props does
@@ -137,10 +142,11 @@ type Client struct {
 type Options struct {
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
-	SpritesRoot string
-	Root        string // the asset directory (login.Assets)
-	ServerINI   string // SERVER.INI override
-	FallbackINI []byte // used when SERVER.INI cannot be read
+	SpritesRoot  string
+	Root         string // the asset directory (login.Assets)
+	SettingsPath string // optional local preference file override
+	ServerINI    string // SERVER.INI override
+	FallbackINI  []byte // used when SERVER.INI cannot be read
 }
 
 // New is the login part of FormCreate: the picture database with the
@@ -226,7 +232,9 @@ func New(o Options) (*Client, error) {
 	c.ChatBar = hud.NewInputBar(c.Env)
 	c.UI.Add(c.ChatBar)
 	c.ChatBar.Message.OnEnter = c.sendChat
+	c.ChatBar.Message.Now = func() time.Time { return c.Now() }
 	c.ChatBar.Whisper.OnEnter = c.whisperEnter
+	c.ChatBar.Whisper.OnBlur = c.whisperBlur
 	c.ChatBar.OnWhisperName = c.whisperEnter
 	c.ChatBar.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
 	c.ChatBar.Focus = func(f seui.Control) { c.Input.Focused = f }
@@ -234,6 +242,17 @@ func New(o Options) (*Client, error) {
 	c.Chat = hud.NewChatLog(c.Env)
 	c.Chat.Now = func() time.Time { return c.Now() }
 	c.Chat.Faces = c.chatFace
+	c.Chat.SelfID = func() uint32 {
+		if c.World == nil {
+			return 0
+		}
+		return c.World.Player.ID
+	}
+	c.Chat.OnSpeaker = func(id uint32) {
+		c.quietWhisper = true
+		c.whisperTo(id)
+		c.quietWhisper = false
+	}
 	c.Chat.Pointer = c.ChatBar.Pointer
 	c.ChatBar.Notice = c.Chat.Notice
 	c.UI.Add(c.Chat)
@@ -263,6 +282,7 @@ func New(o Options) (*Client, error) {
 		}
 	}
 	c.initInventory()
+	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
 	c.UI.Add(c.Create)
@@ -382,11 +402,16 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateWireCode3:
 		// 5/3 (FUN_004381c4) fills the player's values.
 		c.Stats.ParseBaseStats(s)
+	case p[0] == protocol.CommandSettings:
+		c.settingsPacket(p)
 	case p[0] == protocol.CommandInventory:
 		c.inventoryPacket(p)
-	case p[0] == protocol.CommandStats && sub == protocol.StatsStatUpdate && len(s) >= statUpdateBytes:
+	case p[0] == protocol.CommandStats && sub == protocol.StatsStatUpdate && len(s) >= statUpdateBytes && (len(s) < statTargetEnd || binary.LittleEndian.Uint32(s[statTargetOffset:]) == 0):
 		// 8/1 (FUN_00416ebc): stat ID, a kind byte, then the value.
 		c.Stats.Apply(s[1], binary.LittleEndian.Uint32(s[3:]))
+		if s[1] == world.StatPoints && c.Inventory != nil {
+			c.Inventory.AllocationReply()
+		}
 	case p[0] == protocol.CommandGold && sub == protocol.GoldBalance && len(s) >= 5:
 		c.Stats.Gold = binary.LittleEndian.Uint32(s[1:])
 	case p[0] == protocol.CommandChat && sub <= protocol.ChatAllyMessage:
@@ -396,11 +421,25 @@ func (c *Client) dispatch(p []byte) {
 		if len(s) > chatIDEnd {
 			c.Notices.Show(s[chatIDEnd:], chatNoticeFor, c.Now())
 		}
+	case p[0] == protocol.CommandPresence:
+		c.receivePresence(s)
+	case p[0] == protocol.CommandPose:
+		c.receivePose(s)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateEquipmentSnapshot:
+		if c.World != nil {
+			c.World.ApplyPeerEquipment(s[1:])
+		}
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateSpriteRefresh:
+		if len(s) == 6 && c.World != nil {
+			if peer := c.World.Peers[binary.LittleEndian.Uint32(s[1:])]; peer != nil {
+				world.Dress(peer.Role, peer.Player)
+			}
+		}
 	case p[0] == protocol.CommandAppearance:
 		c.peerAppears(s)
 	case p[0] == protocol.CommandMovement && sub == protocol.MovementMove:
-		if id, x, y, ok := world.ParseMove(s); ok && c.World != nil && id != c.World.Player.ID {
-			c.World.MovePeer(id, x, y, c.Now())
+		if id, _, _, ok := world.ParseMove(s); ok && c.World != nil && id != c.World.Player.ID {
+			c.World.ApplyPeerMovement(s, c.Now())
 		}
 	case p[0] == protocol.CommandMovement && sub == protocol.MovementMovementLock && len(s) >= 2:
 		c.held = s[1] != 0
@@ -546,3 +585,5 @@ func (c *Client) connectFailed() {
 		c.Servers.Show()
 	}
 }
+
+const statTargetOffset, statTargetEnd = 7, 11 // AC8:1 target after stat, kind and value; zero denotes self.

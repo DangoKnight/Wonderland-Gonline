@@ -611,21 +611,38 @@ Each button is its picture's width by a third of its height (three state rows). 
 
 - **Channels** (+0x140): 1 World, 2 Local (the start, and again on each world entry, `FUN_00268980`), 3 Whisper, 4 Team, 5 Guild (6 Ally and 7 GM exist but have no button). The channel button shows the channel's name, `btn_channel_<n>_1` (40 × 60, three states; `FUN_00267db0`), with the hint "Switch Channel".
 - **Switching**: the paint (`FUN_00268194`, rectangles by `FUN_00020d08` = Bounds) opens the list while the pointer is over the button (0x1c, 0, 0x28 × 0x15 in the bar) and keeps it open while the pointer is over the list (the 0x7f pixels above): `icon_Channelframe_1` with a button for each other channel (`btn_channel_<n>_1`, 0x14 apart from 0x17 above the bar); a click on one picks it (`FUN_00267c5c`). The button's click (`FUN_00269b30`, World → Local → Whisper → Team) only acts while the list is closed, so with the pointer on the button a click changes nothing; its other handler (`FUN_0026527c`) toggles the list. Choosing Team or Guild without a team or guild adds "(System):You are not in a Team" or "(System):You are not in a Guild" and returns to Local, as `Team_Guild_Chat.png` shows. `TestChannelButtonOpensList`.
-- **Whisper field**: read-only outside Whisper, and emptied (with the target, +0x18c) when leaving it. It has no picture and keeps its pixel hit test, so it never takes a press itself: the bar's press (`FUN_002695d8`) inside (0x46, 0x240, 0x56 × 0x16) selects Whisper, which gives the field the keyboard (`TestWhisperAreaPress`); a press on the mail icon would open the mailbox (not ported). Enter in it (`FUN_00268a30`) looks the name up among the known players (letter case ignored): an empty field says "No target"; an unknown name says "<<No such person online>>" and empties the field; a known one becomes the target (`FUN_00269068`), adding "Whisp to <<name>>", joining the recent whisperers and moving the keyboard to the message field.
+- **Whisper field**: read-only outside Whisper, and emptied (with the target, +0x18c) when leaving it. It has no picture and keeps its pixel hit test, so it never takes a press itself: the bar's press (`FUN_002695d8`) inside (0x46, 0x240, 0x56 × 0x16) selects Whisper, which gives the field the keyboard (`TestWhisperAreaPress`); a press on the mail icon would open the mailbox (not ported). Enter in it (`FUN_00268a30`) looks the name up among the known players (letter case ignored): an empty field says "No target"; an unknown name says "<<No such person online>>" and empties the field; a known one becomes the target (`FUN_00269068`), adding "Whisp to <<name>>", joining the recent whisperers and moving the keyboard to the message field. Losing focus also validates a nonempty recipient: an unknown name clears the field and target and shows "<<No such person online>>" once; valid names resolve without taking focus away from the clicked control. Empty blur is silent (`Chat_03/Chat_Whisper.png`, `TestChatWhisperBlurValidation`).
 - **Recent whisperers** (+0x174 in the panel +0x178, `FUN_00268cdc`): another player's whisper puts its speaker before the last name; a chosen target moves to the end; at most ten. On the Whisper channel the list opens while the pointer is over the whisper field (0x46, 1, 0x56 × 0x16) or the list, 0x14 a row above the bar; a pick (`FUN_00268c38`) fills the field and runs its Enter. The panel is created without a picture, so only the names show. `TestWhisperers`.
 - **Known players** (`PTR_DAT_004c9788`): every AC4 record (`FUN_00429a38`) is kept, whatever its map, until the player leaves (AC12 to map 0), and names whisper targets and chat speakers beyond the map's players. This server sends AC4 only for players on the same map, so a player on another map can be whispered only once the client has seen them.
 - **Speaker icons as targets** (`FUN_00496ca4`, the main form's press): the list's paint records the speaker whose icon is under the pointer (+0x500, from the sprite's own pixel test); a press then, with the channel list closed, whispers to that speaker without the "Whisp to" line (+0x1b4) and takes the press. `TestSpeakerPortraitPress`.
 - **Clicking the message field**: the field has no picture, and the constructor clears its pixel hit test (+0xa8), so it is hit by its rectangle; the port had missed this, and clicks fell through to the bar, so the field could not take the keyboard (`TestMessageFieldClick`). The whisper field keeps the flag, as in the original, and gets the keyboard when Whisper is selected.
 - **History**: the last ten messages sent are recalled with Up and Down in the message field (`FUN_00265178`, `FUN_002651f8`).
 
-Not ported: the whisper name list (+0x174, recent whisperers, opened by clicking the whisper field), the emote panel (`panel_expression_1`, `icon_expre_1..31`), the mail animation, the battle buttons (Atk, Skill, Def, Catch, Flee, Help), and the viewer and auto-play buttons. The chat log is a separate window.
+The Chat Emotes button opens the native `panel_expression_1` picker: 30 icons in
+three rows plus the 31st at the bottom right. `FUN_0026a008` inserts the selected
+two-byte code at the message caret, reserves both bytes before insertion and
+keeps the picker open. The codes come from the binary table at `004bdc18`;
+for example `:D`, `XD` and `-P`. They travel as ordinary chat text. The chat log
+renders them using `icon_expre_1..31`, retaining Big5 character/code boundaries
+when wrapping. The picker animates every 500 ms; log icons advance every seventh
+30 ms game frame. The message editor previews the same animated icons while retaining their text
+codes for sending (`FUN_00269734`, `Chat_03/Chat_Emoji_Preview.png`). Caret
+movement, deletion and horizontal scrolling keep emoticon codes whole
+(`FUN_0045cbbc`). The picker tooltips retain the codes shown in
+`Chat_Tooltip_Emoji.png` and `Chat_Tooltip_Emoji_Go.png`.
+`TestChatEmoticonEditorPreview` and `TestChatEmoticonEditingAndHints` cover
+rendering, editing and hints. Character speech bubbles remain pending. Mail animation and the
+battle/viewer/auto-play buttons remain pending.
 
 ### Chat (ported: `client/wlo/hud/chatlog.go`, `client/wlo/app/chat.go`)
 
-- **Log window**: `TTalkMsgForm` (constructor `FUN_0048bbf4`), 0x208 × 100 at (0, 0x1db), in the mode of the capture: `panel_TalkForm2_1` as the strip at the left (stretched from 86 to 100 pixels through its scroll track, with the `bar_H4` thumb filling the track), Chatbox Lock (7, −8), the scroll arrows and Chat Box Switch. Lines go into the message list (`TSe_CharMsg`, 0x32, 0xe, 405 × 60), rows 0x14 apart, newest at the bottom, wrapped to 50 characters without splitting double-byte characters, at most 100.
+- **Log window**: `TTalkMsgForm` (constructor `FUN_0048bbf4`), 0x208 × 100 at (0, 0x1db), in the transparent mode of the capture: `panel_TalkForm2_1` as the strip at the left (stretched from 86 to 100 pixels through its scroll track, with the `bar_H4` thumb filling the track), Chatbox Lock (7, −8), the scroll arrows and Chat Box Switch. Lines go into the message list (`TSe_CharMsg`, 0x32, 0xe, 405 × 60), rows 0x14 apart, newest at the bottom, wrapped to 50 characters without splitting double-byte characters, at most 100 complete messages.
+- **Navigation**: arrows, the draggable thumb and mouse wheel scroll the retained messages. Lock holds the current view as other players speak; an outgoing message releases it and follows the newest rows (`FUN_0048c9d4`). The switch cycles opaque, transparent and ticker-only modes (`FUN_0048d2e4`). Transparent text lets clicks through to the map; opaque message rows and speaker portraits can select whisper targets.
+- **Resize and move**: the opaque window's native handle changes width/height with even dimensions and a minimum 224 × 72 (`FUN_0048e004`). The HUD bottom is aligned at y 575, matching `Chat_03/Chat_Background.png`; the binary's y-566 resize clamp displaced the port by nine pixels. All modes retain the same size and position (`Chat_Resizing.png`). Unlocked background mode can be dragged with pointer capture across child controls, bounded to the screen and y 578 (`FUN_0048c32c`, `Chat_Move.png`). Lock prevents dragging. The last 100 complete messages are retained and rewrapped with Big5/emoticon boundaries intact. A locked view follows its message and byte offset when wrapping changes. `TestChatNativeResizeCapture` and `TestChatResizeRewrapAndLockedAnchor` cover input and layout.
+- **Background and ticker**: opaque mode tiles the native colour-keyed `32X32Grid` within the stretched frame (`FUN_0048d410`). The ticker follows the window, sits 20 pixels above its bottom and fits its width without splitting Big5 characters. `TestChatReferenceGeometryAndDrag` checks the background, shared geometry and drag/lock capture.
 - **Lines** (`FUN_0048ac28(form, speaker, text, colour, channel)`): channel 1 reads "(World)" + name + ":" + text, and likewise 2 "(Local)", 3 "(Whisp)", 4 "(GM)", 5 "(Team)", 6 "(Guild)" and 7 "(Ally)". Channel 0 is the text alone with a speaker and "(SystemPromp):" + text without one, and also joins the ticker. Channel 10 is the client's own messages as given, 11 "(System):" + text and 12 "(Bouquet):" + text.
 - **Speaker icons** (`FUN_004905e8`): a row of channels 1–7 whose speaker is the player or a player on the map shows the speaker's face sprite (`<family>f`, 601 + head, as the portraits) in action 4 at its second frame (+0x11e = 1: the head turned three-quarters; the first frame faces front), at the list's left − 10 and the row's top + 10. `Chat_Icons_02.png` (the original) and `Chat_Icons.png` (the port, before the fix) show the difference; `TestChatSpeakerIcon` checks the action and frame.
-- **Colours**: channel → entry of the table `FUN_003beb14` fills (0x72a360): system 7 (0xf800 red), World 1, Local 9 (0xff80), Whisper 10 (0xfc00 orange), GM 10, Team 6, Guild 4, Ally 5, channel 10 7 (red); the table is fe31, ffb3, c6f3, 8653, 6e7e, 8e27, ffff, f800, f4a3, ff80, fc00. Every sent and received line first copies the player's `ChannelColor1`…`5` setting (Local, Whisper, Team, Guild, World; read from the character's `user\save` file by `FUN_00284434`) into its channel's slot (+0x4e0 + channel × 2); without a save the defaults are 9, 10, 6, 4 and 1 (0x284d05). The port uses the defaults; reading the save file is not ported. `Chat_02/Connection_Lost.png` shows whispers in orange (the port had them peach before, `Chat_02/Go_Whisper_Colors_Tooltip.png`).
+- **Colours**: channel → entry of the table `FUN_003beb14` fills (0x72a360): system 7 (0xf800 red), World 1, Local 9 (0xff80), Whisper 10 (0xfc00 orange), GM 10, Team 6, Guild 4, Ally 5, channel 10 7 (red); the table is fe31, ffb3, c6f3, 8653, 6e7e, 8e27, ffff, f800, f4a3, ff80, fc00. Every sent and received line first copies the player's `ChannelColor1`…`5` setting (Local, Whisper, Team, Guild, World; read from the character's `user\save` file by `FUN_00284434`) into its channel's slot (+0x4e0 + channel × 2); without a save the defaults are 9, 10, 6, 4 and 1 (0x284d05). The Channels settings window now persists local palette choices; reading legacy save files is not ported. `Chat_02/Connection_Lost.png` shows whispers in orange (the port had them peach before, `Chat_02/Go_Whisper_Colors_Tooltip.png`).
 - **Ticker** (`FUN_0048d688`): channel-0 lines also queue for a ticker drawn at (0x32, 0x22b). It starts as 60 spaces; every tick its first character is dropped and, while it is shorter than 0x36, the message's next character is appended, so a message types in from the right. Each message plays three times. The tick is 100 ms, which puts the welcome message where `Ship_Deck.png` caught it 33 ticks in.
 - **Welcome**: on the first world entry (`FUN_00492ac4`) the log empties and "Welcome to [<server>] Server" is added on channel 0 with the player as speaker (so no prefix and no icon), with the server's name from 1/9 ("Wonderland Go" from this repository's server).
 - **Receiving** (the cases at 0x2df0fb…0x2dfa42, table at 0x2df0b7): 2/n for n up to 7 carries the speaker's ID and the text (cut to 60 characters except 2/0 and 2/4) and is shown on channel n with the speaker's name from the map's players; 2/5 needs a known speaker. 2/16 (case 0x2dfd44) shows its text on the notice board for 2 seconds. (2/3 is Whisper, not a notice, as the port had it before.)
@@ -640,7 +657,7 @@ Not ported: the whisper name list (+0x174, recent whisperers, opened by clicking
 
 Server side (`internal/server/chat.go`, `chat_channels.go`): 2/1 goes to every player in the world except the sender (the sender's client logs it); 2/3 [target][text] goes to the target and back to the sender as 2/3 [sender][text]; 2/5 goes to the party, the sender included; 2/6 is ignored (no guilds). The `/world`, `/team` and `/whisper` commands send the same packets, `/world` echoed to the sender. GM broadcasts are 2/4, which the client shows as "(GM):" lines.
 
-Not ported: the speech bubble over the speaker (`FUN_00428ed0`, colour 0x841; sending and receiving call it), the chat options (channel switches +0x151…+0x155, mutes, GM bans and the radio's 5-second charge), the Loudspeaker's variant of the World line, the whisper name list, scrolling, the lock, resizing and the other window modes, the list's emoticons, links and VIP marks, clicking a line to whisper, and the announcement banner (`FUN_0048d9b8`). Teams and guilds are not ported, so the player is never in one.
+Not ported: the speech bubble over the speaker (`FUN_00428ed0`), GM bans, the radio's 5-second charge, the Loudspeaker's World-line variant, alternate backgrounds, links/VIP marks and the announcement banner (`FUN_0048d9b8`). Team and guild interfaces remain pending.
 
 ### Walking (ported: `client/wlo/world/walk.go`, `client/wlo/app/world.go`)
 
@@ -652,9 +669,9 @@ A left click that no control takes walks the player (`FUN_0043bc70`):
 - **Holding**: arrow keys walk 0x50 pixels from the player on each held axis, re-planned every 400 ms (`FUN_004a4248`, skipped while a text field has focus). Holding the left button after a ground click re-aims the walk at the pointer on the same 400 ms cadence; the original's mouse-hold code was not found, so this follows the key walk.
 - **6/1** (send case at 0x2c33cc, sent per leg by `FUN_0041897c`): the facing and the waypoint, then 8 bytes of an anti-cheat checksum from the role's timing table (+0x3ae0). This server reads only the first five; the client sends zeros for the rest.
 
-Not ported: the server's 6/1 echo (other players' movement), walking onto NPCs and doors, the camera at scene edges, and what the original does while a stall, ride or event holds the player.
+Other players' 6/1 movement and stop poses are handled. Remaining movement work includes the camera at scene edges and native stall/ride restrictions. NPC click and door/area handling are described below.
 
-**Walk marker** (`FUN_0049bbf4`, `client/wlo/world/marker.go`): a mouse walk, a click or a held button's re-aim (0x4a1d60), shows the marker at the walk's destination (+0x84/+0x88: the route's last waypoint, or the clicked point when no route is found) and restarts it. Every 120 ms (0x78) it steps through the skin's `Arrow2`, `Arrow3` and `Arrow4` (64 × 64, centred on the destination), drawn after the map, then hides; a step within 120 ms of the previous one keeps the old picture until the interval has passed. Arrow-key walks show none. A click on unwalkable ground moves the target back along the line toward the player to the first walkable cell (`FUN_0041a348`), so the marker lands on the edge of the walkable area. `TestWalkMarker` covers this; the marker matches `Walk_Marker.png`'s.
+**Walk marker** (`FUN_0049bbf4`, `client/wlo/world/marker.go`): a mouse walk, a click or a held button's re-aim (0x4a1d60), shows the marker at the walk's destination (+0x84/+0x88: the route's last waypoint, or the player's position when no route is active) and restarts it. Every 120 ms (0x78) it steps through the skin's `Arrow2`, `Arrow3` and `Arrow4` (64 × 64, centred on the destination), drawn after the map, then hides; a step within 120 ms of the previous one keeps the old picture until the interval has passed. Arrow-key walks show none. A click on unwalkable ground moves the target back along the line toward the player to the first walkable cell (`FUN_0041a348`), so the marker lands on the edge of the walkable area. Once the player reaches that edge, repeated clicks and held-button re-aims keep the marker at their feet (`Waypoint_Legacy.png`, corrected from `Waypoint_Go.png`). `TestWalkMarker` and `TestWalkMarkerBlockedArrival` cover this; the marker matches `Walk_Marker.png`'s.
 
 **Animation speed** (`FUN_004122ec` → `FUN_00411f54`): a role's frame advances every 100 ms, or every 230 ms (0xe6) while it is at rest (+0x123, set when a walk ends and on most standing paths). The port uses 230 ms for the standing actions (8–15) of the player, other players and NPCs, and 100 ms for walking; the login previews keep 100 ms.
 
@@ -665,9 +682,22 @@ Not ported: the server's 6/1 echo (other players' movement), walking onto NPCs a
 - **AC7** places it; **AC12** for its ID removes it unless the map is ours (this server sends map 0 when a player leaves).
 - **Chat**: 2/2 lines take the speaker's name from the map's players.
 
-`TestPeers` drives all of this with the server's own packet builders. This server shows other players on every map; the original server showed a single player on Ship Deck, the Cabin and Wilson's beach, so those maps are not samples for other players.
+`TestPeers` drives movement and presence with the server's packet builders. Ship Deck, Cabin and starter Wilson/Robinson island scenes are private: the server suppresses other players there. Use a later public map for observer tests.
 
-Not ported: the equipment snapshot (5/x) and sprite refresh, nicknames and titles, the speech bubble, other players' poses, rides and pets, and clicking a player.
+AC5:0 replaces another player's worn item list, including an empty snapshot;
+AC5:8 refreshes its sprite. AC10:1/5 updates nicknames/names, and AC10:2/3 stores
+presence metadata without despawning the character. Names and nicknames respect
+the separate Info Visibility settings. AC32:2 applies batched ID/action records
+and stops movement; movement replies with standing/held actions place the peer
+without starting another walk. AC32:1 starts an independent `E<code>` expression
+animation, resets it when repeated and expires it after four passes at 200 ms
+per frame. It leaves the held pose unchanged. Malformed record batches do not
+partially update the scene. See `TestNativePresentationAndAllocation` and
+`client/wlo/world/presentation_test.go`.
+
+Pending: the gesture selection interface, titles, speech bubbles, riding/pets,
+clicking a player and friend-list presence UI. Expressions and nicknames use the
+existing player name height; native body-height/ride adjustments remain pending.
 
 ### Talking to NPCs (ported: `client/wlo/app/events.go`, `client/wlo/hud/talk.go`)
 
@@ -763,7 +793,7 @@ The long-term plan is [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md), and [ALOGIN_CATALO
 
 1. **The game world**: the remaining event kinds, speech bubbles, the HUD's actions, the remaining chat channels, then wandering NPCs.
    - **NPCs turning to the player** when talked to (the original Burke faces the player in `In-Game/Burke_Talk.png`; ours keeps his facing).
-   - **Finish the chat log** (`client/wlo/hud/chatlog.go`, TTalkMsgForm): clicks on the chat area must walk. The original uses the form hit test (VMT +0x68 → `FUN_0046aadc`, ported as `seui.Panel.HitTest`), which tests the panel's pixels; in the transparent mode there is no background picture, so only the strip and its buttons take clicks and the rest falls through to the map. Ours is a `seui.FixedForm`, whose rectangle hit test (`FUN_004663dc`) swallows the whole 520×100 area. Also still missing: scrolling, the lock, resizing and the other modes, emoticons and VIP marks, and clicking a line to whisper.
+   - **Remaining chat presentation**: alternate backgrounds, VIP marks and character speech bubbles. Transparent mode now lets map clicks through; scroll arrows/thumb/wheel, lock, three modes, line/portrait whisper targets and the native emoticon picker, log rendering and animated editor preview work.
 2. **Remaining login-phase pieces**: the talk window's buttons and typing behind the notices.
 3. **Earlier startup**: the rest of FormCreate (`Transition`) and `Skins.Flst` parsing instead of the fixed white skin.
 4. **Remove the legacy front end**: drop `client/ui` and `client/frontend.go` once the port covers what they show.
@@ -1028,7 +1058,18 @@ among the blue artwork; the picture cache applies native color-keying.
 Equipment bonus/socket/forge and metadata-dependent tradeability lines still
 need the remaining native item-info rules.
 
-Remaining inventory work includes repair, point allocation/potential dialogs,
+The attribute arrows preview STR/CON/INT/WIS/AGI allocation using the available
+point budget (`FUN_00353ed4`). Confirm sends the native counted AC8:1 stat/word
+request (`FUN_003540c4`); Cancel or closing the form discards the draft. Player
+stats change only when the server replies. Pet-targeted stat replies no longer
+overwrite player values. Submission is disabled while awaiting confirmation;
+after five seconds without a reply it permits a manual retry with a notice.
+Derived combat stats stay authoritative during the preview. Native rebirth/class
+allocation caps and pet allocation dialogs remain pending; the server validates
+the actual allocation. `TestInventoryPointDraftAndNativeRequest` and
+`TestNativePresentationAndAllocation` cover budget, packets, replies and resets.
+
+Remaining inventory work includes repair and potential dialogs,
 pet equipment and secondary container/crafting forms. These are separate native
 forms and are not implemented by the inventory toolbar window yet.
 
@@ -1041,3 +1082,46 @@ INVENTORY_SNAPSHOT=/tmp/inventory.png go test ./wlo/app -run TestInventoryFlow -
 INVENTORY_REFERENCE_SNAPSHOT=/tmp/inventory-reference.png go test ./wlo/app -run TestInventoryOriginalSampleSnapshot -count=1
 INVENTORY_INTERACTION_SNAPSHOT=/tmp/inventory-interactions go test ./wlo/app -run TestInventoryInteractionSamples -count=1
 ```
+
+## Settings UI
+
+Open **Options** (the sixth bottom menu button). The System window and its
+Channels, Info Visibility, Titles and Blacklist panels use the exported white
+skin and the native constructor coordinates, checked against the Settings
+screenshots in `client/reference/screenshots/UI/`. Escape closes a child panel
+first, then System. Disconnects and character changes close all settings dialogs.
+
+- **PVP and PK, Joining Battle, Trading, Party Invites and Chat Channels** use
+  authoritative character settings from AC33:2. Changes send native desired-state
+  requests and become effective after the server confirms its snapshot. Joining
+  Battle is independent of party invitations.
+- **BG Music and SFX** have on/off controls and ten volume steps, initially 5.
+  Volume follows the native 300 hundredths of a dB attenuation per step; music
+  updates without restarting its track. SFX controls also apply to ambient loops.
+- **Chat colors** cycle through the native eleven-color palette and update
+  existing and future chat lines. **Blacklist** adds/removes case-insensitive
+  names and filters their incoming player messages; system/GM notices stay visible.
+- **Info Visibility** saves ten native display preferences. Other players' names
+  apply to the current world renderer. Pet labels, nicknames, guild names, tent
+  size and Adventure Level will use these preferences when their renderers are
+  ported; they are currently pending.
+- **Chat Box** toggles the log. **Spawn Point** offers Beach, Record and Carnie
+  through AC5:17, with eligibility checked by the server. **Log Out** returns to
+  server selection; **Exit** closes the client. Both ask for confirmation.
+
+Local preferences live in `var/client/user/settings.json`, written atomically
+outside the generated assets. They apply to this client installation; server
+permissions are stored per character in `wonderland.db` and never loaded from
+that local file. `app.Options.SettingsPath` supplies a separate profile/test path.
+
+Pending: Zoom Mode rendering, title entitlement synchronization/selection,
+Security Lock, Change Login, Change Password, Official Site integration, Balance
+Inquiry, redemption, VIP and point-purchase dialogs. Their controls show an
+unavailable notice; the title list remains empty until authoritative entitlements
+are supported. Readme points to this document and GETTING_STARTED. No external
+payment sites or unsupported server requests are opened by these controls.
+
+Implementation: `client/wlo/settings`, `client/wlo/app/settings.go`. Native sources:
+System constructor `0x282990`, toggle callback `0x284310`, sender
+`0x2d1594..0x2d1757`, snapshot decoder `0x2ea7fe..0x2ea872`, Channels constructor
+`0x281fcc`, Info `0x2824bc`, Titles `0x2a4b40`, Blacklist supplement `0x24ecb8`.

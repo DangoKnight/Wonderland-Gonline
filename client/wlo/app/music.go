@@ -18,9 +18,9 @@ import (
 // it whenever it reaches the end. In game, entering a map plays its scene's
 // track (0x3bce95 → FUN_004048b8), which keeps a track that is already
 // playing. The original also remembers where each map's track stopped
-// (+0x5706, +0x5710), honours the musicOn and musicVolume settings, and
-// plays BGM0028 on some maps under a player flag (+0x5768); none of that is
-// ported.
+// (+0x5706, +0x5710) and plays BGM0028 on some maps under a player flag
+// (+0x5768); those two behaviors are not ported. Local on/off and volume
+// preferences are applied through settings.go.
 const (
 	loginMusic = `Sound\BGM0013.wav`
 	musicDir   = `Sound\`
@@ -32,9 +32,11 @@ type Music struct {
 	Root    string
 	Context func() *audio.Context
 
-	mu      sync.Mutex
-	current string
-	player  *audio.Player
+	mu         sync.Mutex
+	current    string
+	player     *audio.Player
+	volume     float64
+	configured bool
 }
 
 // Play loops the track at path (relative to the client directory, with
@@ -62,6 +64,9 @@ func (m *Music) Play(path string) {
 		return
 	}
 	m.player = p
+	if m.configured {
+		p.SetVolume(m.volume)
+	}
 	p.Play()
 }
 
@@ -95,5 +100,16 @@ func (c *Client) playMapMusic() {
 	}
 	if track := c.sceneMusic[c.mapScenes[c.World.Player.Map]]; track != "" {
 		c.Music.Play(musicDir + track + musicExt)
+	}
+}
+
+// SetVolume applies local music preferences without restarting the current track.
+func (m *Music) SetVolume(v float64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.volume = max(0, min(1, v))
+	m.configured = true
+	if m.player != nil {
+		m.player.SetVolume(m.volume)
 	}
 }

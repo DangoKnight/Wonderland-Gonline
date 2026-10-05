@@ -17,10 +17,11 @@ const (
 )
 
 type ClientSettings struct {
-	PKAllowed    bool `json:"pk_allowed"`
-	JoinAllowed  bool `json:"join_allowed"`
-	TradeAllowed bool `json:"trade_allowed"`
-	Channels     byte `json:"channels"`
+	PKAllowed           bool `json:"pk_allowed"`
+	JoinAllowed         bool `json:"join_allowed"`
+	TradeAllowed        bool `json:"trade_allowed"`
+	PartyInvitesBlocked bool `json:"party_invites_blocked,omitempty"`
+	Channels            byte `json:"channels"`
 }
 
 func (c Character) Preferences() ClientSettings {
@@ -33,10 +34,8 @@ func (c Character) Preferences() ClientSettings {
 // The native AC33:2 decoder at 0x2ea812..0x2ea872 reads four option
 // values, a channel mask, then one byte passed to a no-op. The C# ToArray
 // omitted option 10 and the tail, so native Local chat read a missing mask.
-// Option 10's gameplay meaning is unresolved; retain the native constructor's
-// enabled default (FUN_00282990). Do not mistake this slot for the channel mask.
+// Option 10 is Party Invites (FUN_00284310); it is independent of Joining Battle.
 const (
-	nativeSettingsOption10Default     = SettingEnabled
 	nativeSettingsSnapshotTailDefault = 0
 )
 
@@ -48,5 +47,5 @@ func (s ClientSettings) Packet() []byte {
 		}
 		return SettingDisabled
 	}
-	return []byte{protocol.CommandSettings, protocol.SettingsSnapshot, flag(s.PKAllowed), flag(s.JoinAllowed), flag(s.TradeAllowed), nativeSettingsOption10Default, s.Channels, nativeSettingsSnapshotTailDefault}
+	return []byte{protocol.CommandSettings, protocol.SettingsSnapshot, flag(s.PKAllowed), flag(s.JoinAllowed), flag(s.TradeAllowed), flag(!s.PartyInvitesBlocked), s.Channels, nativeSettingsSnapshotTailDefault}
 }

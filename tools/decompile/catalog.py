@@ -17,7 +17,7 @@ subsystems of SUBSYSTEMS below (hand-authored; review it when the port moves).
 mentions (FUN_xxxxxxxx). It is a lower bound of the ported code: helpers that a
 port reproduces without naming are not counted.
 
-Usage: python3 tools/decompile/catalog.py [--root .]
+Usage: python3 tools/decompile/catalog.py [--root .] [--exe var/ghidra/aLogin.exe]
 """
 
 import argparse
@@ -29,7 +29,6 @@ import re
 import struct
 
 BUILD = "ca19ee087b60"
-EXE = pathlib.Path("/home/dango/Games/Wonderland_Client/WLRI-prefix/drive_c/Games/WLRI-capture/aLogin.exe")
 GO_ROOTS = ("client/wlo", "internal", "client/cmd")
 
 # Receive dispatcher FUN_002dde1c: command byte → jump table index → target.
@@ -68,7 +67,7 @@ SUBSYSTEMS = [
      "FUN_002c2394 sends, FUN_002dde1c receives. See the command coverage table."),
     ("seui", "UI framework (se_UI, picture database)", "client/wlo/seui, client/wlo/picdb", "ported", [265, 266, 267],
      "TSe_UIHandler, TSe_GrBasic and the components, buttons, editors, lists, scroll bars, forms; TSe_CachePicDB. "
-     "Components still unported are noted where met (chat log hit test, item grids)."),
+     "Native modal input, owner-routed wheel scrolling and inventory grids are implemented; remaining components are noted by feature."),
     ("text", "Text rendering", "client/wlo/text", "ported", [275, 276], "Twb_MemSur, Twb_PlainPic, Twb_Chinese bitmap fonts."),
     ("login", "Login, server and character selection", "client/wlo/login", "ported", [94, 96, 251, 252, 258],
      "Server list and health checks (TServerDetect), account and password forms, character selection, deletion, notices."),
@@ -76,7 +75,7 @@ SUBSYSTEMS = [
      "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173)."),
     ("roles", "Roles: players, NPCs, sprites", "client/wlo/role, client/wlo/world", "partial", [262, 263, 264],
      "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, "
-     "frame stepping. Not yet: emotes and poses, riding, transforms, follow NPCs, wandering NPCs, NPC turning."),
+     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata. Not yet: gesture selection UI, riding, transforms, follow NPCs, wandering NPCs, NPC turning."),
     ("ground", "Ground, scene objects and map data", "client/wlo/world", "partial", [249, 257, 268, 102, 103],
      "TGround, TGroundObj, TMap, TFSceneData. Ported: scene layers, walk grid, objects and depth order, sound zones, "
      "camera. Not yet: translucent objects, the map's other lists (sub-regions, the optional grid)."),
@@ -95,7 +94,7 @@ SUBSYSTEMS = [
      "question forms, OK-only mode, scrolling and typing, the talk cursor."),
     ("chat", "Chat log and input bar", "client/wlo/hud (chatlog.go, inputbar.go), client/wlo/app (chat.go)", "partial",
      [277, 278],
-     "TTalkMsgForm, TSe_CharMsg. Not yet: click-through hit test, scrolling, lock, resizing, modes, emoticons, whispers."),
+     "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles."),
     ("hud", "HUD: status, hot keys, buttons, team, emotes", "client/wlo/hud", "partial", [195, 196, 197],
      "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. "
      "Drawn; most actions not wired."),
@@ -106,15 +105,15 @@ SUBSYSTEMS = [
     ("sound", "Sound effects, music centre, volume", "client/wlo/app (sound.go, music.go, ambient.go)", "partial",
      [149, 255, 206],
      "Tsound effect list, TFMark, TMusicCenter (jukebox), the volume form. Ported: effects, map music, ambience, "
-     "movie music. Not yet: the jukebox, sound options and volume sliders."),
+     "movie music, System options for effects/music volumes and ambient sound. Not yet: the jukebox."),
     ("items", "Items, inventory and equipment", "client/wlo/inventory, client/wlo/app (inventory.go)", "partial", [225, 245, 246, 247, 250, 139],
      "TFItem, TSe_itemObject, TSe_ItemImage, item grids, TEquip, equip forms, crafting materials. Item data and sprite "
-     "layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, use, equipment swaps and AC23 updates are ported. "
-     "Remaining: full equipment bonus/socket/forge tooltip rules, repair, stat allocation/potential dialogs, pet equipment, secondary item containers and crafting."),
+     "layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, use, equipment swaps, AC23 updates and player attribute allocation with native AC8 requests are ported. "
+     "Remaining: full equipment bonus/socket/forge tooltip rules, repair, native rebirth/class allocation caps, potential dialogs, pet equipment, secondary item containers and crafting."),
     ("battle", "Battle", "", "todo", [227, 228, 230, 231],
      "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. The server side is ported."),
-    ("system", "Options, teams, organisations, rankings", "", "todo", [232, 234, 235, 237, 256],
-     "TCY_OptionForm, TCY_SystemTeam, TLD_Top100Form, TCY_OrganManage, TCY_TeamManage."),
+    ("system", "Options, teams, organisations, rankings", "client/wlo/settings, client/wlo/app/settings.go", "partial", [232, 234, 235, 237, 256],
+     "TCY_OptionForm: five settings windows, native server permissions and local audio/chat/visibility/blacklist settings are implemented. Pending: Zoom rendering, title entitlements, account/payment services, TCY_SystemTeam, TLD_Top100Form, TCY_OrganManage, TCY_TeamManage."),
     ("trade", "Trade, stalls and vendors", "", "todo", [217, 218, 243],
      "TCY_TradeMenu, vendor and stall forms, TTradeManage."),
     ("social", "Friends, mail, guilds, weddings, PK", "", "todo", [241, 242, 209, 210, 183, 184, 185, 189, 198, 199],
@@ -172,10 +171,10 @@ def cited_addresses(root):
     return out
 
 
-def recv_commands():
-    if not EXE.exists():
+def recv_commands(exe):
+    if not exe.exists():
         return None
-    b = EXE.read_bytes()
+    b = exe.read_bytes()
     off = lambda va: va - 0x11000 + 0x400
     out = []
     for c in range(RECV_LIMIT):
@@ -205,6 +204,7 @@ def client_commands(root):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
+    ap.add_argument("--exe", help="WLRI ca19ee087b60 binary; defaults to ROOT/var/ghidra/aLogin.exe")
     args = ap.parse_args()
     root = pathlib.Path(args.root).resolve()
     dec = root / "var/decompiled"
@@ -258,7 +258,7 @@ def main():
                      "regions": [r["region"] for r in loose], "functions": sum(r["functions"] for r in loose),
                      "cited": sum(r["cited"] for r in loose), "ranges": [f'{r["start"]}-{r["end"]}' for r in loose]})
 
-    cmds = recv_commands()
+    cmds = recv_commands(pathlib.Path(args.exe) if args.exe else root / "var/ghidra/aLogin.exe")
     names = protocol_names(root)
     handled = client_commands(root)
     commands = []

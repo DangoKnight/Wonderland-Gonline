@@ -107,7 +107,8 @@ func (s *Server) enterTent(ctx context.Context, c *Session, owner uint32) error 
 		return nil
 	}
 	host := s.onlineByID(owner)
-	if host == nil || host.openTent == nil || host.openTent.Map != c.character.Map || host.invisible {
+	if host == nil || host.openTent == nil || host.openTent.Map != c.character.Map || host.invisible ||
+		(owner != c.character.ID && s.World.HideOtherPlayers(c.character.Map)) {
 		return c.send(systemLine("This tent is unavailable."))
 	}
 	tent, err := s.Store.Tent(ctx, owner)
@@ -187,7 +188,7 @@ func (s *Server) closePlayerTent(ctx context.Context, c *Session) error {
 	c.openTent = nil
 	packet := protocol.Builder{protocol.CommandTent, protocol.TentClosed}.U32(c.character.ID)
 	for _, peer := range s.world {
-		if peer.character.Map == t.Map && peer.tentOwner == 0 {
+		if peer.character.Map == t.Map && peer.tentOwner == 0 && (peer == c || !s.World.HideOtherPlayers(t.Map)) {
 			s.sendOrClose(peer, packet)
 		}
 	}

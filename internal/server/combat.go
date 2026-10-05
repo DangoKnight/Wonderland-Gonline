@@ -157,7 +157,7 @@ func (s *Server) battleTeam(c *Session) []*Session {
 		return team
 	}
 	for _, m := range c.party.members {
-		if m != c && len(team) < partyMax && m.ready && m.battle == nil && m.event == nil && sameScene(m, c) {
+		if m != c && len(team) < partyMax && m.ready && m.battle == nil && m.event == nil && s.samePlayerScene(m, c) {
 			team = append(team, m)
 		}
 	}

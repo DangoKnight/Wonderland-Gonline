@@ -62,6 +62,9 @@ func (c *Client) warp(p []byte) {
 	// map is not ready until 5/4.
 	c.areas.last = 0
 	c.mapReady = false
+	if c.Settings != nil {
+		c.Settings.Hide()
+	}
 	pl := c.World.Player
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
@@ -81,6 +84,7 @@ func (c *Client) warp(p []byte) {
 		w.OnLeg = c.sendLeg
 		w.Now = func() time.Time { return c.Now() }
 		c.World = w
+		c.applyLocalSettings()
 		c.playMapMusic()
 		c.MainStatus.Portrait = w.Body
 	} else {
@@ -107,7 +111,7 @@ const (
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
-	if c.World == nil || c.sceneFrozen() {
+	if c.World == nil || c.sceneFrozen() || c.settingsPromptForm != nil {
 		return
 	}
 	if c.movie != nil {
@@ -151,16 +155,16 @@ func (c *Client) walkToward(x, y int, marked bool) {
 	cx, cy := c.World.Camera()
 	now := c.Now()
 	c.nextWalk = now.Add(walkRepeat)
-	routed := c.World.WalkTo(x+cx, y+cy, now)
+	c.World.WalkTo(x+cx, y+cy, now)
 	if marked {
-		c.World.MarkWalk(x+cx, y+cy, routed)
+		c.World.MarkWalk()
 	}
 }
 
 // GroundHold is called while the left button stays down: a press that
 // started a walk re-aims it at the pointer every 400 ms. Release ends it.
 func (c *Client) GroundHold(held bool, x, y int) {
-	if !held || c.sport != nil {
+	if !held || c.sport != nil || c.settingsPromptForm != nil {
 		c.groundHeld, c.groundSince = false, time.Time{}
 		return
 	}
@@ -173,7 +177,7 @@ func (c *Client) GroundHold(held bool, x, y int) {
 // focused, the player walks 0x50 pixels from its position on each held
 // axis, re-planned every 400 ms.
 func (c *Client) WalkKeys(left, up, right, down bool) {
-	if c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
+	if c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
 		return
 	}
 	if _, typing := c.Input.Focused.(*seui.Editor); typing {

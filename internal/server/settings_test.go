@@ -17,15 +17,17 @@ func TestSettingsNativePacketsAndPersistence(t *testing.T) {
 	}
 	cases := []struct{ in, out []byte }{
 		{[]byte{16, 1, 0}, []byte{16, 1, 0}},
-		{[]byte{33, 1, 1}, []byte{33, 1, 1, 1}},
+		{[]byte{33, 1, 1}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
+		{[]byte{33, 2, 2}, []byte{33, 2, 1, 2, 1, 1, 31, 0}},
+		{[]byte{33, 2, 1}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
 		{[]byte{16, 2}, []byte{16, 2, 1}},
-		{[]byte{33, 1, 4}, []byte{33, 1, 4, 1}},
+		{[]byte{33, 4, 1}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
 		{[]byte{16, 3, 1}, []byte{16, 3, 1}},
-		{[]byte{33, 1, 2}, []byte{33, 1, 2, 1}},
+		{[]byte{33, 5, 1}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
+		{[]byte{33, 5, 2}, []byte{33, 2, 1, 1, 1, 2, 31, 0}},
+		{[]byte{33, 5, 1}, []byte{33, 2, 1, 1, 1, 1, 31, 0}},
 		{[]byte{16, 4, 2}, []byte{16, 4, 2}},
-		{[]byte{33, 5}, []byte{33, 5, 1}},
-		{[]byte{33, 5, 0}, []byte{33, 5, 0}},
-		{[]byte{33, 1, 3, 18}, nil},
+		{[]byte{33, 3, 18}, []byte{33, 2, 1, 1, 1, 1, 18, 0}},
 		{[]byte{33, 2}, []byte{33, 2, 1, 1, 1, 1, 18, 0}},
 	}
 	for _, tt := range cases {
@@ -65,12 +67,12 @@ func TestSettingsMalformedAndSaveFailure(t *testing.T) {
 	s, players, wires := partyFixture(t)
 	c := players[0]
 	before := c.character.Preferences()
-	for _, p := range [][]byte{{16}, {16, 1, 1, 1}, {33}, {33, 1}, {33, 1, 3}, {33, 1, 1, 1}, {33, 2, 1}, {33, 5, 1, 1}} {
+	for _, p := range [][]byte{{16}, {16, 1, 1, 1}, {33}, {33, 1}, {33, 1, 3}, {33, 1, 1, 1}, {33, 2, 3}, {33, 5, 1, 1}} {
 		if err := s.dispatch(context.Background(), c, p); err == nil {
 			t.Fatal("malformed preferences accepted", p)
 		}
 	}
-	for _, p := range [][]byte{{16, 99}, {33, 99}, {33, 1, 99}} {
+	for _, p := range [][]byte{{16, 99}, {33, 99, 1}} {
 		if err := s.dispatch(context.Background(), c, p); err != ErrUnsupported {
 			t.Fatal("unknown preferences accepted", p, err)
 		}
@@ -79,7 +81,7 @@ func TestSettingsMalformedAndSaveFailure(t *testing.T) {
 		t.Fatal("invalid packet mutated preferences")
 	}
 	s.Store.Close()
-	if err := s.dispatch(context.Background(), c, []byte{33, 1, 4}); err == nil {
+	if err := s.dispatch(context.Background(), c, []byte{33, 4, 2}); err == nil {
 		t.Fatal("failed save ignored")
 	}
 	if c.character.Preferences() != before || c.character.Settings != nil || wires[0].Len() != 0 {
@@ -88,7 +90,7 @@ func TestSettingsMalformedAndSaveFailure(t *testing.T) {
 }
 
 func TestSettingsTeamRequestsAndPendingAccept(t *testing.T) {
-	for _, toggle := range [][]byte{{16, 3, 1}, {33, 1, 2}} {
+	for _, toggle := range [][]byte{{16, 3, 1}, {33, 5, 2}} {
 		s, players, wires := partyFixture(t)
 		target, requester := players[0], players[1]
 		tradeDo(t, s, requester, protocol.Builder{13, 1}.U32(target.character.ID))
@@ -105,7 +107,7 @@ func TestSettingsTeamRequestsAndPendingAccept(t *testing.T) {
 		if target.party != nil || requester.party != nil || wires[0].Len() != 0 {
 			t.Fatal("reject-team preference bypassed")
 		}
-		tradeDo(t, s, target, []byte{16, 3, 0})
+		tradeDo(t, s, target, []byte{33, 5, 1})
 		tradeDo(t, s, target, protocol.Builder{13, 3, 1}.U32(requester.character.ID))
 		if target.party != nil {
 			t.Fatal("stale invitation accepted after enabling")
@@ -144,9 +146,9 @@ func TestSettingsTradeLockCancelsAndBlocksRequests(t *testing.T) {
 		if a.tradeRequest != nil {
 			t.Fatal("locked requester initiated trade")
 		}
-		tradeDo(t, s, b, []byte{33, 1, 4})
+		tradeDo(t, s, b, []byte{33, 4, 1})
 		openTrade(t, s, players, wires)
-		tradeDo(t, s, b, []byte{33, 1, 4})
+		tradeDo(t, s, b, []byte{33, 4, 2})
 		if a.trade != nil || b.trade != nil {
 			t.Fatal("AC33 trade toggle failed to cancel")
 		}
@@ -180,5 +182,24 @@ func TestSettingsCloneCannotMutateOriginal(t *testing.T) {
 	copy.Settings.TradeAllowed = false
 	if !c.Settings.TradeAllowed {
 		t.Fatal("clone shares settings")
+	}
+}
+
+func TestSettingsJoiningBattleIndependentFromPartyInvites(t *testing.T) {
+	s, players, _ := partyFixture(t)
+	target, requester := players[0], players[1]
+	tradeDo(t, s, target, []byte{33, 2, 2})
+	tradeDo(t, s, requester, protocol.Builder{13, 1}.U32(target.character.ID))
+	if len(target.partyRequests) != 1 || target.character.Preferences().JoinAllowed {
+		t.Fatal("Joining Battle disabled party invitations")
+	}
+	tradeDo(t, s, target, []byte{33, 5, 2})
+	if len(target.partyRequests) != 0 || !target.character.Preferences().PartyInvitesBlocked {
+		t.Fatal("Party Invites did not clear pending invitations")
+	}
+	tradeDo(t, s, target, []byte{33, 2, 1})
+	tradeDo(t, s, requester, protocol.Builder{13, 1}.U32(target.character.ID))
+	if len(target.partyRequests) != 0 {
+		t.Fatal("Joining Battle enabled blocked party invitations")
 	}
 }

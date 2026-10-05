@@ -10,16 +10,19 @@ import (
 // InputBar is TSe_InputBar (constructor FUN_0026348c, paint FUN_00268194):
 // the chat bar along the bottom: the channel button, the whisper name and
 // message fields, the recent whisperers, and the emote button. Not ported
-// yet: the emote panel (icon_expre_1..31), the mail animation,
+// yet: the mail animation,
 // the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
 // and auto-play buttons.
 type InputBar struct {
 	seui.FixedForm
-	Channel byte              // +0x140, 2 (Local) at start
-	Switch  *seui.FixedButton // +0x1ac, the current channel's btn_channel_<n>_1
-	Whisper *seui.Editor      // +0x138, the whisper target
-	Message *seui.Editor      // +0x134, the message
-	Emotes  *seui.FixedButton // +0x1ec Btn_expression_1
+	Channel    byte              // +0x140, 2 (Local) at start
+	Switch     *seui.FixedButton // +0x1ac, the current channel's btn_channel_<n>_1
+	Whisper    *seui.Editor      // +0x138, the whisper target
+	Message    *seui.Editor      // +0x134, the message
+	Emotes     *seui.FixedButton // +0x1ec Btn_expression_1
+	EmotePanel *seui.Panel
+	EmoteClose *seui.FixedButton
+	EmoteIcons [chatEmoticons]*seui.FixedButton
 	// Target is the whisper target's ID (+0x18c), 0 for none.
 	Target uint32
 	// The channel list (FUN_0026527c): a frame above the button with a
@@ -163,6 +166,7 @@ func NewInputBar(env *seui.Env) *InputBar {
 	b.Whisperers.SetBounds(whispererListLeft, whispererListTop, whispererRow, whispererBoxW)
 	b.Whisperers.SetColor(inputTextInk)
 	b.Whisperers.OnSelect = b.pickWhisperer
+	b.initEmoticons()
 	return b
 }
 
@@ -226,6 +230,7 @@ func newField(env *seui.Env, owner seui.Control, left, width, maxLen int, hint s
 // Reset is FUN_00268980 (entering the world): the fields empty and the
 // channel returns to Local.
 func (b *InputBar) Reset() {
+	b.ShowEmoticons(false)
 	b.Message.Clear()
 	b.Whisper.Clear()
 	b.SelectChannel(InputLocal)

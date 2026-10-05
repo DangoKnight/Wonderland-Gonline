@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/binary"
+	"image"
 	"time"
 
 	"wonderland-go/client/wlo/hud"
@@ -31,7 +32,7 @@ func (c *Client) welcome() {
 // receiveChat is 2/0..2/7 (the receive cases at 0x2df0fb…0x2dfa42): the
 // speaker's ID and the text, shown on channel n with the speaker's name.
 // A Team line needs a known speaker. The speech bubble over the speaker
-// (FUN_00428ed0) and the whisper name list are not ported.
+// (FUN_00428ed0) is not ported.
 func (c *Client) receiveChat(sub byte, s []byte) {
 	if len(s) < chatIDEnd || c.World == nil {
 		return
@@ -42,6 +43,9 @@ func (c *Client) receiveChat(sub byte, s []byte) {
 		text = text[:chatMaxReceived]
 	}
 	name := c.playerName(id)
+	if c.SettingsState != nil && id != c.World.Player.ID && sub != protocol.ChatSystemMessage && sub != protocol.ChatGMMessage && c.SettingsState.Local.Blocked(name) {
+		return
+	}
 	if sub == protocol.ChatTeamMessage && name == nil {
 		return
 	}
@@ -223,7 +227,7 @@ func (c *Client) whisperEnter() {
 // whispers to that speaker, without the "Whisp to" line (+0x1b4), and
 // takes the press.
 func (c *Client) SpeakerPress() bool {
-	if c.World == nil || c.Chat == nil || !c.Chat.Visible || c.ChatBar.Frame.Visible || c.Chat.Hovered == 0 {
+	if c.World == nil || c.Chat == nil || !c.Chat.Visible || c.ChatBar.Frame.Visible || c.UI.Modal != nil || c.Chat.Hovered == 0 {
 		return false
 	}
 	c.quietWhisper = true
@@ -301,4 +305,37 @@ func (c *Client) playerByName(name []byte) (uint32, bool) {
 		}
 	}
 	return 0, false
+}
+
+// scrollWheel preserves click-through map input while allowing the transparent
+// chat list to scroll under the pointer. Hovered forms and modal dialogs retain
+// precedence over the chat behind them.
+func (c *Client) scrollWheel(up bool) bool {
+	if c.UI.Wheel(up) {
+		return true
+	}
+	if c.Input.Hovered != nil || c.UI.Modal != nil || c.Chat == nil || !c.Chat.Visible || c.Chat.Mode == hud.ChatTickerOnly {
+		return false
+	}
+	if !image.Pt(c.Input.X, c.Input.Y).In(c.Chat.Rect()) {
+		return false
+	}
+	if up {
+		c.Chat.WheelUp()
+	} else {
+		c.Chat.WheelDown()
+	}
+	return true
+}
+
+// whisperBlur validates a typed recipient without stealing focus from the
+// control the player just selected. Empty fields leave quietly.
+func (c *Client) whisperBlur() {
+	if len(c.ChatBar.Whisper.Text) == 0 {
+		c.ChatBar.Target = 0
+		return
+	}
+	focused := c.Input.Focused
+	c.whisperEnter()
+	c.Input.Focused = focused
 }

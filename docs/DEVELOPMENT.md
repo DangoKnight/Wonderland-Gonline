@@ -43,9 +43,11 @@ Game content definitions belong in `assets.db`. Preserve the startup-only
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v16 stores character state in typed tables and owned child rows.
-Structured asset schema v11 stores runtime definitions in generated `catalog_*`
-tables. Migration retains legacy representations solely as snapshots/provenance;
+Gameplay schema v17 stores character state in typed tables and owned child rows.
+v17 separates Party Invites from Joining Battle, preserving earlier invitation
+restrictions during upgrade. Structured asset schema v11 stores runtime definitions
+in generated `catalog_*` tables. Migration retains legacy representations solely
+as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
 Regenerate asset models after changing catalog types with
@@ -252,7 +254,10 @@ local decompile in `var/decompiled` and the Go sources, and regenerates
 `docs/ALOGIN_CATALOG.md` and `docs/client-inventory.json`. Cite ported functions
 by address (`FUN_xxxxxxxx`) so the catalog counts them, and update a subsystem's
 status in the script's `SUBSYSTEMS` table when it moves. The plan is in
-`docs/CLIENT_ROADMAP.md`.
+`docs/CLIENT_ROADMAP.md`. The receive-command table uses
+`var/ghidra/aLogin.exe`; use `--exe /path/to/aLogin.exe` for another location of
+the same WLRI build. Command coverage indicates a receive branch exists, not
+that every subcommand or its interface is complete.
 
 ## Editable picture assets
 
@@ -850,6 +855,16 @@ A blocked or out-of-bounds saved spawn may recover to a valid destination.
 Validated active item vehicles retain native water/air travel within scene bounds;
 land collision bits are not a vehicle capability table. Missing grids preserve
 legacy movement, without falling back to files or fabricated geometry.
+
+Player visibility is personal in introductory Ship Deck, Cabin and Robinson's
+Island (WLRI "Newbie Island"). `World.HideOtherPlayers` uses SQL EVE scene IDs
+10001, 10002 and 10003, covering every map variant without hiding players on
+later ships or cabins with similar names. `Server.samePlayerScene` gates player
+arrival snapshots, movement, pets, vehicles, poses, local chat, battle indicators,
+team formations and local player lookup. Other players' tent signs are also
+hidden. NPCs, authored events and terrain keep their existing behavior; shared
+tent interiors keep owner-based visibility. Definitions are read from the SQL
+startup catalog; the visibility policy lives in `internal/world/player_visibility.go`.
 
 Spawn definitions remain immutable. `World.NPC` and `World.NPCs` report current
 ambient positions for map entry, interaction distance and encounter checks.

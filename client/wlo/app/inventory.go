@@ -25,6 +25,7 @@ func (c *Client) initInventory() {
 	c.Inventory.CanAct = func() bool {
 		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.sceneFrozen()
 	}
+	c.Inventory.Now = func() time.Time { return c.Now() }
 	c.Inventory.Notice = c.Chat.Notice
 	c.UI.Add(c.Inventory)
 	c.MainButtons.Buttons[mainInventoryButton].OnClick = func() {
@@ -37,7 +38,13 @@ func (c *Client) initInventory() {
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	if c.Settings != nil {
+		c.Settings.Hide()
+		c.SettingsState.Reset()
+		c.applyLocalSettings()
+	}
 	c.Inventory.Hide()
+	c.Inventory.AllocationReply()
 	c.InventoryState.Reset(p.Items)
 	*c.Stats = world.Stats{Formula: c.Stats.Formula}
 	c.Inventory.PlayerName = append([]byte(nil), p.Name...)

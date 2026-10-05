@@ -23,9 +23,10 @@ func testClient(t *testing.T) *Client {
 		t.Skip("client assets not installed")
 	}
 	c, err := New(Options{
-		Root:        root,
-		ServerINI:   filepath.Join(t.TempDir(), "SERVER.INI"),
-		FallbackINI: []byte("01[Local]1\r\nLocal1*127.0.0.1\r\n"),
+		Root:         root,
+		SettingsPath: filepath.Join(t.TempDir(), "settings.json"),
+		ServerINI:    filepath.Join(t.TempDir(), "SERVER.INI"),
+		FallbackINI:  []byte("01[Local]1\r\nLocal1*127.0.0.1\r\n"),
 		// SNAPSHOT_SPRITES selects sprite packs or the editable export.
 		SpritesRoot: os.Getenv("SNAPSHOT_SPRITES"),
 	})

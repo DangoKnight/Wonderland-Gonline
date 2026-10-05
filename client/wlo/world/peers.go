@@ -43,6 +43,12 @@ func ParseOther(p []byte) (*Peer, error) {
 	r.u32()
 	r.take(3)
 	pr.Name = r.str()
+	if len(r.b) > 0 {
+		pr.Nickname = r.str()
+	}
+	if len(r.b) > 0 {
+		pr.Presence = r.u8()
+	}
 	if r.bad {
 		return nil, errShortOther
 	}
@@ -106,7 +112,10 @@ func (w *World) PlacePeer(id uint32, x, y int) {
 }
 
 // RemovePeer is AC12 to map 0: the player leaves.
-func (w *World) RemovePeer(id uint32) { delete(w.Peers, id) }
+func (w *World) RemovePeer(id uint32) {
+	delete(w.Peers, id)
+	delete(w.Expressions, id)
+}
 
 // PeerName is the name of a player on the map, nil when unknown.
 func (w *World) PeerName(id uint32) []byte {

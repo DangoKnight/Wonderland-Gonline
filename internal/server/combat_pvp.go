@@ -26,7 +26,7 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 	}
 	targetID := uint32(p[3]) | uint32(p[4])<<8 | uint32(p[5])<<16 | uint32(p[6])<<24
 	target := s.friendSessions[targetID]
-	if target == nil || target == c || target.character == nil || !sameScene(target, c) || c.tentOwner != 0 ||
+	if target == nil || target == c || target.character == nil || !s.samePlayerScene(target, c) || c.tentOwner != 0 ||
 		!c.character.Preferences().PKAllowed || !target.character.Preferences().PKAllowed ||
 		!gmIdle(c) || !gmIdle(target) || (c.party != nil && c.party == target.party) {
 		return c.send(headBanner("The player is unavailable for PK."))

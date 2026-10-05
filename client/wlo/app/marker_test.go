@@ -64,3 +64,38 @@ func TestWalkMarker(t *testing.T) {
 		t.Fatal("arrow keys showed the marker")
 	}
 }
+
+// Waypoint_Legacy keeps the marker at the player's feet after reaching the
+// walkable edge, including subsequent clicks and held-button re-aims.
+func TestWalkMarkerBlockedArrival(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
+	cx, cy := c.World.Camera()
+	target := image.Pt(790+cx, 590+cy)
+	c.GroundClick(790, 590)
+	end := c.World.Marker.At()
+	if !c.World.Walking() || end == target {
+		t.Fatal("blocked click failed to plan a walk to the edge")
+	}
+	c.GroundHold(false, 0, 0)
+	*now = now.Add(10 * time.Second)
+	c.World.Step(*now)
+	if c.World.Walking() || image.Pt(c.World.Player.X, c.World.Player.Y) != end {
+		t.Fatal("player failed to arrive at the walkable edge")
+	}
+	sent() // discard the original route's movement packets
+	cx, cy = c.World.Camera()
+	c.GroundClick(target.X-cx, target.Y-cy)
+	if c.World.Walking() || c.World.Marker.At() != end {
+		t.Fatalf("repeated blocked click moved marker: got %v want %v", c.World.Marker.At(), end)
+	}
+	*now = now.Add(401 * time.Millisecond)
+	c.GroundHold(true, target.X-cx, target.Y-cy)
+	if c.World.Walking() || !c.World.Marker.Shown() || c.World.Marker.At() != end {
+		t.Fatal("held-button re-aim moved marker onto unreachable terrain")
+	}
+	if packets := sent(); len(packets) != 0 {
+		t.Fatalf("stationary blocked clicks sent movement: %x", packets)
+	}
+	c.GroundHold(false, 0, 0)
+}

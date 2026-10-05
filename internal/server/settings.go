@@ -6,8 +6,8 @@ import (
 	"wonderland-go/internal/protocol"
 )
 
-// settingsCommand ports AC16 and AC33. Caller holds worldMu. Walk mode and
-// team-follow are native acknowledgments; neither changes movement in C#.
+// settingsCommand ports AC16 and native AC33 desired-state requests. Caller
+// holds worldMu. Walk mode remains an acknowledgment, as in C#.
 func (s *Server) settingsCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
@@ -31,7 +31,7 @@ func (s *Server) settingsCommand(ctx context.Context, c *Session, p []byte) erro
 			prefs.TradeAllowed = value != game.SettingEnabled
 			changed = true
 		case protocol.DirectSettingsJoinBlock:
-			prefs.JoinAllowed = value != game.SettingEnabled
+			prefs.PartyInvitesBlocked = value == game.SettingEnabled
 			changed = true
 		case protocol.DirectSettingsWalkMode:
 			c.walkMode = value
@@ -40,60 +40,40 @@ func (s *Server) settingsCommand(ctx context.Context, c *Session, p []byte) erro
 		}
 		ack = []byte{protocol.CommandDirectSettings, p[1], value}
 	} else {
-		switch p[1] {
-		case protocol.SettingsToggle:
-			if len(p) < 3 {
-				return protocol.ErrMalformed
-			}
-			setting := p[2]
-			size := 3
-			if setting == protocol.SettingKeyChannels {
-				size = 4
-			}
-			if len(p) != size {
-				return protocol.ErrMalformed
-			}
-			flag := true
-			switch setting {
-			case protocol.SettingKeyPK:
-				prefs.PKAllowed = !prefs.PKAllowed
-				flag = prefs.PKAllowed
-			case protocol.SettingKeyJoin:
-				prefs.JoinAllowed = !prefs.JoinAllowed
-				flag = prefs.JoinAllowed
-			case protocol.SettingKeyChannels:
-				prefs.Channels = p[3]
-			case protocol.SettingKeyTrade:
-				prefs.TradeAllowed = !prefs.TradeAllowed
-				flag = prefs.TradeAllowed
-			default:
-				return ErrUnsupported
-			}
-			changed = true
-			if setting != protocol.SettingKeyChannels {
-				value := byte(game.SettingDisabled)
-				if flag {
-					value = game.SettingEnabled
-				}
-				ack = []byte{protocol.CommandSettings, protocol.SettingsToggle, setting, value}
-			}
-		case protocol.SettingsSnapshot:
-			if len(p) != 2 {
-				return protocol.ErrMalformed
-			}
+		// Native System sends [33, option, desired value], not a generic toggle
+		// key. AC33:2 is a snapshot query only when it has no value. See
+		// TSe_SystemForm callback 0x284310 and sender 0x2d1594..0x2d1757.
+		if p[1] == protocol.SettingsSnapshot && len(p) == 2 {
 			return c.send(prefs.Packet())
-		case protocol.SettingsFollow:
-			if len(p) > 3 {
+		}
+		if len(p) != 3 {
+			return protocol.ErrMalformed
+		}
+		value := p[2]
+		if p[1] != protocol.SettingsChannels && value != game.SettingEnabled && value != game.SettingDisabled {
+			return protocol.ErrMalformed
+		}
+		switch p[1] {
+		case protocol.SettingsPK:
+			prefs.PKAllowed = value == game.SettingEnabled
+		case protocol.SettingsJoinBattle:
+			prefs.JoinAllowed = value == game.SettingEnabled
+		case protocol.SettingsTrade:
+			prefs.TradeAllowed = value == game.SettingEnabled
+		case protocol.SettingsPartyInvites:
+			prefs.PartyInvitesBlocked = value == game.SettingDisabled
+		case protocol.SettingsChannels:
+			if value & ^byte(game.AllChatChannels) != 0 {
 				return protocol.ErrMalformed
 			}
-			value := byte(1)
-			if len(p) == 3 {
-				value = p[2]
-			}
-			return c.send([]byte{protocol.CommandSettings, protocol.SettingsFollow, value})
+			prefs.Channels = value
 		default:
 			return ErrUnsupported
 		}
+		changed = true
+		// Native AC33:1 replies are error notices, not successful setting ACKs.
+		// A complete snapshot both confirms the change and refreshes channels.
+		ack = prefs.Packet()
 	}
 	if changed {
 		next := c.character.Clone()
@@ -104,7 +84,7 @@ func (s *Server) settingsCommand(ctx context.Context, c *Session, p []byte) erro
 		if !prefs.TradeAllowed {
 			s.cancelTrade(c)
 		}
-		if !prefs.JoinAllowed {
+		if prefs.PartyInvitesBlocked {
 			c.partyRequests = nil
 		}
 	}

@@ -19,9 +19,10 @@ functions:
 | Ported | ~800 | UI framework, login and character selection, creation, text, cursor, game data, asset decoding |
 | Partial | ~1,750 | Main frame loop, packet dispatch, roles, ground, events and doors, movies and weather, talk windows, chat, HUD, sound |
 | Started | ~2,800 | Items and equipment, NPC services and feature forms, minigames (sport manager, moles, hunting, dreams, lucky, memory; egg and slot client flows) |
-| Not started | ~1,700 | Battle, minimap, trade, social, shops, housing, pets, the other minigames, options, GM tools |
+| Not started | ~1,700 | Battle, minimap, trade, social, shops, housing, pets, the other minigames, GM tools |
 
-The original handles 91 server commands; the Go client handles 17. The server
+The original handles 91 server commands; the Go client has receive branches for
+22. Individual subcommands and their interfaces can still be incomplete. The server
 side of most systems is already ported, so each phase below can be tested
 end to end.
 
@@ -51,15 +52,18 @@ Finish everything a new character meets before the first battle.
 
 - Events: the remaining event kinds (2-4, 7 and up), NPC walk-in areas (20/2,
   20/3), the treasure light, **NPCs turning to the player**, speech bubbles and
-  emotes above characters, wandering NPCs (eve walk steps).
-- Chat log: **click-through to the map** (form hit test), scrolling, the lock,
-  modes, whispers; the remaining chat channels.
+  wandering NPCs (eve walk steps). Native received AC32 expressions and held poses now render; their selection interface is pending.
+- Chat log: alternate backgrounds, VIP marks and
+  character speech bubbles. Click-through, scrolling, lock, modes, resizing, whispers and
+  the native emoticon picker, log renderer and editor preview with atomic code editing are implemented.
 - HUD actions: wire the button bars and hot keys to their forms as those forms
   arrive; the status info form.
 - Minimap and world map (`CH_TMiniMapForm`, `Tse_MapFrame`).
-- Roles: poses and emotes (Pose, 32), presence (10).
+- Roles: gesture selection, titles, riding/pets and friend-list presence UI.
+  AC32 expressions/poses and AC10 names/nicknames/presence metadata are handled.
 - Movies: weather overlays inside movies, actor trails and draw modes.
-- Commands: Presence 10, Pose 32, Quest 24, Settings 33, StoryConstellation 15.
+- Commands: remaining Presence 10/Pose 32 UI, Quest 24 and StoryConstellation 15.
+  Native Settings 33 is handled by the settings windows.
 
 ### Phase 2: Inventory, items and equipment
 
@@ -67,7 +71,9 @@ The core bag/equipment window is implemented from the native decompilation:
 50 slots, three display modes, battle-ready preview, item icons/tooltips, Ctrl
 quantity dragging, use, drops and equipment swaps with server-confirmed AC23
 updates. Focused tests cover packets, metadata, input requests and world entry.
-Remaining work is repair, point allocation/potential dialogs, pet equipment,
+Player point allocation now previews/cancels/submits native AC8 requests and
+waits for server-confirmed stats. Remaining work is repair, native class/rebirth
+allocation caps, potential dialogs, pet equipment,
 secondary containers and crafting interfaces.
 
 - Item grids, drag and drop, item tooltips (`TSe_itemObject`, `TSe_ItemImage`,
@@ -116,8 +122,13 @@ ported.
 
 ### Phase 7: Startup, options and release
 
-- The rest of FormCreate (`Transition`), skins from `Skins.Flst`, sound and
-  music options (volume sliders, ambient switch), window modes.
+System, Channels, Info Visibility, Titles and Blacklist windows now use native
+skins and layouts. Server permissions, audio, chat colors, blacklist filtering and
+return/logout actions are wired. Remaining settings services, Zoom rendering and
+title entitlement handling are listed in [CLIENT.md](CLIENT.md#settings-ui).
+
+- The rest of FormCreate (`Transition`), skins from `Skins.Flst`, the jukebox and
+  window modes.
 - Remove the legacy front end (`client/ui`, `client/frontend.go`).
 - Packaging for Windows, Linux and macOS.
 

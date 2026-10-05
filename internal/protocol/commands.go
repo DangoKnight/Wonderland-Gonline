@@ -431,9 +431,13 @@ const (
 
 // Settings subcommands (AC33).
 const (
-	SettingsToggle   = 1
-	SettingsSnapshot = 2
-	SettingsFollow   = 5
+	SettingsPK           = 1 // C->S: desired PK permission.
+	SettingsError        = 1 // S->C: rejection reason.
+	SettingsJoinBattle   = 2 // C->S with value; no value requests a snapshot.
+	SettingsSnapshot     = 2
+	SettingsTrade        = 4
+	SettingsPartyInvites = 5
+	SettingsChannels     = 3
 )
 
 // CharacterSelection subcommands (AC35).
@@ -520,14 +524,6 @@ const (
 	DirectSettingsTradeBlock = 2
 	DirectSettingsJoinBlock  = 3
 	DirectSettingsWalkMode   = 4
-)
-
-// SettingsToggle keys (AC33:1); these differ from AC16 commands.
-const (
-	SettingKeyPK       = 1
-	SettingKeyJoin     = 2
-	SettingKeyChannels = 3
-	SettingKeyTrade    = 4
 )
 
 // AC15:10 has different meanings by direction.

@@ -4,7 +4,7 @@ import "fmt"
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 16
+const schemaVersion = 17
 
 func (s *Store) migrate() error {
 	var version int
@@ -142,6 +142,21 @@ func (s *Store) migrate() error {
 			}
 		}
 	}
+	// v17: independent native Party Invites. Preserve old request restrictions.
+	if version >= 8 && version < 17 {
+		var present int
+		if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('character_state') WHERE name='party_invites_blocked'").Scan(&present); e != nil {
+			return e
+		}
+		if present == 0 {
+			if _, e = tx.Exec("ALTER TABLE character_state ADD COLUMN party_invites_blocked INTEGER NOT NULL DEFAULT 0 CHECK(party_invites_blocked IN (0,1))"); e != nil {
+				return e
+			}
+			if _, e = tx.Exec("UPDATE character_state SET party_invites_blocked = 1 WHERE settings_present = 1 AND join_allowed = 0"); e != nil {
+				return e
+			}
+		}
+	}
 	// v8: typed character state and owned collections; retain the legacy snapshot.
 	if e = migrateCharacterState(tx); e != nil {
 		return e
@@ -243,7 +258,7 @@ func (s *Store) migrate() error {
 			return e
 		}
 	}
-	if _, e = tx.Exec("PRAGMA user_version=16"); e != nil {
+	if _, e = tx.Exec("PRAGMA user_version=17"); e != nil {
 		return e
 	}
 	return tx.Commit()

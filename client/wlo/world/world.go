@@ -45,6 +45,8 @@ type Player struct {
 	Color2    uint32
 	Items     []uint16
 	Name      []byte
+	Nickname  []byte
+	Presence  byte
 	Direction int32
 }
 
@@ -66,6 +68,9 @@ func ParseSelf(p []byte) (Player, error) {
 	}
 	r.u32()
 	pl.Name = r.str()
+	if len(r.b) > 0 {
+		pl.Nickname = r.str()
+	}
 	if r.bad {
 		return pl, errShort
 	}
@@ -112,8 +117,9 @@ type World struct {
 	OnLeg  func(facing, x, y int)
 	walker Walker
 	// Peers are the other players on the map, by ID (peers.go).
-	Peers   map[uint32]*Peer
-	hovered *NPC
+	Peers       map[uint32]*Peer
+	Expressions map[uint32]Expression
+	hovered     *NPC
 	// CameraAt, when set, is the camera's top-left instead of the
 	// player-centred one.
 	CameraAt *image.Point
@@ -127,7 +133,9 @@ type World struct {
 	Marker Marker
 	// HideNames leaves out the characters' names, as during a
 	// conversation (both talking captures show none).
-	HideNames bool
+	HideOwnNickname, HidePeerNicknames bool
+	HidePeerNames                      bool // Info Visibility: other players
+	HideNames                          bool
 	// Now is the clock for animated scene objects.
 	Now func() time.Time
 	// Weather is the weather layer and WeatherKind the kind it shows: the
@@ -194,6 +202,7 @@ func (w *World) Camera() (int, int) {
 
 // cameraRightMargin is FUN_003f94e8's 0x14 at the map's right edge.
 const cameraRightMargin = 0x14
+const nicknameRowSpacing = 20 // native name/nickname overlay row spacing
 
 // NewView is a view of a map's scene with no player of its own, for a
 // movie: its actors are set as NPCs (and Player/Body when the player takes
@@ -280,6 +289,7 @@ func (w *World) Draw() {
 	if !w.HideNames {
 		w.drawNames(cx, cy, px)
 	}
+	w.drawExpressions(cx, cy, now)
 	// The effects list (FUN_00403b8c) follows the map paint.
 	if w.lightsFrom.IsZero() {
 		w.lightsFrom = now
@@ -305,9 +315,19 @@ func (w *World) drawNames(cx, cy, px int) {
 	}
 	for _, p := range w.Peers {
 		name := p.Name
-		txt.Draw(p.X-cx-len(name)*charW/2, p.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
+		if !w.HidePeerNicknames && len(p.Nickname) > 0 {
+			nickname := p.Nickname
+			txt.Draw(p.X-cx-len(nickname)*charW/2, p.Y-cy-peerNameLift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
+		}
+		if !w.HidePeerNames {
+			txt.Draw(p.X-cx-len(name)*charW/2, p.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
+		}
 	}
 	name := w.Player.Name
+	if !w.HideOwnNickname && len(w.Player.Nickname) > 0 {
+		nickname := w.Player.Nickname
+		txt.Draw(px-len(nickname)*charW/2, w.Player.Y-cy-peerNameLift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
+	}
 	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
 }
 
