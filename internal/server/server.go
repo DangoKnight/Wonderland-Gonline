@@ -23,6 +23,8 @@ import (
 
 var ErrUnsupported = errors.New("action is not ported")
 
+var errAlreadyLoggedIn = errors.New("account is already logged in")
+
 // actorPursuit is transient and guarded by worldMu.
 type actorPursuit struct {
 	target   uint32
@@ -339,6 +341,10 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 		}
 		e = s.dispatch(ctx, c, p)
 		s.partySync(c)
+		if errors.Is(e, errAlreadyLoggedIn) {
+			s.Log.Info("duplicate login rejected", s.sessionLogAttrs(c)...)
+			return // Native AC0 reasons are displayed by the socket disconnect callback.
+		}
 		if errors.Is(e, ErrUnsupported) {
 			s.unsupported.Add(1)
 			s.Log.Debug("unported action", "session", c.info.ID, "action", p[0])
@@ -413,7 +419,10 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 			if e = c.send([]byte{protocol.CommandLogin, protocol.LoginSelectAlternate}); e != nil {
 				return e
 			}
-			return c.send([]byte{protocol.CommandDiscovery, protocol.DiscoveryWireCode19})
+			if e = c.send([]byte{protocol.CommandDiscovery, protocol.DiscoveryAlreadyLoggedIn}); e != nil {
+				return e
+			}
+			return errAlreadyLoggedIn
 		}
 		s.accounts[account.ID] = c.info.ID
 		c.account = account

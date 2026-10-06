@@ -30,6 +30,7 @@ func TestWorkspaceProfileRestoresSessionsWithoutAuthentication(t *testing.T) {
 	if err := w.Add(); err != nil {
 		t.Fatal(err)
 	}
+	w.Sessions[0].Title = "Fishing setup"
 	first.Servers.LastSelection = &login.ServerSelection{Host: "127.0.0.1", Region: 1, Index: 0}
 	first.Login.SubmittedAccount = "Tester01"
 	first.rememberProfileAccount()
@@ -75,6 +76,9 @@ func TestWorkspaceProfileRestoresSessionsWithoutAuthentication(t *testing.T) {
 	}
 	if len(restored.Sessions) != 2 || restored.Sessions[1].ID != 3 || restored.nextID != 4 || restored.Active != 1 || !restored.Collapsed {
 		t.Fatal("session layout not restored")
+	}
+	if restored.Sessions[0].Title != "Fishing setup" {
+		t.Fatal("custom title not restored")
 	}
 	c := restored.Sessions[0].Client
 	if string(c.Login.Account.Text) != "Tester01" || len(c.Login.Password.Text) != 0 || c.Login.SubmittedAccount != "" || c.G.InGame {

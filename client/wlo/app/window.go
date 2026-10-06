@@ -91,6 +91,20 @@ func (g *Game) shift() byte {
 }
 
 func (g *Game) updateInput(pointerBlocked bool) error {
+	if g.Workspace.titleEditing != 0 {
+		for k, vk := range virtualKeys {
+			d := inpututil.KeyPressDuration(k)
+			if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
+				g.Workspace.titleKey(vk)
+			}
+		}
+		if g.Workspace.titleEditing != 0 {
+			for _, r := range ebiten.AppendInputChars(nil) {
+				g.Workspace.titleChar(r)
+			}
+		}
+		return nil
+	}
 	ui := g.C.UI
 	windowX, windowY := ebiten.CursorPosition()
 	x, y, inside := g.Workspace.GamePoint(windowX, windowY)
@@ -161,7 +175,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			if !g.C.SportKey(int(vk), true) && !g.C.HotbarKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
+			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
 				ui.KeyDown(vk, keys)
 			}
 		}

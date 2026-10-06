@@ -77,7 +77,7 @@ SUBSYSTEMS = [
      "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173)."),
     ("roles", "Roles: players, NPCs, sprites", "client/wlo/role, client/wlo/world", "partial", [262, 263, 264],
      "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, "
-     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata. Not yet: gesture selection UI, riding, transforms, follow NPCs, wandering NPCs, NPC turning."),
+     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs, NPC turning."),
     ("ground", "Ground, scene objects and map data", "client/wlo/world", "partial", [249, 257, 268, 102, 103],
      "TGround, TGroundObj, TMap, TFSceneData. Ported: scene layers, walk grid, objects and depth order, sound zones, "
      "camera. Not yet: translucent objects, the map's other lists (sub-regions, the optional grid)."),
@@ -99,7 +99,7 @@ SUBSYSTEMS = [
      "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, immediate channel recoloring retained across message additions and rewrapping, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles."),
     ("hud", "HUD: status, hot keys, buttons, team, emotes", "client/wlo/hud", "partial", [195, 196, 197],
      "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. "
-     "Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Other toolbar actions remain pending."),
+     "Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending."),
     ("minimap", "Minimap, world map and map frame", "", "todo", [214, 215, 168],
      "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data."),
     ("cursor", "Cursor and mouse state", "client/wlo/cursor, client/wlo/app (cursor.go)", "ported", [238, 239],

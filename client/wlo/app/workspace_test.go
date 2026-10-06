@@ -260,10 +260,16 @@ func TestWorkspaceFourCardsAndAddCardVisible(t *testing.T) {
 		t.Fatal("plus card pinned while fifth session visible")
 	}
 	w.Pointer(ScreenWidth+50, 60, false, false, -1)
+	for i := 0; i < 40; i++ {
+		w.stepScroll()
+	}
 	if w.Scroll != 1 || !w.addVisible() {
 		t.Fatal("plus card did not scroll into view")
 	}
 	w.Pointer(ScreenWidth+50, 60, false, false, 1)
+	for i := 0; i < 40; i++ {
+		w.stepScroll()
+	}
 	if w.Scroll != 0 {
 		t.Fatal("older sessions not accessible by scrolling")
 	}

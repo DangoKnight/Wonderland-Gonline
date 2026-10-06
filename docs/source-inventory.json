@@ -1243,7 +1243,7 @@
 				"internal/server/mounts.go",
 				"internal/server/vehicles.go"
 			],
-			"notes": "Release/rename and vehicle/mount operations implemented.",
+			"notes": "Release/rename and vehicle/mount operations implemented. Starter Beach disposable-raft breaks now commit nearest-walkable terrain recovery with item consumption and send AC7 before break replies. Native six-byte owner-ID AC15:13 acknowledgments are accepted alongside the two-byte compatibility form; focused tests cover position persistence and single raft consumption. Go client raft rendering now applies native directional rider tables and canvas corrections, hides ordinary mounted hand weapons, and plays the vehicle destruction strip at the pre-recovery water position with the owner acknowledgment.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1728,7 +1728,7 @@
 			"status": "ported",
 			"sha256": "324eaa14a76156fb86259a08e341941f09f993670655583ea43ef810f63d806d",
 			"go_files": ["internal/server/server.go", "internal/server/characters.go"],
-			"notes": "Credentials, character selection/creation and world entry implemented; password hashing and configurable timeout intentionally replace plaintext/60-second source.",
+			"notes": "Credentials, character selection/creation and world entry implemented; password hashing and configurable timeout intentionally replace plaintext/60-second source. Concurrent logins reserve an account once; duplicate authentication sends native AC0:19 and closes only the rejected socket so aLogin displays Repeated Login. Go displays Character is already logged in. Focused socket/race tests verify rejection preserves the active session.",
 			"audit_verdict": "migrated"
 		},
 		{

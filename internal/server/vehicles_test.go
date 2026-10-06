@@ -401,3 +401,68 @@ func TestVehicleSwitchAndBattleGate(t *testing.T) {
 		t.Fatal("switch consumed previous vehicle")
 	}
 }
+
+func TestVehicleLandingStopPersistsLandWithoutExtraWear(t *testing.T) {
+	s, c, _ := vehicleFixture(t)
+	vehicleDo(t, s, c, 7, 2, 48016)
+	x, y := c.character.X+20, c.character.Y+20
+	damage := c.character.Bag[1].Damage
+	// Go reports the relocated landing point while mounted, before requesting
+	// dismount. Native stop layout must not trigger raft wear or a beach wreck.
+	stop := protocol.Builder{6, 2, 12}.U16(x).U16(y).Bytes(make([]byte, 8))
+	if err := s.dispatch(context.Background(), c, stop); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.X != x || c.character.Y != y || c.character.ActiveVehicle != 48016 || c.character.Bag[1].Damage != damage {
+		t.Fatal("landing stop changed resources or lost position")
+	}
+	vehicleDo(t, s, c, 10, 2, 48016)
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(stored) != 1 {
+		t.Fatal("landing state read", err)
+	}
+	if stored[0].X != x || stored[0].Y != y || stored[0].ActiveVehicle != 0 || !stored[0].Bag[1].Empty() || stored[0].Bag[2].ID != 48016 {
+		t.Fatal("landing recovery position or raft consumption incorrect")
+	}
+}
+
+func TestStarterBeachRaftBreakRecoversToLand(t *testing.T) {
+	s, c, wires := vehicleFixture(t)
+	cells := make([]byte, 100*100)
+	for i := range cells {
+		cells[i] = 2
+	}
+	cells[20*100+50] = 0
+	s.Assets.Terrains = map[uint16]assets.Terrain{11016: {Width: 2000, Height: 2000, GridWidth: 100, GridHeight: 100, Cells: cells}}
+	next := c.character.Clone()
+	next.Map, next.X, next.Y = 11016, 480, 1000
+	next.ActiveVehicle, next.VehicleSlot = 48016, 2
+	if err := s.commit(context.Background(), c, next); err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	if err := s.wearVehicle(context.Background(), c); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.X != 419 || c.character.Y != 1001 || c.character.ActiveVehicle != 0 || !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 {
+		t.Fatalf("invalid beach recovery: %+v", c.character)
+	}
+	packets := wires[0].packets(t)
+	if len(packets) != 5 || !bytes.Equal(packets[0], c.character.PositionPacket()) || packets[1][0] != 23 || packets[2][1] != 15 {
+		t.Fatal("position must precede break", packets)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || stored[0].X != 419 || stored[0].Y != 1001 || stored[0].ActiveVehicle != 0 || !stored[0].Bag[1].Empty() {
+		t.Fatal("beach recovery not durable", err)
+	}
+	for _, ack := range [][]byte{{15, 13}, {15, 13, 1, 0, 0, 0}} {
+		if err := s.dispatch(context.Background(), c, ack); err != nil {
+			t.Fatal("native dismount ACK rejected", err)
+		}
+	}
+	if wires[0].Len() != 0 {
+		t.Fatal("dismount ACK replayed break")
+	}
+}

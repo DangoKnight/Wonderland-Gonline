@@ -134,3 +134,9 @@ func TestFormulaLevelExp(t *testing.T) {
 		t.Fatalf("progress %v", p)
 	}
 }
+
+func TestAlreadyLoggedInReason(t *testing.T) {
+	if got := string(DisconnectReason(19, 0)); got != "Character is already logged in:19" {
+		t.Fatal(got)
+	}
+}

@@ -10,7 +10,7 @@ var disconnectReasons = map[byte]string{
 	5: "Illegal Activity #1", 6: "Illegal Activity #2", 7: "Event Error", 8: "Incorrect Trigger",
 	9: "Wrong Event Table", 10: "Table Error", 11: "Limiter Tiggered", 12: "Illegal Press",
 	13: "Stream Violation", 14: "Movement Too Fast", 15: "Delete Successful", 16: "Blocked IP Detected",
-	17: "Update Game Files", 18: "Data Altered", 19: "Repeated Login", 20: "Abnormal D/c",
+	17: "Update Game Files", 18: "Data Altered", 19: "Character is already logged in", 20: "Abnormal D/c",
 	21: "Abnormal Safe File Data", 22: "Invalid Packet Data", 23: "Name Changed", 24: "Password Too Short",
 	25: "Duplicated Name", 26: "Event Trigger Error", 27: "Login Error D/c", 28: "Firewall D/c",
 	29: "Too Much Data", 30: "Account Lock", 31: "Login ID Unavailable", 32: "Battle Error",

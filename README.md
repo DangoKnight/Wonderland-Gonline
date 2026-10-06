@@ -67,6 +67,11 @@ from `var/assets.db`; the client reads `data/`. Paths resolve from the working
 directory. SQL persistence uses GORM/SQLite, and the server needs a C compiler.
 Use Go 1.25 or newer for both programs (the server alone requires Go 1.24).
 
+An account may have one authenticated connection at a time, including character
+selection. A second login is rejected while the first remains connected. The Go
+client displays “Character is already logged in”; the original client displays
+its native “Repeated Login” message (AC0:19).
+
 ## Register an account
 
 Open `/register` on the server's HTTP address. With `config.local.json`, use

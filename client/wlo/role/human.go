@@ -2,6 +2,7 @@ package role
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"wonderland-gonline/client/wlo/login"
@@ -11,7 +12,8 @@ import (
 
 // Layered player drawing (FUN_00433318) as character selection uses it: a
 // standing body with its head, equipment and costume in the character's
-// colours, no vehicle. The layer order is FUN_004465f0 (order.go).
+// colours, with a server-confirmed vehicle underneath in the world.
+// The layer order is FUN_004465f0 (order.go).
 const (
 	equipSlots       = 6
 	noSprite         = 1000                   // an item without a look for this body
@@ -41,10 +43,14 @@ const (
 var slotArchive = [equipSlots + 1]string{1: "c", 2: "e", 3: "w", 4: "a", 5: "s"}
 
 // Human is one THuman object of the selection screen.
+const vehicleSpriteFamily = "006"
+
 type Human struct {
-	Lib   *Library
-	Items map[uint16]assets.NativeItem
-	Now   func() time.Time
+	vehicleSprite uint16
+	vehicleSeated bool
+	Lib           *Library
+	Items         map[uint16]assets.NativeItem
+	Now           func() time.Time
 
 	body, head byte
 	colors     Colors
@@ -103,6 +109,10 @@ func (h *Human) layerSprite(dst *surface.Surface, base string, id int, action, f
 		return
 	}
 	if f := s.frame(action, frame%n); f != nil {
+		// FUN_002fe8e8 adds 0x44 to the weapon archives before canvas placement.
+		if strings.HasSuffix(base, "w") {
+			y += weaponGroundOffset
+		}
 		s.drawColored(dst, f, x, y, id, &h.colors)
 	}
 }
@@ -115,13 +125,27 @@ func (h *Human) item(slot int) (assets.NativeItem, bool) {
 	return it, ok
 }
 
+// SetVehicle installs the Item.dat vehicle look from a server-confirmed mount.
+func (h *Human) SetVehicle(sprite uint16) { h.vehicleSprite = sprite; h.vehicleSeated = false }
+
+// SetVehiclePose distinguishes seated water riders from other vehicle classes.
+func (h *Human) SetVehiclePose(sprite uint16, seated bool) {
+	h.vehicleSprite = sprite
+	h.vehicleSeated = seated && sprite != 0
+}
+
 // DrawBody is FUN_00412c50 → FUN_00433318 for a player: the base body,
 // then seven layers in table order. direction is the action (+0x121).
 func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 	if h.body == 0 || h.body > 4 {
 		return
 	}
-	action := int(direction)
+	vehicleAction := int(direction)
+	action := vehicleAction
+	if h.vehicleSeated {
+		action = vehicleRiderAction(direction)
+	}
+
 	fam := familyName(h.body)
 	base := baseID(h.body)
 	// The frame advances every 100 ms (230 ms standing) and wraps at the
@@ -148,6 +172,23 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 				h.frame %= n
 			}
 		}
+	}
+	if h.vehicleSprite != 0 {
+		if arc, key := h.Lib.lookup(vehicleSpriteFamily, int(h.vehicleSprite)); arc != nil {
+			if s := arc.sprite(key); s != nil && s.frameCount(vehicleAction) > 0 {
+				if f := s.frame(vehicleAction, h.frame%s.frameCount(vehicleAction)); f != nil {
+					vehicleY := y
+					if h.vehicleSeated && seatedVehicleGroundCorrection(h.vehicleSprite) {
+						vehicleY += seatedVehicleGroundOffset
+					}
+					s.draw(dst, f, x, vehicleY)
+				}
+			}
+		}
+	}
+	if h.vehicleSeated && h.vehicleSprite == raftVehicleSprite {
+		offset := raftRiderOffsets[h.body-1][int(direction)%nativeFacingDirections]
+		x, y = x+offset[0], y+offset[1]
 	}
 	h.layerSprite(dst, fam, base, action, h.frame, x, y)
 
@@ -183,6 +224,10 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 			if showHead {
 				h.layerSprite(dst, fam+"h", base+headSpriteOffset+int(h.head), action, h.frame, x, y)
 			}
+			continue
+		}
+		// Native mounted poses hide hand weapons except type 6 (FUN_00433318).
+		if layer == weaponSlot && h.vehicleSeated && h.typeOf(h.equip[layer]) != mountedVisibleWeaponType {
 			continue
 		}
 		id := h.equip[layer]
@@ -377,4 +422,42 @@ func intervalFor(action int) time.Duration {
 		return idleInterval
 	}
 	return frameInterval
+}
+
+// FUN_00445950: water vehicle riders use directional seated actions 46..53.
+// The vehicle itself retains walking/standing actions 0..15.
+const waterRiderActionBase = 46
+const nativeFacingDirections = 8
+
+func vehicleRiderAction(direction int32) int {
+	return waterRiderActionBase + int(direction)%nativeFacingDirections
+}
+
+// FUN_002fe8e8 and FUN_00154d20: water vehicle canvases share the weapon
+// ground correction. These are renderer offsets, not changes to exported PNGs.
+const (
+	weaponGroundOffset        = 0x44
+	seatedVehicleGroundOffset = 0x44
+	raftVehicleSprite         = 6005
+	weaponSlot                = 3
+	mountedVisibleWeaponType  = 6
+)
+
+// FUN_00154100, vehicle kind 4: X table at 0x4baafc and Y at 0x4babb0.
+// Each row is a body type; columns are the eight native seated directions.
+var raftRiderOffsets = [4][8][2]int{
+	{{0, -12}, {-10, -7}, {-17, -2}, {-10, 8}, {0, 13}, {10, 8}, {17, -2}, {10, -7}},
+	{{0, -12}, {-10, -7}, {-17, -2}, {-10, 8}, {0, 13}, {10, 8}, {17, -2}, {10, -7}},
+	{{0, -12}, {-10, -2}, {-17, -2}, {-5, 8}, {0, 8}, {5, 8}, {17, -2}, {10, -2}},
+	{{0, -12}, {-10, -7}, {-17, -2}, {-10, 8}, {0, 13}, {10, 8}, {17, -2}, {10, -7}},
+}
+
+// Native vehicle classes 4,5,7,10,12,15 have +68 canvas correction.
+// These WLRI look IDs come from Item.dat; submarine class 16 has no correction.
+func seatedVehicleGroundCorrection(sprite uint16) bool {
+	switch sprite {
+	case 6005, 6006, 6009, 6015, 6016, 6023:
+		return true
+	}
+	return false
 }

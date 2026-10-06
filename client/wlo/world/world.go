@@ -35,19 +35,21 @@ const (
 // the server sends it: ID, body type, map, position, head and look, the
 // colour values, the worn items and the name.
 type Player struct {
-	ID        uint32
-	Body      byte
-	Map       uint16
-	X, Y      int
-	Head      byte
-	Look      byte
-	Color1    uint32
-	Color2    uint32
-	Items     []uint16
-	Name      []byte
-	Nickname  []byte
-	Presence  byte
-	Direction int32
+	VehicleID   uint16
+	VehicleSlot byte
+	ID          uint32
+	Body        byte
+	Map         uint16
+	X, Y        int
+	Head        byte
+	Look        byte
+	Color1      uint32
+	Color2      uint32
+	Items       []uint16
+	Name        []byte
+	Nickname    []byte
+	Presence    byte
+	Direction   int32
 }
 
 var errShort = errors.New("AC3: packet too short")

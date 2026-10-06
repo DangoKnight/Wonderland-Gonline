@@ -1595,7 +1595,7 @@
    "start": "152a64",
    "end": "154dec",
    "functions": 18,
-   "cited": 0,
+   "cited": 4,
    "classes": [
     "TNJ_PlayerTitleManager"
    ],
@@ -2549,7 +2549,7 @@
    "start": "25fea0",
    "end": "2a7258",
    "functions": 465,
-   "cited": 52,
+   "cited": 53,
    "classes": [
     "TSe_TeamForm",
     "THotKeyImage",
@@ -3603,7 +3603,7 @@
    "start": "41010c",
    "end": "458cd8",
    "functions": 525,
-   "cited": 45,
+   "cited": 50,
    "classes": [
     "TPlayers",
     "TBasePlayer",
@@ -4271,14 +4271,14 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata. Not yet: gesture selection UI, riding, transforms, follow NPCs, wandering NPCs, NPC turning.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs, NPC turning.",
    "regions": [
     262,
     263,
     264
    ],
    "functions": 567,
-   "cited": 53,
+   "cited": 58,
    "ranges": [
     "40f4b8-40f988",
     "41010c-458cd8",
@@ -4422,14 +4422,14 @@
    "title": "HUD: status, hot keys, buttons, team, emotes",
    "go": "client/wlo/hud",
    "status": "partial",
-   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Other toolbar actions remain pending.",
+   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending.",
    "regions": [
     195,
     196,
     197
    ],
    "functions": 490,
-   "cited": 52,
+   "cited": 53,
    "ranges": [
     "259760-25b1ac",
     "25b454-25d0ec",
@@ -4671,7 +4671,7 @@
     205
    ],
    "functions": 1493,
-   "cited": 26,
+   "cited": 30,
    "ranges": [
     "152a64-154dec",
     "1552f4-1553c8",
@@ -5283,5 +5283,5 @@
    "client": false
   }
  ],
- "cited_functions": 639
+ "cited_functions": 649
 }

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 func TestArchiveLookup(t *testing.T) {
@@ -61,5 +63,36 @@ func TestMissingPatchFallsBack(t *testing.T) {
 	a, key := NewLibrary(root).lookup("002e", 2335)
 	if a == nil || a.sprite(key) == nil {
 		t.Fatal("2335 should be found in 002e")
+	}
+}
+
+func TestRaftRiderUsesDirectionalSeatedFrames(t *testing.T) {
+	root := filepath.Join("..", "..", "..", "data")
+	if _, err := os.Stat(filepath.Join(root, "sprites", "002")); err != nil {
+		t.Skip("client sprite assets not installed")
+	}
+	h := NewHuman(NewLibrary(root), nil)
+	h.body = 2
+	h.Now = func() time.Time { return time.Unix(0, 0) }
+	h.SetVehiclePose(6005, true)
+	for facing := int32(0); facing < 8; facing++ {
+		h.DrawBody(surface.New(200, 200), 100, 100, facing+8)
+		if h.lastAction != 46+int(facing) {
+			t.Fatalf("raft facing %d used action %d", facing, h.lastAction)
+		}
+		arc, key := h.Lib.lookup("002", 2000)
+		if arc == nil || arc.sprite(key) == nil || arc.sprite(key).frameCount(46+int(facing)) == 0 {
+			t.Fatalf("native seated frame missing: %d", facing)
+		}
+	}
+	h.SetVehicle(0)
+	h.DrawBody(surface.New(200, 200), 100, 100, 12)
+	if h.lastAction != 12 {
+		t.Fatal("dismount retained raft pose")
+	}
+	h.SetVehiclePose(6005, false)
+	h.DrawBody(surface.New(200, 200), 100, 100, 12)
+	if h.lastAction != 12 {
+		t.Fatal("non-water vehicle received raft pose")
 	}
 }

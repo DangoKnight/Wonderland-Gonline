@@ -18,6 +18,8 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
+const gpuParityStages = 14
+
 func TestGPUClientParity(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
 		t.Skip("set WONDERLAND_TEST_GPU=1")
@@ -89,7 +91,7 @@ func TestGPUClientParity(t *testing.T) {
 	if g.err != nil {
 		t.Fatal(g.err)
 	}
-	if g.stage != 8 {
+	if g.stage != gpuParityStages {
 		t.Fatalf("only %d states checked", g.stage)
 	}
 }
@@ -111,7 +113,7 @@ func (g *gpuParityGame) Update() error {
 		g.stage++
 		g.drawn = false
 	}
-	if g.stage == 8 {
+	if g.stage == gpuParityStages {
 		return ebiten.Termination
 	}
 	return nil
@@ -151,6 +153,38 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			freezeGPUFixtureAnimations(w.Current())
 			w.Current().Frame()
 			w.Current().Sprites.WaitNative()
+		case 8:
+			w.Collapsed = false
+			w.slide = 0
+			for len(w.Sessions) < 5 {
+				if err := w.Add(); err != nil {
+					g.err = err
+					return
+				}
+			}
+		case 9:
+			w.scrollTo(54, true)
+		case 10:
+			w.scrollTo(w.maxScrollPixels(), true)
+		case 13:
+			c.vehiclePacket([]byte{15, 15, 0x11, 0x27, 0, 0, 0x90, 0xbb})
+			if len(c.vehicleEffects.effects) != 1 {
+				g.err = fmt.Errorf("raft break fixture failed")
+				return
+			}
+		case 12:
+			w.beginTitle(w.Active)
+			for _, r := range "Raft testing" {
+				w.titleChar(r)
+			}
+		case 11:
+			w.Switch(0)
+			c = w.Current()
+			c.vehiclePacket([]byte{15, 10, 1, 0x11, 0x27, 0, 0, 0x90, 0xbb})
+			if c.World.Player.VehicleID != 48016 {
+				g.err = fmt.Errorf("raft mount fixture failed")
+				return
+			}
 		case 7:
 			w.Remove(2)
 		case 6:

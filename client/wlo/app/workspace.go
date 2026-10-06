@@ -5,11 +5,18 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"math"
 	"path/filepath"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 const (
+	sessionScrollWidth          = 8
+	sessionScrollGap            = 6
+	sessionScrollThumbMinimum   = 28
+	sessionScrollEase           = 0.3
+	sessionScrollSnap           = 0.5
 	sessionPanelWidth           = 220
 	workspaceWidth              = ScreenWidth + sessionPanelWidth
 	sessionCloseWidth           = 24
@@ -41,6 +48,7 @@ const (
 
 type Session struct {
 	ID     int
+	Title  string
 	Client *Client
 }
 
@@ -52,7 +60,14 @@ type Workspace struct {
 	Collapsed      bool
 	slide          int
 	Scroll         int
+	scrollPosition float64
+	scrollTarget   float64
+	scrollDragging bool
+	scrollGrab     int
 	PendingRemove  int
+	titleEditing   int
+	titleDraft     string
+	titleReplace   bool
 	options        Options
 	resources      *Resources
 	nextID         int
@@ -116,7 +131,7 @@ func (w *Workspace) Add() error {
 		w.initAudio(c)
 	}
 	w.Switch(len(w.Sessions) - 1)
-	w.Scroll = max(0, len(w.Sessions)-w.visibleRows())
+	w.setScroll(max(0, len(w.Sessions)-w.visibleRows()))
 	return nil
 }
 func (w *Workspace) Switch(index int) {
@@ -171,6 +186,9 @@ func (w *Workspace) Remove(id int) {
 	if index < 0 {
 		return
 	}
+	if w.titleEditing == id {
+		w.finishTitle(false)
+	}
 	w.Sessions[index].Client.closeSession()
 	copy(w.Sessions[index:], w.Sessions[index+1:])
 	w.Sessions[len(w.Sessions)-1] = nil
@@ -181,7 +199,7 @@ func (w *Workspace) Remove(id int) {
 		w.Active = max(0, len(w.Sessions)-1)
 	}
 	w.PendingRemove = 0
-	w.Scroll = min(w.Scroll, w.maxScroll())
+	w.scrollTo(w.scrollPosition, true)
 	if current := w.Current(); current != nil {
 		current.backgroundSession = false
 		current.cancelSessionInput()
@@ -189,6 +207,7 @@ func (w *Workspace) Remove(id int) {
 	}
 }
 func (w *Workspace) Close() error {
+	w.finishTitle(true)
 	profileErr := w.SaveProfile()
 	for _, s := range w.Sessions {
 		s.Client.closeSession()
@@ -200,6 +219,7 @@ func (w *Workspace) Close() error {
 func (w *Workspace) Tick() {
 	defer w.checkpointProfile()
 	w.stepLayout()
+	w.stepScroll()
 	w.ticks++
 	for _, s := range w.Sessions {
 		s.Client.frame(s.Client == w.Current() || w.ticks%sessionBackgroundFrameTicks == 0)
@@ -230,6 +250,9 @@ func (w *Workspace) Pointer(x, y int, press, held bool, wheel float64) bool {
 	panel := w.SidebarContains(x, y)
 	_, _, inside := w.GamePoint(x, y)
 	consumed := panel || w.captured || !inside
+	if press && w.titleEditing != 0 {
+		w.finishTitle(true)
+	}
 	if press && panel {
 		w.captured = true
 		if c := w.Current(); c != nil {
@@ -238,31 +261,42 @@ func (w *Workspace) Pointer(x, y int, press, held bool, wheel float64) bool {
 		if image.Pt(x, y).In(w.toggleRect()) {
 			w.Collapsed = !w.Collapsed
 			w.PendingRemove = 0
+			w.scrollDragging = false
 		} else if !w.animating() && !w.Collapsed {
-			w.panelClick(x, y)
+			if !w.scrollPress(x, y) {
+				w.panelClick(x, y)
+			}
 		}
 	}
 	if panel && !w.animating() && !w.Collapsed && wheel != 0 {
 		w.PendingRemove = 0
-		if wheel > 0 {
-			w.Scroll--
-		} else {
-			w.Scroll++
-		}
-		w.Scroll = max(0, min(w.Scroll, w.maxScroll()))
+		w.scrollTo(w.scrollTarget-wheel*sessionRowHeight, false)
 	}
+	if w.scrollDragging && held && !w.animating() && !w.Collapsed {
+		track, thumb := w.scrollbarRects()
+		travel := track.Dy() - thumb.Dy()
+		if travel > 0 {
+			w.scrollTo(float64(y-w.scrollGrab-track.Min.Y)*w.maxScrollPixels()/float64(travel), true)
+		}
+	}
+
 	if !held {
 		w.captured = false
+		w.scrollDragging = false
 	}
 	return consumed
 }
 func (w *Workspace) cardRect(row int) image.Rectangle {
-	top := sessionListTop + row*sessionRowHeight
+	top := sessionListTop + row*sessionRowHeight - int(math.Round(w.scrollPosition)) + w.firstRow()*sessionRowHeight
 	left := w.panelLeft()
-	return image.Rect(left+sessionPanelPadding, top, left+sessionPanelWidth-sessionPanelPadding, top+sessionCardHeight)
+	right := left + sessionPanelWidth - sessionPanelPadding
+	if w.maxScroll() > 0 {
+		right -= sessionScrollWidth + sessionScrollGap
+	}
+	return image.Rect(left+sessionPanelPadding, top, right, top+sessionCardHeight)
 }
 func (w *Workspace) addRect() image.Rectangle {
-	return w.cardRect(len(w.Sessions) - w.Scroll)
+	return w.cardRect(len(w.Sessions) - w.firstRow())
 }
 func (w *Workspace) closeRect(row int) image.Rectangle {
 	r := w.cardRect(row)
@@ -278,9 +312,12 @@ func (w *Workspace) confirmRect(row int, confirm bool) image.Rectangle {
 }
 func (w *Workspace) panelClick(x, y int) {
 	point := image.Pt(x, y)
+	if !point.In(w.listRect()) {
+		return
+	}
 	if w.PendingRemove != 0 {
-		for row := 0; row < w.visibleRows() && row+w.Scroll < len(w.Sessions); row++ {
-			if w.Sessions[row+w.Scroll].ID != w.PendingRemove {
+		for row := 0; row <= w.visibleRows() && row+w.firstRow() < len(w.Sessions); row++ {
+			if w.Sessions[row+w.firstRow()].ID != w.PendingRemove {
 				continue
 			}
 			if point.In(w.confirmRect(row, true)) {
@@ -297,14 +334,16 @@ func (w *Workspace) panelClick(x, y int) {
 		}
 		return
 	}
-	for row := 0; row < w.visibleRows() && row+w.Scroll < len(w.Sessions); row++ {
+	for row := 0; row <= w.visibleRows() && row+w.firstRow() < len(w.Sessions); row++ {
 		if !point.In(w.cardRect(row)) {
 			continue
 		}
 		if point.In(w.closeRect(row)) {
-			w.PendingRemove = w.Sessions[row+w.Scroll].ID
+			w.PendingRemove = w.Sessions[row+w.firstRow()].ID
+		} else if point.In(w.titleRect(row)) {
+			w.beginTitle(row + w.firstRow())
 		} else {
-			w.Switch(row + w.Scroll)
+			w.Switch(row + w.firstRow())
 		}
 		return
 	}
@@ -321,8 +360,8 @@ func (w *Workspace) Compose() *surface.Surface {
 	if w.slide < sessionSlideTicks {
 		panelLeft := w.panelLeft()
 		w.screen.Fill(image.Rect(panelLeft, 0, panelLeft+1, ScreenHeight), sessionShadowFill)
-		for row := 0; row < w.visibleRows() && row+w.Scroll < len(w.Sessions); row++ {
-			index := row + w.Scroll
+		for row := 0; row <= w.visibleRows() && row+w.firstRow() < len(w.Sessions); row++ {
+			index := row + w.firstRow()
 			s := w.Sessions[index]
 			r := w.cardRect(row)
 			fill, border := uint16(sessionRowFill), uint16(sessionBorderInk)
@@ -336,12 +375,13 @@ func (w *Workspace) Compose() *surface.Surface {
 			if index == w.Active {
 				w.screen.Fill(image.Rect(r.Min.X, r.Min.Y+1, r.Min.X+3, r.Max.Y-1), sessionAccentInk)
 			}
-			name := fmt.Sprintf("%d: Login", s.ID)
-			if s.Client.World != nil {
-				name = fmt.Sprintf("%d: ", s.ID) + string(s.Client.World.Player.Name)
+			name := s.DisplayTitle()
+			if w.titleEditing == s.ID {
+				name = w.titleDraft + "|"
+				w.screen.Fill(w.titleRect(row).Inset(1), sessionShadowFill)
+				w.screen.Frame(w.titleRect(row), sessionAccentInk)
 			}
-			// Keep long character names clear of the close button.
-			w.Current().Env.Text.Draw(r.Min.X+9, r.Min.Y+3, 0, false, true, w.screen, []byte(name), 15, r.Dx()-sessionCloseWidth-18, 0, sessionPanelInk, 0)
+			w.Current().Env.Text.Draw(r.Min.X+9, r.Min.Y+3, 0, false, true, w.screen, clientassets.Big5Text(name), 15, r.Dx()-sessionCloseWidth-18, 0, sessionPanelInk, 0)
 			w.label(w.closeRect(row).Min.X+8, r.Min.Y+3, "X")
 			if w.PendingRemove == s.ID {
 				w.label(r.Min.X+22, r.Min.Y+34, "Close instance?")
@@ -374,6 +414,19 @@ func (w *Workspace) Compose() *surface.Surface {
 			cx, cy := (add.Min.X+add.Max.X)/2, (add.Min.Y+add.Max.Y)/2
 			w.screen.Fill(image.Rect(cx-sessionPlusHalfSpan, cy-sessionPlusHalfStroke, cx+sessionPlusHalfSpan, cy+sessionPlusHalfStroke), sessionAccentInk)
 			w.screen.Fill(image.Rect(cx-sessionPlusHalfStroke, cy-sessionPlusHalfSpan, cx+sessionPlusHalfStroke, cy+sessionPlusHalfSpan), sessionAccentInk)
+		}
+		// Clip partially visible cards at the list viewport without CPU readbacks.
+		viewport := w.listRect()
+		w.screen.Fill(image.Rect(panelLeft, 0, workspaceWidth, viewport.Min.Y), sessionPanelFill)
+		w.screen.Fill(image.Rect(panelLeft, viewport.Max.Y, workspaceWidth, ScreenHeight), sessionPanelFill)
+		if w.maxScroll() > 0 {
+			track, thumb := w.scrollbarRects()
+			w.screen.Fill(track, sessionShadowFill)
+			ink := uint16(sessionBorderInk)
+			if w.scrollDragging || w.hover.In(track) {
+				ink = sessionAccentInk
+			}
+			w.screen.Fill(thumb, ink)
 		}
 	}
 	toggle := w.toggleRect()
@@ -418,8 +471,8 @@ func (w *Workspace) SidebarContains(x, y int) bool {
 
 func (w *Workspace) maxScroll() int { return max(0, len(w.Sessions)+1-w.visibleRows()) }
 func (w *Workspace) addVisible() bool {
-	row := len(w.Sessions) - w.Scroll
-	return row >= 0 && row < w.visibleRows()
+	row := len(w.Sessions) - w.firstRow()
+	return row >= 0 && !w.addRect().Intersect(w.listRect()).Empty()
 }
 func (w *Workspace) toggleRect() image.Rectangle {
 	right := workspaceWidth - sessionPanelPadding
@@ -457,4 +510,57 @@ func (w *Workspace) attachRenderer(attach func(*surface.Surface)) {
 	for _, s := range w.Sessions {
 		attach(s.Client.Screen)
 	}
+}
+
+func (w *Workspace) listRect() image.Rectangle {
+	return image.Rect(w.panelLeft(), sessionListTop, workspaceWidth, sessionListTop+sessionVisibleRows*sessionRowHeight)
+}
+func (w *Workspace) firstRow() int            { return int(w.scrollPosition) / sessionRowHeight }
+func (w *Workspace) maxScrollPixels() float64 { return float64(w.maxScroll() * sessionRowHeight) }
+func (w *Workspace) setScroll(row int)        { w.scrollTo(float64(row*sessionRowHeight), true) }
+func (w *Workspace) scrollTo(value float64, immediate bool) {
+	w.scrollTarget = max(0, min(value, w.maxScrollPixels()))
+	w.Scroll = int(w.scrollTarget) / sessionRowHeight
+	if immediate {
+		w.scrollPosition = w.scrollTarget
+	}
+}
+func (w *Workspace) stepScroll() {
+	w.scrollTo(w.scrollTarget, false)
+	w.scrollPosition += (w.scrollTarget - w.scrollPosition) * sessionScrollEase
+	if math.Abs(w.scrollTarget-w.scrollPosition) < sessionScrollSnap {
+		w.scrollPosition = w.scrollTarget
+	}
+}
+func (w *Workspace) scrollbarRects() (image.Rectangle, image.Rectangle) {
+	viewport := w.listRect()
+	right := w.panelLeft() + sessionPanelWidth - sessionPanelPadding
+	track := image.Rect(right-sessionScrollWidth, viewport.Min.Y, right, viewport.Max.Y)
+	height := max(sessionScrollThumbMinimum, int(float64(track.Dy()*track.Dy())/(float64(track.Dy())+w.maxScrollPixels())))
+	top := track.Min.Y
+	if w.maxScrollPixels() > 0 {
+		top += int(math.Round(w.scrollPosition / w.maxScrollPixels() * float64(track.Dy()-height)))
+	}
+	return track, image.Rect(track.Min.X, top, track.Max.X, top+height)
+}
+func (w *Workspace) scrollPress(x, y int) bool {
+	if w.maxScroll() == 0 {
+		return false
+	}
+	track, thumb := w.scrollbarRects()
+	if !image.Pt(x, y).In(track) {
+		return false
+	}
+	w.PendingRemove = 0
+	if image.Pt(x, y).In(thumb) {
+		w.scrollDragging = true
+		w.scrollGrab = y - thumb.Min.Y
+	} else {
+		amount := track.Dy()
+		if y < thumb.Min.Y {
+			amount = -amount
+		}
+		w.scrollTo(w.scrollTarget+float64(amount), false)
+	}
+	return true
 }

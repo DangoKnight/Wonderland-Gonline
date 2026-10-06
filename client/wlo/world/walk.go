@@ -17,17 +17,21 @@ import (
 // 0x2c33cc). The original's search order and its other maps' pathfinder
 // (FUN_003cbb2c) are not ported.
 const (
-	cellSize        = 0x14
-	waypointX       = 2
-	waypointY       = 0xf
-	walkReach       = 0x29 // cells from the player
-	walkBlocked     = 0x13 + 4
-	walkSpeed       = 0.16 // pixels per millisecond
-	walkingAction   = 0    // walking actions are 0..7, standing 8..15
-	ratioFlat       = 0.25
-	ratioSteep      = 2.0
-	ratioEpsilon    = 0.001
-	directionsCount = 8
+	cellSize              = 0x14
+	waypointX             = 2
+	waypointY             = 0xf
+	walkReach             = 0x29 // cells from the player
+	terrainWater          = 2
+	terrainWaterAlternate = 8
+	shoreScanMinimum      = -2
+	shoreScanRadius       = 3
+	walkBlocked           = 0x13 + 4
+	walkSpeed             = 0.16 // pixels per millisecond
+	walkingAction         = 0    // walking actions are 0..7, standing 8..15
+	ratioFlat             = 0.25
+	ratioSteep            = 2.0
+	ratioEpsilon          = 0.001
+	directionsCount       = 8
 )
 
 // Facing directions (FUN_0041218c): 0 up, then anticlockwise.
@@ -85,7 +89,13 @@ func (s *Scene) Walkable(x, y int) bool { c := cellOf(x, y); return s.free(c.X, 
 // free reports a walkable grid cell.
 func (s *Scene) free(cx, cy int) bool {
 	v, ok := s.Ground.Cell(cx, cy)
-	return ok && v&walkBlocked == 0
+	if !ok {
+		return false
+	}
+	if s.WaterTravel {
+		return v == terrainWater || v == terrainWaterAlternate
+	}
+	return v&walkBlocked == 0 && v != terrainWaterAlternate
 }
 
 func cellOf(x, y int) image.Point { return image.Pt(x/cellSize, y/cellSize) }
@@ -318,3 +328,70 @@ func (w *World) Step(now time.Time) {
 		p.Walker.Step(&p.Player, now)
 	}
 }
+
+// Water follows the native shore transition checks in FUN_0041897c.
+func (s *Scene) Water(x, y int) bool {
+	if x < 0 || y < 0 {
+		return false
+	}
+	v, ok := s.Ground.Cell(x/cellSize, y/cellSize)
+	return ok && (v == terrainWater || v == terrainWaterAlternate)
+}
+
+// Land reports the clear terrain used by native boarding/landing checks.
+func (s *Scene) Land(x, y int) bool {
+	if x < 0 || y < 0 {
+		return false
+	}
+	v, ok := s.Ground.Cell(x/cellSize, y/cellSize)
+	return ok && v == 0
+}
+
+// ShorePoint follows FUN_0041897c's -2..+3 cell scan. Require a clear
+// crossing so a nearby water cell behind a wall cannot enable boarding.
+func (s *Scene) ShorePoint(x, y int, water bool) (image.Point, bool) {
+	origin := cellOf(x, y)
+	for dx := shoreScanMinimum; dx <= shoreScanRadius; dx++ {
+		for dy := shoreScanMinimum; dy <= shoreScanRadius; dy++ {
+			cell := origin.Add(image.Pt(dx, dy))
+			point := image.Pt(cell.X*cellSize, cell.Y*cellSize)
+			if (water && !s.Water(point.X, point.Y)) || (!water && !s.Land(point.X, point.Y)) {
+				continue
+			}
+			clear := true
+			count := max(abs(dx), abs(dy))
+			for i := 0; i <= count; i++ {
+				step := image.Pt((origin.X+dx*i/max(count, 1))*cellSize, (origin.Y+dy*i/max(count, 1))*cellSize)
+				if !s.Land(step.X, step.Y) && !s.Water(step.X, step.Y) {
+					clear = false
+					break
+				}
+			}
+			if clear {
+				return point, true
+			}
+		}
+	}
+	return image.Point{}, false
+}
+func (s *Scene) WaterEdge(x, y int) bool {
+	if !s.Land(x, y) {
+		return false
+	}
+	_, ok := s.ShorePoint(x, y, true)
+	return ok
+}
+func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
+	water := *s
+	water.WaterTravel = true
+	return water.Plan(fromX, fromY, toX, toY)
+}
+
+// Relocate resets interpolated walking before a native shore transition.
+func (w *World) Relocate(point image.Point) {
+	w.StopWalk()
+	w.Player.X, w.Player.Y = point.X, point.Y
+}
+
+// SameCell compares points on the native walk grid.
+func (s *Scene) SameCell(a, b image.Point) bool { return cellOf(a.X, a.Y) == cellOf(b.X, b.Y) }

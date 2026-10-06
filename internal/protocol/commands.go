@@ -66,8 +66,8 @@ const (
 
 // Discovery subcommands (AC0).
 const (
-	// Unresolved wire meaning; retain the numeric code until verified.
-	DiscoveryWireCode19                = 19
+	// Native AC0:19 displays "Repeated Login" when the rejected socket closes.
+	DiscoveryAlreadyLoggedIn           = 19
 	DiscoveryCharacterCreationRejected = 30
 	// Unresolved wire meaning; retain the numeric code until verified.
 	DiscoveryWireCode32 = 32

@@ -34,7 +34,7 @@ func (s *Server) vehicleCommand(ctx context.Context, c *Session, p []byte) error
 		return protocol.ErrMalformed
 	}
 	if p[1] == protocol.PetControlVehicleNoOp {
-		if len(p) != 2 {
+		if len(p) != vehicleAckShortBytes && len(p) != vehicleAckOwnerBytes {
 			return protocol.ErrMalformed
 		}
 		return nil
@@ -110,12 +110,27 @@ func (s *Server) wreckVehicle(ctx context.Context, c *Session) error {
 	}
 	next := old.Clone()
 	next.ActiveVehicle, next.VehicleSlot = 0, 0
+	if old.ActiveVehicle == game.DisposableRaftItemID && old.Map == game.MapID11016 {
+		if terrain, exists := s.Assets.Terrains[old.Map]; exists {
+			x, y, found := terrain.NearestWalkable(int(old.X), int(old.Y))
+			if !found {
+				return nil
+			} // Keep the raft if no safe landing exists.
+			next.X, next.Y = x, y
+		}
+	}
 	if err := next.Bag.Remove(old.VehicleSlot, 1); err != nil {
 		return err
 	}
-	// Custom packet ordering: deletion, break, dismount, then the scene-load gate.
+	// Commit position and consumption together, then publish recovery placement
+	// (if needed), deletion, break, dismount and the scene-load gate.
 	if err := s.commitState(ctx, c, next); err != nil {
 		return err
+	}
+	if next.X != old.X || next.Y != old.Y {
+		if err := s.sendVehiclePackets(c, [][]byte{next.PositionPacket()}); err != nil {
+			return err
+		}
 	}
 	if err := c.send([]byte{protocol.CommandInventory, protocol.InventoryRemove, old.VehicleSlot, 1}); err != nil {
 		return err
@@ -141,7 +156,7 @@ func (s *Server) wearVehicle(ctx context.Context, c *Session) error {
 	if !game.Raft(item.ID) {
 		return nil
 	}
-	if item.Damage >= game.VehicleWreckDamage-1 || (item.ID == game.DisposableRaftItemID && old.Map == game.MapID11016 && old.X >= 280 && old.Y >= 950) {
+	if item.Damage >= game.VehicleWreckDamage-1 || (item.ID == game.DisposableRaftItemID && old.Map == game.MapID11016 && old.X >= starterBeachRaftBreakX && old.Y >= starterBeachRaftBreakY) {
 		return s.wreckVehicle(ctx, c)
 	}
 	next := old.Clone()
@@ -151,3 +166,10 @@ func (s *Server) wearVehicle(ctx context.Context, c *Session) error {
 	}
 	return c.send(next.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems))
 }
+
+const starterBeachRaftBreakX = 280
+const starterBeachRaftBreakY = 950
+
+// Native AC15:13 may carry the acknowledged owner ID (FUN_0044b380).
+const vehicleAckShortBytes = 2
+const vehicleAckOwnerBytes = 6

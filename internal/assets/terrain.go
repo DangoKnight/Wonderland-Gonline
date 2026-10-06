@@ -37,3 +37,33 @@ func (t Terrain) Walkable(x, y int) bool {
 	at := cx*int(t.GridHeight) + cy
 	return at < len(t.Cells) && t.Cells[at]&TerrainBlockedMask == 0
 }
+
+// NearestWalkable finds the nearest interior land point to a water position.
+// Exhaustive cell search is used only for exceptional recovery transitions.
+func (t Terrain) NearestWalkable(x, y int) (uint16, uint16, bool) {
+	if t.Walkable(x, y) && t.Cells[(x/TerrainCellSize)*int(t.GridHeight)+y/TerrainCellSize] != terrainAlternateWater {
+		return uint16(x), uint16(y), true
+	}
+	best := int64(^uint64(0) >> 1)
+	bx, by, found := 0, 0, false
+	for cx := 0; cx < int(t.GridWidth); cx++ {
+		for cy := 0; cy < int(t.GridHeight); cy++ {
+			at := cx*int(t.GridHeight) + cy
+			if at >= len(t.Cells) || t.Cells[at]&TerrainBlockedMask != 0 || t.Cells[at] == terrainAlternateWater {
+				continue
+			}
+			px := max(cx*TerrainCellSize+1, min(x, min((cx+1)*TerrainCellSize-1, int(t.Width)-1)))
+			py := max(cy*TerrainCellSize+1, min(y, min((cy+1)*TerrainCellSize-1, int(t.Height)-1)))
+			if !t.Walkable(px, py) {
+				continue
+			}
+			dx, dy := int64(px-x), int64(py-y)
+			if distance := dx*dx + dy*dy; distance < best {
+				best, bx, by, found = distance, px, py, true
+			}
+		}
+	}
+	return uint16(bx), uint16(by), found
+}
+
+const terrainAlternateWater = 8

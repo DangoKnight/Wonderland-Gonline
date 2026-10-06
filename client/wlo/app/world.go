@@ -68,6 +68,8 @@ func (c *Client) warp(p []byte) {
 	if c.Settings != nil {
 		c.Settings.Hide()
 	}
+	c.waterTravel = waterTravelState{}
+	c.vehicleEffects = vehicleEffectState{}
 	pl := c.World.Player
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
@@ -87,6 +89,7 @@ func (c *Client) warp(p []byte) {
 		w.OnLeg = c.sendLeg
 		w.Now = func() time.Time { return c.Now() }
 		c.World = w
+		c.applyWaterVehicle()
 		c.applyLocalSettings()
 		c.playMapMusic()
 		c.MainStatus.Portrait = w.Body
@@ -139,6 +142,7 @@ func (c *Client) GroundClick(x, y int) {
 		return
 	}
 	if n := c.World.NPCAt(x, y); n != nil {
+		c.waterTravel.goal = nil
 		c.clickNPC(n)
 		return
 	}
@@ -158,7 +162,7 @@ func (c *Client) walkToward(x, y int, marked bool) {
 	cx, cy := c.World.Camera()
 	now := c.Now()
 	c.nextWalk = now.Add(walkRepeat)
-	c.World.WalkTo(x+cx, y+cy, now)
+	c.walkWaterAware(x+cx, y+cy, now)
 	if marked {
 		c.World.MarkWalk()
 	}

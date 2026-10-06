@@ -16,6 +16,7 @@ const workspaceProfileMaximumSessions = 256
 
 type sessionProfile struct {
 	ID      int                    `json:"id"`
+	Title   string                 `json:"title,omitempty"`
 	Account *string                `json:"account"`
 	Server  *login.ServerSelection `json:"server"`
 }
@@ -48,7 +49,7 @@ func (w *Workspace) ProfilePath() string {
 func (w *Workspace) snapshotProfile() workspaceProfile {
 	p := workspaceProfile{Version: workspaceProfileVersion, NextSessionID: w.nextID, Collapsed: w.Collapsed}
 	for i, s := range w.Sessions {
-		entry := sessionProfile{ID: s.ID, Server: s.Client.Servers.LastSelection}
+		entry := sessionProfile{ID: s.ID, Title: s.Title, Server: s.Client.Servers.LastSelection}
 		if s.Client.profileAccount != "" {
 			name := s.Client.profileAccount
 			entry.Account = &name
@@ -136,6 +137,9 @@ func readWorkspaceProfile(path string) (workspaceProfile, error) {
 			return p, fmt.Errorf("invalid workspace session ID")
 		}
 		ids[s.ID] = true
+		if !validSessionTitle(s.Title) {
+			return p, fmt.Errorf("invalid session title")
+		}
 		if s.Account != nil && !login.ValidAccount([]byte(*s.Account)) {
 			return p, fmt.Errorf("invalid workspace account name")
 		}
@@ -172,7 +176,7 @@ func (w *Workspace) RestoreProfile() error {
 				return err
 			}
 		}
-		restored = append(restored, &Session{ID: entry.ID, Client: c})
+		restored = append(restored, &Session{ID: entry.ID, Title: entry.Title, Client: c})
 	}
 	reusedFirst := false
 	w.Active = 0
@@ -204,7 +208,7 @@ func (w *Workspace) RestoreProfile() error {
 	if w.Collapsed {
 		w.slide = sessionSlideTicks
 	}
-	w.Scroll = min(w.Active, w.maxScroll())
+	w.setScroll(min(w.Active, w.maxScroll()))
 	w.profileEnabled = true
 	return w.SaveProfile()
 }

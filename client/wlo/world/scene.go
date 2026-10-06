@@ -34,6 +34,7 @@ const groundExport = "ground_data.json"
 
 // Scene is one map's terrain record and its loaded background layers.
 type Scene struct {
+	WaterTravel   bool // Set only after a server-confirmed water vehicle mount.
 	MapID         uint16
 	Width, Height int
 	Ground        clientassets.GroundPrefix

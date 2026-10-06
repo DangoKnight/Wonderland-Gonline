@@ -114,12 +114,14 @@ type Client struct {
 	mapReady bool
 	held     bool // 6/2: the server holds the player
 
-	lib          *role.Library
-	items        map[uint16]assets.NativeItem
-	Skills       *skills.Form
-	SkillState   *skills.State
-	hotbar       hotbarRuntime
-	logoutPrompt *logoutForm
+	lib            *role.Library
+	items          map[uint16]assets.NativeItem
+	Skills         *skills.Form
+	SkillState     *skills.State
+	hotbar         hotbarRuntime
+	waterTravel    waterTravelState
+	vehicleEffects vehicleEffectState
+	logoutPrompt   *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
 	// first entry.
 	sceneNames map[uint16]string
@@ -294,6 +296,7 @@ func (c *Client) frame(draw bool) {
 	c.Input.Hovered = nil // FUN_0040f97c
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.Step(c.Now())
+		c.waterTravelTick()
 		c.remoteTick()
 		if c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
@@ -311,6 +314,7 @@ func (c *Client) frame(draw bool) {
 		c.World.Cinematic = fading
 		if !c.movieFrame() && draw {
 			c.World.Draw()
+			c.drawVehicleEffects()
 			c.Talk.Draw()
 		}
 		c.sportFrame()
@@ -433,6 +437,8 @@ func (c *Client) dispatch(p []byte) {
 		c.Skills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandPetControl && (sub == protocol.PetControlVehicleMount || sub == protocol.PetControlWireCode11 || sub == protocol.PetControlRemoveVehicle || sub == protocol.PetControlVehiclePosition):
+		c.vehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlWireCode8:
 		if c.World != nil {
 			if c.InventoryState.ApplyPetList(p) {
@@ -519,8 +525,16 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameEnd:
 		c.endSport()
 	case p[0] == protocol.CommandPosition:
-		if id, _, x, y, ok := world.ParsePlace(s); ok && c.World != nil && id != c.World.Player.ID {
-			c.World.PlacePeer(id, x, y)
+		if id, mapID, x, y, ok := world.ParsePlace(s); ok && c.World != nil {
+			if id == c.World.Player.ID && mapID == c.World.Player.Map {
+				c.rememberVehiclePosition(id)
+				c.waterTravel = waterTravelState{}
+				c.World.Relocate(image.Pt(x, y))
+				c.World.MarkWalk()
+			} else if id != c.World.Player.ID {
+				c.rememberVehiclePosition(id)
+				c.World.PlacePeer(id, x, y)
+			}
 		}
 	case p[0] == protocol.CommandMapAcknowledgment:
 		// AC12 (0x2e20cf) places the player on a map.
@@ -559,6 +573,8 @@ func (c *Client) dispatch(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.vehicleEffects = vehicleEffectState{}
+	c.waterTravel = waterTravelState{}
 	pl, err := world.ParseSelf(p)
 	if err != nil {
 		c.Notices.Show([]byte(err.Error()), 3*time.Second, c.Now())

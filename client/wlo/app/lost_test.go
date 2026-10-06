@@ -43,3 +43,17 @@ func TestLostConnection(t *testing.T) {
 		t.Fatal("Leave did not exit")
 	}
 }
+
+// AC0:19's reason becomes visible on the rejected login socket's close.
+func TestDuplicateLoginNotification(t *testing.T) {
+	c := testClient(t)
+	c.Login.Show()
+	c.dispatch([]byte{0, 19})
+	c.disconnected()
+	if !c.Lost.Visible || string(c.Lost.Text.Text) != "Character is already logged in:19" {
+		t.Fatalf("duplicate login notice: visible %v, text %q", c.Lost.Visible, c.Lost.Text.Text)
+	}
+	if c.G.InGame || c.World != nil || c.disconnectText != nil {
+		t.Fatal("rejected login entered world or retained stale reason")
+	}
+}

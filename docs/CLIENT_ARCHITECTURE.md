@@ -162,7 +162,16 @@ game viewport on the left and a collapsible 220-pixel session panel on the right
 The panel never covers or resizes the game UI. Four session cards and the **+** card fit together without scrolling. The panel has no title or footer bar.
 The **+** card is the last entry in the list and scrolls with it. Click **+** to
 open an instance, or a preview card to switch. The active card has a gold border;
-cards highlight on hover. Scroll to access additional instances and the add card.
+cards highlight on hover. When the list overflows, its right-side scrollbar
+supports dragging the thumb and paging by clicking the track. Mouse-wheel and
+track input ease between pixel offsets, including fractional wheel movement;
+partially visible cards are clipped to the list and remain correctly clickable.
+Scrollbar gestures stay captured until release and never reach the game.
+Card titles default to **Session <number>** and stay independent of character
+names. Click a title to edit it; typing replaces the selected text. Enter or
+clicking outside saves, Escape cancels, and a blank title restores the default.
+Titles accept up to 40 characters and persist in `workspace.json`. While editing,
+keyboard input stays in the title editor.
 Each card has an **X**; closing requires confirmation inside that card. Cancel
 leaves it connected.
 Removing the final session closes the application. Settings Exit/Leave closes
@@ -204,7 +213,7 @@ The Go modules are `wonderland-gonline` and `wonderland-gonline/client`.
 References to WLRI, aLogin and sibling directory paths keep their original names.
 
 `workspace.json` remembers the open session list, stable session IDs, active
-session, collapsed panel state, last selected servers and associated account names.
+session, custom titles, collapsed panel state, last selected servers and associated account names.
 For the compiled client it lives in `bin/profiles/workspace.json`; loose-data
 runs use `var/client/workspace.json`. Embedding callers that supply `app.Options.SettingsPath` store it
 beside that settings file. Account and server fields are explicitly `null`
@@ -428,7 +437,67 @@ blits, scaling, indexed palettes, lighting, all gauge percentages, sparse compil
 canvases, loose image tiles, cache reuse/eviction and GPU-to-GPU copies against the
 CPU renderer through real GPU readbacks. The app test compares entire login,
 Ship Deck, inventory, skills, settings and two-session frames, collapsed previews
-and session removal. It also checks that normal composition performs no readbacks
+session removal and clipped, partially scrolled session cards. It also checks that normal composition performs no readbacks
 and that removal releases the session target. `GPU_DIFF_DIR` optionally saves
 CPU/GPU images when the app comparison fails. Run focused CPU regressions and
 race checks on these modules when changing shared caches or lifetime behavior.
+
+## Shoreline water vehicles
+
+Mouse and arrow-key walking retain the requested target while approaching shore.
+Native travel classes follow `FUN_00154a64` / `FUN_001549e8`. Shore transitions
+follow `FUN_0041897c`, including its -2..+3 cell scan; Go also rejects a crossing
+through an obstacle. Empty, locked and wrecked vehicles are excluded.
+
+Boarding sends AC15:14 `[slot:u8, item:u16]`. Only a matching owner AC15:18
+`[slot:u8, owner:u32, item:u16, x:u32, y:u32]` advances the transition. Following
+`FUN_0044a6dc`, the avatar relocates to the saved water cell and sends AC15:7
+`[slot:u8, item:u16]`. AC15:10 `[slot:u8, owner:u32, item:u16]` enables water
+pathing and resumes walking. Foreign, malformed and repeated placement receipts
+cannot board or replay the confirmation. A missing receipt expires after five
+seconds and restores the prior terrain position if the transition was not confirmed.
+
+Mounted paths admit water terrain 2 and 8 and stop before land. A land click
+relocates to a nearby clear land cell before requesting AC15:10
+`[slot:u8, item:u16]`, as `FUN_0041897c` / `FUN_0035671c` do. Go reports the land
+position with AC6:2 first so the server saves the landing location in the dismount
+transaction without charging an extra movement step or triggering encounters.
+Riding clears on AC15:11/break and the remaining land route resumes. Inventory
+consumption stays authoritative on the server, including disposable rafts.
+
+Mount/break/dismount replies update peers and artwork. Known native water families
+and capsules are supported. Additional vehicle classes, companion riding and full
+native passenger presentation remain pending.
+
+### Seated poses and raft recovery
+
+The default Alt+1 shortcut applies the native held sit pose (actions 16/17,
+`FUN_0027f248`, table `0x4bd7bc`, `FUN_00430f90`). It sends AC32:2 and renders
+locally; peers receive the server broadcast. Text input, battle/event holds and
+mounted vehicles suppress this shortcut. Water riders use directional seated
+frames 46..53 (`FUN_00445950`); the vehicle retains its walking/standing direction.
+Dismounting restores ordinary body rendering. Raft composition also applies the
+native body/direction rider tables (`FUN_00154100`, X at `0x4baafc`, Y at
+`0x4babb0`) and the vehicle canvas correction of +68 Y (`FUN_00154d20`).
+Weapons use their own +68 Y canvas correction (`FUN_002fe8e8`); mounted seated
+poses hide hand weapons except item type 6 (`FUN_00433318`). These corrections
+belong to the renderer; exported PNG anchors remain unchanged.
+
+AC15:15 plays the vehicle destruction strip (`FUN_00449f80`): Robinson's raft
+uses `images/48010_B`, three vertical frames at 70 ms per frame, centered at the
+vehicle's last water position. Missing vehicle artwork falls back to
+`images/48005_B`. The client sends the six-byte AC15:13 owner acknowledgment.
+Effects expire after one playback, remain specific to their session/map and use
+the existing GPU-compatible picture drawing. A preceding AC7 recovery retains
+the old water point only for this brief effect; the rescued player stays ashore.
+
+Robinson's disposable raft breaks on Starter Beach (map 11016) at the legacy
+movement trigger X >= 280, Y >= 950, or through its ordinary durability/landing
+rules. The server now finds the nearest interior walkable land point from the
+SQL terrain catalog and commits that position together with raft removal. It
+sends authoritative AC7 placement before the deletion/break/dismount sequence.
+The Go client applies its own AC7 correction, stops walking and clears pending
+shore travel. Already-walkable positions remain unchanged. An available terrain
+with no safe land leaves the raft intact. Native AC15:13 acknowledges a dismount
+with either the compatibility two-byte packet or the six-byte owner-ID packet;
+both are accepted without replaying consumption.
