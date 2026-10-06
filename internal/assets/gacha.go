@@ -3,7 +3,7 @@ package assets
 import (
 	"encoding/json"
 	"fmt"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 type GachaReward struct {

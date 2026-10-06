@@ -5,11 +5,11 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func TestWorldSimulationMovementRejectionPreservesState(t *testing.T) {

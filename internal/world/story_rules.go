@@ -3,8 +3,8 @@ package world
 import (
 	"encoding/binary"
 	"slices"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // These authored exceptions are from EveEventRuntime.FindBranch and the

@@ -2,7 +2,7 @@ package battle
 
 import (
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestExecutedSkillReceipts(t *testing.T) {

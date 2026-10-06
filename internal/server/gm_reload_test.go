@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/world"
 )
 
 func TestGMReloadFailureAndQuestOwnership(t *testing.T) {

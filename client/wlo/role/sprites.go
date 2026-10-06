@@ -6,13 +6,15 @@
 package role
 
 import (
+	"fmt"
+	"image"
 	"image/color"
 	"log"
 	"path/filepath"
 	"strings"
 
-	"wonderland-go/client/wlo/sprites"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/sprites"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 const idsPerFamily = 1000
@@ -161,23 +163,7 @@ func (s *sprite) drawColored(dst *surface.Surface, f *sprites.Frame, x, y, id in
 	}
 	pal := colors.palette(id, s.Palette)
 	lut, opaque := lookup(&pal)
-	left, top := x+f.OffsetX, y+f.OffsetY
-	b := ix.Bounds()
-	for row := 0; row < f.Height; row++ {
-		dy := top + row
-		if dy < 0 || dy >= dst.H {
-			continue
-		}
-		for col := 0; col < f.Width; col++ {
-			dx := left + col
-			if dx < 0 || dx >= dst.W {
-				continue
-			}
-			if i := ix.Pix[ix.PixOffset(b.Min.X+col, b.Min.Y+row)]; opaque[i] {
-				dst.Pix[dy*dst.W+dx] = lut[i]
-			}
-		}
-	}
+	dst.DrawIndexed(x+f.OffsetX, y+f.OffsetY, f, ix, lut, opaque)
 }
 
 // draw blits a frame at its offset from (x, y) onto the 16-bit surface.
@@ -185,45 +171,31 @@ func (s *sprite) drawColored(dst *surface.Surface, f *sprites.Frame, x, y, id in
 // Partially transparent pixels, possible in edited PNGs, blend with the
 // framebuffer.
 func (s *sprite) draw(dst *surface.Surface, f *sprites.Frame, x, y int) {
-	pixels, err := f.Image(s.m)
-	if err != nil {
-		if !s.reported {
-			log.Printf("sprite %s: %v", s.Name, err)
-			s.reported = true
-		}
-		return
-	}
-	if pixels == nil {
-		return
-	}
-	left, top := x+f.OffsetX, y+f.OffsetY
-	b := pixels.Bounds()
-	for row := 0; row < f.Height; row++ {
-		dy := top + row
-		if dy < 0 || dy >= dst.H {
-			continue
-		}
-		for col := 0; col < f.Width; col++ {
-			dx := left + col
-			if dx < 0 || dx >= dst.W {
-				continue
-			}
-			c := pixels.NRGBAAt(b.Min.X+col, b.Min.Y+row)
-			if c.A == 0 {
-				continue
-			}
-			if c.A < 255 {
-				c = blendSpritePixel(c, surface.Expand(dst.Pix[dy*dst.W+dx]))
-			}
-			dst.Pix[dy*dst.W+dx] = surface.RGB565(c.R, c.G, c.B)
-		}
+	err := dst.DrawSprite(x+f.OffsetX, y+f.OffsetY, f, func() (*image.NRGBA, error) { return f.Image(s.m) })
+	if err != nil && !s.reported {
+		log.Printf("sprite %s: %v", s.Name, err)
+		s.reported = true
 	}
 }
 
 // Blend straight PNG alpha against the RGB565 framebuffer in RGB space.
 func blendSpritePixel(source color.NRGBA, destination color.RGBA) color.NRGBA {
-	alpha := uint32(source.A)
-	inverse := 255 - alpha
-	mix := func(s, d uint8) uint8 { return uint8((uint32(s)*alpha + uint32(d)*inverse + 127) / 255) }
-	return color.NRGBA{R: mix(source.R, destination.R), G: mix(source.G, destination.G), B: mix(source.B, destination.B), A: 255}
+	return surface.BlendSpritePixel(source, destination)
+}
+
+// Image returns the original transparent frame, using normal archive patch rules.
+func (l *Library) Image(family string, id, action, frame int) (*image.NRGBA, error) {
+	a, mapped := l.lookup(family, id)
+	if a == nil {
+		return nil, fmt.Errorf("sprite family %s unavailable", family)
+	}
+	s := a.sprite(mapped)
+	if s == nil {
+		return nil, fmt.Errorf("sprite %d unavailable", id)
+	}
+	f := s.frame(action, frame)
+	if f == nil {
+		return nil, fmt.Errorf("sprite %d frame unavailable", id)
+	}
+	return f.Image(l.Sprites)
 }

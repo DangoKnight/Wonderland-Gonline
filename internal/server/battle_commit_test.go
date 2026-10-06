@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
 )
 
 func TestFailedBattleResultDoesNotPublishPetChanges(t *testing.T) {

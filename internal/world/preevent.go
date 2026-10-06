@@ -2,8 +2,8 @@ package world
 
 import (
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // Reference: PreEventInterpreter.ShouldNpcBeVisible and EveEventRuntime.MatchesCondition.

@@ -5,7 +5,7 @@ import (
 	"image"
 	"time"
 
-	native "wonderland-go/internal/assets"
+	native "wonderland-gonline/internal/assets"
 )
 
 // Map areas (EVE category 1, the scene loader FUN_003090f4 → +0x338). An

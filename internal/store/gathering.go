@@ -5,7 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrGatheringUnavailable = errors.New("resource gathering conditions are not met")

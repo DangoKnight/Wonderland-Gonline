@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/world"
 )
 
 func TestInventoryPointDraftAndNativeRequest(t *testing.T) {

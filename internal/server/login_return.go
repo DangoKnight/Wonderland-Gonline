@@ -1,6 +1,6 @@
 package server
 
-import "wonderland-go/internal/store"
+import "wonderland-gonline/internal/store"
 
 // returnToAccount handles bare AC63:0 from character selection. The client
 // opens its account form locally and expects no reply or connection closure.

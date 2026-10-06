@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"math"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrMallAdjustment = errors.New("invalid mall adjustment or balance limit exceeded")

@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // compoundCommand is AC23.Recv14. Caller holds worldMu. Read the entire two-slot

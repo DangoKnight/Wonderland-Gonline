@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestLegacyImportRollbackPasswordsAndOwnership(t *testing.T) {

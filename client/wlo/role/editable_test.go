@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestEditableSpriteDrawWithoutNativeArchives(t *testing.T) {

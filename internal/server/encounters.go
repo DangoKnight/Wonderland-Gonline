@@ -1,14 +1,14 @@
 package server
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 import (
 	"context"
 	"math"
 	"math/rand/v2"
 	"time"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/world"
 )
 
 // Field encounters. Reference: AC06.Recv1, PvEBattleManager.CheckAndTriggerRandomEncounter,

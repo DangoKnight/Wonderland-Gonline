@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestPictureAtlasesPreservePixelsAndNamespaces(t *testing.T) {

@@ -5,10 +5,10 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func evCond(kind byte, w1, w2, w3 uint16, op byte, value uint32) (c [21]byte) {

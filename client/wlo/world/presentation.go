@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 func TestNativePoseBatchAndMalformed(t *testing.T) {

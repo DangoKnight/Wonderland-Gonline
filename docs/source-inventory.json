@@ -1394,9 +1394,18 @@
 				"docs/FISHING.md",
 				"internal/server/potential.go",
 				"internal/game/potential.go",
-				"internal/server/potential_test.go"
+				"internal/server/potential_test.go",
+				"client/wlo/inventory/use.go",
+				"client/wlo/inventory/use_dialog.go",
+				"client/wlo/inventory/selection.go",
+				"client/wlo/inventory/remote.go",
+				"client/wlo/inventory/remote_options.go",
+				"client/wlo/app/remote.go",
+				"client/wlo/app/remote_test.go",
+				"client/wlo/inventory/use_test.go",
+				"client/wlo/app/inventory.go"
 			],
-			"notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison. Native fishing AC23:53/54 now routes to the rod/shoreline and transactional catch system; 54 retains mall refresh when casting is inactive. Native AC23:126 is absent from this source but now supported using decompiled AC23:213 results and the supplied official WLRI pill rates, with atomic consumption/potential changes and derived stats.",
+			"notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison. Native fishing AC23:53/54 now routes to the rod/shoreline and transactional catch system; 54 retains mall refresh when casting is inactive. Native AC23:126 is absent from this source but now supported using decompiled AC23:213 results and the supplied official WLRI pill rates, with atomic consumption/potential changes and derived stats. Go Client now provides immediate single-item recovery/amity use on the inventory-selected player or pet (AC23:15), Potential Pill requests/results (AC23:126/213), owned pet targeting from AC15:8/2, and correct initial player potential from AC5:3. Server replies exclusively mutate bag counts and potential; stale pill confirmation snapshots are rejected. Pet selectors display pet snapshots and AC8:2 updates, native pet equipment receipts are supported, and Remote Control opens its main Auto Controls window locally, closing Inventory once but allowing both windows to coexist afterward. Level-up Setting opens the separate advanced tabbed window. Double-click and contextual right-click use distinct paths; ordinary right-click does not consume items. Special contextual item windows remain pending. Remote now supports walkable auto-walking, server-gated basic PvE player/pet attacks, threshold-based single-item supplies, space-checked worn-equipment removal, explicitly selected unlocked Auto Discard (controller excluded), enabled leave conditions and optional status text/shortcut. Item requests wait for authoritative receipts and stop on timeout without retry. Advanced skill assignment and battle rendering remain pending.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -1565,10 +1574,12 @@
 			"go_files": [
 				"internal/server/alchemy.go",
 				"internal/server/alchemy_test.go",
+				"internal/server/hotbar.go",
+				"internal/server/hotbar_test.go",
 				"internal/assets/alchemy.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
-			"notes": "Direct native synthesis matches the first symmetric SQL recipe and ignores chance/fee as source does; unknown recipe fails without consumption. Verified authored/Compound2/Compound precedence survives SQL reload. Full containers, stale/duplicate requests, locks, ownership and save/receipt failures retain atomic resources and metadata.",
+			"notes": "Legacy four-byte synthesis matches the first symmetric SQL recipe and ignores chance/fee as source does; unknown recipe fails without consumption. Verified authored/Compound2/Compound precedence survives SQL reload. Full containers, stale/duplicate requests, locks, ownership and save/receipt failures retain atomic resources and metadata. Native seven-byte AC40:1 hotbar assignment is independently verified against aLogin and accepted without alchemy replies or resource mutation; previously it disconnected the client. Server-side durable hotbar storage and login replay remain pending; the Go client now saves per-character bindings locally, handles native lists and supports dragging, F1-F8 activation and native AC50 battle requests.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -3357,10 +3368,13 @@
 				"internal/game/skill_tree.go",
 				"internal/game/skill_progress.go",
 				"internal/game/skill_rewards.go",
+				"client/wlo/skills/state.go",
+				"client/wlo/skills/form.go",
+				"client/wlo/app/skills.go",
 				"internal/assets/catalog.go",
 				"internal/server/combat.go"
 			],
-			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate.",
+			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate. Go client now consumes authoritative learned-skill snapshots and player/pet progress updates in its native five-tab Skills window, including avatar stunt aliases, elemental requirements, SP costs, proficiency and weapon metadata. Go client hotbar skill dragging, local per-character shortcut persistence, target selection and native battle actions are now implemented. Native battle-scene rendering/targeting and overworld casting remain pending.",
 			"audit_verdict": "replaced"
 		},
 		{

@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestNativeNPCOffsets(t *testing.T) {

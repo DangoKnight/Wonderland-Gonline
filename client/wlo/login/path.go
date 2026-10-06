@@ -1,9 +1,10 @@
 package login
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientimage"
 )
 
 // Path joins parts under root, matching each existing component without
@@ -12,11 +13,11 @@ func Path(root string, parts ...string) string {
 	dir := root
 	for _, p := range parts {
 		next := filepath.Join(dir, p)
-		if _, err := os.Stat(next); err != nil {
-			if ents, err := os.ReadDir(dir); err == nil {
+		if _, err := clientfs.Stat(next); err != nil {
+			if ents, err := clientfs.ReadDir(dir); err == nil {
 				for _, e := range ents {
-					if strings.EqualFold(e.Name(), p) {
-						next = filepath.Join(dir, e.Name())
+					if strings.EqualFold(strings.TrimSuffix(e.Name(), clientimage.DescriptorSuffix), p) {
+						next = filepath.Join(dir, strings.TrimSuffix(e.Name(), clientimage.DescriptorSuffix))
 						break
 					}
 				}

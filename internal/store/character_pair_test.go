@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func pairFixture(t *testing.T) (*Store, [2]CharacterRef) {

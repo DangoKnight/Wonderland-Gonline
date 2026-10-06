@@ -4,8 +4,8 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Effect is a game's one-shot animation slot (the object FUN_003c856c

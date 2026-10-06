@@ -3,8 +3,8 @@ package battle
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // lowest makes every roll its minimum.

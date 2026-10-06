@@ -6,7 +6,7 @@ import (
 	"math"
 	"strings"
 	"time"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 type Attributes struct {

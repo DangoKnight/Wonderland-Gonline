@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestBattleSkillProgressIsDurable(t *testing.T) {

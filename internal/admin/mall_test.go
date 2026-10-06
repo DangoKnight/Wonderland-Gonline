@@ -12,10 +12,10 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/server"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/server"
+	"wonderland-gonline/internal/store"
 )
 
 func TestAdminMallAdjustmentValidationAndAudit(t *testing.T) {

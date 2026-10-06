@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/dbmigration"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/dbmigration"
+	"wonderland-gonline/internal/world"
 )
 
 func TestAdminDefinitionsVersionRollbackAndInteractionGates(t *testing.T) {

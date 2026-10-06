@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/cursor"
-	"wonderland-go/client/wlo/minigame"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/minigame"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Minigames (TSportManage, PTR_DAT_004c9994). The server starts one with
@@ -463,6 +463,11 @@ func (c *Client) loadPictures(names ...string) {
 			continue
 		}
 		for _, arc := range sportArchives {
+			if compiled, err := c.Assets.CompiledPicture(arc, n); err == nil {
+				if err = c.Pics.AddCompiled(n, compiled); err == nil {
+					break
+				}
+			}
 			if m, err := c.Assets.LoadPicture(arc, n); err == nil {
 				c.Pics.Add(n, m)
 				break

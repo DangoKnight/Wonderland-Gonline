@@ -2,7 +2,7 @@ package assets
 
 import (
 	"fmt"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const FishingWaterCell byte = 2

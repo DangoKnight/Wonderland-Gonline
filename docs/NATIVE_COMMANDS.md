@@ -355,3 +355,28 @@ rolled 90 and failed to potential 3. The zero shown before that attempt was a
 roster-display error. This correction changes synchronization only, preserving
 probabilities, saved potential and pill outcomes. Native initial-window and
 reconnect acceptance remains pending user retest.
+
+
+## Native hotbar assignment (AC40:1)
+
+Dragging an item or action onto aLogin's hotbar sends
+`[40,1,kind,id:u16,page,slot]`: kind 1 is an item, kind 2 a skill/action,
+page is 1–3 and slot is 1–8. Basic Attack is ID 10001; Defense is 60021.
+The decompiled `FUN_002aa92c` / `FUN_0029082c` sends this seven-byte packet
+**after updating the local hotbar**. No acknowledgement is required.
+Inbound AC40:1 instead contains a list of five-byte binding records, as decoded
+by `FUN_002aa7f8` / `FUN_002906f8`; a legacy alchemy result is incompatible.
+
+The server validates and accepts native assignments without changing inventory,
+currency or learned skills, including during login synchronization and battles.
+Debug logging records kind, ID, page and slot. Hotbar bindings are currently
+client-local; server database storage and replay on reconnect remain pending.
+The Go client saves per-character hotbar preferences beside settings.json and
+restores them on character entry, independently of server resource state.
+
+Private Server's AC40 handler implements four-byte synthesis instead. Go retains
+that legacy compatibility layout separately. Previously the seven-byte native
+assignment was rejected as malformed, closing the requesting connection. Tests
+in `internal/server/hotbar_test.go` cover Basic Attack, Defense, item/empty
+bindings, invalid layouts and unchanged resources; the existing alchemy tests
+verify synthesis still behaves as before.

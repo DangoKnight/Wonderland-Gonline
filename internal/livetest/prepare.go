@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/store"
 )
 
 const (

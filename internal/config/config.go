@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -37,7 +37,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{CharacterSaveSeconds: defaultCharacterSaveSeconds, PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Go", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
+	return Config{CharacterSaveSeconds: defaultCharacterSaveSeconds, PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Gonline Server", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
 }
 func Load(path string) (Config, error) {
 	c := Default()

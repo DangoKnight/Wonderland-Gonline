@@ -10,7 +10,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/world"
 )
 
 // Ambient sounds: waves along a shore, birds in the trees. Every 500 ms

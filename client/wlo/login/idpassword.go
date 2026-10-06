@@ -2,10 +2,11 @@ package login
 
 import (
 	"os"
+	"strings"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Account form layout from FUN_003ffbc0, FUN_0040063c and FUN_00400420.
@@ -49,7 +50,9 @@ type IDPassword struct {
 	Remember                  bool              // +0x150
 	RecordIcon                int               // +0x154
 	Password                  *seui.Editor      // +0x158
-	LoginTime                 time.Time         // +0x160, zero while idle
+	SubmittedAccount          string
+	OnLogout                  func()
+	LoginTime                 time.Time // +0x160, zero while idle
 
 	// Servers is the server list form (DAT_007a15a4).
 	Servers *SelectServer
@@ -207,6 +210,7 @@ func (f *IDPassword) Submit() {
 	case len(f.Password.Text) == 0:
 		f.notify(noticeNoPassword)
 	default:
+		f.SubmittedAccount = strings.TrimSpace(string(f.Account.Text))
 		f.Net.Send(f.LoginPacket())
 		f.wipePassword()
 		f.Hide()
@@ -222,6 +226,9 @@ func (f *IDPassword) wipePassword() {
 
 // Previous is FUN_00400170: back to the server list.
 func (f *IDPassword) Previous() {
+	if f.OnLogout != nil {
+		f.OnLogout()
+	}
 	f.Hide()
 	f.Net.Close()
 	if f.Servers != nil {

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // stubRole is a 40 × 60 monster sprite standing on its feet.

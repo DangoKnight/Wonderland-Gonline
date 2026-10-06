@@ -2,7 +2,7 @@ package game
 
 import (
 	"math"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Pets and companions. Reference: Player.PlayerPetData and the companion helpers of

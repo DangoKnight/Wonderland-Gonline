@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/server"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/server"
+	"wonderland-gonline/internal/store"
 )
 
 //go:embed web/*

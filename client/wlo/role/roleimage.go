@@ -3,9 +3,9 @@ package role
 import (
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/assets"
 )
 
 // TJK_RoleImage's layered body (FUN_002566bc), as character creation draws

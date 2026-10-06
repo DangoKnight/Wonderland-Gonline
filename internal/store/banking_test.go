@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestBankBalancesPersistAcrossReopenWithoutSchemaUpgrade(t *testing.T) {

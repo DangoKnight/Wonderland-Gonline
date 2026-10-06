@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 // Offline-only projection: read individual imported Ground.MMG rows. Runtime

@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestLoginReturnReleasesAccountAndCreationName(t *testing.T) {

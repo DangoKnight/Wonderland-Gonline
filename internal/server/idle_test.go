@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
 )
 
 func TestIdleDeadlineTransitions(t *testing.T) {

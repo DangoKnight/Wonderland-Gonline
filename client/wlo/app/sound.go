@@ -3,14 +3,14 @@ package app
 import (
 	"bytes"
 	"io"
-	"os"
 	"strings"
 	"sync"
+	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 // sampleRate is the mixing rate; wave files are resampled to it.
@@ -20,21 +20,29 @@ const sampleRate = 44100
 // to the client directory with backslashes.
 type Sounds struct {
 	Root       string
-	once       sync.Once
-	ctx        *audio.Context
+	Shared     *SoundCache
 	mu         sync.Mutex
-	cache      map[string][]byte
 	volume     float64
 	configured bool
 }
 
-// Context is the process's one audio context, made on first use.
+// SoundCache owns the workspace's one audio context and decoded effects.
+type SoundCache struct {
+	once  sync.Once
+	ctx   *audio.Context
+	mu    sync.Mutex
+	cache map[string][]byte
+}
+
 func (s *Sounds) Context() *audio.Context {
-	s.once.Do(func() {
-		s.ctx = audio.NewContext(sampleRate)
-		s.cache = map[string][]byte{}
-	})
-	return s.ctx
+	s.mu.Lock()
+	if s.Shared == nil {
+		s.Shared = &SoundCache{}
+	}
+	shared := s.Shared
+	s.mu.Unlock()
+	shared.once.Do(func() { shared.ctx = audio.NewContext(sampleRate); shared.cache = map[string][]byte{} })
+	return shared.ctx
 }
 
 // Play starts a sound; missing or unreadable files are ignored.
@@ -49,7 +57,7 @@ func (s *Sounds) Play(path string) {
 		return
 	}
 	if pcm := s.PCM(path); len(pcm) > 0 {
-		p := s.ctx.NewPlayerFromBytes(pcm)
+		p := s.Context().NewPlayerFromBytes(pcm)
 		p.SetVolume(v)
 		p.Play()
 	}
@@ -59,17 +67,18 @@ func (s *Sounds) Play(path string) {
 // once; nil for a missing or unreadable file.
 func (s *Sounds) PCM(path string) []byte {
 	s.Context()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	pcm, ok := s.cache[path]
+	s.Shared.mu.Lock()
+	defer s.Shared.mu.Unlock()
+	key := login.Path(s.Root, strings.Split(path, `\`)...)
+	pcm, ok := s.Shared.cache[key]
 	if !ok {
-		raw, err := os.ReadFile(login.Path(s.Root, strings.Split(path, `\`)...))
+		raw, err := clientfs.ReadFile(login.Path(s.Root, strings.Split(path, `\`)...))
 		if err == nil {
 			if st, err := wav.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw)); err == nil {
 				pcm, _ = io.ReadAll(st)
 			}
 		}
-		s.cache[path] = pcm
+		s.Shared.cache[key] = pcm
 	}
 	return pcm
 }

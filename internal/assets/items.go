@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const (

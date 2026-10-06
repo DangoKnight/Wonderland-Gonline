@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestArchiveRoundTripPreservesPadding(t *testing.T) {

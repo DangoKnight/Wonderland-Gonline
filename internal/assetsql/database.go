@@ -10,9 +10,9 @@ import (
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"wonderland-go/internal/battle"
+	"wonderland-gonline/internal/battle"
 )
 
 // gmDropRate ports AC02's process-local loot multiplier. The caller holds worldMu.

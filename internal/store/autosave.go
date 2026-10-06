@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"gorm.io/gorm"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrAutosaveConflict = errors.New("autosave snapshot conflicts with durable character state")

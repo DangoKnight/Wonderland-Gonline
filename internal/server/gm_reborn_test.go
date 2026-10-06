@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestGMRebornOwnershipCapeResetAndReplay(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestQuestVisibilitySQLProjectionAndRollback(t *testing.T) {

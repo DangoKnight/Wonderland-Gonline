@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/hex"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

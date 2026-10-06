@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Character selection layout (TSe_SelectCharacter, constructor 0x400804;
@@ -454,6 +454,9 @@ func (s *SelectCharacter) previous() {
 	s.Hide()
 	s.Net.Send([]byte{protocol.CommandLogin, loginReturn})
 	if s.Login != nil {
+		if s.Login.OnLogout != nil {
+			s.Login.OnLogout()
+		}
 		s.Login.Show()
 	}
 }

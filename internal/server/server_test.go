@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 func TestLoginWireFlow(t *testing.T) {
@@ -49,7 +49,7 @@ func TestLoginWireFlow(t *testing.T) {
 		return p
 	}
 	send([]byte{0})
-	if p := read(); !bytes.Equal(p, append([]byte{1, 9, 101, 0, 1}, []byte("Wonderland Go")...)) {
+	if p := read(); !bytes.Equal(p, append([]byte{1, 9, 101, 0, 1}, []byte("Wonderland Gonline Server")...)) {
 		t.Fatalf("%x", p)
 	}
 	if p := read(); p[0] != 54 || p[1] != 201 {

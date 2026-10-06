@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // chat handles AC2. Reference: AC02.Recv1/Recv2. The caller holds worldMu.

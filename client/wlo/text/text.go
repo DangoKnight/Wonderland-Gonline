@@ -12,8 +12,9 @@
 package text
 
 import (
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/clientassets"
+	"image"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Edge is the outline colour (+0x587c), set to 0x1082 by the font
@@ -23,7 +24,16 @@ const Edge = 0x1082
 // Renderer draws with one font. The traditional-Chinese client reads
 // font\tatpc1.twn (Font_Create, 0x489ca0).
 type Renderer struct {
-	Font *clientassets.Font
+	Font  *clientassets.Font
+	cells map[cellKey]*surface.Surface
+}
+
+const glyphCacheLimit = 4096
+
+type cellKey struct {
+	Glyph      clientassets.Glyph
+	Paper, Ink uint16
+	Style      byte
 }
 
 // shadow is FUN_00487358's table: the shadow colour (+0x587e) for an ink.
@@ -112,6 +122,11 @@ func (r *Renderer) Draw(x, y int, underline byte, bold, transparent bool, dst *s
 // blit covers 15 rows and the glyph width (plus one for single-byte or two
 // for double-byte glyphs in style 1).
 func (r *Renderer) cell(dst *surface.Surface, x, y int, g clientassets.Glyph, transparent bool, paper, ink uint16, style byte) {
+	key := cellKey{g, paper, ink, style}
+	if cached := r.cells[key]; cached != nil {
+		dst.Draw(x, y, cached, transparent)
+		return
+	}
 	const rows = 17
 	cols := g.Width + 2
 	buf := make([]uint16, rows*cols)
@@ -168,21 +183,13 @@ func (r *Renderer) cell(dst *surface.Surface, x, y int, g clientassets.Glyph, tr
 			w = 9
 		}
 	}
-	for row := range clientassets.FontHeight {
-		dy := y + row
-		if dy < 0 || dy >= dst.H {
-			continue
-		}
-		for col := range w {
-			dx := x + col
-			if dx < 0 || dx >= dst.W {
-				continue
-			}
-			v := buf[row*cols+col]
-			if transparent && v == 0 {
-				continue
-			}
-			dst.Pix[dy*dst.W+dx] = v
-		}
+	cell := surface.New(w, clientassets.FontHeight)
+	for row := 0; row < cell.H; row++ {
+		copy(cell.Pix[row*w:(row+1)*w], buf[row*cols:row*cols+w])
 	}
+	if r.cells == nil || len(r.cells) >= glyphCacheLimit {
+		r.cells = map[cellKey]*surface.Surface{}
+	}
+	r.cells[key] = cell
+	dst.DrawRect(x, y, image.Rect(0, 0, w, cell.H), cell, transparent)
 }

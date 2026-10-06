@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/legacyimport"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/legacyimport"
+	"wonderland-gonline/internal/store"
 )
 
 func main() {

@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Account changes exclude in-flight authentication so an old credential cannot

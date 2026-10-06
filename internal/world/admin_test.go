@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestAdminClearDroppedPreservesAuthoredGround(t *testing.T) {

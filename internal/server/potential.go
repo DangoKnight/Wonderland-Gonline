@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"slices"
 
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 // potentialPillCommand handles aLogin FUN_001cce98. Caller holds worldMu;

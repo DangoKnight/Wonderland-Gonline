@@ -5,9 +5,9 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

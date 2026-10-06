@@ -5,7 +5,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // ClientVersion is the word the 63/4 send writes after the command

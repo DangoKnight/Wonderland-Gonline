@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestPetEquipmentAndAllocationPersistence(t *testing.T) {

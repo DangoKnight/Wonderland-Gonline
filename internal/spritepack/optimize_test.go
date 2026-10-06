@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestOptimizeEditablePreservesEditsAndMetadata(t *testing.T) {

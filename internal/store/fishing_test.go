@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestFishingDeadlineOwnershipRollbackAndReopen(t *testing.T) {

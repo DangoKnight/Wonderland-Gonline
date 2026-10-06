@@ -7,11 +7,11 @@ import (
 	"math/rand"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/world"
 )
 
 // MainStatus layout (constructor FUN_0025ff84, painter FUN_00260fac):

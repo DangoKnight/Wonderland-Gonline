@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestRenamePetRawASCIIAndReplication(t *testing.T) {

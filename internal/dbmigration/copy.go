@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/store"
 )
 
 // Copy upgrades one snapshot into a new destination. VACUUM INTO includes

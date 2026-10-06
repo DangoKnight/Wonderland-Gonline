@@ -4,9 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/game"
 )
 
 // TSe_ItemInfo constructor/builder/painter: FUN_00287e0c, FUN_00287f58,
@@ -24,6 +25,13 @@ const (
 	itemInfoPaper                = uint16(0)
 	nativeDescriptionSizingWidth = 130
 	moveQuantityTitle            = "Moving quantity"
+	itemExperienceStatus         = 36
+	itemShootResistanceStatus    = 100
+	itemAttackBonusStatus        = 210
+	itemDefenseBonusStatus       = 211
+	itemSpeedBonusStatus         = 214
+	itemMagicAttackBonusStatus   = 215
+	itemMagicDefenseBonusStatus  = 216
 )
 
 // FUN_00485a20; authored type names are client presentation data.
@@ -45,6 +53,7 @@ func itemInfoLines(item assets.NativeItem, id uint16) []string {
 	if binary.LittleEndian.Uint16(item.Record[itemTradeFlagsOffset:])&itemNonTradeableFlag != 0 {
 		lines = append(lines, "<Non-tradeable>")
 	}
+	lines = append(lines, itemEffectLines(item.Definition)...)
 	kind := itemTypeNames[item.Definition.Type]
 	if kind == "" {
 		kind = "Prop"
@@ -57,6 +66,21 @@ func itemInfoLines(item assets.NativeItem, id uint16) []string {
 	}
 	if item.Description != "" {
 		lines = append(lines, item.Description)
+	}
+	return lines
+}
+
+// FUN_00287f58 lists the two catalog effects before type/rank. Values are
+// encoded around 100: 400 means +300, 95 means -5. Zero/100 are inert.
+func itemEffectLines(def game.ItemDefinition) []string {
+	labels := map[uint16]string{itemHPStatus: "Hp", itemSPStatus: "Sp", itemHPBonusStatus: "MaxHp", itemSPBonusStatus: "MaxSp", itemAmityStatus: "Amity", itemExperienceStatus: "EXP", itemShootResistanceStatus: "Shoot RES", itemAttackBonusStatus: "ATK", itemDefenseBonusStatus: "DEF", itemSpeedBonusStatus: "SPD", itemMagicAttackBonusStatus: "MAT", itemMagicDefenseBonusStatus: "MDF"}
+	var lines []string
+	for i, status := range def.Status {
+		label, known := labels[status]
+		value := def.Values[i]
+		if known && value != 0 && value != recoveryValueBase {
+			lines = append(lines, fmt.Sprintf("%s: %+d", label, value-recoveryValueBase))
+		}
 	}
 	return lines
 }

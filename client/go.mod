@@ -1,11 +1,11 @@
-module wonderland-go/client
+module wonderland-gonline/client
 
 go 1.25.0
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.10.0
 	golang.org/x/image v0.45.0
-	wonderland-go v0.0.0
+	wonderland-gonline v0.0.0
 )
 
 require (
@@ -19,6 +19,6 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 )
 
-replace wonderland-go => ..
+replace wonderland-gonline => ..
 
 replace github.com/hajimehoshi/ebiten/v2 => ./third_party/ebiten

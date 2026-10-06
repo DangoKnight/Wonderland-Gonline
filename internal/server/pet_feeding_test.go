@@ -6,8 +6,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func feedingFixture(t *testing.T) (*Server, *Session, []*captureConn) {

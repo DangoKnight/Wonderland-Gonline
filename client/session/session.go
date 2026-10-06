@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Ports used by the original client: the status socket is set to 0x1910 in

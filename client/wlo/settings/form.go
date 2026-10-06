@@ -3,9 +3,9 @@ package settings
 import (
 	"image"
 	"strings"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/internal/clientassets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

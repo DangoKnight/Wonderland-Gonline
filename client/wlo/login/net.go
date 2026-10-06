@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Ports from the form design (ClientSocket1) and FUN_003ff82c.
@@ -23,6 +23,7 @@ const (
 // statusSettle is the pause after closing an open status socket
 // (Sleep(0x32) in FUN_003ff82c).
 const statusSettle = 50 * time.Millisecond
+const connectionDialTimeout = 10 * time.Second
 
 // EventKind tells the frame loop what a socket did. The original receives
 // these as TClientSocket events on the main thread.
@@ -51,11 +52,12 @@ type Net struct {
 	login   net.Conn
 	reframe []byte // DAT_00828128 +8
 	dialing bool
+	closed  bool
 	pending [][]byte
 }
 
 func NewNet() *Net {
-	return &Net{Dial: net.Dial, events: make(chan Event, 256)}
+	return &Net{Dial: (&net.Dialer{Timeout: connectionDialTimeout}).Dial, events: make(chan Event, 256)}
 }
 
 // Poll returns the events received since the last call.
@@ -106,6 +108,11 @@ func (n *Net) QueryStatus(host string) {
 			return
 		}
 		n.mu.Lock()
+		if n.closed {
+			n.mu.Unlock()
+			c.Close()
+			return
+		}
 		n.status = c
 		n.mu.Unlock()
 		buf := make([]byte, 4096)
@@ -130,11 +137,22 @@ func (n *Net) QueryStatus(host string) {
 // Connect opens ClientSocket1 to host.
 func (n *Net) Connect(host string) {
 	n.mu.Lock()
+	if n.closed {
+		n.mu.Unlock()
+		return
+	}
 	n.dialing, n.pending = true, nil
 	n.mu.Unlock()
 	go func() {
 		c, err := n.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(LoginPort)))
 		n.mu.Lock()
+		if n.closed {
+			n.mu.Unlock()
+			if c != nil {
+				c.Close()
+			}
+			return
+		}
 		n.dialing = false
 		pending := n.pending
 		n.pending = nil
@@ -228,4 +246,22 @@ func (n *Net) Send(p []byte) error {
 	}
 	c.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	return protocol.Write(c, p)
+}
+
+// Shutdown permanently disposes a removed session, including late dial results.
+// Ordinary logout uses Close and can reconnect.
+func (n *Net) Shutdown() {
+	n.mu.Lock()
+	n.closed = true
+	login, status := n.login, n.status
+	n.login, n.status = nil, nil
+	n.pending = nil
+	n.dialing = false
+	n.mu.Unlock()
+	if login != nil {
+		login.Close()
+	}
+	if status != nil {
+		status.Close()
+	}
 }

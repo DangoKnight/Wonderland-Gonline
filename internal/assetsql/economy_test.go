@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"wonderland-go/internal/assetdb"
+	"wonderland-gonline/internal/assetdb"
 )
 
 func TestEconomyVersionOneUpgradePreservesDefinitions(t *testing.T) {

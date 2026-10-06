@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 	"time"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func starterTestItems() map[uint16]ItemDefinition {

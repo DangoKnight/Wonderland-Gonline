@@ -3,8 +3,8 @@ package app
 import (
 	"time"
 
-	"wonderland-go/client/wlo/weather"
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/weather"
+	"wonderland-gonline/client/wlo/world"
 )
 
 // weatherLayer is the weather object, made on first use. Its Random is
@@ -20,7 +20,8 @@ func (c *Client) weatherLayer() *weather.Layer {
 // attachWeather gives a map's view the layer and its scene's weather.
 func (c *Client) attachWeather(w *world.World) {
 	if c.sceneWeather == nil {
-		c.sceneWeather, _ = world.SceneWeather(c.Assets)
+		c.resources.loadScenes(c.Assets)
+		c.sceneWeather = c.resources.sceneWeather
 	}
 	w.Weather = c.weatherLayer()
 	w.WeatherKind = weather.SceneKind(c.sceneWeather[c.mapScenes[w.Player.Map]])

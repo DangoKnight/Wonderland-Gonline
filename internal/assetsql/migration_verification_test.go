@@ -3,8 +3,8 @@ package assetsql
 import (
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestMigrationAlchemySourceOrderSurvivesSQLRestart(t *testing.T) {

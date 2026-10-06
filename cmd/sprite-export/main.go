@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 const (

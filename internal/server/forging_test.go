@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func forgingFixture(t *testing.T) (*Server, *Session, *captureConn) {

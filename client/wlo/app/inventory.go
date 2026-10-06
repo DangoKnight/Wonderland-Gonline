@@ -5,14 +5,17 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/inventory"
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/inventory"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
-const mainInventoryButton = 1
+const (
+	mainInventoryButton      = 1
+	inventoryWarningDuration = 2 * time.Second
+)
 
 func (c *Client) initInventory() {
 	c.InventoryState = &inventory.State{Items: c.items}
@@ -22,11 +25,37 @@ func (c *Client) initInventory() {
 			c.Chat.Notice(err.Error())
 		}
 	}
+	petSprites := make(map[uint16]*role.NPC)
+	c.Inventory.DrawPet = func(slot byte, x, y, action int) {
+		if c.lib == nil {
+			return
+		}
+		id := c.InventoryState.Pets[slot-1].ID
+		sprite := petSprites[id]
+		if sprite == nil {
+			if c.npcTemplates == nil {
+				c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+			}
+			template, ok := c.npcTemplates[uint32(id)]
+			if !ok {
+				return
+			}
+			sprite = role.NewNPC(c.lib, template.Look, template.Colors)
+			sprite.Now = func() time.Time { return c.Now() }
+			petSprites[id] = sprite
+		}
+		sprite.Draw(c.Screen, x, y, action)
+	}
 	c.Inventory.CanAct = func() bool {
 		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.sceneFrozen()
 	}
 	c.Inventory.Now = func() time.Time { return c.Now() }
 	c.Inventory.Notice = c.Chat.Notice
+	c.Inventory.StartRemote = c.startRemote
+	c.Inventory.StopRemote = c.stopRemote
+	c.Inventory.Warning = func(message string) {
+		c.Notices.Show([]byte(message), inventoryWarningDuration, c.Now())
+	}
 	c.UI.Add(c.Inventory)
 	c.MainButtons.Buttons[mainInventoryButton].OnClick = func() {
 		if c.Inventory.Visible {
@@ -45,7 +74,15 @@ func (c *Client) resetInventory(p world.Player) {
 	}
 	c.Inventory.Hide()
 	c.Inventory.AllocationReply()
+	c.Inventory.ResetUse()
+	c.Inventory.ResetRemote()
+	c.resetRemoteRuntime()
+	c.Inventory.Select(0)
 	c.InventoryState.Reset(p.Items)
+	if c.Skills != nil {
+		c.SkillState.Reset()
+		c.Skills.Reset()
+	}
 	*c.Stats = world.Stats{Formula: c.Stats.Formula}
 	c.Inventory.PlayerName = append([]byte(nil), p.Name...)
 	if c.lib != nil {
@@ -54,6 +91,7 @@ func (c *Client) resetInventory(p world.Player) {
 		c.Inventory.Preview = preview
 	}
 	c.refreshEquipment()
+	c.loadHotbar()
 }
 
 func (c *Client) refreshEquipment() {
@@ -99,12 +137,27 @@ func (c *Client) inventoryPacket(p []byte) {
 				c.loadPictures(strconv.Itoa(int(icon)))
 			}
 		}
+		for _, pet := range c.InventoryState.Pets {
+			for _, it := range pet.Equipment {
+				if icon := c.items[it.ID].Icon; !it.Empty() && icon != 0 {
+					c.loadPictures(strconv.Itoa(int(icon)))
+				}
+			}
+		}
 		if before != c.InventoryState.Equipment {
 			c.refreshEquipment()
 		}
 		return
 	}
 	switch p[1] {
+	case protocol.InventoryPotentialPillResult:
+		if !c.Inventory.PotentialReply(p) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case protocol.InventoryItemUse:
+		c.remoteInventoryReceipt(p)
+		// AC23:15 acknowledges server-authoritative consumable use.
+
 	case protocol.InventoryWireCode212:
 		if len(p) == 7 && p[2] == 255 {
 			c.Inventory.ConfirmDestroy(p[3], binary.LittleEndian.Uint16(p[4:]), p[6])

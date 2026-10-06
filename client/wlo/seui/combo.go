@@ -3,7 +3,7 @@ package seui
 import (
 	"image"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // ComboBox is TCJ_ComboBox (constructor FUN_0047af90): an editor with a

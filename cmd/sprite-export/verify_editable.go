@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func verifyEditable(root, selected string, compare bool) error {

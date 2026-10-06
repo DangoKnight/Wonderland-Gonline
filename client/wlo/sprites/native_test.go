@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // TestEditableIndicesMatchPack: read directly from the editable export,

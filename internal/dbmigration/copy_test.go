@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
 )
 
 func TestCopyIncludesCommittedWALAndPreservesSource(t *testing.T) {

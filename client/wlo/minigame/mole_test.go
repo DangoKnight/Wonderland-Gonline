@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/picdb"
 )
 
 func runningMole(t *testing.T) (*Mole, *time.Time, *[]string) {

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
 // wire connects the client to a pipe and returns what it has sent so far.

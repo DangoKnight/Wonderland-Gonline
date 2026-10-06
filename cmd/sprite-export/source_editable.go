@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // exportEditableFromSource makes a fresh native decode in temporary storage.

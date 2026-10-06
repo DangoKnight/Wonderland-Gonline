@@ -4,9 +4,9 @@ import (
 	"context"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 func xaolanRewardFixture(t *testing.T) (*Server, *Session, *captureConn, *eventSession) {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // FUN_0047b274's pixel rules.
@@ -97,5 +97,19 @@ func TestLogoMatchesCapture(t *testing.T) {
 				t.Fatalf("(%d,%d) = %v, capture %d,%d,%d", x, y, c, r>>8, g>>8, b>>8)
 			}
 		}
+	}
+}
+
+func TestEditablePNGTransparency(t *testing.T) {
+	db := New()
+	m := image.NewNRGBA(image.Rect(0, 0, 2, 1))
+	m.SetNRGBA(0, 0, color.NRGBA{R: 255, A: 0})
+	m.SetNRGBA(1, 0, color.NRGBA{R: 255, A: 255})
+	db.Add("edited", m)
+	if db.Opaque(db.Find("edited"), 0, 0) {
+		t.Fatal("transparent edited PNG became opaque")
+	}
+	if !db.Opaque(db.Find("edited"), 1, 0) {
+		t.Fatal("opaque edited PNG disappeared")
 	}
 }

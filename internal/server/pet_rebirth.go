@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // petRebirthCommand ports AC69. The dispatcher holds worldMu and guards loading,

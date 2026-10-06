@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // party is a team of up to four characters; members[0] leads. Membership is

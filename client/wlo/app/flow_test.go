@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/internal/protocol"
 )
 
 // until runs frames until cond holds.

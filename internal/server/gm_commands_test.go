@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func TestGMCommandCoverage(t *testing.T) {

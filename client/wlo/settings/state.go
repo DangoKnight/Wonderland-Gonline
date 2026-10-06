@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

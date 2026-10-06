@@ -3,7 +3,7 @@ package game
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func knows(c Character, id uint16) bool {

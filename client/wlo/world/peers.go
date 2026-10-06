@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 // Other players. AC4 (receive case 0x2e0878, record FUN_00429a38) adds a

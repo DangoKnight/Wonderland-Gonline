@@ -3,7 +3,7 @@ package battle
 import (
 	"math"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestComboChanceLinearLevelGap(t *testing.T) {

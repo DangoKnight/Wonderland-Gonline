@@ -2,7 +2,7 @@ package battle
 
 import (
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestPlayerFighterConfiguredGrowth(t *testing.T) {

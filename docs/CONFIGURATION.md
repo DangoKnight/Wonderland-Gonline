@@ -18,7 +18,7 @@ administrator edits. Compiled growth formulas remain in code.
 
 | Key | Default | Meaning / constraints |
 | --- | --- | --- |
-| `name` | `Wonderland Go` | Initial server name, 1–200 bytes; a saved admin `server_name` takes precedence |
+| `name` | `Wonderland Gonline Server` | Initial server name, 1–200 bytes; a saved admin `server_name` takes precedence |
 | `login_address` | `127.0.0.1:6414` | TCP login/game listener |
 | `world_address` | `127.0.0.1:6415` | TCP world listener |
 | `status_address` | `127.0.0.1:6416` | Native launcher status listener, separate from HTTP health |

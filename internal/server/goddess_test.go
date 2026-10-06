@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {

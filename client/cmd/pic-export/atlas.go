@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"wonderland-go/internal/clientassets"
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // Small pictures share atlas pages; large terrain/background images stay loose.
@@ -110,7 +110,6 @@ func atlasPictures(root string, doc *manifest) error {
 				}
 			}
 		}
-
 	}
 	doc.SchemaVersion = pictureAtlasVersion
 	_, err := clientassets.PruneEmptyDirectories(root)

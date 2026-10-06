@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // selfTalkFrame is the server's kind-1 frame for a line the player says

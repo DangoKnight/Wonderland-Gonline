@@ -52,3 +52,15 @@ lint-html:
 		echo "htmlhint not found. Please install node/npm to lint HTML." && exit 1; \
 	fi
 
+
+# Client builds always compile editable assets first; unchanged entries are reused.
+CLIENT_DATA ?= data
+CLIENT_BUNDLE ?= bin/client-assets.zip
+CLIENT_OUTPUT ?= bin/wonderland-client
+CLIENT_CONTRACT ?= client/asset-contract.json
+.PHONY: client-assets build-client
+client-assets:
+	$(GO) run ./cmd/client-bundle -source "$(CLIENT_DATA)" -output "$(CLIENT_BUNDLE)" -contract "$(CLIENT_CONTRACT)"
+
+build-client: client-assets
+	cd client && $(GO) build -o "$(abspath $(CLIENT_OUTPUT))" .

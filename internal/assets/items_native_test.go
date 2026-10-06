@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // Fixed artificial records verify every decoded byte, independently of the

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func mallStoreFixture(t *testing.T) (*Store, Account, CharacterRef, string) {

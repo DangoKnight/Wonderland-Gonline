@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"strings"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // LegacyAccount is an offline import record. Passwords are never report data.

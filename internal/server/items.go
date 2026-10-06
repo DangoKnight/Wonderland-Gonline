@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // headBanner is Player.SendHeadBanner: AC2:16 with raw, unprefixed ASCII text.

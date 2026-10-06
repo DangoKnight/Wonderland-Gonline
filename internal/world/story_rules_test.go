@@ -3,8 +3,8 @@ package world
 import (
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestStoryHandInPriorityAndForwardSelection(t *testing.T) {

@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"strings"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // AdminAnnouncement keeps UI color choices tied to native chat channels.

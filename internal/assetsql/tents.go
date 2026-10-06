@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 //go:embed tent_defaults.json

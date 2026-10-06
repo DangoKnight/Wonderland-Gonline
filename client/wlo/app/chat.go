@@ -6,8 +6,8 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Chat packets after the command byte: subcommand, a character ID, then

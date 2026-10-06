@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"time"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 type commandHandler func(*Server, context.Context, *Session, []byte) error
@@ -84,7 +84,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandPackContents:       {handler: withoutContext((*Server).packContentsCommand), policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandEquipmentRepair:    {handler: (*Server).repairCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandBank:               {handler: (*Server).bankCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandAlchemy:            {handler: (*Server).alchemyCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandAlchemy:            {handler: (*Server).hotbarOrAlchemyCommand, beforeWorldGates: isNativeHotbarAssignment, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPetFeeding:         {handler: (*Server).petFeedingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPetTraining:        {handler: (*Server).petTrainingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPetRebirth:         {handler: (*Server).petRebirthCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},

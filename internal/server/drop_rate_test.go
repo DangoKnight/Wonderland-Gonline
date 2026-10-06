@@ -3,9 +3,9 @@ package server
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
 )
 
 func TestGMDropRateCommand(t *testing.T) {

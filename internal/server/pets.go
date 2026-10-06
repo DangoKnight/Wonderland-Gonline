@@ -5,9 +5,9 @@ import (
 	"math/rand/v2"
 	"slices"
 	"strings"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // petRoster is the client's pet slot numbering for one login (C# PlayerPetData.ClientSlot

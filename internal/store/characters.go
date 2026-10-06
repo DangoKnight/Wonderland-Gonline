@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func (s *Store) Characters(ctx context.Context, account uint32) ([]game.Character, error) {

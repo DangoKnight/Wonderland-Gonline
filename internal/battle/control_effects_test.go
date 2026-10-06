@@ -2,8 +2,8 @@ package battle
 
 import (
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func blocking(rounds int, wake bool) assets.SkillEffect {

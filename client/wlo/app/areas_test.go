@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
 // TestDeckDoor: Ship Deck's cabin door is area 1, cells (93, 41) to

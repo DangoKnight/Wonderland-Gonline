@@ -3,9 +3,9 @@ package inventory
 
 import (
 	"encoding/binary"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -24,10 +24,12 @@ type State struct {
 	Bag       game.Inventory
 	Equipment game.Equipment
 	Items     map[uint16]assets.NativeItem
+	Pets      [game.MaxPets]UsePet
 }
 
 func (s *State) Reset(worn []uint16) {
 	s.Bag, s.Equipment = game.Inventory{}, game.Equipment{}
+	s.Pets = [game.MaxPets]UsePet{}
 	for _, id := range worn {
 		if slot := s.equipmentSlot(id); slot != 0 {
 			s.Equipment[slot-1] = game.Item{ID: id, Count: 1}
@@ -128,6 +130,28 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 		bag[p[2]-1] = game.Item{}
 		bag[p[3]-1] = old
 		eq[slot-1] = item
+	case protocol.InventoryWireCode23: // Native pet equip acknowledgement.
+		if len(p) != 4 || p[2] < 1 || p[2] > game.MaxPets || p[3] < 1 || p[3] > game.BagSize {
+			return true, false
+		}
+		pet := &s.Pets[p[2]-1]
+		item := bag[p[3]-1]
+		equipSlot := s.equipmentSlot(item.ID)
+		if pet.ID == 0 || item.Count != 1 || equipSlot == 0 {
+			return true, false
+		}
+		bag[p[3]-1], pet.Equipment[equipSlot-1] = pet.Equipment[equipSlot-1], item
+		s.recomputePet(pet)
+	case protocol.InventoryWireCode22: // Native pet unequip acknowledgement.
+		if len(p) != 5 || p[2] < 1 || p[2] > game.MaxPets || p[3] < 1 || p[3] > EquipmentSlots || p[4] < 1 || p[4] > game.BagSize {
+			return true, false
+		}
+		pet := &s.Pets[p[2]-1]
+		if pet.ID == 0 || pet.Equipment[p[3]-1].Empty() || !bag[p[4]-1].Empty() {
+			return true, false
+		}
+		bag[p[4]-1], pet.Equipment[p[3]-1] = pet.Equipment[p[3]-1], game.Item{}
+		s.recomputePet(pet)
 	case protocol.InventoryEquipmentChanged: // 23/16: native unequip into a bag slot (FUN_003fbcd0).
 		if len(p) != 4 || p[2] < 1 || p[2] > EquipmentSlots || p[3] < 1 || p[3] > game.BagSize || eq[p[2]-1].Empty() || !bag[p[3]-1].Empty() {
 			return true, false

@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -41,13 +41,14 @@ func (f *Form) draftTotal() uint32 {
 }
 
 func (f *Form) Attributes() [allocationAttributes]uint16 {
-	return [allocationAttributes]uint16{f.Stats.STR, f.Stats.CON, f.Stats.INT, f.Stats.WIS, f.Stats.AGI}
+	s := f.DisplayStats()
+	return [allocationAttributes]uint16{s.STR, s.CON, s.INT, s.WIS, s.AGI}
 }
 
 // AddPoint follows FUN_00353ed4, with a separate draft instead of changing
 // authoritative stats. Cancellation (FUN_00354074) simply discards the draft.
 func (f *Form) allocationAllowed() bool {
-	return f.Stats != nil && f.allowed() && (f.Env == nil || !f.Blocked())
+	return f.Selected == 0 && f.Stats != nil && f.allowed() && (f.Env == nil || !f.Blocked())
 }
 
 func (f *Form) AddPoint(attribute int) {
@@ -116,7 +117,7 @@ func (f *Form) syncAllocationControls() {
 		if b == nil {
 			continue
 		}
-		b.SetVisible(f.Mode != 2 && f.Stats.Points > 0)
+		b.SetVisible(f.Selected == 0 && f.Mode != 2 && f.Stats.Points > 0)
 		b.Enabled = !f.AllocationWaiting && f.draftTotal() < uint32(f.Stats.Points)
 		if uint32(f.Attributes()[i])+uint32(f.PendingPoints[i]) >= math.MaxUint16 {
 			b.Enabled = false

@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/livetest"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/livetest"
 )
 
 func main() {

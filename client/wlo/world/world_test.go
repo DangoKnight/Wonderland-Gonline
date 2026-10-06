@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 var assets = login.NewAssets(filepath.Join("..", "..", "..", "data"))

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // LostForm is the message form PTR_DAT_004ca12c (constructor FUN_003a5184):
@@ -78,8 +78,7 @@ func (c *Client) drawFade(now time.Time) {
 	}
 	c.Screen.FillAlpha(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0, f.step*fadeAlphaStep)
 	if f.step == fadeSteps {
-		f.frozen = surface.New(ScreenWidth, ScreenHeight)
-		copy(f.frozen.Pix, c.Screen.Pix)
+		f.frozen = c.Screen.Clone()
 		f.step = 0
 	}
 }
@@ -93,14 +92,20 @@ func (c *Client) sceneFrozen() bool { return c.fade.step > 0 || c.fade.frozen !=
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
 	c.Login.LoginTime = time.Time{}
+	c.hotbar.drag = nil
+	c.closeHotbarTarget()
 	if !(c.Login.Visible || c.Chars.Visible || c.Create.Visible || c.Password.Visible || c.G.InGame) {
 		return
+	}
+	if c.Skills != nil {
+		c.Skills.Hide()
 	}
 	if c.Settings != nil {
 		c.Settings.Hide()
 	}
 	if c.Inventory != nil {
 		c.Inventory.Hide()
+		c.Inventory.ResetRemote()
 	}
 	c.Login.Hide()
 	c.Chars.Hide()
@@ -115,6 +120,9 @@ func (c *Client) disconnected() {
 	c.Lost.Show()
 	c.Lost.Prev.Show()
 	c.Lost.Leave.Show()
+	if c.fade.frozen != nil {
+		c.fade.frozen.Close()
+	}
 	c.fade = fadeState{step: 1, at: c.Now()}
 }
 
@@ -122,6 +130,9 @@ func (c *Client) disconnected() {
 // (FUN_00314bf4) and the server list returns.
 func (c *Client) lostPrev() {
 	c.Lost.Hide()
+	if c.fade.frozen != nil {
+		c.fade.frozen.Close()
+	}
 	c.fade = fadeState{}
 	c.G.InGame = false
 	c.World = nil

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"math"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func comboFixture(speeds ...int) (*Battle, Rules, []Action) {

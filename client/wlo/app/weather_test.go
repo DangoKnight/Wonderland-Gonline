@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/movie"
-	"wonderland-go/client/wlo/weather"
+	"wonderland-gonline/client/wlo/movie"
+	"wonderland-gonline/client/wlo/weather"
 )
 
 // TestSceneWeather: Hilltop Hot Spring (scene 11089, weather byte 3)

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/world"
 )
 
 // TestSceneMusic: Ship Deck's scene plays BGM0007, and every track the

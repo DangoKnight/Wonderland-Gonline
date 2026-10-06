@@ -4,7 +4,7 @@ import (
 	"image"
 	"strconv"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // SelectText is TSe_SelectText (constructor FUN_0046ec9c): a list of text

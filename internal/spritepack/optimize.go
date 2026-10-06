@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 const editableAtlasDirectory = "atlas"

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // writePack builds a one-sprite pack with a two-frame animation.

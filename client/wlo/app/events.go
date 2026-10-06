@@ -4,12 +4,12 @@ import (
 	"encoding/binary"
 	"log"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/clientassets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Events. Clicking a map NPC (FUN_00303b54) sends 20/1 with its click ID;
@@ -133,7 +133,11 @@ func (c *Client) say(subject byte, actor, talk uint16) {
 func (c *Client) loadTalks() {
 	if c.talks == nil {
 		var err error
-		if c.talks, err = world.Talks(c.Assets); err != nil {
+		if c.resources.talks == nil {
+			c.resources.talks, err = world.Talks(c.Assets)
+		}
+		c.talks = c.resources.talks
+		if err != nil {
 			log.Printf("talk: %v", err)
 			c.talks = map[uint16]string{}
 		}

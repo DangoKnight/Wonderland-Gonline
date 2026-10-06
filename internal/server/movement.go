@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // movementCommand runs with worldMu held by worldCommand.

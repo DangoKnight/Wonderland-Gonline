@@ -2,8 +2,8 @@ package world
 
 import (
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // Op is a decoded EVE action (EventSubSubEntry): Code is DialogPtr.

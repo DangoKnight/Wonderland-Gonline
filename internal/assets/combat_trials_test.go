@@ -3,7 +3,7 @@ package assets
 import (
 	"encoding/json"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestCombatTrialsValidation(t *testing.T) {

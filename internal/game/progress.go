@@ -2,7 +2,7 @@ package game
 
 import (
 	"math"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // MaxLevel is the highest level before rebirth (EquipManager.GetLevelProgress).

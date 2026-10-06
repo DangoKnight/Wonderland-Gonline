@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"wonderland-go/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/cursor"
 )
 
 // The cursor (Tjo_Cursor, FUN_003bab68 each frame): a control under the

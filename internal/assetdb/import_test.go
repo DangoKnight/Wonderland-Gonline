@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/store"
 )
 
 func fixture(t *testing.T) (string, string) {

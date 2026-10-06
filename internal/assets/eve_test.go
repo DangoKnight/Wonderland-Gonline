@@ -2,7 +2,7 @@ package assets
 
 import (
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func miningFixture() []byte {

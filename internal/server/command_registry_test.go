@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Raw command numbers preserve existing dispatch/gates, including ported AC10, AC34 and AC45.

@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 	"strconv"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const AdminPageLimit = 500

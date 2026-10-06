@@ -3,9 +3,9 @@ package minigame
 import (
 	"time"
 
-	"wonderland-go/client/wlo/cursor"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Mole is minigame 3, hitting moles (the object FUN_001b3090 creates at

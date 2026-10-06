@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func luckyDrawFixture(t *testing.T) (*Server, []*Session, []*captureConn) {

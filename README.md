@@ -1,4 +1,9 @@
-# Wonderland Go
+# Wonderland Gonline
+
+**Wonderland Gonline Server** is the Go server rewrite; **Wonderland Gonline** is
+the Go client. The client uses Xaolan’s small portrait as its window icon and
+restores open sessions, account names and server choices from a local
+`workspace.json` profile. See [client architecture](docs/CLIENT_ARCHITECTURE.md#workspace-profile-and-application-identity).
 
 An ongoing rewrite of the Wonderland Online private server and port of its
 client to Go, with web administration and editable game assets.
@@ -6,8 +11,8 @@ client to Go, with web administration and editable game assets.
 Both programs remain incomplete. Implemented server features include native
 login and character management, map movement and portals, NPC events, PvE
 battles, inventory, crafting, companions, trading, server chat, mall and Lucky
-Draw. The Go client has login, character and world code, with further rendering
-and gameplay work in progress. See [port status](docs/PORTING.md) and
+Draw. The Go client has login, character and world code, native-compatible GPU
+rendering and multiple sessions in one window, with gameplay work in progress. See [port status](docs/PORTING.md) and
 [client details](docs/CLIENT.md) for coverage and limitations.
 
 ## Start here
@@ -49,8 +54,8 @@ The setup guide includes Windows PowerShell equivalents and token handling.
 Keep the server running and use a second terminal for the client:
 
 ```sh
-(cd client && go build -o ../bin/wonderland-client .)
-./bin/wonderland-client -assets data
+make build-client
+./bin/wonderland-client
 ```
 
 Default endpoints are TCP 6414 (login/game), 6415 (world), 6416 (native launcher
@@ -366,3 +371,11 @@ characters, legacy-client login credentials and feature checklists:
 ```sh
 go run ./cmd/live-test -list
 ```
+
+Client builds compile editable PNG/JSON sources into `bin/client-assets.zip`.
+Picture/media images become lossless tiled pages with shared small-image atlases,
+deduplicated content and a 64 MiB LRU cache. Map drawing reads visible tiles while
+source PNGs remain editable in `data/`.
+The collapsible session panel beside the game adds, previews, switches and removes independent
+sessions sharing loaded assets. See [Client architecture](docs/CLIENT_ARCHITECTURE.md)
+for asset editing, build validation and session/resource ownership.

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestAccountsPersistAndBan(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const FriendLimit = 49

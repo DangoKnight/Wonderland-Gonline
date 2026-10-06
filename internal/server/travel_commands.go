@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 // Authored destinations from GmManager.TownDirectory. These are the legacy

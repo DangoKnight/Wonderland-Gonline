@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestNativePresentationAndAllocation(t *testing.T) {

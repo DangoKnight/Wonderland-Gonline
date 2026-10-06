@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var le = binary.LittleEndian

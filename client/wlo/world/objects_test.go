@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // TestShipDeckObjects: the deck's record lists 72 objects; 11 lie under

@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // cond packs an EVE condition: kind, three operands, comparison and a 32-bit value.

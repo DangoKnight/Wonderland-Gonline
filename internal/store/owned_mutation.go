@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"gorm.io/gorm"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // MutateOwnedCharacter validates resources from SQL, then publishes a committed

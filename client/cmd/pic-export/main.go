@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	_ "golang.org/x/image/bmp"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 const schemaVersion = 1

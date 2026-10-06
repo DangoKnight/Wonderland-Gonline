@@ -6,9 +6,9 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 type closeConn struct {

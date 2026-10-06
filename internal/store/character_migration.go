@@ -7,7 +7,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // Migration is additive. The old JSON column is retained as a migration snapshot;

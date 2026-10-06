@@ -2,13 +2,15 @@ package app
 
 import (
 	"bytes"
+	"encoding/binary"
 	"image"
 	"os"
 	"testing"
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestInventoryFlow(t *testing.T) {
@@ -359,5 +361,187 @@ func TestInventoryInteractionSamples(t *testing.T) {
 	f.Slots[7].Hint()
 	if out := os.Getenv("INVENTORY_INTERACTION_SNAPSHOT"); out != "" {
 		savePNG(t, out+".tooltip.png", c)
+	}
+}
+
+// Drive actual input routing; direct OnEnter/OnClick calls alone cannot prove
+// the inventory interaction users see works.
+func inventoryClick(t *testing.T, c *Client, control seui.Control) {
+	t.Helper()
+	at := control.Base().Rect()
+	x, y := at.Min.X+at.Dx()/2, at.Min.Y+at.Dy()/2
+	c.Input.X, c.Input.Y = x, y
+	c.Input.Hovered = nil
+	c.Frame()
+	if c.Input.Hovered != control {
+		t.Fatalf("control not reachable: %s (%d,%d), hovered %T", control.Base().Name, x, y, c.Input.Hovered)
+	}
+	c.UI.MouseDown(seui.ButtonLeft, 0, x, y)
+	c.UI.MouseUp(seui.ButtonLeft, 0, x, y)
+}
+
+func TestInventorySelectedConsumableAndReplies(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.mapReady = true
+	c.Inventory.Show()
+	sent := wire(t, c)
+	c.items[32011] = assets.NativeItem{Definition: game.ItemDefinition{ID: 32011, Name: "Healing food", Status: [2]uint16{25, 26}, Values: [2]int32{400, 400}}}
+	c.InventoryState.Bag[0] = game.Item{ID: 32011, Count: 3}
+	c.Stats.HP, c.Stats.MaxHP = 50, 181
+	if out := os.Getenv("ITEM_USE_SNAPSHOT"); out != "" {
+		c.InventoryState.Bag[1] = game.Item{ID: 32176, Count: 5}
+		c.inventoryPacket([]byte{23, 5})
+		c.Frame()
+		c.Inventory.Slots[1].Hint()
+		savePNG(t, out+".consumable.png", c)
+	}
+	pet := game.Pet{ID: 12032, Level: 1, HP: 100, SP: 40, Potential: 10, Base: game.Attributes{Constitution: 4, Wisdom: 3}}
+	c.dispatch(pet.ListRecord([]byte{15, 8}, 3, "Robinson", game.PetTemplate{}))
+	c.Inventory.Slots[0].DblClick()
+	if c.UI.Modal != nil || c.Inventory.UseDialog != nil {
+		t.Fatal("ordinary consumable opened a dialog")
+	}
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{23, 15, 1, 1, 0, 0}) {
+		t.Fatalf("player consume %x", got)
+	}
+	if c.InventoryState.Bag[0].Count != 3 || c.Stats.HP != 50 {
+		t.Fatal("optimistic consume")
+	}
+	inventoryClick(t, c, c.Inventory.RotateRight)
+	if c.Inventory.Selected != 3 || c.Inventory.DisplayStats().HP != 100 {
+		t.Fatal("selector did not select the pet")
+	}
+	c.Inventory.Slots[0].RightUp(0, 0, 0)
+	if len(sent()) != 1 {
+		t.Fatal("right-click used the selected pet consumable")
+	}
+	c.Inventory.Slots[0].DblClick()
+	if got := sent(); len(got) != 2 || !bytes.Equal(got[1], []byte{23, 15, 1, 1, 3, 0}) {
+		t.Fatalf("pet consume %x", got)
+	}
+	c.dispatch([]byte{23, 9, 1, 1})
+	c.dispatch([]byte{8, 2, 4, 3, 0, 25, 1, 150, 0, 0, 0, 0, 0, 0, 0})
+	if c.InventoryState.Bag[0].Count != 2 || c.Inventory.DisplayStats().HP != 150 || c.Stats.HP != 50 {
+		t.Fatal("pet consume replies altered player or failed")
+	}
+	inventoryClick(t, c, c.Inventory.RotateLeft)
+	if c.Inventory.Selected != 0 || c.Inventory.DisplayStats() != c.Stats {
+		t.Fatal("selector did not return to player")
+	}
+	c.InventoryState.Bag[0] = game.Item{ID: game.ItemPotentialPill, Count: 1}
+	c.Stats.Potential = 5
+	c.Inventory.Use(1, false)
+	if c.Inventory.UseDialog == nil || !c.Inventory.UseDialog.Visible {
+		t.Fatal("Potential Pill must retain its own confirmation")
+	}
+	for _, child := range c.Inventory.UseDialog.Children {
+		if b, ok := child.(*seui.FixedButton); ok && b.Image == c.Pics.Find("Btn_OK_1") {
+			inventoryClick(t, c, b)
+			break
+		}
+	}
+	c.dispatch([]byte{23, 9, 1, 1})
+	c.dispatch([]byte{23, 213, 1, 0, 4})
+	if c.Stats.Potential != 4 || !c.InventoryState.Bag[0].Empty() {
+		t.Fatal("pill failure reply handling")
+	}
+	c.Inventory.Select(3)
+	release := binary.LittleEndian.AppendUint32([]byte{15, 2}, c.World.Player.ID)
+	c.dispatch(append(release, 3))
+	c.Frame()
+	if c.Inventory.Selected != 0 || c.Inventory.RotateRight.Enabled {
+		t.Fatal("released selection was retained")
+	}
+}
+
+func TestInventoryRemoteOpensLocally(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.mapReady = true
+	c.Inventory.Show()
+	sent := wire(t, c)
+	item := game.Item{ID: 34058, Count: 1}
+	c.InventoryState.Bag[0] = item
+	c.Inventory.Slots[0].DblClick()
+	if c.Inventory.Remote == nil || !c.Inventory.Remote.Visible || c.Inventory.Remote.Image < 0 || len(sent()) != 0 || c.InventoryState.Bag[0] != item {
+		t.Fatal("Remote did not open locally without consumption")
+	}
+	for _, child := range c.Inventory.Remote.Children {
+		if _, button := child.(*seui.FixedButton); button && child.Base().Image < 0 {
+			t.Fatalf("missing Remote control asset at %d,%d", child.Base().Left, child.Base().Top)
+		}
+	}
+	if c.Inventory.Visible || c.Inventory.Remote.Image != c.Pics.Find("form_autoPlay_1") {
+		t.Fatal("Remote did not close Inventory or used secondary skin")
+	}
+	c.Inventory.Show()
+	if !c.Inventory.Visible || !c.Inventory.Remote.Visible {
+		t.Fatal("Inventory cannot coexist with Remote")
+	}
+	c.Inventory.Hide()
+	if !c.Inventory.Remote.Visible {
+		t.Fatal("closing Inventory closed Remote")
+	}
+	inventoryClick(t, c, c.Inventory.Remote.Checks[0])
+	if c.Inventory.Remote.Checks[0].Image != c.Pics.Find("btn_Check_1") {
+		t.Fatal("Remote checkbox did not update")
+	}
+	c.Inventory.Remote.Thresholds[0].SetPos(75)
+	c.Inventory.Show()
+	c.Inventory.Slots[0].DblClick()
+	if c.Inventory.Remote.Thresholds[0].Pos != 75 || c.Inventory.Remote.Checks[0].Image != c.Pics.Find("btn_Check_1") {
+		t.Fatal("reopening Remote discarded local settings")
+	}
+	inventoryClick(t, c, c.Inventory.Remote.Settings)
+	if c.Inventory.Remote.Plus == nil || !c.Inventory.Remote.Plus.Visible {
+		t.Fatal("Level-up Setting did not open secondary window")
+	}
+	inventoryClick(t, c, c.Inventory.Remote.Plus.Tabs[2])
+	if c.Inventory.Remote.Plus.Image != c.Pics.Find("Form_AutoPlayerPlus_2") {
+		t.Fatal("missing Remote options tab")
+	}
+	if out := os.Getenv("ITEM_USE_SNAPSHOT"); out != "" {
+		c.Frame()
+		savePNG(t, out+".remote.png", c)
+	}
+	c.Inventory.Show()
+	c.Inventory.Remote.Hide()
+	if !c.Inventory.Visible || c.Inventory.Remote.Visible {
+		t.Fatal("closing Remote changed Inventory visibility")
+	}
+	c.Inventory.Remote.Show()
+	c.Inventory.ResetRemote()
+	if c.Inventory.Remote.Visible || c.Inventory.Remote.Plus.Visible {
+		t.Fatal("character boundary retained Remote windows")
+	}
+}
+
+func TestInventoryFullRecoveryWarning(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.mapReady = true
+	c.Inventory.Show()
+	sent := wire(t, c)
+	c.items[32011] = assets.NativeItem{Definition: game.ItemDefinition{EquipSlot: 8, Status: [2]uint16{25, 26}, Values: [2]int32{400, 400}}}
+	item := game.Item{ID: 32011, Count: 3}
+	c.InventoryState.Bag[0] = item
+	c.Stats.HP, c.Stats.MaxHP, c.Stats.SP, c.Stats.MaxSP = 181, 181, 100, 100
+	c.Inventory.Slots[0].DblClick()
+	if len(sent()) != 0 || c.InventoryState.Bag[0] != item {
+		t.Fatal("unneeded recovery sent a request or consumed the item")
+	}
+	if len(c.Notices.items) != 1 || string(c.Notices.items[0].text) != "This item cannot benefit the selected target right now." {
+		t.Fatal("full recovery did not show native warning")
+	}
+	if c.UI.Modal != nil || !c.Inventory.Visible {
+		t.Fatal("warning blocked or closed Inventory")
+	}
+	*now = now.Add(inventoryWarningDuration)
+	c.Notices.update(*now)
+	if len(c.Notices.items) != 0 {
+		t.Fatal("warning did not expire")
+	}
+	c.Stats.SP--
+	c.Inventory.Slots[0].DblClick()
+	if len(sent()) != 1 || !bytes.Equal(sent()[0], []byte{23, 15, 1, 1, 0, 0}) {
+		t.Fatal("combined recovery rejected a target needing SP")
 	}
 }

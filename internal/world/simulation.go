@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // QuestNpc.Update compatibility values. Timers and patrol cursors are transient;

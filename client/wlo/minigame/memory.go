@@ -5,8 +5,8 @@ import (
 	"image"
 	"sort"
 	"time"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Memory is the numbered sequence game, not matching pairs. FUN_0014a558,

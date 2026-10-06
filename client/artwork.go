@@ -16,7 +16,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	_ "golang.org/x/image/bmp"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func decodeImage(archive *clientassets.ImageArchive, index int) (image.Image, error) {

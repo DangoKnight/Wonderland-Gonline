@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestMultiSlotLuckyDrawRollbackAndFootprintPersistence(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"testing"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func clearSkillsFixture(t *testing.T) (*Server, []*Session, []*captureConn) {

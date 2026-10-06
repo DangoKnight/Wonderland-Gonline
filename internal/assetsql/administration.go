@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 	"math"
 	"reflect"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // Dataset names describe server definitions, rather than source filenames.

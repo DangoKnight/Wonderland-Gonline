@@ -10,8 +10,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
 
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Jxa indexes: a 14-byte "jx" header, then an 80-byte record per sprite
@@ -31,7 +32,7 @@ const ManifestFile = "sprite_manifest.json"
 // editableSourceBytes reads an archive's original .jma size from the
 // export manifest beside dir, or 0.
 func editableSourceBytes(dir, archive string) int64 {
-	data, err := os.ReadFile(filepath.Join(filepath.Dir(dir), ManifestFile))
+	data, err := clientfs.ReadFile(filepath.Join(filepath.Dir(dir), ManifestFile))
 	if err != nil {
 		return 0
 	}
@@ -188,7 +189,7 @@ func OpenJMA(jmaPath, jxaPath string) (*JMA, error) {
 		f.Close()
 		return nil, err
 	}
-	jxa, _ := os.ReadFile(jxaPath)
+	jxa, _ := clientfs.ReadFile(jxaPath)
 	return &JMA{Archive: a, Jxa: jxa, Size: st.Size(), file: f}, nil
 }
 

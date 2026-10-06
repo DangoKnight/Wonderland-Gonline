@@ -5,7 +5,7 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Areas (doors and walk-in regions). Once the map is ready (+0x133d0, set

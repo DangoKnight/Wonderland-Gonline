@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"math/big"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 // FUN_00175cf0 consumes used count, reward count, then UInt16 ID/byte quantity

@@ -10,9 +10,9 @@ package seui
 import (
 	"image"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/text"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/text"
 )
 
 // Env holds the globals the framework reaches through PTR_DAT_ symbols: the

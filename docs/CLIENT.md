@@ -59,9 +59,10 @@ cd client
 go run . -client ../../Wonderland-Client -archive map.JMG -name 11016.jpg
 ```
 
-Source runs discover repository `data/` directly.
-Installed builds use `data/` beside the executable. Use `-assets <directory>`
-to select the decompiled data directory. The workbench requires `-client`
+Builds discover `client-assets.zip` beside the executable. Source runs can
+use `-assets ../data` for loose editable assets; `-assets <bundle.zip>` selects
+a compiled bundle. The collapsible panel beside the game manages independent sessions sharing
+decoded assets. See [Client architecture](CLIENT_ARCHITECTURE.md). The workbench requires `-client`
 pointing to the original sibling installation.
 
 ## Compile the client
@@ -69,17 +70,25 @@ pointing to the original sibling installation.
 From the repository root:
 
 ```sh
-(cd client && go build -o ../bin/wonderland-client .)
-./bin/wonderland-client -assets data
+make build-client
+./bin/wonderland-client
 ```
+
+GPU rendering is enabled by default (`-renderer auto`). Require it with
+`./bin/wonderland-client -renderer gpu`; select software drawing with
+`-renderer cpu`. Maps, sprites, text, UI, effects and session previews render to
+GPU targets in GPU mode. CPU snapshots remain available. See
+[renderer details and graphics tests](CLIENT_ARCHITECTURE.md#gpu-rendering).
+
 
 PowerShell:
 
 ```powershell
+go run ./cmd/client-bundle -source data -output bin/client-assets.zip -contract client/asset-contract.json
 Push-Location client
 go build -o ../bin/wonderland-client.exe .
 Pop-Location
-.\bin\wonderland-client.exe -assets data
+.\bin\wonderland-client.exe
 ```
 
 The server must be running for login. Use the registration endpoint to create a
@@ -90,41 +99,36 @@ The root `go build` and `go test` commands do not include this nested module.
 
 Repository `data/` is the decompiled asset tree used by the normal client.
 It includes JSON data, PNG picture and sprite atlases, exported media and audio.
-The client reads these exports exclusively; missing exports do not trigger native
+Development mode reads these exports; distribution builds compile heavy exports
+into binary runtime records and split packs. Missing assets do not trigger native
 Item.Dat, Formula.Dat or font fallbacks.
 
 Development runs read repository `data/` directly, without links or duplicate
 asset directories. From `client/`, run `go run . -assets ../data`. Saved user
 state lives in `var/client/user`, outside the asset tree.
 
-From the repository root, verify exports with:
+For a distribution, build the assets and executable together:
 
 ```sh
-go run ./cmd/asset-build
+make build-client
+mkdir -p var/client-distribution
+cp bin/wonderland-client var/client-distribution/
+python3 - <<'PYASSETS'
+import json, pathlib, shutil, zipfile
+source = pathlib.Path("bin")
+with zipfile.ZipFile(source / "client-assets.zip") as pack:
+    names = ["client-assets.zip"] + json.loads(pack.read("_packs.json"))["packs"]
+for name in names:
+    shutil.copy2(source / name, pathlib.Path("var/client-distribution") / name)
+PYASSETS
+./var/client-distribution/wonderland-client
 ```
 
-This command checks the main export manifest and does not create assets.
-For standalone distribution, use:
-
-```sh
-go run ./cmd/asset-build -copy -output var/client-distribution
-```
-
-This copies the complete data tree, including editable sprites, into
-`var/client-distribution/data`. Run the client with `-assets` pointing to `var/client-distribution/data`. Copying does not regenerate or repack artwork. No native
-asset directory is included. Ship the data payloads with the executable;
-large image/audio files remain ignored by Git. After building the client, a
-Linux/macOS distribution can be started from the repository root with:
-
-```sh
-cp bin/wonderland-client var/client-distribution/wonderland-client
-./var/client-distribution/wonderland-client -assets var/client-distribution/data
-```
-
-On Windows, copy `bin/wonderland-client.exe` into that directory and launch it
-with the same explicit `-assets` argument. Include an authored server list when
-targeting a remote host. Copy the verified data tree together with the binary;
-the executable does not embed the media payloads.
+On Windows, copy the `.exe`, core pack and its three listed companions together. Add `SERVER.INI` beside them
+for a remote server, or pass `-serverini <path>`. No native asset directory is
+included. Profiles remain outside the bundle. See
+[Client architecture](CLIENT_ARCHITECTURE.md) for editing constraints and format.
+`cmd/asset-build` still verifies/copies loose exports for development and inspection.
 
 The old front end (`-legacy`) and native artwork workbench are inspection modes.
 They require `-client` pointing explicitly to the authoritative sibling client
@@ -580,7 +584,7 @@ The background pictures already contain railings, masts and other scenery, but t
 - kind 3 in the depth-sorted list with the characters (`FUN_0041d13c`), keyed by Y plus the depth line, after characters with the same key;
 - kinds 4–5 after every character. The deck's railings are kind 5 (42 of the deck's 72 objects), so they cross the characters' legs as in the captures.
 
-`TestShipDeckObjects` checks the deck's counts. Not ported: the cull test (`FUN_003f5d70`), translucent objects (+0xd4 other than 0xff, or +0xe0 from the picture's first pixel), and the resources 11011–11015 and 11031 that the loader forces to kind 3. The picture loader keeps the last four decoded atlas pages, so a map's objects decode their shared pages once.
+`TestShipDeckObjects` checks the deck's counts. Not ported: the cull test (`FUN_003f5d70`), translucent objects (+0xd4 other than 0xff, or +0xe0 from the picture's first pixel), and the resources 11011–11015 and 11031 that the loader forces to kind 3. Compiled picture pages use a shared 64 MiB LRU cache; map backgrounds decode only visible tiles. The editable PNG atlas fallback also uses a separate 64 MiB LRU cache.
 
 ### Status panel (ported: `client/wlo/hud`, `client/wlo/world/stats.go`)
 
@@ -644,7 +648,7 @@ battle/viewer/auto-play buttons remain pending.
 - **Speaker icons** (`FUN_004905e8`): a row of channels 1–7 whose speaker is the player or a player on the map shows the speaker's face sprite (`<family>f`, 601 + head, as the portraits) in action 4 at its second frame (+0x11e = 1: the head turned three-quarters; the first frame faces front), at the list's left − 10 and the row's top + 10. `Chat_Icons_02.png` (the original) and `Chat_Icons.png` (the port, before the fix) show the difference; `TestChatSpeakerIcon` checks the action and frame.
 - **Colours**: channel → entry of the table `FUN_003beb14` fills (0x72a360): system 7 (0xf800 red), World 1, Local 9 (0xff80), Whisper 10 (0xfc00 orange), GM 10, Team 6, Guild 4, Ally 5, channel 10 7 (red); the table is fe31, ffb3, c6f3, 8653, 6e7e, 8e27, ffff, f800, f4a3, ff80, fc00. Every sent and received line first copies the player's `ChannelColor1`…`5` setting (Local, Whisper, Team, Guild, World; read from the character's `user\save` file by `FUN_00284434`) into its channel's slot (+0x4e0 + channel × 2); without a save the defaults are 9, 10, 6, 4 and 1 (0x284d05). The Channels settings window now persists local palette choices; reading legacy save files is not ported. `Chat_02/Connection_Lost.png` shows whispers in orange (the port had them peach before, `Chat_02/Go_Whisper_Colors_Tooltip.png`).
 - **Ticker** (`FUN_0048d688`): channel-0 lines also queue for a ticker drawn at (0x32, 0x22b). It starts as 60 spaces; every tick its first character is dropped and, while it is shorter than 0x36, the message's next character is appended, so a message types in from the right. Each message plays three times. The tick is 100 ms, which puts the welcome message where `Ship_Deck.png` caught it 33 ticks in.
-- **Welcome**: on the first world entry (`FUN_00492ac4`) the log empties and "Welcome to [<server>] Server" is added on channel 0 with the player as speaker (so no prefix and no icon), with the server's name from 1/9 ("Wonderland Go" from this repository's server).
+- **Welcome**: on the first world entry (`FUN_00492ac4`) the log empties and "Welcome to [<server>] Server" is added on channel 0 with the player as speaker (so no prefix and no icon), with the server's name from 1/9 ("Wonderland Gonline Server" from this repository's server).
 - **Receiving** (the cases at 0x2df0fb…0x2dfa42, table at 0x2df0b7): 2/n for n up to 7 carries the speaker's ID and the text (cut to 60 characters except 2/0 and 2/4) and is shown on channel n with the speaker's name from the map's players; 2/5 needs a known speaker. 2/16 (case 0x2dfd44) shows its text on the notice board for 2 seconds. (2/3 is Whisper, not a notice, as the port had it before.)
 - **Sending** (`FUN_002641c4`, Enter in the message field): by channel,
   - World: needs a radio in the special slot (equipment slot 6: Radio Set 34076, Loudspeaker 34132 or Transceiver 39070, `FUN_00452fc4` → `FUN_003d1018`), else "(System):World Channel requires Radio Set" (`World_Chat_02.png`); with one, at least 15 SP ("(Alert):Not enough SP to use Radio Setq"). Sends 2/1 and adds the line at once.
@@ -1018,8 +1022,8 @@ The Inventory toolbar button opens the native `TSe_EquipForm2`. Its constructor
 386 × 461 pixels; the arrows switch to status-only or inventory-only forms.
 The six worn slots surround a separate character preview in battle-ready
 action 17 (`FUN_00353384`).
-The adjacent arrows select player/pet views in the native client; pet views
-remain pending, so these controls are disabled.
+The adjacent arrows select the player or an occupied pet slot; pet views display
+the selected pet's name, vitals, attributes and equipment.
 HP/SP/EXP use the native Panel31–Panel36 artwork. Combat values display the
 cached AC8 words at +0x1ffc–+0x2004 read by
 `FUN_0035172c`. The native battle getter (`FUN_004166e4`) calculates different
@@ -1028,7 +1032,7 @@ transparently with zero paper and skin ink (0x0841), including quantity-one
 bag counters. The element control is at (19,56), as
 in `FUN_0034fad4`.
 
-Double-click or right-click a bag item to use it; drag equipment onto its worn
+Double-click a bag item to use it; drag equipment onto its worn
 slot to equip it. Double-click worn equipment to return it to the first empty
 bag slot. Dragging normally moves one item (`FUN_00350914`). Hold **Ctrl** while
 dragging to choose a quantity (`FUN_003594b8`; the executable's modifier masks
@@ -1037,7 +1041,88 @@ asks for a drop quantity. The native `Form_ThrowThing` keeps its baked “Moving
 quantity” title for moves; the initial count is the source count limited by
 the destination’s remaining stack capacity. The editor takes focus when clicked.
 A protected-item server reply asks separately before
-sending a destruction request. Escape closes the form and its quantity dialog.
+sending a destruction request. Escape closes the form and its child dialogs.
+
+HP/SP recovery and pet amity items use **one item immediately** on the current
+inventory character, matching `FUN_003548bc` → `FUN_00360a9c` → `FUN_003ddc50`. The arrows below
+the character preview cycle through the player and occupied pet slots. Name,
+preview, stats and equipment follow the selected character; this selection does
+not change the battle pet. There is no consumable target/quantity dialog.
+AC23:15 carries `[slot, 1, target:u16]`, with target 0 for the player and 1–4 for
+pets. Pet-only food refuses the player target. Inventory and vitals change only
+when the server replies. If neither restored vital needs recovery, the client
+shows the timed warning “This item cannot benefit the selected target right now.”
+without sending a use request or consuming the item. A combined HP/SP item is
+still usable when either restored vital is below its maximum. Pet attribute allocation remains pending and its arrows
+are disabled; selecting a pet never spends the player's attribute points.
+
+Potential Pills retain their dedicated confirmation, initially targeting the
+inventory selection, with quantity fixed to one and confirmed potential shown.
+They send AC23:126 `[slot, target]`. AC23:213 distinguishes a rejected request
+from a processed attempt; processed attempts can still fail and reduce potential.
+Golden pills require potential 10 or higher; every pill respects the cap of 12.
+Pending pill attempts block another pill submission for five seconds, then allow
+a manual retry. There are no automatic retries or local consumption. Changed bag
+slots or pet identities invalidate an open pill confirmation.
+
+AC15:8 restores the pet roster, vitals, attributes, equipment and potential;
+AC8:2 updates pet stats without overwriting player stats, and AC15:2 removes
+released targets. Character entry clears the old roster and pending attempts.
+AC5:3 restores player potential from its native footer, independently of unrelated
+AC8 stat 37. Equipment use sends AC23:11 for the player or AC23:17 for a pet;
+pet equip/unequip receipts are AC23:23/22. Other server-dispatched items retain
+AC23:96, including reward packs, vouchers, tents and rods.
+
+Double-click invokes the native use dispatcher. Right-click invokes the distinct
+`FUN_00355d80` contextual handler; ordinary consumables and equipment have no
+right-click use action. Tent retrieval and the remaining special contextual
+windows are pending their client modules.
+
+**Remote Control** (34058) opens the main `TTH_AutoPlayForm`, using the native
+`form_autoPlay_1` skin and control positions from `FUN_001e5ba4`. Opening Remote
+closes Inventory once; Inventory may then be reopened alongside Remote. Closing
+either window leaves the other open. Character entry hides both Remote windows.
+The **Level-up Setting** button opens the separate `THL_AutoPlayFormPlus` window,
+with `Form_AutoPlayerPlus_1/2` skins and Player/Pet/Description tabs.
+Confirm copies the local settings, starts automation and hides the form. The
+controller shortcut remains visible near the lower-right corner; click it to
+reopen Remote and press Stop. **Remote Information** controls the white status
+readout independently of the shortcut, matching the two automation screenshots.
+Opening these windows never consumes the controller or sends generic item use.
+
+Implemented main options:
+
+- **Auto Walk:** repeatedly walks around the starting position through the normal
+  walkability/path planner. It preserves an unfinished path and pauses for map
+  loading, server movement locks, events, battles and dead characters. The radius
+  is a documented Go fallback of 160 pixels per axis until the native offset table
+  is verified. Changing maps stops automation.
+- **Auto Atk:** submits basic attacks (skill 10001) for the player and their own
+  living battle pet in existing monster encounters. Native fighter records,
+  turn prompts and round-ready packets gate submissions; duplicate ready packets
+  do not repeat attacks. It does not initiate battles or automate PvP.
+- **Auto Heal:** outside battle, uses suitable positive HP/SP recovery from the
+  configured inclusive inventory slot range when the player or battle pet falls
+  below its threshold. Locked items, harmful effects and selected discard items
+  are excluded. Each AC23:15 request waits for inventory changes and the use ACK;
+  equipment/discard requests also wait for authoritative source changes. Missing
+  receipts stop automation after five seconds without an automatic retry.
+- **Auto Unequip:** requests removal of unlocked equipment with native wear of
+  200 or more, for the player and battle pet, only if its complete footprint fits
+  in the bag. No equipment or inventory changes are applied optimistically.
+- **Auto Discard:** only deletes unlocked item IDs explicitly dragged into its
+  five selection cells and confirmed with the option enabled. Right-click a cell
+  to clear it. The controller itself cannot be selected or deleted. Selected IDs
+  apply to matching acquired stacks as well; destruction is permanent.
+- **Auto Leave:** enabled death limits, elapsed minutes, or missing required
+  supplies close the connection and show the leave reason. Unchecked conditions
+  cannot log the player out. Missing-supply leave applies when Auto Heal needs
+  recovery. Death counts reset on Confirm and count each defeat once.
+
+The runtime is transient and stops at disconnect/character entry or controller
+loss. Supply requests use the Go server's transactional AC23:15 path, rather than
+native AC23:82. Advanced Player/Pet skill assignment and battle scene/animation
+rendering remain pending; Auto Atk currently uses basic attacks only.
 
 AC23 replies alone update the bag and equipment. Addition records are additive,
 and move/removal/wear/unequip acknowledgments preserve item metadata. Malformed
@@ -1048,7 +1133,7 @@ item catalog and are encoded for the native Big5 bitmap font.
 
 Item hover uses the native name hint and `TSe_ItemInfo` (`FUN_00287e0c`,
 `FUN_00287f58`, `FUN_0028cc74`): a 196-pixel `panel4` frame beside the cell,
-yellow text, type names from `FUN_00485a20`, rank from decoded record byte 45,
+yellow text, two decoded catalog effect lines before type/rank, type names from `FUN_00485a20`, rank from decoded record byte 45,
 and non-tradeable flags from word 123 (`FUN_0028cbec`). Equipment requirements
 use byte 113, independently of the legacy server Level projection. Descriptions
 wrap by Big5 glyph. Native description sizing reserves extra bottom padding.
@@ -1069,8 +1154,10 @@ allocation caps and pet allocation dialogs remain pending; the server validates
 the actual allocation. `TestInventoryPointDraftAndNativeRequest` and
 `TestNativePresentationAndAllocation` cover budget, packets, replies and resets.
 
-Remaining inventory work includes repair and potential dialogs,
-pet equipment and secondary container/crafting forms. These are separate native
+The item-use selector has a compact presentation with native controls. The full
+animated native PotentialForm presentation remains pending.
+Remaining inventory work includes repair dialogs,
+pet attribute allocation and secondary container/crafting forms. These are separate native
 forms and are not implemented by the inventory toolbar window yet.
 
 Focused validation:
@@ -1099,7 +1186,9 @@ first, then System. Disconnects and character changes close all settings dialogs
   Volume follows the native 300 hundredths of a dB attenuation per step; music
   updates without restarting its track. SFX controls also apply to ambient loops.
 - **Chat colors** cycle through the native eleven-color palette and update
-  existing and future chat lines. **Blacklist** adds/removes case-insensitive
+  all existing and future messages in that channel immediately. The retained
+  history is recolored too, so new messages, resizing and mode changes preserve
+  the selected colors. **Blacklist** adds/removes case-insensitive
   names and filters their incoming player messages; system/GM notices stay visible.
 - **Info Visibility** saves ten native display preferences. Other players' names
   apply to the current world renderer. Pet labels, nicknames, guild names, tent
@@ -1125,3 +1214,63 @@ Implementation: `client/wlo/settings`, `client/wlo/app/settings.go`. Native sour
 System constructor `0x282990`, toggle callback `0x284310`, sender
 `0x2d1594..0x2d1757`, snapshot decoder `0x2ea7fe..0x2ea872`, Channels constructor
 `0x281fcc`, Info `0x2824bc`, Titles `0x2a4b40`, Blacklist supplement `0x24ecb8`.
+
+
+## Skills window
+
+Open **Skills** from the main toolbar or press **Ctrl+S**. The window is draggable;
+Escape and either Close button dismiss it. It follows `TRe_SkillForm`
+(`FUN_002a00f0`, `FUN_002a2234`) and the Skills screenshots in `UI_02`.
+
+- **Physical, Magical, Assistant and Life** show learned skills, icons, SP costs
+  and grades. Hover or select a row for its description, attack range,
+  proficiency and permitted weapons. Scroll buttons, thumb and wheel browse
+  longer lists, retaining each tab's position.
+- The arrows select the player or an occupied pet slot. Pet skills use the
+  NPC template's skill IDs and authoritative roster/progress packets.
+- **Intro** shows the player's elemental tree, with learned nodes colored and
+  unavailable nodes gray. Hover a node to read its description and required
+  attributes. Requirements use the server's compiled elemental skill tree.
+
+`client/wlo/skills` reads names, descriptions, native category (`effect_layer`),
+icons and maximum grades from `skill_data.json`; permitted weapon flags come
+from the fixed tail of `animation_data.json`. Stunt alias 15003 displays the
+avatar's actual skill. AC5:3 replaces learned skills; AC5:11/12 and AC8:1 update
+player progress, and AC15:8 plus AC8:2 update pets. Malformed updates are rejected
+before mutation. Character changes and disconnects hide the window.
+
+Drag learned skills (including Basic Atk and Defense) onto a hotbar slot.
+Double-clicking a skill and activating its hotbar binding use the same battle
+action path. Browsing sends no gameplay requests or optimistic unlocks. The
+native battle skill menu and battle-scene rendering remain pending.
+
+
+## Hotbar and logout confirmation
+
+The hotbar supports three pages of eight slots. Drag a skill from the Skills
+list onto a slot; drag an existing shortcut to move it, and right-click to
+remove it. Page arrows change the F1–F8 bindings. The view button toggles the
+native vertical and horizontal layouts without losing bindings.
+
+Assignments send native `[40,1,kind,id:u16,page,slot]`; received AC40:1 binding
+lists are validated atomically. Shortcuts save locally per character beside
+`settings.json`, in `hotbar-<character-id>.json`. These files store preferences;
+server packets remain authoritative for learned skills, pet ownership, resources
+and combat. Changing characters loads a separate bar. Pet skill bindings retain
+the selected pet's ID and slot and refuse to use a replacement/released pet.
+
+Click a slot or press **F1–F8** to activate it. During a ready battle turn,
+Basic Attack and offensive skills open a target chooser from the server fighter
+roster; Defense submits immediately. Other skills offer roster targets, with the
+server validating their effects. The client checks learned skills, ownership and
+SP, rejects duplicate actions and revalidates pending choices when the turn or
+roster changes. Stop Remote auto-fight before choosing manual actions. Combat
+skills outside battle show a warning; overworld healing/casting and the native
+battle-scene targeting interface remain pending. Received item shortcuts use the
+existing inventory-selected consumption checks and authoritative receipts.
+
+Settings **Log Out** and **Exit** now show the native gold frame, blue dither,
+player preview/name and Confirm/Cancel buttons over a darkened scene, based on
+`UI_02/Screenshot_20261005_200128.png`. Cancel/Escape leaves the connection intact;
+Confirm alone returns to server selection or exits. The blue mask palette is
+measured from the reference; original panel22 frame/dither assets are preserved.

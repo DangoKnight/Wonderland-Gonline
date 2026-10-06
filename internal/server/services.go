@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // NPC services opened by EVE action 7 (EveEventInterpreter case 7, Player.Open*).

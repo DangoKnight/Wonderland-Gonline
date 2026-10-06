@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"gorm.io/gorm"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestArcadeDefaultsNativeTablesAndEqualWeights(t *testing.T) {

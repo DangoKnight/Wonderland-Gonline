@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"errors"
 	"time"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 const (

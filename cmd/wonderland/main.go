@@ -14,11 +14,11 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"wonderland-go/internal/admin"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/server"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/admin"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/server"
+	"wonderland-gonline/internal/store"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package game
 import (
 	"errors"
 	"time"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 type Character struct {

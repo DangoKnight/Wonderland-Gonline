@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
 
 func vehicleFixture(t *testing.T) (*Server, *Session, []*captureConn) {

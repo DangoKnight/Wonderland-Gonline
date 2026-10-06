@@ -1,6 +1,6 @@
 package game
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 // LearnSkill is EVE opcode 11 and SkillManager.UnlockSkill. Replayed learning
 // leaves trained grade/proficiency intact; a new reward starts at grade one.

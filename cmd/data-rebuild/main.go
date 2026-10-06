@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/config"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/config"
 )
 
 func main() {

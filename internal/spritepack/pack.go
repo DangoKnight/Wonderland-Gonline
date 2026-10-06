@@ -14,10 +14,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
 )
 
 const (
@@ -199,7 +199,7 @@ func SafePath(path string) bool {
 
 // Read loads and validates dir/pack.json.
 func Read(dir string) (*Pack, error) {
-	data, err := os.ReadFile(filepath.Join(dir, FileName))
+	data, err := clientfs.ReadFile(filepath.Join(dir, FileName))
 	if err != nil {
 		return nil, err
 	}

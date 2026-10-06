@@ -1,4 +1,4 @@
-module wonderland-go
+module wonderland-gonline
 
 go 1.24.0
 

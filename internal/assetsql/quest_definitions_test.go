@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestQuestDefinitionsSQLRoundTripValidationAndAuthority(t *testing.T) {

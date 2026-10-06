@@ -1,6 +1,6 @@
 package game
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 // UnlockQualifiedSkills ports the stat tree and, when requested, grade-ten
 // evolutions. Attributes include avatar and potential bonuses, not equipment combat bonuses.

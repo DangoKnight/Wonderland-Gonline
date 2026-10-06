@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestSettingsNativePacketsAndPersistence(t *testing.T) {

@@ -16,8 +16,8 @@ import (
 	"math"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Kind is a weather kind: the category FUN_00334120 tests and the

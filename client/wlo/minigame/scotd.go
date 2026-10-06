@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"time"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 const (

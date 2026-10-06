@@ -5,9 +5,9 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/settings"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/settings"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // ChatLog is TTalkMsgForm (constructor FUN_0048bbf4, adding FUN_0048ac28,
@@ -290,6 +290,26 @@ func (l *ChatLog) add(text []byte, channel int, speaker uint32) {
 	}
 
 	l.syncScroll()
+}
+
+// SetColors applies the current palette to retained messages and visible rows.
+// Rewrapping after new messages, resizing or mode changes keeps these colours.
+func (l *ChatLog) SetColors(colors map[int]uint16) {
+	l.Colors = make(map[int]uint16, len(colors))
+	for channel, ink := range colors {
+		l.Colors[channel] = ink
+	}
+	recolor := func(lines []ChatLine) {
+		for i := range lines {
+			ink := ChannelInk(lines[i].Channel)
+			if override, ok := l.Colors[lines[i].Channel]; ok {
+				ink = override
+			}
+			lines[i].Ink = ink
+		}
+	}
+	recolor(l.history)
+	recolor(l.Lines)
 }
 
 // Clear is FUN_0048cab4: the list and the ticker empty.

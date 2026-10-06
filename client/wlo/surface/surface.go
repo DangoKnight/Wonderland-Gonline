@@ -8,15 +8,21 @@ package surface
 import (
 	"image"
 	"image/color"
+	"log"
+	"wonderland-gonline/internal/clientimage"
 )
 
 // Surface is a width x height RGB565 buffer. Key is the transparent colour
 // used when a transparent blit reads from this surface; the picture
 // database creates every cached surface with key 0 (FUN_00477e18).
 type Surface struct {
-	W, H int
-	Pix  []uint16
-	Key  uint16
+	W, H      int
+	Pix       []uint16
+	Tiles     *clientimage.Image // Immutable compiled image metadata; Pix remains nil.
+	Backend   Backend            // nil for CPU buffers; GPU targets have no Pix buffer.
+	Revision  uint64             // Increment after changing an uploaded CPU source.
+	tileError bool
+	Key       uint16
 }
 
 func New(w, h int) *Surface {
@@ -32,6 +38,27 @@ func (s *Surface) Draw(x, y int, src *Surface, transparent bool) {
 // DrawRect is TDirectDrawSurface.Draw(X, Y, SrcRect, Source, Transparent).
 // The source rectangle is clipped to the source and the destination.
 func (s *Surface) DrawRect(x, y int, r image.Rectangle, src *Surface, transparent bool) {
+	if s.Backend != nil {
+		s.Backend.DrawRect(x, y, r, src, transparent)
+		return
+	}
+	s.Revision++
+	if src.Backend != nil {
+		src = src.CPUCopy()
+	}
+	if src.Tiles != nil {
+		r = r.Intersect(image.Rect(0, 0, src.W, src.H))
+		visible := r.Intersect(image.Rect(r.Min.X-x, r.Min.Y-y, r.Min.X-x+s.W, r.Min.Y-y+s.H))
+		if visible.Empty() {
+			return
+		}
+		origin := image.Pt(x+visible.Min.X-r.Min.X, y+visible.Min.Y-r.Min.Y)
+		if err := src.Tiles.CopyPixels(visible, s.Pix, s.W, origin, transparent, src.Key); err != nil {
+			src.reportTileError(err)
+		}
+		return
+	}
+
 	r = r.Intersect(image.Rect(0, 0, src.W, src.H))
 	for sy := r.Min.Y; sy < r.Max.Y; sy++ {
 		dy := y + sy - r.Min.Y
@@ -56,6 +83,20 @@ func (s *Surface) DrawRect(x, y int, r image.Rectangle, src *Surface, transparen
 // scaled (nearest pixel) into dst's rectangle r, skipping the key colour
 // when transparent.
 func (s *Surface) DrawStretch(r image.Rectangle, src *Surface, transparent bool) {
+	if s.Backend != nil {
+		s.Backend.DrawStretch(r, src, transparent)
+		return
+	}
+	s.Revision++
+	if src.Backend != nil {
+		src = src.CPUCopy()
+	}
+	if src.Tiles != nil {
+		src = src.materialized()
+		if src == nil {
+			return
+		}
+	}
 	if r.Dx() <= 0 || r.Dy() <= 0 || src.W == 0 || src.H == 0 {
 		return
 	}
@@ -78,6 +119,20 @@ const LightLevelFull = 32
 // rectangle is added to the destination, each channel scaled by
 // level/32 and saturating, skipping the source's key colour.
 func (s *Surface) DrawLight(x, y int, r image.Rectangle, src *Surface, level int) {
+	if s.Backend != nil {
+		s.Backend.DrawLight(x, y, r, src, level)
+		return
+	}
+	s.Revision++
+	if src.Backend != nil {
+		src = src.CPUCopy()
+	}
+	if src.Tiles != nil {
+		src = src.materialized()
+		if src == nil {
+			return
+		}
+	}
 	r = r.Intersect(image.Rect(0, 0, src.W, src.H))
 	for sy := r.Min.Y; sy < r.Max.Y; sy++ {
 		dy := y + sy - r.Min.Y
@@ -105,6 +160,11 @@ func (s *Surface) DrawLight(x, y int, r image.Rectangle, src *Surface, level int
 
 // Fill sets a rectangle to one RGB565 value.
 func (s *Surface) Fill(r image.Rectangle, v uint16) {
+	if s.Backend != nil {
+		s.Backend.Fill(r, v)
+		return
+	}
+	s.Revision++
 	r = r.Intersect(image.Rect(0, 0, s.W, s.H))
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		row := s.Pix[y*s.W:]
@@ -128,6 +188,15 @@ func Expand(v uint16) color.RGBA {
 
 // RGBA converts the surface for display or comparison.
 func (s *Surface) RGBA() *image.RGBA {
+	if s.Backend != nil {
+		return s.Backend.RGBA()
+	}
+	if s.Tiles != nil {
+		if decoded := s.materialized(); decoded != nil {
+			return decoded.RGBA()
+		}
+		return image.NewRGBA(image.Rect(0, 0, s.W, s.H))
+	}
 	out := image.NewRGBA(image.Rect(0, 0, s.W, s.H))
 	for i, v := range s.Pix {
 		c := Expand(v)
@@ -161,6 +230,11 @@ func TColor(c uint32) uint16 {
 // original's tooltip over the sea (Chat/Whisper_Chat_01_(tooltip).png,
 // $F98B3D at 200) matches this to the bit.
 func (s *Surface) FillAlpha(r image.Rectangle, c uint32, alpha int) {
+	if s.Backend != nil {
+		s.Backend.FillAlpha(r, c, alpha)
+		return
+	}
+	s.Revision++
 	if alpha >= 0xff {
 		s.Fill(r, TColor(c))
 		return
@@ -186,4 +260,24 @@ func (s *Surface) Frame(r image.Rectangle, v uint16) {
 	s.Fill(image.Rect(r.Min.X, r.Max.Y-1, r.Max.X, r.Max.Y), v)
 	s.Fill(image.Rect(r.Min.X, r.Min.Y, r.Min.X+1, r.Max.Y), v)
 	s.Fill(image.Rect(r.Max.X-1, r.Min.Y, r.Max.X, r.Max.Y), v)
+}
+
+// FromCompiled keeps large map canvases lazy; drawing requests only visible tiles.
+func FromCompiled(m *clientimage.Image) *Surface {
+	b := m.Bounds()
+	return &Surface{W: b.Dx(), H: b.Dy(), Tiles: m}
+}
+func (s *Surface) reportTileError(err error) {
+	if !s.tileError {
+		log.Printf("compiled image: %v", err)
+		s.tileError = true
+	}
+}
+func (s *Surface) materialized() *Surface {
+	pix, err := s.Tiles.Pixels(s.Tiles.Bounds(), clientimage.Plain)
+	if err != nil {
+		s.reportTileError(err)
+		return nil
+	}
+	return &Surface{W: s.W, H: s.H, Pix: pix, Key: s.Key}
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 	"sort"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // samePlayerScene prevents starter-scene players from discovering each other.

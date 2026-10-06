@@ -8,9 +8,9 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func parseAuthoredSynthesis(text string) ([]assets.SynthesisRate, error) {

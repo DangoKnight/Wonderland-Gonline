@@ -7,8 +7,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 const maxMallWireIndex = math.MaxUint8

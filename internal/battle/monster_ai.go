@@ -1,6 +1,6 @@
 package battle
 
-import "wonderland-go/internal/assets"
+import "wonderland-gonline/internal/assets"
 
 // monsterSkill selects uniformly among distinct usable native slots. No skill ID
 // or name decides a buff/debuff: cast targets come from the effect definitions.

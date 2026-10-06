@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestScriptedPropV14UpgradeFrameAndReopen(t *testing.T) {

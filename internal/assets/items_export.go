@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const (

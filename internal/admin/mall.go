@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/store"
 )
 
 func (a *API) mallAdjust(w http.ResponseWriter, r *http.Request) {

@@ -3,7 +3,7 @@ package world
 import (
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestWaterGatheringCompleteShapeValidation(t *testing.T) {

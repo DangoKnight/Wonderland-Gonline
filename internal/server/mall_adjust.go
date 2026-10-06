@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/store"
 )
 
 // AdjustMallBalance is the administrator operation. Exclude account deletion and

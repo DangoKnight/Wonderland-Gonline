@@ -1,9 +1,9 @@
 package server
 
 import (
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // battleStateCommand decodes the native AC11:2 player PK request before changing

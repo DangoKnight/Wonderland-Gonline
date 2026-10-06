@@ -5,8 +5,8 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestAlchemyPacketsPersistenceAndReplay(t *testing.T) {

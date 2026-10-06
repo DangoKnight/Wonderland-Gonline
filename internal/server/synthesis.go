@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 const synthesisPercentScale = 100

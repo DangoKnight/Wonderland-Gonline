@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestNativeArtworkDecode(t *testing.T) {

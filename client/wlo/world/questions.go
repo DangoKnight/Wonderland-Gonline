@@ -3,7 +3,7 @@ package world
 import (
 	"encoding/binary"
 
-	native "wonderland-go/internal/assets"
+	native "wonderland-gonline/internal/assets"
 )
 
 // Event questions: the map record's category 7 (eve.Emg), copied by the map

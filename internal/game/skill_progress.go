@@ -1,6 +1,6 @@
 package game
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 // AddSkillEXP follows SkillManager.AddSkillExp, including the native stunt alias.
 // The caller persists the changed character before sending the returned packets.

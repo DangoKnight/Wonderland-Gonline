@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestAutosavePendingChangesAndStaleSnapshots(t *testing.T) {

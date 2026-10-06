@@ -10,11 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/draw"
-	_ "image/png"
-	"os"
 	"path/filepath"
 	"time"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/clientfs"
 )
 
 // Shape is a Screen.Cursors index registered at startup (0x3bb990). Names
@@ -87,7 +86,7 @@ type manifest struct {
 // Load reads an ANI export (media/cursor/<name>/manifest.json).
 func Load(dir, name string) (*Animation, error) {
 	base := filepath.Join(dir, name)
-	raw, err := os.ReadFile(filepath.Join(base, "manifest.json"))
+	raw, err := clientfs.ReadFile(filepath.Join(base, "manifest.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -123,23 +122,7 @@ func Load(dir, name string) (*Animation, error) {
 	return a, nil
 }
 
-func loadPNG(path string) (*image.NRGBA, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	m, _, err := image.Decode(f)
-	if err != nil {
-		return nil, err
-	}
-	if n, ok := m.(*image.NRGBA); ok {
-		return n, nil
-	}
-	n := image.NewNRGBA(m.Bounds())
-	draw.Draw(n, n.Bounds(), m, m.Bounds().Min, draw.Src)
-	return n, nil
-}
+func loadPNG(path string) (*image.NRGBA, error) { return clientassets.ReadPicturePNG(path, nil) }
 
 // At is the frame shown d after the cursor was selected; the animation
 // loops as Windows plays it.

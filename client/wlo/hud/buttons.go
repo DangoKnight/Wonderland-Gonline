@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 // stateRows is the number of state rows in a button picture (idle, under

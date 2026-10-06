@@ -1,6 +1,6 @@
 package game
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 // ClientSettings mirrors ClientSettings in inGameSettings.cs. A nil settings
 // record on an older character uses the native constructor defaults.

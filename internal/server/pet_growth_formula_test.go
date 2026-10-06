@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
 )
 
 func TestPetGrowthStartupFormulaReachesEXPGrants(t *testing.T) {

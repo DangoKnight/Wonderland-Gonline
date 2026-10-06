@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
 )
 
 func (s *Server) grantStarterPack(ctx context.Context, ref store.CharacterRef, reservations ...game.Character) (game.Character, []game.Addition, error) {

@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 	"time"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/world"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"strings"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 type Map struct {

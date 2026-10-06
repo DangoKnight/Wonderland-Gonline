@@ -4,8 +4,8 @@ package assetsql
 import (
 	"fmt"
 	"gorm.io/gorm"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 type QuestDefinitionsRow struct {

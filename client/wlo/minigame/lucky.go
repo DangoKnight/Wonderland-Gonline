@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"time"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Lucky is TLuckey (FUN_0016c4fc, FUN_0016ce44, FUN_0016ceb0,

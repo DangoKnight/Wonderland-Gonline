@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/assetsql"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/assetsql"
 )
 
 // AssetSnapshot returns a shallow, immutable snapshot for administration readers.

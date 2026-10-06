@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 func TestSettingsSnapshotAndValidation(t *testing.T) {

@@ -43,10 +43,12 @@ SUBSYSTEMS = [
       60, 65, 67, 68, 69, 70, 72, 74, 76, 78, 79, 82, 90, 91, 120, 126, 127, 128],
      "System, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ComCtrls, Grids, OLE and TWebBrowser. "
      "Only behaviour the game relies on is reproduced (string handling, Delphi date doubles, VCL click order)."),
-    ("graphics", "Graphics backend (DelphiX, DirectDraw, JPEG, rodraw2)", "client/wlo/surface, Ebitengine", "replaced",
+    ("graphics", "Graphics backend (DelphiX, DirectDraw, JPEG, rodraw2)", "client/wlo/surface, client/wlo/render, Ebitengine", "replaced",
      [36, 39, 40, 42, 43, 53, 55, 58, 59, 66],
-     "TDXDraw and DirectDraw surfaces become surface.Surface (RGB565) presented by Ebitengine. "
-     "rodraw2.dll blits are ported one by one as they are met: colour key, light alpha, alpha fill."),
+     "TDXDraw/DirectDraw surfaces use native-compatible Ebitengine GPU render targets by default, with a CPU RGB565 compatibility path. "
+     "GPU shaders preserve colour keys, integer alpha/light/scaling and palette recolouring; UI/text blits can batch. "
+     "Visible map tiles and a shared bounded texture cache serve all sessions, with GPU composition/previews and explicit capture-only readbacks. "
+     "Graphics and full-client frame parity tests verify the replacement."),
     ("audio", "Audio backend (DirectSound, Ogg, MCI)", "client/wlo/app (sound.go, music.go), Ebitengine audio", "replaced",
      [50, 51, 52, 80, 81, 101, 122, 124, 140, 141, 142],
      "TDXSound buffers, Ogg streams and TMediaPlayer become Ebitengine audio players over the exported PCM WAV files."),
@@ -55,13 +57,13 @@ SUBSYSTEMS = [
     ("transport", "Network transport (sockets, HTTP)", "client/wlo/login (net.go), Go net", "replaced",
      [47, 48, 49, 98, 113, 115, 116, 117, 118, 119],
      "TClientSocket and the NetMasters HTTP components. The packet framing and XOR are ported in login."),
-    ("assets", "Asset decryption and data files", "internal/clientassets, internal/assets", "ported", [97, 83],
-     "JMA/JXAN decryption, .wmg data; the exports under data/ replace runtime decoding."),
-    ("mainform", "Main form and frame loop (TForm4)", "client/wlo/app (app.go, window.go)", "partial",
+    ("assets", "Asset decryption and data files", "internal/clientassets, internal/assets, internal/clientbundle, internal/clientruntime, internal/clientimage, internal/clientfs", "ported", [97, 83],
+     "JMA/JXAN decryption, .wmg data; editable exports compile incrementally into separate ZIP64 core/world/sprite/audio packs, binary terrain/event/object records and lazy sprite metadata with build-time palette matching; PNG dimensions and JSON/frame references are validated. Non-sprite images compile into lossless, independently readable tiles with native color preparation, empty-border trimming, small-image atlas packing, content deduplication and byte-bounded LRU caching. Large map backgrounds draw only visible tiles; per-image dependencies preserve incremental builds. Loose data/ remains a development input."),
+    ("mainform", "Main form and frame loop (TForm4)", "client/wlo/app (app.go, window.go, workspace.go, profile.go, resources.go)", "partial",
      [279, 280, 281, 283, 284],
      "FormCreate, the 30 ms frame timer (timeSetEvent → message 0x8002 → FUN_004a1d60), the sound table, music start. "
      "Ported: the frame order for login and world, map music, ambience. Not yet: the remaining FormCreate steps, "
-     "window modes, most per-frame managers."),
+     "window modes, most per-frame managers. Go workspace adds independent sessions, a collapsible panel outside the game viewport with four visible preview cards, a scrolling plus card and animated game centering, a persistent workspace profile restoring account-prefilled server login screens without passwords, Xaolan small portrait window icon, shared decoded resources, compiled map/sprite records in separate runtime packs and throttled background drawing."),
     ("protocol", "Packet dispatch (send and receive)", "client/wlo/app (app.go dispatch), internal/protocol", "partial",
      [206, 207],
      "FUN_002c2394 sends, FUN_002dde1c receives. See the command coverage table."),
@@ -94,10 +96,10 @@ SUBSYSTEMS = [
      "question forms, OK-only mode, scrolling and typing, the talk cursor."),
     ("chat", "Chat log and input bar", "client/wlo/hud (chatlog.go, inputbar.go), client/wlo/app (chat.go)", "partial",
      [277, 278],
-     "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles."),
+     "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, immediate channel recoloring retained across message additions and rewrapping, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles."),
     ("hud", "HUD: status, hot keys, buttons, team, emotes", "client/wlo/hud", "partial", [195, 196, 197],
      "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. "
-     "Drawn; most actions not wired."),
+     "Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Other toolbar actions remain pending."),
     ("minimap", "Minimap, world map and map frame", "", "todo", [214, 215, 168],
      "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data."),
     ("cursor", "Cursor and mouse state", "client/wlo/cursor, client/wlo/app (cursor.go)", "ported", [238, 239],
@@ -106,14 +108,16 @@ SUBSYSTEMS = [
      [149, 255, 206],
      "Tsound effect list, TFMark, TMusicCenter (jukebox), the volume form. Ported: effects, map music, ambience, "
      "movie music, System options for effects/music volumes and ambient sound. Not yet: the jukebox."),
-    ("items", "Items, inventory and equipment", "client/wlo/inventory, client/wlo/app (inventory.go)", "partial", [225, 245, 246, 247, 250, 139],
+    ("items", "Items, inventory and equipment", "client/wlo/inventory, client/wlo/app (inventory.go)", "partial", [225, 245, 246, 247, 250, 139, 169],
      "TFItem, TSe_itemObject, TSe_ItemImage, item grids, TEquip, equip forms, crafting materials. Item data and sprite "
-     "layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, use, equipment swaps, AC23 updates and player attribute allocation with native AC8 requests are ported. "
-     "Remaining: full equipment bonus/socket/forge tooltip rules, repair, native rebirth/class allocation caps, potential dialogs, pet equipment, secondary item containers and crafting."),
-    ("battle", "Battle", "", "todo", [227, 228, 230, 231],
-     "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. The server side is ported."),
+     "layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, direct recovery/amity use on the inventory-selected player or pet, consumable effect breakdowns, Potential Pill requests/results, authoritative pet target rosters and initial potential snapshots, player/pet previews and stats, native Remote windows and main automation options (walking, basic PvE attacks, supplies, worn equipment, safeguarded discard/logout and optional status display), equipment swaps, AC23 updates and player attribute allocation with native AC8 requests are ported. "
+     "Remaining: full equipment bonus/socket/forge tooltip rules, repair, native rebirth/class allocation caps, full animated PotentialForm presentation, pet attribute allocation and advanced Remote skill assignment, secondary item containers and crafting."),
+    ("skills", "Skills window and elemental tree", "client/wlo/skills, client/wlo/app/skills.go", "partial", [],
+     "TRe_SkillForm: Physical, Magical, Assistant, Life and Intro tabs, player/pet selector, native archive icons, SP costs, grades, proficiency, weapon flags, scroll controls and elemental tree prerequisites. Toolbar/Ctrl+S toggling, AC5:3 snapshots, AC5:11/12 and AC8:1/2 progress updates are implemented. Native skill and animation data supply presentation metadata. Skill dragging and hotbar assignment, target selection through the current battle roster and native AC50 actions are implemented. Native battle-scene targeting/rendering and the battle skill menu remain pending."),
+    ("battle", "Battle", "client/wlo/app/remote.go", "started", [227, 228, 230, 231],
+     "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. The server side is ported. Client Remote tracks fighter rosters, vitals, defeats and round readiness and submits owned basic PvE actions. Manual hotbar/Skills actions now select a fighter from a roster dialog and submit native AC50, with ownership/SP/learned-skill checks and duplicate/stale-turn protection. Battle scene rendering, animations, the native battle command menu and advanced Remote skill assignment remain pending."),
     ("system", "Options, teams, organisations, rankings", "client/wlo/settings, client/wlo/app/settings.go", "partial", [232, 234, 235, 237, 256],
-     "TCY_OptionForm: five settings windows, native server permissions and local audio/chat/visibility/blacklist settings are implemented. Pending: Zoom rendering, title entitlements, account/payment services, TCY_SystemTeam, TLD_Top100Form, TCY_OrganManage, TCY_TeamManage."),
+     "TCY_OptionForm: five settings windows, native server permissions, local audio/chat/visibility/blacklist settings and the native shaded logout/exit confirmation with player preview are implemented. Pending: Zoom rendering, title entitlements, account/payment services, TCY_SystemTeam, TLD_Top100Form, TCY_OrganManage, TCY_TeamManage."),
     ("trade", "Trade, stalls and vendors", "", "todo", [217, 218, 243],
      "TCY_TradeMenu, vendor and stall forms, TTradeManage."),
     ("social", "Friends, mail, guilds, weddings, PK", "", "todo", [241, 242, 209, 210, 183, 184, 185, 189, 198, 199],
@@ -197,7 +201,11 @@ def client_commands(root):
     for p in (root / "client/wlo").rglob("*.go"):
         if p.name.endswith("_test.go"):
             continue
-        found |= set(re.findall(r"p\[0\] == protocol\.Command(\w+)", p.read_text()))
+        text = p.read_text()
+        found |= set(re.findall(r"p\[0\] == protocol\.Command(\w+)", text))
+        # Dispatchers may also switch directly on the received command.
+        if "switch p[0]" in text:
+            found |= set(re.findall(r"case protocol\.Command(\w+)\s*:", text))
     return found
 
 

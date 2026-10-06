@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientruntime"
 
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 // Extracted SceneData.dat (TFSceneData, FUN_0047be24 / FUN_0047c808) and
@@ -113,6 +115,13 @@ func SceneWeather(a login.Assets) (map[uint16]byte, error) {
 
 // MapScenes maps each map ID to its scene.
 func MapScenes(a login.Assets) (map[uint16]uint16, error) {
+	var compiled map[uint16]uint16
+	if err := clientruntime.Read(a.DataPath(clientruntime.EventIndex), &compiled); err == nil {
+		return compiled, nil
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+
 	var doc struct {
 		Maps []struct {
 			ID    uint16 `json:"id"`
@@ -130,7 +139,7 @@ func MapScenes(a login.Assets) (map[uint16]uint16, error) {
 }
 
 func readJSON(path string, v any) error {
-	raw, err := os.ReadFile(path)
+	raw, err := clientfs.ReadFile(path)
 	if err != nil {
 		return err
 	}

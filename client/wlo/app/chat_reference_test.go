@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/internal/game"
 )
 
 func TestChatReferenceGeometryAndDrag(t *testing.T) {

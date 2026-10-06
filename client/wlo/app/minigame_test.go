@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/cursor"
-	"wonderland-go/client/wlo/minigame"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/minigame"
+	"wonderland-gonline/internal/protocol"
 )
 
 // moleStart is the server's 57/1 for the cabin's mole machine (type 3,

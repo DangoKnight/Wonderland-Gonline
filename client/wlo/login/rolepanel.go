@@ -3,8 +3,8 @@ package login
 import (
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Colour block size and its neutral digit (THuman +0xd5, FUN_00012d10(…,

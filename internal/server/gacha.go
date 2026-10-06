@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // packContentsCommand is native AC91:1. Preview is read-only, requires no owned

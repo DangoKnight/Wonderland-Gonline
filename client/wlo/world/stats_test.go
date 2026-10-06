@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 // TestBaseStats reads 5/3 with one skill (FUN_004381c4's offsets) and the
-// tail's rebirth and job.
+// compatibility tail's rebirth and job. The native eight-byte footer is
+// independently covered by TestStatsPotentialNativeFooter.
 func TestBaseStats(t *testing.T) {
 	p := []byte{3, 2} // subcommand, element
 	p = binary.LittleEndian.AppendUint32(p, 150)
@@ -29,7 +30,7 @@ func TestBaseStats(t *testing.T) {
 	p = binary.LittleEndian.AppendUint16(p, 6)
 	p = append(p, 1, 4, 0, 0)
 	var s Stats
-	if err := s.ParseBaseStats(p); err != nil {
+	if err := s.ParseBaseStats(p[:len(p)-2]); err != nil {
 		t.Fatal(err)
 	}
 	if s.Element != 2 || s.HP != 150 || s.SP != 40 || s.STR != 11 || s.CON != 12 || s.INT != 13 || s.WIS != 14 || s.AGI != 15 ||
@@ -80,5 +81,20 @@ func TestInventoryAuthoritativeCombatValues(t *testing.T) {
 	s.Apply(41, 27)
 	if s.CombatValues()[0] != 27 {
 		t.Fatal("updated value")
+	}
+}
+
+func TestStatsPotentialNativeFooter(t *testing.T) {
+	// Raw AC5:3 payload with an empty skill list and the native eight-byte footer.
+	p := make([]byte, 63)
+	p[0] = 3
+	p = append(p, 5, 0, 6, 0, 0, 1, 10, 3)
+	var s Stats
+	if err := s.ParseBaseStats(p); err != nil || s.Potential != 10 || s.Rebirth != 1 || s.Job != 3 {
+		t.Fatalf("native footer %#v %v", s, err)
+	}
+	s.Apply(37, 2)
+	if s.Potential != 10 {
+		t.Fatal("unrelated native stat field overwrote potential")
 	}
 }

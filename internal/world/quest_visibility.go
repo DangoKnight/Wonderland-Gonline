@@ -2,7 +2,7 @@ package world
 
 import (
 	"slices"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // Match reference registration/list order. A spawn list owns visibility even

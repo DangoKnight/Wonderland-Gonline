@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // mountPacket is PutPetToRide / SendPeerCompanionAndVehicle: slot, owner,

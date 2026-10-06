@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func run(input, output string) error {

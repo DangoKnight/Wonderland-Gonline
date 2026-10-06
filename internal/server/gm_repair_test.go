@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func gmRepairFixture(t *testing.T) (*Server, []*Session, []*captureConn) {

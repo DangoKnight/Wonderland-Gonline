@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // fieldFixture puts Alice on field map 30001 with a one-HP wild boar (click 4) beside

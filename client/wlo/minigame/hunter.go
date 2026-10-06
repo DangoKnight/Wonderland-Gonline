@@ -4,8 +4,8 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Hunter is minigame 4, hunting (TSport_Hunter, constructor FUN_0017e2c8,

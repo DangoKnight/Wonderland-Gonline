@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"math"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // startMinigame ports EVE opcode 9. The native outcome condition uses the

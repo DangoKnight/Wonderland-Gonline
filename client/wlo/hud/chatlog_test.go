@@ -92,3 +92,44 @@ func TestWhisperInk(t *testing.T) {
 		t.Fatalf("whisper ink %#x", ink)
 	}
 }
+
+func TestChatColorChangesSurviveRewrap(t *testing.T) {
+	l, _ := newTestLog()
+	l.Add(bytes.Repeat([]byte("x"), 120), ChannelLocal)
+	l.Add([]byte("other channel"), ChannelWhisper)
+	l.Locked = true
+	anchor := l.firstRow
+	l.SetColors(map[int]uint16{ChannelLocal: 0x1234})
+	check := func() {
+		t.Helper()
+		for _, rows := range [][]ChatLine{l.history, l.Lines} {
+			for _, line := range rows {
+				want := ChannelInk(line.Channel)
+				if line.Channel == ChannelLocal {
+					want = 0x1234
+				}
+				if line.Ink != want {
+					t.Fatalf("channel %d reverted to %#x", line.Channel, line.Ink)
+				}
+			}
+		}
+	}
+	check()
+	if l.firstRow != anchor {
+		t.Fatal("colour change moved locked viewport")
+	}
+	l.Add([]byte("new message"), ChannelLocal)
+	check()
+	l.Width = 300
+	l.rewrap(true)
+	check()
+	l.Mode = ChatOpaque
+	l.rewrap(true)
+	check()
+	l.SetColors(nil)
+	for _, line := range l.history {
+		if line.Ink != ChannelInk(line.Channel) {
+			t.Fatal("palette reset did not recolor history")
+		}
+	}
+}

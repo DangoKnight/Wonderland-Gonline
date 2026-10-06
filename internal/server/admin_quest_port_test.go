@@ -5,11 +5,11 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
 
 func TestAdminAnnouncementChannelsAndRecipientIsolation(t *testing.T) {

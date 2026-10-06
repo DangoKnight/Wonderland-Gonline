@@ -83,6 +83,12 @@ secondary containers and crafting interfaces.
 
 ### Phase 3: Battle
 
+The standalone Skills window is implemented: five native tabs, player/pet
+selection, progress updates and the elemental prerequisite tree. Learned skills
+can be dragged onto a saved per-character hotbar and activated with F1–F8 or a
+click. Manual battle actions use a roster target chooser and native AC50 packets.
+The native battle scene, battle skill menu and overworld casting remain pending.
+
 The largest single gameplay system (about 360 functions); the server side is
 ported.
 

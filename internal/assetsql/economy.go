@@ -7,8 +7,8 @@ import (
 	"math"
 	"strings"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // Source: MarriageManager, TentManufactureManager, GatheringManager and AlchemyManager.

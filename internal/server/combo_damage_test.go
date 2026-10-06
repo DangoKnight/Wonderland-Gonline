@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/config"
+	"wonderland-gonline/internal/config"
 )
 
 func TestComboDamageStartupSelectionAndRestart(t *testing.T) {

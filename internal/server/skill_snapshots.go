@@ -1,6 +1,6 @@
 package server
 
-import "wonderland-go/internal/game"
+import "wonderland-gonline/internal/game"
 
 // Native AC5:3 overlays skill records (FUN_004381c4). Zero removed grades and
 // EXP in the wire snapshot only; removed records must not survive persistence.

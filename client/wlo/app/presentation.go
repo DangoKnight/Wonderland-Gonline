@@ -2,7 +2,7 @@ package app
 
 import (
 	"encoding/binary"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 const poseReplyBytes = 6 // subcommand, character ID, expression/action

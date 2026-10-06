@@ -4,7 +4,7 @@ import (
 	"image"
 	"testing"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // TestStandFacing checks FUN_00484a50's facing conversion followed by the

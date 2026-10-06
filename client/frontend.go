@@ -9,8 +9,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"wonderland-go/client/session"
-	"wonderland-go/client/ui"
+	"wonderland-gonline/client/session"
+	"wonderland-gonline/client/ui"
 )
 
 // defaultServerINI is used when no SERVER.INI is found: one local server.
@@ -238,7 +238,7 @@ func runFrontend(assetDir, iniPath, snapshot string) error {
 	}
 	f := newFrontend(assets, iniPath, snapshot)
 	ebiten.SetWindowSize(ui.ScreenWidth, ui.ScreenHeight)
-	ebiten.SetWindowTitle("WLO Rhodes Island")
+	ebiten.SetWindowTitle("Wonderland Gonline")
 	ebiten.SetScreenClearedEveryFrame(false)
 	if err := ebiten.RunGame(f); err != nil && !errors.Is(err, ebiten.Termination) {
 		return err

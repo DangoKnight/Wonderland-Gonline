@@ -8,9 +8,9 @@ import (
 	"os"
 	"strconv"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/game"
 )
 
 // Status is the part of TSe_MainStatus (constructor FUN_0025ff84) that the

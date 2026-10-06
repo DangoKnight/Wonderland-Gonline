@@ -2,7 +2,7 @@ package assetsql
 
 import (
 	"testing"
-	"wonderland-go/internal/assetdb"
+	"wonderland-gonline/internal/assetdb"
 )
 
 func TestInventoryDimensionsV10MigrationUsesSQLAndPreservesEdits(t *testing.T) {

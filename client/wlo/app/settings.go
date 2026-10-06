@@ -2,10 +2,10 @@ package app
 
 import (
 	"math"
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/settings"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/settings"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -82,6 +82,9 @@ func audioGain(on bool, steps int) float64 {
 	return math.Pow(10, -float64((settings.VolumeSteps-steps)*volumeAttenuationStep)/hundredthsPerBel)
 }
 func (c *Client) effectsGain() float64 {
+	if c.backgroundSession {
+		return 0
+	}
 	if c.SettingsState == nil {
 		return 1
 	}
@@ -94,7 +97,11 @@ func (c *Client) applyLocalSettings() {
 	}
 	l := c.SettingsState.Local
 	if c.Music != nil {
-		c.Music.SetVolume(audioGain(l.MusicOn, l.MusicVolume))
+		gain := audioGain(l.MusicOn, l.MusicVolume)
+		if c.backgroundSession {
+			gain = 0
+		}
+		c.Music.SetVolume(gain)
 	}
 	if c.sfx != nil {
 		c.sfx.SetVolume(c.effectsGain())
@@ -116,16 +123,11 @@ func (c *Client) applyLocalSettings() {
 		c.World.HidePeerNicknames = !l.Info[settings.InfoOtherNicknames]
 	}
 	channels := [settings.ChannelCount]int{hud.ChannelLocal, hud.ChannelWhisper, hud.ChannelTeam, hud.ChannelGuild, hud.ChannelWorld}
-	c.Chat.Colors = map[int]uint16{}
+	colors := make(map[int]uint16, len(channels))
 	for i, ch := range channels {
-		c.Chat.Colors[ch] = settings.Palette[l.Colors[i]]
+		colors[ch] = settings.Palette[l.Colors[i]]
 	}
-	for i := range c.Chat.Lines {
-		line := &c.Chat.Lines[i]
-		if ink, ok := c.Chat.Colors[line.Channel]; ok {
-			line.Ink = ink
-		}
-	}
+	c.Chat.SetColors(colors)
 }
 func (c *Client) settingsAction(action string) {
 	switch action {
@@ -138,20 +140,9 @@ func (c *Client) settingsAction(action string) {
 			c.Settings.Send([]byte{protocol.CommandCharacterState, protocol.CharacterStateTeleport, byte(i + 1)})
 		})
 	case "logout":
-		c.settingsPrompt("Return to server selection?", []string{"Yes", "Cancel"}, func(i int) {
-			if i == 0 {
-				c.Net.Close()
-				c.Settings.Hide()
-				c.lostPrev()
-			}
-		})
+		c.logoutConfirmation(false)
 	case "exit":
-		c.settingsPrompt("Want to exit?", []string{"Yes", "Cancel"}, func(i int) {
-			if i == 0 {
-				c.Net.Close()
-				c.Exit = true
-			}
-		})
+		c.logoutConfirmation(true)
 	default:
 		c.Chat.Notice("This settings service is not yet available in the Go client.")
 	}
@@ -194,4 +185,13 @@ func (c *Client) closeSettingsPrompt() {
 	}
 	f.Hide()
 	c.UI.Remove(f)
+	if c.logoutPrompt != nil {
+		logout := c.logoutPrompt
+		c.logoutPrompt = nil
+		if c.UI.Modal == logout {
+			c.UI.Modal = nil
+		}
+		logout.Hide()
+		c.UI.Remove(logout)
+	}
 }

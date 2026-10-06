@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/legacyimport"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/legacyimport"
+	"wonderland-gonline/internal/store"
 )
 
 func TestImportProcedureReviewVerifyAndCleanup(t *testing.T) {

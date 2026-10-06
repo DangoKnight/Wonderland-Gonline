@@ -6,14 +6,15 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"wonderland-gonline/internal/clientimage"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/movie"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/weather"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/movie"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/weather"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Movies (event kind 5, FUN_00304fd0 case 5): the frame's value names the
@@ -61,6 +62,13 @@ func (c *Client) picture(mp *moviePlay, pic *movie.Picture) *surface.Surface {
 	}
 	var s *surface.Surface
 	for _, arc := range pictureArchives {
+		if compiled, err := c.Assets.CompiledPicture(arc, pic.Name); err == nil {
+			if pixels, err := compiled.Pixels(compiled.Bounds(), clientimage.Plain); err == nil {
+				b := compiled.Bounds()
+				s = &surface.Surface{W: b.Dx(), H: b.Dy(), Pix: pixels, Key: pic.Key()}
+				break
+			}
+		}
 		if m, err := c.Assets.LoadPicture(arc, pic.Name); err == nil {
 			s = surface.FromImage(m)
 			s.Key = pic.Key()
@@ -228,14 +236,10 @@ func (c *Client) zoomScreen(zoom int) {
 		return
 	}
 	r := image.Rect(zoom*movie.ZoomStepW, zoom*movie.ZoomStepH, ScreenWidth-zoom*movie.ZoomStepW, ScreenHeight-zoom*movie.ZoomStepH)
-	src := surface.New(r.Dx(), r.Dy())
+	src := c.Screen.NewCompatible(r.Dx(), r.Dy())
+	defer src.Close()
 	src.DrawRect(0, 0, r, c.Screen, false)
-	for y := 0; y < ScreenHeight; y++ {
-		sy := y * r.Dy() / ScreenHeight
-		for x := 0; x < ScreenWidth; x++ {
-			c.Screen.Pix[y*ScreenWidth+x] = src.Pix[sy*r.Dx()+x*r.Dx()/ScreenWidth]
-		}
-	}
+	c.Screen.DrawStretch(image.Rect(0, 0, ScreenWidth, ScreenHeight), src, false)
 }
 
 // lightFull is DAT_0072a090's full light.

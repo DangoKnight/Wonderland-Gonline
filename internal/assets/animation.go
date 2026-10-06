@@ -3,7 +3,7 @@ package assets
 import (
 	"fmt"
 	"math"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // ParseAnimationTiming ports SkillAnimationTiming.Read. Unknown movement modes

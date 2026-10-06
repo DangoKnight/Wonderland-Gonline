@@ -3,7 +3,7 @@ package assetsql
 import (
 	"os"
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestInstalledManufacturingAndRebornDefinitions(t *testing.T) {

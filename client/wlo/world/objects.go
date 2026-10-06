@@ -9,9 +9,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"wonderland-gonline/internal/clientruntime"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Scene objects (TGroundObj). The scene loader (FUN_003f830c) reads the
@@ -88,17 +89,32 @@ func wemRecords(a login.Assets) (map[uint32]wemRecord, error) {
 			DecodedHex string `json:"decoded_hex"`
 		} `json:"entries"`
 	}
-	if err := readJSON(path, &doc); err != nil {
-		return nil, err
+	var compiled map[uint32][]byte
+	if err := clientruntime.Read(a.DataPath(clientruntime.ObjectsFile), &compiled); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		if err := readJSON(path, &doc); err != nil {
+			return nil, err
+		}
 	}
 	out := make(map[uint32]wemRecord, len(doc.Entries))
-	for _, e := range doc.Entries {
-		id, err := strconv.ParseUint(strings.TrimSuffix(strings.ToLower(e.Name), ".wem"), 10, 32)
-		if err != nil {
-			continue
+	if compiled == nil {
+		compiled = make(map[uint32][]byte, len(doc.Entries))
+		for _, e := range doc.Entries {
+			id, err := strconv.ParseUint(strings.TrimSuffix(strings.ToLower(e.Name), ".wem"), 10, 32)
+			if err != nil {
+				continue
+			}
+			b, err := hex.DecodeString(e.DecodedHex)
+			if err != nil {
+				continue
+			}
+			compiled[uint32(id)] = b
 		}
-		b, err := hex.DecodeString(e.DecodedHex)
-		if err != nil || len(b) < wemBytes {
+	}
+	for id, b := range compiled {
+		if len(b) < wemBytes {
 			continue
 		}
 		le := func(i, n int) int {
@@ -108,7 +124,7 @@ func wemRecords(a login.Assets) (map[uint32]wemRecord, error) {
 			}
 			return v
 		}
-		out[uint32(id)] = wemRecord{
+		out[id] = wemRecord{
 			depth:    le(wemDepth, 4) * cellSize,
 			frames:   max(int(b[wemFrames]), 1),
 			interval: time.Duration(le(wemInterval, 2)) * time.Millisecond,

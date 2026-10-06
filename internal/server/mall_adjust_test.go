@@ -5,8 +5,8 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
 )
 
 func expectMallAdjustment(t *testing.T, wire *captureConn, points, bonus byte) {

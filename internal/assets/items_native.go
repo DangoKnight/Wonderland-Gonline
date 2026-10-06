@@ -3,7 +3,7 @@ package assets
 import (
 	"fmt"
 	"slices"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const (

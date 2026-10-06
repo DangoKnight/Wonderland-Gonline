@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	"net/netip"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 type IPBan struct {

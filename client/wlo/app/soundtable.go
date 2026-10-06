@@ -2,8 +2,8 @@ package app
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
 )
 
 // The sound table (sound\soundtabel.txt, FUN_00493c7c): its first line is
@@ -18,7 +18,7 @@ func (c *Client) soundTable() []string {
 		return c.sounds
 	}
 	c.sounds = []string{""}
-	b, err := os.ReadFile(c.Assets.MediaPath("sound", soundTableExport))
+	b, err := clientfs.ReadFile(c.Assets.MediaPath("sound", soundTableExport))
 	if err != nil {
 		return c.sounds
 	}

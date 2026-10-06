@@ -5,13 +5,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image"
+	"os"
 	"sync"
+	"wonderland-gonline/internal/clientruntime"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
-	native "wonderland-go/internal/assets"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
+	native "wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Map NPCs. The map loader (FUN_003090f4 → FUN_00484a50) reads the map's
@@ -85,6 +87,8 @@ func (t NPCTemplate) SpriteDrop() int {
 // sprite's drop (+0x3c, +0x5b), and the talk window's face sprite (+0x5c,
 // FUN_002586c8).
 type NPCTemplate struct {
+	Element      byte
+	Skills       [3]uint16
 	Name         string
 	Kind         byte
 	Look         uint16
@@ -238,6 +242,10 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 			} `json:"name"`
 			Fields struct {
 				ID           uint32 `json:"id"`
+				Element      byte   `json:"element"`
+				Skill1       uint16 `json:"skill_1"`
+				Skill2       uint16 `json:"skill_2"`
+				Skill3       uint16 `json:"skill_3"`
 				Kind         byte   `json:"type"`
 				Look         uint16 `json:"unknown_u16_offset_14"`
 				Color1       uint32 `json:"unknown_u32_offset_18"`
@@ -259,7 +267,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	out := make(map[uint32]NPCTemplate, len(doc.Records))
 	for _, r := range doc.Records {
 		f := r.Fields
-		out[f.ID] = NPCTemplate{Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
+		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
 			Face: f.Face, TalkLow: f.TalkLow, Sound: f.Sound, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
 	}
 	npcData.path, npcData.templates = path, out
@@ -268,6 +276,17 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 
 // MapRecord decodes one map's eve.Emg record from the export.
 func MapRecord(a login.Assets, mapID uint16) (native.Map, error) {
+	var compiled []byte
+	if err := clientruntime.Read(a.DataPath(clientruntime.EventPath(mapID)), &compiled); err == nil {
+		scenes, err := MapScenes(a)
+		if err != nil {
+			return native.Map{}, err
+		}
+		return native.ParseEVEMap(mapID, scenes[mapID], compiled)
+	} else if !os.IsNotExist(err) {
+		return native.Map{}, err
+	}
+
 	npcData.Lock()
 	path := a.DataPath(eveExport)
 	if npcData.evePath != path {

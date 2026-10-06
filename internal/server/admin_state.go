@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // The caller holds worldMu and a catalog lock, excluding initial map snapshots.

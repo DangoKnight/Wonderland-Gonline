@@ -4,8 +4,8 @@ import (
 	"sort"
 	"sync"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // PickupRange is the C# 180-pixel reach for ground pickups.

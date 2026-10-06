@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // say types a message into the bar and presses Enter.

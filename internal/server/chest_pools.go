@@ -4,9 +4,9 @@ import (
 	"math/rand/v2"
 	"strings"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func (s *Server) chestPool(mapID, click uint16) *assets.ChestPool {

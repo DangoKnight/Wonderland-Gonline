@@ -6,11 +6,11 @@ import (
 	"math"
 	"strconv"
 	"time"
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Coordinates and controls from FUN_0034fad4, FUN_003638dc, FUN_00356214
@@ -41,10 +41,16 @@ type Form struct {
 	Stats                                                           *world.Stats
 	PlayerName                                                      []byte
 	Preview                                                         login.RoleView
+	Selected                                                        byte
+	DrawPet                                                         func(byte, int, int, int)
+	Remote                                                          *remoteForm
 	Status                                                          *login.Status
 	Send                                                            func([]byte)
 	CanAct                                                          func() bool
 	Notice                                                          func(string)
+	Warning                                                         func(string)
+	StartRemote                                                     func(RemoteOptions) bool
+	StopRemote                                                      func()
 	Close, CloseTitle, RotateLeft, RotateRight, StatusOnly, BagOnly *seui.FixedButton
 	Slots                                                           [game.BagSize]*slotControl
 	Worn                                                            [EquipmentSlots]*slotControl
@@ -58,6 +64,8 @@ type Form struct {
 	drag                                                            *dragItem
 	itemInfo                                                        *seui.Panel
 	Dialog                                                          *actionDialog
+	UseDialog                                                       *useDialog
+	potentialRequest                                                *potentialRequest
 }
 type dragItem struct {
 	slot  int
@@ -84,10 +92,10 @@ func NewForm(env *seui.Env, state *State, stats *world.Stats) *Form {
 	f.CloseTitle = f.button("Btn_Close_s_1", 336, 26, 18, 18, func() { f.Hide() })
 	f.Close = f.button("Btn_Close_1", (formWidth-56)/2, 423, 56, 20, func() { f.Hide() })
 	f.Close.SetHint([]byte("[ESC]"))
-	f.RotateLeft = f.button("Btn_ArrowL_9", 40, 245, 20, 20, nil)
-	f.RotateRight = f.button("Btn_ArrowR_9", 139, 245, 20, 20, nil)
+	f.RotateLeft = f.button("Btn_ArrowL_9", 40, 245, 20, 20, func() { f.SelectNext(-1) })
+	f.RotateRight = f.button("Btn_ArrowR_9", 139, 245, 20, 20, func() { f.SelectNext(1) })
 	// Native callbacks select the previous/next party pet, keeping action 17;
-	// they do not rotate the player. Pet inventory views remain unported.
+	// they do not rotate the player.
 	f.RotateLeft.Enabled, f.RotateRight.Enabled = false, false
 	f.StatusOnly = f.button("Btn_ArrowL_5", 149, 30, 17, 17, func() {
 		if f.Mode == 0 {
@@ -178,6 +186,9 @@ func (f *Form) Hide() {
 	if f.Dialog != nil {
 		f.Dialog.Hide()
 	}
+	if f.UseDialog != nil {
+		f.UseDialog.Hide()
+	}
 	f.Form.Hide()
 }
 func (f *Form) KeyDown(key uint16, shift byte) {
@@ -186,34 +197,42 @@ func (f *Form) KeyDown(key uint16, shift byte) {
 	}
 }
 func (f *Form) Paint() {
+	f.syncSelection()
 	f.syncAllocationControls()
+	stats := f.DisplayStats()
+	name := f.PlayerName
+	if f.Selected != 0 {
+		name = f.State.Pets[f.Selected-1].Name
+	}
 	f.Env.Pics.Draw(f.Env.Screen, f.Image, f.Left, f.Top, true)
 	if f.Mode == 2 {
 		return
 	}
 	at := func(x, y int) image.Point { return image.Pt(f.Left+x, f.Top+y) }
-	f.label(49, 61, string(f.PlayerName))
-	f.Status.Level(f.Stats.Level, at(20, 88), true)
-	element := f.Env.Pics.Find(fmt.Sprintf("Icon_Element_%d_1", f.Stats.Element))
+	f.label(49, 61, string(name))
+	f.Status.Level(stats.Level, at(20, 88), true)
+	element := f.Env.Pics.Find(fmt.Sprintf("Icon_Element_%d_1", stats.Element))
 	f.Env.Pics.Draw(f.Env.Screen, element, f.Left+19, f.Top+56, true)
 	f.Env.Pics.DrawRect(f.Env.Screen, f.Env.Pics.Find("Btn_Potential_1"), f.Left+126, f.Top+88, image.Rect(0, 0, 43, 20), true)
-	f.label(172, 90, strconv.Itoa(int(f.Stats.Potential)))
-	if f.Preview != nil {
+	f.label(172, 90, strconv.Itoa(int(stats.Potential)))
+	if f.Selected != 0 && f.DrawPet != nil {
+		f.DrawPet(f.Selected, f.Left+previewX, f.Top+previewY, previewBattleReady)
+	} else if f.Selected == 0 && f.Preview != nil {
 		f.Preview.DrawBody(f.Env.Screen, f.Left+previewX, f.Top+previewY, previewBattleReady)
 	}
-	f.gauge(0, int(f.Stats.HP), int(f.Stats.MaxHP))
-	f.gauge(1, int(f.Stats.SP), int(f.Stats.MaxSP))
+	f.gauge(0, int(stats.HP), int(stats.MaxHP))
+	f.gauge(1, int(stats.SP), int(stats.MaxSP))
 	ratio := float64(0)
-	if f.Stats.Formula != nil {
-		ratio = f.Stats.Formula.Progress(f.Stats.Level, f.Stats.EXP, f.Stats.Rebirth != 0)
+	if stats.Formula != nil {
+		ratio = stats.Formula.Progress(stats.Level, stats.EXP, stats.Rebirth != 0)
 	}
 	f.gauge(2, int(ratio*10000), 10000)
-	f.label(100, 273, fmt.Sprintf("%d/%d", f.Stats.HP, f.Stats.MaxHP))
-	f.label(100, 287, fmt.Sprintf("%d/%d", f.Stats.SP, f.Stats.MaxSP))
+	f.label(100, 273, fmt.Sprintf("%d/%d", stats.HP, stats.MaxHP))
+	f.label(100, 287, fmt.Sprintf("%d/%d", stats.SP, stats.MaxSP))
 	f.label(100, 301, fmt.Sprintf("%.0f%%", ratio*100))
 	f.label(45, 318, strconv.Itoa(int(f.Stats.Gold)))
-	f.label(160, 317, strconv.Itoa(int(uint32(f.Stats.Points)-f.draftTotal())))
-	combat := f.Stats.CombatValues()
+	f.label(160, 317, strconv.Itoa(int(uint32(stats.Points)-f.draftTotal())))
+	combat := stats.CombatValues()
 	for i, v := range combat {
 		f.label(44, 337+i*16, strconv.Itoa(int(v)))
 	}
@@ -242,7 +261,7 @@ func (f *Form) gauge(n, v, total int) {
 
 func (c *slotControl) item() game.Item {
 	if c.worn {
-		return c.form.State.Equipment[c.slot-1]
+		return c.form.Equipment()[c.slot-1]
 	}
 	return c.form.State.Bag[c.slot-1]
 }
@@ -289,9 +308,10 @@ func (c *slotControl) DblClick() {
 	}
 }
 func (c *slotControl) RightUp(_ byte, _, _ int) {
-	if !c.Blocked() {
-		c.form.Use(c.slot, c.worn)
-	}
+	// Native FUN_00355d80 is the contextual callback, distinct from the
+	// double-click use callback FUN_003548bc. Ordinary consumables and
+	// equipment have no right-click use action. Tent retrieval and other
+	// special contextual windows remain pending their client modules.
 }
 func (f *Form) allowed() bool { return f.Visible && (f.CanAct == nil || f.CanAct()) }
 func (f *Form) send(p []byte) {
@@ -304,7 +324,7 @@ func (f *Form) Use(slot int, worn bool) {
 		return
 	}
 	if worn {
-		if slot < 1 || slot > EquipmentSlots || f.State.Equipment[slot-1].Empty() {
+		if slot < 1 || slot > EquipmentSlots || f.Equipment()[slot-1].Empty() {
 			return
 		}
 		free := f.State.FirstFree()
@@ -312,9 +332,13 @@ func (f *Form) Use(slot int, worn bool) {
 			f.notice("Your inventory is full.")
 			return
 		}
-		f.send([]byte{protocol.CommandInventory, protocol.InventoryUnequip, byte(slot), free})
+		if f.Selected == 0 {
+			f.send([]byte{protocol.CommandInventory, protocol.InventoryUnequip, byte(slot), free})
+		} else {
+			f.send([]byte{protocol.CommandInventory, protocol.InventoryPetUnequip, f.Selected, byte(slot), free})
+		}
 	} else if slot >= 1 && slot <= game.BagSize && !f.State.Bag[slot-1].Empty() {
-		f.send([]byte{protocol.CommandInventory, protocol.InventoryUse, byte(slot)})
+		f.useBag(byte(slot))
 	}
 }
 func (f *Form) release(x, y int) {
@@ -331,7 +355,7 @@ func (f *Form) release(x, y int) {
 	}
 	current := f.State.Bag[d.slot-1]
 	if d.worn {
-		current = f.State.Equipment[d.slot-1]
+		current = f.Equipment()[d.slot-1]
 	}
 	if current != d.item {
 		return
@@ -342,7 +366,11 @@ func (f *Form) release(x, y int) {
 		}
 		if d.worn {
 			if dst.item().Empty() {
-				f.send([]byte{protocol.CommandInventory, protocol.InventoryUnequip, byte(d.slot), byte(dst.slot)})
+				if f.Selected == 0 {
+					f.send([]byte{protocol.CommandInventory, protocol.InventoryUnequip, byte(d.slot), byte(dst.slot)})
+				} else {
+					f.send([]byte{protocol.CommandInventory, protocol.InventoryPetUnequip, f.Selected, byte(d.slot), byte(dst.slot)})
+				}
 			}
 			return
 		}
@@ -365,9 +393,12 @@ func (f *Form) release(x, y int) {
 		}
 		return
 	}
+	if !d.worn && f.Remote != nil && f.Remote.acceptDrop(d.item, x, y) {
+		return
+	}
 	for _, dst := range f.Worn {
 		if !d.worn && dst.Visible && dst.HitTest(x, y) && int(f.State.equipmentSlot(d.item.ID)) == dst.slot {
-			f.send([]byte{protocol.CommandInventory, protocol.InventoryEquip, byte(d.slot)})
+			f.equipBag(byte(d.slot))
 			return
 		}
 	}
@@ -495,3 +526,6 @@ func (f *Form) ConfirmDestroy(slot byte, id uint16, count byte) {
 		}
 	})
 }
+
+// CancelDrag discards only the pending UI gesture when switching sessions.
+func (f *Form) CancelDrag() { f.drag = nil }

@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // NPC is a spawned EVE actor. Coordinates are truncated to the wire width like the C# loader.

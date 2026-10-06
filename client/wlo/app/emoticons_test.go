@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 func TestChatEmoticonPickerAndWire(t *testing.T) {

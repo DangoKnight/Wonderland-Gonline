@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"time"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 const friendRequestTTL = time.Minute

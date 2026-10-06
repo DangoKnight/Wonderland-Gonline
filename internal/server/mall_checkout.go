@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 // mallCheckoutPackets resumes the native cart using the same point snapshot as

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func hasPacket(packets [][]byte, want []byte) bool {

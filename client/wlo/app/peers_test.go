@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // TestPeers drives another player through the server's own packets: it

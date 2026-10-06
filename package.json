@@ -1,8 +1,8 @@
 {
-	"name": "wonderland-go",
+	"name": "wonderland-gonline",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Wonderland Go server admin web assets tooling",
+	"description": "Wonderland Gonline Server admin web assets tooling",
 	"scripts": {
 		"format": "prettier --write \"internal/admin/web/**/*.{html,css,js}\"",
 		"format:check": "prettier --check \"internal/admin/web/**/*.{html,css,js}\"",

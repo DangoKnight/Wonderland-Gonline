@@ -3,8 +3,8 @@ package battle
 import (
 	"math"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func effect(stat assets.EffectStat, flat, percent int32, rounds int, group string) assets.SkillEffect {

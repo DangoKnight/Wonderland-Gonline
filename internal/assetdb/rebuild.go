@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/store"
 )
 
 type RebuildOptions struct {

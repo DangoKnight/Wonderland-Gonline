@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 func TestFallbackServiceClassification(t *testing.T) {

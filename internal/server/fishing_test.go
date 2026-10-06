@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func fishingFixture(t *testing.T) (*Server, *Session, *captureConn) {

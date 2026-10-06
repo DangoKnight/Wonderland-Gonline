@@ -5,7 +5,7 @@ import (
 	"math"
 	"os"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestLuckyDrawWeightedIntervals(t *testing.T) {

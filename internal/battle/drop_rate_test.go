@@ -3,7 +3,7 @@ package battle
 import (
 	"math"
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestDropRateMultiplier(t *testing.T) {

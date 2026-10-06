@@ -5,8 +5,8 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrManufacturingBusy = errors.New("a manufacturing job already exists")

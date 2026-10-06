@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 // Notices is the notice board (PTR_DAT_004c9e40, TRe_TalkMsgFormPlus_1,

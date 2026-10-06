@@ -3,9 +3,8 @@ package clientassets
 import (
 	"encoding/json"
 	"fmt"
-	"image/png"
-	"os"
 	"path/filepath"
+	"wonderland-gonline/internal/clientfs"
 )
 
 const fontAtlasASCIICharacters = 256
@@ -27,7 +26,7 @@ func LoadFontAtlas(directory string) (*Font, error) {
 			Height  int    `json:"height"`
 		} `json:"sheets"`
 	}
-	raw, err := os.ReadFile(filepath.Join(directory, "manifest.json"))
+	raw, err := clientfs.ReadFile(filepath.Join(directory, "manifest.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +49,7 @@ func LoadFontAtlas(directory string) (*Font, error) {
 			return nil, fmt.Errorf("invalid %s font sheet", sheet.Group)
 		}
 		seen[sheet.Group] = true
-		f, err := os.Open(filepath.Join(directory, sheet.PNG))
-		if err != nil {
-			return nil, err
-		}
-		img, err := png.Decode(f)
-		f.Close()
+		img, err := ReadPicturePNG(filepath.Join(directory, sheet.PNG), nil)
 		if err != nil {
 			return nil, err
 		}

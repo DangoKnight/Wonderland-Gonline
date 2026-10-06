@@ -1,5 +1,7 @@
 package world
 
+import "wonderland-gonline/internal/clientruntime"
+
 // Sound zones. After its walk grid a Ground.MMG record lists 6-byte zones
 // (the loader FUN_003f830c → +0xc6ab4, +0xc64b4): a centre cell (x, y), a
 // sound number (wav####.wav) and a radius in cells, packed in the export's
@@ -13,11 +15,7 @@ type SoundZone struct {
 }
 
 // groundZone is an export record of the zone list.
-type groundZone struct {
-	X      uint16 `json:"unknown_u16_0"`
-	Y      uint16 `json:"unknown_u16_1"`
-	Packed uint16 `json:"unknown_u16_2"`
-}
+type groundZone = clientruntime.Zone
 
 const (
 	zoneSoundMask   = 0xff

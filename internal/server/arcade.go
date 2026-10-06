@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // mallGameCommand ports AC75:4: forward the category byte with a zero seed,

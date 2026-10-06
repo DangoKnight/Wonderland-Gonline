@@ -181,3 +181,22 @@ var skillEvolutions = map[uint16]uint16{
 	15161: 15162,
 	15162: 15163,
 }
+
+// SkillTreeEntry exposes the authored stat requirements to client reference
+// views without granting skills or changing the server's unlock policy.
+type SkillTreeEntry struct {
+	ID      uint16
+	Minimum Attributes
+}
+
+// ElementSkillTree returns an independent copy in native column-major order:
+// six physical, six magical and six assistant skills.
+func ElementSkillTree(element byte) []SkillTreeEntry {
+	var out []SkillTreeEntry
+	for _, r := range progressionSkills {
+		if r.element == element {
+			out = append(out, SkillTreeEntry{ID: r.id, Minimum: r.minimum})
+		}
+	}
+	return out
+}

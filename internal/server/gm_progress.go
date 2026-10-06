@@ -5,8 +5,8 @@ import (
 	"math"
 	"strconv"
 
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // GM progression changes don't mutate snapshots owned by combat, events,

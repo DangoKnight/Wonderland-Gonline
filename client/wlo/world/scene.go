@@ -19,10 +19,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientruntime"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Map background archives, searched in order (patches first).
@@ -48,26 +50,8 @@ type Layer struct {
 }
 
 // groundEntry is one record of the Ground.MMG export.
-type groundEntry struct {
-	Name    string `json:"name"`
-	Terrain struct {
-		Width      uint32 `json:"width"`
-		Height     uint32 `json:"height"`
-		Layers     []clientassets.GroundLayer
-		GridWidth  uint16         `json:"grid_width"`
-		GridHeight uint16         `json:"grid_height"`
-		CellsHex   string         `json:"cells_hex"`
-		Zones      []groundZone   `json:"unknown_triples"`
-		Objects    []groundObject `json:"objects"`
-	} `json:"terrain"`
-}
-
-// groundObject is one entry of the record's object list.
-type groundObject struct {
-	Resource uint32 `json:"resource"`
-	X        uint16 `json:"x"`
-	Y        uint16 `json:"y"`
-}
+type groundEntry = clientruntime.Ground
+type groundObject = clientruntime.Object
 
 var grounds struct {
 	sync.Mutex
@@ -77,11 +61,23 @@ var grounds struct {
 
 // groundRecord finds <map>.map in the Ground.MMG export, read once.
 func groundRecord(a login.Assets, mapID uint16) (*groundEntry, error) {
+	var compiled groundEntry
+	err := clientruntime.Read(a.DataPath(clientruntime.MapPath(mapID)), &compiled)
+	if err == nil {
+		return &compiled, nil
+	}
+	if !os.IsNotExist(err) {
+		return nil, err
+	}
+	if _, e := clientfs.Stat(a.DataPath(clientruntime.GroundDir)); e == nil {
+		return nil, fmt.Errorf("map %d has no compiled terrain record", mapID)
+	}
+
 	grounds.Lock()
 	defer grounds.Unlock()
 	path := a.DataPath(groundExport)
 	if grounds.path != path {
-		raw, err := os.ReadFile(path)
+		raw, err := clientfs.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
@@ -105,15 +101,21 @@ func groundRecord(a login.Assets, mapID uint16) (*groundEntry, error) {
 }
 
 // LoadScene reads the map's terrain and its background layers.
-func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
+func loadScene(a login.Assets, mapID uint16) (*Scene, error) {
 	e, err := groundRecord(a, mapID)
 	if err != nil {
 		return nil, err
 	}
 	t := e.Terrain
-	cells, err := hex.DecodeString(t.CellsHex)
-	if err != nil {
-		return nil, err
+	cells := t.Cells
+	if cells == nil {
+		cells, err = hex.DecodeString(t.CellsHex)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(cells) != int(t.GridWidth)*int(t.GridHeight) {
+		return nil, fmt.Errorf("invalid terrain grid for map %d", mapID)
 	}
 	g := clientassets.GroundPrefix{Width: t.Width, Height: t.Height, Layers: t.Layers,
 		GridWidth: t.GridWidth, GridHeight: t.GridHeight, Cells: cells}
@@ -135,6 +137,11 @@ func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
 func background(a login.Assets, resource uint16) (*surface.Surface, error) {
 	name := strconv.Itoa(int(resource))
 	for _, arc := range backgroundArchives {
+		if compiled, err := a.CompiledPicture(arc, name); err == nil {
+			return surface.FromCompiled(compiled), nil
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
 		m, err := a.LoadPicture(arc, name)
 		if os.IsNotExist(err) {
 			continue
@@ -155,4 +162,39 @@ func (s *Scene) Draw(dst *surface.Surface, camX, camY int) {
 			dst.Draw(l.X-camX, l.Y-camY, l.Image, false)
 		}
 	}
+}
+
+// sceneCache holds four recent immutable scene definitions. Each world receives
+// its own descriptor; large terrain and decoded image buffers are shared.
+const cachedScenes = 4
+
+var sceneCache = struct {
+	sync.Mutex
+	entries map[string]*Scene
+	order   []string
+}{entries: map[string]*Scene{}}
+
+func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
+	key := fmt.Sprintf("%s:%d", a.Data, mapID)
+	sceneCache.Lock()
+	defer sceneCache.Unlock()
+	s := sceneCache.entries[key]
+	if s == nil {
+		var err error
+		s, err = loadScene(a, mapID)
+		if err != nil {
+			return nil, err
+		}
+		sceneCache.entries[key] = s
+		sceneCache.order = append(sceneCache.order, key)
+		if len(sceneCache.order) > cachedScenes {
+			delete(sceneCache.entries, sceneCache.order[0])
+			sceneCache.order = sceneCache.order[1:]
+		}
+	}
+	out := *s
+	out.Layers = append([]Layer(nil), s.Layers...)
+	out.Objects = append([]Object(nil), s.Objects...)
+	out.Zones = append([]SoundZone(nil), s.Zones...)
+	return &out, nil
 }

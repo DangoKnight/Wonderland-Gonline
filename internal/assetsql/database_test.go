@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 
 	"gorm.io/gorm"
-	"wonderland-go/internal/assetdb"
+	"wonderland-gonline/internal/assetdb"
 )
 
 func runtimeDatabaseFixture(t *testing.T) string {

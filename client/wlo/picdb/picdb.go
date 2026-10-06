@@ -15,15 +15,18 @@ package picdb
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientimage"
 
 	_ "golang.org/x/image/bmp"
 	_ "image/png"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Entry is one 0x24-byte record of the picture list (+0x3c).
@@ -57,17 +60,18 @@ func key(name string) string { return strings.ToLower(name) }
 // LoadDir is FUN_004785e4: every *.bmp file in dir, by file name without
 // extension, in sorted order.
 func (db *DB) LoadDir(dir string, loadNow bool, tint uint32) error {
-	entries, err := os.ReadDir(dir)
+	entries, err := clientfs.ReadDir(dir)
 	if err != nil {
 		return nil // FindFirst failing registers nothing.
 	}
 	var names []string
 	seen := map[string]bool{}
 	for _, e := range entries {
-		if e.IsDir() || (!strings.EqualFold(filepath.Ext(e.Name()), ".bmp") && !strings.HasSuffix(strings.ToLower(e.Name()), ".bmp.png")) {
+		logical := strings.TrimSuffix(e.Name(), clientimage.DescriptorSuffix)
+		if e.IsDir() || (!strings.EqualFold(filepath.Ext(logical), ".bmp") && !strings.HasSuffix(strings.ToLower(logical), ".bmp.png")) {
 			continue
 		}
-		n := e.Name()
+		n := logical
 		if strings.HasSuffix(strings.ToLower(n), ".png") {
 			n = n[:len(n)-4]
 		}
@@ -102,13 +106,57 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 		}
 	}
 	path := bitmapPath(dir, name)
-	if _, err := os.Stat(path); err != nil {
-		db.Missing = append(db.Missing, path)
-		return nil
+	if _, err := clientfs.Stat(path); err != nil {
+		if _, compiledErr := clientfs.Stat(path + clientimage.DescriptorSuffix); compiledErr != nil {
+			db.Missing = append(db.Missing, path)
+			return nil
+		}
 	}
-	img, err := decodeBMP(path)
-	if err != nil {
+	var img image.Image
+	var width, height int
+	if compiled, err := clientimage.Open(path); err == nil {
+		bounds := compiled.Bounds()
+		width, height = bounds.Dx(), bounds.Dy()
+		if loadNow && tint == 0 && !db.RGB555 {
+			pixels, err := compiled.Pixels(bounds, clientimage.Keyed)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				i = len(db.Entries)
+				db.Entries = append(db.Entries, Entry{})
+				db.index[key(name)] = i
+			}
+			db.Entries[i] = Entry{Image: &surface.Surface{W: width, H: height, Pix: pixels}, W: width, H: height, Loaded: true, Registered: true, Name: name, Path: dir, Tint: tint}
+			return nil
+		}
+		if loadNow {
+			decoded, err := compiled.NRGBA(bounds)
+			if err != nil {
+				return err
+			}
+			img = decoded
+		}
+	} else if !os.IsNotExist(err) {
 		return err
+	} else if loadNow {
+		decoded, err := decodeBMP(path)
+		if err != nil {
+			return err
+		}
+		img = decoded
+		width, height = img.Bounds().Dx(), img.Bounds().Dy()
+	} else {
+		f, err := clientfs.Open(path)
+		if err != nil {
+			return err
+		}
+		cfg, _, err := image.DecodeConfig(f)
+		f.Close()
+		if err != nil {
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		width, height = cfg.Width, cfg.Height
 	}
 	if !ok {
 		i = len(db.Entries)
@@ -116,8 +164,7 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 		db.index[key(name)] = i
 	}
 	e := &db.Entries[i]
-	b := img.Bounds()
-	e.W, e.H, e.Registered, e.Loaded, e.Name, e.Path, e.Tint = b.Dx(), b.Dy(), true, loadNow, name, dir, tint
+	e.W, e.H, e.Registered, e.Loaded, e.Name, e.Path, e.Tint = width, height, true, loadNow, name, dir, tint
 	if loadNow {
 		e.Image = db.convert(img, tint)
 	}
@@ -125,11 +172,11 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 }
 
 func bitmapPath(dir, name string) string {
-	entries, _ := os.ReadDir(dir)
+	entries, _ := clientfs.ReadDir(dir)
 	for _, suffix := range []string{".bmp.png", ".bmp"} {
 		for _, entry := range entries {
-			if !entry.IsDir() && strings.EqualFold(entry.Name(), name+suffix) {
-				return filepath.Join(dir, entry.Name())
+			if !entry.IsDir() && strings.EqualFold(strings.TrimSuffix(entry.Name(), clientimage.DescriptorSuffix), name+suffix) {
+				return filepath.Join(dir, strings.TrimSuffix(entry.Name(), clientimage.DescriptorSuffix))
 			}
 		}
 	}
@@ -137,7 +184,12 @@ func bitmapPath(dir, name string) string {
 }
 
 func decodeBMP(path string) (image.Image, error) {
-	f, err := os.Open(path)
+	if compiled, err := clientimage.Open(path); err == nil {
+		return compiled.NRGBA(compiled.Bounds())
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	f, err := clientfs.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +220,11 @@ func (db *DB) convert(img image.Image, tint uint32) *surface.Surface {
 	}
 	for y := 0; y < b.Dy(); y++ {
 		for x := 0; x < b.Dx(); x++ {
-			r32, g32, b32, _ := img.At(b.Min.X+x, b.Min.Y+y).RGBA()
-			r, g, bl := uint8(r32>>8), uint8(g32>>8), uint8(b32>>8)
+			pixel := color.NRGBAModel.Convert(img.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA)
+			if pixel.A == 0 {
+				continue
+			}
+			r, g, bl := pixel.R, pixel.G, pixel.B
 			if r < 8 && g < 8 && bl < 8 {
 				bl = 8
 			}
@@ -223,7 +278,14 @@ func (db *DB) image(i int) *surface.Surface {
 	}
 	e := &db.Entries[i]
 	if e.Image == nil && e.Registered {
-		if img, err := decodeBMP(bitmapPath(e.Path, e.Name)); err == nil {
+		path := bitmapPath(e.Path, e.Name)
+		if compiled, err := clientimage.Open(path); err == nil && e.Tint == 0 && !db.RGB555 {
+			if pix, err := compiled.Pixels(compiled.Bounds(), clientimage.Keyed); err == nil {
+				e.Image = &surface.Surface{W: e.W, H: e.H, Pix: pix}
+			}
+			return e.Image
+		}
+		if img, err := decodeBMP(path); err == nil {
 			e.Image = db.convert(img, e.Tint)
 		}
 	}
@@ -312,6 +374,23 @@ func (db *DB) DrawGauge(dst *surface.Surface, i, x, y, percent int) {
 	if endX != fixedX {
 		slope = float64(endY) / float64(endX-fixedX)
 	}
+	if dst.Backend != nil {
+		// Submit row geometry instead of rebuilding a masked bitmap every frame.
+		// Float64 boundary tests preserve the native gauge's edge pixels exactly.
+		for row := 0; row < src.H; row++ {
+			n := sort.Search(src.W, func(px int) bool {
+				side := float64(px)*slope - float64(fixedX)*slope - float64(row)
+				return !((slope < 0 && side > 0) || (slope >= 0 && side < 0))
+			})
+			if n > 0 {
+				dst.DrawRect(x, y+row, image.Rect(0, row, n, row+1), src, true)
+			}
+			if src.Key != 0 && n < src.W {
+				dst.Fill(image.Rect(x+n, y+row, x+src.W, y+row+1), 0)
+			}
+		}
+		return
+	}
 	g := surface.New(src.W, src.H)
 	g.Key = src.Key
 	for py := 0; py < src.H; py++ {
@@ -324,4 +403,27 @@ func (db *DB) DrawGauge(dst *surface.Surface, i, x, y, percent int) {
 		}
 	}
 	dst.Draw(x, y, g, true)
+}
+
+// AddCompiled registers a picture view with native, precomputed UI key colors.
+func (db *DB) AddCompiled(name string, m *clientimage.Image) error {
+	if _, ok := db.index[key(name)]; ok {
+		return nil
+	}
+	b := m.Bounds()
+	if db.RGB555 {
+		img, err := m.NRGBA(b)
+		if err != nil {
+			return err
+		}
+		db.Add(name, img)
+		return nil
+	}
+	pix, err := m.Pixels(b, clientimage.Keyed)
+	if err != nil {
+		return err
+	}
+	db.index[key(name)] = len(db.Entries)
+	db.Entries = append(db.Entries, Entry{Image: &surface.Surface{W: b.Dx(), H: b.Dy(), Pix: pix}, W: b.Dx(), H: b.Dy(), Loaded: true, Registered: true, Name: name})
+	return nil
 }

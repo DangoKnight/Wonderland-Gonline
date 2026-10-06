@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // gmRepair ports GmManager.RepairAllItems. The caller holds worldMu and has

@@ -1,5 +1,5 @@
 {
-  "name": "Wonderland Go",
+  "name": "Wonderland Gonline Server",
   "login_address": "127.0.0.1:6414",
   "world_address": "127.0.0.1:6415",
   "status_address": "127.0.0.1:6416",

@@ -4,7 +4,7 @@ package clientassets
 
 import (
 	"fmt"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // GroundPrefix is the initial terrain block read by aLogin FUN_004121a8.

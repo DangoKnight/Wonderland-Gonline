@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"slices"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // decodeHotel validates the entire AC31 selection before any mutation.

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"wonderland-go/internal/assetdb"
+	"wonderland-gonline/internal/assetdb"
 )
 
 func TestTentVersionTwoUpgradePreservesEconomyAndDefinitions(t *testing.T) {

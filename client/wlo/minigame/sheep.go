@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"time"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Sheep ports Tsport_SheepDream: FUN_00138f3c, FUN_001391b0 and
@@ -91,7 +91,6 @@ func (g *Sheep) Update(now time.Time) {
 		g.remaining = 0
 		g.finish(g.Lives > 0, end)
 	}
-
 }
 func (g *Sheep) Click(x, y int, now time.Time) {
 	g.Update(now)

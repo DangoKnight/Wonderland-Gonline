@@ -4,7 +4,7 @@ import (
 	"image"
 	"time"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // NPC sprites. An NPC object keeps body type 0, so FUN_00433318 draws one

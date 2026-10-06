@@ -1,4 +1,4 @@
-# Set up and run Wonderland Go
+# Set up and run Wonderland Gonline
 
 This guide takes a fresh checkout through WLRI asset extraction, database setup,
 compilation and a local server/client session. Both Go programs are still being
@@ -192,14 +192,19 @@ for character editing, GM tools, EXP tuning, gifts, content editors and maintena
 
 ## 6. Compile and run the Go client
 
-The client is a separate Go module. From the repository root:
+The client is a separate Go module. The canonical build validates and compiles
+editable PNG/JSON assets before compiling Go. From the repository root:
 
 ```sh
-(cd client && go build -o ../bin/wonderland-client .)
-./bin/wonderland-client -assets data
+make build-client
+./bin/wonderland-client
 ```
 
-Or run from source:
+See [Client architecture](CLIENT_ARCHITECTURE.md) for asset editing, bundle
+validation, Windows builds and the session drawer. Each session has its own
+connection and state while sharing loaded assets.
+
+Or run directly from loose sources:
 
 ```sh
 (cd client && go run . -assets ../data)
@@ -225,7 +230,7 @@ Local1*192.168.1.50
 Save it as `var/SERVER.INI` and run:
 
 ```sh
-./bin/wonderland-client -assets data -serverini var/SERVER.INI
+./bin/wonderland-client -serverini var/SERVER.INI
 ```
 
 Use the host reachable from the client, not a listener bind address such as
@@ -274,6 +279,7 @@ In another terminal, register the account and build/run the client:
 ```powershell
 $body = @{ username = 'tester'; password = 'change-me'; email = '' } | ConvertTo-Json
 Invoke-RestMethod -Uri http://127.0.0.1:8080/register -Method Post -ContentType 'application/json' -Body $body
+go run ./cmd/client-bundle -source data -output bin/client-assets.zip -contract client/asset-contract.json
 Push-Location client
 go build -o ../bin/wonderland-client.exe .
 Pop-Location

@@ -2,7 +2,7 @@ package assetsql
 
 import (
 	"fmt"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func validateFishingCatalog(c *assets.Catalog) error {

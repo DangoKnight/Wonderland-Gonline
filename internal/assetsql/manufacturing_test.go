@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/game"
 )
 
 func TestManufacturingProjectionPreservesFormulaOrdinalsAndAllInputs(t *testing.T) {

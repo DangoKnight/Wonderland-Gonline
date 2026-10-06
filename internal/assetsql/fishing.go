@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"gorm.io/gorm"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 //go:embed fishing_defaults.json

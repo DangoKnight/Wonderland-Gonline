@@ -20,7 +20,7 @@ func TestQuestionSnapshot(t *testing.T) {
 	now := time.Now()
 	c.Now = func() time.Time { return now }
 	c.Frame()
-	c.G.ServerText = []byte("Wonderland Go")
+	c.G.ServerText = []byte("Wonderland Gonline Server")
 	c.dispatch(selfPacket(10001, 2, 10003, 1082, 2235, 0, 444444444, 444444444, []uint16{22003, 21002, 24002}, "Dango"))
 	if c.World == nil {
 		t.Fatal("no world")

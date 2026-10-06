@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestEventSkillRewardPersistenceAndUnknownPreflight(t *testing.T) {

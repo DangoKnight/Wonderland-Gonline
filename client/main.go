@@ -15,7 +15,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 type workbench struct {
@@ -67,7 +67,7 @@ func (g *workbench) Draw(screen *ebiten.Image) {
 		}
 	}
 	vector.FillRect(screen, 0, 0, 1024, 110, color.RGBA{25, 33, 43, 255}, false)
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("Wonderland native asset workbench\n%s | offset %d | %d x %d pixels | %d x %d cells\n%d verified prefix bytes | %d layer references | raw terrain values (artwork not loaded)\nArrow keys: pan | mouse wheel: zoom | Home: reset", g.source, g.offset, g.ground.Width, g.ground.Height, g.ground.GridWidth, g.ground.GridHeight, g.ground.BytesRead, len(g.ground.Layers)))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Wonderland Gonline native asset workbench\n%s | offset %d | %d x %d pixels | %d x %d cells\n%d verified prefix bytes | %d layer references | raw terrain values (artwork not loaded)\nArrow keys: pan | mouse wheel: zoom | Home: reset", g.source, g.offset, g.ground.Width, g.ground.Height, g.ground.GridWidth, g.ground.GridHeight, g.ground.BytesRead, len(g.ground.Layers)))
 	mx, my := ebiten.CursorPosition()
 	x, y := int((float64(mx)-g.panX)/(20*g.zoom)), int((float64(my)-g.panY)/(20*g.zoom))
 	if float64(mx) >= g.panX && float64(my) >= g.panY && my >= 115 {
@@ -80,14 +80,15 @@ func (g *workbench) Draw(screen *ebiten.Image) {
 func (*workbench) Layout(int, int) (int, int) { return 1024, 720 }
 
 func main() {
+	renderer := flag.String("renderer", "auto", "renderer: auto (GPU with CPU fallback), gpu or cpu (game only; snapshots use CPU)")
 	sprites := flag.String("sprites", "", "optional sprite pack or editable directory override")
-	assets := flag.String("assets", defaultAssetDir(), "decompiled data directory")
+	assets := flag.String("assets", defaultAssetDir(), "compiled client-assets.zip bundle, or editable data directory for development")
 	clientDir := flag.String("client", "", "original client directory for the workbench or -legacy (required)")
 	archive := flag.String("archive", "map.JMG", "BMg/JMg filename under the client pic directory")
 	name := flag.String("name", "", "resource filename; defaults to first entry")
 	list := flag.Bool("list", false, "list indexed image resources without opening a window")
 	export := flag.String("export", "", "export selected decoded image as PNG without opening a window")
-	snapshot := flag.String("snapshot", "", "save an Ebitengine-rendered frame as PNG, then exit")
+	snapshot := flag.String("snapshot", "", "save a CPU-rendered game frame as PNG, then exit")
 	terrain := flag.Bool("terrain", false, "inspect the verified Ground.MMG prefix instead of artwork")
 	path := flag.String("ground", "", "terrain archive override; defaults to <client>/data/Ground.MMG")
 	offset := flag.Int64("offset", 0, "verified byte offset of a Ground.MMG record; no map ID is inferred")
@@ -116,7 +117,7 @@ func main() {
 		return
 	}
 	if !*useWorkbench {
-		if err := runClientWithSprites(*assets, *serverINI, *snapshot, *sprites); err != nil {
+		if err := runClientWithRenderer(*assets, *serverINI, *snapshot, *sprites, *renderer); err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -155,7 +156,7 @@ func main() {
 		log.Fatal(err)
 	}
 	ebiten.SetWindowSize(1024, 720)
-	ebiten.SetWindowTitle("Wonderland — native asset workbench")
+	ebiten.SetWindowTitle("Wonderland Gonline — native asset workbench")
 	if err := ebiten.RunGame(&workbench{ground: ground, offset: *offset, zoom: .45, panX: 35, panY: 130, source: *path}); err != nil {
 		log.Fatal(err)
 	}
@@ -165,9 +166,18 @@ func defaultAssetDir() string {
 	// Installed distributions keep assets beside the executable. Source runs
 	// accept either the module directory or repository root as working directory.
 	if exe, err := os.Executable(); err == nil {
+		bundle := filepath.Join(filepath.Dir(exe), "client-assets.zip")
+		if info, err := os.Stat(bundle); err == nil && !info.IsDir() {
+			return bundle
+		}
 		dir := filepath.Join(filepath.Dir(exe), "data")
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
 			return dir
+		}
+	}
+	for _, bundle := range []string{filepath.Join("bin", "client-assets.zip"), filepath.Join("..", "bin", "client-assets.zip")} {
+		if info, err := os.Stat(bundle); err == nil && !info.IsDir() {
+			return bundle
 		}
 	}
 	for _, dir := range []string{"data", filepath.Join("..", "data")} {

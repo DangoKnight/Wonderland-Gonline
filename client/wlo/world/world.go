@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/weather"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/weather"
 )
 
 // Screen layout of the static view, measured from the original's capture

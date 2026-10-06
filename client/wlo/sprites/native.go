@@ -3,12 +3,12 @@ package sprites
 import (
 	"image"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
+	"wonderland-gonline/internal/clientfs"
 
-	"wonderland-go/internal/clientassets"
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // Palette indices for the editable export. Its PNG sheets carry colours
@@ -33,7 +33,7 @@ type nativeSource struct {
 // attachNative gives an editable archive its sprites.json, if present.
 func (a *Archive) attachNative(dir string) {
 	path := filepath.Join(dir, spritepack.NativeFile)
-	if _, err := os.Stat(path); err == nil {
+	if _, err := clientfs.Stat(path); err == nil {
 		a.native = &nativeSource{path: path}
 	}
 }

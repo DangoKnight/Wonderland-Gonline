@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"strconv"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func parseAdminGold(value string) (uint64, error) { return strconv.ParseUint(value, 10, 32) }

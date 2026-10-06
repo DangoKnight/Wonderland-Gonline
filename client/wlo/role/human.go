@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/assets"
 )
 
 // Layered player drawing (FUN_00433318) as character selection uses it: a

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // enteredClient is a test client standing on Ship Deck, with its sent

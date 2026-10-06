@@ -3,8 +3,8 @@ package world
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func TestQuestVisibilityRegisteredListPrecedence(t *testing.T) {

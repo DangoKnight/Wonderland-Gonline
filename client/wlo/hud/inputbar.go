@@ -4,7 +4,7 @@ import (
 	"image"
 	"strconv"
 
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 // InputBar is TSe_InputBar (constructor FUN_0026348c, paint FUN_00268194):

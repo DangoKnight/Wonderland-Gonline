@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"time"
 
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/protocol"
 )
 
 // 8/1 after its command byte: subcommand, stat ID, kind, value.
@@ -22,7 +22,10 @@ const warpPacketBytes = 10
 // event data simply has none.
 func (c *Client) loadNPCs(w *world.World) {
 	if c.npcTemplates == nil {
-		c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+		if c.resources.npcTemplates == nil {
+			c.resources.npcTemplates, _ = world.NPCTemplates(c.Assets)
+		}
+		c.npcTemplates = c.resources.npcTemplates
 	}
 	rec, err := world.MapRecord(c.Assets, w.Player.Map)
 	if err != nil {

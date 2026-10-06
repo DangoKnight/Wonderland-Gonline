@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 func minigameFixture(t *testing.T, gameType, seed uint16) (*Server, *Session, *captureConn, *assets.Event) {

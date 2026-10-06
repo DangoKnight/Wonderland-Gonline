@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // Slot is the one-based native presentation position in the ordered catalog.

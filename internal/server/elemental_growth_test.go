@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestCompiledElementalGrowthClinicAndPersistence(t *testing.T) {

@@ -3,7 +3,7 @@ package assets
 import (
 	"math"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestArcadeWeightedSelectionAndValidation(t *testing.T) {

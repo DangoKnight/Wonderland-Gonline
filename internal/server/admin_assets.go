@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"os"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/assetsql"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/assetsql"
 )
 
 type AssetDocument struct {

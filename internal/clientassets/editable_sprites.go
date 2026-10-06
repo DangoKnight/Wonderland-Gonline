@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
 )
 
 const (
@@ -59,7 +60,7 @@ type SpriteRect struct {
 func (r SpriteRect) Bounds() image.Rectangle { return image.Rect(r.X, r.Y, r.X+r.Width, r.Y+r.Height) }
 
 func OpenEditableSprites(path string) (*EditableSprites, error) {
-	data, err := os.ReadFile(path)
+	data, err := clientfs.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

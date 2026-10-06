@@ -4,13 +4,14 @@ import (
 	"image"
 	"image/color"
 	"math/rand/v2"
+	"sync"
 	"time"
 
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
-	"wonderland-go/client/wlo/cursor"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 const (
@@ -110,22 +111,50 @@ func (r *Round) outcome(dst *surface.Surface) {
 
 // arcadeText renders fallback labels and controls when a native bitmap is absent.
 // Game artwork still comes from the shared picture database.
-func arcadeText(dst *surface.Surface, x, y int, text string) {
-	pen := fixed.P(x, y+basicfont.Face7x13.Ascent)
-	for _, ch := range text {
-		box, mask, at, advance, ok := basicfont.Face7x13.Glyph(pen, ch)
-		if ok {
-			origin := box.Min
-			box = box.Intersect(image.Rect(0, 0, dst.W, dst.H))
-			for py := box.Min.Y; py < box.Max.Y; py++ {
-				for px := box.Min.X; px < box.Max.X; px++ {
-					if color.AlphaModel.Convert(mask.At(at.X+px-origin.X, at.Y+py-origin.Y)).(color.Alpha).A > 0 {
-						dst.Pix[py*dst.W+px] = arcadeWhite
-					}
+type arcadeGlyph struct {
+	image   *surface.Surface
+	offset  image.Point
+	advance fixed.Int26_6
+}
+
+var arcadeGlyphCache = struct {
+	sync.Mutex
+	cells map[rune]arcadeGlyph
+}{cells: map[rune]arcadeGlyph{}}
+
+func loadArcadeGlyph(ch rune) arcadeGlyph {
+	arcadeGlyphCache.Lock()
+	defer arcadeGlyphCache.Unlock()
+	if cell, ok := arcadeGlyphCache.cells[ch]; ok {
+		return cell
+	}
+	box, mask, at, advance, ok := basicfont.Face7x13.Glyph(fixed.P(0, basicfont.Face7x13.Ascent), ch)
+	cell := arcadeGlyph{offset: box.Min, advance: advance}
+	if ok {
+		cell.image = surface.New(box.Dx(), box.Dy())
+		for y := 0; y < box.Dy(); y++ {
+			for x := 0; x < box.Dx(); x++ {
+				if color.AlphaModel.Convert(mask.At(at.X+x, at.Y+y)).(color.Alpha).A > 0 {
+					cell.image.Pix[y*cell.image.W+x] = arcadeWhite
 				}
 			}
 		}
-		pen.X += advance
+	}
+	// The fallback face contains only ASCII; do not retain arbitrary unsupported
+	// Unicode labels in a process-wide cache.
+	if ch >= 0 && ch <= 127 {
+		arcadeGlyphCache.cells[ch] = cell
+	}
+	return cell
+}
+func arcadeText(dst *surface.Surface, x, y int, text string) {
+	pen := fixed.I(x)
+	for _, ch := range text {
+		cell := loadArcadeGlyph(ch)
+		if cell.image != nil {
+			dst.Draw(pen.Floor()+cell.offset.X, y+cell.offset.Y, cell.image, true)
+		}
+		pen += cell.advance
 	}
 }
 

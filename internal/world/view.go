@@ -4,9 +4,9 @@ import (
 	"sort"
 	"sync/atomic"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // View is what one client has been told about its current scene. A session owns it

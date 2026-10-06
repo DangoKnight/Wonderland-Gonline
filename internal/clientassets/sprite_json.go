@@ -12,6 +12,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"wonderland-gonline/internal/clientfs"
 )
 
 // SpriteJSON opens the lossless verification bytes embedded in sprites.json.
@@ -34,7 +35,7 @@ func (s *SpriteJSON) Close() error {
 	return removeErr
 }
 func OpenSpriteJSON(path string) (*SpriteJSON, error) {
-	f, err := os.Open(path)
+	f, err := clientfs.Open(path)
 	if err != nil {
 		return nil, err
 	}

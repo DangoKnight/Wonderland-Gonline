@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestTentFurnitureAtomicOwnershipMetadataAndOrdinalIndex(t *testing.T) {

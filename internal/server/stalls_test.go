@@ -7,10 +7,10 @@ import (
 	"io"
 	"log/slog"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestStallListDuringMapLoadingAndGameplay(t *testing.T) {

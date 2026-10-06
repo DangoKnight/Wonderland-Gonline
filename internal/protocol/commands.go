@@ -39,7 +39,8 @@ const (
 	CommandMallCheckout       = 34
 	CommandCharacterSelection = 35
 	CommandEquipmentRepair    = 36
-	CommandAlchemy            = 40
+	CommandAlchemy            = 40 // Legacy four-byte synthesis compatibility.
+	CommandHotbar             = 40 // Native AC40:1 hotbar bindings (seven bytes).
 	CommandBank               = 45
 	CommandBattleAction       = 50
 	CommandBattleReady        = 52
@@ -690,12 +691,28 @@ const (
 	RepairFailed       = 0
 )
 
-// AC40 echoes the request subcommand; its legacy handler defines no distinct
+// Legacy AC40 echoes the request subcommand; its handler defines no distinct
 // subcommand operations. The payload names two one-based bag slots.
 const (
 	AlchemyRequestBytes = 4
 	AlchemyFailed       = 0
 	AlchemySucceeded    = 1
+)
+
+// Native hotbar assignment: command, subcommand, kind, ID:u16, page, slot.
+// FUN_002aa92c sends it after updating the local hotbar. There is no required
+// acknowledgement; inbound AC40:1 is a list of the same five-byte records.
+const (
+	HotbarAssign       = 1
+	HotbarRequestBytes = 7
+	HotbarItem         = 1
+	HotbarSkill        = 2
+	HotbarPages        = 3
+	HotbarSlotsPerPage = 8
+	HotbarKindOffset   = 2
+	HotbarIDOffset     = 3
+	HotbarPageOffset   = 5
+	HotbarSlotOffset   = 6
 )
 
 // Native AC75:6 results from MallForgingManager.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"testing"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func TestBufferedMovementPurchaseAndDisconnect(t *testing.T) {

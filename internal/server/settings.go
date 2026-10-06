@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // settingsCommand ports AC16 and native AC33 desired-state requests. Caller

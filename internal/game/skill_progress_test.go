@@ -3,7 +3,7 @@ package game
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestSkillProgressAliasAndCap(t *testing.T) {

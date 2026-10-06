@@ -1,4 +1,4 @@
-Wonderland-Go contains Go translations of behavior and packet formats from
+Wonderland Gonline contains Go translations of behavior and packet formats from
 Wonderland-Private-Server, source revision bc4a140 (Develop).
 The source project's GNU General Public License version 3 is preserved in LICENSE.
 Tracked JSON exports preserve original game data. The original WLRI installation

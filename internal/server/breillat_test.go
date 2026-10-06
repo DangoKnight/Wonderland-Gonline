@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 func finishBreillatDialogue(t *testing.T, s *Server, c *Session) {
@@ -114,9 +114,10 @@ func TestInstalledBreillatTenTalksAndPermanentConversion(t *testing.T) {
 		if !found {
 			t.Fatal("missing native model packet", want)
 		}
-		peers := wires[1].packets(t)
-		if len(peers) != 2 || peers[0][0] != 4 || peers[0][5] != 4 || peers[0][15] != 3 || peers[0][16] != 0 || !bytes.Equal(peers[1], want) {
-			t.Fatal("peer appearance missing", peers)
+		// Cabin and its native map variants are personal introductory scenes.
+		// Conversion still reaches its owner, but must not expose them to peers.
+		if peers := wires[1].packets(t); len(peers) != 0 {
+			t.Fatal("conversion leaked to another player in Cabin", peers)
 		}
 		if wires[2].Len() != 0 {
 			t.Fatal("conversion leaked to another map")

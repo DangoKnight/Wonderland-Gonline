@@ -3,9 +3,9 @@ package world
 import (
 	"bytes"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 // action packs an EVE action; value is spread across dialog4's high byte and dword1.

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrAlreadyMarried = errors.New("one of these characters is already married")

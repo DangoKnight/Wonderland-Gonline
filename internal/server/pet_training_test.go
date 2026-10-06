@@ -7,8 +7,8 @@ import (
 	"math"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestPetTrainingAllocationPacketsAndPersistence(t *testing.T) {

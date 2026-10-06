@@ -8,7 +8,7 @@ import (
 	"math"
 	"sync"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestMallAdjustmentAuditBoundsAndRestart(t *testing.T) {

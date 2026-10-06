@@ -5,8 +5,8 @@ import (
 	"gorm.io/gorm"
 	"reflect"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestFishingSchemaV6UpgradeAndPreservedEdits(t *testing.T) {

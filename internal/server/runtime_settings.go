@@ -7,8 +7,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

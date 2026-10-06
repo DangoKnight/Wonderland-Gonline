@@ -3,7 +3,7 @@ package assets
 import (
 	"encoding/binary"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestAnimationTimingNativePath(t *testing.T) {

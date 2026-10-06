@@ -3,16 +3,17 @@ package login
 import (
 	"bytes"
 	"image"
-	"image/png"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientimage"
 )
 
 // Server list layout from FUN_003fecf4 and the paint and light functions.
@@ -88,7 +89,8 @@ type SelectServer struct {
 	OnExit func()
 	// OnConnecting runs after the login socket is opened: the original
 	// resets an object at PTR_DAT_004ca958 (not traced) and queues action 0.
-	OnConnecting func()
+	OnConnecting  func()
+	LastSelection *ServerSelection
 }
 
 func NewSelectServer(env *seui.Env, g *Globals, n *Net, a Assets) *SelectServer {
@@ -490,11 +492,12 @@ func (s *SelectServer) playConnect() {
 
 // Connect is FUN_003ff4f4: the login socket opens to the server.
 func (s *SelectServer) Connect(i int) {
-	s.G.Offset += byte(i)
-	s.ServerRow = s.G.Offset
-	if s.G.InGame || i > s.Servers.Count()-1 {
+	if s.G.InGame || i < 0 || i >= s.Servers.Count() || i >= len(s.Addresses) {
 		return
 	}
+	s.G.Offset += byte(i)
+	s.ServerRow = s.G.Offset
+	s.LastSelection = &ServerSelection{Host: string(s.Addresses[i]), Region: s.Current, Index: i}
 	s.playConnect()
 	s.TopLine = s.Servers.TopIndex
 	s.Net.Connect(string(s.Addresses[i]))
@@ -544,16 +547,26 @@ func (s *SelectServer) paintSignals(pt image.Point) {
 
 // loadJPEG is TJPEGImage.LoadFromFile, converted as the canvas draws it.
 func loadJPEG(path string) (*surface.Surface, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
 	if strings.EqualFold(filepath.Ext(path), ".png") {
-		m, err := png.Decode(bytes.NewReader(raw))
+		if compiled, err := clientimage.Open(path); err == nil {
+			pixels, err := compiled.Pixels(compiled.Bounds(), clientimage.Plain)
+			if err != nil {
+				return nil, err
+			}
+			b := compiled.Bounds()
+			return &surface.Surface{W: b.Dx(), H: b.Dy(), Pix: pixels}, nil
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+		m, err := clientassets.ReadPicturePNG(path, nil)
 		if err != nil {
 			return nil, err
 		}
 		return surface.FromImage(m), nil
+	}
+	raw, err := clientfs.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
 	m, err := clientassets.DecodeJPEG(raw)
 	if err != nil {

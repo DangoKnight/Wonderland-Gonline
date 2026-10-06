@@ -14,15 +14,17 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/spritepack"
 )
 
 // maxCachedPageBytes bounds decoded CPU pages; older pages are dropped
@@ -58,6 +60,7 @@ type Archive struct {
 	dir         string
 	pages       []*page
 	sprites     map[int]*Sprite
+	runtime     *spritepack.Pack
 	native      *nativeSource // editable export's originals, for indices
 }
 
@@ -137,6 +140,13 @@ func (m *Manager) Archive(name string) (*Archive, error) {
 func (m *Manager) load(name string) (*Archive, error) {
 	for _, d := range m.PackDirs {
 		dir := filepath.Join(d, name)
+		if p, err := spritepack.ReadRuntime(dir); err == nil {
+			a := m.fromPack(name, dir, p)
+			a.runtime = p
+			return a, nil
+		} else if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("%s: %w", dir, err)
+		}
 		if p, err := spritepack.Read(dir); err == nil {
 			return m.fromPack(name, dir, p), nil
 		} else if !os.IsNotExist(err) {
@@ -202,6 +212,24 @@ func (a *Archive) Sprite(index int) *Sprite {
 	a.m.mu.Lock()
 	defer a.m.mu.Unlock()
 	s := a.sprites[index]
+	if s != nil && a.runtime != nil && !s.derived {
+		r, err := spritepack.ReadRuntimeSprite(a.dir, a.runtime, index)
+		if err != nil {
+			log.Printf("sprites %s slot %d: compiled record unavailable: %v", a.Name, index, err)
+			delete(a.sprites, index)
+			return nil
+		}
+		s = a.convert(r.Sprite, a.pages, nil)
+		s.Palette = r.Palette
+		s.derived = true
+		for i, ix := range r.Indices {
+			if len(ix) > 0 {
+				f := &s.Frames[i]
+				f.indices = &image.Gray{Pix: ix, Stride: f.Width, Rect: image.Rect(0, 0, f.Width, f.Height)}
+			}
+		}
+		a.sprites[index] = s
+	}
 	if s != nil {
 		a.derive(s)
 	}
@@ -232,7 +260,7 @@ func (m *Manager) loadPage(p *page) (image.Image, error) {
 	if p.cpu != nil {
 		return p.cpu, nil
 	}
-	f, err := os.Open(p.path)
+	f, err := clientfs.Open(p.path)
 	if err != nil {
 		return nil, err
 	}

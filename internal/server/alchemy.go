@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 	alchemyOutputQuantity     = 1
 )
 
-// alchemyCommand ports AC40. Recipes come from the SQL-loaded catalog. Unlike
+// alchemyCommand ports the legacy four-byte AC40 synthesis operation. Recipes come from the SQL-loaded catalog. Unlike
 // AC23, a missing recipe fails without consuming either ingredient. The legacy
 // handler ignores recipe rates and echoes the subcommand for every operation.
 // Caller holds worldMu; the dispatcher guards map loading, battles and trades.

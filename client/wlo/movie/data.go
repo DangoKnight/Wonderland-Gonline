@@ -16,11 +16,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
+	"wonderland-gonline/internal/clientfs"
 
-	"wonderland-go/client/wlo/login"
+	"wonderland-gonline/client/wlo/login"
 )
 
 const styleExport = "style_data.json"
@@ -183,7 +183,7 @@ func entry(a login.Assets, name string) (json.RawMessage, error) {
 	defer styles.Unlock()
 	path := a.MediaPath("sty", styleExport)
 	if styles.path != path {
-		b, err := os.ReadFile(path)
+		b, err := clientfs.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}

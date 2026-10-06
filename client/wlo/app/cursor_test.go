@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/cursor"
 )
 
 // TestLoginCursor: over the password field the cursor is the pointing

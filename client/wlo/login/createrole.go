@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Character creation is TRE_CreateCharacter (VMT 0x212fcc, constructor

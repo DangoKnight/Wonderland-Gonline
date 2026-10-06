@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/dbmigration"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/dbmigration"
 )
 
 func main() {

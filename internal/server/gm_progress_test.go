@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func assertProgressSaved(t *testing.T, s *Server, c *Session) {

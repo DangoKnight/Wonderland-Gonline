@@ -4,7 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestSettingsPartyInvitesPreservingUpgrade(t *testing.T) {

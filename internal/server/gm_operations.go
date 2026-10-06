@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wonderland-go/internal/battle"
+	"wonderland-gonline/internal/battle"
 )
 
 const (

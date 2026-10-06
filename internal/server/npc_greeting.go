@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // QuestNpc.ResolveTalkIdForNpc's default native Kelan welcome line.

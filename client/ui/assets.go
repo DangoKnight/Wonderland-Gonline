@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	_ "golang.org/x/image/bmp"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Assets loads front-end resources from an extracted client asset tree.

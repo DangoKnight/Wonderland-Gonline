@@ -4,17 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"image"
-	"os"
 	"path/filepath"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/clientimage"
 )
 
 // Assets locates the decompiled data root directly.
 // Media and sprites are resolved inside that one root.
 type Assets struct {
-	Root  string
-	Media string
-	Data  string
+	Root     string
+	Media    string
+	Data     string
+	UserRoot string
 }
 
 const PicturesDir = "pictures"
@@ -24,6 +26,9 @@ func NewAssets(root string) Assets {
 }
 func (a Assets) MediaPath(parts ...string) string { return Path(a.Media, parts...) }
 func (a Assets) UserPath(name string) string {
+	if a.UserRoot != "" {
+		return Path(a.UserRoot, "user", name)
+	}
 	return Path(filepath.Join(filepath.Dir(a.Root), "var", "client"), "user", name)
 }
 func (a Assets) SkinPicture(parts ...string) string {
@@ -50,6 +55,13 @@ func (a Assets) LoadPicture(parts ...string) (*image.NRGBA, error) {
 	return clientassets.LoadPicture(Path(a.Data, PicturesDir), filepath.ToSlash(filepath.Join(path...)))
 }
 
+// CompiledPicture returns a lazily decoded view, preserving atlas rectangles.
+func (a Assets) CompiledPicture(parts ...string) (*clientimage.Image, error) {
+	path := append([]string(nil), parts...)
+	path[len(path)-1] += ".png"
+	return clientassets.CompiledPicture(Path(a.Data, PicturesDir), filepath.ToSlash(filepath.Join(path...)))
+}
+
 // exportHeader is the leading part of an extracted record export.
 type exportHeader struct {
 	Format      string `json:"format"`
@@ -61,7 +73,7 @@ type exportHeader struct {
 // large array, which it skips without loading.
 func readExportHeader(path string, stop string) (exportHeader, error) {
 	var h exportHeader
-	f, err := os.Open(path)
+	f, err := clientfs.Open(path)
 	if err != nil {
 		return h, err
 	}

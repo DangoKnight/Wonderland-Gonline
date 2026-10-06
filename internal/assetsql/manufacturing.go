@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"math"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 // Original Compound2 ordinals are the native formula IDs; never compress them.

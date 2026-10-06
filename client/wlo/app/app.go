@@ -9,23 +9,23 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"wonderland-gonline/internal/game"
 
-	"wonderland-go/client/wlo/cursor"
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/inventory"
-	"wonderland-go/client/wlo/login"
-	"wonderland-go/client/wlo/picdb"
-	"wonderland-go/client/wlo/role"
-	"wonderland-go/client/wlo/settings"
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/sprites"
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/client/wlo/text"
-	"wonderland-go/client/wlo/weather"
-	"wonderland-go/client/wlo/world"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/clientassets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/inventory"
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/settings"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/skills"
+	"wonderland-gonline/client/wlo/sprites"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/weather"
+	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Display and timing constants.
@@ -50,8 +50,12 @@ var (
 
 // Client is the running login phase.
 type Client struct {
-	Root   string
-	Assets login.Assets
+	options           Options
+	Root              string
+	Assets            login.Assets
+	resources         *Resources
+	backgroundSession bool
+	profileAccount    string
 
 	Screen  *surface.Surface
 	Pics    *picdb.DB
@@ -77,6 +81,7 @@ type Client struct {
 	settingsPromptForm *seui.Form
 	settingsPath       string
 	Inventory          *inventory.Form
+	remote             remoteRuntime
 	InventoryState     *inventory.State
 	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
 	MainStatus         *hud.MainStatus  // the status panel over the world
@@ -109,8 +114,12 @@ type Client struct {
 	mapReady bool
 	held     bool // 6/2: the server holds the player
 
-	lib   *role.Library
-	items map[uint16]assets.NativeItem
+	lib          *role.Library
+	items        map[uint16]assets.NativeItem
+	Skills       *skills.Form
+	SkillState   *skills.State
+	hotbar       hotbarRuntime
+	logoutPrompt *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
 	// first entry.
 	sceneNames map[uint16]string
@@ -140,8 +149,11 @@ type Client struct {
 
 // Options configure New.
 type Options struct {
+	Renderer string // auto (default), gpu rasterization, or cpu compatibility rendering
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
+	Shared       *Resources // workspace-owned immutable assets and decoded caches
+	UserRoot     string     // writable preferences for this session
 	SpritesRoot  string
 	Root         string // the asset directory (login.Assets)
 	SettingsPath string // optional local preference file override
@@ -153,43 +165,26 @@ type Options struct {
 // default and white skins, the font, the form manager in the white skin's
 // colour, the login background and the two login forms.
 func New(o Options) (*Client, error) {
-	c := &Client{Root: o.Root, Assets: login.NewAssets(o.Root), Now: time.Now}
+	r := o.Shared
+	if r == nil {
+		r = &Resources{}
+	}
+	c := &Client{Root: o.Root, Assets: login.NewAssets(o.Root), Now: time.Now, resources: r, options: o}
+	c.Assets.UserRoot = o.UserRoot
 	a := c.Assets
-	// The original install ships user\ for save.dat and AccountList.dat.
-	os.MkdirAll(filepath.Dir(c.Assets.UserPath("save.dat")), 0o755)
+	if err := r.prepare(a, o.SpritesRoot); err != nil {
+		return nil, err
+	}
+	os.MkdirAll(filepath.Dir(a.UserPath("save.dat")), 0o755)
 	c.Screen = surface.New(ScreenWidth, ScreenHeight)
-	c.Pics = picdb.New()
-	// Direct data roots use standard PNG skins and bitmap font atlases.
-	c.Pics.LoadDir(a.MediaPath("menu", "skins", "default"), false, 0)
-	c.Pics.LoadDir(a.MediaPath("menu", "Skins", "white"), true, 0)
-	font, err := clientassets.LoadFontAtlas(a.MediaPath("font", "TATPC1_TWN"))
-	if err != nil {
-		return nil, err
-	}
-	// Screen.Cursors from cursor\*.ani (0x3bb990), as exported frames.
-	c.Cursors, err = cursor.LoadAll(a.MediaPath("cursor"), c.Now())
-	if err != nil {
-		return nil, err
-	}
-	// The ground shadows of pic\images.BMg (1.bls), from its PNG export.
-	// The door lights come from the same archive.
-	for _, name := range []string{world.ShadowPicture, world.MonsterShadowPicture, world.DoorLightPicture, world.SmallDoorLightPicture} {
-		m, err := a.LoadPicture(shadowArchive, name)
-		if err != nil {
-			return nil, err
-		}
-		c.Pics.Add(name, m)
-	}
+	c.Pics = r.pics
+	c.Cursors = &cursor.Cursors{Shapes: r.cursors}
+	c.Cursors.Set(cursor.ShapeNormal, c.Now())
 	c.Input = &seui.Input{}
-	c.Env = &seui.Env{Pics: c.Pics, Screen: c.Screen, Text: &text.Renderer{Font: font}}
+	c.Env = &seui.Env{Pics: c.Pics, Screen: c.Screen, Text: r.textRenderer}
 	c.UI = seui.NewManager(c.Env, c.Input)
 	c.UI.SetColor(skinColor)
-
-	// LogPic1.jpg, from its PNG export (decoded with the client's JPEG
-	// rules).
-	if m, err := a.LoadPicture("LogPic1"); err == nil {
-		c.background = surface.FromImage(m)
-	}
+	c.background = r.background
 	c.logo = -1
 
 	c.G = login.NewGlobals()
@@ -201,19 +196,15 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.Lost)
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
-	c.Servers.OnConnecting = func() { c.Net.Send(login.Discovery()) }
+	c.Servers.OnConnecting = func() { c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
+	c.Login.OnLogout = c.clearProfileAccount
 	c.Login.Servers = c.Servers
 	c.Login.Notify = func(text []byte, d time.Duration) { c.Notices.Show(text, d, c.Now()) }
 	c.UI.Add(c.Login)
-	formula, err := login.LoadFormula(a)
-	if err != nil {
-		return nil, err
-	}
-	c.Sprites = sprites.NewManager(
-		[]string{o.SpritesRoot},
-		[]string{o.SpritesRoot, filepath.Join(a.Data, "sprites")})
+	formula := r.formula
+	c.Sprites = r.sprites
 	var jma001 int64
 	if a, err := c.Sprites.Archive("001"); err == nil {
 		jma001 = a.SourceBytes
@@ -271,17 +262,15 @@ func New(o Options) (*Client, error) {
 	c.Create.Select, c.Create.Password = c.Chars, c.Password
 	c.Chars.Password = c.Password
 	c.Create.Notify = c.Login.Notify
-	if raw, err := os.ReadFile(a.DataPath(itemExport)); err == nil {
-		if items, err := assets.ParseItemCatalogJSON(raw); err == nil {
-			lib := role.NewLibraryWith(c.Sprites)
-			c.lib, c.items = lib, items
-			for i := range c.Chars.Roles {
-				c.Chars.Roles[i] = role.NewHuman(lib, items)
-			}
-			c.Create.Role.Painter = role.NewCreator(lib, items)
+	c.lib, c.items = r.library, r.items
+	if c.items != nil {
+		for i := range c.Chars.Roles {
+			c.Chars.Roles[i] = role.NewHuman(c.lib, c.items)
 		}
+		c.Create.Role.Painter = role.NewCreator(c.lib, c.items)
 	}
 	c.initInventory()
+	c.initSkills()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -292,12 +281,20 @@ func New(o Options) (*Client, error) {
 }
 
 // Frame is the login phase of DXTimer1Timer.
-func (c *Client) Frame() {
+func (c *Client) Frame() { c.frame(true) }
+
+// frame always pumps networking, simulation and automation; background
+// thumbnails render at a lower rate. Movies/minigames retain their own clocks.
+func (c *Client) frame(draw bool) {
+	draw = draw || c.movie != nil || c.sport != nil || c.fade.step > 0
 	c.handleNet()
-	c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
+	if draw {
+		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
+	}
 	c.Input.Hovered = nil // FUN_0040f97c
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.Step(c.Now())
+		c.remoteTick()
 		if c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
 		} else {
@@ -312,12 +309,12 @@ func (c *Client) Frame() {
 		fading := c.fade.step > 0
 		c.World.HideNames = c.Talk.Drawn() || fading
 		c.World.Cinematic = fading
-		if !c.movieFrame() {
+		if !c.movieFrame() && draw {
 			c.World.Draw()
 			c.Talk.Draw()
 		}
 		c.sportFrame()
-	} else if c.fade.frozen == nil {
+	} else if c.fade.frozen == nil && draw {
 		c.drawBackground()
 	}
 	now := c.Now()
@@ -331,12 +328,27 @@ func (c *Client) Frame() {
 	// A movie's game mode hides the HUD (and every other form).
 	if c.movie == nil {
 		c.UI.Tick()
-		c.UI.Draw()
-		if c.Inventory != nil {
-			c.Inventory.DrawDragged()
+		if draw {
+			settingsVisible := c.Settings.Visible
+			if c.logoutPrompt != nil {
+				c.Settings.Visible = false
+			}
+			c.UI.Draw()
+			c.Settings.Visible = settingsVisible
+			if c.logoutPrompt != nil && c.logoutPrompt.Visible {
+				c.Screen.FillAlpha(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0, logoutShadeAlpha)
+				c.logoutPrompt.Update(c.Input)
+			}
+			if c.Inventory != nil {
+				c.Inventory.DrawDragged()
+				c.drawHotbarDrag()
+			}
 		}
 	}
-	c.Notices.Draw(c.Env, now)
+	if draw {
+		c.remoteInformation()
+		c.Notices.Draw(c.Env, now)
+	}
 	c.uiHovered = c.Input.Hovered != nil
 	c.updateCursor(now)
 }
@@ -378,6 +390,15 @@ func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
 		return
 	}
+	if c.hotbarPacket(p) {
+		return
+	}
+	if c.skillPacket(p) {
+		return
+	}
+	if c.remoteBattlePacket(p) {
+		return
+	}
 	s := p[1:]
 	sub := byte(0)
 	if len(s) > 0 {
@@ -395,17 +416,47 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandHandshake && sub == protocol.HandshakeWireCode3:
 		// 1/3 (0x2ded1a) opens character creation; the byte after the
 		// subcommand says the account already has a secret code.
+		c.rememberProfileAccount()
 		c.Create.Open(len(s) > 1 && s[1] != 0)
 	case p[0] == protocol.CommandMapLoad:
 		// AC3 (0x2dfdb3) is the player's own character: the world opens.
 		c.enterWorld(s)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateWireCode3:
 		// 5/3 (FUN_004381c4) fills the player's values.
+		if !c.SkillState.Snapshot(p) {
+			if c.Unhandled != nil {
+				c.Unhandled(p)
+			}
+			return
+		}
 		c.Stats.ParseBaseStats(s)
+		c.Skills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlWireCode8:
+		if c.World != nil {
+			if c.InventoryState.ApplyPetList(p) {
+				c.assignPetSkills()
+				c.Skills.Refresh()
+			} else if c.Unhandled != nil {
+				c.Unhandled(p)
+			}
+		}
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlPetSlot:
+		if c.World != nil && len(p) == 7 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID && p[6] >= 1 && p[6] <= game.MaxPets {
+			c.InventoryState.Pets[p[6]-1] = inventory.UsePet{}
+			c.Skills.Refresh()
+		}
 	case p[0] == protocol.CommandInventory:
 		c.inventoryPacket(p)
+	case p[0] == protocol.CommandStats && sub == protocol.StatsWireCode2:
+		if c.World != nil {
+			if c.InventoryState.ApplyPetStat(p) {
+				c.Skills.Refresh()
+			} else if c.Unhandled != nil {
+				c.Unhandled(p)
+			}
+		}
 	case p[0] == protocol.CommandStats && sub == protocol.StatsStatUpdate && len(s) >= statUpdateBytes && (len(s) < statTargetEnd || binary.LittleEndian.Uint32(s[statTargetOffset:]) == 0):
 		// 8/1 (FUN_00416ebc): stat ID, a kind byte, then the value.
 		c.Stats.Apply(s[1], binary.LittleEndian.Uint32(s[3:]))
@@ -514,8 +565,8 @@ func (c *Client) enterWorld(p []byte) {
 		return
 	}
 	if c.sceneNames == nil {
-		c.sceneNames, _ = world.SceneNames(c.Assets)
-		c.mapScenes, _ = world.MapScenes(c.Assets)
+		c.resources.loadScenes(c.Assets)
+		c.sceneNames, c.mapScenes = c.resources.sceneNames, c.resources.mapScenes
 	}
 	var body login.RoleView
 	if c.lib != nil {
@@ -558,6 +609,7 @@ const handshakeWrongPassword = 6
 // wrongPassword is 1/6: the account form returns with both fields
 // cleared. The login timer keeps running, as in the original.
 func (c *Client) wrongPassword() {
+	c.clearProfileAccount()
 	if c.G.InGame {
 		return
 	}
@@ -570,6 +622,7 @@ func (c *Client) wrongPassword() {
 // roster is 63/1 (0x2ed7ec): the character selection opens
 // (FUN_00402468) and a remembered account is saved.
 func (c *Client) roster(s []byte) {
+	c.rememberProfileAccount()
 	c.Chars.Roster(s)
 	if c.Login.Remember {
 		c.Login.Account.AddItem(c.Login.Account.Text)

@@ -3,7 +3,7 @@ package seui
 import (
 	"image"
 
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Tooltip layout from FUN_00477864.

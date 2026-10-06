@@ -1,8 +1,8 @@
 package role
 
 import (
-	"wonderland-go/client/wlo/surface"
-	"wonderland-go/internal/clientassets"
+	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Character colours. A THuman keeps 45 colour digits at +0xd5, 0..8 with 4

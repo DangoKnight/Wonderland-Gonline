@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func (s *Server) petControlCommand(ctx context.Context, c *Session, p []byte) error {

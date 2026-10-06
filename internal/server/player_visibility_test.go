@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 func TestStarterScenesHidePlayerSnapshotsAndBroadcasts(t *testing.T) {

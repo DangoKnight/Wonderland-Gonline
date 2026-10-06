@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/assetsql"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
 )
 
 func catalogFixture() *assets.Catalog {

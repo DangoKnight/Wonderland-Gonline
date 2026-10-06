@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
 )
 
 func nativeManufactureFixture(t *testing.T) (*Server, *Session, *captureConn) {

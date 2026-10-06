@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestStructuredCharacterMigrationPreservesState(t *testing.T) {

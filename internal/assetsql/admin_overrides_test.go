@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"testing"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestAdminSQLCatalogEditValidatesBeforeCommit(t *testing.T) {

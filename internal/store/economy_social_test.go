@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func economyStoreFixture(t *testing.T) (*Store, [2]CharacterRef, map[uint16]game.ItemDefinition) {

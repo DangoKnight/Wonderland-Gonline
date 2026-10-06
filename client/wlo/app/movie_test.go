@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // movieFrame is the server's kind-5 frame: play movie id in mode.

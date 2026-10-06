@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 type CharacterRef struct{ Account, ID uint32 }

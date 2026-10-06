@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"testing"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 // These scenarios use the exported native scripts in SQL, without editing them.

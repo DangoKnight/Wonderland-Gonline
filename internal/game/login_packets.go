@@ -3,7 +3,7 @@ package game
 import (
 	"fmt"
 	"math"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func (c Character) WornEquipment() []byte {

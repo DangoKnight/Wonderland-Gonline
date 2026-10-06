@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"strings"
 
-	"wonderland-go/internal/spritepack"
+	"wonderland-gonline/internal/spritepack"
 )
 
 func main() {

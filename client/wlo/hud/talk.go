@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Talk is the event talk window (PTR_DAT_004c9950, a TSe_TalkMsgFormPlus

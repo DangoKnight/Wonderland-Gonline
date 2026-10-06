@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestPotentialBonusAndDerivedStats(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestORMOpensExistingDatabaseWithoutChangingSchema(t *testing.T) {

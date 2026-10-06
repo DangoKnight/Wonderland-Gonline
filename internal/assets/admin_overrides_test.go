@@ -2,7 +2,7 @@ package assets
 
 import (
 	"testing"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestAdminChestPoolValidation(t *testing.T) {

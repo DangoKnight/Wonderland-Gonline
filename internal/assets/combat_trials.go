@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const CombatTrialsAsset = "combat_trials.json"

@@ -2,8 +2,8 @@ package battle
 
 import (
 	"math"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (

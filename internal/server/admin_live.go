@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wonderland-go/internal/battle"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 type AdminBattle struct {

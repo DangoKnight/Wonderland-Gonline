@@ -5,7 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"strings"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 const (

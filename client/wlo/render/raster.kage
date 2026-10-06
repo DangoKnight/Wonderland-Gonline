@@ -1,0 +1,65 @@
+//kage:unit pixels
+package main
+
+// These explicit operation values match device.go.
+const (
+ Blit = 0.0
+ Fill = 1.0
+ AlphaFill = 2.0
+ Light = 3.0
+ Sprite = 4.0
+ Indexed = 5.0
+ Cutout = 6.0
+)
+
+var Operation float
+var DestinationOrigin vec2
+var DestinationSize vec2
+var SourceOrigin vec2
+var SourceSize vec2
+var Key vec3
+var Transparent float
+var Ink vec3
+var Amount float
+
+func bytes(c vec4) vec4 { return floor(c * 255.0 + 0.5) }
+func native(c vec3) vec3 { return floor(c / vec3(8.0,4.0,8.0)) }
+func expand(c vec3) vec4 {
+ return vec4((c*vec3(8.0,4.0,8.0)+floor(c/vec3(4.0,16.0,4.0)))/255.0,1.0)
+}
+func mix(s, d, a int) float {
+ return float((s*a+d*(255-a)+127)/255)
+}
+func Fragment(position vec4, tex vec2, color vec4) vec4 {
+ local := floor(position.xy-imageDstOrigin())
+ if Operation == Fill { return expand(Ink) }
+ // Integer division matches the software nearest-neighbor selection exactly.
+ // Floating division can round an integer coordinate just below its boundary.
+ offset := local-DestinationOrigin
+ sourceAt := SourceOrigin + vec2(float(int(offset.x)*int(SourceSize.x)/int(DestinationSize.x)),float(int(offset.y)*int(SourceSize.y)/int(DestinationSize.y)))
+ sample := bytes(imageSrc0At(imageSrc0Origin()+sourceAt))
+ if Operation == Indexed {
+  sample=bytes(imageSrc2At(imageSrc0Origin()+vec2(sample.r,0.0)))
+ }
+ if Operation == Blit || Operation == Light {
+  if Transparent != 0.0 && native(sample.rgb)==Key { return vec4(0.0) }
+ }
+ if Operation == Blit || Operation == Indexed || Operation == Cutout {
+  if sample.a==0.0 { return vec4(0.0) }
+  return expand(native(sample.rgb))
+ }
+ destination := bytes(imageSrc1At(imageSrc0Origin()+local)).rgb
+ if Operation == AlphaFill {
+  return expand(floor((Ink*Amount+native(destination)*(256.0-Amount))/256.0))
+ }
+ if Operation == Light {
+  return expand(min(native(destination)+floor(native(sample.rgb)*Amount/32.0),vec3(31.0,63.0,31.0)))
+ }
+ if Operation == Sprite {
+  if sample.a==0.0 { return vec4(0.0) }
+  a:=int(sample.a)
+  mixed:=vec3(mix(int(sample.r),int(destination.r),a),mix(int(sample.g),int(destination.g),a),mix(int(sample.b),int(destination.b),a))
+  return expand(native(mixed))
+ }
+ return vec4(0.0)
+}

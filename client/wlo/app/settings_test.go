@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/client/wlo/hud"
-	"wonderland-go/client/wlo/settings"
-	"wonderland-go/client/wlo/seui"
+	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/settings"
+	"wonderland-gonline/client/wlo/seui"
 )
 
 func TestSettingsNativeMenuAndDialogs(t *testing.T) {
@@ -110,10 +110,17 @@ func TestSettingsChatAndAudio(t *testing.T) {
 	if len(c.Chat.Lines) != n {
 		t.Fatal("blocked player chat displayed")
 	}
+	c.Chat.Say(10001, nil, []byte("Earlier local message"), hud.ChannelLocal)
 	c.Settings.Color(0, 1)
 	c.Chat.Say(10001, nil, []byte("Hello"), hud.ChannelLocal)
 	if c.Chat.Lines[len(c.Chat.Lines)-1].Ink != settings.Palette[10] {
 		t.Fatal("chat color")
+	}
+	c.Chat.Add([]byte("another channel triggers a rewrap"), hud.ChannelSystem)
+	for _, line := range c.Chat.Lines {
+		if line.Channel == hud.ChannelLocal && line.Ink != settings.Palette[10] {
+			t.Fatal("earlier local message reverted after new chat")
+		}
 	}
 	c.Settings.Volume(0, -99)
 	if c.SettingsState.Local.MusicVolume != 0 {

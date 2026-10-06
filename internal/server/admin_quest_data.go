@@ -5,10 +5,10 @@ import (
 	"errors"
 	"sort"
 	"time"
-	"wonderland-go/internal/assets"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/store"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
 
 type AdminOpcode struct {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"wonderland-go/client/wlo/role"
+	"wonderland-gonline/client/wlo/role"
 )
 
 // TestSelectCharacterSnapshot writes the character selection frame to

@@ -3,7 +3,7 @@ package assetsql
 import (
 	"os"
 	"testing"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/world"
 )
 
 func TestInstalledSQLWorldSimulationGeometry(t *testing.T) {

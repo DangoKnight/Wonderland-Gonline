@@ -5,7 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 var ErrLuckyDrawLimit = errors.New("daily Lucky Draw limit reached")

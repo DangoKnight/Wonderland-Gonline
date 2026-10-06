@@ -1,6 +1,6 @@
 package world
 
-import "wonderland-go/internal/game"
+import "wonderland-gonline/internal/game"
 
 import (
 	"sort"

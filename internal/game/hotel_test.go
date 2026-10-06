@@ -3,7 +3,7 @@ package game
 import (
 	"encoding/hex"
 	"testing"
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestHotelRecordGolden(t *testing.T) {

@@ -1,10 +1,10 @@
 package server
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 import (
 	"context"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // redeemVoucher is PetVoucherManager.TryRedeem. A recognized voucher is handled

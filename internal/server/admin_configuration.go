@@ -5,8 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/config"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/config"
 )
 
 type StartupConfiguration struct {

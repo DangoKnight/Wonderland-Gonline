@@ -3,8 +3,8 @@ package login
 import (
 	"bytes"
 
-	"wonderland-go/client/wlo/seui"
-	"wonderland-go/client/wlo/surface"
+	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // TRe_InputPwAndDarkPw (VMT 0x21309c, constructor FUN_0021a8c0, DAT_006c6f40

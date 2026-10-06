@@ -1057,3 +1057,35 @@ module follow the official WLRI potential table for normal/golden attempts;
 Super Pills are guaranteed. A normal failure loses one level and forgets newly
 unqualified stat-tree skills; a golden failure retains potential. Consume one
 pill on either outcome, but none on a rejected request or failed persistence. See [native Potential Pills](NATIVE_COMMANDS.md#potential-pills).
+
+## Client build and session ownership
+
+Use `make build-client` to validate/recompile editable assets before building Go.
+`client/asset-contract.json` holds PNG dimension compatibility constraints;
+`cmd/client-bundle` produces incremental core/world/sprite/audio packs with binary map and sprite
+records without regenerating or
+changing edited sources. Preserve source JSON fields and transparent PNG pixels.
+See [CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md) for build/edit guidance.
+
+The single-window workspace owns shared read-only definitions and decoded asset
+caches. Each session owns its connection, UI/input, character/world actor state,
+timers and automation. Never put mutable player state into `app.Resources` or
+mutate shared pixel/terrain buffers. Main-thread session mutations are sequential;
+socket callbacks post to the owning session. New disposal paths must reject late
+dial results and release that session without closing shared resources. Keep
+background networking/simulation active when thumbnails are not being redrawn.
+
+## Client GPU drawing
+
+Normal client windows use `client/wlo/render.Device` through `surface.Backend`.
+Use surface draw/fill/blend operations for all frame rendering. GPU targets have
+no CPU `Pix` buffer; direct pixel access is reserved for CPU compatibility and
+immutable asset/glyph preparation. Increment `Surface.Revision` after directly
+editing an uploaded CPU source. Allocate temporary GPU-compatible canvases with
+`NewCompatible`, freeze with `Clone`, and release targets with `Close`.
+Keep textures, glyph caches and drawing on the Ebitengine game thread. Sessions
+share the device/asset cache but own their targets; disposing one session must
+not dispose another session or the window's shared assets. GPU destination-reading
+effects use GPU scratch surfaces, never per-frame CPU readbacks. Preserve native
+integer color-key, alpha, light and scaling semantics with the actual graphics
+parity tests in [CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md#gpu-rendering).

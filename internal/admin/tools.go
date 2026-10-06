@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"wonderland-go/internal/assetdb"
-	"wonderland-go/internal/config"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/server"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/config"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/server"
+	"wonderland-gonline/internal/store"
 )
 
 const assetEditMaxBytes = 2 << 20

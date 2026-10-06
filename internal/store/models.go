@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // Identity models preserve existing constraints. Gameplay state lives in typed tables.

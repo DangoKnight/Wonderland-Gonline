@@ -1,12 +1,12 @@
 package server
 
-import "wonderland-go/internal/protocol"
+import "wonderland-gonline/internal/protocol"
 
 import (
 	"context"
 	"strings"
-	"wonderland-go/internal/game"
-	"wonderland-go/internal/world"
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
 // serviceKind follows QuestNpc.Interact's priority and name/template heuristics.

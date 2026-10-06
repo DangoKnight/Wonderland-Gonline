@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"wonderland-go/client/wlo/world"
+	"wonderland-gonline/client/wlo/world"
 
-	"wonderland-go/internal/protocol"
+	"wonderland-gonline/internal/protocol"
 )
 
 // selfPacket builds AC3 as the server sends it (game.AppearancePacket).
@@ -73,7 +73,7 @@ func TestWorldSnapshot(t *testing.T) {
 	now := time.Now()
 	c.Now = func() time.Time { return now }
 	c.Frame()
-	c.G.ServerText = []byte("Wonderland Go") // 1/9 from this repository's server
+	c.G.ServerText = []byte("Wonderland Gonline Server") // 1/9 from this repository's server
 	c.dispatch(selfPacket(10001, 2, 10017, 1042, 1075, 0, 444444444, 444444444, []uint16{22003, 21002, 24002}, "Dango"))
 	if c.World == nil {
 		t.Fatal("AC3 did not open the world")

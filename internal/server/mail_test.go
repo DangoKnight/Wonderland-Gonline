@@ -7,8 +7,8 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"wonderland-go/internal/protocol"
-	"wonderland-go/internal/store"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
 )
 
 func nativeMailRequest(recipient uint32, body []byte) []byte {

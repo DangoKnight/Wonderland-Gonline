@@ -2,7 +2,7 @@ package world
 
 import (
 	"testing"
-	"wonderland-go/internal/assets"
+	"wonderland-gonline/internal/assets"
 )
 
 func TestStarterScenePlayerVisibility(t *testing.T) {

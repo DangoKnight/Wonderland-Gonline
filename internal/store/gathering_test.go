@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 func TestWaterGatheringAtomicCooldownAndRestart(t *testing.T) {

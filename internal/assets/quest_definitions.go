@@ -3,7 +3,7 @@ package assets
 import (
 	"fmt"
 	"math"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // QuestType is the reference custom registry type, distinct from EVE opcodes.

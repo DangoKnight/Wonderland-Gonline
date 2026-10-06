@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"wonderland-go/internal/game"
+	"wonderland-gonline/internal/game"
 )
 
 // ParseItemCatalogJSON reads the maintained export without consulting its source
