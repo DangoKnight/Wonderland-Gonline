@@ -91,6 +91,9 @@ func Prepare(ctx context.Context, cfg config.Config, a *assets.Catalog, scenario
 			return "", e
 		}
 		fmt.Fprintf(&credentials, "## %s\n\nUsername: `%s`  \nPassword: `%s`  \nDeletion code: same as password  \nCharacter: `%s` (slot 1, ID %d)  \nMap: %d, position: %d, %d\n\n", role, user, password, name, c.ID, c.Map, c.X, c.Y)
+		if !observer && strings.HasPrefix(scenario, "compound-") {
+			describeCompounding(&credentials, a, c)
+		}
 		if !observer && strings.HasPrefix(scenario, "fishing") {
 			for _, rod := range a.Fishing.Rods {
 				fmt.Fprintf(&credentials, "Configured rod: %d (%s), maximum grade %d.  \n", rod.ItemID, a.Items[rod.ItemID].Name, rod.MaxGrade)

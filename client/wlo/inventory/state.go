@@ -82,6 +82,13 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 			}
 			bag[slot-1] = item
 		}
+	case protocol.InventoryCompoundResult:
+		if len(p) != 6+protocol.CompoundResultReservedBytes || p[2] < 1 || p[2] > game.BagSize || p[5] == 0 || p[5] > game.MaxItemStack || binary.LittleEndian.Uint16(p[3:]) == 0 || !bag[p[2]-1].Empty() {
+			return true, false
+		}
+		item := game.Item{ID: binary.LittleEndian.Uint16(p[3:]), Count: p[5]}
+		copy(item.Metadata[:], p[6:])
+		bag[p[2]-1] = item
 	case protocol.InventoryRemove:
 		if len(p) != 4 || bag.Remove(p[2], p[3]) != nil {
 			return true, false

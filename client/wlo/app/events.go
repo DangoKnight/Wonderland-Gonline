@@ -39,6 +39,7 @@ const (
 	eventKindTalk     = 1
 	eventKindQuestion = 6
 	eventKindMovie    = 5
+	npcTalkTurn       = 1
 	eventSpeakerNPC   = 3
 	eventSpeakerSelf  = 7
 	// eventChoiceCancel closes a question (the server's cancel value).
@@ -46,7 +47,9 @@ const (
 	// talkBodyAction is the body-mode pose: standing, facing down-left.
 	talkBodyAction = 0xb
 	// npcReach is FUN_00303b54's distance check, per axis.
-	npcReach = 0xa9
+	npcReach                   = 0xa9
+	conversationStandingAction = 8
+	conversationFacingCount    = 8
 )
 
 // eventState is the interpreter's step flags.
@@ -55,8 +58,9 @@ type eventState struct {
 	done   bool // the step is finished and awaits 20/6 (+0x7108)
 	// A question awaiting its answer (+0x710a): the reply value of each
 	// option row, and whether the step also ends with 20/6 (mode 0).
-	answers   []byte
-	ackAnswer bool
+	answers    []byte
+	ackAnswer  bool
+	npcFacings map[*world.NPC]int
 }
 
 // clickNPC is a left click on a map NPC: within reach it sends 20/1,
@@ -111,9 +115,11 @@ func (c *Client) eventFrame(s []byte) {
 	talk := binary.LittleEndian.Uint16(s[eventFrameText:])
 	switch kind {
 	case eventKindTalk:
+		c.faceConversation(subject, actor, s[eventFrameMode] == npcTalkTurn)
 		c.event.done = false
 		c.say(subject, actor, talk)
 	case eventKindQuestion:
+		c.faceConversation(subject, actor, true)
 		c.ask(subject, actor, talk, s[eventFrameMode])
 	case eventKindMovie:
 		c.startMovie(s)
@@ -303,6 +309,9 @@ func stepDone(sub byte) bool {
 // no longer holds the player (+0x2392 = 0), so a door event's 6/2 hold
 // ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
+	for npc, action := range c.event.npcFacings {
+		npc.Action = action
+	}
 	c.event = eventState{}
 	c.held = false
 	c.Talk.Hide()
@@ -320,4 +329,32 @@ func (c *Client) eventTick() {
 		c.event.done = false
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
 	}
+}
+
+// FUN_00304fd0 saves turning actors for FUN_00307bc4 to restore at event end.
+// Talk mode 1 permits turning; mode 2 preserves the NPC's facing. Question
+// prompts turn eligible NPCs regardless of their answer-acknowledgment mode.
+func (c *Client) faceConversation(subject byte, actor uint16, turn bool) {
+	if c.World == nil || subject != eventSpeakerNPC {
+		return
+	}
+	n := c.World.NPCs[actor]
+	if n == nil {
+		return
+	}
+	p := &c.World.Player
+	if turn {
+		original := n.Action
+		if n.FaceConversation(p.X, p.Y) {
+			if c.event.npcFacings == nil {
+				c.event.npcFacings = map[*world.NPC]int{}
+			}
+			if _, saved := c.event.npcFacings[n]; !saved {
+				c.event.npcFacings[n] = original
+			}
+		}
+	}
+	// The player faces the speaker even when the speaker is exempt from turning.
+	c.World.StopWalk()
+	p.Direction = int32(world.Facing(p.X, p.Y, n.X, n.Y, int(p.Direction)%conversationFacingCount) + conversationStandingAction)
 }

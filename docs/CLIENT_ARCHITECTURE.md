@@ -501,3 +501,84 @@ shore travel. Already-walkable positions remain unchanged. An available terrain
 with no safe land leaves the raft intact. Native AC15:13 acknowledges a dismount
 with either the compatibility two-byte packet or the six-byte owner-ID packet;
 both are accepted without replaying consumption.
+
+
+### NPC conversation facing
+
+Dialogue and NPC questions follow `FUN_00304fd0` -> `FUN_00307ae8` ->
+`FUN_00432638`. Talk mode 1 turns an eligible NPC toward the local player;
+talk mode 2 preserves the NPC's direction. Question prompts turn eligible NPCs
+in both acknowledgment modes. The player also faces the NPC. Turning uses the
+native eight-direction slope thresholds already implemented by `world.Facing`.
+
+The native exceptions are template kind 6 (props such as chests) and actors whose
+pose group is neither walking nor standing (for example, sitting or lying).
+The exception is specifically kind 6, rather than all kinds that use fixed prop
+frames. Changes are session-local presentation state and send no new packets.
+Original NPC actions are saved once per event and restored on AC20:8, matching
+`FUN_00307bc4`; subsequent dialogue lines do not replace the saved original.
+
+### Compound window
+
+The Alchemy toolbar button or **Ctrl+C** opens `TRe_CompoundForm` in
+`client/wlo/inventory/compound.go`. Its 299 × 467 background, 5 × 10 bag,
+five ordered ingredient boxes, close controls and Synthesis button come from
+WLRI `FUN_0021b240`; `Screenshot_20261006_123850` is the visual reference.
+The cauldron uses the native 23-frame `Compounding` strip at 200 ms per frame.
+Submission starts a full sequence; its later frames show the result effect.
+At frame 14, a confirmed result flies from the native launch anchor to the
+server-selected bag cell at 120 pixels per second along the dominant axis.
+The receipt updates inventory immediately; only its compound-window icon is
+hidden until landing. Closing/resetting the window or replacing the item
+cancels the visual without changing inventory. A missing result reply times out.
+Bag and ingredient hover details reuse the inventory item breakdown.
+
+Left-click a bag item or drag it onto an ingredient box to select it;
+double-click also fills the first empty box. Selected bag anchors have a pink
+background. Right-click the selected bag item or an ingredient box to deselect
+it; double-click an ingredient also removes it. The first
+occupied box is the base item. Entries refer to bag anchors and consume one
+unit each. Selecting an ingredient does not change the bag. Locked items and
+an active vehicle cannot be selected; replaced or depleted items invalidate
+their selections. Loading, scripted events and modal windows block synthesis.
+
+The server accepts two to five total ingredients, including Alchemy Books, with
+at least two non-book materials. With exactly one learned alchemy skill, the client uses it automatically and
+hides tier controls. Multiple learned skills offer the native Junior checkbox
+or Superior tier selector, limited to learned choices, using AC23:14/87/101; Server validates that tier against SQL skills. Alchemy
+uses Formula.dat advancement thresholds and its native 30-level cap, with
+per-grade SQL EXP converted to cumulative login/AC8:1 stat 111 counters.
+The Go skill UI converts those counters back into per-grade proficiency.
+The rank/base algorithm is documented in
+[COMPOUNDING.md](COMPOUNDING.md). Compound tooltips include native material-base
+names. The choice defaults to the first available tier, remains selected when reopening the window,
+and resets on character handoff. Unlearned tiers and changing tier during
+synthesis are blocked. No overworld synthesis packet is sent: native AC23:122
+is a fishing-stop command incorrectly labelled as synthesis in Legacy.
+
+AC23:9 removes consumed units; AC23:8 installs the fresh result and metadata;
+AC23:13 announces the result. Duplicate submission is
+blocked while waiting. After five seconds without a result the controls unlock
+and display a notice, without automatically resubmitting. Recheck inventory
+before retrying, since the server may reject a recipe or lack output space.
+AC23:122 is accepted as a fishing-stop receipt. Closing the form before
+submission retains the recipe; accepted submissions clear its ingredient
+selection locally without consuming inventory.
+Character changes and disconnects reset it. Each session owns its selections,
+request state and animation clock. Ingredients can be selected and another
+attempt submitted while the previous cauldron/result animation is playing.
+After a successful new submission, the previous result is immediately revealed
+in its authoritative bag position and the new cauldron animation starts.
+Only an outstanding server request blocks submission; animation playback does
+not. A failed send preserves the previous animation and current recipe.
+
+### Login clipboard
+
+Username and password fields support Ctrl+V from the desktop system clipboard.
+`app.loginClipboardText` converts text to the same Big5 encoding as keyboard
+input; `seui.Editor` retains the existing 10-byte limit, account normalization,
+caret insertion and password masking. Clipboard contents are neither logged nor
+cleared, allowing reuse across sessions. The local Ebitengine fork exposes
+`ClipboardText` on the window thread through GLFW (Linux/BSD/macOS) and native
+Unicode clipboard reads on Windows. Unavailable clipboard reads leave the field
+unchanged.

@@ -77,7 +77,7 @@ SUBSYSTEMS = [
      "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173)."),
     ("roles", "Roles: players, NPCs, sprites", "client/wlo/role, client/wlo/world", "partial", [262, 263, 264],
      "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, "
-     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs, NPC turning."),
+     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs."),
     ("ground", "Ground, scene objects and map data", "client/wlo/world", "partial", [249, 257, 268, 102, 103],
      "TGround, TGroundObj, TMap, TFSceneData. Ported: scene layers, walk grid, objects and depth order, sound zones, "
      "camera. Not yet: translucent objects, the map's other lists (sub-regions, the optional grid)."),
@@ -124,9 +124,9 @@ SUBSYSTEMS = [
      "TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights."),
     ("shop", "Shops, IM mall and skill trees", "", "todo", [187, 188],
      "THL_ShoppingForm, THL_ShoppingCarForm, TSe_SkillTreeForm."),
-    ("services", "NPC services and feature forms", "", "started",
+    ("services", "NPC services and feature forms", "client/wlo/inventory (compound.go), client/wlo/app (compound.go)", "started",
      [143, 144, 145, 146, 147, 158, 159, 165, 169, 170, 171, 172, 173, 180, 181, 182, 186, 200, 204, 205],
-     "Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, crafting (TRe_CompoundForm), "
+     "TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Native material-base labels are shown in compound tooltips. Pending: manual tier selection and overworld synthesis animation. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, "
      "inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported."),
     ("housing", "Housing and furniture", "", "todo", [244, 248, 111, 112],
      "TRE_FurnitureMng, TGdThing, home pillars, furniture drawing, NPC dolls."),

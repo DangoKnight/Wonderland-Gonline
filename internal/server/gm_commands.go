@@ -65,7 +65,7 @@ func (s *Server) commandHelp(c *Session) error {
 			"/guildcreate <name>; /marry <character>; /acceptmarry; /declinemarry; /divorce; /warptospouse",
 			"/mail; /readmail <ID>; /claimmail <ID>; /deletemail <ID>",
 			"/sendmail <ID> <gold> <bag slot or 0> <count or 0> <subject> | <body>",
-			"/compound <slot1> <slot2>; /manufacture <bench> <item1> <count1> <item2> <count2>; /fish; /mine; /chop; /stop",
+			"/compound <slot1> <slot2> [slot3] [slot4] [slot5]; /manufacture <bench> <item1> <count1> <item2> <count2>; /fish; /mine; /chop; /stop",
 		} {
 			if err := s.chatFeedback(c, line); err != nil {
 				return err

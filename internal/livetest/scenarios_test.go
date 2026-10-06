@@ -18,13 +18,35 @@ func catalogFixture() *assets.Catalog {
 	const rod, skill = 37105, 15993
 	cells := make([]byte, 20*20)
 	cells[8*20+8] = assets.FishingWaterCell
-	return &assets.Catalog{
+	a := &assets.Catalog{
 		Items:  map[uint16]game.ItemDefinition{21004: {ID: 21004, EquipSlot: 2}, 24004: {ID: 24004, EquipSlot: 5}, rod: {ID: rod, Type: 28}, raftItem: {ID: raftItem, CellWidth: 4, CellHeight: 3}},
 		Skills: map[uint16]assets.Skill{skill: {}}, NPCs: map[uint16]assets.NPC{robinsonPet: {}},
 		Maps:     map[uint16]assets.Map{starterBeachMap: {ID: starterBeachMap}, beachMap: {ID: beachMap, NPCs: []assets.MapNPC{{ClickID: robinsonActor, X: 200, Y: 200}}}},
 		Terrains: map[uint16]assets.Terrain{starterBeachMap: {Width: 1600, Height: 1600, GridWidth: 80, GridHeight: 80, Cells: make([]byte, 80*80)}, beachMap: {Width: 400, Height: 400, GridWidth: 20, GridHeight: 20, Cells: cells}},
 		Fishing:  assets.FishingRules{Enabled: true, Maps: []uint16{beachMap}, Rods: []assets.FishingRod{{ItemID: rod, MaxGrade: 6}}, Skills: []uint16{skill}, IntervalSeconds: 60, CatchRequirements: []uint32{14, 35}},
 	}
+	a.NativeItems = map[uint16]assets.NativeItem{}
+	for _, fixture := range []struct {
+		id         uint16
+		rank, base byte
+	}{
+		{100, 10, 34}, {101, 12, 34}, {102, 11, 6}, {103, 14, 34},
+		{game.AlchemyCommonStone, 1, 34}, {game.AlchemySteamedBuns, 1, 6},
+		{game.AlchemyBookOne, 1, 2}, {game.AlchemyBookFour, 4, 2},
+	} {
+		def := game.ItemDefinition{ID: fixture.id, Name: "Fixture ingredient", Type: 36}
+		a.Items[fixture.id] = def
+		it := assets.NativeItem{Definition: def}
+		it.Record[45], it.Record[136], it.Record[406], it.Record[407] = fixture.rank, fixture.base, 1, 1
+		a.NativeItems[fixture.id] = it
+	}
+	dual := a.NativeItems[103]
+	dual.Record[138] = 6
+	a.NativeItems[103] = dual
+	for _, id := range []uint16{game.AlchemyPrimarySkill, game.AlchemyJuniorSkill, game.AlchemySuperiorSkill} {
+		a.Skills[id] = assets.Skill{}
+	}
+	return a
 }
 
 func TestScenarioPrerequisites(t *testing.T) {

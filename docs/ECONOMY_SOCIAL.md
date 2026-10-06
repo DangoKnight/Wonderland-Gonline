@@ -108,13 +108,12 @@ handlers follow the reference's workbench-name selection. Tent furniture now
 lives in isolated homes; linking manufacturing recipes to verified physical
 workbench item identities remains pending.
 
-`/compound <bag slot1> <bag slot2>` (alias `/synthesize`) uses source chance-based
-synthesis. Recipe results come from SQL `AlchemyRecipes`; chances and the failure
-item come from `Economy.Synthesis`. Authored source rates override the default
-85% native-recipe rate by matching both inputs and output. A failed attempt grants
-the configured charcoal item. Both ingredient removals and the output commit
-together. Native AC23/AC40 retain their verified deterministic behavior.
-`AlchemyRecipes` and `Economy` can both be edited through Admin.
+`/compound <slot1> <slot2> [slot3] [slot4] [slot5]` (alias `/synthesize`)
+shares the rank/base engine with native AC23 and compatibility AC40. See
+[COMPOUNDING.md](COMPOUNDING.md) for books, skill levels, rank ceilings, secondary
+bases and catastrophic failures. Resources and proficiency commit together in
+SQL. Historical `AlchemyRecipes` and `Economy.Synthesis` chances/fees remain
+preserved but no longer control gameplay synthesis.
 
 `/mine` and `/chop` retain SQL gathering pools and their configured interval.
 Movement, travel, battle, active interactions, disconnect and full bags stop

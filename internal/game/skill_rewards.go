@@ -20,7 +20,7 @@ func (c *Character) LearnSkill(id uint16) [][]byte {
 // Unlike quest learning, it resets proficiency even when the grade is unchanged.
 // The caller validates catalog membership and commits before emitting packets.
 func (c *Character) SetSkillGrade(id uint16, grade byte) [][]byte {
-	if id == 0 || grade < MinSkillGrade || grade > MaxSkillGrade {
+	if id == 0 || grade < MinSkillGrade || grade > SkillGradeLimit(id) {
 		return nil
 	}
 	old := byte(0)
@@ -44,6 +44,12 @@ func (c *Character) SetSkillGrade(id uint16, grade byte) [][]byte {
 	var packets [][]byte
 	if grade > old {
 		packets = append(packets, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatSkillGrade, protocol.StatsValueAbsolute}.U32(uint32(grade)).U32(uint32(clientID)))
+	}
+	if IsAlchemySkill(id) {
+		if grade <= old {
+			packets = append(packets, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatSkillGrade, protocol.StatsValueAbsolute}.U32(uint32(grade)).U32(uint32(clientID)))
+		}
+		return append(packets, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatSkillEXP, protocol.StatsValueAbsolute}.U32(AlchemyCumulativeEXP(grade, 0)).U32(uint32(clientID)))
 	}
 	return append(packets,
 		protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode16, 0}.U16(clientID).U8(grade),

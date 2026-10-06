@@ -1007,8 +1007,13 @@ read-only balance queries; PIN/transfer stay unavailable. There is no default
 ACK for unregistered commands. Do not copy AC03's short replies: native AC3 is a
 full self-character/map snapshot. Use the verified AC12/89/92 synchronization.
 Source Tradeable/use-type metadata has no restriction caller in the inspected
-trade/wear paths. Preserve recipe order in typed SQL arrays: authored alchemy
-precedes Compound2 then Compound, and first matching workbench recipe wins.
+trade/wear paths. Preserve historical recipe order in typed SQL arrays for
+provenance, and retain first matching workbench recipe selection for manufacturing.
+Gameplay compounding intentionally replaces the legacy recipe/fallback paths
+with the rank/base model documented in [COMPOUNDING.md](COMPOUNDING.md).
+Its approved probability curves are compiled in `internal/game/compounding_policy.go`;
+all inventory consumption/output/proficiency must commit together from fresh SQL
+state. Invalidate the derived alchemy candidate index after catalog replacement.
 See [focused verification](PORTING.md#focused-migration-verification--2026-10-04).
 
 ## Inventory footprints

@@ -1579,7 +1579,7 @@
 				"internal/assets/alchemy.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
-			"notes": "Legacy four-byte synthesis matches the first symmetric SQL recipe and ignores chance/fee as source does; unknown recipe fails without consumption. Verified authored/Compound2/Compound precedence survives SQL reload. Full containers, stale/duplicate requests, locks, ownership and save/receipt failures retain atomic resources and metadata. Native seven-byte AC40:1 hotbar assignment is independently verified against aLogin and accepted without alchemy replies or resource mutation; previously it disconnected the client. Server-side durable hotbar storage and login replay remain pending; the Go client now saves per-character bindings locally, handles native lists and supports dragging, F1-F8 activation and native AC50 battle requests.",
+			"notes": "Legacy four-byte synthesis now uses the owner-approved rank/base engine shared with AC23 and the chat shortcut; historical recipe rows no longer select gameplay results. Books, skill tiers, catastrophic failure and downward rank search are documented in COMPOUNDING.md. Full containers, stale/duplicate requests, locks, ownership and save/receipt failures retain atomic resources and metadata. Native seven-byte AC40:1 hotbar assignment is independently verified against aLogin and accepted without alchemy replies or resource mutation; previously it disconnected the client. Server-side durable hotbar storage and login replay remain pending; the Go client now saves per-character bindings locally, handles native lists and supports dragging, F1-F8 activation and native AC50 battle requests.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -2586,6 +2586,15 @@
 			"status": "partial",
 			"sha256": "515e93035cc90308f1a1bcdd4d3b549f84039f4c1932ec71be559c60632e9512",
 			"go_files": [
+				"internal/game/compounding.go",
+				"internal/game/compounding_policy.go",
+				"internal/game/alchemy_progress.go",
+				"internal/game/alchemy_progress_test.go",
+				"internal/assets/compounding.go",
+				"internal/server/compounding.go",
+				"internal/server/compounding_test.go",
+				"client/wlo/inventory/compound_presentation.go",
+				"client/wlo/inventory/compound_tiers.go",
 				"internal/assets/alchemy.go",
 				"internal/server/alchemy.go",
 				"internal/server/synthesis.go",
@@ -2593,7 +2602,7 @@
 				"internal/server/migration_verification_test.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
-			"notes": "Authored input/output recipe chances and fees projected offline into SQL, preserving customized rates. Player compound cost and result commit transactionally; deterministic native paths remain separate. Focused verification confirms first matching source recipe wins, authored entries precede Compound2 then Compound, and typed SQL ordinals preserve priority after reload without provenance documents.",
+			"notes": "Historical input/output recipes, chances and fees remain preserved in SQL as provenance. The owner-approved rank/base compounding model replaces runtime table selection in AC23, AC40 and the chat shortcut. Two to five inputs, books, native AC23:14/87/101 tier selection with SQL-validated learned skills and progression through level 30 using Formula.dat EXP thresholds and cumulative AC8:1 stat 111/login counters, secondary-base loss, rank fallback and catastrophic junk outcomes use compiled probability curves. Fresh SQL ownership/resources/skills, output space and proficiency commit atomically; tests cover stale/duplicate requests, failed random sources, save/receipt failures and metadata. Native tier selectors and the cauldron/result-flight presentation are implemented in Client; the legacy AC23:122 broadcast is removed because native clients interpret it as fishing stop. See docs/COMPOUNDING.md.",
 			"audit_verdict": "migrated"
 		},
 		{

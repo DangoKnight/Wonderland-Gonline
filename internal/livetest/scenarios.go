@@ -36,7 +36,7 @@ type Scenario struct {
 // Scenarios is the manual acceptance registry. Preparation never simulates a
 // successful client interaction or marks the checklist as passed.
 func Scenarios() []Scenario {
-	return []Scenario{
+	return append([]Scenario{
 		{"native-commands", "Native synchronization, appearance, gestures, mall and reconnect", []string{
 			"Log in with both accounts in separate legacy-client instances. Select the prepared characters and wait for the map to load.",
 			"Open character/inventory panels. Confirm model, element, equipment and HP/SP are displayed correctly; record a screenshot.",
@@ -73,7 +73,7 @@ func Scenarios() []Scenario {
 			"Talk to Robinson (actor 1) and complete any dialogue. Confirm Robinson joins the companion roster and disappears from the map for this character.",
 			"Reconnect. Confirm one Robinson, recruitment mark 15283 at step 1, and no newly granted raft. Repeated interactions must not duplicate the companion.",
 		}},
-	}
+	}, compoundScenarios()...)
 }
 
 func fishingSteps(skilled, full bool) []string {
@@ -177,7 +177,7 @@ func Character(a *assets.Catalog, scenario string, id uint32, name string, obser
 	}
 	var location game.Location
 	switch scenario {
-	case "carnie-return", "native-commands":
+	case "carnie-return", "native-commands", compoundUnskilled, compoundJunior, compoundBooks, compoundFallback, compoundFullBag, compoundAdvancement:
 		location, err = starterBeachLocation(a)
 	case "fishing", "fishing-skilled", "fishing-full-bag", "fishing-advancement":
 		location, err = shoreline(a)
@@ -193,6 +193,10 @@ func Character(a *assets.Catalog, scenario string, id uint32, name string, obser
 		return c, c.Validate()
 	}
 	switch scenario {
+	case compoundUnskilled, compoundJunior, compoundBooks, compoundFallback, compoundFullBag, compoundAdvancement:
+		if err := prepareCompounding(a, scenario, &c); err != nil {
+			return c, err
+		}
 	case "fishing", "fishing-skilled", "fishing-full-bag", "fishing-advancement", "raft-no-space":
 		if len(a.Fishing.Rods) == 0 {
 			return c, fmt.Errorf("no configured fishing rod")

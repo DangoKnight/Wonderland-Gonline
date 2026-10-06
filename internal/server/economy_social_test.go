@@ -157,39 +157,28 @@ func TestManufacturingAtomicCostsAndGatheringStops(t *testing.T) {
 	}
 }
 
-func TestSynthesisSQLRatesPreserveNativeCompound(t *testing.T) {
-	s, players, wires := tradeFixture(t)
+func TestSynthesisUsesRankBasesAcrossCommands(t *testing.T) {
+	s, players, wires := compoundFixture(t)
 	c := players[0]
-	ctx := context.Background()
+	s.Assets.Economy.Synthesis = assets.SynthesisRules{FailureItemID: 100, DefaultSuccessPercent: 0}
+	tradeDo(t, s, c, append([]byte{2, 2}, []byte("/compound 5 9")...))
+	if c.character.Bag[0].ID != 300 {
+		t.Fatal("chat shortcut did not use rank/base engine")
+	}
+	wires[0].Reset()
 	next := c.character.Clone()
-	next.Bag[1] = next.Bag[0]
-	next.Bag[1].Count = 5
-	if err := s.commit(ctx, c, next); err != nil {
+	next.Bag = game.Inventory{}
+	next.Bag[4] = game.Item{ID: 100, Count: 1}
+	next.Bag[8] = game.Item{ID: 200, Count: 1}
+	if err := s.commit(context.Background(), c, next); err != nil {
 		t.Fatal(err)
 	}
-	s.Assets.AlchemyRecipes = []assets.AlchemyRecipe{{Input1: 32176, Input2: 32176, Output: 32176}}
-	s.Assets.Economy.Synthesis = assets.SynthesisRules{FailureItemID: 32176, DefaultSuccessPercent: 100}
-	tradeDo(t, s, c, append([]byte{2, 2}, []byte("/compound 1 2")...))
-	if c.character.Bag[0].Count != 9 || c.character.Bag[1].Count != 4 || c.character.Bag[2].Count != 1 {
-		t.Fatal("synthesis costs or result", c.character.Bag)
-	}
-	effect := protocol.Builder{5, 5}.U32(c.character.ID).U16(60020)
-	if !contains(wires[0].packets(t), effect) {
-		t.Fatal("synthesis effect missing")
-	}
-	s.Assets.Economy.Synthesis.DefaultSuccessPercent = 0
-	wires[0].Reset()
-	tradeDo(t, s, c, append([]byte{2, 2}, []byte("/compound 1 2")...))
-	if contains(wires[0].packets(t), effect) || c.character.Bag[2].Count != 2 {
-		t.Fatal("failure branch not honored")
-	}
-	// The native handler remains deterministic even when public synthesis is 0%.
-	wires[0].Reset()
-	tradeDo(t, s, c, []byte{40, 1, 1, 2})
-	if !contains(wires[0].packets(t), protocol.Builder{40, 1, 1}.U16(32176)) {
-		t.Fatal("native alchemy behavior changed")
+	tradeDo(t, s, c, []byte{40, 1, 5, 9})
+	if !contains(wires[0].packets(t), protocol.Builder{40, 1, 1}.U16(300)) {
+		t.Fatal("AC40 did not share rank/base behavior")
 	}
 }
+
 func TestPublicMarriageAndParcelCommands(t *testing.T) {
 	s, players, wires := tradeFixture(t)
 	a, b := players[0], players[1]

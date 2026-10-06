@@ -14,14 +14,31 @@ func (c *Character) AddSkillEXP(id uint16, gain uint32) [][]byte {
 		if sk.ID == StarterStunt(c.Body, c.Head) {
 			clientID = 15003
 		}
-		if (sk.ID != id && clientID != id) || sk.Grade == 0 || sk.Grade >= 10 {
+		limit := SkillGradeLimit(sk.ID)
+		if (sk.ID != id && clientID != id) || sk.Grade == 0 || sk.Grade >= limit {
 			continue
 		}
 		old := sk.Grade
 		sk.EXP += gain // C# UInt32 addition wraps.
-		for sk.Grade < 10 && sk.EXP >= uint32(sk.Grade)*SkillGradeExpScale {
-			sk.EXP -= uint32(sk.Grade) * 100
+		required := func() uint32 {
+			if IsAlchemySkill(sk.ID) {
+				return AlchemyGradeEXP(sk.Grade)
+			}
+			return uint32(sk.Grade) * SkillGradeExpScale
+		}
+		for sk.Grade < limit && sk.EXP >= required() {
+			sk.EXP -= required()
 			sk.Grade++
+		}
+		if IsAlchemySkill(sk.ID) {
+			if sk.Grade == limit {
+				sk.EXP = 0
+			}
+			var packets [][]byte
+			if sk.Grade > old {
+				packets = append(packets, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatSkillGrade, protocol.StatsValueAbsolute}.U32(uint32(sk.Grade)).U32(uint32(clientID)))
+			}
+			return append(packets, protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatSkillEXP, protocol.StatsValueAbsolute}.U32(AlchemyCumulativeEXP(sk.Grade, sk.EXP)).U32(uint32(clientID)))
 		}
 		prof := min(uint32(SkillProficiencyScale), sk.EXP*SkillProficiencyScale/(uint32(sk.Grade)*SkillGradeExpScale))
 		packets := [][]byte{protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSkillProficiency}.U32(uint32(clientID)).U16(uint16(prof))}

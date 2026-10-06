@@ -12,7 +12,7 @@ import (
 func TestAlchemyPacketsPersistenceAndReplay(t *testing.T) {
 	s, players, wires := compoundFixture(t)
 	c := players[0]
-	// AC40 echoes subcommands; recipe lookup is symmetric and first-match wins.
+	// AC40 echoes subcommands while the same rank/base engine supplies results.
 	s.Assets.AlchemyRecipes = append(s.Assets.AlchemyRecipes, assets.AlchemyRecipe{Input1: 200, Input2: 100, Output: 200})
 	if err := s.dispatch(context.Background(), c, []byte{40, 7, 9, 5}); err != nil {
 		t.Fatal(err)
@@ -66,32 +66,15 @@ func TestAlchemyMalformedAndUnavailableInputs(t *testing.T) {
 			t.Fatal("invalid ingredients accepted", request, got)
 		}
 	}
-	for _, name := range []string{"missing recipe", "unknown output", "unknown input"} {
-		t.Run(name, func(t *testing.T) {
-			recipes := s.Assets.AlchemyRecipes
-			items := s.Assets.Items
-			s.Assets.Items = map[uint16]game.ItemDefinition{}
-			for id, definition := range items {
-				s.Assets.Items[id] = definition
-			}
-			switch name {
-			case "missing recipe":
-				s.Assets.AlchemyRecipes = nil
-			case "unknown output":
-				delete(s.Assets.Items, 300)
-			case "unknown input":
-				delete(s.Assets.Items, 100)
-			}
-			if err := s.dispatch(context.Background(), c, []byte{40, 1, 5, 9}); err != nil {
-				t.Fatal(err)
-			}
-			got := wires[0].packets(t)
-			if c.character.Bag != before || len(got) != 1 || !bytes.Equal(got[0], []byte{40, 1, 0, 0, 0}) {
-				t.Fatal("unavailable recipe consumed items", got)
-			}
-			s.Assets.Items = items
-			s.Assets.AlchemyRecipes = recipes
-		})
+	// Unknown definitions cannot be consumed; obsolete recipe rows are ignored.
+	delete(s.Assets.Items, 100)
+	s.alchemyIndex = nil
+	if err := s.dispatch(context.Background(), c, []byte{40, 1, 5, 9}); err != nil {
+		t.Fatal(err)
+	}
+	got := wires[0].packets(t)
+	if c.character.Bag != before || len(got) != 1 || !bytes.Equal(got[0], []byte{40, 1, 0, 0, 0}) {
+		t.Fatal("unknown material consumed", got)
 	}
 }
 
@@ -218,7 +201,7 @@ func TestAlchemyOwnershipGates(t *testing.T) {
 				if len(got) != 1 || got[0][0] != 23 || got[0][1] != 57 {
 					t.Fatal("trade warning missing", got)
 				}
-			} else if len(got) != 0 {
+			} else if gate != "mounted" && len(got) != 0 {
 				t.Fatal("gated alchemy emitted receipt", got)
 			}
 		})
@@ -257,8 +240,8 @@ func TestAlchemyWithSQLAssets(t *testing.T) {
 	c := players[0]
 	next := c.character.Clone()
 	next.Bag = game.Inventory{}
-	next.Bag[4] = game.Item{ID: 37206, Count: 1}
-	next.Bag[8] = game.Item{ID: 37207, Count: 1}
+	next.Bag[4] = game.Item{ID: 32011, Count: 1}
+	next.Bag[8] = game.Item{ID: 32012, Count: 1}
 	if err := s.commit(context.Background(), c, next); err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +249,12 @@ func TestAlchemyWithSQLAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := wires[0].packets(t)
-	if len(got) != 4 || !bytes.Equal(got[3], []byte{40, 1, 1, 63, 78}) || c.character.Bag[0].ID != 20031 {
-		t.Fatal("SQL recipe synthesis failed", got)
+	if len(got) != 4 || got[3][0] != 40 || got[3][2] != 1 {
+		t.Fatal("SQL rank/base synthesis", got)
+	}
+	output := catalog.NativeItems[c.character.Bag[0].ID].AlchemyItem()
+	input := min(catalog.NativeItems[32011].AlchemyItem().Rank, catalog.NativeItems[32012].AlchemyItem().Rank)
+	if output.Rank > input+4 || output.Bases[0] != catalog.NativeItems[32011].AlchemyItem().Bases[0] {
+		t.Fatal("SQL rank/base constraints", output)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
 
 func testState() *State {
@@ -110,5 +111,34 @@ func TestInstalledSkillCatalog(t *testing.T) {
 	}
 	if slow.Weapons != ([5]bool{true, true, true, true, true}) || c.Orders[130] != 11056 {
 		t.Fatal("assistant catalog", slow)
+	}
+}
+
+func TestAlchemyThirtyLevelSnapshot(t *testing.T) {
+	id := uint16(game.AlchemySuperiorSkill)
+	c := &Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id}, MaximumGrade: 30}}, Orders: map[uint16]uint16{194: id}}
+	s := NewState(c)
+	if !s.Snapshot(snapshot([]byte{194, 0, 30, 0, 0, 0, 0})) || s.Learned[id].Grade != 30 {
+		t.Fatal("native alchemy grade 30 rejected")
+	}
+	if !s.Apply([]byte{5, 12, 127, 62, 29}) || s.Learned[id].Grade != 29 {
+		t.Fatal("alchemy grade update")
+	}
+	if s.Apply([]byte{5, 12, 127, 62, 31}) {
+		t.Fatal("above-cap alchemy grade accepted")
+	}
+}
+
+func TestAlchemyCumulativeExperienceSnapshotAndUpdates(t *testing.T) {
+	id := uint16(game.AlchemyJuniorSkill)
+	s := NewState(&Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id}, MaximumGrade: 30}}, Orders: map[uint16]uint16{193: id}})
+	if !s.Snapshot(snapshot([]byte{193, 0, 2, 22, 0, 0, 0})) {
+		t.Fatal("snapshot")
+	}
+	if s.Learned[id].EXP != 8 || s.Learned[id].Proficiency != 2285 {
+		t.Fatal("cumulative snapshot conversion", s.Learned[id])
+	}
+	if !s.Apply([]byte{8, 1, 111, 1, 23, 0, 0, 0, 126, 62, 0, 0}) || s.Learned[id].EXP != 9 || s.Learned[id].Proficiency != 2571 {
+		t.Fatal("native EXP update", s.Learned[id])
 	}
 }

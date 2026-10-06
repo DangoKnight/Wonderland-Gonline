@@ -6,7 +6,6 @@ import (
 	"testing"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
-	"wonderland-gonline/internal/protocol"
 )
 
 func compoundFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
@@ -15,7 +14,14 @@ func compoundFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	for _, id := range []uint16{100, 200, 300} {
 		s.Assets.Items[id] = game.ItemDefinition{ID: id, Type: 23}
 	}
-	s.Assets.AlchemyRecipes = []assets.AlchemyRecipe{{Input1: 100, Input2: 200, Output: 300}}
+	s.Assets.AlchemyRecipes = []assets.AlchemyRecipe{{Input1: 100, Input2: 200, Output: 100}} // Conflicting obsolete table is ignored.
+	s.Assets.NativeItems = map[uint16]assets.NativeItem{}
+	for _, id := range []uint16{100, 200, 300} {
+		it := assets.NativeItem{Definition: s.Assets.Items[id]}
+		it.Record[45], it.Record[136], it.Record[406], it.Record[407] = 1, 1, 1, 1
+		s.Assets.NativeItems[id] = it
+	}
+	s.alchemyRandom = func(n int) (int, error) { return n - 1, nil }
 	for _, c := range players {
 		if err := s.worldCommand(context.Background(), c, []byte{12, 1}); err != nil {
 			t.Fatal(err)
@@ -43,8 +49,7 @@ func TestCompoundNativePacketsPersistenceAndReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := append([]byte{23, 8, 5, 44, 1, 1}, make([]byte, 28)...)
-	animation := protocol.Builder{23, 122}.U32(c.character.ID)
-	want := [][]byte{{23, 9, 9, 1}, {23, 9, 5, 1}, result, {23, 13, 44, 1, 1, 5}, animation}
+	want := [][]byte{{23, 9, 9, 1}, {23, 9, 5, 1}, result, {23, 13, 44, 1, 1, 5}}
 	got := wires[0].packets(t)
 	if len(got) != len(want) {
 		t.Fatal(got)
@@ -55,15 +60,15 @@ func TestCompoundNativePacketsPersistenceAndReplay(t *testing.T) {
 		}
 	}
 	peer := wires[1].packets(t)
-	if len(peer) != 1 || !bytes.Equal(peer[0], animation) || wires[2].Len() != 0 {
-		t.Fatal("animation map isolation", peer)
+	if len(peer) != 0 || wires[2].Len() != 0 {
+		t.Fatal("synthesis must not broadcast native fishing-stop", peer)
 	}
 	chars, err := s.Store.Characters(ctx, c.account.ID)
 	if err != nil || chars[0].Bag != c.character.Bag || chars[0].Bag[4] != (game.Item{ID: 300, Count: 1}) || !chars[0].Bag[8].Empty() {
 		t.Fatal("not persisted", err)
 	}
 	before := c.character.Bag
-	if err := s.dispatch(ctx, c, []byte{23, 14, 2, 9, 5}); err != nil || c.character.Bag != before || wires[0].Len() != 0 || wires[1].Len() != 0 {
+	if err := s.dispatch(ctx, c, []byte{23, 14, 2, 9, 5}); err != nil || c.character.Bag != before || wires[1].Len() != 0 {
 		t.Fatal("empty-slot replay changed state", err)
 	}
 }
@@ -77,18 +82,14 @@ func TestCompoundRefusesMalformedAndUnavailableInputs(t *testing.T) {
 		if len(p) != 5 && err == nil {
 			t.Fatalf("truncated or extra packet accepted: %v", p)
 		}
-		if c.character.Bag != before || wires[0].Len() != 0 || wires[1].Len() != 0 {
+		if c.character.Bag != before || wires[1].Len() != 0 {
 			t.Fatal("invalid input changed state", p)
 		}
 	}
-	delete(s.Assets.Items, 300)
-	if err := s.worldCommand(context.Background(), c, []byte{23, 14, 2, 5, 9}); err != nil || c.character.Bag != before || wires[0].Len() != 0 {
-		t.Fatal("unknown output", err)
-	}
-	s.Assets.AlchemyRecipes = nil
-	// No recipe uses the same deterministic greater-ID fallback as native AC23.
-	if err := s.worldCommand(context.Background(), c, []byte{23, 14, 2, 5, 9}); err != nil || c.character.Bag[4].ID != 200 {
-		t.Fatal("fallback", err)
+	delete(s.Assets.Items, 100)
+	s.alchemyIndex = nil
+	if err := s.worldCommand(context.Background(), c, []byte{23, 14, 2, 5, 9}); err != nil || c.character.Bag != before || wires[1].Len() != 0 {
+		t.Fatal("unknown input", err)
 	}
 }
 
@@ -105,9 +106,10 @@ func TestCompoundFullBagAndFailedSave(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := c.character.Bag
-	if err := s.worldCommand(ctx, c, []byte{23, 14, 2, 5, 9}); err != nil || before != c.character.Bag || wires[0].Len() != 0 {
+	if err := s.worldCommand(ctx, c, []byte{23, 14, 2, 5, 9}); err != nil || before != c.character.Bag {
 		t.Fatal("full bag consumed ingredients", err)
 	}
+	wires[0].Reset()
 	// A removal can free the other ingredient slot even in a full bag.
 	next = c.character.Clone()
 	next.Bag[8].Count = 1
@@ -164,7 +166,7 @@ func TestCompoundOwnershipGates(t *testing.T) {
 				if len(packets) != 1 || packets[0][1] != 57 {
 					t.Fatal("trade warning", packets)
 				}
-			} else if len(packets) != 0 {
+			} else if gate != "mounted" && len(packets) != 0 {
 				t.Fatal("gated success", packets)
 			}
 		})

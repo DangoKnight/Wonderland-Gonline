@@ -206,6 +206,16 @@ func (n *NPC) paint() {
 	}
 }
 
+// FaceConversation is FUN_00304fd0 -> FUN_00307ae8: normal actors turn
+// to the player, but kind-6 props and special pose groups keep their artwork.
+func (n *NPC) FaceConversation(x, y int) bool {
+	if n.Info.Kind == kindProp || n.Action < 0 || n.Action >= standingAction+facingCount {
+		return false
+	}
+	n.Action = standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
+	return true
+}
+
 // standFacing converts a record's facing to its standing action.
 func standFacing(r byte) int {
 	if r < 1 || r > facingCount {

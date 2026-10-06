@@ -119,11 +119,18 @@ func (c *slotControl) Hint() {
 	if it.Empty() || c.form.drag != nil || c.Blocked() {
 		return
 	}
-	f := c.form
+	c.form.drawItemHint(&c.Component, it)
+}
+
+// Bag views share the native item breakdown without sharing selection state.
+func (f *Form) drawItemHint(control *seui.Component, it game.Item) {
 	item := f.State.Items[it.ID]
 	lines := itemInfoLines(item, it.ID)
-	c.SetHint(clientassets.Big5Text(strings.TrimSuffix(strings.TrimPrefix(lines[0], "[ "), " ]")))
-	c.GrBasic.Hint()
+	if control.Root().Base().Name == compoundNativeClass {
+		lines = append(lines, alchemyBaseLine(item))
+	}
+	control.SetHint(clientassets.Big5Text(strings.TrimSuffix(strings.TrimPrefix(lines[0], "[ "), " ]")))
+	control.GrBasic.Hint()
 	rows := wrapItemInfo(lines)
 	if f.itemInfo == nil {
 		f.itemInfo = seui.NewPanel(f.Env, nil)
@@ -136,9 +143,9 @@ func (c *slotControl) Hint() {
 	// the painter. Preserve the resulting padding seen in the reference.
 	height := (len(lines) + len(clientassets.Big5Text(item.Description))*8/nativeDescriptionSizingWidth + 1) * itemInfoLineHeight
 	height = max(height, (len(rows)+1)*itemInfoLineHeight)
-	at := c.Abs()
+	at := control.Abs()
 	panel.Width, panel.Height = itemInfoWidth, min(height, f.Env.Screen.H)
-	panel.Left, panel.Top = at.X+c.Width+2, at.Y
+	panel.Left, panel.Top = at.X+control.Width+2, at.Y
 	if panel.Left+panel.Width > f.Env.Screen.W {
 		panel.Left = at.X - panel.Width - 2
 	}
@@ -149,6 +156,6 @@ func (c *slotControl) Hint() {
 		if (i+1)*itemInfoLineHeight > panel.Height-10 {
 			break
 		}
-		c.Env.Text.Draw(panel.Left+10, panel.Top+10+i*itemInfoLineHeight, 0, false, true, c.Env.Screen, row, itemInfoLineHeight, itemInfoTextWidth, itemInfoPaper, itemInfoInk, 2)
+		control.Env.Text.Draw(panel.Left+10, panel.Top+10+i*itemInfoLineHeight, 0, false, true, control.Env.Screen, row, itemInfoLineHeight, itemInfoTextWidth, itemInfoPaper, itemInfoInk, 2)
 	}
 }

@@ -2138,7 +2138,7 @@
    "start": "213ad8",
    "end": "22a864",
    "functions": 166,
-   "cited": 22,
+   "cited": 25,
    "classes": [
     "TRe_CompoundForm",
     "TRe_MiniThingGridForm",
@@ -2801,7 +2801,7 @@
    "start": "3030ec",
    "end": "30a510",
    "functions": 41,
-   "cited": 11,
+   "cited": 13,
    "classes": [
     "CH_TTrafficMenu",
     "CH_TMiniMapForm",
@@ -3070,7 +3070,7 @@
    "start": "36e674",
    "end": "36e9e4",
    "functions": 11,
-   "cited": 4,
+   "cited": 5,
    "classes": [
     "CH_TMotionSkill",
     "CH_TBattleSound",
@@ -3312,7 +3312,7 @@
    "start": "3c856c",
    "end": "3c9420",
    "functions": 21,
-   "cited": 3,
+   "cited": 4,
    "classes": [
     "TRE_FurnitureMng"
    ],
@@ -3339,7 +3339,7 @@
    "start": "3cd920",
    "end": "3d39a8",
    "functions": 157,
-   "cited": 6,
+   "cited": 7,
    "classes": [
     "TSe_itemObject",
     "TSe_ItemImage",
@@ -3795,7 +3795,7 @@
    "start": "4827a8",
    "end": "485d44",
    "functions": 46,
-   "cited": 6,
+   "cited": 7,
    "classes": [
     "Twb_MemSur",
     "Twb_PlainPic"
@@ -4220,7 +4220,7 @@
     276
    ],
    "functions": 56,
-   "cited": 8,
+   "cited": 9,
    "ranges": [
     "4827a8-485d44",
     "4868b8-486aac"
@@ -4271,7 +4271,7 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs, NPC turning.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs.",
    "regions": [
     262,
     263,
@@ -4353,7 +4353,7 @@
     254
    ],
    "functions": 90,
-   "cited": 23,
+   "cited": 25,
    "ranges": [
     "2fdc40-302cf8",
     "302d90-302e00",
@@ -4507,7 +4507,7 @@
     169
    ],
    "functions": 715,
-   "cited": 24,
+   "cited": 25,
    "ranges": [
     "34fad4-36e008",
     "3c96f8-3cd798",
@@ -4542,7 +4542,7 @@
     231
    ],
    "functions": 356,
-   "cited": 8,
+   "cited": 9,
    "ranges": [
     "36e674-36e9e4",
     "36f144-377054",
@@ -4645,9 +4645,9 @@
   {
    "key": "services",
    "title": "NPC services and feature forms",
-   "go": "",
+   "go": "client/wlo/inventory (compound.go), client/wlo/app (compound.go)",
    "status": "started",
-   "notes": "Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, crafting (TRe_CompoundForm), inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported.",
+   "notes": "TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Native material-base labels are shown in compound tooltips. Pending: manual tier selection and overworld synthesis animation. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported.",
    "regions": [
     143,
     144,
@@ -4671,7 +4671,7 @@
     205
    ],
    "functions": 1493,
-   "cited": 30,
+   "cited": 33,
    "ranges": [
     "152a64-154dec",
     "1552f4-1553c8",
@@ -4708,7 +4708,7 @@
     112
    ],
    "functions": 246,
-   "cited": 13,
+   "cited": 14,
    "ranges": [
     "3c856c-3c9420",
     "3d73b8-3f5a6c",
@@ -5283,5 +5283,5 @@
    "client": false
   }
  ],
- "cited_functions": 649
+ "cited_functions": 658
 }

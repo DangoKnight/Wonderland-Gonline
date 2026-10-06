@@ -299,6 +299,10 @@ func (s *Server) nativeStatsSnapshot(char game.Character) game.Character {
 	snapshot := char.Clone()
 	for i := range snapshot.Skills {
 		sk := &snapshot.Skills[i]
+		if game.IsAlchemySkill(sk.ID) {
+			sk.EXP = game.AlchemyCumulativeEXP(sk.Grade, sk.EXP)
+			continue
+		}
 		for _, id := range s.Assets.Fishing.Skills {
 			if sk.ID == id {
 				sk.EXP = fishingClientEXP(*sk, s.Assets.Fishing)

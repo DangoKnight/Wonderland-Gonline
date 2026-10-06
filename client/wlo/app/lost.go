@@ -97,6 +97,9 @@ func (c *Client) disconnected() {
 	if !(c.Login.Visible || c.Chars.Visible || c.Create.Visible || c.Password.Visible || c.G.InGame) {
 		return
 	}
+	if c.Compound != nil {
+		c.Compound.Reset()
+	}
 	if c.Skills != nil {
 		c.Skills.Hide()
 	}

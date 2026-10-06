@@ -81,6 +81,7 @@ type Client struct {
 	settingsPromptForm *seui.Form
 	settingsPath       string
 	Inventory          *inventory.Form
+	Compound           *inventory.CompoundForm
 	remote             remoteRuntime
 	InventoryState     *inventory.State
 	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
@@ -201,6 +202,8 @@ func New(o Options) (*Client, error) {
 	c.Servers.OnConnecting = func() { c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
+	c.Login.Account.Clipboard = loginClipboardText
+	c.Login.Password.Clipboard = loginClipboardText
 	c.Login.OnLogout = c.clearProfileAccount
 	c.Login.Servers = c.Servers
 	c.Login.Notify = func(text []byte, d time.Duration) { c.Notices.Show(text, d, c.Now()) }
@@ -272,6 +275,7 @@ func New(o Options) (*Client, error) {
 		c.Create.Role.Painter = role.NewCreator(c.lib, c.items)
 	}
 	c.initInventory()
+	c.initCompound()
 	c.initSkills()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
@@ -345,6 +349,7 @@ func (c *Client) frame(draw bool) {
 			}
 			if c.Inventory != nil {
 				c.Inventory.DrawDragged()
+				c.Compound.DrawDragged()
 				c.drawHotbarDrag()
 			}
 		}

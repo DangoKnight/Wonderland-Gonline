@@ -11,9 +11,9 @@ const (
 	compoundSecondInputOffset = 14
 )
 
-// AlchemyRecipe is the two-input projection used by native AlchemyManager and
-// AC23.Recv14. Manufacturing quantities, tools and later ingredients are not
-// applied by that handler; manufacturing remains a separate pending subsystem.
+// AlchemyRecipe retains the legacy two-input table for import provenance and
+// compatibility inspection. Gameplay now uses CompoundingCatalog, not this table.
+// Manufacturing retains its separate quantities, tools and later ingredients.
 type AlchemyRecipe struct{ Input1, Input2, Output uint16 }
 
 // ParseAlchemyRecipes follows AlchemyManager.LoadFromCompoundDat. Keep file order

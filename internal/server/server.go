@@ -140,6 +140,9 @@ type Server struct {
 	Config         config.Config
 	Store          *store.Store
 	Assets         *assets.Catalog
+	alchemyAssets  *assets.Catalog
+	alchemyIndex   *game.AlchemyCatalog
+	alchemyRandom  game.AlchemyRoll // Nil uses crypto/rand; deterministic fixtures may inject a roll.
 	World          *world.World
 	actorPursuits  map[uint16]map[uint16]*actorPursuit
 	Log            *slog.Logger

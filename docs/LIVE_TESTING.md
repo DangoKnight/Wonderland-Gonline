@@ -64,6 +64,12 @@ starts beside the tester. The framework grants no GM privileges.
 | `inventory-raft` | One 4 × 3 raft at anchor slot 1; valid/invalid moves and reconnect without duplicate items. |
 | `raft-no-space` | Alternating full rod stacks leave fragmented free cells; raft pickup fails until a contiguous rectangle is freed. |
 | `robinson-recovery` | Completed raft dialogue checkpoint, pending recruitment, no Robinson/raft; actor interaction completes recruitment once. |
+| `compound-unskilled` | Stackable materials, no learned skills; Primary level 0, consumption, result replies and reconnect without teaching alchemy. |
+| `compound-junior` | Three materials with different first/base-sum winners; Junior level 1 outranks Primary level 30, secondary loss and rank fallback. |
+| `compound-books` | Four material stacks and Books 1/4, all three tiers learned; one book per native recipe, 3/4/5-input requests, Superior level 1, highest-book additive shift and secondary retention. |
+| `compound-fallback` | SQL-verified impossible material/rank pair; every accepted attempt consumes inputs and produces catastrophic junk. |
+| `compound-full-bag` | Full inventory with stacked materials; rejected delivery changes nothing, then clearing slot 50 permits one result. |
+| `compound-advancement` | Primary level 10 one EXP below the native Formula.dat threshold; first committed attempt advances to 11, subsequent progress and reconnect. |
 
 Shoreline coordinates, rod/skill IDs and catch timing come from installed SQL
 rules. Preparation fails when required definitions or geometry are unavailable.
@@ -116,7 +122,7 @@ the server starts.
 Add relevant prerequisite tests in `internal/livetest/scenarios_test.go`. Run:
 
 ```sh
-WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./internal/livetest ./cmd/live-test
+WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" go test -race ./internal/livetest ./cmd/live-test
 ```
 
 Native SQL integration checks skip when that variable is absent. They remain
@@ -252,3 +258,94 @@ retain those detailed checks as unverified where no earlier result exists.
 AC6:2 stopping still needs an explicit observer/reconnect retest. The previously
 reported fishing passes remain valid; AC7 and unreached title, reborn-job and
 bath flows remain NOT TESTED.
+
+## Compounding acceptance batch
+
+Prepare each scenario in a separate new directory. For example:
+
+```sh
+go run ./cmd/live-test -config config.local.json \
+  -scenario compound-books -output var/live-tests/compound-books-01
+```
+
+Run the six `compound-*` scenarios above independently. Start with
+`compound-unskilled`, then Junior, books, fallback, full bag and advancement.
+Stop the previous test server before starting the next configuration. Each
+report contains its own 10-character credentials, starting ingredient quantities,
+item IDs/names, ranks, material codes, selected skill state and allowed junk pool.
+Left-click items in the native Compound bag, choosing one unit when prompted.
+Use its named bag slots, not items produced by a previous attempt. aLogin allows
+only one Alchemy Book per recipe; use Book 1 and Book 4 in separate attempts. Repeat with a
+new output directory to replenish ingredients; preparation refuses overwrites.
+
+Definitions come from the installed assets database. Preparation requires
+eligible 1×1 stackable ordinary bulk materials (native types 31–38) of rank at least 5, the relevant alchemy skills,
+the selected books and at least one eligible catastrophic reward. Junior and
+book fixtures require a reachable normal item with both material bases, so they
+can verify successful material retention as well as failures. The forced
+fallback fixture checks every candidate at or below the maximum Superior ceiling
+for the chosen base pair, with the higher-ranked material first so Superior's
+rank-sum primary agrees with the checklist. It does not alter probabilities,
+inject a random seed or modify `assets.db`. Fixture tests also verify the forced
+fallback for every possible delta using independent controlled rolls.
+
+The book checklist compares each committed log row against
+`rank_ceiling = max(1, base_rank + delta)`, where logged `delta` already includes
+the highest book. Subtract `book_bonus` to check the original tier range.
+Separate live attempts have different random rolls: Book 1 need not produce an
+item exactly one rank above a previous no-book attempt. Initial catastrophes
+skip delta selection and may log a zero delta/ceiling; candidate exhaustion can
+also force catastrophe after the delta is rolled. Junk need not fit the normal
+rank ceiling or secondary requirements. Exact weighted probabilities require
+statistical analysis, not a handful of successful UI attempts.
+
+Enable **Use Junior Alchemy** for Junior tests and select Superior for Superior
+tests. Capture AC23:14/87/101 requests and AC23:9/8/13 replies. Use screenshots for the client
+result presentation, inventory quantities and skill display. Keep reconnect
+checks on the same prepared database. If aLogin cannot display per-grade EXP,
+stop the test server and inspect the isolated database with a read-only query:
+
+```sh
+sqlite3 -readonly var/live-tests/compound-advancement-01/wonderland.db \
+  'SELECT character_id, skill_id, grade, exp FROM character_skills WHERE skill_id IN (15997,15998,15999);'
+```
+
+These tests verify client acceptance and durable mechanics. They start **NOT RUN**;
+passing fixture tests do not establish a live-client pass. See
+[compounding policy](COMPOUNDING.md) for the compiled rates and full rules.
+
+### Prepared compounding runs
+
+On 2026-10-06, the finalized fixtures were prepared in these private, ignored
+directories. Each remains **NOT RUN**. Open the corresponding `instructions.md`
+for credentials and the exact server command; no server was started.
+
+| Scenario | Run directory |
+| --- | --- |
+| Unskilled | `var/live-tests/compound-unskilled-02/` |
+| Junior | `var/live-tests/compound-junior-02/` |
+| Books | `var/live-tests/compound-books-02/` |
+| Forced fallback | `var/live-tests/compound-fallback-02/` |
+| Full bag | `var/live-tests/compound-full-bag-02/` |
+| Advancement | `var/live-tests/compound-advancement-02/` |
+
+The `-02` fixtures are superseded by the corrected `-03` batch below. The initial `-01` preparations
+remain untouched; the finalized Junior/book fixtures additionally guarantee an
+attainable normal two-base result.
+
+### Corrected native compounding fixtures
+
+The tester reported that the earlier materials (27012/27013) were blocked by
+alogin as not compoundable. They are native lucky-bag items; the broad metadata
+filter alone did not make them suitable ordinary ingredients. Runs `-01`/`-02`
+therefore do not establish compounding acceptance. The unskilled logs contain
+no AC23:14 attempts or committed calculations. AC23:115 was incorrectly inferred
+to be compounding; `FUN_0021bd90` actually sends AC23:14.
+
+Use `var/live-tests/compound-<scenario>-03/instructions.md` for the corrected
+batch (unskilled, junior, books, fallback, full-bag, advancement). Only ordinary
+bulk material types 31–38 are eligible fixture inputs. The checklists use native
+left-click selection, with one unit if prompted. aLogin's `FUN_0021bd90` limits
+recipes to one book; the five-input test uses four material stacks plus Book 4.
+Multiple-book highest-bonus logic remains supported by Go and its automated tests.
+These fresh runs start NOT RUN; no server was started during preparation.

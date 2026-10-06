@@ -52,7 +52,7 @@ func (s *State) Snapshot(p []byte) bool {
 	for o := snapshotCountOffset + 2; o < tail; o += snapshotRecordBytes {
 		order := binary.LittleEndian.Uint16(p[o:])
 		grade := p[o+2]
-		if order == 0 || orders[order] || grade > game.MaxSkillGrade {
+		if order == 0 || orders[order] || grade > game.AlchemySkillMaximum {
 			return false
 		}
 		orders[order] = true
@@ -60,7 +60,15 @@ func (s *State) Snapshot(p []byte) bool {
 		if !known {
 			continue
 		}
-		next[id] = FromEXP(grade, binary.LittleEndian.Uint32(p[o+3:]))
+		if grade > game.SkillGradeLimit(id) {
+			return false
+		}
+		exp := binary.LittleEndian.Uint32(p[o+3:])
+		if game.IsAlchemySkill(id) {
+			next[id] = alchemyProgress(grade, exp)
+		} else {
+			next[id] = FromEXP(grade, exp)
+		}
 	}
 	s.Learned = next
 	s.Revision++
@@ -73,6 +81,7 @@ func (s *State) Apply(p []byte) bool {
 	var id uint32
 	var value uint32
 	var grade bool
+	var experience bool
 	switch {
 	case p[0] == protocol.CommandCharacterState && p[1] == protocol.CharacterStateWireCode12 && len(p) == 5:
 		id = uint32(binary.LittleEndian.Uint16(p[2:]))
@@ -85,10 +94,14 @@ func (s *State) Apply(p []byte) bool {
 		id = binary.LittleEndian.Uint32(p[8:])
 		value = binary.LittleEndian.Uint32(p[4:])
 		grade = true
+	case p[0] == protocol.CommandStats && p[1] == protocol.StatsStatUpdate && len(p) == 12 && p[2] == game.StatSkillEXP && p[3] == protocol.StatsValueAbsolute:
+		id = binary.LittleEndian.Uint32(p[8:])
+		value = binary.LittleEndian.Uint32(p[4:])
+		experience = true
 	default:
 		return false
 	}
-	if id == 0 || id > 65535 || (grade && value > game.MaxSkillGrade) || (!grade && value > game.SkillProficiencyScale) {
+	if id == 0 || id > 65535 || (grade && value > uint32(game.SkillGradeLimit(uint16(id)))) || (!grade && !experience && value > game.SkillProficiencyScale) {
 		return false
 	}
 	key := uint16(id)
@@ -96,7 +109,12 @@ func (s *State) Apply(p []byte) bool {
 		return false
 	}
 	v := s.Learned[key]
-	if grade {
+	if experience {
+		if !game.IsAlchemySkill(key) {
+			return false
+		}
+		v = alchemyProgress(v.Grade, value)
+	} else if grade {
 		v.Grade = byte(value)
 	} else {
 		v.Proficiency = uint16(value)
@@ -108,4 +126,17 @@ func (s *State) Apply(p []byte) bool {
 	}
 	s.Revision++
 	return true
+}
+
+// Native skill EXP is cumulative; gameplay and the Go UI keep per-grade progress.
+func alchemyProgress(grade byte, cumulative uint32) Progress {
+	exp := game.AlchemyGradeProgress(grade, cumulative)
+	p := Progress{Grade: grade, EXP: exp}
+	if grade > 0 {
+		p.Proficiency = uint16(min(uint64(game.SkillProficiencyScale), uint64(exp)*game.SkillProficiencyScale/uint64(game.AlchemyGradeEXP(grade))))
+		if grade >= game.AlchemySkillMaximum {
+			p.Proficiency = game.SkillProficiencyScale
+		}
+	}
+	return p
 }

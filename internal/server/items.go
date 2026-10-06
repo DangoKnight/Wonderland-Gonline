@@ -30,7 +30,7 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return s.openPackCommand(ctx, c, p)
 	case protocol.InventoryPotentialPill:
 		return s.potentialPillCommand(ctx, c, p)
-	case protocol.InventoryCompound:
+	case protocol.InventoryCompound, protocol.InventoryCompoundJunior, protocol.InventoryCompoundSuperior:
 		return s.compoundCommand(ctx, c, p)
 	case protocol.InventoryFishingStart:
 		slot, err := fishingStartSlot(p)

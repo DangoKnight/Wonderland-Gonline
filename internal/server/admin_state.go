@@ -52,7 +52,7 @@ func (s *Server) validateAdminState(c game.Character) error {
 	}
 	seenSkills := map[uint16]bool{}
 	for _, skill := range c.Skills {
-		if _, known := s.Assets.Skills[skill.ID]; !known || seenSkills[skill.ID] || skill.Grade < game.MinSkillGrade || skill.Grade > game.MaxSkillGrade {
+		if _, known := s.Assets.Skills[skill.ID]; !known || seenSkills[skill.ID] || skill.Grade < game.MinSkillGrade || skill.Grade > game.SkillGradeLimit(skill.ID) {
 			return errors.New("invalid or duplicate skill")
 		}
 		seenSkills[skill.ID] = true

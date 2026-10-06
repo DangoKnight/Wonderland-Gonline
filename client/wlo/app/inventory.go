@@ -9,6 +9,7 @@ import (
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -73,6 +74,7 @@ func (c *Client) resetInventory(p world.Player) {
 		c.applyLocalSettings()
 	}
 	c.Inventory.Hide()
+	c.Compound.Reset()
 	c.Inventory.AllocationReply()
 	c.Inventory.ResetUse()
 	c.Inventory.ResetRemote()
@@ -127,6 +129,9 @@ func (c *Client) inventoryPacket(p []byte) {
 			}
 			return
 		}
+		if p[1] == protocol.InventoryCompoundResult {
+			c.Compound.QueueResult(p[2])
+		}
 		for _, it := range c.InventoryState.Bag {
 			if icon := c.items[it.ID].Icon; !it.Empty() && icon != 0 {
 				c.loadPictures(strconv.Itoa(int(icon)))
@@ -150,6 +155,17 @@ func (c *Client) inventoryPacket(p []byte) {
 		return
 	}
 	switch p[1] {
+	case protocol.InventoryCompoundSuccess:
+		if len(p) == 6 && p[4] != 0 && p[5] >= 1 && p[5] <= game.BagSize {
+			c.Compound.Result(binary.LittleEndian.Uint16(p[2:]), p[4], p[5])
+		} else if c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case protocol.InventoryFishingStopped:
+		// Native AC23:122 clears rod presentation; it is not a synthesis effect.
+		if len(p) != 6 && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case protocol.InventoryPotentialPillResult:
 		if !c.Inventory.PotentialReply(p) && c.Unhandled != nil {
 			c.Unhandled(p)

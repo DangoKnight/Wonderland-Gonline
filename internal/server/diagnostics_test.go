@@ -135,3 +135,19 @@ func TestPotentialPillTraceBoundsPayload(t *testing.T) {
 		t.Fatal("unbounded potential trace")
 	}
 }
+
+func TestNativeCompoundPacketTrace(t *testing.T) {
+	attrs := packetTraceAttrs([]byte{23, 14, 2, 1, 2}, false)
+	found := false
+	for i := 0; i+1 < len(attrs); i += 2 {
+		if attrs[i] == "payload_hex" {
+			found = true
+			if attrs[i+1] != "170e020102" {
+				t.Fatal(attrs)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("compound request bytes not logged")
+	}
+}

@@ -146,6 +146,7 @@ func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, co
 	}
 	candidate.AssetsDatabase = s.Config.AssetsDatabase
 	*s.Assets = *candidate
+	s.alchemyIndex = nil // Native item edits invalidate derived rank/base candidate indexes.
 	s.World.ReloadCatalog(s.Assets)
 	// Reconnect completes native catalog and map snapshots coherently.
 	for _, c := range s.friendSessions {

@@ -2525,7 +2525,7 @@ func platformSetClipboardString(str string) error {
 }
 
 func platformGetClipboardString() (string, error) {
-	panic("glfw: platformGetClipboardString is not implemented")
+	return readClipboardText()
 }
 
 func (w *Window) GetWin32Window() (windows.HWND, error) {

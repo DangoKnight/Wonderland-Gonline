@@ -81,7 +81,7 @@ func (s *Server) gmProgress(ctx context.Context, c *Session, name string, words 
 				return nil
 			}
 		}
-		if grade < game.MinSkillGrade || grade > game.MaxSkillGrade {
+		if grade < game.MinSkillGrade || grade > uint64(game.SkillGradeLimit(uint16(id))) {
 			return nil
 		}
 		packets = next.SetSkillGrade(uint16(id), byte(grade))

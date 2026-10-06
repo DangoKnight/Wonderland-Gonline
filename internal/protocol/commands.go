@@ -305,7 +305,9 @@ const (
 	InventoryEquip            = 11
 	InventoryUnequip          = 12
 	InventoryCompoundSuccess  = 13
-	InventoryCompound         = 14
+	InventoryCompound         = 14 // Primary Alchemy.
+	InventoryCompoundJunior   = 87
+	InventoryCompoundSuperior = 101
 	InventoryItemUse          = 15
 	InventoryEquipmentChanged = 16
 	InventoryPetEquip         = 17
@@ -326,7 +328,6 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	InventoryWireCode76        = 76
 	InventoryUse               = 96
-	InventoryCompoundAnimation = 122
 	InventoryFishingStopped    = 122
 	InventoryFishingStarted    = 123
 	InventoryAcquisitionNotice = 51
@@ -667,11 +668,13 @@ const (
 	LoginCancelPacketBytes    = 2
 )
 
-// AC23:14 supports precisely two slot operands. The result packet includes the
+// AC23:14 carries an ingredient count followed by two to five slot operands. The result packet includes the
 // reference's 28 reserved zero bytes, distinct from ordinary inventory metadata.
 const (
-	CompoundIngredientSlots     = 2
-	CompoundRequestBytes        = 5
+	CompoundIngredientSlots     = 2 // Minimum total inputs (books included).
+	CompoundMaximumIngredients  = 5
+	CompoundRequestHeaderBytes  = 3
+	CompoundRequestBytes        = 5 // Minimum request size.
 	CompoundResultReservedBytes = 28
 )
 

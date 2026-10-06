@@ -24,6 +24,9 @@ type Appearance struct {
 	Base                       Attributes
 }
 
+// ItemTypeExotic is the native Exotic item category (FUN_00485a20).
+const ItemTypeExotic = 10
+
 type ItemDefinition struct {
 	CellWidth  byte      `json:"cell_width"`
 	CellHeight byte      `json:"cell_height"`

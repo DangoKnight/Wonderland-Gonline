@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/binary"
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/game"
@@ -92,7 +93,7 @@ func (c *Client) skillPacket(p []byte) bool {
 		return false
 	}
 	known := p[0] == protocol.CommandCharacterState && (p[1] == protocol.CharacterStateSkillProficiency || p[1] == protocol.CharacterStateWireCode12)
-	known = known || p[0] == protocol.CommandStats && p[1] == protocol.StatsStatUpdate && len(p) > 2 && p[2] == game.StatSkillGrade
+	known = known || p[0] == protocol.CommandStats && p[1] == protocol.StatsStatUpdate && len(p) > 2 && (p[2] == game.StatSkillGrade || p[2] == game.StatSkillEXP && len(p) == 12 && game.IsAlchemySkill(uint16(binary.LittleEndian.Uint32(p[8:]))))
 	if !known {
 		return false
 	}

@@ -155,6 +155,9 @@ func (c *Client) cancelSessionInput() {
 	c.hotbar.drag = nil
 	if c.Inventory != nil {
 		c.Inventory.CancelDrag()
+		if c.Compound != nil {
+			c.Compound.CancelDrag()
+		}
 	}
 	c.groundHeld = false
 	c.uiHovered = false

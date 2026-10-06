@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	luckyDrawTraceBytes  = 64
-	nativePoseTraceBytes = 7 // AC32 subcommand, character ID and expression/pose.
+	luckyDrawTraceBytes      = 64
+	nativeCompoundTraceBytes = 64 // Bounded native synthesis request bytes.
+	nativePoseTraceBytes     = 7  // AC32 subcommand, character ID and expression/pose.
 )
 
 // General packet diagnostics contain no payload bytes: authentication,
@@ -46,6 +47,9 @@ func packetTraceAttrs(p []byte, sent bool) []any {
 			limit = protocol.PotentialPillResultBytes
 		}
 		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), limit)]), "payload_truncated", len(p) > limit)
+	}
+	if !sent && len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryCompound || p[1] == protocol.InventoryCompoundJunior || p[1] == protocol.InventoryCompoundSuperior) {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), nativeCompoundTraceBytes)]), "payload_truncated", len(p) > nativeCompoundTraceBytes)
 	}
 	if !sent && len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryFishingStart || p[1] == protocol.InventoryFishingStop) {
 		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), nativeFishingRequestBytes)]), "payload_truncated", len(p) > nativeFishingRequestBytes)

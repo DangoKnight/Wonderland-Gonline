@@ -163,18 +163,19 @@ func (s *Server) craftingChatCommand(ctx context.Context, c *Session, name strin
 		_, err := s.manufacture(ctx, c, strings.Join(args[:len(args)-4], " "), [2]assets.ManufacturingInput{{ItemID: uint16(values[0]), Count: byte(values[1])}, {ItemID: uint16(values[2]), Count: byte(values[3])}})
 		return true, err
 	case "compound", "synthesize":
-		if len(args) != 2 {
-			return true, s.chatFeedback(c, "Usage: /compound <bag slot1> <bag slot2>")
+		if len(args) < 2 || len(args) > game.AlchemyMaximumIngredients {
+			return true, s.chatFeedback(c, "Usage: /compound <slot1> <slot2> [slot3] [slot4] [slot5]")
 		}
-		a, ea := strconv.ParseUint(args[0], 10, 8)
-		b, eb := strconv.ParseUint(args[1], 10, 8)
-		if ea != nil || eb != nil {
-			return true, s.chatFeedback(c, "Invalid bag slots.")
+		slots := make([]byte, len(args))
+		for i, arg := range args {
+			v, err := strconv.ParseUint(arg, 10, 8)
+			if err != nil || v < 1 || v > game.BagSize {
+				return true, s.chatFeedback(c, "Choose valid bag slots.")
+			}
+			slots[i] = byte(v)
 		}
-		if !gmIdle(c) {
-			return true, s.chatFeedback(c, "Finish active interactions before compounding.")
-		}
-		return true, s.synthesize(ctx, c, byte(a), byte(b))
+		return true, s.synthesize(ctx, c, slots...)
+
 	case "fish":
 		if len(args) != 0 {
 			return true, s.chatFeedback(c, "Usage: /fish")

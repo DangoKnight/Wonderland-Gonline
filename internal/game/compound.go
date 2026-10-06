@@ -5,17 +5,27 @@ package game
 // ingredients, use another empty slot; never discard leftovers or their metadata.
 // A separate result slot also preserves AC23:8's fresh one-item record semantics.
 func (b *Inventory) Compound(first, second byte, result uint16, definitions ...map[uint16]ItemDefinition) (byte, error) {
-	if first < 1 || first > BagSize || second < 1 || second > BagSize || first == second || result == 0 {
+	return b.CompoundSlots([]byte{first, second}, result, definitions...)
+}
+
+// CompoundSlots plans every debit and rectangular output placement together.
+func (b *Inventory) CompoundSlots(slots []byte, result uint16, definitions ...map[uint16]ItemDefinition) (byte, error) {
+	if len(slots) < AlchemyMinimumMaterials || len(slots) > AlchemyMaximumIngredients || result == 0 {
 		return 0, ErrInvalidItem
 	}
 	next := *b
-	if err := next.Remove(first, 1); err != nil {
-		return 0, err
+	target := byte(BagSize)
+	seen := map[byte]bool{}
+	for _, slot := range slots {
+		if slot < 1 || slot > BagSize || seen[slot] {
+			return 0, ErrInvalidItem
+		}
+		seen[slot] = true
+		target = min(target, slot)
+		if err := next.Remove(slot, 1); err != nil {
+			return 0, err
+		}
 	}
-	if err := next.Remove(second, 1); err != nil {
-		return 0, err
-	}
-	target := min(first, second)
 	if !next.CanPlace(target, Item{ID: result, Count: 1}, inventoryDefinitions(definitions)) {
 		target = 0
 		for index, item := range next {

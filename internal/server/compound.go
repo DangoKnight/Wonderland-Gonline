@@ -6,58 +6,42 @@ import (
 	"wonderland-gonline/internal/protocol"
 )
 
-// compoundCommand is AC23.Recv14. Caller holds worldMu. Read the entire two-slot
-// request before planning inventory changes; unsupported extra ingredients must
-// never be silently consumed or ignored.
+// AC23:14/87/101 select Primary/Junior/Superior: count followed by ordered, distinct bag anchors. Two to five total
+// inputs are accepted; books are excluded from the minimum material count.
 func (s *Server) compoundCommand(ctx context.Context, c *Session, p []byte) error {
-	if len(p) != protocol.CompoundRequestBytes {
+	if len(p) < protocol.CompoundRequestHeaderBytes {
 		return protocol.ErrMalformed
 	}
-	if p[2] != protocol.CompoundIngredientSlots {
+	count := int(p[2])
+	if count < protocol.CompoundIngredientSlots || count > protocol.CompoundMaximumIngredients || len(p) != protocol.CompoundRequestHeaderBytes+count {
+		return protocol.ErrMalformed
+	}
+	if !gmIdle(c) || c.stall != nil {
 		return nil
 	}
-	first, second := p[3], p[4]
-	if first < 1 || first > game.BagSize || second < 1 || second > game.BagSize || first == second {
-		return nil
+	slots := p[protocol.CompoundRequestHeaderBytes:]
+	tier := game.AlchemyPrimary
+	switch p[1] {
+	case protocol.InventoryCompoundJunior:
+		tier = game.AlchemyJunior
+	case protocol.InventoryCompoundSuperior:
+		tier = game.AlchemySuperior
 	}
-	if c.event != nil || c.storm || c.beach != nil {
-		return nil
-	}
-	if c.character.ActiveVehicle != 0 && (first == c.character.VehicleSlot || second == c.character.VehicleSlot) {
-		return nil
-	}
-	a, b := c.character.Bag[first-1], c.character.Bag[second-1]
-	if a.Empty() || b.Empty() {
-		return nil
-	}
-	if _, ok := s.Assets.Items[a.ID]; !ok {
-		return nil
-	}
-	if _, ok := s.Assets.Items[b.ID]; !ok {
-		return nil
-	}
-	result := s.Assets.CompoundResult(a.ID, b.ID)
-	if _, ok := s.Assets.Items[result]; !ok {
-		return nil
-	}
-	next := c.character.Clone()
-	target, err := next.Bag.Compound(first, second, result, s.Assets.Items)
+	execution, err := s.executeCompounding(ctx, c, slots, false, tier)
 	if err != nil {
-		return nil
-	}
-	if err = s.commit(ctx, c, next); err != nil {
+		if compoundingRejection(err) {
+			return c.send(systemLine(err.Error()))
+		}
 		return err
 	}
-	packets := [][]byte{
-		{protocol.CommandInventory, protocol.InventoryRemove, first, 1},
-		{protocol.CommandInventory, protocol.InventoryRemove, second, 1},
-		protocol.Builder{protocol.CommandInventory, protocol.InventoryCompoundResult, target}.U16(result).U8(1).Bytes(make([]byte, protocol.CompoundResultReservedBytes)),
-		protocol.Builder{protocol.CommandInventory, protocol.InventoryCompoundSuccess}.U16(result).U8(1).U8(target),
+	result := execution.Outcome.ItemID
+	packets := make([][]byte, 0, len(slots)+2+len(execution.SkillPackets))
+	for _, slot := range slots {
+		packets = append(packets, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1})
 	}
-	if err = s.sendAll(c, packets); err != nil {
-		return err
-	}
-	animation := protocol.Builder{protocol.CommandInventory, protocol.InventoryCompoundAnimation}.U32(next.ID)
-	s.broadcastWorld(c, animation)
-	return c.send(animation)
+	packets = append(packets,
+		protocol.Builder{protocol.CommandInventory, protocol.InventoryCompoundResult, execution.Target}.U16(result).U8(1).Bytes(make([]byte, protocol.CompoundResultReservedBytes)),
+		protocol.Builder{protocol.CommandInventory, protocol.InventoryCompoundSuccess}.U16(result).U8(1).U8(execution.Target))
+	packets = append(packets, execution.SkillPackets...)
+	return s.sendAll(c, packets)
 }
