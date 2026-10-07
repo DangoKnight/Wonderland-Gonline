@@ -287,6 +287,9 @@ func contains(list []string, s string) bool {
 }
 func runtimeSource(name string) bool {
 	lower := strings.ToLower(name)
+	if strings.HasPrefix(lower, "audio/odd/") || strings.HasPrefix(lower, "audio/odd_d01/") {
+		return strings.HasSuffix(lower, ".ogg")
+	}
 	if strings.HasPrefix(lower, "sprites/") {
 		return strings.HasSuffix(lower, ".png")
 	}

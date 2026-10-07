@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"image"
 	"os"
 	"path/filepath"
 	"testing"
@@ -146,5 +147,69 @@ func TestStormMovieEffects(t *testing.T) {
 	}
 	if !shown[17] || !shown[18] {
 		t.Errorf("passengers drawn in stages %v", shown)
+	}
+}
+
+// The authored Starter Beach rescue is two movies, containing ten then six
+// dialogue lines; the server must receive an acknowledgment for each movie.
+func TestMonkeyRescueMovies(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	capture := wire(t, c)
+	for _, scenario := range []struct {
+		id    uint32
+		lines int
+	}{{12000, 10}, {11011, 6}} {
+		c.dispatch(movieFrameFor(scenario.id, 2))
+		if !c.MoviePlaying() {
+			t.Fatal("monkey movie did not start", scenario.id)
+		}
+		lines := 0
+		for i := 0; i < 1200 && c.MoviePlaying(); i++ {
+			*now = now.Add(100 * time.Millisecond)
+			c.Frame()
+			if c.Talk.Shown() && c.Talk.Drawn() {
+				lines++
+				c.GroundClick(400, 300)
+			}
+		}
+		if c.MoviePlaying() {
+			t.Fatalf("movie %d stuck at stage %d", scenario.id, c.movie.p.Stage)
+		}
+		if lines != scenario.lines {
+			t.Fatalf("movie %d dialogue lines: got %d want %d", scenario.id, lines, scenario.lines)
+		}
+		c.Frame()
+	}
+	packets := capture()
+	if len(packets) != 2 || !bytes.Equal(packets[0], []byte{20, 6}) || !bytes.Equal(packets[1], []byte{20, 6}) {
+		t.Fatal("expected one completion acknowledgment per movie", packets)
+	}
+}
+
+func TestMonkeyMovieDepthAndIllustration(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.dispatch(movieFrameFor(12000, 2))
+	if c.movie == nil || len(c.movie.npcs) != 1 || c.movie.npcs[0].Depth != 100 {
+		t.Fatal("monkey authored depth missing")
+	}
+	if n := c.movie.npcs[0]; n.SortY() != n.Y+100 {
+		t.Fatal("monkey sort did not include native depth")
+	}
+	c.endMovie()
+	c.dispatch(movieFrameFor(11011, 2))
+	mp := c.movie
+	if mp == nil || mp.background == nil || mp.background.W != 832 || mp.background.H != 640 || len(mp.view.Scene.Objects) != 0 {
+		t.Fatal("full-screen illustration replaced by map")
+	}
+	// The talk box occupies the bottom of the image; verify the artwork above it.
+	*now = now.Add(100 * time.Millisecond)
+	c.Frame()
+	for _, at := range []image.Point{{100, 100}, {400, 100}, {700, 200}} {
+		if got, want := c.Screen.Pix[at.Y*c.Screen.W+at.X], mp.background.Pix[at.Y*mp.background.W+at.X]; got != want {
+			t.Fatalf("illustration at %v: got %x want %x", at, got, want)
+		}
+	}
+	if path := os.Getenv("MONKEY_ILLUSTRATION_SNAPSHOT"); path != "" {
+		savePNG(t, path, c)
 	}
 }

@@ -30,7 +30,9 @@ func (c *Client) updateCursor(now time.Time) {
 		state = componentCursor
 	}
 	shape := cursor.Shape(state)
-	if state == 0 && c.sportCursor() != 0 {
+	if state == 0 && c.joinTeamTarget {
+		shape = cursor.ShapePoint
+	} else if state == 0 && c.sportCursor() != 0 {
 		shape = c.sportCursor()
 	} else if state == 0 {
 		shape = cursor.ShapeNormal

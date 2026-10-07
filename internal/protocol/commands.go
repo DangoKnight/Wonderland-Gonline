@@ -902,3 +902,36 @@ const (
 	SocialProfileRequestBytes = 7
 	SocialNicknameMaxBytes    = 14 // Native fixed nickname buffer in AC3/AC10 receive handlers.
 )
+
+// Native stat records carry separate one-byte stat and sign fields.
+const (
+	StatValuePositive    = 1
+	StatValueNegative    = 2
+	PetControlMountPet   = 11 // Inbound, distinct from item-vehicle removal reply.
+	PetControlUnmountPet = 12
+)
+
+// Instance browser requests are native AC85. Room controls above 199 are
+// Gonline extensions; their native request layouts remain unverified.
+const (
+	CommandInstance             = 85
+	InstanceBrowse              = 1
+	InstanceStatus              = 2
+	InstanceCreate              = 3
+	InstanceDetails             = 4
+	InstanceMembership          = 5
+	InstanceDefinitions         = 14
+	InstanceJoinRoom            = 200
+	InstanceLeaveRoom           = 201
+	InstanceStartRoom           = 202
+	InstanceRoomSnapshot        = 203
+	InstancePageSize            = 5
+	InstanceNameLimit           = 28
+	InstanceRoomsPerDefinition  = 10
+	InstanceAliasFirst          = 61501
+	InstanceUnavailable         = 11
+	InstanceDefinitionAvailable = 1
+	InstanceLevelTooLow         = 2
+	InstanceRoomsFull           = 1
+	InstanceRejected            = 255
+)

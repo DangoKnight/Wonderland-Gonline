@@ -23,26 +23,30 @@ import (
 // shared decoded caches; all UI/state mutations run serially on the game thread.
 // Only the sprite manager's native decoder works asynchronously, under its lock.
 type Resources struct {
-	root, spriteRoot string
-	ready            bool
-	pics             *picdb.DB
-	font             *clientassets.Font
-	textRenderer     *text.Renderer
-	cursors          map[cursor.Shape]*cursor.Animation
-	sprites          *sprites.Manager
-	library          *role.Library
-	items            map[uint16]assets.NativeItem
-	formula          *login.Formula
-	skillCatalog     *skills.Catalog
-	background       *surface.Surface
-	audio            *SoundCache
-	scenes           bool
-	sceneNames       map[uint16]string
-	mapScenes        map[uint16]uint16
-	sceneWeather     map[uint16]byte
-	sceneMusic       map[uint16]string
-	npcTemplates     map[uint32]world.NPCTemplate
-	talks            map[uint16]string
+	root, spriteRoot          string
+	ready                     bool
+	pics                      *picdb.DB
+	font                      *clientassets.Font
+	textRenderer              *text.Renderer
+	cursors                   map[cursor.Shape]*cursor.Animation
+	sprites                   *sprites.Manager
+	library                   *role.Library
+	items                     map[uint16]assets.NativeItem
+	formula                   *login.Formula
+	skillCatalog              *skills.Catalog
+	background                *surface.Surface
+	audio                     *SoundCache
+	scenes                    bool
+	sceneNames                map[uint16]string
+	mapScenes                 map[uint16]uint16
+	sceneWeather              map[uint16]byte
+	sceneMusic                map[uint16]string
+	npcTemplates              map[uint32]world.NPCTemplate
+	petPortraits              map[petPortraitKey]*surface.Surface
+	talks                     map[uint16]string
+	instanceDefinitions       []assets.InstanceDefinition
+	instanceDefinitionsLoaded bool
+	mountPositions            map[uint16]role.MountPlacement
 }
 
 func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
@@ -120,4 +124,68 @@ func (r *Resources) Close() error {
 		return r.sprites.Close()
 	}
 	return nil
+}
+
+func (r *Resources) loadInstances(a login.Assets) {
+	if r.instanceDefinitionsLoaded {
+		return
+	}
+	r.instanceDefinitionsLoaded = true
+	if raw, err := clientfs.ReadFile(a.DataPath("scene_data.json")); err == nil {
+		if defs, err := assets.ParseInstanceDefinitions(raw); err == nil {
+			if marks, err := clientfs.ReadFile(a.DataPath("mark_data.json")); err == nil {
+				_ = assets.ApplyInstanceText(defs, marks)
+			}
+			r.instanceDefinitions = defs
+		}
+	}
+}
+func (r *Resources) loadMountPositions(a login.Assets) {
+	if r.mountPositions != nil {
+		return
+	}
+	r.mountPositions = map[uint16]role.MountPlacement{}
+	if raw, err := clientfs.ReadFile(a.DataPath("ride_pet_positions.json")); err == nil {
+		if positions, err := role.ParseMountPlacements(raw); err == nil {
+			r.mountPositions = positions
+		}
+	}
+}
+
+// Pet portraits are immutable artwork shared by sessions. Rasterize once into an
+// asset surface instead of allocating and immediately disposing a GPU target.
+const petPortraitCanvasPixels = 24
+
+type petPortraitKey struct {
+	Look, Icon uint16
+	Colors     [4]uint32
+}
+
+func (r *Resources) petPortrait(t world.NPCTemplate) *surface.Surface {
+	if t.Icon == 0 {
+		return nil
+	}
+	key := petPortraitKey{t.Look, t.Icon, t.Colors}
+	if portrait := r.petPortraits[key]; portrait != nil {
+		return portrait
+	}
+	portrait := surface.New(petPortraitCanvasPixels, petPortraitCanvasPixels)
+	sprite := role.NewNPC(r.library, t.Look, t.Colors)
+	sprite.DrawIcon(portrait, 0, 0, t.Icon)
+	// Missing or still loading artwork must be retried, not cached as empty.
+	havePixels := false
+	for _, pixel := range portrait.Pix {
+		if pixel != 0 {
+			havePixels = true
+			break
+		}
+	}
+	if !havePixels {
+		return nil
+	}
+	if r.petPortraits == nil {
+		r.petPortraits = map[petPortraitKey]*surface.Surface{}
+	}
+	r.petPortraits[key] = portrait
+	return portrait
 }

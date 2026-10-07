@@ -154,6 +154,14 @@ const (
 // press. Only the framework's own classes are dispatched; the original's
 // furniture and vendor item classes are not ported.
 func (m *Manager) MouseDown(button, shift byte, x, y int) bool {
+	// Let transient menus observe outside presses, including clicks on the world.
+	for _, form := range m.Forms {
+		if form.Base().Visible {
+			if observer, ok := form.(interface{ PointerDown(int, int) }); ok {
+				observer.PointerDown(x, y)
+			}
+		}
+	}
 	in := m.Input
 	h := in.Hovered
 	in.Focused = h

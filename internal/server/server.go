@@ -83,7 +83,7 @@ type Session struct {
 	// requester ID, and the vitals last reported to teammates.
 	party         *party
 	partyRequests map[uint32]time.Time
-	partyVitals   [7]int64
+	partyVitals   [8]int64
 	saleMode      int // NpcSaleMode: -1 closed, 0 equipment, 1 other items.
 	saleMap       uint16
 	resumeAt      time.Time // NpcClickResumeAt: ignore a repeated click after an interaction.
@@ -122,9 +122,10 @@ func (s *Session) send(p []byte) error {
 }
 
 type Server struct {
-	configPath string // Set before HTTP starts; protected by adminEditMu thereafter.
-	bannedIPs  atomic.Value
-	ipBanMu    sync.Mutex
+	instanceRooms map[uint16]*instanceRoom
+	configPath    string // Set before HTTP starts; protected by adminEditMu thereafter.
+	bannedIPs     atomic.Value
+	ipBanMu       sync.Mutex
 	// accountMu orders credential verification/publication against admin changes.
 	accountMu    sync.RWMutex
 	privilegeMu  sync.Mutex   // Orders persisted and live GM permissions.

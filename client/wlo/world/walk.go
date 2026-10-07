@@ -327,6 +327,11 @@ func (w *World) Step(now time.Time) {
 	for _, p := range w.Peers {
 		p.Walker.Step(&p.Player, now)
 	}
+	for owner, companion := range w.Companions {
+		if p := w.companionOwner(owner); p != nil {
+			companion.step(p, now)
+		}
+	}
 }
 
 // Water follows the native shore transition checks in FUN_0041897c.

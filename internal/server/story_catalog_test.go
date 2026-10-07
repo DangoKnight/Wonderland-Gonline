@@ -88,7 +88,7 @@ func TestNativeMonkeyRescueController(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, c, _ := eventFixture(t)
+	s, c, wire := eventFixture(t)
 	s.Assets, s.World = catalog, world.New(catalog)
 	next := c.character.Clone()
 	next.Map = 11016
@@ -103,6 +103,9 @@ func TestNativeMonkeyRescueController(t *testing.T) {
 	c.view = world.NewView()
 	if err := s.worldCommand(context.Background(), c, []byte{20, 1, 1, 0}); err != nil {
 		t.Fatal(err)
+	}
+	if packets := wire.packets(t); !contains(packets, []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 2, 224, 46, 0, 0, 0, 0, 7}) {
+		t.Fatal("installed authored Monkey cinematic missing", packets)
 	}
 	for i := 0; c.event != nil && i < 20; i++ {
 		if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {

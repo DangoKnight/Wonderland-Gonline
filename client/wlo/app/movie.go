@@ -29,8 +29,8 @@ import (
 //
 // The timeline's effects, music and keyframe sounds are in movie/effects.go
 // and soundtable.go, the pictures in movie/pictures.go. Not ported yet: the
-// weather overlays (1, 2, 3, 10), looping keyframe sounds, pictures' light
-// blit and their place in the depth order (drawn over the scene here), the
+// looping keyframe sounds, pictures' place in the depth order
+// (drawn over the scene here), the
 // actors' trails and draw modes (keyframe +0x1d), and party-member
 // speakers.
 const (
@@ -44,11 +44,12 @@ const (
 
 // moviePlay is a running movie.
 type moviePlay struct {
-	p    *movie.Player
-	view *world.World
-	npcs []*world.NPC // the actors after the player, in order
-	mode byte
-	pics map[string]*surface.Surface // the pictures' images, keyed
+	p          *movie.Player
+	view       *world.World
+	npcs       []*world.NPC // the actors after the player, in order
+	mode       byte
+	pics       map[string]*surface.Surface // the pictures' images, keyed
+	background *surface.Surface            // JRP-registered JPEG illustration, drawn opaque.
 }
 
 // pictureArchives are the image archives (pic\*.BMg) a picture's name is
@@ -81,8 +82,8 @@ func (c *Client) picture(mp *moviePlay, pic *movie.Picture) *surface.Surface {
 
 // drawPictures is FUN_00342508 for each picture drawn in the stage: one
 // frame of its strip, centred on its point with its bottom on it. Pictures
-// below the full light level (+0x2164 < 255) use the light blit in the
-// original; the movies seen so far use 255, so all are drawn keyed.
+// with level 255 use the colour key alone; other levels use the native
+// additive light blit, which makes the rescue dust cloud translucent.
 func (c *Client) drawPictures(mp *moviePlay) {
 	p := mp.p
 	cam := p.Camera.Add(p.ShakeOffset())
@@ -97,7 +98,12 @@ func (c *Client) drawPictures(mp *moviePlay) {
 		rows, cols := ps.Pic.Grid()
 		w, h := img.W/cols, img.H/rows
 		pt := ps.Point()
-		c.Screen.DrawRect(pt.X-w/2-cam.X, pt.Y-h-cam.Y, image.Rect(0, (ps.Frame-1)*h, w, ps.Frame*h), img, true)
+		r := image.Rect(0, (ps.Frame-1)*h, w, ps.Frame*h)
+		if ps.Pic.Level() == movie.LevelKeyed {
+			c.Screen.DrawRect(pt.X-w/2-cam.X, pt.Y-h-cam.Y, r, img, true)
+		} else {
+			c.Screen.DrawLight(pt.X-w/2-cam.X, pt.Y-h-cam.Y, r, img, ps.Pic.Level())
+		}
 	}
 }
 
@@ -117,6 +123,18 @@ func (c *Client) startMovie(s []byte) {
 		return
 	}
 	mp := &moviePlay{view: view, mode: movieModeNormal, pics: map[string]*surface.Surface{}}
+	if strings.HasPrefix(m.Camera.Scene, "JRP") {
+		name := strings.TrimPrefix(m.Camera.Scene, "JRP")
+		for _, archive := range []string{"JRole_c01", "jRole", "Jpeg"} {
+			if im, err := c.Assets.LoadPicture(archive, name); err == nil {
+				mp.background = surface.FromImage(im)
+				break
+			}
+		}
+		if mp.background == nil {
+			log.Printf("movie %d: illustration %s unavailable", id, name)
+		}
+	}
 	if mode := s[eventFrameMode]; mode == 2 || mode == 4 {
 		mp.mode = movieModeWide
 	}
@@ -124,7 +142,7 @@ func (c *Client) startMovie(s []byte) {
 		c.npcTemplates, _ = world.NPCTemplates(c.Assets)
 	}
 	for _, a := range m.NPCs {
-		n := &world.NPC{Template: a.Template, Shown: true, Action: movie.NormalPose}
+		n := &world.NPC{Template: a.Template, Shown: true, Action: movie.NormalPose, Depth: int(a.Extra)}
 		if t, ok := c.npcTemplates[a.Template]; ok {
 			n.Info = t
 			if c.lib != nil {
@@ -157,6 +175,9 @@ func (c *Client) startMovie(s []byte) {
 
 // movieView is the view of the movie's background map ("Map10001").
 func (c *Client) movieView(m *movie.Movie) (*world.World, error) {
+	if strings.HasPrefix(m.Camera.Scene, "JRP") {
+		return &world.World{Env: c.Env, Scene: &world.Scene{}, Now: c.Now, Cinematic: true, HideNames: true, CameraAt: &image.Point{}}, nil
+	}
 	id, err := strconv.Atoi(strings.TrimPrefix(m.Camera.Scene, movieScenePrefix))
 	if err != nil {
 		id = int(c.World.Player.Map)
@@ -184,8 +205,15 @@ func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 			n.Painter = role.NewNPC(c.lib, t.Look, t.Colors)
 		}
 		who = npcSpeaker(n)
+		for _, pet := range c.InventoryState.Pets {
+			if uint32(pet.ID) == l.Speaker && len(pet.Name) != 0 {
+				who.Name = pet.Name
+				break
+			}
+		}
 	}
 	c.Talk.Say(text, who, c.World.Player.Name)
+	c.playDialogueVoice(l.Talk, l.Speaker)
 }
 
 // sync copies the movie's actors and camera into its view.
@@ -256,19 +284,31 @@ func (c *Client) movieFrame() bool {
 	// The movie's draw runs the weather passes with its overlay (+0xf9a)
 	// rather than the map's weather.
 	mp.view.Weather, mp.view.WeatherKind = c.weatherLayer(), weather.Kind(mp.p.Overlay)
-	mp.view.Draw()
-	c.drawPictures(mp)
-	c.drawEffects(mp.p)
-	c.Talk.Draw()
-	c.zoomScreen(mp.p.Zoom)
+	c.drawMovie(mp)
 	if mp.p.Ended() {
 		c.endMovie()
 	}
 	return true
 }
 
+// drawMovie renders the current movie state without advancing its timeline.
+func (c *Client) drawMovie(mp *moviePlay) {
+	if mp.background != nil && !mp.p.HideScene {
+		cam := mp.p.Camera.Add(mp.p.ShakeOffset())
+		c.Screen.Draw(-cam.X, -cam.Y, mp.background, false)
+	}
+	mp.view.Draw()
+	c.drawPictures(mp)
+	c.drawEffects(mp.p)
+	c.Talk.Draw()
+	c.zoomScreen(mp.p.Zoom)
+}
+
 // endMovie restores the game mode and acknowledges the step.
 func (c *Client) endMovie() {
+	if c.movie != nil && c.movie.background != nil {
+		c.movie.background.Close()
+	}
 	c.movie = nil
 	c.Talk.Hide()
 	c.Talk.Lowered = false

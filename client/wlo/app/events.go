@@ -3,8 +3,10 @@ package app
 import (
 	"encoding/binary"
 	"log"
+	"time"
 
 	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/movie"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/world"
@@ -47,6 +49,7 @@ const (
 	// talkBodyAction is the body-mode pose: standing, facing down-left.
 	talkBodyAction = 0xb
 	// npcReach is FUN_00303b54's distance check, per axis.
+	interactionNoticeDuration  = 2 * time.Second
 	npcReach                   = 0xa9
 	conversationStandingAction = 8
 	conversationFacingCount    = 8
@@ -64,7 +67,7 @@ type eventState struct {
 }
 
 // clickNPC is a left click on a map NPC: within reach it sends 20/1,
-// otherwise the player walks toward it first.
+// otherwise it reports the range failure.
 func (c *Client) clickNPC(n *world.NPC) {
 	p := c.World.Player
 	if abs(p.X-n.X) <= npcReach && abs(p.Y-n.Y) <= npcReach {
@@ -72,9 +75,8 @@ func (c *Client) clickNPC(n *world.NPC) {
 		c.sendNPCClick(n.ClickID)
 		return
 	}
-	if c.World.WalkTo(n.X, n.Y, c.Now()) {
-		c.pendingNPC = n
-	}
+	c.pendingNPC = nil
+	c.Notices.Show([]byte("Too far"), interactionNoticeDuration, c.Now())
 }
 
 func abs(v int) int {
@@ -133,6 +135,11 @@ func (c *Client) say(subject byte, actor, talk uint16) {
 	c.loadTalks()
 	text := clientassets.Big5Text(c.talks[talk])
 	c.Talk.Say(text, c.speaker(subject, actor), c.World.Player.Name)
+	if subject == eventSpeakerSelf {
+		c.playDialogueVoice(talk, movie.PlayerTemplate)
+	} else if n := c.World.NPCs[actor]; subject == eventSpeakerNPC && n != nil {
+		c.playDialogueVoice(talk, n.Template)
+	}
 }
 
 // loadTalks reads Talk.dat once.
@@ -320,11 +327,21 @@ func (c *Client) eventResume() {
 // advanceTalk is a click while a line shows: the step is done.
 func (c *Client) advanceTalk() {
 	c.Talk.Hide()
+	if c.petAnnouncement {
+		c.petAnnouncement = false
+		return
+	}
 	c.event.done = true
 }
 
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
+	if !c.event.active && !c.held && c.movie == nil && !c.Talk.Shown() && len(c.petAnnouncements) > 0 {
+		c.World.StopWalk()
+		c.Talk.Say(c.petAnnouncements[0], hud.Speaker{}, c.World.Player.Name)
+		c.petAnnouncements = c.petAnnouncements[1:]
+		c.petAnnouncement = true
+	}
 	if c.event.done {
 		c.event.done = false
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})

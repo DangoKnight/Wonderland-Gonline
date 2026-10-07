@@ -270,7 +270,7 @@ func (c *Client) hasRadio() bool {
 // inTeam and inGuild are the memberships the Team and Guild channels
 // need (+0x1eff, the guild object's +0xc); teams and guilds are not
 // ported, so the player is in neither.
-func (c *Client) inTeam() bool  { return false }
+func (c *Client) inTeam() bool  { return c.TeamState != nil && c.TeamState.InParty() }
 func (c *Client) inGuild() bool { return false }
 
 // The online players the client knows (PTR_DAT_004c9788, filled by every

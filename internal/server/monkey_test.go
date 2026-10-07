@@ -135,3 +135,86 @@ func TestMonkeyFullPartyCancellationAndFailedSave(t *testing.T) {
 		}
 	})
 }
+
+func TestMonkeyAuthoredMoviesBeforeAtomicRecruitment(t *testing.T) {
+	for _, scenario := range []string{"success", "full", "cancel", "save failure"} {
+		t.Run(scenario, func(t *testing.T) {
+			s, c, wire := monkeyFixture(t)
+			ctx := context.Background()
+			ev := assets.Event{ClickID: 1, Branches: []assets.Branch{{Index: 7, Operations: []assets.Operation{
+				evOp(1, 8, 2, 0, 0, 12000), evOp(2, 8, 1, 0, 0, 11011),
+			}}}}
+			s.Assets.Maps[11016] = assets.Map{ID: 11016, NPCs: []assets.MapNPC{{ClickID: 1, Template: 17162, Flags: 1, X: 1050, Y: 1080, Events: []byte{1}}}, Events: []assets.Event{ev}}
+			s.World = world.New(s.Assets)
+			next := c.character.Clone()
+			next.Map = 11016
+			if scenario == "full" {
+				for i := 0; i < 4; i++ {
+					next.Pets = append(next.Pets, game.Pet{ID: uint32(14080 + i), Slot: byte(i + 1), Name: "Companion", Level: 1})
+				}
+			}
+			if err := s.commit(ctx, c, next); err != nil {
+				t.Fatal(err)
+			}
+			wire.Reset()
+			if err := s.worldCommand(ctx, c, []byte{20, 1, 1, 0}); err != nil {
+				t.Fatal(err)
+			}
+			first := []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 2, 224, 46, 0, 0, 0, 0, 7}
+			if packets := wire.packets(t); len(packets) != 2 || !bytes.Equal(packets[1], first) {
+				t.Fatal("first authored movie", packets)
+			}
+			if scenario == "cancel" {
+				if err := s.worldCommand(ctx, c, []byte{20, 9, 40}); err != nil {
+					t.Fatal(err)
+				}
+				if c.event != nil || len(c.character.Pets) != 0 || c.character.Quests[12002].ID != 0 {
+					t.Fatal("cancel granted rescue")
+				}
+				return
+			}
+			if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
+				t.Fatal(err)
+			}
+			second := []byte{20, 1, 0, 0, 0, 2, 5, 0, 0, 0, 2, 3, 43, 0, 0, 0, 0, 7}
+			if packets := wire.packets(t); len(packets) != 1 || !bytes.Equal(packets[0], second) {
+				t.Fatal("second authored movie", packets)
+			}
+			if c.character.Quests[12002].ID != 0 {
+				t.Fatal("rescue committed before movies finished")
+			}
+			if scenario == "save failure" {
+				if err := s.Store.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if err := s.worldCommand(ctx, c, []byte{20, 6}); err == nil {
+					t.Fatal("failed save accepted")
+				}
+				if len(c.character.Pets) != 0 || c.character.Quests[12002].ID != 0 || wire.Len() != 0 || c.view.Hidden[1] {
+					t.Fatal("success before durable commit")
+				}
+				return
+			}
+			if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
+				t.Fatal(err)
+			}
+			if scenario == "full" {
+				if packets := wire.packets(t); !contains(packets, dialogueFrame(1, 7, 0, 31146)) {
+					t.Fatal("missing full-party explanation", packets)
+				}
+				for i := 0; i < 2; i++ {
+					if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if c.event != nil || len(c.character.Pets) != 4 || c.character.Quests[12002].ID != 0 {
+					t.Fatal("full party consumed rescue")
+				}
+				return
+			}
+			if c.event != nil || len(c.character.Pets) != 1 || c.character.Quests[12002].State != game.Completed {
+				t.Fatal("movies did not finish rescue")
+			}
+		})
+	}
+}

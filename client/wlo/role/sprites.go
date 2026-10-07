@@ -152,18 +152,21 @@ func (s *sprite) frame(action, n int) *sprites.Frame {
 // by the colour block (FUN_002fe8e8); frames without indices, such as
 // edited ones, draw as painted.
 func (s *sprite) drawColored(dst *surface.Surface, f *sprites.Frame, x, y, id int, colors *Colors) {
+	s.drawColoredScaled(dst, f, x, y, id, colors, 1)
+}
+func (s *sprite) drawColoredScaled(dst *surface.Surface, f *sprites.Frame, x, y, id int, colors *Colors, scale int) {
 	if colors == nil || s.Palette == nil {
-		s.draw(dst, f, x, y)
+		s.drawScaled(dst, f, x, y, scale)
 		return
 	}
 	ix, err := f.Indices(s.m)
 	if err != nil || ix == nil {
-		s.draw(dst, f, x, y)
+		s.drawScaled(dst, f, x, y, scale)
 		return
 	}
 	pal := colors.palette(id, s.Palette)
 	lut, opaque := lookup(&pal)
-	dst.DrawIndexed(x+f.OffsetX, y+f.OffsetY, f, ix, lut, opaque)
+	dst.DrawIndexedScaled(x+f.OffsetX*scale, y+f.OffsetY*scale, scale, f, ix, lut, opaque)
 }
 
 // draw blits a frame at its offset from (x, y) onto the 16-bit surface.
@@ -171,7 +174,10 @@ func (s *sprite) drawColored(dst *surface.Surface, f *sprites.Frame, x, y, id in
 // Partially transparent pixels, possible in edited PNGs, blend with the
 // framebuffer.
 func (s *sprite) draw(dst *surface.Surface, f *sprites.Frame, x, y int) {
-	err := dst.DrawSprite(x+f.OffsetX, y+f.OffsetY, f, func() (*image.NRGBA, error) { return f.Image(s.m) })
+	s.drawScaled(dst, f, x, y, 1)
+}
+func (s *sprite) drawScaled(dst *surface.Surface, f *sprites.Frame, x, y, scale int) {
+	err := dst.DrawSpriteScaled(x+f.OffsetX*scale, y+f.OffsetY*scale, scale, f, func() (*image.NRGBA, error) { return f.Image(s.m) })
 	if err != nil && !s.reported {
 		log.Printf("sprite %s: %v", s.Name, err)
 		s.reported = true

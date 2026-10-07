@@ -15,6 +15,15 @@ import (
 
 func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	o, source := fixture(t)
+	voice := []byte("OggS-native-dialogue-fixture")
+	for _, archive := range []string{"odd", "odd_d01"} {
+		if err := os.MkdirAll(filepath.Join(source, "audio", archive), 0755); err != nil {
+			t.Fatal(err)
+		}
+		put(t, filepath.Join(source, "audio", archive, "20038_1002.ogg"), voice)
+	}
+	put(t, filepath.Join(source, "audio", "odd_index.json"), []byte(`{"source":"private installation path"}`))
+
 	put(t, filepath.Join(source, "ground_data.json"), []byte(`{"entries":[{"name":"10017.map","terrain":{"width":800,"height":600,"grid_width":2,"grid_height":2,"cells_hex":"01020304"}}]}`))
 	put(t, filepath.Join(source, "eve_data.json"), []byte(`{"maps":[{"id":10017,"scene":12,"decoded_hex":"010203"}]}`))
 	put(t, filepath.Join(source, "wem_data.json"), []byte(`{"entries":[{"name":"100.wem","decoded_hex":"000102"}]}`))
@@ -39,6 +48,16 @@ func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	root, closePacks, err := clientfs.Mount(o.Output)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	for _, archive := range []string{"odd", "odd_d01"} {
+		got, err := clientfs.ReadFile(filepath.Join(root, "audio", archive, "20038_1002.ogg"))
+		if err != nil || !bytes.Equal(got, voice) {
+			t.Fatalf("voice %s did not survive runtime packaging: %q %v", archive, got, err)
+		}
+	}
+	if _, err := clientfs.Stat(filepath.Join(root, "audio", "odd_index.json")); !os.IsNotExist(err) {
+		t.Fatal("source audio index shipped", err)
 	}
 	var g clientruntime.Ground
 	if err = clientruntime.Read(filepath.Join(root, clientruntime.MapPath(10017)), &g); err != nil {

@@ -97,6 +97,11 @@ func (c *Client) disconnected() {
 	if !(c.Login.Visible || c.Chars.Visible || c.Create.Visible || c.Password.Visible || c.G.InGame) {
 		return
 	}
+	if c.Team != nil {
+		c.Team.Reset()
+		c.teamAppearances = nil
+		c.setJoinTeamTarget(false)
+	}
 	if c.Compound != nil {
 		c.Compound.Reset()
 	}
@@ -139,9 +144,14 @@ func (c *Client) lostPrev() {
 	c.fade = fadeState{}
 	c.G.InGame = false
 	c.World = nil
+	c.petAnnouncements = nil
+	c.petAnnouncement = false
 	c.movie = nil
 	c.players = nil
 	c.stopAmbience()
+	if c.sfx != nil {
+		c.sfx.StopVoice()
+	}
 	c.Chat.Clear()
 	c.UI.HideAll()
 	c.Servers.Show()

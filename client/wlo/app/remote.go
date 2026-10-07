@@ -82,7 +82,7 @@ func (c *Client) startRemote(o inventory.RemoteOptions) bool {
 	if (o.LeaveAfter && o.LeaveMinutes <= 0) || (o.LeavePlayerDeaths && o.PlayerDeaths <= 0) || (o.LeavePetDeaths && o.PetDeaths <= 0) {
 		return false
 	}
-	if c.World == nil || !c.mapReady || c.sceneFrozen() || c.held || c.event.active || c.sport != nil || c.movie != nil || c.Stats.HP == 0 {
+	if c.World == nil || !c.mapReady || c.sceneFrozen() || c.held || c.event.active || c.petAnnouncement || c.sport != nil || c.movie != nil || c.Stats.HP == 0 {
 		return false
 	}
 	owned := false
@@ -209,7 +209,7 @@ func (c *Client) remoteTick() {
 		}
 		return
 	}
-	if !c.mapReady || c.held || c.event.active || c.settingsPromptForm != nil || r.pending != nil {
+	if !c.mapReady || c.held || c.event.active || c.petAnnouncement || c.settingsPromptForm != nil || r.pending != nil {
 		return
 	}
 	if r.options.AutoSupply && c.remoteSupply() {

@@ -35,8 +35,8 @@ import (
 // characters there; the exact width is not traced. Sound tags play when the line
 // shows, as the typing effect that reaches them is not ported. Not ported
 // either: the OK, Yes, Cancel and Close buttons, the scroll bar, face
-// expressions (#F1..#F3) and the recorded voices (FUN_0034d3e8, Data\odd.dat,
-// which the reference install does not have).
+// expressions (#F1..#F3). Recorded voices from Data\odd.dat are selected
+// by the app dialogue interpreter (FUN_0034d3e8).
 type Talk struct {
 	Env *seui.Env
 	Now func() time.Time

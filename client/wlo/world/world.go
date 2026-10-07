@@ -119,9 +119,12 @@ type World struct {
 	OnLeg  func(facing, x, y int)
 	walker Walker
 	// Peers are the other players on the map, by ID (peers.go).
-	Peers       map[uint32]*Peer
-	Expressions map[uint32]Expression
-	hovered     *NPC
+	Peers             map[uint32]*Peer
+	Companions        map[uint32]*Companion
+	Expressions       map[uint32]Expression
+	JoinTeamSelection bool
+	teamHover         teamTarget
+	hovered           *NPC
 	// CameraAt, when set, is the camera's top-left instead of the
 	// player-centred one.
 	CameraAt *image.Point
@@ -262,7 +265,22 @@ func (w *World) Draw() {
 		if p.Role != nil {
 			figures = append(figures, figure{p.Y, func() {
 				w.drawSmallShadow(p.X-cx, p.Y-cy)
+				if lit, ok := p.Role.(interface{ SetLit(bool) }); ok {
+					lit.SetLit(w.JoinTeamSelection && w.teamHover.owner == p.ID)
+				}
 				p.Role.DrawBody(scr, p.X-cx, p.Y-cy, p.Direction)
+			}})
+		}
+	}
+	for owner, companion := range w.Companions {
+		x, y, action, ok := w.companionPosition(owner)
+		if ok && companion.Painter != nil {
+			figures = append(figures, figure{y, func() {
+				w.drawSmallShadow(x-cx, y-cy)
+				if lit, ok := companion.Painter.(interface{ SetLit(bool) }); ok {
+					lit.SetLit(w.JoinTeamSelection && w.teamHover.owner == owner)
+				}
+				companion.Painter.Draw(scr, x-cx, y-cy+companion.Info.SpriteDrop(), action)
 			}})
 		}
 	}
@@ -317,20 +335,29 @@ func (w *World) drawNames(cx, cy, px int) {
 	}
 	for _, p := range w.Peers {
 		name := p.Name
+		lift := peerNameLift + mountedNameLift(p.Role)
 		if !w.HidePeerNicknames && len(p.Nickname) > 0 {
 			nickname := p.Nickname
-			txt.Draw(p.X-cx-len(nickname)*charW/2, p.Y-cy-peerNameLift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
+			txt.Draw(p.X-cx-len(nickname)*charW/2, p.Y-cy-lift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
 		}
 		if !w.HidePeerNames {
-			txt.Draw(p.X-cx-len(name)*charW/2, p.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
+			txt.Draw(p.X-cx-len(name)*charW/2, p.Y-cy-lift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
+		}
+	}
+	for owner, companion := range w.Companions {
+		x, y, _, ok := w.companionPosition(owner)
+		if ok && (!w.HidePeerNames || owner == w.Player.ID) {
+			name := companion.Name
+			txt.Draw(x-cx-len(name)*charW/2, y-cy+companion.nameTop(), 0, false, true, scr, name, 0, len(name)*charW+charW, 0, peerNameInk, textStyle)
 		}
 	}
 	name := w.Player.Name
+	lift := peerNameLift + mountedNameLift(w.Body)
 	if !w.HideOwnNickname && len(w.Player.Nickname) > 0 {
 		nickname := w.Player.Nickname
-		txt.Draw(px-len(nickname)*charW/2, w.Player.Y-cy-peerNameLift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
+		txt.Draw(px-len(nickname)*charW/2, w.Player.Y-cy-lift-nicknameRowSpacing, 0, false, true, scr, nickname, 0, len(nickname)*charW+charW, 0, locationInk, textStyle)
 	}
-	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-peerNameLift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
+	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-lift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
 }
 
 // drawLocation draws the name, scene and position line.
@@ -338,4 +365,11 @@ func (w *World) drawLocation() {
 	scr, txt := w.Env.Screen, w.Env.Text
 	loc := []byte(string(w.Player.Name) + " " + w.SceneName + " X:" + strconv.Itoa(w.Player.X) + " Y:" + strconv.Itoa(w.Player.Y))
 	txt.Draw(locationRight-len(loc)*charW, locationY, 0, false, true, scr, loc, 0, len(loc)*charW+charW, 0, locationInk, textStyle)
+}
+
+func mountedNameLift(body any) int {
+	if mounted, ok := body.(interface{ NameLift() int }); ok {
+		return mounted.NameLift()
+	}
+	return 0
 }

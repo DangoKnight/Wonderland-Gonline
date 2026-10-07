@@ -103,6 +103,10 @@ func loadLegacyTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		if err != nil {
 			return err
 		}
+		c.Instances, err = importedInstances(tx)
+		if err != nil {
+			return err
+		}
 		c.NativeItems, err = assets.ParseItemCatalogJSON(raw)
 		if err != nil {
 			return fmt.Errorf("item.dat SQL catalog: %w", err)

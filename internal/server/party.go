@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/world"
 )
@@ -190,20 +191,37 @@ func (s *Server) partyLeave(c *Session, notify bool) {
 	if i := p.index(c); i >= 0 {
 		p.members = append(p.members[:i:i], p.members[i+1:]...)
 	}
+	// Detach using the old formation before replacing the leaver's roster.
+	// Native FUN_00406848 needs the previous leader/member links to clear
+	// the other visible actors' follow state.
+	leave := protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(c.character.ID)
 	if notify {
-		// The leaver's HUD resets to a team of one.
-		s.sendOrClose(c, protocol.Builder{protocol.CommandTeam, protocol.TeamRoster}.U32(c.character.ID).U8(0))
-		s.sendMap(c.character.Map, protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(c.character.ID), nil)
-	} else {
-		s.sendMap(c.character.Map, protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(c.character.ID), c)
+		s.sendOrClose(c, leave)
 	}
-	s.partyUpdate(p)
+	s.sendMap(c.character.Map, leave, c)
+	if notify {
+		s.partyReset(c)
+	}
 	if len(p.members) == 1 {
-		p.members[0].party = nil
-		if v := p.members[0].view; v != nil {
+		remaining := p.members[0]
+		remaining.party = nil
+		if v := remaining.view; v != nil {
 			v.Team.Store(0)
 		}
+		s.partyReset(remaining)
+		return
 	}
+	s.partyUpdate(p)
+}
+
+// partyReset clears the native party role as well as the HUD. FUN_00407ccc
+// marks even a zero-member roster as a leader; FUN_00406848 must run after it.
+// The self roster also makes the reset work when the old leader is off-map.
+func (s *Server) partyReset(c *Session) {
+	s.sendOrClose(c,
+		protocol.Builder{protocol.CommandTeam, protocol.TeamRoster}.U32(c.character.ID).U8(0),
+		protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(c.character.ID),
+	)
 }
 
 // partyTransfer is Player.TransferLeadership.
@@ -248,19 +266,27 @@ func (s *Server) partyUpdate(p *party) {
 }
 
 // vitals are the values SendTeammateStats reports, in its order.
-func (s *Server) vitals(c *Session) [7]int64 {
+func (s *Server) vitals(c *Session) [8]int64 {
 	char := c.character
-	b := char.Equipment.Bonuses(s.Assets.Items)
-	return [7]int64{int64(char.Level), int64(char.MaxHP), int64(char.MaxSP), int64(char.HP), int64(char.SP), int64(b.HP), int64(b.SP)}
+	hpBonus, spBonus := char.NativeVitalBonuses(s.Assets.Items)
+	a := char.Attributes()
+	return [8]int64{int64(char.Level), int64(a.Constitution), int64(a.Wisdom), int64(char.HP), int64(char.SP), int64(hpBonus), int64(spBonus), int64(char.RebornByte())}
 }
 
-var vitalStats = [7]uint16{0x011d, 0x0119, 0x011a, 0x0123, 0x0124, 0x01cf, 0x01d0}
+// FUN_00451718 reads a stat byte, sign byte, value U32 and target U32.
+// FUN_0043b7bc stores CON/WIS so native Formula.dat can derive the maxima.
+var vitalStats = [8]byte{game.StatLevel, game.StatCON, game.StatWIS, game.StatCurrentHP, game.StatCurrentSP, game.StatHPBonus, game.StatSPBonus, game.StatRebirth}
 
 func (s *Server) teammateStats(c *Session) [][]byte {
 	v := s.vitals(c)
 	out := make([][]byte, len(v))
 	for i := range v {
-		out[i] = protocol.Builder{protocol.CommandStats, protocol.StatsWireCode3}.U32(c.character.ID).U16(vitalStats[i]).U64(uint64(v[i]))
+		sign, value := byte(protocol.StatValuePositive), v[i]
+		if value < 0 {
+			sign = protocol.StatValueNegative
+			value = -value
+		}
+		out[i] = protocol.Builder{protocol.CommandStats, protocol.StatsWireCode3}.U32(c.character.ID).U8(vitalStats[i]).U8(sign).U32(uint32(value)).U32(0)
 	}
 	return out
 }

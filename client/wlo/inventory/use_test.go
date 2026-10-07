@@ -194,3 +194,21 @@ func TestInventoryRightClickDoesNotUseItem(t *testing.T) {
 		t.Fatal("right-click entered the Potential Pill use path")
 	}
 }
+
+func TestItemUsePetRecruitGoldenAndAtomicValidation(t *testing.T) {
+	s := &State{}
+	// Native 54-byte recruited pet. The three skill records are grade + EXP.
+	p := []byte{15, 1, 1, 0, 0, 0, 0, 47, 0, 0, 1, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 60, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0}
+	if !s.ApplyPetRecruit(p, 1) || s.Pets[0].ID != 12032 || s.Pets[0].Stats.STR != 2 || s.Pets[0].Potential != 4 || s.Pets[0].Skills[2].Grade != 3 {
+		t.Fatal("recruit decoded incorrectly", s.Pets)
+	}
+	if !s.ApplyPetRecruit(p, 1) || s.Pets[1].ID != 0 {
+		t.Fatal("recruit replay duplicated pet")
+	}
+	before := s.Pets
+	p[6] = 1
+	p[26] = 255
+	if s.ApplyPetRecruit(p, 1) || s.Pets[0].ID != before[0].ID || s.Pets[1].ID != 0 {
+		t.Fatal("malformed recruit mutated roster")
+	}
+}

@@ -175,7 +175,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
+			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.TeamKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
 				ui.KeyDown(vk, keys)
 			}
 		}

@@ -131,6 +131,7 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
+	Instances        []InstanceDefinition
 	QuestDefinitions map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
 	Manufacturing    map[uint16]ManufacturingFormula
 	RebornClasses    []RebornClass

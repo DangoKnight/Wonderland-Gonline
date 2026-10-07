@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 11
+const catalogSchemaVersion = 12
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -329,6 +329,32 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 12 {
+			if err := tx.AutoMigrate(&InstancesRow{}); err != nil {
+				return err
+			}
+			if !tx.Migrator().HasColumn(&catalogPresence{}, "Instances") {
+				if err := tx.Migrator().AddColumn(&catalogPresence{}, "Instances"); err != nil {
+					return err
+				}
+			}
+			var count int64
+			if err := tx.Model(&InstancesRow{}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count == 0 {
+				defs, err := importedInstances(tx)
+				if err != nil {
+					return err
+				}
+				if err := writeInstances(tx, defs); err != nil {
+					return err
+				}
+			}
+			if err := tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("instances", true).Error; err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -402,6 +428,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateInstances(c.Instances); err != nil {
 		return nil, err
 	}
 	if err = assets.ValidateManufacturing(c.Manufacturing, c.Items); err != nil {

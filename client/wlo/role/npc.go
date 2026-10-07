@@ -4,6 +4,7 @@ import (
 	"image"
 	"time"
 
+	"wonderland-gonline/client/wlo/sprites"
 	"wonderland-gonline/client/wlo/surface"
 )
 
@@ -29,11 +30,12 @@ type NPC struct {
 	sprite int
 	colors Colors
 	// Lit draws the NPC highlighted, as while the pointer is over it.
-	Lit     bool
-	frame   int
-	frameAt time.Time
-	hold    int  // the fixed frame, < 0 to animate
-	wrap    bool // hold counts frames that wrap at the action's count
+	Lit         bool
+	heightScale byte
+	frame       int
+	frameAt     time.Time
+	hold        int  // the fixed frame, < 0 to animate
+	wrap        bool // hold counts frames that wrap at the action's count
 }
 
 // Hold fixes the drawn frame: a prop's +0x11f or a movie keyframe's frame
@@ -96,7 +98,7 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 			lit := n.colors.lifted(litSteps)
 			colors = &lit
 		}
-		s.drawColored(dst, f, x, y, n.sprite, colors)
+		s.drawColoredScaled(dst, f, x, y, n.sprite, colors, n.rasterScale())
 	}
 }
 
@@ -119,7 +121,8 @@ func (n *NPC) Bounds(x, y, action int) image.Rectangle {
 	if f == nil {
 		return image.Rectangle{}
 	}
-	return image.Rect(0, 0, f.Width, f.Height).Add(image.Pt(x+f.OffsetX, y+f.OffsetY))
+	scale := n.rasterScale()
+	return image.Rect(0, 0, f.Width*scale, f.Height*scale).Add(image.Pt(x+f.OffsetX*scale, y+f.OffsetY*scale))
 }
 
 // FrameSize is the size of the action's first frame (FUN_002fe570 leaves
@@ -178,4 +181,53 @@ func (n *NPC) FirstAnchorY() (int, bool) {
 		return 0, false
 	}
 	return s.Frames[0].AnchorY, true
+}
+
+// mountFrame supplies native saddle geometry. FixedFirst affects placement
+// only: the mount itself continues to animate normally.
+func (n *NPC) mountFrame(action int, first bool) *sprites.Frame {
+	arc, key := n.Lib.lookup(npcFamily, n.sprite)
+	if arc == nil {
+		return nil
+	}
+	s := arc.sprite(key)
+	if s == nil || s.frameCount(action) == 0 {
+		return nil
+	}
+	frame := n.shown(s.frameCount(action))
+	if first {
+		frame = 0
+	}
+	return s.frame(action, frame)
+}
+
+// Npc.dat +0x38 (memory +0x3c) selects the native 2x map raster scale.
+// Portraits remain at their original scale.
+func (n *NPC) SetHeightScale(scale byte) { n.heightScale = scale }
+func (n *NPC) rasterScale() int {
+	if n.heightScale == 1 {
+		return 2
+	}
+	return 1
+}
+
+// DrawIcon uses the dedicated small portrait referenced by Npc.dat +0x10,
+// copied to +0xb2 by FUN_004265a4. It is 007-family artwork, separate from
+// the 008-family dialogue portrait. (x,y) is the icon's top-left corner.
+func (n *NPC) DrawIcon(dst *surface.Surface, x, y int, icon uint16) {
+	if icon == 0 {
+		return
+	}
+	const smallPortraitFamily = "007"
+	arc, key := n.Lib.lookup(smallPortraitFamily, int(icon))
+	if arc == nil {
+		return
+	}
+	s := arc.sprite(key)
+	if s == nil || s.frameCount(0) == 0 {
+		return
+	}
+	if frame := s.frame(0, 0); frame != nil {
+		s.drawColored(dst, frame, x-frame.OffsetX, y-frame.OffsetY, int(icon), &n.colors)
+	}
 }

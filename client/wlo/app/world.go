@@ -34,7 +34,11 @@ func (c *Client) loadNPCs(w *world.World) {
 	}
 	var paint func(world.NPCTemplate) world.NPCPainter
 	if c.lib != nil {
-		paint = func(t world.NPCTemplate) world.NPCPainter { return role.NewNPC(c.lib, t.Look, t.Colors) }
+		paint = func(t world.NPCTemplate) world.NPCPainter {
+			npc := role.NewNPC(c.lib, t.Look, t.Colors)
+			npc.SetHeightScale(t.HeightScale)
+			return npc
+		}
 	}
 	w.NPCs = world.MapNPCs(rec, c.npcTemplates, paint)
 	w.Questions = world.MapQuestions(rec)
@@ -141,6 +145,9 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
+	if c.teamTargetAt(x, y) {
+		return
+	}
 	if n := c.World.NPCAt(x, y); n != nil {
 		c.waterTravel.goal = nil
 		c.clickNPC(n)
@@ -230,4 +237,5 @@ func (c *Client) peerAppears(s []byte) {
 		newBody = func() login.RoleView { return role.NewHuman(c.lib, c.items) }
 	}
 	c.World.AddPeer(p, newBody)
+	c.rememberTeammate(p)
 }

@@ -83,6 +83,9 @@ func (c *Client) assignPetSkills() {
 			t = c.npcTemplates[game.BroadcastID(uint32(p.ID))]
 		}
 		p.Stats.Element = t.Element
+		if len(p.Name) == 0 {
+			p.Name = []byte(t.Name)
+		}
 		for j, id := range t.Skills {
 			p.Skills[j].ID = id
 		}

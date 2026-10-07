@@ -77,7 +77,7 @@ SUBSYSTEMS = [
      "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173)."),
     ("roles", "Roles: players, NPCs, sprites", "client/wlo/role, client/wlo/world", "partial", [262, 263, 264],
      "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, "
-     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs."),
+     "frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Not yet: gesture selection UI, passengers, additional vehicle classes, transforms, wandering NPCs."),
     ("ground", "Ground, scene objects and map data", "client/wlo/world", "partial", [249, 257, 268, 102, 103],
      "TGround, TGroundObj, TMap, TFSceneData. Ported: scene layers, walk grid, objects and depth order, sound zones, "
      "camera. Not yet: translucent objects, the map's other lists (sub-regions, the optional grid)."),
@@ -97,9 +97,11 @@ SUBSYSTEMS = [
     ("chat", "Chat log and input bar", "client/wlo/hud (chatlog.go, inputbar.go), client/wlo/app (chat.go)", "partial",
      [277, 278],
      "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, immediate channel recoloring retained across message additions and rewrapping, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles."),
-    ("hud", "HUD: status, hot keys, buttons, team, emotes", "client/wlo/hud", "partial", [195, 196, 197],
+    ("hud", "HUD: status, hot keys, buttons, team, emotes", "client/wlo/hud, client/wlo/team", "partial", [195, 196, 197],
      "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. "
-     "Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending."),
+     "Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending."),
+    ("instances", "Instance browser and room controls", "client/wlo/team/instances.go, client/wlo/app/team.go", "partial", [],
+     "TDupMisForm, TCreateDupMisForm and TDupMisManage: native definition selector, Mark.dat names/descriptions, capacities/levels/guild requirements/time limits, room creation, browser pagination and membership controls. Server uses typed SQL definitions and transient rooms; Go room controls are explicitly named AC85 extensions. Dungeon objectives, rewards, guild instances and native join/start request layouts remain pending verification."),
     ("minimap", "Minimap, world map and map frame", "", "todo", [214, 215, 168],
      "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data."),
     ("cursor", "Cursor and mouse state", "client/wlo/cursor, client/wlo/app (cursor.go)", "ported", [238, 239],
@@ -130,8 +132,8 @@ SUBSYSTEMS = [
      "inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported."),
     ("housing", "Housing and furniture", "", "todo", [244, 248, 111, 112],
      "TRE_FurnitureMng, TGdThing, home pillars, furniture drawing, NPC dolls."),
-    ("pets", "Pets and riding", "", "todo", [166, 259, 260],
-     "CH_TRidePet, ride pet positions (Data\\AdjustRidePetPos.txt), pet forms."),
+    ("pets", "Pets and riding", "client/wlo/role, client/wlo/team, client/wlo/app (team.go)", "partial", [166, 259, 260],
+     "Pet selection/rest/battle/ride/release and confirmations, native directional riding poses, authored saddle tables, frame/height positioning, raster order, mounted/following name placement and follow trails are ported. Remaining pet-specific forms and passengers are pending."),
     ("minigames", "Minigames and casino games", "client/wlo/minigame, client/wlo/app (minigame.go)", "started",
      [129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 150, 151, 152, 153, 154, 155, 156, 157, 160, 161, 162, 163, 167,
       174, 175, 177, 178, 190, 191, 192, 240],

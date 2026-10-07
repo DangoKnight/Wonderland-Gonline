@@ -54,6 +54,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandHandshake:          {handler: (*Server).handshakeCommand, policy: protocol.CommandPolicy{}},
 	protocol.CommandLogin:              {handler: (*Server).login, policy: protocol.CommandPolicy{}},
 	protocol.CommandTeam:               {handler: (*Server).partyCommand, policy: protocol.CommandPolicy{}},
+	protocol.CommandInstance:           {handler: (*Server).instanceCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandCharacterCreation:  {handler: (*Server).createCharacter, policy: protocol.CommandPolicy{}},
 	protocol.CommandCharacterSelection: {handler: (*Server).deleteCharacter, policy: protocol.CommandPolicy{CharacterDeletion: true}},
 	protocol.CommandChat:               {handler: (*Server).chat, policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, AllowedDuringMinigame: true}},

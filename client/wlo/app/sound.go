@@ -3,11 +3,13 @@ package app
 import (
 	"bytes"
 	"io"
+	"path/filepath"
 	"strings"
 	"sync"
 	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 
 	"wonderland-gonline/client/wlo/login"
@@ -16,7 +18,8 @@ import (
 // sampleRate is the mixing rate; wave files are resampled to it.
 const sampleRate = 44100
 
-// Sounds plays the client's wave files (FUN_00404fa4), given paths relative
+// Sounds plays wave effects and extracted OGG voices (FUN_00404fa4),
+// given paths relative
 // to the client directory with backslashes.
 type Sounds struct {
 	Root       string
@@ -24,6 +27,7 @@ type Sounds struct {
 	mu         sync.Mutex
 	volume     float64
 	configured bool
+	voice      *audio.Player
 }
 
 // SoundCache owns the workspace's one audio context and decoded effects.
@@ -63,7 +67,7 @@ func (s *Sounds) Play(path string) {
 	}
 }
 
-// PCM is a sound's decoded 16-bit stereo samples at the mixing rate, read
+// PCM is a wave/OGG sound's decoded 16-bit stereo samples at the mixing rate, read
 // once; nil for a missing or unreadable file.
 func (s *Sounds) PCM(path string) []byte {
 	s.Context()
@@ -74,8 +78,14 @@ func (s *Sounds) PCM(path string) []byte {
 	if !ok {
 		raw, err := clientfs.ReadFile(login.Path(s.Root, strings.Split(path, `\`)...))
 		if err == nil {
-			if st, err := wav.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw)); err == nil {
-				pcm, _ = io.ReadAll(st)
+			var decoded io.Reader
+			if strings.EqualFold(filepath.Ext(path), ".ogg") {
+				decoded, err = vorbis.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
+			} else {
+				decoded, err = wav.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
+			}
+			if err == nil {
+				pcm, _ = io.ReadAll(decoded)
 			}
 		}
 		s.Shared.cache[key] = pcm
@@ -89,4 +99,36 @@ func (s *Sounds) SetVolume(v float64) {
 	defer s.mu.Unlock()
 	s.volume = max(0, min(1, v))
 	s.configured = true
+}
+
+// PlayVoice replaces the preceding recorded line (FUN_004051fc).
+// Other effects, including dialogue sound tags, keep playing independently.
+func (s *Sounds) PlayVoice(path string) {
+	pcm := s.PCM(path)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.voice != nil {
+		s.voice.Close()
+		s.voice = nil
+	}
+	volume := 1.0
+	if s.configured {
+		volume = s.volume
+	}
+	if len(pcm) == 0 || volume == 0 {
+		return
+	}
+	// PCM initialized the shared audio context before taking this lock.
+	s.voice = s.Shared.ctx.NewPlayerFromBytes(pcm)
+	s.voice.SetVolume(volume)
+	s.voice.Play()
+}
+
+func (s *Sounds) StopVoice() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.voice != nil {
+		s.voice.Close()
+		s.voice = nil
+	}
 }

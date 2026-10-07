@@ -93,7 +93,7 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	roster := protocol.Builder{13, 6}.U32(a).U8(1).U32(b)
 	for i, w := range wires[:2] {
 		got := w.packets(t)
-		if !hasPacket(got, follow) || !hasPacket(got, roster) || countPrefix(got, 8, 3) != 7 || countPrefix(got, 8, 1) == 0 {
+		if !hasPacket(got, follow) || !hasPacket(got, roster) || countPrefix(got, 8, 3) != 8 || countPrefix(got, 8, 1) == 0 {
 			t.Fatalf("member %d: %v", i, got)
 		}
 	}
@@ -108,8 +108,8 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	bobby.character.HP--
 	s.partySync(bobby)
 	s.partySync(bobby)
-	hp := protocol.Builder{8, 3}.U32(b).U16(0x0123).U64(uint64(bobby.character.HP))
-	if got := wires[0].packets(t); len(got) != 7 || !hasPacket(got, hp) {
+	hp := protocol.Builder{8, 3}.U32(b).U8(0x19).U8(1).U32(uint32(bobby.character.HP)).U32(0)
+	if got := wires[0].packets(t); len(got) != 8 || !hasPacket(got, hp) {
 		t.Fatalf("vitals: %v", got)
 	}
 
@@ -299,5 +299,109 @@ func TestTeamBattleFleeAndDisconnect(t *testing.T) {
 	settle(t, s2, team[1])
 	if team[0].battle != nil || team[1].battle != nil {
 		t.Fatal("a member's escape did not end the battle for the team")
+	}
+}
+
+func TestPartyLeaveNativeReset(t *testing.T) {
+	for _, operation := range []string{"leader leave", "follower leave", "kick", "leader disconnect", "follower disconnect", "hidden scene", "different maps"} {
+		t.Run(operation, func(t *testing.T) {
+			s, players, wires := partyFixture(t)
+			leader, follower := players[0], players[1]
+			ctx := context.Background()
+			if err := s.partyCommand(ctx, follower, protocol.Builder{13, 1}.U32(leader.character.ID)); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.partyCommand(ctx, leader, protocol.Builder{13, 3, 1}.U32(follower.character.ID)); err != nil {
+				t.Fatal(err)
+			}
+			if operation == "hidden scene" {
+				m := s.Assets.Maps[leader.character.Map]
+				m.Scene = 10001
+				s.Assets.Maps[m.ID] = m
+				s.World = world.New(s.Assets)
+			}
+			if operation == "different maps" {
+				follower.character.Map = 20000
+			}
+			for _, wire := range wires {
+				wire.Reset()
+			}
+			var err error
+			disconnected := -1
+			switch operation {
+			case "leader leave", "hidden scene", "different maps":
+				err = s.partyCommand(ctx, leader, []byte{13, 4})
+			case "follower leave":
+				err = s.partyCommand(ctx, follower, []byte{13, 4})
+			case "kick":
+				err = s.partyCommand(ctx, leader, protocol.Builder{13, 9}.U32(follower.character.ID))
+			case "leader disconnect":
+				disconnected = 0
+				s.leaveWorld(leader)
+			case "follower disconnect":
+				disconnected = 1
+				s.leaveWorld(follower)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, member := range players[:2] {
+				if member.party != nil || member.view.Team.Load() != 0 {
+					t.Fatalf("member %d still in party", i)
+				}
+				packets := wires[i].packets(t)
+				if i == disconnected {
+					if len(packets) != 0 {
+						t.Fatalf("sent to disconnected member: %v", packets)
+					}
+					continue
+				}
+				var teamPackets [][]byte
+				for _, packet := range packets {
+					if len(packet) >= 2 && packet[0] == 13 {
+						teamPackets = append(teamPackets, packet)
+					}
+				}
+				packets = teamPackets
+				// Independent native wire fixture: empty AC13:6 sets role=leader,
+				// and must be followed by AC13:4(self) to clear role and follow state.
+				id := member.character.ID
+				reset := []byte{13, 6, byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24), 0}
+				leave := []byte{13, 4, byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
+				if len(packets) < 2 || !bytes.Equal(packets[len(packets)-2], reset) || !bytes.Equal(packets[len(packets)-1], leave) {
+					t.Fatalf("member %d native reset order: %v", i, packets)
+				}
+			}
+		})
+	}
+}
+
+func TestPartyLeaderLeaveKeepsRemainingMembers(t *testing.T) {
+	s, players, wires := partyFixture(t)
+	ctx := context.Background()
+	leader := players[0]
+	for _, member := range players[1:] {
+		if err := s.partyCommand(ctx, member, protocol.Builder{13, 1}.U32(leader.character.ID)); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.partyCommand(ctx, leader, protocol.Builder{13, 3, 1}.U32(member.character.ID)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	if err := s.partyCommand(ctx, leader, []byte{13, 4}); err != nil {
+		t.Fatal(err)
+	}
+	if leader.party != nil || players[1].party == nil || players[1].party != players[2].party || players[1].party.leader() != players[1] {
+		t.Fatal("leader leave did not preserve remaining party")
+	}
+	roster := protocol.Builder{13, 6}.U32(players[1].character.ID).U8(1).U32(players[2].character.ID)
+	for _, wire := range wires[1:] {
+		packets := wire.packets(t)
+		if len(packets) < 2 || !bytes.Equal(packets[0], protocol.Builder{13, 4}.U32(leader.character.ID)) || !bytes.Equal(packets[1], roster) {
+			t.Fatalf("old formation must detach before new roster: %v", packets)
+		}
 	}
 }

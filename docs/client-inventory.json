@@ -1953,7 +1953,7 @@
    "start": "180f64",
    "end": "198668",
    "functions": 267,
-   "cited": 1,
+   "cited": 3,
    "classes": [
     "TBeforeCareerForm",
     "TCareerForm",
@@ -2549,7 +2549,7 @@
    "start": "25fea0",
    "end": "2a7258",
    "functions": 465,
-   "cited": 53,
+   "cited": 60,
    "classes": [
     "TSe_TeamForm",
     "THotKeyImage",
@@ -3498,7 +3498,7 @@
    "start": "403e50",
    "end": "405e88",
    "functions": 23,
-   "cited": 5,
+   "cited": 6,
    "classes": [
     "TFMark"
    ],
@@ -3526,7 +3526,7 @@
    "start": "406848",
    "end": "40c1f0",
    "functions": 31,
-   "cited": 3,
+   "cited": 5,
    "classes": [
     "TGround"
    ],
@@ -3569,7 +3569,7 @@
    "start": "40cb70",
    "end": "40f394",
    "functions": 13,
-   "cited": 0,
+   "cited": 4,
    "classes": [
     "TSe_HInputDevice"
    ],
@@ -3603,7 +3603,7 @@
    "start": "41010c",
    "end": "458cd8",
    "functions": 525,
-   "cited": 50,
+   "cited": 56,
    "classes": [
     "TPlayers",
     "TBasePlayer",
@@ -3795,7 +3795,7 @@
    "start": "4827a8",
    "end": "485d44",
    "functions": 46,
-   "cited": 7,
+   "cited": 10,
    "classes": [
     "Twb_MemSur",
     "Twb_PlainPic"
@@ -4220,7 +4220,7 @@
     276
    ],
    "functions": 56,
-   "cited": 9,
+   "cited": 12,
    "ranges": [
     "4827a8-485d44",
     "4868b8-486aac"
@@ -4271,14 +4271,14 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Not yet: gesture selection UI, companion riding, passengers, additional vehicle classes, transforms, follow NPCs, wandering NPCs.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Not yet: gesture selection UI, passengers, additional vehicle classes, transforms, wandering NPCs.",
    "regions": [
     262,
     263,
     264
    ],
    "functions": 567,
-   "cited": 58,
+   "cited": 64,
    "ranges": [
     "40f4b8-40f988",
     "41010c-458cd8",
@@ -4299,7 +4299,7 @@
     103
    ],
    "functions": 88,
-   "cited": 6,
+   "cited": 8,
    "ranges": [
     "3f5ba8-3f710c",
     "406848-40c1f0",
@@ -4420,21 +4420,32 @@
   {
    "key": "hud",
    "title": "HUD: status, hot keys, buttons, team, emotes",
-   "go": "client/wlo/hud",
+   "go": "client/wlo/hud, client/wlo/team",
    "status": "partial",
-   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills and Options actions are wired. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending.",
+   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending.",
    "regions": [
     195,
     196,
     197
    ],
    "functions": 490,
-   "cited": 53,
+   "cited": 60,
    "ranges": [
     "259760-25b1ac",
     "25b454-25d0ec",
     "25fea0-2a7258"
    ]
+  },
+  {
+   "key": "instances",
+   "title": "Instance browser and room controls",
+   "go": "client/wlo/team/instances.go, client/wlo/app/team.go",
+   "status": "partial",
+   "notes": "TDupMisForm, TCreateDupMisForm and TDupMisManage: native definition selector, Mark.dat names/descriptions, capacities/levels/guild requirements/time limits, room creation, browser pagination and membership controls. Server uses typed SQL definitions and transient rooms; Go room controls are explicitly named AC85 extensions. Dungeon objectives, rewards, guild instances and native join/start request layouts remain pending verification.",
+   "regions": [],
+   "functions": 0,
+   "cited": 0,
+   "ranges": []
   },
   {
    "key": "minimap",
@@ -4484,7 +4495,7 @@
     206
    ],
    "functions": 54,
-   "cited": 5,
+   "cited": 6,
    "ranges": [
     "15df98-161750",
     "403e50-405e88",
@@ -4671,7 +4682,7 @@
     205
    ],
    "functions": 1493,
-   "cited": 33,
+   "cited": 35,
    "ranges": [
     "152a64-154dec",
     "1552f4-1553c8",
@@ -4719,16 +4730,16 @@
   {
    "key": "pets",
    "title": "Pets and riding",
-   "go": "",
-   "status": "todo",
-   "notes": "CH_TRidePet, ride pet positions (Data\\AdjustRidePetPos.txt), pet forms.",
+   "go": "client/wlo/role, client/wlo/team, client/wlo/app (team.go)",
+   "status": "partial",
+   "notes": "Pet selection/rest/battle/ride/release and confirmations, native directional riding poses, authored saddle tables, frame/height positioning, raster order, mounted/following name placement and follow trails are ported. Remaining pet-specific forms and passengers are pending.",
    "regions": [
     166,
     259,
     260
    ],
    "functions": 199,
-   "cited": 0,
+   "cited": 4,
    "ranges": [
     "1995dc-1ae464",
     "40c684-40c998",
@@ -4895,7 +4906,7 @@
   {
    "command": 13,
    "name": "Team",
-   "client": false
+   "client": true
   },
   {
    "command": 14,
@@ -5209,8 +5220,8 @@
   },
   {
    "command": 85,
-   "name": "",
-   "client": false
+   "name": "Instance",
+   "client": true
   },
   {
    "command": 86,
@@ -5283,5 +5294,5 @@
    "client": false
   }
  ],
- "cited_functions": 658
+ "cited_functions": 683
 }

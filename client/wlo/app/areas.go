@@ -45,7 +45,7 @@ func (c *Client) areaTick() {
 		return
 	}
 	w.x, w.y = p.X, p.Y
-	if c.event.active {
+	if c.event.active || c.petAnnouncement {
 		return
 	}
 	inside := false

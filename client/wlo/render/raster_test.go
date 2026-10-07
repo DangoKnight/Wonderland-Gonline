@@ -115,6 +115,13 @@ func exerciseRaster(d *Device) error {
 			return err
 		}
 	}
+	for _, at := range []image.Point{{-7, -3}, {2, 5}, {179, 109}} {
+		if err := draw("scaled alpha pet sprite", func(s *surface.Surface) {
+			_ = s.DrawSpriteScaled(at.X, at.Y, 2, sprite, func() (*image.NRGBA, error) { return sprite, nil })
+		}); err != nil {
+			return err
+		}
+	}
 	indices := image.NewGray(image.Rect(4, 7, 68, 39))
 	for i := range indices.Pix {
 		indices.Pix[i] = byte(i)
@@ -127,6 +134,11 @@ func exerciseRaster(d *Device) error {
 	}
 	for _, at := range []image.Point{{-3, -7}, {56, 13}} {
 		if err := draw("indexed sprite", func(s *surface.Surface) { s.DrawIndexed(at.X, at.Y, indices, indices, lut, opaque) }); err != nil {
+			return err
+		}
+	}
+	for _, at := range []image.Point{{-7, -3}, {2, 5}, {179, 109}} {
+		if err := draw("scaled indexed pet sprite", func(s *surface.Surface) { s.DrawIndexedScaled(at.X, at.Y, 2, indices, indices, lut, opaque) }); err != nil {
 			return err
 		}
 	}

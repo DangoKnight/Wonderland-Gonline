@@ -373,7 +373,7 @@ func TestRemoteDiscardSelectionDoesNotConsume(t *testing.T) {
 }
 
 func TestRemoteWalkingPausesForServerLocks(t *testing.T) {
-	for _, pause := range []string{"loading", "held", "event", "dead", "battle"} {
+	for _, pause := range []string{"loading", "held", "event", "recruitment", "dead", "battle"} {
 		t.Run(pause, func(t *testing.T) {
 			c, _, o := remoteClient(t)
 			o.AutoMove = true
@@ -387,6 +387,8 @@ func TestRemoteWalkingPausesForServerLocks(t *testing.T) {
 				c.held = true
 			case "event":
 				c.event.active = true
+			case "recruitment":
+				c.petAnnouncement = true
 			case "dead":
 				c.Stats.HP = 0
 			case "battle":

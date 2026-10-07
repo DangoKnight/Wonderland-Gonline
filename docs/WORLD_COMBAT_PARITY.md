@@ -69,3 +69,37 @@ identify a verified replacement cutscene, remote or completion mark. No duplicat
 hardcoded fallback is added. Authored EVE rewards elsewhere retain their normal
 transactional execution. Verify native content/captures before implementing this
 separate fallback.
+
+## Starter Beach monkey cinematic
+
+Map 11016, actor 1 (S.Monkey, template 17162), links to event 1. Its authored
+rescue branch 7 plays `12000.sty` (the monkey falling and rescue, ten lines),
+then `11011.sty` (six concluding lines). Branch 10 contains the same movies
+with a full-party response. The previous explicit controller replaced the
+movies with sixteen dialogue packets, so neither native nor Go clients could
+play the cinematic.
+
+The rescue controller now reads its movie operations from the assets database
+and sends the native AC20:1 kind-5 frames in order, waiting for AC20:6 after
+each movie. It then commits the companion and marks 12002/12003 together.
+Full-party attempts explain the capacity limit without completing the quest;
+cancelled movies and failed commits do not grant or hide the companion.
+Definitions without movie operations retain the older dialogue sequence.
+Already-completed rescues retain their short response and do not replay rewards.
+
+For a live check, use a character without S.Monkey or completed mark 12002,
+leave a free companion slot, enter Starter Beach and click the monkey near
+(733, 388). Confirm both movies play, then check the recruited pet. Repeat
+with a full party and cancel during the movie to verify the retry paths.
+Reference video supplied by the user: https://www.youtube.com/watch?v=XpG62F146k0.
+The event and movie IDs above are verified against the local WLRI exports;
+the video could not be fetched by the investigation tools.
+
+The Go movie renderer applies the authored NPC `Extra` depth offset when sorting
+actors (`FUN_0033de44`): S.Monkey's +100 places it in front of the tree during
+movie 12000. Movie 11011 has the illustration background `JRPJRole_5_3`, rather
+than a map. `JRP` is resolved to the exported JPEG picture; the 832×640 artwork
+is drawn opaque at the authored camera origin and cropped to the 800×600 game
+viewport. It does not reuse the current map or its objects. Owned pet speakers
+prefer their roster nickname. Focused tests cover both movies' completion,
+the authored depth offset, visible illustration pixels and compiled GPU parity.

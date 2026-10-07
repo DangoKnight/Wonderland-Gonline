@@ -17,6 +17,7 @@ import (
 type Peer struct {
 	Player
 	Element, Level byte
+	Rebirth        byte
 	Role           login.RoleView
 	Walker         Walker
 }
@@ -41,7 +42,9 @@ func ParseOther(p []byte) (*Peer, error) {
 		pr.Items = append(pr.Items, r.u16())
 	}
 	r.u32()
-	r.take(3)
+	r.u8()
+	pr.Rebirth = r.u8()
+	r.u8()
 	pr.Name = r.str()
 	if len(r.b) > 0 {
 		pr.Nickname = r.str()
@@ -108,6 +111,9 @@ func (w *World) PlacePeer(id uint32, x, y int) {
 	if p := w.Peers[id]; p != nil {
 		p.Walker.Stop(&p.Player)
 		p.X, p.Y = x, y
+		if companion := w.Companions[id]; companion != nil {
+			companion.reset(&p.Player)
+		}
 	}
 }
 
@@ -115,6 +121,7 @@ func (w *World) PlacePeer(id uint32, x, y int) {
 func (w *World) RemovePeer(id uint32) {
 	delete(w.Peers, id)
 	delete(w.Expressions, id)
+	delete(w.Companions, id)
 }
 
 // PeerName is the name of a player on the map, nil when unknown.

@@ -45,7 +45,7 @@ successful chain participants count, including pets, and singles receive no bonu
 
 Gameplay schema v17 stores character state in typed tables and owned child rows.
 v17 separates Party Invites from Joining Battle, preserving earlier invitation
-restrictions during upgrade. Structured asset schema v11 stores runtime definitions
+restrictions during upgrade. Structured asset schema v12 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline copy procedure
@@ -1094,3 +1094,23 @@ not dispose another session or the window's shared assets. GPU destination-readi
 effects use GPU scratch surfaces, never per-frame CPU readbacks. Preserve native
 integer color-key, alpha, light and scaling semantics with the actual graphics
 parity tests in [CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md#gpu-rendering).
+
+## Teams and instance rooms
+
+Party vitals use the native AC8:3 layout decoded by `FUN_00451718`:
+character U32, stat U8, sign U8, magnitude U32, target U32. Level is stat 35;
+current HP is stat 25. Do not reuse Private Server's misleading U16 stat IDs.
+Send CON/WIS, growth-adjusted HP/SP bonuses and rebirth so native clients can
+calculate maxima. Keep independent wire fixtures for these fields.
+
+Instance metadata belongs to `assets.Catalog.Instances` and SQL
+`catalog_instances` (asset schema v12). Offline initialization projects
+SceneData.dat; its map list supplies the entry map. Field +0x6b references
+Mark.dat ID +1 and supplies the display title and description. It is not an
+entry map. Runtime server code reads only the typed SQL catalog. Room membership
+is transient presentation state, protected by `worldMu`, and ends on disconnect.
+No fee or reward is granted by joining a lobby. Starting dungeons remains pending
+until objectives and rewards are verified. Do not substitute guessed content.
+
+Native AC85 browser/create/detail requests and replies are separate from
+Gonline's explicit room-control extensions (200–203); see [Teams](TEAMS.md).

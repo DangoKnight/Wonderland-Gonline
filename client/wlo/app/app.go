@@ -22,6 +22,7 @@ import (
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/sprites"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/team"
 	"wonderland-gonline/client/wlo/weather"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/assets"
@@ -82,6 +83,10 @@ type Client struct {
 	settingsPath       string
 	Inventory          *inventory.Form
 	Compound           *inventory.CompoundForm
+	Team               *team.Form
+	TeamState          *team.State
+	teamAppearances    map[uint32]*world.Peer
+	joinTeamTarget     bool
 	remote             remoteRuntime
 	InventoryState     *inventory.State
 	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
@@ -103,6 +108,8 @@ type Client struct {
 	sceneMusic         map[uint16]string
 	talks              map[uint16]string
 	event              eventState
+	petAnnouncements   [][]byte
+	petAnnouncement    bool
 	pendingNPC         *world.NPC // clicked out of reach, sent on arrival
 	areas              areaWatch
 	sounds             []string // the sound table (soundtable.go)
@@ -277,6 +284,7 @@ func New(o Options) (*Client, error) {
 	c.initInventory()
 	c.initCompound()
 	c.initSkills()
+	c.initTeam()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -299,6 +307,7 @@ func (c *Client) frame(draw bool) {
 	}
 	c.Input.Hovered = nil // FUN_0040f97c
 	if c.World != nil && c.fade.frozen == nil {
+		c.World.JoinTeamSelection = c.joinTeamTarget
 		c.World.Step(c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
@@ -399,6 +408,9 @@ func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
 		return
 	}
+	if c.teamPacket(p) {
+		return
+	}
 	if c.hotbarPacket(p) {
 		return
 	}
@@ -446,7 +458,9 @@ func (c *Client) dispatch(p []byte) {
 		c.vehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlWireCode8:
 		if c.World != nil {
+			before := c.InventoryState.Pets
 			if c.InventoryState.ApplyPetList(p) {
+				c.announceNewPets(before)
 				c.assignPetSkills()
 				c.Skills.Refresh()
 			} else if c.Unhandled != nil {

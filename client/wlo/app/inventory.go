@@ -75,6 +75,10 @@ func (c *Client) resetInventory(p world.Player) {
 	}
 	c.Inventory.Hide()
 	c.Compound.Reset()
+	c.Team.Reset()
+	c.TeamState.Reset(p.ID)
+	c.teamAppearances = nil
+	c.setJoinTeamTarget(false)
 	c.Inventory.AllocationReply()
 	c.Inventory.ResetUse()
 	c.Inventory.ResetRemote()

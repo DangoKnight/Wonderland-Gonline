@@ -8,6 +8,74 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
+type InstancesRow struct {
+	InstancesOrdinal  int `gorm:"column:instances_ordinal;primaryKey;autoIncrement:false"`
+	ValueID           uint16
+	ValueName         string
+	ValueDescription  string
+	ValueMarkID       uint16
+	ValueCapacity     uint8
+	ValueGuildOnly    bool
+	ValueMinimumLevel uint16
+	ValueMinutes      uint16
+	ValueEntryMap     uint16
+	ValueEntryX       uint16
+	ValueEntryY       uint16
+}
+
+func (InstancesRow) TableName() string { return "catalog_instances" }
+func writeInstances(tx *gorm.DB, values []assets.InstanceDefinition) error {
+	var rows []InstancesRow
+	for key, value := range values {
+		row := InstancesRow{InstancesOrdinal: key}
+		row.ValueID = value.ID
+		row.ValueName = value.Name
+		row.ValueDescription = value.Description
+		row.ValueMarkID = value.MarkID
+		row.ValueCapacity = value.Capacity
+		row.ValueGuildOnly = value.GuildOnly
+		row.ValueMinimumLevel = value.MinimumLevel
+		row.ValueMinutes = value.Minutes
+		row.ValueEntryMap = value.EntryMap
+		row.ValueEntryX = value.EntryX
+		row.ValueEntryY = value.EntryY
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readInstances(tx *gorm.DB) ([]assets.InstanceDefinition, error) {
+	result := make([]assets.InstanceDefinition, 0)
+	var rows []InstancesRow
+	query := tx
+	if err := query.Order("instances_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.InstanceDefinition
+		value.ID = row.ValueID
+		value.Name = row.ValueName
+		value.Description = row.ValueDescription
+		value.MarkID = row.ValueMarkID
+		value.Capacity = row.ValueCapacity
+		value.GuildOnly = row.ValueGuildOnly
+		value.MinimumLevel = row.ValueMinimumLevel
+		value.Minutes = row.ValueMinutes
+		value.EntryMap = row.ValueEntryMap
+		value.EntryX = row.ValueEntryX
+		value.EntryY = row.ValueEntryY
+		if row.InstancesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type QuestDefinitionsRow struct {
 	QuestDefinitionsKey               uint32 `gorm:"column:quest_definitions_key;primaryKey;autoIncrement:false"`
 	ValueID                           uint32
@@ -5803,6 +5871,7 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	Instances             bool
 	QuestDefinitions      bool
 	Manufacturing         bool
 	RebornClasses         bool
@@ -5833,6 +5902,7 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&InstancesRow{},
 		&QuestDefinitionsRow{},
 		&QuestDefinitionsAllLinkedMarkIDsRow{},
 		&QuestDefinitionsRequiredItemsRow{},
@@ -6220,10 +6290,14 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&QuestDefinitionsRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&InstancesRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.Instances = c.Instances != nil
 	presence.QuestDefinitions = c.QuestDefinitions != nil
 	presence.Manufacturing = c.Manufacturing != nil
 	presence.RebornClasses = c.RebornClasses != nil
@@ -6250,6 +6324,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeInstances(tx, c.Instances); err != nil {
 		return err
 	}
 	if err := writeQuestDefinitions(tx, c.QuestDefinitions); err != nil {
@@ -6353,6 +6430,10 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.Instances, err = readInstances(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.QuestDefinitions, err = readQuestDefinitions(tx)
 	if err != nil {
 		return nil, err
@@ -6484,6 +6565,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.Instances {
+		c.Instances = nil
 	}
 	if !presence.QuestDefinitions {
 		c.QuestDefinitions = nil

@@ -342,6 +342,9 @@ func (t *target) drawTiles(dst, r image.Rectangle, s *surface.Surface, transpare
 	}
 }
 func (t *target) DrawSprite(x, y int, key any, load func() (*image.NRGBA, error)) error {
+	return t.DrawSpriteScaled(x, y, 1, key, load)
+}
+func (t *target) DrawSpriteScaled(x, y, scale int, key any, load func() (*image.NRGBA, error)) error {
 	img, err := t.device.cached(textureKey{Kind: textureSprite, Source: key}, func() (*ebiten.Image, error) {
 		m, err := load()
 		if err != nil || m == nil {
@@ -369,7 +372,7 @@ func (t *target) DrawSprite(x, y int, key any, load func() (*image.NRGBA, error)
 		return err
 	}
 	src := img.Bounds()
-	dst := src.Add(image.Pt(x, y))
+	dst := image.Rect(x, y, x+src.Dx()*scale, y+src.Dy()*scale)
 	op := rasterSprite
 	if !t.device.translucent[img] {
 		op = rasterCutout
@@ -378,6 +381,9 @@ func (t *target) DrawSprite(x, y int, key any, load func() (*image.NRGBA, error)
 	return nil
 }
 func (t *target) DrawIndexed(x, y int, key any, m *image.Gray, lut [256]uint16, opaque [256]bool) {
+	t.DrawIndexedScaled(x, y, 1, key, m, lut, opaque)
+}
+func (t *target) DrawIndexedScaled(x, y, scale int, key any, m *image.Gray, lut [256]uint16, opaque [256]bool) {
 	img, err := t.device.cached(textureKey{Kind: textureIndices, Source: key}, func() (*ebiten.Image, error) {
 		b := m.Bounds()
 		data := make([]byte, b.Dx()*b.Dy()*texturePixelBytes)
@@ -411,7 +417,7 @@ func (t *target) DrawIndexed(x, y int, key any, m *image.Gray, lut [256]uint16, 
 		panic(err)
 	}
 	src := img.Bounds()
-	dst := src.Add(image.Pt(x, y))
+	dst := image.Rect(x, y, x+src.Dx()*scale, y+src.Dy()*scale)
 	t.paint(rasterIndexed, dst, dst, src, img, pal, 0, false, 0, 0)
 }
 

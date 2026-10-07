@@ -39,6 +39,9 @@ func writePlacementSprite(t *testing.T, root, family, name string, color color.N
 	if family == "006" {
 		index = 5
 	}
+	if family == "001" {
+		index = 867
+	}
 	data, err := json.Marshal(clientassets.EditableSprites{Version: 1, Sprites: []clientassets.EditableSprite{{Index: index, Name: name, Animations: actions, Frames: []clientassets.EditableFrame{{Sheet: "sheet.png", Rect: clientassets.SpriteRect{Width: 1, Height: 1}, CanvasWidth: 2, CanvasHeight: 32, AnchorX: 1}}}}})
 	if err != nil {
 		t.Fatal(err)

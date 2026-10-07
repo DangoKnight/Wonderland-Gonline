@@ -1,6 +1,7 @@
 package role
 
 import (
+	"image"
 	"strconv"
 	"strings"
 	"time"
@@ -46,11 +47,19 @@ var slotArchive = [equipSlots + 1]string{1: "c", 2: "e", 3: "w", 4: "a", 5: "s"}
 const vehicleSpriteFamily = "006"
 
 type Human struct {
-	vehicleSprite uint16
-	vehicleSeated bool
-	Lib           *Library
-	Items         map[uint16]assets.NativeItem
-	Now           func() time.Time
+	Lit                             bool
+	picks                           [layerPositions + 2]spritePick // Base, seven layers and vehicle.
+	pickCount                       int
+	picking                         bool
+	pickOrigin                      image.Point
+	petMount                        *NPC
+	petPlacement                    *MountPlacement
+	petHeightScale, petHeightPreset byte
+	vehicleSprite                   uint16
+	vehicleSeated                   bool
+	Lib                             *Library
+	Items                           map[uint16]assets.NativeItem
+	Now                             func() time.Time
 
 	body, head byte
 	colors     Colors
@@ -113,7 +122,15 @@ func (h *Human) layerSprite(dst *surface.Surface, base string, id int, action, f
 		if strings.HasSuffix(base, "w") {
 			y += weaponGroundOffset
 		}
-		s.drawColored(dst, f, x, y, id, &h.colors)
+		if h.picking {
+			h.recordPick(spritePick{s: s, f: f, at: image.Pt(x+f.OffsetX, y+f.OffsetY).Sub(h.pickOrigin), scale: 1})
+		}
+		colors := h.colors
+		if h.Lit {
+			colors = colors.lifted(litSteps)
+		}
+
+		s.drawColored(dst, f, x, y, id, &colors)
 	}
 }
 
@@ -126,6 +143,8 @@ func (h *Human) item(slot int) (assets.NativeItem, bool) {
 }
 
 // SetVehicle installs the Item.dat vehicle look from a server-confirmed mount.
+func (h *Human) SetPetMount(pet *NPC) { h.petMount = pet }
+
 func (h *Human) SetVehicle(sprite uint16) { h.vehicleSprite = sprite; h.vehicleSeated = false }
 
 // SetVehiclePose distinguishes seated water riders from other vehicle classes.
@@ -137,6 +156,9 @@ func (h *Human) SetVehiclePose(sprite uint16, seated bool) {
 // DrawBody is FUN_00412c50 → FUN_00433318 for a player: the base body,
 // then seven layers in table order. direction is the action (+0x121).
 func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
+	h.pickCount = 0
+	h.pickOrigin, h.picking = image.Pt(x, y), true
+	defer func() { h.picking = false }()
 	if h.body == 0 || h.body > 4 {
 		return
 	}
@@ -144,6 +166,8 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 	action := vehicleAction
 	if h.vehicleSeated {
 		action = vehicleRiderAction(direction)
+	} else if h.petMount != nil {
+		action = h.petRiderAction(direction)
 	}
 
 	fam := familyName(h.body)
@@ -173,6 +197,14 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 			}
 		}
 	}
+	if h.petMount != nil {
+		// FUN_00412c50 draws the mounted TFollowNpc before the human. Saddle
+		// placement, rather than reversing these layers, establishes overlap.
+		h.petMount.SetLit(h.Lit)
+		h.petMount.Draw(dst, x, y+petSpriteDrop(h.petHeightScale, h.petHeightPreset), vehicleAction)
+		dx, dy := h.petRiderOffset(vehicleAction)
+		x, y = x+dx, y+dy
+	}
 	if h.vehicleSprite != 0 {
 		if arc, key := h.Lib.lookup(vehicleSpriteFamily, int(h.vehicleSprite)); arc != nil {
 			if s := arc.sprite(key); s != nil && s.frameCount(vehicleAction) > 0 {
@@ -181,6 +213,7 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 					if h.vehicleSeated && seatedVehicleGroundCorrection(h.vehicleSprite) {
 						vehicleY += seatedVehicleGroundOffset
 					}
+					h.recordPick(spritePick{s: s, f: f, at: image.Pt(x+f.OffsetX, vehicleY+f.OffsetY).Sub(h.pickOrigin), scale: 1})
 					s.draw(dst, f, x, vehicleY)
 				}
 			}
@@ -227,7 +260,7 @@ func (h *Human) DrawBody(dst *surface.Surface, x, y int, direction int32) {
 			continue
 		}
 		// Native mounted poses hide hand weapons except type 6 (FUN_00433318).
-		if layer == weaponSlot && h.vehicleSeated && h.typeOf(h.equip[layer]) != mountedVisibleWeaponType {
+		if layer == weaponSlot && (h.vehicleSeated || h.petMount != nil) && h.typeOf(h.equip[layer]) != mountedVisibleWeaponType {
 			continue
 		}
 		id := h.equip[layer]

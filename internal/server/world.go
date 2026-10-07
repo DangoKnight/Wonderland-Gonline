@@ -250,6 +250,7 @@ func (s *Server) leaveWorld(c *Session) {
 	s.endEvent(c)
 	// C# keeps a disconnected player in its team; it leaves here.
 	s.partyLeave(c, false)
+	s.instanceLeave(c)
 	if s.world[c.info.ID] == c {
 		s.depart(c, protocol.Builder{protocol.CommandMapAcknowledgment}.U32(c.character.ID).U16(0).U16(0).U16(0).U16(0).U8(0))
 	}

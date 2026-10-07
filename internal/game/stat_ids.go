@@ -9,6 +9,7 @@ const (
 	StatCON               byte = 29
 	StatAGI               byte = 30
 	StatWIS               byte = 33
+	StatLevel             byte = 35
 	StatTotalEXP          byte = 36
 	StatUnallocatedPoints byte = 38
 	StatAttack            byte = 41
@@ -21,3 +22,5 @@ const (
 	StatHPBonus           byte = 207
 	StatSPBonus           byte = 208
 )
+
+const StatRebirth byte = 39

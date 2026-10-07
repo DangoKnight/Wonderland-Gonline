@@ -93,13 +93,15 @@ type NPCTemplate struct {
 	Kind         byte
 	Look         uint16
 	Face         uint16
-	TalkLow      byte // +0x5a: 1 stands the talk window's body lower
+	Icon         uint16 // Npc.dat +0x10: 007-family small companion portrait
+	TalkLow      byte   // +0x5a: 1 stands the talk window's body lower
 	Colors       [4]uint32
 	Shadow       byte
 	HeightScale  byte
 	HeightPreset byte
 	// Sound is the wav#### a prop plays as it opens (+0x60, FUN_00408054).
 	Sound uint16
+	Voice byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
 }
 
 // NPCPainter draws an NPC's sprite at its feet.
@@ -266,8 +268,10 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				Shadow       byte   `json:"unknown_u8_offset_74"`
 				HeightPreset byte   `json:"unknown_u8_offset_87"`
 				Face         uint16 `json:"unknown_u16_offset_88"`
+				Icon         uint16 `json:"unknown_u16_offset_16"`
 				TalkLow      byte   `json:"unknown_u8_offset_86"`
 				Sound        uint16 `json:"unknown_u16_offset_92"`
+				Voice        byte   `json:"unknown_u8_offset_104"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
@@ -278,7 +282,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	for _, r := range doc.Records {
 		f := r.Fields
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, TalkLow: f.TalkLow, Sound: f.Sound, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
+			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
 	}
 	npcData.path, npcData.templates = path, out
 	return out, nil
@@ -377,7 +381,17 @@ func (w *World) ApplyActorPositions(p []byte) {
 // Hover marks the NPC under a screen point as hovered (drawn lit, as the
 // pick of FUN_002fe8e8 → FUN_004106b0 and the map draw do); a point off
 // every NPC, or (-1, -1), clears it.
-func (w *World) Hover(x, y int) { w.hovered = w.NPCAt(x, y) }
+func (w *World) Hover(x, y int) {
+	w.teamHover = teamTarget{}
+	if w.JoinTeamSelection {
+		w.hovered = nil
+		if x >= 0 && y >= 0 {
+			w.teamHover = w.pickTeamTarget(x, y)
+		}
+		return
+	}
+	w.hovered = w.NPCAt(x, y)
+}
 
 // Hovered is the NPC under the pointer, nil for none.
 func (w *World) Hovered() *NPC { return w.hovered }

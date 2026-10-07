@@ -130,3 +130,44 @@ func (s *State) ApplyPetStat(p []byte) bool {
 	}
 	return true
 }
+
+const petRecruitBytes = 54
+
+// FUN_00409820: newly recruited pets occupy the lowest free login slot.
+func (s *State) ApplyPetRecruit(p []byte, owner uint32) bool {
+	if len(p) != petRecruitBytes || p[0] != protocol.CommandPetControl || p[1] != protocol.PetControlWireCode1 || binary.LittleEndian.Uint32(p[2:]) != owner {
+		return false
+	}
+	id := binary.LittleEndian.Uint32(p[6:])
+	if id == 0 || id > 65535 || p[45] > 1 || p[46] > game.PotentialMaximum {
+		return false
+	}
+	for _, pet := range s.Pets {
+		if uint32(pet.ID) == id {
+			return true
+		}
+	}
+	slot := -1
+	for i, pet := range s.Pets {
+		if pet.ID == 0 {
+			slot = i
+			break
+		}
+	}
+	if slot < 0 {
+		return false
+	}
+	pet := UsePet{ID: uint16(id), Amity: p[41], Potential: p[46]}
+	pet.Stats = world.Stats{STR: binary.LittleEndian.Uint16(p[11:]), CON: binary.LittleEndian.Uint16(p[13:]), INT: binary.LittleEndian.Uint16(p[15:]), WIS: binary.LittleEndian.Uint16(p[17:]), AGI: binary.LittleEndian.Uint16(p[19:]), Level: p[21], EXP: binary.LittleEndian.Uint32(p[22:]), Rebirth: p[45], Potential: p[46], Job: p[47]}
+	for i := range pet.Skills {
+		at := 26 + i*5
+		if p[at] > game.MaxSkillGrade {
+			return false
+		}
+		pet.Skills[i] = game.PetSkill{Grade: p[at], Exp: binary.LittleEndian.Uint32(p[at+1:])}
+	}
+	s.recomputePet(&pet)
+	pet.Stats.HP, pet.Stats.SP = pet.Stats.MaxHP, pet.Stats.MaxSP
+	s.Pets[slot] = pet
+	return true
+}

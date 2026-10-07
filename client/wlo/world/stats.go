@@ -3,6 +3,7 @@ package world
 import (
 	"encoding/binary"
 	"errors"
+	"wonderland-gonline/internal/game"
 
 	"wonderland-gonline/client/wlo/login"
 )
@@ -136,6 +137,7 @@ func (s *Stats) Apply(id byte, v uint32) {
 		s.STR = uint16(v)
 	case StatCON:
 		s.CON = uint16(v)
+		s.recomputeHP()
 	case StatAGI:
 		s.AGI = uint16(v)
 	case StatJob:
@@ -145,6 +147,12 @@ func (s *Stats) Apply(id byte, v uint32) {
 		s.recomputeSP()
 	case StatLevel:
 		s.Level = byte(v)
+		s.recomputeHP()
+		s.recomputeSP()
+	case game.StatRebirth:
+		s.Rebirth = byte(v)
+		s.recomputeHP()
+		s.recomputeSP()
 	case StatEXP:
 		s.EXP = v
 	case StatATK, StatDEF, StatMAT, StatMDF, StatSPD:

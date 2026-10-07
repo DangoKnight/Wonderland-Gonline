@@ -7,19 +7,24 @@ import (
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 const (
-	monkeyTemplate       = 17162
-	monkeyMap            = 11016
-	monkeyActor          = 1
-	monkeyRescueMark     = 12002
-	monkeyFollowMark     = 12003
-	monkeyFirstTalk      = 20038
-	monkeySqueakTalk     = 20042
-	monkeyFullPartyTalk  = 31146
-	monkeyNPCPortrait    = 3
-	monkeyPlayerPortrait = 7
+	monkeyTemplate           = 17162
+	monkeyMap                = 11016
+	monkeyActor              = 1
+	monkeyRescueMark         = 12002
+	monkeyFollowMark         = 12003
+	monkeyFirstTalk          = 20038
+	monkeySqueakTalk         = 20042
+	monkeyFullPartyTalk      = 31146
+	monkeyNPCPortrait        = 3
+	monkeyPlayerPortrait     = 7
+	monkeyMovieFrameKind     = 5
+	monkeyMovieHoldMode      = 2
+	nativeMoviePlay          = 1
+	nativeMoviePlayAlternate = 2
 )
 
 type monkeyLine struct {
@@ -27,13 +32,44 @@ type monkeyLine struct {
 	portrait byte
 }
 
-// startMonkey ports the explicit sixteen-step rescue controller. Only a linked,
+type monkeyMovieStep struct {
+	op     world.Op
+	branch byte
+}
+
+// monkeyMovies preserves the movie operations from the authored rescue branch.
+// Recruitment is still committed atomically by finishMonkey, rather than by the
+// authored branch's separate companion and quest-mark writes.
+func (s *Server) monkeyMovies(mapID, click uint16) []monkeyMovieStep {
+	if mapID != monkeyMap {
+		return nil
+	}
+	for _, ev := range s.World.NPCEvents(mapID, click) {
+		for _, br := range ev.Branches {
+			var movies []monkeyMovieStep
+			for _, raw := range br.Operations {
+				op := world.DecodeOp(raw)
+				if op.Code == world.ActionMovie && (op.D1 == nativeMoviePlay || op.D1 == nativeMoviePlayAlternate) {
+					movies = append(movies, monkeyMovieStep{op: op, branch: br.Index})
+				}
+			}
+			if len(movies) != 0 {
+				return movies
+			}
+		}
+	}
+	return nil
+}
+
+// startMonkey plays the authored rescue movies when available, retaining the
+// sixteen-step dialogue for legacy definitions without movie operations. Only a linked,
 // enabled native event may invoke it; range/visibility checks still precede it.
 func (s *Server) startMonkey(ctx context.Context, c *Session, click uint16) error {
 	_, owned := c.character.Pet(monkeyTemplate)
 	done := c.character.Quests[monkeyRescueMark].State == game.Completed
 	lines := []monkeyLine{{monkeySqueakTalk, monkeyNPCPortrait}}
 	recruit := !owned && !done
+	var movies []monkeyMovieStep
 	if recruit {
 		if _, known := s.World.Template(monkeyTemplate); !known {
 			return s.sendAll(c, [][]byte{headBanner("The companion definition is unavailable."), {protocol.CommandEvent, protocol.EventResume}})
@@ -47,6 +83,11 @@ func (s *Server) startMonkey(ctx context.Context, c *Session, click uint16) erro
 		for i := 0; i < count; i++ {
 			lines = append(lines, monkeyLine{uint32(monkeyFirstTalk + i), portraits[i]})
 		}
+		movies = s.monkeyMovies(c.character.Map, click)
+		if len(movies) != 0 {
+			// The cinematic already contains the rescue dialogue.
+			lines = nil
+		}
 		if count < len(portraits) {
 			lines = append(lines, monkeyLine{monkeyFullPartyTalk, monkeyPlayerPortrait}, monkeyLine{20048, monkeyNPCPortrait})
 			recruit = false
@@ -59,11 +100,18 @@ func (s *Server) startMonkey(ctx context.Context, c *Session, click uint16) erro
 	if err := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); err != nil {
 		return err
 	}
-	index := 0
+	index, movieIndex := 0, 0
 	var advance func() error
 	advance = func() error {
 		if c.event != es || c.character.Map != es.mapID {
 			return nil
+		}
+		if movieIndex < len(movies) {
+			movie := movies[movieIndex]
+			op := movie.op
+			movieIndex++
+			es.onComplete = advance
+			return c.send(eventFrame(monkeyMovieFrameKind, 0, 0, monkeyMovieHoldMode, op.Value(), 0, op.Index, movie.branch))
 		}
 		if index == len(lines) {
 			if recruit {

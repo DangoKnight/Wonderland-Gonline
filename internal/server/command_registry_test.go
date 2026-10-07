@@ -20,7 +20,7 @@ func TestCommandRegistryCompatibility(t *testing.T) {
 	for code := 0; code <= 255; code++ {
 		c := byte(code)
 		registration := commandRegistry[c]
-		world := contains(c, 2, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 25, 27, 30, 31, 32, 33, 34, 36, 37, 39, 40, 44, 45, 50, 56, 57, 59, 62, 64, 65, 66, 67, 68, 69, 71, 75, 77, 87, 89, 90, 91, 92, 104, 183, 186, 226)
+		world := contains(c, 2, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 25, 27, 30, 31, 32, 33, 34, 36, 37, 39, 40, 44, 45, 50, 56, 57, 59, 62, 64, 65, 66, 67, 68, 69, 71, 75, 77, 85, 87, 89, 90, 91, 92, 104, 183, 186, 226)
 		known := world || contains(c, 0, 1, 9, 13, 35, 63)
 		p := registration.policy
 		if (registration.handler != nil) != known || p.IsWorldCommand() != world ||
@@ -28,7 +28,7 @@ func TestCommandRegistryCompatibility(t *testing.T) {
 			p.AllowedDuringBattle != contains(c, 2, 11, 50) ||
 			p.RequiresBattle != contains(c, 50) ||
 			p.AllowedDuringMinigame != contains(c, 2, 20, 57, 71) ||
-			p.BlockedDuringTrade != contains(c, 5, 8, 15, 19, 20, 21, 23, 27, 30, 31, 36, 37, 40, 45, 56, 59, 62, 64, 65, 67, 68, 69, 71, 75, 77, 90, 104) {
+			p.BlockedDuringTrade != contains(c, 5, 8, 15, 19, 20, 21, 23, 27, 30, 31, 36, 37, 40, 45, 56, 59, 62, 64, 65, 67, 68, 69, 71, 85, 75, 77, 90, 104) {
 			t.Errorf("command %d changed registration or interaction policy: %+v", c, p)
 		}
 		for sub := 0; sub <= 255; sub++ {

@@ -1,26 +1,26 @@
 package app
 
 import (
+	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
 )
 
 const (
-	logoutWidth            = 280
-	logoutHeight           = 200
-	logoutPreviewDirection = 2
-	logoutNameInk          = 0xffff
-	logoutPromptInk        = 0xffe0
-	logoutShadeAlpha       = 128
-	logoutMaskRed          = 96
-	logoutMaskGreen        = 128
-	logoutMaskBlue         = 192
+	logoutWidth         = 280
+	logoutHeight        = 200
+	logoutPreviewAction = 13 // FUN_0034c814: human body mode, fixed first frame.
+	logoutNameInk       = 0xffff
+	logoutPromptInk     = 0xffe0
+	logoutShadeAlpha    = 128
 )
 
 type logoutForm struct {
 	seui.Form
 	c          *Client
 	background *surface.Surface
+	preview    login.RoleView
 }
 
 func (f *logoutForm) Update(in *seui.Input) {
@@ -30,15 +30,20 @@ func (f *logoutForm) Update(in *seui.Input) {
 	f.Form.Update(in)
 	a := f.Abs()
 	c := f.c
-	if c.Inventory.Preview != nil {
-		c.Inventory.Preview.DrawBody(c.Screen, a.X+40, a.Y+110, logoutPreviewDirection)
+	if f.preview != nil {
+		f.preview.DrawBody(c.Screen, a.X+40, a.Y+110, logoutPreviewAction)
 	}
 	name := c.World.Player.Name
 	c.Env.Text.Draw(a.X+40-len(name)*4, a.Y+123, 0, false, true, c.Screen, name, 15, 160, 0, logoutNameInk, 0)
 }
 func (c *Client) logoutConfirmation(exit bool) {
 	c.closeSettingsPrompt()
-	f := &logoutForm{c: c}
+	f := &logoutForm{c: c, preview: c.Inventory.Preview}
+	if human, ok := c.Inventory.Preview.(*role.Human); ok {
+		preview := *human // Independent animation state; shared immutable sprite library.
+		preview.Hold(0, false)
+		f.preview = &preview
+	}
 	f.InitForm(f, c.Env)
 	f.Dockable = false
 	f.Name = "Logout confirmation"
@@ -89,19 +94,7 @@ func (c *Client) logoutConfirmation(exit bool) {
 // preserve the exported dither and frame rather than replacing the asset.
 func (f *logoutForm) Paint() {
 	if f.background == nil {
-		f.background = surface.New(logoutWidth, logoutHeight)
-		env := *f.Env
-		env.Screen = f.background
-		panel := seui.NewPanel(&env, nil)
-		panel.Init("panel22", 0, 168, 324, 0, 0, true, logoutHeight, logoutWidth, 0)
-		panel.SetMargins(50, 32, 32, 60)
-		panel.Paint()
-		for at, v := range f.background.Pix {
-			if v != 0 && v&0xf81f == 0 {
-				shade := int((v>>5)&63) * 255 / 63
-				f.background.Pix[at] = surface.RGB565(uint8(shade*logoutMaskRed/255), uint8(shade*logoutMaskGreen/255), uint8(shade*logoutMaskBlue/255))
-			}
-		}
+		f.background = seui.ConfirmationBackground(f.Env, logoutWidth, logoutHeight)
 	}
 	a := f.Abs()
 	f.Env.Screen.Draw(a.X, a.Y, f.background, true)

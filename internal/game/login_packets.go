@@ -130,3 +130,21 @@ func (c Character) StatPackets(items map[uint16]ItemDefinition, growth ...Elemen
 	}
 	return out
 }
+
+// NativeVitalBonuses includes the correction needed for the client Formula.dat
+// maxima to match the server's compiled elemental growth parameters.
+func (c Character) NativeVitalBonuses(items map[uint16]ItemDefinition) (int32, int32) {
+	a := c.Attributes()
+	level := float64(c.Level)
+	g := characterGrowth(c.Element, nil)
+	native := nativeElementGrowth(c.Element)
+	nativeLevel := level
+	if c.Reborn {
+		nativeLevel += nativeRebirthStatLevels
+	}
+	b := c.Equipment.Bonuses(items)
+	delta := func(v, baseline float64) int32 { return int32(math.RoundToEven(v)) - int32(math.RoundToEven(baseline)) }
+	return b.HP + delta(g.HP.value(level, a), native.HP.value(nativeLevel, a)), b.SP + delta(g.SP.value(level, a), native.SP.value(nativeLevel, a))
+}
+
+const nativeRebirthStatLevels = 100 // FUN_00485490, native client vital maxima.

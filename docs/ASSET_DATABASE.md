@@ -46,7 +46,7 @@ original snapshot. Keep both copies until acceptance testing finishes.
 Gameplay schema v17 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline copy command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 11 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 12 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -194,7 +194,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v11. The copy procedure upgrades existing v14 installations
+Asset schema is now v12. The copy procedure upgrades existing v14 installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -220,3 +220,13 @@ Before deploying this version, stop the server and run the copy procedure above
 then select the verified copied databases in the configuration. Gameplay remains
 schema v17. Inventory anchors are preserved; old overlapping placements require
 an explicit correction and are never silently discarded or repacked.
+
+### Instance definitions (asset v12)
+
+The preserving upgrade adds `catalog_instances` and its catalog presence flag.
+Definitions are seeded from retained SceneData.dat and Mark.dat SQL import rows,
+including native titles/descriptions, capacity, level, guild requirement, time
+limit, entry map and coordinates. Existing catalog edits remain intact. Runtime
+reads use these typed rows. Lobby membership remains in memory; verified dungeon
+objectives and rewards are pending. Follow the offline copy procedure above to
+upgrade an older installation before running the new server.
