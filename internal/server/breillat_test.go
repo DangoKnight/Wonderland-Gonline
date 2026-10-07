@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -100,8 +101,11 @@ func TestInstalledBreillatTenTalksAndPermanentConversion(t *testing.T) {
 		if err != nil || !reflect.DeepEqual(chars[0], *c.character) {
 			t.Fatal("conversion not durable", err)
 		}
-		if c.character.Bag != original.Bag || c.character.Equipment != original.Equipment || c.character.Base != original.Base || c.character.Name != original.Name || c.character.EXP != original.EXP {
+		if c.character.Bag != original.Bag || c.character.Base != original.Base || c.character.Name != original.Name || c.character.EXP != original.EXP {
 			t.Fatal("conversion destroyed player state")
+		}
+		if got := c.character.Equipment.IDs(); got != [6]uint16{22007, 21009, 10002, 0, 24009, 0} {
+			t.Fatal("missing Breillat outfit", got)
 		}
 		found := false
 		id := c.character.ID
@@ -247,7 +251,116 @@ func TestBreillatFailedReceiptKeepsConversionDurable(t *testing.T) {
 		t.Fatal("receipt did not fail", ok, err)
 	}
 	chars, e := s.Store.Characters(context.Background(), c.account.ID)
-	if e != nil || chars[0].Body != 4 || chars[0].Head != 3 || chars[0].Quests[50031].Step != 1 {
+	if e != nil || chars[0].Body != 4 || chars[0].Head != 3 || chars[0].Quests[50031].Step != 1 || chars[0].Equipment.IDs() != [6]uint16{22007, 21009, 10002, 0, 24009, 0} {
 		t.Fatal("failed receipt lost durable conversion", e)
+	}
+}
+
+func TestInstalledBreillatOutfitReplacement(t *testing.T) {
+	catalog, err := installedCatalog(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, scenario := range []string{"mixed gear", "full bag", "locked standard", "locked worn", "fresh SQL gear"} {
+		t.Run(scenario, func(t *testing.T) {
+			s, players, wires := worldFixture(t)
+			c := players[0]
+			s.Assets, s.World = catalog, world.New(catalog)
+			c.character.Map = 10002
+			c.character.Quests[50030] = game.Quest{ID: 50030, State: game.InProgress, Step: 10}
+			c.character.Bag = game.Inventory{}
+			c.character.Bag[0] = game.Item{ID: 21001, Count: 1}
+			c.character.Bag[1] = game.Item{ID: 24001, Count: 1}
+			returned := game.Item{ID: 23001, Count: 1, Damage: 17}
+			returned.Metadata[game.ForgeMetadataOffset] = 5
+			returned.Metadata[0] = 42
+			c.character.Equipment[3] = returned
+			switch scenario {
+			case "full bag":
+				for i := range c.character.Bag {
+					c.character.Bag[i] = game.Item{ID: 32176, Count: 50}
+				}
+			case "locked standard":
+				c.character.Bag[0].Locked = true
+			case "locked worn":
+				c.character.Equipment[3].Locked = true
+			}
+			saveBreillatFixture(t, s, c)
+			if scenario == "fresh SQL gear" {
+				if err := s.Store.UpdateCharacter(context.Background(), c.account.ID, c.character.ID, func(stored *game.Character) error {
+					stored.Equipment[3].Damage = 23
+					return nil
+				}); err != nil {
+					t.Fatal(err)
+				}
+				returned.Damage = 23
+			}
+			before, err := breillatStoredCharacter(s, c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ev, _ := s.World.Event(10002, 4)
+			es := &eventSession{mapID: 10002, click: 5, ev: ev, branch: 8}
+			c.event = es
+			op := world.DecodeOp(ev.Branches[8].Operations[len(ev.Branches[8].Operations)-1])
+			ok, err := s.convertBreillat(context.Background(), c, es, op)
+			if err != nil {
+				t.Fatal(err)
+			}
+			stored, err := breillatStoredCharacter(s, c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			successful := scenario == "mixed gear" || scenario == "fresh SQL gear"
+			if ok != successful {
+				t.Fatal("unexpected conversion", ok)
+			}
+			if !successful {
+				if !reflect.DeepEqual(before, stored) {
+					t.Fatal("failed conversion changed durable state")
+				}
+				for _, p := range wires[0].packets(t) {
+					if len(p) > 1 && (p[0] == 23 || p[0] == 5 && p[1] == 12) {
+						t.Fatal("failed conversion published item/model changes", p)
+					}
+				}
+				return
+			}
+			if stored.Equipment.IDs() != [6]uint16{22007, 21009, 10002, 0, 24009, 0} || stored.Bag[0] != returned || !stored.Bag[1].Empty() {
+				t.Fatal("outfit replacement was not durable", stored)
+			}
+			if !reflect.DeepEqual(stored, *c.character) {
+				t.Fatal("session differs from SQL")
+			}
+			foundBag, foundEquipment := false, false
+			clientBag := before.Bag
+			for _, p := range wires[0].packets(t) {
+				if len(p) > 1 && p[0] == 23 && p[1] == 5 {
+					foundBag = true
+					for offset := 2; offset < len(p); offset += 5 + game.ItemMetadataBytes {
+						item := game.Item{ID: binary.LittleEndian.Uint16(p[offset+1:]), Count: p[offset+3], Damage: p[offset+4]}
+						copy(item.Metadata[:], p[offset+5:offset+5+game.ItemMetadataBytes])
+						if !clientBag[p[offset]-1].Empty() {
+							t.Fatal("returned equipment overwrote a client item")
+						}
+						clientBag[p[offset]-1] = item
+					}
+				}
+				if len(p) == 4 && p[0] == 23 && p[1] == 9 {
+					if err := clientBag.Remove(p[2], p[3]); err != nil {
+						t.Fatal("invalid bag removal receipt", err)
+					}
+				}
+				if bytes.Equal(p, stored.EquipmentPacket()) {
+					foundEquipment = true
+				}
+			}
+			if !foundBag || !foundEquipment {
+				t.Fatal("missing committed item receipts", foundBag, foundEquipment)
+			}
+			if clientBag != stored.Bag {
+				t.Fatal("client bag receipts differ from committed state")
+			}
+		})
 	}
 }

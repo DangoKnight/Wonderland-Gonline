@@ -147,6 +147,14 @@ func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *asset
 		return -1
 	}
 	order := make([]int, 0, len(ev.Branches))
+	// Native voucher hand-ins precede the broad greeting and transformation offer.
+	if trigger == TriggerEntry {
+		for i := first; i < len(ev.Branches); i++ {
+			if _, ok := BreillatExchange(ev, i); ok {
+				order = append(order, i)
+			}
+		}
+	}
 	// The broad greeting condition precedes the unlock condition in native data.
 	if trigger == TriggerEntry && IsBreillat(ev) && first <= BreillatOfferBranch-1 {
 		order = append(order, BreillatOfferBranch-1)

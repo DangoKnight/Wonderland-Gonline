@@ -65,9 +65,9 @@ var (
 	xFlush          func(display uintptr) int32
 
 	xrrGetScreenResourcesCurrent func(display uintptr, window xID) uintptr
-	xrrGetCrtcInfo               func(display uintptr, resources uintptr, crtc xID) uintptr
+	xrrGetCrtcInfo               func(display uintptr, resources uintptr, crtc xID) *xrrCrtcInfo
 	xrrFreeScreenResources       func(resources uintptr)
-	xrrFreeCrtcInfo              func(crtcInfo uintptr)
+	xrrFreeCrtcInfo              func(crtcInfo *xrrCrtcInfo)
 )
 
 var (
@@ -172,13 +172,12 @@ func x11CrtcSize(display uintptr, crtc xID) (width, height int, ok bool) {
 	defer xrrFreeScreenResources(resources)
 
 	info := xrrGetCrtcInfo(display, resources, crtc)
-	if info == 0 {
+	if info == nil {
 		return 0, 0, false
 	}
 	defer xrrFreeCrtcInfo(info)
 
-	ci := (*xrrCrtcInfo)(unsafe.Pointer(info))
-	return int(ci.width), int(ci.height), true
+	return int(info.width), int(info.height), true
 }
 
 // x11SetWindowThemeVariant sets the _GTK_THEME_VARIANT property on the window,

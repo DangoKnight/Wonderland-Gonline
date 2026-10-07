@@ -727,11 +727,25 @@ Enable verified transformation operands only within their recognized authored
 scripts. Keep the static SQL catalog immutable when correcting branch order or
 execution. Save model changes and their unlock/completion marks together using
 fresh character state inside the gameplay transaction, before publishing success.
-Preserve inventory and equipment unless a verified exchange explicitly requires
-changes. Never clear equipment to imitate a reference handler with missing or
-misclassified item IDs. Unsupported model conversions remain rejected before
+Breillat's conversion removes all copies of the original character's standard
+starter outfit from the bag and worn slots, returns other worn items to the bag
+with their damage and metadata intact, and equips Breillat's starter outfit.
+Use the shared starter outfit mapping and SQL item definitions. Commit the outfit,
+model and marks together; reject insufficient bag space or reserved affected items
+without changing anything. Publish bag deltas and the complete worn list after commit.
+Unsupported model conversions remain rejected before
 ordinary branch mutations. See the Breillat regression suite for the ten-talk
 unlock, decline, stale state and failed delivery cases.
+
+Breillat's verified voucher branches take precedence over greetings and the
+transformation offer. Read item IDs, quantities and conditions from the SQL
+event; do not add a parallel hardcoded reward catalog. After the dialogue,
+recheck the selected branch against fresh owned character state and commit
+voucher consumption plus the complete reward in one transaction. Preserve
+pending walking and item reservations. The native Cabin event accepts voucher
+30002: one gives Vanilla Ice Cream 32071; two or more consume two for Chocolate
+Ice Cream 32072. Map 10002 gives two chocolate items, while variants 10021–10030
+give one. Same-named vouchers 30029 and 30030 are different content references.
 
 ## Character growth settings
 

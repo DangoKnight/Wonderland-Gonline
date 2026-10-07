@@ -482,6 +482,16 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 		return s.finishEvent(c, es)
 	}
 	br := es.ev.Branches[es.branch]
+	// The native exchange starts with dialogue; its remaining item operations
+	// must commit together after that dialogue is acknowledged.
+	if es.index == world.BreillatExchangeDialogueSteps {
+		if changes, ok := world.BreillatExchange(es.ev, es.branch); ok {
+			if err := s.redeemBreillat(ctx, c, es, changes); err != nil {
+				return err
+			}
+			return s.finishEvent(c, es)
+		}
+	}
 	resume := func() error { return s.advance(ctx, c, es) }
 	for es.index < len(br.Operations) {
 		op := world.DecodeOp(br.Operations[es.index])

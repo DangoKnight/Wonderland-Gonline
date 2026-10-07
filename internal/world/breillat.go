@@ -6,17 +6,45 @@ import (
 )
 
 const (
-	BreillatInitialBranch    = 1
-	BreillatGreetingBranch   = 3
-	BreillatOfferBranch      = 7
-	BreillatAcceptanceBranch = 9
-	breillatEvent            = 4
-	breillatAcceptAnswer     = 30
-	breillatQuestion         = 1
-	transformPlayer          = 1
-	questConditionActive     = 1
-	BreillatActor            = 5
+	BreillatInitialBranch          = 1
+	BreillatGreetingBranch         = 3
+	BreillatMultiVoucherBranch     = 5
+	BreillatSingleVoucherBranch    = 6
+	BreillatExchangeDialogueSteps  = 1
+	breillatExchangeOperationCount = 3
+	BreillatOfferBranch            = 7
+	BreillatAcceptanceBranch       = 9
+	breillatEvent                  = 4
+	breillatAcceptAnswer           = 30
+	breillatQuestion               = 1
+	transformPlayer                = 1
+	questConditionActive           = 1
+	BreillatActor                  = 5
 )
+
+// BreillatExchange recognizes the native hand-in shape. Item IDs and amounts
+// come from the SQL-owned event, rather than a second reward table in code.
+func BreillatExchange(ev *assets.Event, branch int) ([]game.ItemChange, bool) {
+	if !IsBreillat(ev) || branch < 0 || branch >= len(ev.Branches) {
+		return nil, false
+	}
+	br := ev.Branches[branch]
+	if br.Index != BreillatMultiVoucherBranch && br.Index != BreillatSingleVoucherBranch || len(br.Operations) != breillatExchangeOperationCount {
+		return nil, false
+	}
+	cond := DecodeCond(br.Condition)
+	const playerSubject, itemCountOperand, itemRewardOperand = 1, 1, 1
+	if cond.Kind != ConditionSubject || cond.W1 != playerSubject || cond.W2 != itemCountOperand || cond.W3 == 0 || cond.ExtraConditions() != 0 {
+		return nil, false
+	}
+	speech, debit, credit := DecodeOp(br.Operations[0]), DecodeOp(br.Operations[1]), DecodeOp(br.Operations[2])
+	if !speech.NPCSpeech() || speech.D1 != BreillatActor ||
+		debit.Code != ActionPlayer || debit.D1 != PlayerActionReward || debit.D2 != itemRewardOperand || debit.D3 != cond.W3 || int32(debit.Value()) >= 0 ||
+		credit.Code != ActionPlayer || credit.D1 != PlayerActionReward || credit.D2 != itemRewardOperand || credit.D3 == 0 || int32(credit.Value()) <= 0 {
+		return nil, false
+	}
+	return []game.ItemChange{{ID: debit.D3, Count: int(int32(debit.Value()))}, {ID: credit.D3, Count: int(int32(credit.Value()))}}, true
+}
 
 func (o Op) BreillatTransform() bool {
 	return o.Code == ActionTransform && o.D1 == transformPlayer && o.D2 == game.BreillatModel && o.D3 == 0 && o.Value() == 0

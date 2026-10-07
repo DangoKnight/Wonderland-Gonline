@@ -306,7 +306,7 @@ func (f *Instances) Apply(p []byte) bool {
 			r.U8()
 			r.U16()
 			r.U8()
-			r.String()
+			_ = r.String() // Creator name is supplied by the room snapshot.
 			r.U32()
 		case 2:
 		default:
