@@ -14,7 +14,7 @@ import (
 // her and a second one (click 5) far away.
 func fieldFixture(t *testing.T) (*Server, *Session, *captureConn) {
 	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
-	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, 30*time.Second })
+	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
 	s, players, wires := worldFixture(t)
 	s.Assets.Maps[30001] = assets.Map{ID: 30001, NPCs: []assets.MapNPC{{ClickID: 4, Flags: 1, X: 1050, Y: 1080, Template: 17100}, {ClickID: 5, Flags: 1, X: 3000, Y: 3000, Template: 17100}}}
 	s.Assets.NPCs = map[uint16]assets.NPC{17100: {ID: 17100, Name: "Wild Boar", Level: 2, HP: 1}}

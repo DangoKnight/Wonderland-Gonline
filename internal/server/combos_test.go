@@ -14,7 +14,7 @@ import (
 
 func TestPartySpeedChainPersistsEveryParticipantsSkill(t *testing.T) {
 	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
-	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, 30*time.Second })
+	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
 	s, players, wires := partyFixture(t)
 	ctx := context.Background()
 	leader := players[0]

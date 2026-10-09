@@ -43,6 +43,7 @@ const (
 	CommandHotbar             = 40 // Native AC40:1 hotbar bindings (seven bytes).
 	CommandBank               = 45
 	CommandBattleAction       = 50
+	CommandBattleStat         = 51
 	CommandBattleReady        = 52
 	CommandMonsterBook        = 53 // Outbound discovery; AC53:9 carries a template ID.
 	CommandBattleEffect       = 53
@@ -451,9 +452,16 @@ const (
 
 // BattleAction subcommands (AC50).
 const (
-	BattleActionAnimation = 1
-	BattleActionTurn      = 6
+	BattleActionAnimation     = 1
+	BattleActionTurn          = 6
+	BattleActionAttackRequest = 1
+	BattleActionItemRequest   = 2 // Native FUN_002c2394; execution requires transactional item consumption.
+	BattleActionDefendRequest = 4
+	BattleActionFleeRequest   = 5
 )
+
+// AC51:1 carries repeated cell X/Y, stat and U32 absolute-value records.
+const BattleStatValues = 1
 
 // BattleReady subcommands (AC52).
 const (
@@ -462,8 +470,10 @@ const (
 
 // BattleEffect subcommands (AC53).
 const (
-	BattleEffectDefeated = 3
-	BattleEffectEscape   = 5
+	BattleEffectDefeated  = 3
+	BattleEffectSubmitted = 5
+	// Compatibility alias for the former, misleading name. AC53:5 is an action ACK.
+	BattleEffectEscape = BattleEffectSubmitted
 )
 
 // DiscoveryChannels subcommands (AC54).
@@ -743,6 +753,11 @@ const (
 const (
 	BattleHitLanded = 1
 	BattleHitMiss   = 0
+	// FUN_0039b558 subtracts modes 1/2 and adds modes 3/4.
+	BattleStatDamage           = 1
+	BattleStatCriticalDamage   = 2
+	BattleStatRecovery         = 3
+	BattleStatCriticalRecovery = 4
 )
 
 // Companion rebirth (AC69).

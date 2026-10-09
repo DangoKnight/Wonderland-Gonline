@@ -88,6 +88,7 @@ type Client struct {
 	teamAppearances    map[uint32]*world.Peer
 	joinTeamTarget     bool
 	remote             remoteRuntime
+	battle             battleView
 	InventoryState     *inventory.State
 	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
 	MainStatus         *hud.MainStatus  // the status panel over the world
@@ -325,7 +326,9 @@ func (c *Client) frame(draw bool) {
 		fading := c.fade.step > 0
 		c.World.HideNames = c.Talk.Drawn() || fading
 		c.World.Cinematic = fading
-		if !c.movieFrame() && draw {
+		if c.battleFrame(draw) {
+			// Battle owns the scene while the map and networking keep ticking.
+		} else if !c.movieFrame() && draw {
 			c.World.Draw()
 			c.drawVehicleEffects()
 			c.Talk.Draw()
@@ -364,6 +367,7 @@ func (c *Client) frame(draw bool) {
 		}
 	}
 	if draw {
+		c.battleOverlay()
 		c.remoteInformation()
 		c.Notices.Draw(c.Env, now)
 	}
@@ -568,6 +572,11 @@ func (c *Client) dispatch(p []byte) {
 			if snd := c.World.ApplyActorState(s[1:]); snd != 0 && c.mapReady && c.Env.Sound != nil {
 				c.Env.Sound(numberedSound(int(snd)))
 			}
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorWalk:
+		// Native AC22:2, dispatch 0x002e55fc -> FUN_0041869c.
+		if c.World != nil && !c.World.ApplyActorWalk(s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPosition:
 		// AC22:4 (FUN_0038cf30) moves, shows and hides map NPCs.

@@ -48,6 +48,37 @@ func TestIntroAndSubmit(t *testing.T) {
 	}
 }
 
+func TestSubmitNativeTrailerAndUnsupportedRequests(t *testing.T) {
+	// The native AC50:1 builder appends opaque compatibility bytes after the
+	// skill. They must not affect ownership, skill selection or replay checks.
+	b, _ := setup(50)
+	data := []byte{4, 2, 2, 2, 0xf9, 0x2a, 0xdc, 0xcd, 2}
+	if ack := b.Submit(lowest, 7, 1, data); !bytes.Equal(ack, []byte{53, 5, 4, 2}) {
+		t.Fatalf("native extended attack: %x", ack)
+	}
+	if a := b.Pending[4<<8|2]; a.Kind != "attack" || a.Skill != 11001 {
+		t.Fatal("trailer changed action", a)
+	}
+	if ack := b.Submit(lowest, 7, 1, data); ack != nil || len(b.Pending) != 1 {
+		t.Fatal("duplicate native request accepted", ack, b.Pending)
+	}
+	for _, request := range []struct {
+		sub  byte
+		data []byte
+	}{
+		{2, []byte{4, 2, 2, 2, 0xf9, 0x2a, 0xdc, 0xcd, 1, 0}},
+		{0, []byte{4, 2, 2, 2, 0xf9, 0x2a}},
+		{255, []byte{4, 2, 2, 2, 0xf9, 0x2a}},
+		{1, []byte{4, 2, 2}},
+		{1, []byte{4, 2, 2, 2, 0xf9}},
+	} {
+		b, _ := setup(50)
+		if ack := b.Submit(lowest, 7, request.sub, request.data); ack != nil || len(b.Pending) != 0 {
+			t.Fatalf("unsupported/malformed request %d/%x consumed turn: %x", request.sub, request.data, ack)
+		}
+	}
+}
+
 func TestRoundDamageAndOutcomes(t *testing.T) {
 	b, self := setup(1000)
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2})

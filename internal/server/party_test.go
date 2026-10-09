@@ -212,7 +212,7 @@ func TestPartyLimitFollowAndLogout(t *testing.T) {
 func teamBattle(t *testing.T, hp int) (*Server, []*Session, []*captureConn) {
 	t.Helper()
 	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
-	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, 30*time.Second })
+	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
 	s, players, wires := partyFixture(t)
 	ctx := context.Background()
 	alice, bobby := players[0], players[1]

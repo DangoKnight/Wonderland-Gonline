@@ -14,8 +14,8 @@ import (
 // button has walked the player for a second (DAT_00828ae0, set in the main
 // loop's walk branch); every other state is its own index (2 is the
 // pointing hand of TSe_Component; forms and fixed forms keep 0). The talk
-// window is a component too. The game's other states (7, 6, 8 … for
-// skills, trading and the like) are not ported.
+// window is a component too. Battle targeting supplies its native game state
+// (FUN_0039b218); other interaction modes remain separate.
 const heldWalkArrow = time.Second
 
 // updateCursor picks the cursor for this frame.
@@ -30,7 +30,9 @@ func (c *Client) updateCursor(now time.Time) {
 		state = componentCursor
 	}
 	shape := cursor.Shape(state)
-	if state == 0 && c.joinTeamTarget {
+	if state == 0 && c.battleCursor() != 0 {
+		shape = c.battleCursor()
+	} else if state == 0 && c.joinTeamTarget {
 		shape = cursor.ShapePoint
 	} else if state == 0 && c.sportCursor() != 0 {
 		shape = c.sportCursor()
@@ -48,3 +50,29 @@ func (c *Client) updateCursor(now time.Time) {
 
 // componentCursor is TSe_Component's state, the pointing hand.
 const componentCursor = 2
+
+const (
+	nativeDefenseCursorLayer = 10
+	nativeCaptureCursorLayer = 11
+	nativeFleeCursorLayer    = 12
+	nativePhysicalCursorType = 0
+)
+
+// FUN_0039b218: defend/flee restore the arrow, capture selects the hand,
+// type-zero actions select the sword, and the other skill types select magic.
+func (c *Client) battleCursor() cursor.Shape {
+	if !c.battle.state.Active || !c.battle.state.Ready || c.battle.binding == nil || c.battleAnimating() {
+		return 0
+	}
+	d := c.SkillState.Catalog.Definitions[c.bindingSkillID(*c.battle.binding)]
+	switch d.EffectLayer {
+	case nativeDefenseCursorLayer, nativeFleeCursorLayer:
+		return cursor.ShapeNormal
+	case nativeCaptureCursorLayer:
+		return cursor.ShapeGrab
+	}
+	if d.Type == nativePhysicalCursorType {
+		return cursor.ShapeSwordAlt
+	}
+	return cursor.ShapeMagic
+}

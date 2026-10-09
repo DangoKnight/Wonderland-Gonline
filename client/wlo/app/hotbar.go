@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"path/filepath"
+	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/skills"
@@ -159,6 +160,10 @@ func (c *Client) drawHotbarDrag() {
 }
 func (c *Client) HotbarKey(key uint16, shift byte) bool {
 	if key == escapeKey {
+		if c.battle.binding != nil {
+			c.battle.binding = nil
+			return true
+		}
 		if c.hotbar.drag != nil {
 			c.hotbar.drag = nil
 			return true
@@ -248,7 +253,7 @@ func (c *Client) useBinding(b hud.Binding) {
 		c.Chat.Notice("Use this skill during battle.")
 		return
 	}
-	if !battle.ready {
+	if !battle.ready || c.battleAnimating() {
 		c.Chat.Notice("Wait for your battle turn.")
 		return
 	}
@@ -265,10 +270,7 @@ func (c *Client) useBinding(b hud.Binding) {
 		c.Chat.Notice("An action has already been selected for this turn.")
 		return
 	}
-	id := b.ID
-	if id == game.StarterStuntClientID {
-		id = game.StarterStunt(uint16(c.World.Player.Body), uint16(c.World.Player.Head))
-	}
+	id := c.bindingSkillID(b)
 	if c.SkillState.Catalog.Definitions[id].SP > actor.sp {
 		c.Chat.Notice("Not enough SP.")
 		return
@@ -277,11 +279,20 @@ func (c *Client) useBinding(b hud.Binding) {
 		c.submitHotbar(b, actor)
 		return
 	}
+	if c.battle.state.Active {
+		c.battle.selected = clientbattle.Cell{X: actor.x, Y: actor.y}
+		c.battle.binding = &b
+		c.Skills.Hide()
+		return
+	}
 	c.openHotbarTargets(b, actor)
 }
 func (c *Client) hotbarActor(b hud.Binding) (remoteFighter, bool) {
 	for _, f := range c.remote.battle.fighters {
 		if f.hp == 0 {
+			continue
+		}
+		if native := c.battle.state.At(clientbattle.Cell{X: f.x, Y: f.y}); native != nil && native.Removed {
 			continue
 		}
 		if b.Target == 0 && f.kind == remoteFighterPlayer && f.id == c.World.Player.ID {
@@ -311,10 +322,8 @@ func (c *Client) openHotbarTargets(b hud.Binding, actor remoteFighter) {
 	c.hotbar.target = f
 	f.Dockable = false
 	var targets []remoteFighter
-	d := c.SkillState.Catalog.Definitions[b.ID]
-	enemy := b.ID == skills.BasicAttack || d.EffectLayer == skills.Physical || d.EffectLayer == skills.Magical || d.EffectLayer == nativeControlLayer || d.EffectLayer == nativeDebuffLayer || d.EffectLayer == nativeDebuffAlternateLayer
 	for _, t := range c.remote.battle.fighters {
-		if (t.hp > 0 || d.EffectLayer == nativeReviveLayer) && ((enemy && t.side != actor.side) || (!enemy && t.side == actor.side)) {
+		if c.hotbarTargetAllowed(b, actor, t) {
 			targets = append(targets, t)
 		}
 	}
@@ -370,25 +379,26 @@ func (c *Client) openHotbarTargets(b hud.Binding, actor remoteFighter) {
 }
 func (c *Client) submitHotbar(b hud.Binding, target remoteFighter) {
 	actor, ok := c.hotbarActor(b)
-	if !ok || !c.remote.battle.active || !c.remote.battle.ready || !c.bindingLearned(b) || c.hotbar.submitted[[2]byte{actor.x, actor.y}] {
+	if !ok || c.battleAnimating() || c.remote.active && c.remote.options.AutoFight || !c.remote.battle.active || !c.remote.battle.ready || !c.bindingLearned(b) || c.hotbar.submitted[[2]byte{actor.x, actor.y}] {
 		return
 	}
-	id := b.ID
-	if id == game.StarterStuntClientID {
-		id = game.StarterStunt(uint16(c.World.Player.Body), uint16(c.World.Player.Head))
-	}
+	id := c.bindingSkillID(b)
 	if c.SkillState.Catalog.Definitions[id].SP > actor.sp {
 		c.Chat.Notice("Not enough SP.")
 		return
 	}
 	found := false
 	for _, t := range c.remote.battle.fighters {
-		if t.x == target.x && t.y == target.y && t.id == target.id && (t.hp > 0 || c.SkillState.Catalog.Definitions[b.ID].EffectLayer == nativeReviveLayer) {
+		if t.x == target.x && t.y == target.y && t.id == target.id && (t.hp > 0 || c.SkillState.Catalog.Definitions[id].EffectLayer == nativeReviveLayer) {
+			target = t
 			found = true
 			break
 		}
 	}
-	if !found {
+	if native := c.battle.state.At(clientbattle.Cell{X: target.x, Y: target.y}); native != nil && native.Removed {
+		return
+	}
+	if !found || b.ID != skills.Defense && !c.hotbarTargetAllowed(b, actor, target) {
 		return
 	}
 	sub := byte(remoteBattleAttack)
@@ -405,4 +415,26 @@ func (c *Client) submitHotbar(b hud.Binding, target remoteFighter) {
 		c.hotbar.submitted = map[[2]byte]bool{}
 	}
 	c.hotbar.submitted[[2]byte{actor.x, actor.y}] = true
+	c.rememberBattleSubmission(actor, b.ID)
+}
+
+// Native target policy gates roster and scene selection. Synthetic definitions
+// without raw Skill.dat provenance retain the documented layer compatibility.
+func (c *Client) hotbarTargetAllowed(b hud.Binding, actor, target remoteFighter) bool {
+	d := c.SkillState.Catalog.Definitions[c.bindingSkillID(b)]
+	if d.EffectLayer == nativeReviveLayer && target.hp != 0 || d.EffectLayer != nativeReviveLayer && target.hp == 0 {
+		return false
+	}
+	if d.TargetKnown {
+		return d.AllowsTarget(target.side == actor.side, target.x == actor.x && target.y == actor.y)
+	}
+	enemy := b.ID == skills.BasicAttack || d.EffectLayer == skills.Physical || d.EffectLayer == skills.Magical || d.EffectLayer == nativeControlLayer || d.EffectLayer == nativeDebuffLayer || d.EffectLayer == nativeDebuffAlternateLayer
+	return (enemy && target.side != actor.side) || (!enemy && target.side == actor.side)
+}
+
+func (c *Client) bindingSkillID(b hud.Binding) uint16 {
+	if b.Target == 0 && b.ID == game.StarterStuntClientID && c.World != nil {
+		return game.StarterStunt(uint16(c.World.Player.Body), uint16(c.World.Player.Head))
+	}
+	return b.ID
 }

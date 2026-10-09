@@ -99,6 +99,10 @@ type NPCTemplate struct {
 	Shadow       byte
 	HeightScale  byte
 	HeightPreset byte
+	// MoveKind (+0x57, disk offset 83) picks a battle role's run action:
+	// 1 walks (actions 2/6 and 0x10/0x11 leaps), others run (0x40/0x41,
+	// 0x24/0x25); FUN_003747f4, FUN_003753ac.
+	MoveKind byte
 	// Sound is the wav#### a prop plays as it opens (+0x60, FUN_00408054).
 	Sound uint16
 	Voice byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
@@ -146,6 +150,19 @@ func nameHeight(t NPCTemplate, anchorY int) int {
 	return h
 }
 
+// DefaultBattleHeight is +0x20b2 for players and for templates whose sprite
+// leaves it unset (FUN_00423d98, FUN_0042a4d8, FUN_00458814).
+const DefaultBattleHeight = 0x50
+
+// BattleHeight is a battle role's +0x20b2 (FUN_004265a4): the name height
+// rule, from which battle names and health bars are lifted.
+func BattleHeight(t NPCTemplate, anchorY int) int {
+	if h := nameHeight(t, anchorY); h > 0 {
+		return h
+	}
+	return DefaultBattleHeight
+}
+
 // nameTop is the name's Y relative to the feet (0x41489e, 0x415fca).
 func nameTop(height int) int {
 	if height < nameHeightTallLimit {
@@ -157,7 +174,7 @@ func nameTop(height int) int {
 // Ground shadows (FUN_0030120c, 0x301d97): the template's shadow kind
 // picks a cut of the Shadow picture or the whole Monster_Shadow picture.
 const (
-	shadowSmall   = 0
+	shadowSmall   = ShadowSmall
 	shadowMonster = 1
 	// ShadowPicture and MonsterShadowPicture name the pictures in pic\images.BMg.
 	ShadowPicture        = "Shadow"
@@ -186,7 +203,8 @@ type NPC struct {
 	Frame       int
 	// Depth moves the NPC's place among the depth-sorted figures (record
 	// +0x1180): a coconut up a palm sorts in front of the palm.
-	Depth int
+	Depth  int
+	walker Walker
 }
 
 // SortY is the NPC's key in the depth-sorted list (FUN_0041d13c).
@@ -267,6 +285,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				HeightScale  byte   `json:"unknown_u8_offset_56"`
 				Shadow       byte   `json:"unknown_u8_offset_74"`
 				HeightPreset byte   `json:"unknown_u8_offset_87"`
+				MoveKind     byte   `json:"unknown_u8_offset_83"`
 				Face         uint16 `json:"unknown_u16_offset_88"`
 				Icon         uint16 `json:"unknown_u16_offset_16"`
 				TalkLow      byte   `json:"unknown_u8_offset_86"`
@@ -282,7 +301,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	for _, r := range doc.Records {
 		f := r.Fields
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
+			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind}
 	}
 	npcData.path, npcData.templates = path, out
 	return out, nil
@@ -364,6 +383,7 @@ func (w *World) ApplyActorPositions(p []byte) {
 		if n == nil {
 			continue
 		}
+		n.stopWalk()
 		n.X, n.Y = int(binary.LittleEndian.Uint16(p[4:])), int(binary.LittleEndian.Uint16(p[6:]))
 		if n.Info.Prop() {
 			f := p[actorStateOffset]
@@ -423,6 +443,9 @@ func (w *World) drawSmallShadow(sx, sy int) {
 func (w *World) drawShadow(n *NPC, sx, sy int) {
 	DrawShadow(w.Env.Screen, w.Env.Pics, n.Info.Shadow, sx, sy)
 }
+
+// ShadowSmall is the Shadow cut drawn under players and shadow kind 0.
+const ShadowSmall = 0
 
 // DrawShadow is FUN_0030120c's ground shadow of a template's shadow kind
 // (Npc.dat offset 74) at feet (sx, sy).

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
+	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/picdb"
@@ -25,6 +26,7 @@ import (
 type Resources struct {
 	root, spriteRoot          string
 	ready                     bool
+	battleAssets              *clientbattle.Assets
 	pics                      *picdb.DB
 	font                      *clientassets.Font
 	textRenderer              *text.Renderer

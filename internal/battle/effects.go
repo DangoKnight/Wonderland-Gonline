@@ -8,8 +8,8 @@ import (
 
 const (
 	effectPercentBase          = 100
-	effectNormalHitMode   byte = 1
-	effectCriticalHitMode byte = 2
+	effectNormalHitMode   byte = protocol.BattleStatDamage
+	effectCriticalHitMode byte = protocol.BattleStatCriticalDamage
 )
 
 type ActiveEffect struct {

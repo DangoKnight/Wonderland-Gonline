@@ -14,7 +14,7 @@ import (
 // and has victory (result 1) and defeat (result 2) callback branches.
 func battleFixture(t *testing.T, hp uint32) (*Server, *Session, *captureConn) {
 	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
-	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, 30*time.Second })
+	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
 	s, players, wires := worldFixture(t)
 	fight := evOp(2, 6, 10500, 0, 5, hp<<8)
 	fight.Data[7], fight.Data[8] = 0, 0 // Value packs HP in dword1; dialog4 high byte 0.

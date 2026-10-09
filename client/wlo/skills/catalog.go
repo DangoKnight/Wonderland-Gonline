@@ -15,6 +15,7 @@ const (
 	Defense                       = 60021
 	LifeLayer                     = 13
 	nativeIconField               = 100
+	nativeTargetField             = 99 // FUN_00481640: TSkillDat +0x67, after four-byte prefix.
 	nativeMaximumGradeField       = 105
 	nativeAnimationFixedTailBytes = 198 // FUN_00377060: 72+24+6+6+60+24+6.
 	nativeWeaponFlagsFromEnd      = 95  // Record +0x131..135, within that fixed tail.
@@ -27,6 +28,33 @@ type Definition struct {
 	Icon         uint16
 	MaximumGrade byte
 	Weapons      [WeaponKinds]bool
+	NativeTarget byte
+	TargetKnown  bool
+}
+
+// Target policies returned by FUN_00481640 and checked in FUN_0038972c.
+const (
+	TargetEnemy     = 0
+	TargetAlly      = 1
+	TargetEither    = 2
+	TargetSelf      = 3
+	TargetOtherAlly = 5
+)
+
+func (d Definition) AllowsTarget(sameSide, self bool) bool {
+	switch d.NativeTarget {
+	case TargetEnemy:
+		return !sameSide
+	case TargetAlly:
+		return sameSide
+	case TargetEither:
+		return true
+	case TargetSelf:
+		return self
+	case TargetOtherAlly:
+		return sameSide && !self
+	}
+	return false
 }
 
 func (d Definition) IconName() string { return fmt.Sprintf("Icon_sk%ds", d.Icon) }
@@ -85,6 +113,7 @@ func Parse(raw []byte) (*Catalog, error) {
 			return nil, fmt.Errorf("duplicate skill %d", r.Fields.ID)
 		}
 		d := Definition{Skill: r.Fields, Description: r.Description.Text, Icon: uint16(b[nativeIconField]) | uint16(b[nativeIconField+1])<<8, MaximumGrade: b[nativeMaximumGradeField]}
+		d.NativeTarget, d.TargetKnown = b[nativeTargetField], true
 		d.Name = r.Name.Text
 		c.Definitions[d.ID] = d
 		if d.TableOrder != 0 {

@@ -28,6 +28,11 @@ const (
 	Monster Kind = 7
 )
 
+const (
+	battleActionCellBytes  = 4 // Acting and target grid coordinates, two bytes each.
+	battleActionSkillBytes = 2
+)
+
 // Fighter is BattleFighter. Char is set for player fighters.
 type Fighter struct {
 	Side                 Side
@@ -230,9 +235,23 @@ func StatSync(x, y, stat byte, value uint32) []byte {
 
 // Intro is InitializeAndStartBattle's sequence for one player, after the map-side
 // AC11:4 indicator: enter battle, own fighter, enemies, HP/SP sync, then the action menu.
+// KindStandard is the battle kind AC11:10 announces (the native client keeps
+// it at +4, FUN_00395efc).
+const KindStandard byte = 1
+
+// TurnLimit is the native client's command countdown for a battle kind
+// (FUN_00395efc): 30 seconds for kinds 2, 4 and 7-9, 20 otherwise.
+func TurnLimit(kind byte) time.Duration {
+	switch kind {
+	case 2, 4, 7, 8, 9:
+		return 30 * time.Second
+	}
+	return 20 * time.Second
+}
+
 func (b *Battle) Intro(self *Fighter, background uint16) [][]byte {
 	out := [][]byte{{protocol.CommandEvent, protocol.EventBattleBegin}, {protocol.CommandMovement, protocol.MovementMovementLock, 1}}
-	out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateFormation}.U16(background), byte(self.Side), self, 2, 0, 0), []byte{protocol.CommandBattleState, protocol.BattleStateInitialize, 1})
+	out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateFormation}.U16(background), byte(self.Side), self, 2, 0, 0), []byte{protocol.CommandBattleState, protocol.BattleStateInitialize, KindStandard})
 	allies, enemies := b.Teams(self.Side)
 	for _, f := range allies {
 		if f != self && f.Kind == Player {
@@ -369,13 +388,22 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 	if b.Finished || b.Processing {
 		return nil
 	}
+	// Item requests have a different payload and resource boundary. Never
+	// interpret their item ID as a skill ID (or consume an actor's turn) while
+	// transactional battle-item execution is unavailable.
+	switch sub {
+	case protocol.BattleActionAttackRequest, protocol.BattleActionDefendRequest, protocol.BattleActionFleeRequest:
+	default:
+		return nil
+	}
+	if len(data) < battleActionCellBytes || len(data) == battleActionCellBytes+1 {
+		return nil
+	}
 	var sx, sy, tx, ty byte
 	skill := uint16(basicAttackSkill)
-	if len(data) >= 4 {
-		sx, sy, tx, ty = data[0], data[1], data[2], data[3]
-		data = data[4:]
-	}
-	if len(data) >= 2 {
+	sx, sy, tx, ty = data[0], data[1], data[2], data[3]
+	data = data[battleActionCellBytes:]
+	if len(data) >= battleActionSkillBytes {
 		if v := uint16(data[0]) | uint16(data[1])<<8; v > 0 {
 			skill = v
 		}
@@ -401,9 +429,9 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 	kind := "attack"
 	s, known := r.Skills[skill]
 	switch {
-	case sub == 5 || skill == fleeSkill:
+	case sub == protocol.BattleActionFleeRequest || skill == fleeSkill:
 		kind, skill = "flee", fleeSkill
-	case sub == 4 || skill == defendSkill:
+	case sub == protocol.BattleActionDefendRequest || skill == defendSkill:
 		kind, skill = "defend", defendSkill
 	case skill == catchSkill:
 		kind = "catch"
@@ -417,7 +445,7 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 		kind, skill = "defend", defendSkill
 	}
 	b.Pending[actor.key()] = Action{Actor: actor, Player: player, Kind: kind, Skill: skill, TX: tx, TY: ty}
-	return []byte{protocol.CommandBattleEffect, protocol.BattleEffectEscape, sx, sy}
+	return []byte{protocol.CommandBattleEffect, protocol.BattleEffectSubmitted, sx, sy}
 }
 
 // Ready reports whether every expected command has arrived.
@@ -722,13 +750,13 @@ func (r Rules) support(b *Battle, a Action) Step {
 		stat, amount := byte(0), 0
 		switch {
 		case isRevive(s) && target.Dead():
-			amount = max(50, target.MaxHP/3)
+			amount = min(target.MaxHP, max(50, target.MaxHP/3))
 			target.HP, stat = amount, game.StatCurrentHP
 		case isHeal(s):
-			amount = max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15)
+			amount = min(target.MaxHP-target.HP, max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15))
 			target.HP, stat = min(target.MaxHP, target.HP+amount), game.StatCurrentHP
 		}
-		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: effectNormalHitMode})
+		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, a.Skill, results))
 	for _, target := range targets {

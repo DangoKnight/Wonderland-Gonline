@@ -18,7 +18,7 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 14
+const gpuParityStages = 20
 
 func TestGPUClientParity(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
@@ -126,6 +126,40 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 14:
+			w.Switch(0)
+			c = w.Current()
+			enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
+			enemy[2] = 2
+			for _, p := range [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), remoteRecord(5, 4, 3, 2, 17162, 10001), enemy, {50, 6, 4, 2, 0}, {52, 1}} {
+				c.dispatch(p)
+			}
+			c.Frame()
+			c.Sprites.WaitNative()
+		case 15:
+			c.dispatch([]byte{50, 1, 17, 0, 4, 2, 0x11, 0x27, 0, 1, 2, 2, 1, 0, 1, 25, 35, 0, 0, 0, 2})
+			c.Frame()
+			c.Now = func() time.Time { return time.Unix(0, 0).Add(800 * time.Millisecond) }
+			c.Input.X, c.Input.Y = 230, 370
+		case 16:
+			motion := c.battle.assets.Motions[10001]
+			hitAt := motion.EventAt(motion.Events[0]) + 10*time.Millisecond
+			c.Now = func() time.Time { return time.Unix(0, 0).Add(hitAt) }
+		case 17:
+			c.Now = func() time.Time { return time.Unix(0, 0).Add(time.Minute) }
+			c.dispatch([]byte{50, 6, 4, 2, 0})
+			c.dispatch([]byte{52, 1})
+		case 18:
+			c.dispatch([]byte{11, 0, 0x11, 0x27, 0, 0, 0, 0})
+		case 19:
+			n := c.World.NPCs[1]
+			if n == nil {
+				g.err = fmt.Errorf("roaming fixture NPC is missing")
+				return
+			}
+			n.X, n.Y, n.Shown = 1042, 1075, true
+			c.dispatch([]byte{22, 2, 1, 0, 0xb0, 4, 0x33, 4, 2})
+			c.Now = func() time.Time { return time.Unix(0, 0).Add(time.Minute + time.Second) }
 		case 1:
 			c.dispatch(selfPacket(10001, 2, 10017, 1042, 1075, 0, 444444444, 444444444, []uint16{22003, 21002, 24002}, "Tester"))
 			if c.World == nil {

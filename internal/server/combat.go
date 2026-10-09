@@ -14,9 +14,18 @@ import (
 	"wonderland-gonline/internal/world"
 )
 
+// turnGrace is a compatibility margin over the native countdown: the client
+// accepts commands until its counter passes 0 (FUN_0039800c reaches -1 one
+// second later), and the command still has to cross the network.
+const turnGrace = 2 * time.Second
+
+// defaultTurnTimeout is the native countdown of the kind this server
+// announces, plus the grace.
+var defaultTurnTimeout = battle.TurnLimit(battle.KindStandard) + turnGrace
+
 // Battle timing; variables so tests need not wait.
 var (
-	turnTimeout = 30 * time.Second
+	turnTimeout = defaultTurnTimeout
 	battleSleep = time.Sleep
 )
 

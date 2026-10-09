@@ -104,16 +104,16 @@ func TestHotbarBattleActionsGoldenAndStaleGuards(t *testing.T) {
 	for _, p := range [][]byte{player, enemy, {50, 6, 4, 2, 0}, {52, 1}} {
 		c.dispatch(p)
 	}
-	if !c.HotbarKey(0x70, 0) || c.hotbar.target == nil || len(sent()) != 0 {
+	if !c.HotbarKey(0x70, 0) || c.battle.binding == nil || len(sent()) != 0 {
 		t.Fatal("F1 did not wait for target")
 	}
-	inventoryClick(t, c, c.hotbar.target.Children[1])
+	c.GroundClick(230, 370)
 	got := sent()
 	if len(got) != 1 || !bytes.Equal(got[0], []byte{50, 1, 4, 2, 2, 2, 0x11, 0x27}) {
 		t.Fatalf("basic attack %x", got)
 	}
 	c.HotbarKey(0x71, 0)
-	if len(sent()) != 1 || c.hotbar.target != nil {
+	if len(sent()) != 1 || c.battle.binding != nil {
 		t.Fatal("duplicate turn submitted")
 	}
 	c.dispatch([]byte{50, 6, 4, 2, 0})
@@ -128,31 +128,31 @@ func TestHotbarBattleActionsGoldenAndStaleGuards(t *testing.T) {
 	c.SkillState.Learned[11016] = skills.Progress{Grade: 1}
 	c.HotKeys.Bindings[1][3] = hud.Binding{Kind: 2, ID: 11016}
 	c.HotbarKey(0x72, 0)
-	if c.hotbar.target == nil {
+	if c.battle.binding == nil {
 		t.Fatal("learned skill not usable")
 	}
 	c.remote.battle.ready = false
-	inventoryClick(t, c, c.hotbar.target.Children[1])
+	c.GroundClick(230, 370)
 	if len(sent()) != 2 {
 		t.Fatal("expired prompt sent action")
 	}
 	c.remote.battle.ready = true
 	c.remote.battle.fighters[0].sp = 0
 	c.HotbarKey(0x72, 0)
-	if c.hotbar.target != nil || len(sent()) != 2 {
+	if c.battle.binding != nil || len(sent()) != 2 {
 		t.Fatal("insufficient SP allowed action")
 	}
 	c.remote.battle.fighters[0].sp = 100
 	delete(c.SkillState.Learned, 11016)
 	c.HotbarKey(0x72, 0)
-	if c.hotbar.target != nil || len(sent()) != 2 {
+	if c.battle.binding != nil || len(sent()) != 2 {
 		t.Fatal("unlearned skill used")
 	}
 	c.HotbarKey(0x70, 0)
-	if c.hotbar.target == nil {
+	if c.battle.binding == nil {
 		t.Fatal("basic target prompt")
 	}
-	if !c.HotbarKey(27, 0) || c.hotbar.target != nil || c.UI.Modal != nil {
+	if !c.HotbarKey(27, 0) || c.battle.binding != nil || c.UI.Modal != nil {
 		t.Fatal("Escape target cleanup")
 	}
 }
@@ -198,10 +198,10 @@ func TestHotbarOwnedPetAndReleasedTarget(t *testing.T) {
 	}
 	b := c.skillBinding(10001, 3)
 	c.useBinding(b)
-	if c.hotbar.target == nil {
+	if c.battle.binding == nil {
 		t.Fatal("owned pet could not select action")
 	}
-	inventoryClick(t, c, c.hotbar.target.Children[1])
+	c.GroundClick(230, 370)
 	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{50, 1, 3, 2, 2, 2, 0x11, 0x27}) {
 		t.Fatalf("pet action %x", got)
 	}
@@ -209,7 +209,7 @@ func TestHotbarOwnedPetAndReleasedTarget(t *testing.T) {
 	c.dispatch([]byte{52, 1})
 	c.useBinding(b)
 	c.InventoryState.Pets[2] = inventory.UsePet{}
-	inventoryClick(t, c, c.hotbar.target.Children[1])
+	c.GroundClick(230, 370)
 	if len(sent()) != 1 {
 		t.Fatal("released pet submitted an action")
 	}
@@ -221,19 +221,15 @@ func TestHotbarSupportTargetsRespectSideAndRevival(t *testing.T) {
 	fallen := remoteFighter{id: 10002, side: 1, x: 4, y: 3}
 	enemy := remoteFighter{id: 20001, side: 2, x: 2, y: 2, hp: 100}
 	c.remote.battle.fighters = []remoteFighter{actor, fallen, enemy}
-	binding := hud.Binding{Kind: 2, ID: 11016}
-	definition := c.SkillState.Catalog.Definitions[binding.ID]
-	definition.EffectLayer = 5 // Native status removal, not revival.
-	c.SkillState.Catalog.Definitions[binding.ID] = definition
+	binding := hud.Binding{Kind: 2, ID: 12043} // Authored Wake Spell: living ally.
 	c.openHotbarTargets(binding, actor)
-	if len(c.hotbar.target.Children) != 3 { // Title, living ally, Cancel.
+	if c.hotbar.target == nil || len(c.hotbar.target.Children) != 3 { // Title, living ally, Cancel.
 		t.Fatal("status removal offered an enemy or defeated ally")
 	}
-	definition.EffectLayer = 8 // Native revival category.
-	c.SkillState.Catalog.Definitions[binding.ID] = definition
+	binding.ID = 11053 // Authored Revival: defeated ally other than self.
 	c.openHotbarTargets(binding, actor)
-	if len(c.hotbar.target.Children) != 4 { // Title, both allies, Cancel.
-		t.Fatal("revival omitted defeated ally or offered an enemy")
+	if c.hotbar.target == nil || len(c.hotbar.target.Children) != 3 { // Title, fallen ally, Cancel.
+		t.Fatal("revival omitted defeated ally or offered a living fighter")
 	}
 	c.closeHotbarTarget()
 }

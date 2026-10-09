@@ -2549,7 +2549,7 @@
    "start": "25fea0",
    "end": "2a7258",
    "functions": 465,
-   "cited": 60,
+   "cited": 62,
    "classes": [
     "TSe_TeamForm",
     "THotKeyImage",
@@ -3045,7 +3045,7 @@
    "start": "34fad4",
    "end": "36e008",
    "functions": 202,
-   "cited": 12,
+   "cited": 13,
    "classes": [
     "TRe_GarageForm",
     "TSe_EquipForm2",
@@ -3086,7 +3086,7 @@
    "start": "36f144",
    "end": "377054",
    "functions": 90,
-   "cited": 1,
+   "cited": 5,
    "classes": [
     "TAvoid",
     "TEnterFight",
@@ -3102,7 +3102,7 @@
    "start": "378620",
    "end": "388fac",
    "functions": 69,
-   "cited": 0,
+   "cited": 3,
    "classes": [
     "TFightHum",
     "TFightField",
@@ -3121,7 +3121,7 @@
    "start": "389174",
    "end": "3a4258",
    "functions": 186,
-   "cited": 3,
+   "cited": 25,
    "classes": [
     "TFightHum",
     "TDZ_TestForm1",
@@ -3603,7 +3603,7 @@
    "start": "41010c",
    "end": "458cd8",
    "functions": 525,
-   "cited": 56,
+   "cited": 60,
    "classes": [
     "TPlayers",
     "TBasePlayer",
@@ -3773,7 +3773,7 @@
    "start": "480b74",
    "end": "4816d8",
    "functions": 16,
-   "cited": 0,
+   "cited": 1,
    "classes": [
     "TFNpc"
    ],
@@ -4271,14 +4271,14 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Not yet: gesture selection UI, passengers, additional vehicle classes, transforms, wandering NPCs.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Server-driven roaming NPCs consume native AC22:2 with speed/facing, interrupted legs, background-session progression and AC22:4 movement cancellation. Not yet: gesture selection UI, passengers, additional vehicle classes, transforms.",
    "regions": [
     262,
     263,
     264
    ],
    "functions": 567,
-   "cited": 64,
+   "cited": 68,
    "ranges": [
     "40f4b8-40f988",
     "41010c-458cd8",
@@ -4326,7 +4326,7 @@
     273
    ],
    "functions": 96,
-   "cited": 3,
+   "cited": 4,
    "ranges": [
     "1221c8-1221c8",
     "122264-122998",
@@ -4429,7 +4429,7 @@
     197
    ],
    "functions": 490,
-   "cited": 60,
+   "cited": 62,
    "ranges": [
     "259760-25b1ac",
     "25b454-25d0ec",
@@ -4518,7 +4518,7 @@
     169
    ],
    "functions": 715,
-   "cited": 25,
+   "cited": 26,
    "ranges": [
     "34fad4-36e008",
     "3c96f8-3cd798",
@@ -4534,7 +4534,7 @@
    "title": "Skills window and elemental tree",
    "go": "client/wlo/skills, client/wlo/app/skills.go",
    "status": "partial",
-   "notes": "TRe_SkillForm: Physical, Magical, Assistant, Life and Intro tabs, player/pet selector, native archive icons, SP costs, grades, proficiency, weapon flags, scroll controls and elemental tree prerequisites. Toolbar/Ctrl+S toggling, AC5:3 snapshots, AC5:11/12 and AC8:1/2 progress updates are implemented. Native skill and animation data supply presentation metadata. Skill dragging and hotbar assignment, target selection through the current battle roster and native AC50 actions are implemented. Native battle-scene targeting/rendering and the battle skill menu remain pending.",
+   "notes": "TRe_SkillForm: Physical, Magical, Assistant, Life and Intro tabs, player/pet selector, native archive icons, SP costs, grades, proficiency, weapon flags, scroll controls and elemental tree prerequisites. Toolbar/Ctrl+S toggling, AC5:3 snapshots, AC5:11/12 and AC8:1/2 progress updates are implemented. Native skill and animation data supply presentation metadata. Skill dragging and hotbar assignment, target selection through the current battle roster and native AC50 actions are implemented. Direct battle-scene targeting uses native Skill.dat target policies, including self/other-ally restrictions and resolved character stunts. The dedicated native battle skill menu remains pending.",
    "regions": [],
    "functions": 0,
    "cited": 0,
@@ -4543,9 +4543,9 @@
   {
    "key": "battle",
    "title": "Battle",
-   "go": "client/wlo/app/remote.go",
-   "status": "started",
-   "notes": "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. The server side is ported. Client Remote tracks fighter rosters, vitals, defeats and round readiness and submits owned basic PvE actions. Manual hotbar/Skills actions now select a fighter from a roster dialog and submit native AC50, with ownership/SP/learned-skill checks and duplicate/stale-turn protection. Battle scene rendering, animations, the native battle command menu and advanced Remote skill assignment remain pending.",
+   "go": "client/wlo/battle, client/wlo/app/battle.go, internal/battle",
+   "status": "partial",
+   "notes": "CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. Existing server rules are integrated with a dedicated client scene: native formation/background layers, player/pet/monster sprites, stances and defeated poses, radial attack/skills/defend/capture/flee icons and per-actor previous-action center/repeat controls, direct scene targeting and native cursors, batched stats/actions, duplicate-ready guards, MBTM action/frame timing, actor-relative mirrored movement, native HP/SP digits, multi-hit damage cues and sound tracks. Server recovery packets now use native additive modes. Precise movement phase/camera synchronization, spell visual tracks, actor/weapon voices, battle item execution, dedicated battle skill form, spectator mode and remaining command/result presentation are pending. See docs/BATTLE_CLIENT_PARITY.md.",
    "regions": [
     227,
     228,
@@ -4553,7 +4553,7 @@
     231
    ],
    "functions": 356,
-   "cited": 9,
+   "cited": 38,
    "ranges": [
     "36e674-36e9e4",
     "36f144-377054",
@@ -5055,8 +5055,8 @@
   },
   {
    "command": 51,
-   "name": "",
-   "client": false
+   "name": "BattleStat",
+   "client": true
   },
   {
    "command": 52,
@@ -5294,5 +5294,5 @@
    "client": false
   }
  ],
- "cited_functions": 683
+ "cited_functions": 720
 }

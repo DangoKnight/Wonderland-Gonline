@@ -142,3 +142,26 @@ func TestAlchemyCumulativeExperienceSnapshotAndUpdates(t *testing.T) {
 		t.Fatal("native EXP update", s.Learned[id])
 	}
 }
+
+// Real authored policies distinguish allies, self and allies other than self;
+// effect-layer inference cannot represent these restrictions.
+func TestNativeTargetPolicies(t *testing.T) {
+	c, err := Load(login.NewAssets("../../../data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		id                      uint16
+		sameSide, self, allowed bool
+	}{
+		{10001, false, false, true}, {10001, true, false, false},
+		{15190, true, true, true}, {15190, true, false, false},
+		{15075, true, true, false}, {15075, true, false, true}, {15075, false, false, false},
+		{65000, true, true, false},
+	} {
+		d := c.Definitions[tc.id]
+		if !d.TargetKnown || d.AllowsTarget(tc.sameSide, tc.self) != tc.allowed {
+			t.Fatalf("skill %d policy %d: side=%v self=%v", tc.id, d.NativeTarget, tc.sameSide, tc.self)
+		}
+	}
+}

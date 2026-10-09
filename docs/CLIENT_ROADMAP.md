@@ -19,10 +19,10 @@ functions:
 | Ported | ~800 | UI framework, login and character selection, creation, text, cursor, game data, asset decoding |
 | Partial | ~1,750 | Main frame loop, packet dispatch, roles, ground, events and doors, movies and weather, talk windows, chat, HUD, sound |
 | Started | ~2,800 | Items and equipment, NPC services and feature forms, minigames (sport manager, moles, hunting, dreams, lucky, memory; egg and slot client flows) |
-| Not started | ~1,700 | Battle, minimap, trade, social, shops, housing, pets, the other minigames, GM tools |
+| Not started | ~1,700 | Minimap, trade, social, shops, housing, pets, the other minigames, GM tools |
 
 The original handles 91 server commands; the Go client has receive branches for
-22. Individual subcommands and their interfaces can still be incomplete. The server
+29. Individual subcommands and their interfaces can still be incomplete. The server
 side of most systems is already ported, so each phase below can be tested
 end to end.
 
@@ -52,7 +52,9 @@ Finish everything a new character meets before the first battle.
 
 - Events: the remaining event kinds (2-4, 7 and up), NPC walk-in areas (20/2,
   20/3), the treasure light, **NPCs turning to the player**, speech bubbles and
-  wandering NPCs (eve walk steps). Native received AC32 expressions and held poses now render; their selection interface is pending.
+  remaining event motion presentation. Server-driven NPC roaming now renders
+  through AC22:2 with native speed, facing, interruption and arrival handling.
+  Native received AC32 expressions and held poses now render; their selection interface is pending.
 - Chat log: alternate backgrounds, VIP marks and
   character speech bubbles. Click-through, scrolling, lock, modes, resizing, whispers and
   the native emoticon picker, log renderer and editor preview with atomic code editing are implemented.
@@ -86,11 +88,17 @@ secondary containers and crafting interfaces.
 The standalone Skills window is implemented: five native tabs, player/pet
 selection, progress updates and the elemental prerequisite tree. Learned skills
 can be dragged onto a saved per-character hotbar and activated with F1–F8 or a
-click. Manual battle actions use a roster target chooser and native AC50 packets.
-The native battle scene, battle skill menu and overworld casting remain pending.
+click. Manual battle actions now target fighters directly in a dedicated battle scene.
+Native formation/backgrounds, radial command icons (including each actor's
+previous action), mirrored sprite movement,
+HP/SP digit artwork, damage cues and sound tracks are implemented. Precise movement
+phase/camera synchronization, spell visuals,
+the dedicated battle skill menu, item execution, spectator/results presentation
+and overworld casting remain pending. See [battle parity](BATTLE_CLIENT_PARITY.md).
 
-The largest single gameplay system (about 360 functions); the server side is
-ported.
+The largest single gameplay system (about 360 functions). Existing server
+combat rules are integrated; the parity document distinguishes verified native
+presentation from server compatibility formulas and remaining mechanics.
 
 - The battle scene (`CH_TBattleGround`), fighters and motions
   (`TFightHum`, `CH_TBattleMotion`), skills and attacks (`TSkill`, `TAttack`),

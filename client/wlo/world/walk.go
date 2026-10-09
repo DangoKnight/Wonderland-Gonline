@@ -231,6 +231,8 @@ func (s *Scene) search(start, goal image.Point) []image.Point {
 type Walker struct {
 	walk  *walkState
 	OnLeg func(facing, x, y int)
+	// NPC AC22:2 supplies a speed; players and followers use walkSpeed.
+	pixelsPerMillisecond float64
 }
 
 // Start begins a walk of p along path.
@@ -276,7 +278,11 @@ func (k *Walker) Step(p *Player, now time.Time) {
 	if ws == nil {
 		return
 	}
-	budget := walkSpeed * float64(now.Sub(ws.at).Milliseconds())
+	speed := k.pixelsPerMillisecond
+	if speed == 0 {
+		speed = walkSpeed
+	}
+	budget := speed * float64(now.Sub(ws.at).Milliseconds())
 	if budget <= 0 {
 		return
 	}
@@ -321,11 +327,14 @@ func (w *World) StopWalk() { w.walker.Stop(&w.Player) }
 // Walking reports whether the player is moving.
 func (w *World) Walking() bool { return w.walker.Walking() }
 
-// Step moves the player and the peers.
+// Step moves all session-owned actors, including server-driven roaming NPCs.
 func (w *World) Step(now time.Time) {
 	w.walker.Step(&w.Player, now)
 	for _, p := range w.Peers {
 		p.Walker.Step(&p.Player, now)
+	}
+	for _, n := range w.NPCs {
+		n.stepWalk(now)
 	}
 	for owner, companion := range w.Companions {
 		if p := w.companionOwner(owner); p != nil {

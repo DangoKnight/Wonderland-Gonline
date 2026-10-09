@@ -316,6 +316,15 @@ func (db *DB) DrawRect(dst *surface.Surface, i, x, y int, r image.Rectangle, tra
 	}
 }
 
+// Pixel is FUN_0045e90c: an image's 16-bit pixel at (x, y), 0 outside it.
+func (db *DB) Pixel(i, x, y int) uint16 {
+	src := db.image(i)
+	if src == nil || x < 0 || y < 0 || x >= src.W || y >= src.H {
+		return 0
+	}
+	return src.Pix[y*src.W+x]
+}
+
 // DrawStretch is FUN_0046012c: the whole image scaled into r.
 func (db *DB) DrawStretch(dst *surface.Surface, i int, r image.Rectangle, transparent bool) {
 	if src := db.image(i); src != nil {

@@ -143,3 +143,30 @@ func TestUnconfiguredMixedEffectsPreserveSingleRecipientAnimations(t *testing.T)
 		}
 	}
 }
+
+// FUN_0039b558 negates modes 1/2; recovery must carry literal mode 3.
+func TestSupportNativeRecoveryModeAndActualAmount(t *testing.T) {
+	r := targetingRules()
+	s := r.Skills[11001]
+	s.Name = "Cure"
+	s.Targeting = nil
+	r.Skills[11001] = s
+	b, actor := setup(1000)
+	actor.HP = actor.MaxHP - 7
+	step := r.support(b, Action{Actor: actor, Skill: 11001, Kind: "heal", TX: actor.X, TY: actor.Y})
+	want := []byte{50, 1, 17, 0, 4, 2, 0xf9, 0x2a, 0, 1, 4, 2, 1, 0, 1, 25, 7, 0, 0, 0, 3}
+	if len(step.Packets) < 3 || !bytes.Equal(step.Packets[2], want) || actor.HP != actor.MaxHP {
+		t.Fatalf("recovery %x HP=%d", step.Packets, actor.HP)
+	}
+	s.Name = "Revival"
+	r.Skills[11001] = s
+	ally := *actor
+	ally.X = 3
+	ally.MaxHP = 20
+	ally.HP = 0
+	b.Attackers = append(b.Attackers, &ally)
+	step = r.support(b, Action{Actor: actor, Skill: 11001, Kind: "heal", TX: ally.X, TY: ally.Y})
+	if ally.HP != 20 || step.Packets[2][16] != 20 || step.Packets[2][20] != 3 {
+		t.Fatalf("revival overflow %x HP=%d", step.Packets, actor.HP)
+	}
+}

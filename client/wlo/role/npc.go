@@ -36,6 +36,8 @@ type NPC struct {
 	frameAt     time.Time
 	hold        int  // the fixed frame, < 0 to animate
 	wrap        bool // hold counts frames that wrap at the action's count
+	// lastAction restarts the animation when the action changes.
+	lastAction int
 }
 
 // Hold fixes the drawn frame: a prop's +0x11f or a movie keyframe's frame
@@ -57,7 +59,7 @@ func (n *NPC) shown(count int) int {
 // NewNPC is FUN_004265a4's appearance part: the template's look and its
 // four colour values over a neutral block.
 func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
-	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors(), hold: -1}
+	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors(), hold: -1, lastAction: -1}
 	for i, v := range colors {
 		n.colors.Set(int32(v), allParts, i+1)
 	}
@@ -87,9 +89,17 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 	if count == 0 {
 		return
 	}
+	if action != n.lastAction {
+		n.lastAction, n.frame, n.frameAt = action, 0, n.Now()
+	}
 	if now := n.Now(); now.Sub(n.frameAt) > intervalFor(action) {
 		n.frameAt = now
 		n.frame++
+	}
+	// The falling group (26, 27) plays once and holds its last frame, as
+	// for players (FUN_004122ec): a defeated monster lies flattened.
+	if fallAction(action) {
+		n.frame = min(n.frame, count-1)
 	}
 	n.frame %= count
 	if f := s.frame(action, n.shown(count)); f != nil {
