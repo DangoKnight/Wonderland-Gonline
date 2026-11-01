@@ -134,7 +134,7 @@ func TestSettingsTradeLockCancelsAndBlocksRequests(t *testing.T) {
 			tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
 		}
 		tradeDo(t, s, b, []byte{16, 2, 1})
-		if a.trade != nil || b.trade != nil || b.tradeRequest != nil || !contains(wires[0].packets(t), []byte{25, 2, 2}) {
+		if a.trade != nil || b.trade != nil || b.tradeRequest != nil || !contains(wires[0].packets(t), []byte{25, 2, 3}) {
 			t.Fatal("trade lock retained active/pending trade")
 		}
 		tradeDo(t, s, b, []byte{25, 2, 1})

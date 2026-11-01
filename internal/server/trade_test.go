@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"sync"
 	"testing"
 	"time"
@@ -41,15 +42,15 @@ func openTrade(t *testing.T, s *Server, players []*Session, wires []*captureConn
 	t.Helper()
 	a, b := players[0], players[1]
 	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
-	if !contains(wires[1].packets(t), protocol.Builder{25, 1}.U32(a.character.ID)) {
+	pa, pb := wires[0].packets(t), wires[1].packets(t)
+	if !contains(pb, protocol.Builder{25, 1}.U32(a.character.ID)) {
 		t.Fatal("trade request not forwarded")
 	}
-	tradeDo(t, s, b, []byte{25, 2, 1})
 	if a.trade == nil || a.trade != b.trade {
 		t.Fatal("trade did not open")
 	}
-	if !contains(wires[0].packets(t), protocol.Builder{25, 1}.U32(b.character.ID)) || !contains(wires[1].packets(t), protocol.Builder{25, 1}.U32(a.character.ID)) {
-		t.Fatal("native open packets missing")
+	if !contains(pa, tradeWindow(a, b)) || !contains(pb, tradeWindow(b, a)) {
+		t.Fatalf("native open packets missing: a=% x b=% x", pa, pb)
 	}
 	for _, wire := range wires {
 		wire.Reset()
@@ -73,16 +74,18 @@ func TestTradeDispatcherOfferAndAtomicCompletion(t *testing.T) {
 	openTrade(t, s, players, wires)
 	a, b := players[0], players[1]
 	tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
-	offer := protocol.Builder{25, 3}.U32(0).U8(1).U16(32176).U8(3).U8(2)
-	if p := wires[1].packets(t); len(p) != 1 || !bytes.Equal(p[0], offer) {
+	if p := tradeWindows(wires[1].packets(t)); len(p) != 1 {
 		t.Fatal("offer wire", p)
 	}
 	tradeDo(t, s, b, protocol.Builder{25, 4}.U32(50))
 	wires[0].Reset()
 	tradeDo(t, s, a, []byte{25, 5}) // Native lock action is a no-op.
 	tradeDo(t, s, a, []byte{25, 6})
-	if wires[0].Len() != 0 || a.character.Gold != 100 || a.character.Bag[0].Count != 10 {
+	if a.character.Gold != 100 || a.character.Bag[0].Count != 10 {
 		t.Fatal("first confirmation transferred assets")
+	}
+	if p := wires[0].packets(t); len(tradeWindows(p)) != len(p) {
+		t.Fatalf("first confirmation sent more than a window refresh: % x", p)
 	}
 	tradeDo(t, s, b, []byte{25, 6})
 	if a.trade != nil || b.trade != nil || a.character.Gold != 150 || b.character.Gold != 150 || a.character.Bag[0].Count != 7 || b.character.Bag[1].Count != 3 || b.character.Bag[1].Damage != 2 || b.character.Bag[1].Metadata[6] != 7 {
@@ -114,7 +117,7 @@ func TestTradeOfferRevisionResetsBothConfirmations(t *testing.T) {
 	tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
 	tradeDo(t, s, a, []byte{25, 6})
 	tradeDo(t, s, b, protocol.Builder{25, 4}.U32(500)) // Clamp to owned gold, including the displayed offer.
-	if p := wires[0].packets(t); len(p) != 1 || !bytes.Equal(p[0], protocol.Builder{25, 3}.U32(200).U8(0)) {
+	if p := wires[0].packets(t); offerGold(p) != 200 {
 		t.Fatal("displayed gold differed from reserved gold", p)
 	}
 	tradeDo(t, s, b, []byte{25, 6})
@@ -135,12 +138,17 @@ func TestTradeOfferRevisionResetsBothConfirmations(t *testing.T) {
 	}
 }
 
-func TestTradeRefusesMalformedAndUnsolicitedReplies(t *testing.T) {
+func TestTradeIgnoresMalformedAndUnsolicitedReplies(t *testing.T) {
 	s, players, wires := tradeFixture(t)
+	// Wrong shapes must not close the session: the native client keeps the
+	// window open and retries, so a malformed packet is only ignored.
 	for _, p := range [][]byte{{25}, {25, 1, 0}, {25, 2}, {25, 3, 1, 1}, {25, 4, 0}, {25, 5, 1}, {25, 6, 1}, {25, 7, 1}} {
-		if err := s.dispatch(context.Background(), players[0], p); err == nil {
-			t.Fatal("malformed trade accepted", p)
+		if err := s.dispatch(context.Background(), players[0], p); err != nil {
+			t.Fatalf("trade packet closed the session: %v (% x)", err, p)
 		}
+	}
+	if players[0].trade != nil || wires[0].Len() != 0 {
+		t.Fatal("malformed trade changed state")
 	}
 	tradeDo(t, s, players[1], []byte{25, 2, 1})
 	if players[1].trade != nil {
@@ -151,8 +159,8 @@ func TestTradeRefusesMalformedAndUnsolicitedReplies(t *testing.T) {
 	if players[0].trade != nil || players[1].tradeRequest != nil || wires[2].Len() != 0 {
 		t.Fatal("self/cross-map trade accepted")
 	}
-	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[1].character.ID))
-	players[1].tradeRequest.at = time.Now().Add(-2 * tradeRequestTTL)
+	players[0].trade, players[1].trade = nil, nil
+	players[1].tradeRequest = &tradeRequest{from: players[0], at: time.Now().Add(-2 * tradeRequestTTL)}
 	tradeDo(t, s, players[1], []byte{25, 2, 1})
 	if players[0].trade != nil || players[1].trade != nil {
 		t.Fatal("expired request accepted")
@@ -191,7 +199,7 @@ func TestTradeCancellationReleasesInventories(t *testing.T) {
 			if a.trade != nil || b.trade != nil || a.character.Bag[0].Count != 10 || b.character.Bag[0].Count != 20 {
 				t.Fatal("cancel changed offered items or retained session")
 			}
-			if !contains(wires[1].packets(t), []byte{25, 2, 2}) {
+			if !contains(wires[1].packets(t), []byte{25, 2, 3}) {
 				t.Fatal("partner not told of cancellation")
 			}
 		})
@@ -276,7 +284,7 @@ func TestTradePendingRequesterDepartureClosesPrompt(t *testing.T) {
 	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[1].character.ID))
 	wires[1].Reset()
 	s.leaveWorld(players[0])
-	if players[1].tradeRequest != nil || !contains(wires[1].packets(t), []byte{25, 2, 2}) {
+	if players[1].tradeRequest != nil || !contains(wires[1].packets(t), []byte{25, 2, 3}) {
 		t.Fatal("departed requester retained prompt")
 	}
 	tradeDo(t, s, players[1], []byte{25, 2, 1})
@@ -314,5 +322,180 @@ func TestTradeTransfersMountedVehicleAndDismountsOwner(t *testing.T) {
 	saved := tradeStored(t, s, players)
 	if saved[0].ActiveVehicle != 0 || saved[1].Bag[1].Damage != 27 {
 		t.Fatal("vehicle transfer not saved")
+	}
+}
+
+func TestTradeInviteEchoesBothSides(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	a, b := players[0], players[1]
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
+	pa, pb := wires[0].packets(t), wires[1].packets(t)
+	if !contains(pa, protocol.Builder{25, 1}.U32(b.character.ID)) {
+		t.Fatalf("initiator did not receive the mirrored invite: % x", pa)
+	}
+	if !contains(pb, protocol.Builder{25, 1}.U32(a.character.ID)) {
+		t.Fatalf("target did not receive the invite: % x", pb)
+	}
+	if a.trade == nil || a.trade != b.trade {
+		t.Fatal("invite did not open a shared session")
+	}
+}
+
+func TestTradeWindowCarriesPartnerRecord(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	openTrade(t, s, players, wires)
+	a, b := players[0], players[1]
+	item := a.character.Bag[0]
+	if item.Empty() {
+		t.Fatal("fixture has no item in slot 1")
+	}
+	tradeDo(t, s, a, protocol.Builder{25, 2}.U32(0).U8(1))
+	w := tradeWindow(b, a)
+	// One 21-byte row header plus a single trailing 0x51-byte structure.
+	if len(w) != 25+21+0x51 {
+		t.Fatalf("window length %d", len(w))
+	}
+	if w[0] != 25 || w[1] != 12 {
+		t.Fatalf("wrong header % x", w[:2])
+	}
+	if w[23] != 1 {
+		t.Fatalf("record flag %d", w[23])
+	}
+	key := uint16(w[25]) | uint16(w[26])<<8
+	if key != item.ID {
+		t.Fatalf("record key %d, want item id %d", key, item.ID)
+	}
+	if count := w[27]; count != item.Count {
+		t.Fatalf("record count %d, want %d", count, item.Count)
+	}
+	id := uint16(w[46]) | uint16(w[47])<<8
+	if id != item.ID {
+		t.Fatalf("body item %d, want %d", id, item.ID)
+	}
+}
+
+func TestNativeGoldOfferResetsConfirmations(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	openTrade(t, s, players, wires)
+	a, b := players[0], players[1]
+	tradeDo(t, s, a, []byte{25, 6})
+	if !a.trade.accepted[0] {
+		t.Fatal("first confirmation not recorded")
+	}
+	tradeDo(t, s, b, protocol.Builder{25, 2}.U32(0).U8(1))
+	if a.trade.accepted != [2]bool{} || b.trade.accepted != [2]bool{} {
+		t.Fatal("offer change did not reset both confirmations")
+	}
+}
+
+// TestTradeNativeOfferCarriesGoldAndSlotList replays the frame captured from the
+// native client: 19 02 7b 00 00 00 24 2a (123 gold plus two inventory slots).
+func TestTradeNativeOfferCarriesGoldAndSlotList(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	a, b := players[0], players[1]
+	next := a.character.Clone()
+	next.Gold = 200
+	next.Bag[1] = game.Item{ID: 32176, Count: 4}
+	next.Bag[2] = game.Item{ID: 32176, Count: 2}
+	if err := s.commit(context.Background(), a, next); err != nil {
+		t.Fatal(err)
+	}
+	openTrade(t, s, players, wires)
+	tradeDo(t, s, a, []byte{25, 2, 0x7b, 0, 0, 0, 1, 2})
+	run := a.trade
+	if run == nil {
+		t.Fatal("native offer closed the trade")
+	}
+	offer := run.offers[run.side(a)]
+	if offer.Gold != 0x7b || len(offer.Items) != 2 {
+		t.Fatalf("offer = %+v", offer)
+	}
+	if offer.Items[0].Slot != 1 || offer.Items[1].Slot != 2 || offer.Items[1].Count != 4 {
+		t.Fatalf("items = %+v", offer.Items)
+	}
+	if p := tradeWindows(wires[1].packets(t)); len(p) != 1 || !contains(p, tradeWindow(b, a)) {
+		t.Fatalf("partner window = % x", p)
+	}
+}
+
+// tradeWindows selects the AC25:12 packets from a captured wire log.
+func tradeWindows(packets [][]byte) [][]byte {
+	out := make([][]byte, 0, len(packets))
+	for _, p := range packets {
+		if len(p) >= 2 && p[0] == 25 && p[1] == 12 {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// offerGold reports the gold carried by the last AC25:3 offer packet.
+func offerGold(packets [][]byte) uint32 {
+	var gold uint32
+	for _, p := range packets {
+		if len(p) >= 6 && p[0] == 25 && p[1] == 3 {
+			gold = binary.LittleEndian.Uint32(p[2:6])
+		}
+	}
+	return gold
+}
+
+// TestTradeOfferPacketLayout pins the native AC25:3 layout captured from the
+// client: gold, then one 29-byte record per item (id, count in byte 2), then
+// five trailing bytes so the client's (len-5)/29 item count stays exact.
+func TestTradeOfferPacketLayout(t *testing.T) {
+	p := tradeOfferPacket(game.TradeOffer{
+		Gold: 123,
+		Items: []game.TradeItem{
+			{Slot: 36, Count: 2, Item: game.Item{ID: 0xA0A7}},
+			{Slot: 42, Count: 4, Item: game.Item{ID: 0xA0A9}},
+		},
+	})
+	if len(p) != 2+4+2*tradeOfferRecordSize+5 {
+		t.Fatalf("length %d", len(p))
+	}
+	if p[0] != 25 || p[1] != 3 {
+		t.Fatalf("header % x", p[:2])
+	}
+	if binary.LittleEndian.Uint32(p[2:6]) != 123 {
+		t.Fatalf("gold %d", binary.LittleEndian.Uint32(p[2:6]))
+	}
+	const first = 6
+	if id := binary.LittleEndian.Uint16(p[first : first+2]); id != 0xA0A7 || p[first+11] != 2 {
+		t.Fatalf("first record id=%#x count=%d", id, p[first+11])
+	}
+	second := first + tradeOfferRecordSize
+	if id := binary.LittleEndian.Uint16(p[second : second+2]); id != 0xA0A9 || p[second+11] != 4 {
+		t.Fatalf("second record id=%#x count=%d", id, p[second+11])
+	}
+	for i, b := range p[first+3 : first+tradeOfferRecordSize] {
+		if i+3 == 11 {
+			continue // the quantity lives here
+		}
+		if b != 0 {
+			t.Fatal("record padding must stay zero")
+		}
+	}
+}
+
+// TestTradeOfferEchoKeepsConfirmations pins the click-through behaviour: the
+// client resends its offer right before the confirmation, and that echo must
+// not clear the partner's confirmation.
+func TestTradeOfferEchoKeepsConfirmations(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	openTrade(t, s, players, wires)
+	a := players[0]
+	tradeDo(t, s, a, protocol.Builder{25, 2}.U32(0).U8(1))
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	if !a.trade.accepted[0] {
+		t.Fatal("confirmation not recorded")
+	}
+	tradeDo(t, s, a, protocol.Builder{25, 2}.U32(0).U8(1))
+	if !a.trade.accepted[0] {
+		t.Fatal("resent offer cleared the confirmation")
+	}
+	tradeDo(t, s, a, protocol.Builder{25, 2}.U32(15))
+	if a.trade.accepted[0] {
+		t.Fatal("changed offer kept the confirmation")
 	}
 }
