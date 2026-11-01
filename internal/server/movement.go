@@ -66,6 +66,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	}
 	if x != prevX || y != prevY {
 		s.stopFishing(c)
+		s.closeStall(c)
 		s.cancelTrade(c)
 		c.arrived = false
 	}

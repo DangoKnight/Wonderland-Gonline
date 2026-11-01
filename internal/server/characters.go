@@ -138,6 +138,8 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	packets = append(packets, s.arrivalPackets(char, view, pets, 0)...)
 	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode15, 0}, []byte{protocol.CommandWire62, protocol.Wire62WireCode53, 2, 0}, recordPointStatus(char), []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode14, 2})
+	onlineDate := int32(float64(time.Now().Unix())/86400 + 25569)
+	packets = append(packets, protocol.Builder{protocol.CommandTrade, 44, 2}.U32(uint32(onlineDate)))
 	for slot := byte(1); slot <= 10; slot++ {
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode24, slot, 0, 0})
 	}
@@ -219,11 +221,6 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	defer s.worldMu.Unlock()
 	if p[0] == protocol.CommandLuckyDraw {
 		s.Log.Debug("Lucky Draw dispatch state", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map, "map_ready", c.ready, "warped", c.warped, "battle", c.battle != nil, "trade", c.trade != nil, "minigame", c.event != nil && c.event.onMinigame != nil)
-	}
-	// An open sign cannot reserve an item across arbitrary inventory changes.
-	// Close it before other actions; chat and read-only login sync may continue.
-	if c.stall != nil && p[0] != protocol.CommandStall && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
-		s.closeStall(c)
 	}
 	// Settings and native login synchronization precede the interaction gates.
 	if command.policy.BeforeWorldGates || (command.beforeWorldGates != nil && command.beforeWorldGates(p)) {

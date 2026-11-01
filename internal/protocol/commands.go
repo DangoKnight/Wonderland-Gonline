@@ -322,6 +322,12 @@ const (
 	InventoryMessage    = 57
 	InventoryOpenPack   = 75
 	// AC23.Recv77 requests the player-stall list, including during native login.
+	InventoryStallOpen         = 30
+	InventoryStallClose        = 31
+	InventoryStallState        = 31
+	InventoryStallBrowse       = 32
+	InventoryStallDespawn      = 32
+	InventoryStallBrowseResult = 33
 	InventoryStallListRequest  = 77
 	InventoryStallList         = 4
 	InventoryStallListComplete = 102
@@ -371,6 +377,7 @@ const (
 	TradeOfferNoOp = 5
 	TradeConfirm   = 6
 	TradeCancel    = 7
+	TradeWindow    = 12
 )
 
 // Bank/ATM operations (AC45). PIN and inter-character transfer remain unavailable.
@@ -535,6 +542,7 @@ const PetControlVehicleMount = 10
 const (
 	TradeReplyAccepted  = 1
 	TradeReplyRejected  = 2
+	TradeReplyCancelled = 3
 	TradeReplyCompleted = 4
 )
 

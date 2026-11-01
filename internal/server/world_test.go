@@ -67,7 +67,7 @@ func TestWorldVisibilityMovementAndLogout(t *testing.T) {
 	if len(a) != 4 || a[0][0] != 4 || !bytes.Equal(a[2][:2], []byte{10, 3}) || !bytes.Equal(a[3][:2], []byte{5, 8}) {
 		t.Fatalf("arrival packets: %v", a)
 	}
-	if len(b) != 4 || b[0][0] != 4 || b[2][0] != 7 || !bytes.Equal(b[3], []byte{5, 4}) {
+	if len(b) != 5 || b[0][0] != 4 || b[2][0] != 7 || !bytes.Equal(b[3], []byte{5, 4}) || !bytes.Equal(b[4], []byte{56, 30, 0}) {
 		t.Fatalf("snapshot packets: %v", b)
 	}
 	if wires[2].Len() != 0 {
@@ -229,7 +229,7 @@ func TestPortalWarpBetweenMaps(t *testing.T) {
 	if c := wires[2].packets(t); len(c) != 3 || c[0][0] != 4 || !bytes.Equal(c[2][:2], []byte{10, 3}) {
 		t.Fatalf("warp arrival must omit the login sprite refresh: %v", c)
 	}
-	if a = wires[0].packets(t); len(a) != 4 || a[0][0] != 4 || !bytes.Equal(a[3], []byte{5, 4}) {
+	if a = wires[0].packets(t); len(a) != 5 || a[0][0] != 4 || !bytes.Equal(a[3], []byte{5, 4}) || !bytes.Equal(a[4], []byte{56, 30, 0}) {
 		t.Fatalf("destination snapshot: %v", a)
 	}
 	// Immediate reuse is debounced and only releases the client.

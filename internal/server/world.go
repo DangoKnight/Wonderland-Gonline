@@ -170,6 +170,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			}
 		}
 	}
+	if err := s.sendAll(c, s.stallList(c)); err != nil {
+		return err
+	}
 	s.partyArrival(c)
 	if s.friendSessions == nil {
 		s.friendSessions = map[uint32]*Session{}

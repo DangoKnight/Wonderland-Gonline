@@ -22,6 +22,14 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return protocol.ErrMalformed
 	}
 	switch p[1] {
+	case protocol.InventoryStallOpen:
+		return s.nativeStallOpen(ctx, c, p)
+	case protocol.InventoryStallClose:
+		return s.nativeStallClose(c)
+	case protocol.InventoryStallBrowse:
+		return s.nativeStallBrowse(c, p)
+	case protocol.InventoryStallBrowseResult:
+		return s.nativeStallBuy(ctx, c, p)
 	case protocol.InventoryStallListRequest:
 		// AC23.Recv77 supplies only the empty global-list layout. Keep both
 		// native loading replies; actual player shops use AC56 map signs/view.
