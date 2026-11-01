@@ -81,3 +81,26 @@ func TestHotelExchangeAndPersistence(t *testing.T) {
 		t.Fatal("deposited pet missing")
 	}
 }
+
+func TestHotelExchangeUnlocksForm(t *testing.T) {
+	s, players, wires := petFixture(t)
+	c, wire := players[0], wires[0]
+	ctx := context.Background()
+	next := c.character.Clone()
+	next.Pets = append(next.Pets, game.Pet{ID: 14000, Slot: 1, Name: "Team"})
+	next.HotelPets = append(next.HotelPets, game.Pet{ID: 15000, Slot: 1, Name: "Hotel"})
+	if err := s.commit(ctx, c, next); err != nil {
+		t.Fatal(err)
+	}
+	c.pets.register(14000)
+	wire.Reset()
+	if err := s.worldCommand(ctx, c, []byte{31, 4, 1, 1, 1, 1}); err != nil {
+		t.Fatal(err)
+	}
+	got := wire.packets(t)
+	for _, want := range [][]byte{{31, 3, 1, 1}, {31, 5, 1, 1}, {31, 4, 1}, {31, 8}, {31, 12}} {
+		if !contains(got, want) {
+			t.Fatalf("missing %v in %v", want, got)
+		}
+	}
+}
