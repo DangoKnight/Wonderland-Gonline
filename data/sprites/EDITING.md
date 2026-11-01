@@ -28,7 +28,8 @@ only that frame at the new sheet and rectangle.
 Paint within the frame's rectangle to change its appearance without changing
 JSON. Preserve transparency and sheet dimensions when repainting an existing
 frame. Ordinary RGB colors, opaque black and partial alpha are supported;
-there is no 256-color limit. The display still uses the client's RGB565 buffer.
+there is no 256-color limit. GPU and CPU rendering retain native RGB565 color
+semantics; GPU targets do not have a CPU pixel buffer.
 
 Most sprites have one sheet. Larger ones have several numbered pages.
 Directories use the sprite ID; malformed native names use `sprite_XXXX`, with
@@ -112,17 +113,21 @@ the decoded sources:
 go run ./cmd/sprite-export -verify-editable -compare-original
 ```
 
-The standard-format runtime does not use the lossless `sprites.json`,
-`actions.json` or JXAN metadata. Compressed decoded bytes in `sprites.json` remain
-conversion and preservation artifacts. Their source manifest checks do not
-restrict deliberate edits to PNGs or `editable.json`.
+Loose sprite loading can read preserved decoded bytes in `sprites.json` to
+derive original palette indices for unchanged frames; edited frames render as
+painted. Compiled asset builds perform that matching ahead of runtime.
+`actions.json` and JXAN metadata remain conversion/preservation inputs. Their
+source manifest checks do not restrict deliberate edits to PNGs or `editable.json`.
 
 The original Windows client still requires its proprietary formats. Direct
 PNG/JSON loading is a feature of the Go client.
 
 ## Build sprite packs
 
-To repack the editable export into consolidated atlas pages for distribution, see [Sprite packs](../../docs/SPRITE_PACKS.md). The client reads the existing decompiled tree directly. Verify exports without repacking:
+Normal distributions use `make build-client` to compile edits into split runtime
+packs; see [client architecture](../../docs/CLIENT_ARCHITECTURE.md). Use
+`-assets data` for loose loading. [Sprite packs](../../docs/SPRITE_PACKS.md)
+documents optional palette-indexed directory packs. Verify exports without repacking:
 
 ```sh
 go run ./cmd/asset-build

@@ -131,24 +131,25 @@ Persist the gameplay result required for recovery, never the process lock.
 
 ## Verification and unresolved reference behavior
 
-Tests cover native envelopes, independent scenes, admission/ownership, complete
-metadata, stale/full-bag rollback, ordinal indices, loading/logout/crash recovery,
-reservations, and preserving gameplay v9 and asset v2 upgrades. Live aLogin tent
+Coverage is centralized in [inventory and recovery checks](TESTING.md#inventory-and-recovery-checks). Live aLogin tent
 and furniture synchronization acceptance remains pending.
 
 AC60 decoration purchases, AC61 upstairs operations and AC62:4 special placement
 are empty or success-only source handlers. Their costs, unlock and transaction
 rules remain pending; they are not implemented as false successes. Initial floor
 and wallpaper references persist, but native decoration editing and house upgrades
-remain unresolved. Manufacturing currently retains reference workbench-name
-selection; binding recipes to verified physical furniture identities remains pending.
+remain unresolved. AC59 and `/manufacture` retain workbench-name recipe matching;
+native AC64 validates placed owned benches, bag tools and plans. See
+[manufacturing](MANUFACTURING_CHARACTER_STATE.md#native-manufacturing).
 
 ## Remaining state and native compatibility
 
 Character title, nickname, actual class, potential and separate AC66 metadata
 persist in typed SQL, along with pet potential. GM rebirth, all six class stat
-modifiers and normalized rebirth progression are implemented. Funded potential
-training remains pending; AC66 changes its metadata without granting advancement.
+modifiers and normalized rebirth progression are implemented. AC23:126 consumes
+normal, golden and Super Potential Pills transactionally for players and owned
+party pets. Failure/bonus rules are in [Potential Pills](NATIVE_COMMANDS.md#potential-pills).
+AC66 changes separate metadata without granting advancement.
 
 Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Furniture
 placement stays floor zero; occupant poses replay through AC32:2. Configured
@@ -160,7 +161,7 @@ The source Tradeable property and use-type metadata have no restriction callers
 in trade/wear, so they do not impose additional rules. Unverified special item
 effects remain on hold. AC8 allocation rejects invalid/overflowing entries without
 spending points; pet overflow matches the reference guard, and character overflow
-is deliberately rejected too. See [verification](PORTING.md#focused-migration-verification--2026-10-04).
+is deliberately rejected too. See [verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
 
 Routine walking follows the buffered session policy in DEVELOPMENT.md.
 Furniture transfers, purchases, claims, item wear/consumption and inventory
@@ -174,4 +175,4 @@ five materials. Character nickname/class/potential, pet potential and both tent
 decoration pairs live in typed gameplay v14 rows. GM rebirth, class bonuses and
 tent peer pose replay are implemented. See [manufacturing and character
 state](MANUFACTURING_CHARACTER_STATE.md) for packet layouts, SQL upgrade steps,
-recovery and explicitly pending socket/training/upstairs rules.
+recovery, funded potential training and the pending socket/upstairs rules.

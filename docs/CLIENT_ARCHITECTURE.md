@@ -132,22 +132,14 @@ On the current WLRI data, the previous single bundle was approximately 4.5 GiB.
 The optimized deployment set totals approximately 3.0 GiB. Cache/build files are
 excluded from these totals. These are local measurements, not format guarantees.
 
-The focused first-terrain benchmark for Ship Deck measured 108–127 ms and about
-154 MB of allocations when parsing the editable ground export. The first compiled
-lookup measured about 6 ms and 2.7 MB, including ZIP directory initialization;
-subsequent fresh record lookups measured about 0.14 ms and 50 KB. These numbers
-measure terrain retrieval, not total startup, world rendering or peak resident RAM.
-Reproduce with:
-
-```sh
-cd client
-WONDERLAND_TEST_CLIENT_BUNDLE=../bin/client-assets.zip go test ./wlo/world -run '^$' -bench BenchmarkFirstTerrainRecord -benchtime=1x -count=3
-```
+Terrain benchmark results and reproduction commands are centralized in
+[benchmarks](TESTING.md#benchmarks).
 
 The next optimizations should follow profiling: compile remaining small definition
 JSON into consumer-specific tables, split world/sprite packs further for smaller
 patches, or use independently compressed blocks when read/seek costs justify them.
-Patch override precedence is not implemented. GPU rendering uses cached RGBA8
+Map picture lookup already searches `map_d01`, `map_c01`, then `map`. Layering
+additional compiled deployment packs as patch overrides is not implemented. GPU rendering uses cached RGBA8
 textures and the existing lossless pages. Block-compressed GPU textures remain
 future work and need separate checks for editable alpha and native color fidelity.
 
@@ -311,35 +303,13 @@ sprite PNGs are unchanged. Total size of the core and its three current companio
 is **3057.06 MiB**. Old published packs and build caches are not part of that
 runtime distribution size.
 
-On an Intel Core i5-13600K, `BenchmarkWorldBackgroundDrawing` for Ship Deck at
-camera `(700, 500)` measured **0.774 ms** for the editable-image path and
-**0.030 ms** for compiled tile drawing. Both loops allocated zero bytes per draw.
-This is a warm-cache, background-only comparison, not an overall FPS measurement.
-Direct copies from prepared tile rows avoid a temporary viewport buffer. Run:
-
-```sh
-cd client
-WONDERLAND_TEST_CLIENT_BUNDLE=../bin/client-assets.zip go test ./wlo/world -run '^$' -bench BenchmarkWorldBackgroundDrawing -benchtime=1s
-```
+Background drawing measurements and reproduction commands are in
+[benchmarks](TESTING.md#benchmarks).
 
 ## Verification
 
-Focused tests cover image/JSON edits, transparency, failed-build atomicity,
-compression/reuse, per-image invalidation, lossless page formats, native color keys,
-trim/atlas offsets, viewport clipping, LRU byte budgets, ZIP64 offsets, safe mounted paths, independent session state,
-shared buffers, background packet processing without redraw, sidebar input and
-socket disposal. With a real bundle:
-
-```sh
-cd client
-WONDERLAND_TEST_CLIENT_BUNDLE=../bin/client-assets.zip go test ./wlo/app -run TestCompiledBundleLoginAndSharedWorld
-```
-
-For live acceptance, log in as two different accounts, switch between their
-previews, and check movement/chat/Remote continue in the background. Remove one
-session, verify the observer sees it disconnect, and continue using the remaining
-session. Modify one same-size PNG and a JSON value, rebuild, and inspect the change;
-resize that PNG and verify the build fails while the previous bundle remains usable.
+See [compiled assets and workspace checks](TESTING.md#compiled-assets-and-workspace-checks)
+for automated coverage and the multi-session/artwork acceptance checklist.
 
 ## GPU rendering
 
@@ -407,7 +377,7 @@ adjacent tiles and uses a full upload for a densely changed frame. Unchanged CPU
 frames upload nothing. The legacy GPU framebuffer-conversion helper remains for
 embedding/canvas compatibility; normal GPU play bypasses framebuffer uploads.
 
-### Renderer development and verification
+### Renderer development
 
 Create temporary targets through `Surface.NewCompatible`; release them with
 `Close`. Use `Clone` for freezes and surface draw calls for composition. Never
@@ -417,30 +387,8 @@ pixel arrays directly. Increment a source surface's `Revision` after a direct
 pixel edit; normal CPU drawing methods increment it automatically. Texture/glyph
 caches and render calls belong to the game thread; socket events stay queued.
 
-Graphics tests require an available display/context:
-
-```sh
-cd client
-WONDERLAND_TEST_GPU=1 go test ./wlo/render -count=1
-WONDERLAND_TEST_GPU=1 \
-  WONDERLAND_TEST_CLIENT_BUNDLE=/absolute/path/to/bin/client-assets.zip \
-  go test ./wlo/app -run '^TestGPUClientParity$' -count=1
-```
-
-The app graphics test runs in a subprocess because Ebitengine owns
-process-global graphics state and shuts down its native backend when `RunGame`
-returns. This keeps graphics teardown separate from later CPU/UI tests in a full
-suite; the subprocess uses the same test binary, including race instrumentation.
-
-The renderer test compares all 65,536 native colors, all alpha levels, clipped
-blits, scaling, indexed palettes, lighting, all gauge percentages, sparse compiled
-canvases, loose image tiles, cache reuse/eviction and GPU-to-GPU copies against the
-CPU renderer through real GPU readbacks. The app test compares entire login,
-Ship Deck, inventory, skills, settings and two-session frames, collapsed previews
-session removal and clipped, partially scrolled session cards. It also checks that normal composition performs no readbacks
-and that removal releases the session target. `GPU_DIFF_DIR` optionally saves
-CPU/GPU images when the app comparison fails. Run focused CPU regressions and
-race checks on these modules when changing shared caches or lifetime behavior.
+Graphics test commands, subprocess isolation and coverage are in
+[GPU parity and snapshots](TESTING.md#gpu-parity-and-snapshots).
 
 ## Shoreline water vehicles
 

@@ -158,7 +158,7 @@ remaining exact-parity questions are documented in [FISHING.md](FISHING.md).
 The expanded `native-commands` checklist separates naturally captured requests
 from unreached handlers and checks observer replay, pose cleanup and mall aliases.
 Fishing fixtures cover unlearned, full-bag and threshold-minus-one advancement
-states. See the [prepared acceptance batch](LIVE_TESTING.md#native-command-acceptance-and-fishing-parity-batch)
+states. See the [prepared acceptance batch](TESTING.md#native-command-acceptance-and-fishing-parity-batch)
 for run directories and evidence requirements. Preparation is not live acceptance.
 
 ### Expressions and held poses

@@ -24,10 +24,11 @@ cancels the previous leg, preventing it from moving a hidden or respawned actor
 back toward a stale endpoint. Background workspace sessions advance normally.
 The client does not generate random destinations or send NPC movement requests.
 
-Until the EVE initial-speed byte is projected into client map records, a first
-AC22:2 with speed zero uses the named server-speed-2 compatibility fallback.
-Subsequent zero-speed packets preserve the preceding speed. Ordinary server
-roaming packets always supply speed 2 and do not need this fallback.
+The EVE initial-speed byte is projected into client map records and initializes
+each NPC's walker. A zero-speed AC22:2 retains that speed or the preceding
+nonzero command speed. Only an actor whose retained speed is also zero uses
+the named server-speed-2 compatibility fallback. Ordinary server roaming
+packets supply speed 2 and do not need this fallback.
 
 Focused tests cover raw packet decoding, native speed, diagonal travel,
 interrupted legs, standing on arrival, malformed packets, unknown actors,

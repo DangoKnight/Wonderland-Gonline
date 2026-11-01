@@ -61,10 +61,10 @@ bonuses. For example, Fire attack is defined as:
 ATK: StatGrowth{Level: 2, PointGrowth: PointGrowth{STR: 2}},
 ```
 
-After editing, run the focused growth tests and rebuild, then restart the server:
+After editing, run [focused growth checks](TESTING.md#growth-and-progression-checks),
+then rebuild and restart the server:
 
 ```sh
-go test ./internal/game ./internal/battle ./internal/server -run 'Test(ElementalGrowth|PlayerFighterConfiguredGrowth|CompiledElementalGrowth)'
 make build
 ./bin/wonderland -config config.local.json
 ```
@@ -212,7 +212,7 @@ growth coefficients remain compiled parameters.
 | `-config <file>` | Load JSON overrides; omitting it uses defaults |
 | `-inspect-data` | Print catalog summary and exit before starting listeners or requiring an admin token |
 | `-log-file <file>` | Append JSON logs to a file as well as stderr; parent directory must exist |
-| `-debug` | Log packet metadata and bounded decoded Lucky Draw traces |
+| `-debug` | Log packet metadata plus selected bounded decoded traces, including movement, poses and Lucky Draw; credential packets are not dumped |
 | `WONDERLAND_ADMIN_TOKEN` | Admin bearer credential, at least 24 characters; required for normal server startup |
 | `CGO_ENABLED=1` | Build-time SQLite driver support; requires a working C compiler |
 
@@ -256,12 +256,14 @@ GM rights are checked on every invocation and online revocations apply immediate
 | `clearskills` (`resetskills`) `[character]` | Rebuild starter/stat-qualified skills; see below. |
 | `repair` (`fixall`) `[character]` | Repair player equipment and inventory; see below. |
 | `clearinv` | Empty the player's bag with native stack removals. Equipment and storage remain. |
-| `tent` | Grant Tent item 34001 unless already carried. Tent interiors are still pending. |
+| `tent` | Grant legacy GM item 34001 unless already carried. The implemented WLRI tent workflow uses item 36002; use `item 36002` for that tent. |
 | `buy <ID or name> [count]` | Purchase a normal mall entry with normal prices, quantities and atomic checkout. Names use case-insensitive substring matching. A known item ID outside the mall grants a free GM item. |
 | `im` (`points_im`, `mallpoints`) `<gain> [character]` | Adjust account mall points with an audit record. |
 | `pet <template ID> [name]` | Recruit a known NPC template and select it for battle. An owned companion keeps its progress; a reserved companion is restored; a hotel companion must first be retrieved. Optional names allow 1–16 printable bytes. |
 | `amity` (`petamity`) `[0-100]` | Set selected pet amity; default 100. |
 | `rebirth` (`petrebirth`) | Force selected pet rebirth, bypassing normal eligibility, resetting level/EXP and adding 50 points. Already reborn pets are refused. |
+| `reborn <Killer\|Warrior\|Knight\|Wit\|Priest\|Seer>` | Rebirth a level-100+ character once, with atomic class cape delivery, level/EXP reset and class bonuses; see [GM rebirth](MANUFACTURING_CHARACTER_STATE.md#gm-rebirth). |
+| `palace <stage>` | Start an operator-defined SQL Palace trial using its normal admission and reward rules. |
 | `petlvl` (`petlevel`) `<level>` | Set pet level to 1–199 and reset EXP. Increases grant normal level points; lowering does not reclaim points. |
 | `petexp <gain>` | Add pet EXP using normal level growth. |
 | `warp` (`goto`, `tp`) `<map> [X Y]` or `<character>` | Warp to a known map or an online character. |
@@ -380,7 +382,8 @@ verification also distinguishes original bytes from deliberate tuning.
 
 A GM account can use `/droprate` (or `:droprate`) to query the current multiplier,
 and `/droprate <number>` to change it. Finite values are clamped to 0.1–100.
-The default is 1.0; restarting the server restores that default. This is a live
+The fresh-database default is 1.0; restarting restores the saved Server operations
+value, or 1.0 if none was saved. This is a live
 server-wide setting and affects subsequent victory loot rolls, including battles
 already underway. Feedback goes only to the requesting GM.
 
@@ -416,14 +419,15 @@ Run compiled clients from the repository root, for example:
 
 | Flag | Purpose |
 | --- | --- |
-| `-assets <directory>` | Decompiled client asset root; explicit `data` avoids discovery ambiguity |
+| `-assets <directory or bundle.zip>` | Loose editable data or compiled core pack; default discovery prefers compiled packs when present |
+| `-renderer <auto\|gpu\|cpu>` | Default `auto` uses GPU with CPU fallback; snapshots use CPU |
 | `-serverini <file>` | Native-format server list; otherwise `SERVER.INI` under the asset root or a local fallback |
 | `-sprites <directory>` | Optional sprite pack/editable sprite-directory override |
 | `-snapshot <file>` | Save a rendered frame and exit; needs a graphics/display environment |
 | `-legacy` | Older reference front end; requires `-client <original-WLRI-root>` |
 | `-workbench` | Original artwork inspection; requires `-client <original-WLRI-root>` |
 
-Normal client runs read `data/`; they do not need `-client`. Artwork/terrain
+Normal client runs discover compiled packs or loose `data/`; they do not need `-client`. Artwork/terrain
 flags such as `-archive`, `-name`, `-list` and `-terrain` automatically select
 inspection mode. Saved client state is separate under `var/client/user`.
 See [CLIENT.md](CLIENT.md) for detailed inspection and packaging commands.
@@ -449,8 +453,8 @@ Server operations.
 
 NPC skill choices use the three skill slots in the SQL `npc.dat` records and
 the effects in `skill.dat`; there is no separate AI skill-ID list or launch
-switch. Palace stages use the optional SQL `combat_trials.json` table, managed
-through the authenticated asset API. GM `/palace <stage>` and native AC77:1
+switch. Palace stages use the typed SQL `CombatTrials` dataset, managed
+through the authenticated definition API. GM `/palace <stage>` and native AC77:1
 share those definitions and admission rules. See
 [ADMINISTRATION.md](ADMINISTRATION.md#palace-trials) for configuration and the
 reference placeholder limitations. Empty definitions disable Palace challenges.
@@ -483,6 +487,8 @@ shutdown attempts a final flush. Vehicle wear and resource consumption remain
 immediate even when triggered by movement. Checkpoints still hold the world lock
 through a bounded batch; multiplayer load/soak validation remains pending.
 
-GM command coverage is also incomplete: source `/reborn` character class/reset
-workflow is absent. Pet rebirth is a separate implemented operation. `/reload
-quests` refreshes native EVE/visibility, not the missing custom game_quests registry.
+GM `/reborn` implements the character class/reset workflow; pet `/rebirth` is a
+separate operation. `/reload quests` refreshes native EVE, actor visibility and
+the typed custom `QuestDefinitions` registry. Custom NPC acceptance, advancement
+and completion/reward execution remain dormant; registry editing/loading and PvE
+kill counters are implemented. See [quest administration](ADMINISTRATION.md#custom-quest-definitions-and-reachable-kill-counters).

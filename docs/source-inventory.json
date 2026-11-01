@@ -907,7 +907,7 @@
 				"internal/server/admin_configuration.go",
 				"internal/server/starter_packs.go"
 			],
-			"notes": "Read all 2917 lines. Sessions, heal/gold/warp/kick, account/IP bans, guild notice/leader/member edits/disband, GM mail single/online/all dispatch/history/delete, battle snapshots/victory/abort and marriage annul/summon have actual Go handlers and SQL persistence. General character edits reconnect. Starter definitions have SQL editing; the one-click configured starter-pack grant to all online players is absent. Reference MySQL connection test, provider configuration and live database reconfiguration have no Go equivalent (Go is SQLite; startup configuration applies after restart). SQLite-to-MySQL action calls a concrete RCLibrary migration routine, so this is an unported provider workflow rather than merely a form placeholder. Source God Mode writes oversized HP/SP; Go provides durable god attributes and normalized vitals instead. Mail name lookup in source uses nonexistent charName column; Go accepts explicit receiver IDs. Mass online starter delivery now exposed in Operations with authentication, per-recipient audit/results and atomic packs; remaining desktop field/report/editor gaps persist.",
+			"notes": "Read all 2917 lines. Sessions, heal/gold/warp/kick, account/IP bans, guild notice/leader/member edits/disband, GM mail single/online/all dispatch/history/delete, battle snapshots/victory/abort and marriage annul/summon have actual Go handlers and SQL persistence. General character edits reconnect. Starter definitions have SQL editing and Operations exposes explicit mass online delivery, with per-recipient atomic grants and audit/results. Reference MySQL connection test, provider configuration and live database reconfiguration have no Go equivalent (Go is SQLite; startup configuration applies after restart). SQLite-to-MySQL action calls a concrete RCLibrary migration routine, so this is an unported provider workflow rather than merely a form placeholder. Source God Mode writes oversized HP/SP; Go provides durable god attributes and normalized vitals instead. Mail name lookup in source uses nonexistent charName column; Go accepts explicit receiver IDs. Mass online starter delivery now exposed in Operations with authentication, per-recipient audit/results and atomic packs; remaining desktop field/report/editor gaps persist.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -1163,7 +1163,7 @@
 				"client/wlo/app/presentation_test.go",
 				"client/wlo/world/peers.go"
 			],
-			"notes": "Friend operations use persisted symmetric relationships rather than one-sided source removal. Go client now handles inbound name/nickname changes and presentation presence metadata; friend/profile interfaces remain pending.",
+			"notes": "Friend operations use persisted symmetric relationships rather than one-sided source removal. Go client now handles inbound name/nickname changes and presentation presence metadata; the Go client implements Friend/Emote/Set Up tabs and request questions. Server Online/Busy persistence and native friend-list job/extra-byte and VIP/presence interpretation still differ; see docs/CLIENT.md.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -1405,7 +1405,7 @@
 				"client/wlo/inventory/use_test.go",
 				"client/wlo/app/inventory.go"
 			],
-			"notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison. Native fishing AC23:53/54 now routes to the rod/shoreline and transactional catch system; 54 retains mall refresh when casting is inactive. Native AC23:126 is absent from this source but now supported using decompiled AC23:213 results and the supplied official WLRI pill rates, with atomic consumption/potential changes and derived stats. Go Client now provides immediate single-item recovery/amity use on the inventory-selected player or pet (AC23:15), Potential Pill requests/results (AC23:126/213), owned pet targeting from AC15:8/2, and correct initial player potential from AC5:3. Server replies exclusively mutate bag counts and potential; stale pill confirmation snapshots are rejected. Pet selectors display pet snapshots and AC8:2 updates, native pet equipment receipts are supported, and Remote Control opens its main Auto Controls window locally, closing Inventory once but allowing both windows to coexist afterward. Level-up Setting opens the separate advanced tabbed window. Double-click and contextual right-click use distinct paths; ordinary right-click does not consume items. Special contextual item windows remain pending. Remote now supports walkable auto-walking, server-gated basic PvE player/pet attacks, threshold-based single-item supplies, space-checked worn-equipment removal, explicitly selected unlocked Auto Discard (controller excluded), enabled leave conditions and optional status text/shortcut. Item requests wait for authoritative receipts and stop on timeout without retry. Advanced skill assignment and battle rendering remain pending.",
+			"notes": "All implemented source bag/mall/pack/recovery/pet-equipment subcommands registered. Inventory and compound dependencies require detailed comparison. Native fishing AC23:53/54 now routes to the rod/shoreline and transactional catch system; 54 retains mall refresh when casting is inactive. Native AC23:126 is absent from this source but now supported using decompiled AC23:213 results and the supplied official WLRI pill rates, with atomic consumption/potential changes and derived stats. Go Client now provides immediate single-item recovery/amity use on the inventory-selected player or pet (AC23:15), Potential Pill requests/results (AC23:126/213), owned pet targeting from AC15:8/2, and correct initial player potential from AC5:3. Server replies exclusively mutate bag counts and potential; stale pill confirmation snapshots are rejected. Pet selectors display pet snapshots and AC8:2 updates, native pet equipment receipts are supported, and Remote Control opens its main Auto Controls window locally, closing Inventory once but allowing both windows to coexist afterward. Level-up Setting opens the separate advanced tabbed window. Double-click and contextual right-click use distinct paths; ordinary right-click does not consume items. Special contextual item windows remain pending. Remote now supports walkable auto-walking, server-gated basic PvE player/pet attacks, threshold-based single-item supplies, space-checked worn-equipment removal, explicitly selected unlocked Auto Discard (controller excluded), enabled leave conditions and optional status text/shortcut. Item requests wait for authoritative receipts and stop on timeout without retry. Advanced Remote skill assignment remains pending; native battle rendering, hotbar activation and direct scene targeting are implemented.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -1499,7 +1499,7 @@
 				"client/wlo/world/presentation_test.go",
 				"client/wlo/app/presentation_test.go"
 			],
-			"notes": "Pose set/broadcast/stop and unconditional interaction callback cleanup on AC32:3 are implemented; cleanup also works at pose zero and through minigame/loading gates. Go client now renders timed native expressions independently of held poses, supports batched pose records and repeated expression restart; gesture selection UI remains pending.",
+			"notes": "Pose set/broadcast/stop and unconditional interaction callback cleanup on AC32:3 are implemented; cleanup also works at pose zero and through minigame/loading gates. Go client now renders timed native expressions independently of held poses, supports batched pose records and repeated expression restart; the Social Emote tab implements expression/action selection, Ctrl phrases and saved Alt slots.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -2355,7 +2355,7 @@
 				"internal/server/characters.go",
 				"internal/server/world_entry.go"
 			],
-			"notes": "Reviewed all 2069 lines: name reservations, creation, deletion, character storage/settings/equipment, pets, friends, skills, quests, tents and discovery are implemented through normalized SQL transactions and current sessions. Go preserves tent Locked/Enlarged/Type but has one floor/wallpaper pair versus the source's two-floor decoration fields; character Job/nickname/Potential and pet Potential are absent. Source SendOnlineCharacters/BroadcastNewPlayer, including synthetic GM bots, have no active callers (WorldServer calls are commented); their global-map broadcasts are dormant, not a live spawn requirement. Reference destructive schema repair and hardcoded staff-name ownership are replaced. SQL cascades and guild repair replace sequential deletion; Go correctly persists Reborn despite the source load omission.",
+			"notes": "Reviewed all 2069 lines: name reservations, creation, deletion, character storage/settings/equipment, pets, friends, skills, quests, tents and discovery are implemented through normalized SQL transactions and current sessions. Go persists tent Locked/Enlarged/Type and both floor/wallpaper pairs; character Job/nickname/Potential and pet Potential are stored in typed rows and replay in applicable snapshots. Source SendOnlineCharacters/BroadcastNewPlayer, including synthetic GM bots, have no active callers (WorldServer calls are commented); their global-map broadcasts are dormant, not a live spawn requirement. Reference destructive schema repair and hardcoded staff-name ownership are replaced. SQL cascades and guild repair replace sequential deletion; Go correctly persists Reborn despite the source load omission.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -2620,7 +2620,7 @@
 			"status": "pending",
 			"sha256": "6d48918072e4d17ced887f70df54bfc85c3d0e3ea959a84e38d2a2127b4f2a45",
 			"go_files": ["internal/server/forging.go", "internal/server/tent_manufacturing.go"],
-			"notes": "Gem consumption/effect exists but no equipment stat/metadata change in source. Direct AC37 handler absent in Go; mall point forging is a separate implemented system. Direct AC37 safely rejects unfinished socket effects without consuming source oil IDs; mall forging unchanged.",
+			"notes": "Gem consumption/effect exists but no equipment stat/metadata change in source. Go registers direct AC37 with a truthful failure response; mall point forging is a separate implemented system. Direct AC37 safely rejects unfinished socket effects without consuming source oil IDs; mall forging unchanged.",
 			"audit_verdict": "legacy_incomplete"
 		},
 		{
@@ -2758,7 +2758,7 @@
 			"status": "partial",
 			"sha256": "6b014a4b7661f0edcedf8e55d441f8cbaebcbd7d06d73e77e6c1276e97a2b76e",
 			"go_files": ["internal/game/character.go"],
-			"notes": "Element values preserved; player RebornJob class enum/model absent.",
+			"notes": "Element values are preserved. Actual Job and separate AC66 RebornJob metadata persist in the Go character model; compiled class growth and the GM rebirth workflow are implemented.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -3118,7 +3118,7 @@
 				"internal/store/accounts.go",
 				"internal/admin/admin.go"
 			],
-			"notes": "Read all 926 source lines and corresponding Go command bodies. Online targeting, announcements, summon/warp, pet edits, skill grants, inventory grants, mute/jail, invisibility, repair, restat, mall adjustments, kick and shutdown have concrete implementations with SQL persistence and interaction guards. Name-based default GM identities and gm_list.txt are replaced by authenticated account privileges. Reload quests refreshes native events, visibility and the SQL custom QuestDefinitions model; character Job remains absent from information/rebirth. Reference repeated pet rebirth bonus and unsafe grant fallbacks are corrected rather than preserved.",
+			"notes": "Read all 926 source lines and corresponding Go command bodies. Online targeting, announcements, summon/warp, pet edits, skill grants, inventory grants, mute/jail, invisibility, repair, restat, mall adjustments, kick and shutdown have concrete implementations with SQL persistence and interaction guards. Name-based default GM identities and gm_list.txt are replaced by authenticated account privileges. Reload quests refreshes native events, visibility and the SQL custom QuestDefinitions model; actual character class and the GM /reborn workflow are implemented, while /info does not expose all class metadata. Reference repeated pet rebirth bonus and unsafe grant fallbacks are corrected rather than preserved.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -3383,7 +3383,7 @@
 				"internal/assets/catalog.go",
 				"internal/server/combat.go"
 			],
-			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate. Go client now consumes authoritative learned-skill snapshots and player/pet progress updates in its native five-tab Skills window, including avatar stunt aliases, elemental requirements, SP costs, proficiency and weapon metadata. Go client hotbar skill dragging, local per-character shortcut persistence, target selection and native battle actions are now implemented. Native battle-scene rendering/targeting and overworld casting remain pending.",
+			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate. Go client now consumes authoritative learned-skill snapshots and player/pet progress updates in its native five-tab Skills window, including avatar stunt aliases, elemental requirements, SP costs, proficiency and weapon metadata. Go client hotbar skill dragging, local per-character shortcut persistence, target selection and native battle actions are now implemented. Native battle-scene rendering and direct fighter targeting are implemented; the dedicated battle skill form and overworld casting remain pending.",
 			"audit_verdict": "replaced"
 		},
 		{
@@ -3530,8 +3530,8 @@
 	],
 	"note": "Maintained per-file migration inventory for all 566 tracked reference files: files contains 331 C# records; supporting_files contains 235 other records. Use audit_verdict and notes to distinguish executable gaps, replacements, retired scaffolding and incomplete source. Compatibility status values remain ported/partial/pending; ported can include replacements/retired types, pending can include legacy stubs. Counts describe file review coverage, not feature-completion percentages. Keep this inventory and PORTING.md current when changing behavior.",
 	"native_client_work": {
-		"status": "asset-workbench",
-		"reference": "decompiled/aLogin_decompiled.c FUN_004121a8 and read-only native client archives",
+		"status": "partial-native-client",
+		"reference": "WLRI aLogin build ca19ee087b60, var/decompiled/aLogin_ca19ee087b60_full.c and matching var/ghidra/aLogin.exe; earlier Ground prefix research also used sibling FUN_004121a8.",
 		"go_files": [
 			"internal/clientassets/ground.go",
 			"internal/clientassets/images.go",
@@ -3543,8 +3543,8 @@
 			"cmd/client-assets/unpack_test.go"
 		],
 		"asset_installation": "Cross-platform cmd/client-assets -unpack validates package checksums before extraction, checks resource checksums and paths, retains verified files, repairs missing/damaged files and verifies the complete local tree. No external ZIP utility required.",
-		"asset_distribution": "4,070 native resource files staged in ignored client/assets from Wonderland-Client; 13 upload ZIPs in var/client-assets-upload. Tracked client/assets-manifest.json and client/asset-packages.json record SHA-256 and sizes. Runtime defaults to local assets, including terrain; no sibling installation is required. See CLIENT.md.",
-		"verification": "Terrain prefix, image directory bounds/signatures and base-archive image decoding tested; native Ebitengine frame visually verified. Three client variants supported. See CLIENT.md for the malformed native BMP exception and pending animation/scene/network work.",
+		"asset_distribution": "Normal runtime uses split client-assets ZIP64 packs compiled from editable repository data/, or explicit loose data/. Saved workspace/settings are separate. The earlier workbench staged 4,070 native resources and 13 upload ZIPs with checksummed manifests; that inspection layout is not the normal client asset tree. See CLIENT.md and CLIENT_ARCHITECTURE.md.",
+		"verification": "Current coverage includes native decoding, compiled/loose asset parity, GPU rendering, login/creation, world/events/roaming, battle presentation/targeting, inventory/compounding, Teams/pets, Social/mail, item trading, minimap and supported minigames. These automated checks do not establish complete native-client acceptance. The earlier base-archive census and workbench frame checks remain historical evidence; see CLIENT.md for malformed native resources and current limitations.",
 		"public_account_registration": {
 			"status": "Implemented; focused HTTP race tests, Go lint, HTML lint, JavaScript syntax and formatting checks passed; server rebuilt",
 			"routes": ["GET /register", "POST /register"],

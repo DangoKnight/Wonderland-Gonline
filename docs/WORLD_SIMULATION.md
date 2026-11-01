@@ -32,9 +32,10 @@ Private tent occupants and players on other maps receive no public-map movement.
 Failed recipients do not stop other viewers' updates.
 
 Map-entry snapshots, actor show packets, NPC click reach and proximity encounters
-all use announced simulation destinations. Arrival gating uses native speed byte
-2 (40 pixels/second); coordinates are not yet interpolated during the leg.
-Original EVE spawns remain immutable.
+use interpolated current actor positions. Arrival gating uses native speed byte
+2 (40 pixels/second); interrupted paths start from the estimated current position.
+Original EVE spawns remain immutable. The Go client animates these destinations
+with the same speed mapping; see [client roaming](CLIENT_ROAMING.md).
 Positions, patrol cursors and deadlines stay in memory and reset after restart;
 ordinary character walking stays in session memory, then checkpoints to
 `wonderland.db` at the configured interval and disconnect. See the
@@ -70,11 +71,16 @@ Ground.MMG, read exclusively from typed `catalog_terrains` rows in `assets.db`.
 The cells are X-major, spaced 20 pixels apart; the land blocked mask is `0x17`,
 as in the native client pathfinder. No pictures are imported into the server.
 
-Player walking validates the destination and the straight cell segment from the
-last accepted position. Rejected requests receive the saved AC7 position and do
-not change the database, trade, encounter counters or vehicle wear. An invalid
-saved spawn may recover to valid terrain. Native clients announce whole walking
-legs in advance, so movement is not limited by packet-time speed estimates.
+Native 15-byte AC6 requests validate the destination cell and scene bounds. The
+previous announced destination is not the avatar's current rendered position,
+so the server does not reject a native route merely because the straight line
+between announced endpoints crosses an obstacle. Invalid native endpoints are
+ignored without AC7 snapping. Short compatibility requests retain segment checks
+and saved-position corrections. Rejection precedes session changes, trade
+cancellation, encounters and vehicle wear. A blocked saved spawn may recover to
+valid terrain; movement has no packet-time speed cap. Native AC6:2 stop reports
+update the stopped endpoint without another wear/encounter step; the eight
+trailing check bytes remain opaque. See [native movement](NATIVE_COMMANDS.md).
 
 Validated active item vehicles retain water/air movement within scene bounds.
 The land mask cannot describe their traversal capabilities. Actors use ordinary
@@ -96,38 +102,31 @@ projects existing imported Ground.MMG rows once; repeated migration preserves
 terrain edits. A complete installed export yields **1,147 terrain grids**.
 
 Adjust authored patrols in the `Maps` administration dataset (`WalkBehavior`,
-`WalkSteps`) and collision geometry in `Terrains`, then restart or use the existing
-catalog reload. The compatibility limits and scheduling ranges are compiled
+`WalkSteps`) and collision geometry in `Terrains`, then restart or publish through
+the validated administration flow. `/reload quests` preserves existing spawn
+geometry and does not serve as a terrain/patrol reload. The compatibility limits and scheduling ranges are compiled
 constants in `internal/world/simulation.go`; native collision constants are in
 `internal/assets/terrain.go`. No new startup JSON knobs are required.
 
 ## Verification
 
-```sh
-go test -race ./internal/world ./internal/assetsql
-go test -race ./internal/server -run 'TestWorldSimulation|TestWildMonster|TestProximity|TestWorldVisibility|TestTent|TestVehicle'
-WONDERLAND_TEST_ASSETS_DB=/absolute/path/to/migrated/assets.db go test ./internal/assetsql -run TestInstalledSQLWorldSimulationGeometry
-```
+Commands and coverage are centralized in [world simulation checks](TESTING.md#world-simulation-checks).
 
-Coverage includes golden movement bytes, current-position snapshots, single
-waypoint return, looping patrols, blocked patrol legs, signed bounds, roaming
-leashes, town exclusions, static props, script pauses, monster respawn,
-collision rejection before saving, visibility/instance isolation, recipient
-failure isolation and SQL upgrade preservation. Installed-grid verification
-checks the terrain census and Ship Deck geometry. Native-client and multiplayer
-acceptance are still required; synthetic tests do not establish that acceptance.
+## Implemented parity and remaining limits
 
-## Remaining reference differences
+Nonquest scripted shared prop frames persist and replay through the durable
+cooldown store, with a 60-second reset; quest-conditioned frames remain private.
+Unlinked nonservice NPCs use the resolved/default Kelan greeting. Clinic
+confirmation heals the character and accompanying pets. Native waypoints, poses
+and scene-ready synchronization have handlers. See
+[world/combat parity](WORLD_COMBAT_PARITY.md) and [native commands](NATIVE_COMMANDS.md).
 
-Scripted EVE actor prop-state/hide/show actions change the requesting view; they
-do not perform the reference map-wide broken-state transition and 60-second reset.
-The SQL fallback resource-node path above is separate and does not close this gap.
-Unlinked nonservice NPCs release interaction without the reference resolved/default
-Kelan greeting. Clinic offer/confirmation heals the character, not accompanying
-pets. Native waypoint/emote and some synchronization requests remain absent; see
-PORTING.md. Scene geometry/simulation tests do not establish those command paths.
+Starting a wild/proximity battle reserves and hides its overworld actor from
+public viewers. The last participant leaving the battle starts the 30-second
+respawn delay; respawn restores the immutable spawn and three-second movement
+grace. Reservations, patrols and pursuit state reset after server restart.
 
-Scripted shared prop frames now use the same durable cooldown store with the
-reference 60-second reset. Linked props replay at entry; quest props remain per
-character. See [world/combat parity](WORLD_COMBAT_PARITY.md) for packet and scope
-rules, clinic healing, starter recovery and battle synchronization.
+Arbitrary obstacle navigation, complete native movement-check validation and
+multiplayer/load acceptance remain unfinished. Instance lobbies have their own
+implemented browser and transient room membership, but verified dungeon
+objectives and rewards remain pending; see [Teams](TEAMS.md#instance-tab).

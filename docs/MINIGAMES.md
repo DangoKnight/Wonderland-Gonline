@@ -200,28 +200,8 @@ compared interactively with the original running games.
 
 ## Focused validation
 
-From `client/`:
-
-```sh
-go test ./wlo/minigame
-go test ./wlo/app -run 'Test(MoleFlow|HunterFlow|AdditionalLocalMinigameFlows|NativeArcadeDispatchAndCleanup|UnportedMinigame)'
-```
-
-To render the newly implemented games using extracted WLRI assets:
-
-```sh
-ARCADE_SNAPSHOT_DIR=/tmp/wonderland-arcade \
-  go test ./wlo/app -run '^TestAdditionalMinigameSnapshots$' -count=1
-```
-
-This writes separate explanation and play PNGs for each supported new kind.
-It does not purchase anything. The existing `MOLE_SNAPSHOT` and `HUNTER_SNAPSHOT`
-checks remain available. After adding native ports or changing their references,
-regenerate the client inventory from the repository root:
-
-```sh
-python3 tools/decompile/catalog.py
-```
+See [minigame checks](TESTING.md#minigame-checks) for engine/packet tests and
+snapshot commands. Native source references and gameplay limits remain here.
 
 ## Fruit machines
 
@@ -263,9 +243,8 @@ on the middle reel and the tenth any other line. The seed follows that
 legend. Which reply the original server chose is not recorded; the server
 sends three matching reels with a prize as reply 3 and every other line as
 reply 4, lit for prizes 1-10 (an inferred compatibility rule).
-`TestMarioFlow`, `TestArcadeFruitMachines` and the `minigame` tests cover
-the packets and the reel timing; `MARIO_SNAPSHOT` renders the form, a spin
-and the stopped reels.
+Packet/reel checks and explanation/spin/stopped-reel rendering are documented
+in [minigame checks](TESTING.md#minigame-checks).
 
 ## Throw
 
@@ -313,9 +292,8 @@ the scene is at offset 6 including command 57 (the sixth byte after that command
 
 Sprite frame counts are not consulted: the release frame is reached by time
 (100 ms a frame), so a throw sprite with fewer than four frames still
-throws. `TestThrowFlow`, the server's `TestThrowStartSceneVariant` and the
-`minigame` tests cover it; `THROW_SNAPSHOT` renders the explanation form and
-a game in progress.
+throws. Scene-variant/flow checks and explanation/play snapshots are documented
+in [minigame checks](TESTING.md#minigame-checks).
 
 ## Poke
 

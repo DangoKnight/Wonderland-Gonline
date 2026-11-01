@@ -51,10 +51,9 @@ Regenerate and verify from the repository root using Python 3.10+ and Go:
 ```sh
 python3 tools/data_export/export.py
 python3 tools/data_export/verify.py
-python3 -m unittest discover -s tools/data_export -v
-WONDERLAND_TEST_CLIENT_DATA=../Wonderland-Client/data \
-  go test ./internal/assets ./cmd/item-export -count=1
 ```
+
+For exporter unit/native checks, see [Testing](../docs/TESTING.md#exporter-checks).
 
 The exporter accepts `--client`, `--server` and `--output` to select other source
 and destination directories. Source projects remain untouched. Unsupported files
@@ -124,9 +123,10 @@ JSON or native files. Rebuild and restart to apply export changes.
 ## SQL access
 
 `go run ./cmd/data-rebuild` rebuilds `var/assets.db` from these exports using
-Go and GORM. All JSON content is preserved with indexed collection rows and SQL
-views for major gameplay tables. Audio indexes are included; audio bytes stay
-on disk. To reset gameplay storage at the same time, use the explicit
+Go and GORM. Runtime definitions use structured `catalog_*` tables with typed
+columns and owned child rows. Import documents, indexed records and legacy SQL
+views preserve source provenance; they are not live gameplay definitions.
+Audio metadata may be retained, while audio bytes stay on disk. To reset gameplay storage at the same time, use the explicit
 `-reset-gameplay` flag with the server configuration. Existing databases are
 backed up before replacement. See [the reset procedure and SQL examples](../docs/ASSET_DATABASE.md).
 
@@ -249,7 +249,8 @@ editing, SQL resolution and source-only regeneration instructions.
 `lucky_draw.json` projects daily Lucky Draw compatibility policy against freshly
 decrypted sibling Item.dat. It preserves source item names/hashes alongside
 announcement labels, quantities, relative weights and presentation slots. The
-14 default outcomes have equal weight 1; these are authored probabilities rather
+nine default outcomes have equal weight 1; these are authored probabilities rather
 than recovered official drop rates. Full source-only export includes it. Refresh
 with `python3 tools/data_export/lucky_draw.py --output data --overwrite` and
-rebuild the asset database. Runtime reads only indexed SQL rows.
+rebuild the asset database. Runtime reads typed `catalog_lucky_draw_rewards`
+rows; existing installation edits are not replaced on startup.

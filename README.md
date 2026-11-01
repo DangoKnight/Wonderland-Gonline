@@ -11,8 +11,11 @@ client to Go, with web administration and editable game assets.
 Both programs remain incomplete. Implemented server features include native
 login and character management, map movement and portals, NPC events, PvE
 battles, inventory, crafting, companions, trading, server chat, mall and Lucky
-Draw. The Go client has login, character and world code, native-compatible GPU
-rendering and multiple sessions in one window, with gameplay work in progress. See [port status](docs/PORTING.md) and
+Draw. The Go client includes native battle scenes and targeting, inventory and
+compounding, Skills and Teams windows, riding/following pets, Social and mail,
+item trading, a scene minimap and several minigames. GPU rendering and decoded
+assets are shared by independent sessions in one window; gameplay parity remains
+in progress. See [port status](docs/PORTING.md) and
 [client details](docs/CLIENT.md) for coverage and limitations.
 
 ## Start here
@@ -37,6 +40,7 @@ supplies extraction keys and is separate from the Go client.
 | [Database operations](docs/ASSET_DATABASE.md) | Asset rebuilds, SQL authority, backups and explicit gameplay reset |
 | [Items and player state](docs/ITEMS_PLAYER_STATE.md) | Tent controls, furniture, item reservations and recovery |
 | [Client](docs/CLIENT.md) | Graphics requirements, asset layout, inspection and packaging |
+| [Testing](docs/TESTING.md) | Automated checks, graphics/snapshots, live acceptance and recorded findings |
 
 ## Build and run
 
@@ -63,7 +67,8 @@ status), and HTTP `http://127.0.0.1:8080` (admin, registration and `/healthz`).
 They bind to loopback. Stop the foreground server with Ctrl+C.
 
 Gameplay storage is `var/wonderland.db`; static catalogs are loaded read-only
-from `var/assets.db`; the client reads `data/`. Paths resolve from the working
+from `var/assets.db`; compiled clients discover split asset packs, while
+`-assets data` selects loose editable exports. Paths resolve from the working
 directory. SQL persistence uses GORM/SQLite, and the server needs a C compiler.
 Use Go 1.25 or newer for both programs (the server alone requires Go 1.24).
 
@@ -74,8 +79,9 @@ its native “Repeated Login” message (AC0:19).
 
 ## Register an account
 
-Open `/register` on the server's HTTP address. With `config.local.json`, use
-`http://127.0.0.1:8081/register`. The public page needs no administrator token.
+Open `/register` on the server's HTTP address. With the example HTTP address, use
+`http://127.0.0.1:8080/register`; use the configured port for local overrides.
+The public page needs no administrator token.
 It accepts 8–10 character usernames/passwords for the original client's limits,
 confirms the password, and shows registration errors or successful creation.
 Start the server first; the page is embedded in the server binary.
@@ -99,52 +105,10 @@ Invoke-RestMethod -Uri http://127.0.0.1:8080/register -Method Post -ContentType 
 
 Account names accept 4–14 ASCII letters, digits or underscores. The JSON API accepts passwords of 4–14 printable ASCII bytes; use at most 10 characters with the original client. Passwords are stored as salted PBKDF2-SHA256 hashes. Registration does not grant administrator or GM access. Grant in-game GM commands from the web interface's account list; legacy default GM names are not trusted.
 
-## Validate
+## Testing
 
-The following commands work in Linux Bash and Windows PowerShell after enabling CGO and installing the compiler as above:
-
-```text
-go test ./...
-go test -race ./...
-go vet ./...
-go run ./cmd/wonderland -inspect-data
-```
-
-Native server-data tests need the sibling server's `Data` directory and this repository's maintained JSON item catalog; the client package is a separate data set. Set its location explicitly:
-
-Linux Bash:
-
-```bash
-export WONDERLAND_TEST_DATA='../Wonderland-Private-Server/Data'
-go test -v ./internal/assets
-```
-
-Windows PowerShell:
-
-```powershell
-$env:WONDERLAND_TEST_DATA = '../Wonderland-Private-Server/Data'
-go test -v ./internal/assets
-```
-
-The root test command does not include the nested `client/` module; run its checks separately as described in [CLIENT.md](docs/CLIENT.md). The Makefile requires a POSIX shell and GNU Make. Windows users can use the direct Go commands above, or run Make through Git Bash/WSL. For the Makefile's additional formatting/lint checks, install Node/npm and use the following equivalents from the repository root in either shell:
-
-```text
-gofmt -l .
-go vet ./...
-npx prettier --check "internal/admin/web/**/*.{html,css,js}"
-npx htmlhint --config .htmlhintrc internal/admin/web/index.html
-```
-
-`gofmt -l .` should print no filenames; if `golangci-lint` is installed, also run `golangci-lint run ./...` to match the optional Makefile check.
-
-Tests cover golden wire bytes, fragmented TCP frames, truncated payloads, native record offsets, EVE boundaries, Big5 names, animation timing, login over a duplex connection, administrator authorization, persistent accounts, duplicate registrations, bans, transaction rollback, inventory capacity and quest reward replay. Creation tests cover name reservations, malformed requests, starter grants, map acknowledgment ordering, deletion codes, and reconnect persistence; native asset checks exercise all 60 body/head/element combinations. Peer tests cover concurrent arrival, appearance before movement, map isolation, disconnect cleanup, and failed recipients. World tests cover golden map-info bytes, PreEvent rule order and conditions, every portal lookup priority, and a warp between maps with persistence, departure, acknowledgment and cooldown. Trade tests cover the native AC25 wire (golden offer records), locked offers, metadata preservation, cancellation notices, concurrent acceptance and rollback of both characters. Native asset tests are opt-in because game assets are not bundled. Relative `WONDERLAND_TEST_DATA` paths resolve from the Go module root. Friendship tests cover cross-map requests, native lists and appearance fields, request expiry, capacity, concurrent acceptance, presence across map loads and deletion cleanup. Minigame tests cover start/result packets, native rabbit win/loss rewards, cancellation, replay, chained games, full bags and failed saves. Preference tests cover native settings packets, persistence, malformed commands, failed saves and team/trade request controls. Vehicle tests cover placement/boarding packets, raft wear and wrecking, mounted-slot protection, save failures, portal landing, and login after database reopen.
-
-Optional fuzzing (same commands in Linux Bash and Windows PowerShell):
-
-```text
-go test ./internal/protocol -run '^$' -fuzz FuzzRead -fuzztime 10s
-go test ./internal/assets -run '^$' -fuzz FuzzEVE -fuzztime 10s
-```
+See [TESTING.md](docs/TESTING.md) for focused checks, pre-commit validation,
+server/client module commands, optional assets, graphics tests and live acceptance.
 
 ## Layout
 
@@ -155,8 +119,9 @@ go test ./internal/assets -run '^$' -fuzz FuzzEVE -fuzztime 10s
 - `internal/game`: inventory, character creation and serialization, quest rewards, critical-hit rules, pets and stat/skill progression, connected to the corresponding server gameplay handlers.
 - `internal/battle`: deterministic PvE round engine producing animation steps; the server plays and commits them.
 - `internal/world`: immutable map state from EVE, per-character map info and PreEvent NPC visibility, portal lookup.
-- `internal/assets`: SQL-backed gameplay catalogs and offline native format readers.
-- `internal/assetdb`: GORM asset import, read-only materialization and database rebuild.
+- `internal/assets`: gameplay catalog types, validation and offline native format readers; no SQL dependency.
+- `internal/assetsql`: typed SQL catalog loading, projections, migrations and validated content edits.
+- `internal/assetdb`: GORM asset import, provenance storage and database rebuild.
 - `internal/admin`: authenticated HTTP API and embedded HTML/CSS/JavaScript interface.
 - `docs/source-inventory.json`: source revision, hashes and independent per-file findings for all 566 reference files, including 331 C# files.
 - `docs/PORTING.md`: current implemented scope, remaining executable migration work and unfinished-source hold list.
@@ -214,28 +179,24 @@ implemented below; additional native mall request compatibility remains pending.
 
 ## Compound synthesis
 
-AC23:14 consumes one item from each of two distinct bag slots and creates one fresh
-result. Recipes come from the SQL-loaded assets catalog: authored defaults, then
-`Compound2.dat` and `Compound.dat` projections in file order. Asset inspection
-includes the two-input recipe count; missing required SQL assets stop startup. The first symmetric
-match wins. This native handler is deterministic and reproduces the greater input
-ID when no recipe matches.
+AC23:14/87/101, compatibility AC40 and `/compound` (`/synthesize`) share the
+rank-and-material-base engine. Native requests accept two to five distinct bag
+slots, including optional Alchemy Books. Each selected slot consumes one unit;
+at least two non-book materials are required. Primary, Junior and Superior use
+separate compiled probability curves, learned-skill requirements and a native
+30-level proficiency progression. Books shift the rank roll; secondary-base
+loss and catastrophic junk outcomes follow the selected tier.
 
-Consumption and delivery save together before success packets. Leftover stacks
-keep damage and metadata; the result needs an empty slot after consumption.
-Full bags and failed saves leave the bag unchanged.
+Current SQL ownership, learned skills, ingredient removal, output placement and
+proficiency commit in one transaction before receipts. Rejected attempts and
+failed saves retain resources; committed catastrophes consume the materials.
+Historical `AlchemyRecipes` and `Economy.Synthesis` rows remain provenance and
+no longer choose outputs, charge fees or control synthesis probabilities.
+See [compounding](docs/COMPOUNDING.md) for eligibility, formulas and client controls.
 
-AC40 takes a subcommand and two distinct slot bytes. It requires a matching
-recipe and echoes the subcommand with success and the output ID. No match returns
-failure without consuming anything. Its result uses normal inventory grants,
-including compatible stack merging. Both handlers preserve ingredient metadata,
-commit before receipts, and wait during map loading, battle, trade, events and
-cutscenes. A mounted vehicle cannot be used as an ingredient. Recipe rates are
-unused, matching the legacy handlers.
-
-Native five-material formula/tool/timer manufacturing remains incomplete.
-Two-input chat manufacturing, probabilistic synthesis and validated SQL recipe
-editing exist; see ECONOMY_SOCIAL.md. Original-client validation remains pending.
+Manufacturing is separate: AC59 and `/manufacture` retain two-input recipes;
+AC64 supports five-material formulas, owned benches/tools/plans, durable timers
+and atomic bag/tent delivery. See [manufacturing and character state](docs/MANUFACTURING_CHARACTER_STATE.md).
 
 ## Mall forging
 
@@ -263,21 +224,25 @@ loading, battles, trades, quests and cutscenes.
 
 The legacy launcher installs no result callback: standalone AC57 reports grant
 no items, tickets or quest progress. EVE minigames keep their existing authored
-outcome routing. Arcade ticket/prize exchange remains pending.
+outcome routing. AC71 separately charges and grants weighted prizes for supported
+egg, slot and fruit machines, without using client result claims. See
+[minigames](docs/MINIGAMES.md). Arcade ticket/prize exchange remains pending.
 
 ## Gacha packs
 
 Native AC91 previews return the current ordered reward list. AC23:75, AC23:128
 and ordinary item use (AC23:96) open one pack from the requested bag slot.
-`gacha_packs.json` supplies the reward IDs, quantities and integer weights; the
-supplied data contains 24 pools and 394 reward rows with custom weights. Draws
+Typed SQL `GachaPacks` definitions supply reward IDs, quantities and integer
+weights. `data/server/gacha_packs.json` is an offline seed, not a runtime file. Draws
 use cryptographic rejection sampling over 10,000 weight slots.
 
 Pack consumption and all reward additions save together before receipts. Full
-bags and failed saves retain the pack. Missing or invalid configuration disables
-all configured packs, reports asset warnings and removes those packs from mall
-catalogs. The withdrawn Lucky Pack (34333) stays unavailable. Pack quantities,
-reward definitions and duplicate pool IDs are validated at startup.
+bags and failed saves retain the pack. Malformed pool definitions fail validation;
+compatibility import disables only pools with missing item definitions, records
+warnings and excludes those packs from mall catalogs. Other valid pools stay
+available; unavailable rewards are never dropped or reweighted. The withdrawn
+Lucky Pack (34333) stays unavailable. Import and validated administration edits
+check pack quantities, reward definitions and duplicate pool IDs.
 
 Rewards are delivered as items. Their use depends on the corresponding item
 handler; remaining scroll and other special-item behavior and general
@@ -311,9 +276,10 @@ server to load changes. Remove the old `item_catalog` and `data_directory`
 configuration fields and use `assets_database` instead. Accounts and characters
 continue to use the separate `database` setting.
 
-The sibling's current gacha configuration references server-only items absent
-from this JSON. Its validation disables the entire gacha table and reports a
-warning. All configured starter items are available.
+Offline gacha import reports missing pack/reward definitions per pool, preserving
+other complete pools. Use the validated `GachaPacks` editor for current contents;
+exported seed counts do not describe an administrator-edited installation.
+All configured starter items are available in the maintained catalog.
 
 See [item format and verification](docs/ITEM_FORMAT.md) for validation, the
 export format and remaining field interpretation.
@@ -370,12 +336,8 @@ committed results. See the
 
 ## Live legacy-client acceptance
 
-Use the [live-test framework](docs/LIVE_TESTING.md) to prepare isolated scenario
-characters, legacy-client login credentials and feature checklists:
-
-```sh
-go run ./cmd/live-test -list
-```
+Use the [native-client acceptance procedure](docs/TESTING.md#native-client-acceptance)
+to prepare isolated scenario characters, login credentials and feature checklists.
 
 Client builds compile editable PNG/JSON sources into `bin/client-assets.zip`.
 Picture/media images become lossless tiled pages with shared small-image atlases,

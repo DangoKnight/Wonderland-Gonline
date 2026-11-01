@@ -160,7 +160,7 @@ not a JSON config field or game-account password. Reuse it when restarting in th
 same shell; generating a new token changes the credential the admin UI accepts.
 The log file appends JSON lines and does not create a missing parent directory.
 Add `-debug` when investigating packets: ordinary packets log metadata; Lucky
-Draw packets also have bounded decoded traces.
+Draw, movement and pose packets also have bounded decoded traces.
 
 For development, the equivalent source run is:
 
@@ -243,7 +243,8 @@ For a source run inside `client/`, the override path is `../var/SERVER.INI`.
 Use [CONFIGURATION.md](CONFIGURATION.md) for every server config field, CLI
 flags, client overrides and gameplay-tuning sources. Changes to listeners and
 limits require a restart. Admin name/account/session changes apply live; static
-SQL gameplay changes require a restart to reload the catalog.
+SQL gameplay changes publish through the validated editor or supported reload
+scopes; other catalog/startup changes require a restart.
 
 ## Windows PowerShell
 
@@ -307,6 +308,5 @@ credential. Use Ctrl+C there to stop it.
 | Config change appears ineffective | Restart for startup settings; saved admin `server_name` overrides config `name` |
 | Files appear under an unexpected directory | Relative paths resolve from the working directory, including database and log paths |
 
-For development verification, root `go test ./...` checks the server module;
-the nested client module needs its own build/tests. See the README's validation
-section for race tests and native-data checks.
+Use [Testing](TESTING.md) for development selections, the separate server/client
+suites, required environments and optional native-data checks.

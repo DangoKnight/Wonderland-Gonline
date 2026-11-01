@@ -91,45 +91,10 @@ below is complete; unfinished source systems and native acceptance remain on hol
 
 ## Focused migration verification — 2026-10-04
 
-Compared current handlers and their callers with the recorded reference revision;
-25 reviewed source hashes match after CRLF normalization. Ran **175 unique
-top-level tests** with the race detector across game, assets, assetsql, protocol,
-world, server and store. A stale AC37/AC64 dispatch test matrix was corrected and
-its affected checks rerun successfully. This was a focused battery, not the full suite.
-
-| Area                    | Verified outcome                                                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Allocation              | Direct/header/target/batch formats preserve greedy 4/2/1-byte amounts, missing/zero defaults and partial-batch behavior. Invalid/overflowing entries retain points; pet overflow now matches the reference guard. Character overflow is deliberately rejected as well. HP/SP remain unchanged apart from clamping to maxima; skill unlocks and allocations commit before snapshots. |
-| Generic replies         | All handshake/entity subcommands keep their owning layouts. Unknown bank subcommands now return the private AC45:8 balance snapshot without mutation. No global ACK fallback is invented.                                                                                                                                                                                           |
-| Native scene readiness  | Source AC3 short ACK/map broadcast conflicts with native AC3 character/map snapshots (receive address 0x2dfdb3); it remains unsupported. AC12/89/92 synchronization, replay and loading gates are tested independently.                                                                                                                                                             |
-| Guild journal           | AC39:1 works without guild membership; repeated requests clear old AC24:4 entries, replace active marks and send completion flags without leaking to peers.                                                                                                                                                                                                                         |
-| Inventory rules         | All 256 stack/drop type values match source. Wear guards, metadata, locks, whole grants and full-container rollback pass. Source Tradeable and use-type metadata have no reachable restriction callers; no new trade/body/level restriction is imposed.                                                                                                                             |
-| Pet outcomes            | Feeding, alias/capacity/initialization checks for vouchers, sparse client slots, rebirth eligibility/reset/bonus and desertion below 20 pass. Failed saves do not consume vouchers or change published rosters. An unrelated mount survives desertion.                                                                                                                              |
-| Recipe order            | Historical first-match alchemy tables preserve authored → Compound2 → Compound order through typed SQL reload. Gameplay now intentionally uses the owner-approved [rank/base model](COMPOUNDING.md) instead. Two-input manufacturing retains first workbench match and atomic costs/output.                                                                                                                                                                |
-| Persistence and stories | Restart, rollback, duplicate requests, ownership, receipt failures and full containers are covered; native ship/storm/Monkey/Xaolan/Niss/Fred/Elin scenarios run against imported SQL assets. Buffered walking survives committed resource operations.                                                                                                                              |
-
-The SQL census covered 1,119 maps, 8,181 NPCs, 209 ground items, 2,790 resolvable
-warps and 786 manufacturing formulas. Of 7,313 NPCs with events, fresh-character
-branch selection found 4,872 runnable branches, 30 with unsupported operations,
-and 2,411 with no matching branch for that state. Unsupported here means the
-ordinary opcode executor refuses the shape; complete water-gathering branches
-have a separate validated controller. The reference also rejects unresolved
-reward kinds. This census is selection/decoding coverage, not execution of every
-story or proof that every state has been ported. Unresolved shapes remain pending.
-
-Regression entry points are `migration_verification_test.go` in game, server and
-assetsql, alongside the affected existing suites. To repeat the new checks:
-
-```sh
-WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race \
-  ./internal/game ./internal/assetsql ./internal/server \
-  -run 'Test(Migration.*|CommandRegistry.*|AllocationUnlock.*|Bank.*|PetAllocation.*)' -count=1
-```
-
-Use migrated asset schema v10 with gameplay schema v15. Verification used
-disposable fixtures and asset database copies; installed databases were unchanged.
-Interactive aLogin captures, multiplayer acceptance and load/soak/crash testing
-remain separate work below.
+The [recorded migration verification](TESTING.md#migration-verification-recorded-on-2026-10-04)
+contains the 175-test battery, source-hash checks, SQL census, historical schema
+versions and reproduction command. Those results are historical, not a current
+full-suite pass. Current behavior and outstanding work are summarized here.
 
 ## Native trade and social compatibility follow-up
 
@@ -160,7 +125,7 @@ These do not block porting reachable implemented reference behavior:
   The AC6:2 stopped-position handler still needs live verification.
   Exact original probabilities and remaining live-client checks remain research; see
   [fishing](FISHING.md) and
-  [native commands](NATIVE_COMMANDS.md). The [live-test framework](LIVE_TESTING.md)
+  [native commands](NATIVE_COMMANDS.md). The [live-test framework](TESTING.md#native-client-acceptance)
   prepares isolated characters, credentials and manual acceptance checklists;
   preparation does not establish live acceptance.
 

@@ -2,7 +2,8 @@
 
 The Go client (`client/wlo`) recreates aLogin.exe (WLRI build `ca19ee087b60`)
 on Ebitengine for Windows, Linux and macOS. The decompile is the source of
-truth; the client reads only the repository's `data/` exports. This roadmap
+truth; the client reads compiled packs built from repository `data/`, or the
+loose exports selected with `-assets`. This roadmap
 orders the remaining work; [ALOGIN_CATALOG.md](ALOGIN_CATALOG.md) lists every
 code region of the original with its subsystem, size and port status, and
 [CLIENT.md](CLIENT.md) documents what each ported piece does.
@@ -83,8 +84,10 @@ quantity dragging, use, drops and equipment swaps with server-confirmed AC23
 updates. Focused tests cover packets, metadata, input requests and world entry.
 Player point allocation now previews/cancels/submits native AC8 requests and
 waits for server-confirmed stats. Remaining work is repair, native class/rebirth
-allocation caps, potential dialogs, pet equipment,
-secondary containers and crafting interfaces.
+allocation caps, the full animated PotentialForm, pet allocation dialogs,
+secondary containers and remaining crafting interfaces. Potential Pill requests,
+results and derived stats, player/pet equipment and the animated compounding
+form with learned-tier selection are implemented; see [compounding](COMPOUNDING.md).
 
 - Item grids, drag and drop, item tooltips (`TSe_itemObject`, `TSe_ItemImage`,
   `TRe_ItemGridForm`), equipment forms (`TSe_EquipForm2`), item use and
@@ -124,18 +127,22 @@ presentation from server compatibility formulas and remaining mechanics.
   mode 9) and the trade form (`TRe_TradeItemForm`), with the server's AC25
   rewritten to aLogin's protocol. Pet and furniture trades, stalls and
   vendors remain.
-- Teams (`TSe_TeamForm`, `TCY_TeamManage`), friends and mail (`TAC_ICQList`,
-  `TSe_SendMailForm`), trade (`TCY_TradeMenu`), stalls and vendors, shops and
-  the IM mall (`THL_ShoppingForm`), bank and storage, guilds (`TSe_ArmyForm`).
+- Teams is implemented: pet modes/rename/dismissal, invitations, leadership,
+  teammate vitals and instance room browsing. Dungeon objectives/rewards remain
+  pending; see [Teams](TEAMS.md).
+- Remaining forms include stalls/vendors, shops, the IM mall (`THL_ShoppingForm`),
+  bank/storage and guild management (`TSe_ArmyForm`), plus the social/trade gaps above.
 - Commands: Team 13, Friends 14, Trade 25, Shop 27, Storage 29/30, Mall 34/75,
   Bank 45, Guild 39, Stall 56.
 
 ### Phase 5: Character growth and services
 
-- Skill trees (`TSe_SkillTreeForm`), pets and riding (`CH_TRidePet`, pet
-  forms), NPC service forms: crafting and manufacture (`TRe_CompoundForm`,
-  `TRe_MakeThingForm`), alchemy, careers, dungeon missions, titles, inns,
-  tents, territory, the palace trial, the monster book, the lucky draw.
+- Skill trees, pet following/riding, and rank/base alchemy with its cauldron
+  animation and tier controls are implemented.
+- Remaining service forms include timed manufacturing (`TRe_MakeThingForm`),
+  careers, dungeon objectives, titles, inns, tents, territory, Palace trials,
+  the monster book and Lucky Draw. Their server backends have separate coverage
+  in [port status](PORTING.md); a working backend does not imply a Go-client form.
 - Commands: NPCService 31, Alchemy 40, Manufacture 59, PetFeeding 67,
   PetTraining 68, PetRebirth 69, Tent 65, Territory 70, PalaceTrial 77,
   MonsterBook 53, LuckyDraw 104.
@@ -144,10 +151,9 @@ presentation from server compatibility formulas and remaining mechanics.
 
 - Housing and furniture (`TRE_FurnitureMng`, `TGdThing`), the remaining
   minigames and casino games (about 800 functions, many small and
-  independent; the sport manager and local kinds 3/4/5/13/15 are playable;
+  independent; the sport manager and local kinds 1/2/3/4/5/13/15/17 are playable;
   paid kinds 6/8/10/19/22 have client flows and server purchases/rewards,
-  the fruit machines 11/12/14 are native ports with server purchases;
-  kind 1 (dodgeball) is playable; see
+  the fruit machines 11/12/14 are native ports with server purchases; see
   [MINIGAMES.md](MINIGAMES.md)), options and
   rankings (`TCY_OptionForm`, `TLD_Top100Form`), organisations, GM tools.
 - Commands: Minigame 57 and the remaining unnamed commands.

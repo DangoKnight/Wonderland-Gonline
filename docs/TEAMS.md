@@ -93,18 +93,8 @@ native controls. Private Server contains no working instance backend.
 
 ## Verification
 
-Focused automated tests cover pet mode/release requests and authoritative replies,
-recruitment validation, invitation acceptance/decline, teammate level versus HP,
-SQL instance migration/authority, malformed packets, room capacity, minimum levels,
-leadership, disconnect cleanup and unavailable starts. Server tests run under the
-race detector. Rendered Teams and Instance windows are compared with the supplied
-screenshots.
-
-Manual acceptance: log in with two clients, form a party, confirm both level/HP
-rows, transfer leadership, leave, then select/rest/ride/dismiss a disposable pet.
-Create a room on an eligible character, join on a second character, refresh the
-browser, leave and disconnect the leader. Start must display the pending message
-without changing maps or granting rewards.
+See [Teams and instance checks](TESTING.md#teams-and-instance-checks) for automated
+coverage, graphics parity and the two-client acceptance checklist.
 
 Remaining presentation work includes native party walking formations. Dungeon
 objectives and rewards require verified source rules.
@@ -129,8 +119,8 @@ dungeon objectives and rewards remain pending as documented above.
 
 Pet portraits are rasterized once as immutable artwork shared by sessions, then
 uploaded through the normal GPU asset cache. They do not allocate a disposable
-GPU render target on every frame. Focused tests exercise editable and compiled
-assets, plus CPU/GPU portrait parity (`WONDERLAND_TEST_GPU=1`).
+GPU render target on every frame. Editable/compiled portrait checks are covered
+in [GPU parity](TESTING.md#gpu-parity-and-snapshots).
 
 ## Native pet raster and name placement
 

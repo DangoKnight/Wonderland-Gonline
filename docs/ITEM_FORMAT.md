@@ -10,27 +10,30 @@ Configuration field `assets_database` defaults to `var/assets.db`. Paths are
 relative to the process working directory. `item_catalog` and `data_directory`
 are removed from server configuration.
 
-Runtime loading reads the `item.dat` / `items` collection in `asset_records`,
-using `asset_documents` for export metadata. The existing JSON validator checks
-the SQL materialization. It never opens the JSON export, `Item.dat`,
-`itemDat.wpdat`, or the export's `source` metadata path. Missing or invalid SQL
-assets stop startup, including inspection mode. Restart after SQL edits or a
-rebuild. See [asset database](ASSET_DATABASE.md) for import instructions.
+Runtime loading reads typed `catalog_native_items` rows through
+`assetsql.LoadDatabase`. `NativeItems` is the validated administration dataset;
+its readable `value_definition_*` columns supply the gameplay item definitions.
+The catalog also retains decoded record bytes, descriptions, icons and sprite
+references. `asset_records`, `asset_documents` and legacy views are migration
+provenance, not live item sources. Missing required structured tables or catalogs
+stop startup, including inspection mode. Restart or use the administration
+publication flow after validated edits; see [asset database](ASSET_DATABASE.md).
 
-The JSON's readable `definition` fields are authoritative for gameplay. Its
-`decoded_hex` preserves imported source bytes for later field interpretation;
-editing a readable stat or name does not require changing those provenance bytes.
-Item IDs must agree with the decoded record, and IDs must be unique and nonzero.
-Schema/native versions, header, source-size/hash structure, record lengths and
-positions are validated before any definitions are published. The source hash
-records export provenance; runtime loading does not re-open or hash the binary.
+The JSON export's readable `definition` fields seed the typed definitions during
+explicit offline import. `decoded_hex` preserves source bytes for field
+interpretation and independent verification. Normal startup neither opens the
+export/native files nor overwrites edited definitions from retained bytes.
+Offline JSON validation checks IDs, schema/native versions, headers, source
+size/hash structure, record lengths and positions before import. Its source hash
+records provenance rather than requiring the original binary at runtime.
 
-The maintained asset contains 7,312 translated-client items. Status reports
-`assets_database`, `native_items` and `items`. No server-only definitions or converted
-stats are merged. All configured starters exist in this asset. The sibling
-`gacha_packs.json` references absent server-only pack/reward IDs, so its existing
-validation disables the entire table and reports a warning. Gacha code remains
-implemented; enabling it requires a configuration whose IDs exist in the JSON.
+The maintained export contains 7,312 translated-client items. Status reports
+`assets_database`, `native_items` and `items`; an installed catalog may contain
+administrator edits. Converted server items are not merged into the WLRI item
+definitions. Gacha import validates each complete pool: missing pack/reward IDs
+disable only that pool with a diagnostic, while structurally invalid definitions
+fail validation. Other complete pools remain available. Edit current rewards
+through `GachaPacks`; source `gacha_packs.json` is an offline seed.
 
 ## Native version nine
 
@@ -71,7 +74,12 @@ prefix already removed. They are a format map, not gameplay magic numbers.
 | 30, 32      | 2 each             | Status types                    |
 | 34          | 1                  | Legacy importer's level mapping |
 | 36, 40      | 4 each             | Signed status values            |
+| 45          | 1                  | Compounding rank                |
 | 46          | 1                  | Equipment slot                  |
+| 112         | 1                  | Compounding restriction byte    |
+| 123         | 2                  | Item flags, including compounding exclusion bit 2 |
+| 136–145     | 2 each             | Five ordered material bases     |
+| 406–407     | 1 each             | Inventory cell width and height |
 
 The level mapping follows the existing converted import script. All supplied
 native records have zero in that field; complete native equipment-level rules
@@ -86,23 +94,9 @@ native table. Source buffers are never modified.
 
 ## Verification
 
-A committed artificial golden record checks every decoded byte, text reversal,
-Big5, negative stats and arithmetic wrap boundaries. Native-data tests compare
-all decoded records in file order against independent reference SHA-256 hashes.
-No original game data is committed with the golden fixture.
-
-From the repository root in Bash:
-
-```sh
-WONDERLAND_TEST_DATA=../Wonderland-Private-Server/Data \
-WONDERLAND_TEST_CLIENT_DATA=../Wonderland-Client/data \
-go test -race ./internal/assets -count=1
-```
-
-In PowerShell, set the two environment variables before running the same Go
-command. The full server native-data race suite checks gameplay with the
-maintained JSON catalog. Catalog decoding and protocol test clients do not establish
-original game-client compatibility.
+Independent raw/native format checks and their environment variables are in
+[Testing](TESTING.md#native-format-verification). Runtime format rules above
+remain separate from native-client acceptance.
 
 ## Maintained JSON export
 

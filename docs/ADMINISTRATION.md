@@ -143,11 +143,11 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v15 and structured asset schema v10.
+Current startup requires gameplay schema v17 and structured asset schema v13.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
-the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 24 administration views and checks read-only
-inspectors, including the combined map/quest actor report. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
-transaction behavior, native packet layouts and affected gameplay paths.
+the preserving offline migration procedure for an existing installation. The
+[administration validation record](TESTING.md#administration-validation-history)
+describes the earlier smoke/API checks and their limits.
 
 
 ## Optional quest actor visibility

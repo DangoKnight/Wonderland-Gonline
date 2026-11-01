@@ -129,7 +129,7 @@ These addresses refer to the recovered WLRI build with SHA-256
 `ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`.
 Focused packet tests pass. On 2026-10-04, the tester reported Fishing Skilled
 02 working properly; the first run was blocked by external conditions. See
-[recorded live outcomes](LIVE_TESTING.md#recorded-live-outcomes). Individual rod,
+[recorded live outcomes](TESTING.md#recorded-live-outcomes). Individual rod,
 flight, notification and overlay checklist observations were not supplied.
 The subsequent Fishing Unskilled, Full Bag and Advancement runs were reported
 with all checks passing. Advancement played the native level-up animation and

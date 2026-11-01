@@ -188,13 +188,11 @@ Explain semantic exceptions in nearby comments when their role is unclear.
 Prefer named packet builders when an entire layout is repeated or difficult to
 read. Avoid inventing wrappers for every one-line packet just to hide its bytes.
 
-During development, run only tests relevant to the modified modules and affected
-integrations. Use focused test selections within large packages; protocol or event
-changes should include their relevant native-data compatibility tests. Use the
-race detector when changing concurrent behavior. Reserve full test-suite runs for
-pre-commit validation. Run formatting, lint and build checks appropriate to the
-change. Review namespaces as well as values: byte-for-byte tests cannot detect a
-misleading name.
+Follow [test selection and correctness](TESTING.md#test-selection-and-correctness):
+use focused affected tests during development, the race detector for concurrency,
+and full suites for pre-commit validation. Commands, required environments and
+recorded results belong in TESTING.md. Review namespaces as well as values:
+byte-for-byte tests cannot detect a misleading name.
 
 ## Editable sprite assets
 
@@ -225,12 +223,9 @@ which SQL fields are authoritative when adding a projection, and validate before
 publishing the startup snapshot. Keep file decoders for offline tools and
 independent compatibility tests.
 
-Run relevant gameplay tests against imported assets with
-`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test ./internal/<package> -run <tests>`.
-Add `-race` for concurrent behavior. At pre-commit validation, run the full suite
-with `WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
-format tests still accept `WONDERLAND_TEST_DATA` and
-`WONDERLAND_TEST_CLIENT_DATA`.
+Use [test data and opt-ins](TESTING.md#test-data-and-opt-ins) for SQL/native inputs
+and absolute paths, and [pre-commit validation](TESTING.md#pre-commit-validation)
+for the separate server/client suites and installed-data timeout.
 
 ## Migration source inventory
 
@@ -458,14 +453,12 @@ effects in order and validate the final list, including trigger consistency.
 Identifiers must be unique; missing or duplicate references fail startup. The
 SQL loader clones resolved effects so skills do not share mutable modifier lists.
 
-The current compatibility importer indexes definitions under
-`skill_effects.json/records`; the
-`asset_skill_effects` SQL view exposes IDs and names. Indexed SQL rows are
-authoritative for definitions and skill references. The server reads only SQL.
+Typed `catalog_skill_effects*` rows own definitions and `catalog_skills*` rows
+own skill references. Use the `SkillEffects` and `Skills` administration datasets;
+legacy `asset_skill_effects` views are provenance and may be stale after edits.
 Every SQL skill must explicitly provide `effects` or `effect_refs`, including an
-empty list when it has no effects. Missing metadata fails startup with a rebuild
-instruction; there is no native-code inference or embedded policy fallback in
-the runtime loader.
+empty list when it has no effects. The loader validates and resolves the typed
+metadata; it does not infer behavior from native codes or embedded policies.
 
 Ability-specific conversion mappings and tuning values live in
 `internal/assets/native_effect_rules.json`, outside the derived `data/` tree.
@@ -511,10 +504,12 @@ Messages allow up to 60 bytes of native encoded text; channel commands allow
 ASCII control-bearing messages. Public channel commands run before the GM
 authorization gate; existing administrative commands retain that gate.
 
-Additional channels and feedback use the verified AC2:16 native head-banner
-format with explicit channel/name text. Dedicated native channel receive layouts,
-guild membership and client channel controls require separate migration work.
-Keep their framing documented rather than inventing unverified wire codes.
+World, local, whisper and team chat use native AC2:1/2/3/5 layouts; guild
+membership is SQL-authoritative and AC2:6 or `/guild` reaches its online members.
+World/local exclude sender echo for native sends; team/guild and whispers include
+the appropriate sender copy. GM announcements use AC2:4. Feedback/errors use
+AC2:16 head banners. Go-client channel controls and colors are implemented;
+the separate guild-management UI remains pending.
 
 ## Pet rebirth
 
@@ -538,10 +533,11 @@ its own compatibility tests. Normalize current vitals without refilling, persist
 first, then emit progression and the success receipt. Invalid selectors and
 exhausted budgets receive failure receipts without spending points.
 
-Potential training remains unavailable until item consumption, combat behavior
-and native display are verified. The reference's free increment and stat-37
-level-minus-one display do not establish these semantics. Do not add a second
-point budget or invent pill IDs/costs to fill this gap.
+Funded potential training uses native AC23:126 for normal, golden and Super
+Potential Pills; see [Potential Pill consumption](#potential-pill-consumption).
+Keep it separate from manual stat allocation. The reference's free AC68 increment
+remains rejected, and stat37 must not encode potential. Player/pet potential is
+typed durable state, with compiled success rates and native attribute bonuses.
 
 ## Battle-pet feeding
 
@@ -648,11 +644,14 @@ weights totaling 10,000 and quantities one to 255. Native pack IDs provide only
 fallback recognition of unavailable legacy packs. Lucky Pack 34333 remains
 withdrawn. The strict offline validator requires every item definition.
 
-Runtime loading validates structural correctness across the whole table first;
-malformed configuration fails startup. Missing item definitions disable the
-entire affected pool and produce an explicit diagnostic. Keep other complete
-pools available. Never drop unavailable rewards or redistribute their weights.
-Remember disabled configured pack IDs for item use and mall filtering.
+The offline compatibility importer validates the whole authored table before
+selecting available pools; malformed definitions fail import. Missing item
+definitions disable the entire affected pool with an explicit diagnostic while
+other complete pools remain available. The typed runtime catalog loads that
+projection, including unavailable pack IDs and diagnostics. The `GachaPacks`
+editor validates complete pools against the current item catalog. Never drop
+unavailable rewards or redistribute their weights; keep disabled configured IDs
+recognizable for item use and mall filtering.
 
 Runtime uses typed `catalog_gacha_packs` and ordered child reward rows.
 Use the `GachaPacks` administration dataset; legacy import views are provenance.
@@ -706,10 +705,11 @@ require separately verified semantics.
 
 ## Periodic character checkpoints
 
-Gameplay mutations must still commit before success packets. The one-second
-server autosave worker is an additional checkpoint for pending session changes,
-with a final checkpoint on disconnect. It uses a cloned baseline and the Store's
-transactional `AutosaveCharacter` comparison. Never replace this with an
+Gameplay mutations must still commit before success packets. The server autosave
+worker checkpoints dirty recoverable session fields at `character_save_seconds`
+(default 30 seconds), with final attempts on disconnect and graceful shutdown.
+The checkpoint uses a cloned baseline and the Store's transactional
+`AutosaveCharacter` comparison; the one-second world/gathering ticker is separate. Never replace this with an
 unconditional session snapshot write: stale caches could undo rewards or recreate
 state after deletion. A conflict leaves durable state and the baseline unchanged;
 resolve conflicting mutations through the subsystem that owns them. Already saved
@@ -826,14 +826,15 @@ must never select or authenticate a character. Do not introduce a
 socket transfer/token protocol without native evidence: the reference queues
 its existing authenticated connection into WorldServer.
 
-The current optional `quest_visibility.json` compatibility interface stores an
-authored SQL document with
-`schema_version: 1` and ordered `value` rows. Preserve reference registration
-order: completed quest despawns precede quest spawns; active-step despawns precede
-step spawns. Spawn lists own visibility even when inactive. Native story/party
-and explicit administrator visibility retain their earlier precedence. Rebuild
-or `/reload quests` publishes a fresh immutable collection; no runtime file
-fallback is allowed. The reference loader has no populated lists to extract.
+The optional `QuestVisibility` administration dataset stores ordered typed
+`catalog_quest_visibility*` rows. Definition API payloads contain the current
+version and a `value` array, not a filename-based JSON document. Preserve reference
+registration order: completed quest despawns precede quest spawns; active-step
+despawns precede step spawns. Spawn lists own visibility even when inactive.
+Native story/party and explicit administrator visibility retain their earlier
+precedence. Catalog publication or `/reload quests` loads a fresh immutable
+collection; no runtime file fallback is allowed. The reference loader has no
+populated lists to extract. See [quest actor visibility](ADMINISTRATION.md#optional-quest-actor-visibility).
 
 ## Combat sides, AI and trial content
 
@@ -848,8 +849,8 @@ fallback is allowed. The reference loader has no populated lists to extract.
   ability IDs/names out of buff/debuff decisions. Healing retains the existing
   name-based compatibility classification. No new ability-specific exception
   belongs in the AI.
-- Palace definitions currently use operator-authored SQL rows through the
-  `combat_trials.json` compatibility interface.
+- Palace definitions use operator-authored typed SQL rows through the
+  `CombatTrials` administration dataset.
   They are not decrypted external assets and must not be generated into `data/`.
   Validate all identities against the SQL catalog and freeze the definition for
   the battle. The C# stage placeholders are invalid for WLRI; do not restore
@@ -868,11 +869,15 @@ Terrain cells are server geometry stored as BLOBs, not image payloads. Schema v5
 projects imported Ground.MMG rows during explicit offline migration. Preserve
 existing typed edits and reject malformed geometry transactionally.
 
-AC6 announces a walking leg destination before animation completes; validate
-the straight cell segment without imposing a distance or elapsed-speed cap.
-Reject collisions before persistence, trade cancellation, encounter progress or
-vehicle wear; send the existing AC7 position correction instead of disconnecting.
-A blocked or out-of-bounds saved spawn may recover to a valid destination.
+Native 15-byte AC6 packets announce a destination before animation completes;
+validate that endpoint against terrain/bounds without treating the previous
+announced destination as the current rendered position. Rejected native endpoints
+are ignored, avoiding an AC7 teleport during a walk. Short compatibility packets
+retain straight-segment validation and AC7 correction. Rejection precedes dirty
+state, trade cancellation, encounter progress and vehicle wear. Impose no elapsed
+speed/distance cap. A blocked saved spawn may recover to a valid destination;
+AC6:2 stop reports update the stopped position without another encounter/wear step.
+The eight native movement-check bytes remain opaque.
 Validated active item vehicles retain native water/air travel within scene bounds;
 land collision bits are not a vehicle capability table. Missing grids preserve
 legacy movement, without falling back to files or fabricated geometry.
@@ -1035,7 +1040,7 @@ with the rank/base model documented in [COMPOUNDING.md](COMPOUNDING.md).
 Its approved probability curves are compiled in `internal/game/compounding_policy.go`;
 all inventory consumption/output/proficiency must commit together from fresh SQL
 state. Invalidate the derived alchemy candidate index after catalog replacement.
-See [focused verification](PORTING.md#focused-migration-verification--2026-10-04).
+See [focused verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
 
 ## Inventory footprints
 
@@ -1057,7 +1062,7 @@ the typed sizes exclusively. See [Items and Player State](ITEMS_PLAYER_STATE.md)
 
 ## Live legacy-client acceptance fixtures
 
-Use [LIVE_TESTING.md](LIVE_TESTING.md) and `cmd/live-test` to prepare a fresh
+Use [native-client acceptance](TESTING.md#native-client-acceptance) and `cmd/live-test` to prepare a fresh
 isolated gameplay database with scenario-specific characters. Load assets
 read-only from SQL; never alter the regular gameplay database or active sessions
 for fixture setup. Generated credentials and startup config belong under ignored

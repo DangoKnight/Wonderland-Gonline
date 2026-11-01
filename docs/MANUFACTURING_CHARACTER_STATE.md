@@ -39,10 +39,11 @@ workbench-name matching. `Economy.Manufacturing` recipes support optional
 attempt consumes the recipe materials and fee without an output. Successful
 output overflow, missing materials or insufficient gold rolls the transaction back.
 
-Offline conversion reads authored alchemy recipe chances/fees into
-`Economy.Synthesis.Rates`. Existing customized rates survive upgrades and repeat
-conversion. `/compound` debits fee and ingredients and grants the selected result
-or charcoal atomically. Native deterministic AC23/AC40 paths retain their rules.
+Offline conversion preserves authored alchemy recipe chances/fees in
+`Economy.Synthesis.Rates` for provenance. They no longer control gameplay.
+AC23:14/87/101, AC40 and `/compound` share the rank/base engine, including books,
+learned tiers, catastrophe outcomes and transactional proficiency. They do not
+charge the legacy synthesis fee. See [compounding](COMPOUNDING.md).
 
 AC37 socket requests return failure without consuming items. Reference ForgeGem
 never improves equipment, and its hardcoded gem IDs identify WLRI oil/fuel. Real
@@ -62,7 +63,8 @@ values; hotel record potential semantics remain pending native verification.
 Actual `Job` selects class growth. `RebornJob` remains distinct AC66 metadata.
 Native inventory potential use is AC23:126; free AC68:1 training remains rejected.
 See [Potential Pills](NATIVE_COMMANDS.md#potential-pills) for funded consumption,
-stat bonuses and the pending level-dependent normal/golden success rates.
+stat bonuses and the implemented level-dependent normal/golden success rates.
+Super Pills guarantee advancement below the potential cap.
 
 ## GM rebirth
 
@@ -90,7 +92,8 @@ and class display still need aLogin verification.
 
 Both floor/wallpaper pairs persist in wonderland.db. Tent snapshots replay each
 present peer's nonzero pose through AC32:2. Upper-floor access, upgrade purchases,
-funded training, verified sockets and class skills remain pending source systems.
+verified sockets and class skills remain pending source systems. Funded Potential
+Pill training is implemented; native mercenary eligibility still needs verification.
 Optional legacy SQLite import still rejects unsupported metadata explicitly;
 these additions do not silently reinterpret old string-packed fields.
 

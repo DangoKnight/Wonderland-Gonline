@@ -195,8 +195,9 @@ scheduling margin; precise camera/movement synchronization remains pending.
 - Exact native movement phase/tick synchronization, approach/return poses,
   ground-height handling and camera tracking. Actor-relative interpolation is
   implemented, with the explicitly documented compatibility scheduling margin.
-- Visual spell/projectile/effect tracks, status icons and transitions, actor and
-  weapon voices, battle-specific music, recovery/critical digit effects and results.
+- Visual spell/projectile/effect tracks, status icons and effect transitions,
+  actor/weapon voices, recovery/critical digit effects and results. Battle scene
+  music and entry/exit fades are implemented as described above.
 - The dedicated native battle skill form; the existing standalone Skills form
   currently supplies learned skills and direct scene targeting.
 - Native battle item actions and their transactional server execution, manual
@@ -229,31 +230,6 @@ scheduling margin; precise camera/movement synchronization remains pending.
 
 ## Validation
 
-Independent raw-byte fixtures cover formation, turn ownership, repeated readiness,
-variable actions, malformed/truncated packets, batched stats, recovery and capture.
-All 1,832 exported motions are decoded. Additional tests cover scene commands,
-world movement exclusion, direct skill/pet targeting, transient HUD state,
-background workspace progression, damage distribution and once-only sounds.
-CPU/GPU parity includes formation, radial controls, action/damage, the previous
-action icon, exit and roaming NPC movement (20 states).
-Server rules have an independent recovery-wire golden and low-maximum revival case.
-
-Validation completed in this development pass: full root and client Go suites,
-root/client `go vet`, focused battle/protocol/server/app race tests, and 18-stage
-CPU/GPU parity with both loose assets and the compiled bundle. Tests used a
-60-minute outer timeout rather than the previous ten-minute limit. The final
-focused app race run, including the stale-target corrections, completed in
-239 seconds.
-
-`make build-client CLIENT_BUNDLE=/tmp/wonderland-battle-assets.zip
-CLIENT_OUTPUT=/tmp/wonderland-battle-client` succeeded, packaging 72,829 files
-from approximately 6,017 MiB of source assets and compiling the client binary.
-Existing authored sprite exports were used without regeneration. Final request
-and stale-target corrections have additional focused regression/race coverage.
-The server binary also built successfully with
-`go build -o /tmp/wonderland-battle-server ./cmd/wonderland`.
-
-The subsequent roaming/previous-action pass has focused world/battle/hotbar
-regressions, session-ownership race coverage and 20-state CPU/GPU parity. See
-[client roaming](CLIENT_ROAMING.md) for native packet evidence and the explicitly
-named initial-zero-speed compatibility case.
+See [battle validation history](TESTING.md#battle-validation-history) for raw-byte,
+CPU/GPU and recorded build/suite evidence. Current rendering limits above remain
+separate from those historical results.

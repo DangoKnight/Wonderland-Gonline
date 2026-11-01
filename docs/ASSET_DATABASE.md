@@ -54,7 +54,8 @@ initial rules; it preserves every existing typed content table. Gameplay v9 adds
 guild roles/icons and parcel escrow without replacing existing relationships.
 The v2-to-v3 asset upgrade adds only `catalog_tents*` rules and default furniture.
 The v3-to-v4 asset upgrade adds only `catalog_arcades*` tables and their presence
-flag, with equal-weight defaults for the five supported paid machines. Existing
+flag, with equal-weight defaults for supported paid machines (the original five
+egg/slot kinds, plus fruit-machine seeds in the current migrator). Existing
 content edits remain intact. See [MINIGAMES.md](MINIGAMES.md) for balance defaults.
 The v4-to-v5 upgrade adds `catalog_terrains` and its presence flag. It projects
 scene dimensions and collision-cell BLOBs from the imported Ground.MMG rows;

@@ -126,8 +126,9 @@ Fees, ingredients and output commit in one authoritative SQL transaction; a full
 bag on a successful attempt or missing material consumes nothing. An authored
 failed attempt consumes ingredients and its fee without granting output. Repeated input IDs consume the combined recipe cost. These
 handlers follow the reference's workbench-name selection. Tent furniture now
-lives in isolated homes; linking manufacturing recipes to verified physical
-workbench item identities remains pending.
+lives in isolated homes. These two-input paths retain workbench-name matching;
+native AC64 separately checks placed owned benches, tools and plans, with durable
+timed output. See [manufacturing](MANUFACTURING_CHARACTER_STATE.md).
 
 `/compound <slot1> <slot2> [slot3] [slot4] [slot5]` (alias `/synthesize`)
 shares the rank/base engine with native AC23 and compatibility AC40. See
@@ -193,7 +194,7 @@ when adopting a committed SQL result that leaves those saved fields unchanged.
 Guarded checkpoints must not undo balances, attachments or draw usage.
 See DEVELOPMENT.md for the persistence boundary and remaining concurrency limits.
 
-## Focused migration verification
+## Retained compatibility rules
 
 AC45 retains the reference default: unknown bank subcommands return the private
 AC45:8 bank/wallet snapshot, ignoring any payload and changing no balances. PIN
@@ -205,4 +206,4 @@ overflow and reopen.
 Recipe lookup retains authored entries before Compound2 then Compound, including
 first-match priority when inputs have multiple outputs. Typed SQL reload preserves
 this order independently of import snapshots. Manufacturing keeps first matching
-workbench order. See [focused results](PORTING.md#focused-migration-verification--2026-10-04).
+workbench order. See [focused results](TESTING.md#migration-verification-recorded-on-2026-10-04).

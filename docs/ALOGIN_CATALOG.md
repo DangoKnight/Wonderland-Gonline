@@ -167,7 +167,7 @@ TSe_UIHandler, TSe_GrBasic and the components, buttons, editors, lists, scroll b
 
 Status **ported**; 96 functions, 6 cited. Go: internal/assets, client/wlo/world.
 
-TEveData, TRe_Npc, TRE_Scene, TFSkill, TFNpc and the Npc.dat lookup; read from the data/ exports.
+TEveData, TRe_Npc, TRE_Scene, TFSkill, TFNpc and the Npc.dat lookup; loaded from compiled runtime records or loose data/ exports.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|
@@ -279,7 +279,7 @@ THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC lo
 
 Status **partial**; 490 functions, 85 cited. Go: client/wlo/hud, client/wlo/team.
 
-TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. The toolbar's Trade opens the Business menu. Other toolbar actions remain pending.
+TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Social opens Friend/Emote/Set Up tabs, Make Friends arms target selection and Trade opens the Business menu. Other toolbar actions remain pending.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|
@@ -405,7 +405,7 @@ TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lo
 
 Status **partial**; 54 functions, 6 cited. Go: client/wlo/app (sound.go, music.go, ambient.go).
 
-Tsound effect list, TFMark, TMusicCenter (jukebox), the volume form. Ported: effects, map music, ambience, movie music, System options for effects/music volumes and ambient sound. Not yet: the jukebox.
+Tsound effect list, TFMark, TMusicCenter (jukebox), the volume form. Ported: effects, map music, ambience, movie/event/battle music, System options for effects/music volumes and ambient sound. Not yet: the jukebox.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|
@@ -462,7 +462,7 @@ TRe_SkillForm: Physical, Magical, Assistant, Life and Intro tabs, player/pet sel
 
 Status **started**; 1,493 functions, 50 cited. Go: client/wlo/inventory (compound.go), client/wlo/app (compound.go).
 
-TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Native material-base labels are shown in compound tooltips. Pending: manual tier selection and overworld synthesis animation. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported.
+TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Native material-base labels are shown in compound tooltips. Junior checkbox and Superior tier selector are implemented. The legacy AC23:122 overworld effect is intentionally not sent because native aLogin interprets it as fishing cleanup. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, inns, titles, lottery, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|
@@ -492,7 +492,7 @@ TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection
 
 Status **started**; 811 functions, 131 cited. Go: client/wlo/minigame, client/wlo/app (minigame.go).
 
-Sports (sheep, catch doll, boxing, Mario, memory, turn, gobang, pumpkin, dig hole, poke, catcher, lucky, conundrum, watermelon, egg, slot machines, scotd, hunter), chess, dice, lotto, the MP3 player. The sport manager, scotd (2), moles (3), hunting (4), dreams (5), lucky (13), numbered memory (15) and pumpkin (17) are playable; scotd/pumpkin native collision and animation fidelity remains partial. Egg draws (6/22) and slots (8/10/19) have native client AC71 flows; these five kinds have atomic server purchases and weighted rewards. Other paid kinds remain pending. See docs/MINIGAMES.md.
+Sports (sheep, catch doll, boxing, Mario, memory, turn, gobang, pumpkin, dig hole, poke, catcher, lucky, conundrum, watermelon, egg, slot machines, scotd, hunter), chess, dice, lotto, the MP3 player. The sport manager, dodgeball (1), scotd (2), moles (3), hunting (4), dreams (5), lucky (13), numbered memory (15) and pumpkin (17) are playable; scotd/pumpkin native collision and animation fidelity remains partial. Egg draws (6/22) and slots (8/10/19) have native client AC71 flows. Fruit machines (11/12/14) have native reels, lamps and payment controls; all eight paid kinds have atomic server purchases and weighted rewards. Other paid kinds remain pending. See docs/MINIGAMES.md.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|
@@ -533,7 +533,7 @@ Sports (sheep, catch doll, boxing, Mario, memory, turn, gobang, pumpkin, dig hol
 
 Status **started**; 370 functions, 20 cited. Go: client/wlo/hud (social.go), client/wlo/app (social.go).
 
-TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights. Ported: the Social window (TSe_EmotiomForm, FUN_0027c6a4): the Friend tab (14/5 friend table with the GM entry, portraits, levels, element/presence/job icons, paging, ticks, Del Friend → 14/4), the Emote tab (Ctrl phrases, TEmotionImage/TActionImage grids, Alt slots, AC32:1/2) and the Set Up tab (nickname, status, birthday and sun sign, blood type, AC10:1/2/3); TSe_SendMailForm with a TSe_Memo (14/1); the mailbox (Form_MailBox_1), letters (form_MailReceive_1) and the chat bar's mail icon; Make Friends (target mode 5, 14/2 and 14/3). Old Mail and the compose form (friends). Not yet: 14/6 name-addressed letters, Make Friends, TAC_ICQList, guilds, weddings, PK.
+TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights. Ported: the Social window (TSe_EmotiomForm, FUN_0027c6a4): the Friend tab (14/5 friend table with the GM entry, portraits, levels, element/presence/job icons, paging, ticks, Del Friend → 14/4), the Emote tab (Ctrl phrases, TEmotionImage/TActionImage grids, Alt slots, AC32:1/2) and the Set Up tab (nickname, status, birthday and sun sign, blood type, AC10:1/2/3); TSe_SendMailForm with a TSe_Memo (14/1); the mailbox (Form_MailBox_1), letters (form_MailReceive_1) and the chat bar's mail icon; Make Friends (target mode 5, 14/2 and 14/3). Old Mail and the compose form (friends). Not yet: 14/6 name-addressed letters, the remaining native friend-status array behavior, guild-management forms, weddings and PK forms. Server guild gameplay is implemented; Social wire mismatches are recorded in CLIENT.md.
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|

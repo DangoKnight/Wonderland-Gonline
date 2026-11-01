@@ -70,13 +70,14 @@ application, death rules, allegiance and typed SQL round trips.
 ## Other remaining combat parity
 
 Registered AC50 action submission validates ownership and handles attack,
-defend/flee/capture and skills. The server sends AC53:5 acknowledgements only to
-the submitting session; the source broadcasts them to battle participants. Its
-explicit battle-entry teammate HUD and owner pet-progress refresh are not fully
-reproduced by having other stat packet helpers elsewhere. Go awards no PvP EXP or
-gold; the source attacker-victory path grants 150 EXP and 100 gold. Retaining that
-rule requires an explicit decision. Character reborn jobs/potential remain absent,
-independently of implemented rebirth combo-level adjustment.
+defend/flee/capture and skills. AC53:5 submission acknowledgements broadcast to
+active battle participants, and entry refreshes teammate HUD and owner pet
+progress. PvP deliberately grants no EXP, gold, drops or captures; the source's
+attacker-victory grant is not used. Typed character/pet potential, actual class,
+separate reborn-job metadata and the GM rebirth workflow are implemented.
+See [world/combat parity](WORLD_COMBAT_PARITY.md) and
+[character state](MANUFACTURING_CHARACTER_STATE.md). Native area-pattern/grade
+mapping, hit/resistance formulas and visual acceptance remain separate work.
 
 Combat rewards, paid resources and item/vehicle wear remain durable operations.
 Buffering ordinary movement does not authorize periodic saving of scarce resources
