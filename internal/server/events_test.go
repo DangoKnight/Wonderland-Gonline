@@ -244,3 +244,27 @@ func TestRegionsAndDoorEntries(t *testing.T) {
 		t.Fatal("request outside the region", got)
 	}
 }
+
+func TestAreaRegionRunsAuthoredEvent(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	ctx := context.Background()
+	say := func(id byte, talk uint16) assets.Event {
+		return assets.Event{ClickID: uint16(id), Branches: []assets.Branch{{Index: 1, Condition: evCond(0, 0, 0, 0, 0, 0), Operations: []assets.Operation{evOp(1, 2, 0, 0, talk, 0)}}}}
+	}
+	s.Assets.Maps[10017] = assets.Map{ID: 10017,
+		Entries: []assets.AreaEntry{areaEntry(3, 3, 53, 54, 53, 54, 9)},
+		Events:  []assets.Event{say(9, 30003)},
+	}
+	s.World = world.New(s.Assets)
+	c, wire := players[0], wires[0]
+	if err := s.worldCommand(ctx, c, []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	wire.Reset()
+	if err := s.worldCommand(ctx, c, []byte{20, 8, 3, 0}); err != nil {
+		t.Fatal(err)
+	}
+	if got := wire.packets(t); !contains(got, eventFrame(1, 3, 0, 1, 0, 30003, 1, 1)) || c.event == nil {
+		t.Fatal("area region event", got)
+	}
+}
