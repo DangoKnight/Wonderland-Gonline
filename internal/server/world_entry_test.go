@@ -293,6 +293,9 @@ func TestWorldEntryKeepsAuthenticatedSocketOnBothServices(t *testing.T) {
 					break
 				}
 			}
+			if p := read(); !bytes.Equal(p, []byte{56, 30, 0}) {
+				t.Fatal(p)
+			}
 			// A world action on the original stream proves that no reconnect/ticket is required.
 			send([]byte{89, 0})
 			if p := read(); !bytes.Equal(p, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {

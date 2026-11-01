@@ -162,16 +162,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 				return err
 			}
 		}
-		if peer.stall != nil {
-			if err := c.send(stallSign(peer, peer.stall.Title)); err != nil {
-				return err
-			}
-			if peer.stall.Native {
-				if err := c.send(nativeStallMapState(peer)); err != nil {
-					return err
-				}
-			}
-		}
+
 	}
 	if err := s.guildPresence(context.Background(), c.character.ID); err != nil {
 		return err
@@ -184,6 +175,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 				}
 			}
 		}
+	}
+	if err := s.sendAll(c, s.stallList(c)); err != nil {
+		return err
 	}
 	s.partyArrival(c)
 	if s.friendSessions == nil {

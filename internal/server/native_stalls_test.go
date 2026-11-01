@@ -64,3 +64,30 @@ func TestAlternativeStallAdaptersUseOwnedInventory(t *testing.T) {
 		t.Fatal("event stall close", err)
 	}
 }
+
+func TestNativeStallFiveByteOffersPreserveStyleSlotsAndMetadata(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	seller, buyer := players[0], players[1]
+	// Native title, style two, then one five-byte (bag slot, price) record.
+	open := []byte{23, 30, 5, 'G', 'o', 'o', 'd', 's', 2, 1, 3, 0, 0, 0}
+	tradeDo(t, s, seller, open)
+	if seller.stall == nil || !seller.stall.NativeSlots || seller.stall.Style != 2 || seller.stall.Listings[0].Item.Count != 10 {
+		t.Fatal("native offer lost style, bag identity or whole-stack quantity")
+	}
+	if !contains(wires[0].packets(t), open) {
+		t.Fatal("native open acknowledgment changed")
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	tradeDo(t, s, buyer, protocol.Builder{23, 32}.U32(seller.character.ID))
+	packets := wires[1].packets(t)
+	if len(packets) != 2 || len(packets[0]) != 58 || packets[0][19] != 1 || packets[0][22] != 10 {
+		t.Fatal("native browse must use the original bag slot", packets)
+	}
+	tradeDo(t, s, buyer, protocol.Builder{23, 33}.U32(seller.character.ID).U8(1).U8(2).U16(32176).U32(3))
+	stored := tradeStored(t, s, players)
+	if stored[0].Gold != 106 || stored[1].Gold != 194 || stored[0].Bag[0].Count != 8 || stored[1].Bag[1].Count != 2 || stored[1].Bag[1].Damage != 2 || stored[1].Bag[1].Metadata[6] != 7 {
+		t.Fatal("native purchase lost ownership, funds or instance metadata")
+	}
+}

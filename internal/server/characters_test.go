@@ -103,7 +103,7 @@ func TestCreateEnterAcknowledgeAndReconnect(t *testing.T) {
 		t.Fatal("movement accepted before map acknowledgment")
 	}
 	dispatch([]byte{12, 1})
-	if p := wire.packets(t); len(p) != 1 || !bytes.Equal(p[0], []byte{5, 4}) {
+	if p := wire.packets(t); len(p) != 2 || !bytes.Equal(p[0], []byte{5, 4}) || !bytes.Equal(p[1], []byte{56, 30, 0}) {
 		t.Fatal(p)
 	}
 	dispatch([]byte{12, 1})

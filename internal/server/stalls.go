@@ -16,9 +16,11 @@ type stallListing struct {
 	Price uint32
 }
 type playerStall struct {
-	Native   bool
-	Title    string
-	Listings []stallListing
+	Native      bool
+	NativeSlots bool // Native five-byte offers use bag slots; the six-byte compatibility form uses listing indexes.
+	Style       byte
+	Title       string
+	Listings    []stallListing
 }
 
 func stallSign(c *Session, title string) []byte {
@@ -35,6 +37,9 @@ func (s *Server) closeStall(c *Session) {
 	s.broadcastWorld(c, p)
 	s.sendOrClose(c, p)
 	if native {
+		pose := protocol.Builder{protocol.CommandPose, protocol.PoseBroadcast}.U32(c.character.ID).U8(0)
+		s.broadcastWorld(c, pose)
+		s.sendOrClose(c, pose)
 		gone := protocol.Builder{protocol.CommandInventory, protocol.InventoryStallDespawn}.U32(c.character.ID)
 		s.broadcastWorld(c, gone)
 		s.sendOrClose(c, gone, []byte{protocol.CommandInventory, protocol.InventoryStallFormClose, protocol.StallItemShopType})

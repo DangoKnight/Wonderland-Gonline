@@ -207,7 +207,7 @@ func TestEmotes(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = wires[1].packets(t)
-	if len(got) != 5 || !bytes.Equal(got[3], protocol.Builder{32, 2}.U32(alice).U8(7)) {
+	if len(got) != 6 || !bytes.Equal(got[3], protocol.Builder{32, 2}.U32(alice).U8(7)) || !bytes.Equal(got[5], []byte{56, 30, 0}) {
 		t.Fatal("pose not replayed", got)
 	}
 }

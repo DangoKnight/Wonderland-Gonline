@@ -73,6 +73,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 		// Walking ends a held pose locally without an AC32 report.
 		c.emote = 0
 		s.stopFishing(c)
+		s.closeStall(c)
 		s.cancelTrade(c)
 		c.arrived = false
 	}

@@ -233,7 +233,7 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	// An open sign cannot reserve an item across arbitrary inventory changes.
 	// Close it before other actions; chat and read-only login sync may continue.
-	if c.stall != nil && p[0] != protocol.CommandStall && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
+	if c.stall != nil && !stallPacket(p) && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
 		s.closeStall(c)
 	}
 	// Settings and native login synchronization precede the interaction gates.
