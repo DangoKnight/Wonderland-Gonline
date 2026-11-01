@@ -118,7 +118,7 @@ func (s *Server) potentialPillWithRoll(ctx context.Context, c *Session, p []byte
 				}
 				unlocks = [][]byte{packet, {protocol.CommandCharacterState, protocol.CharacterStateRefresh}}
 			} else {
-				unlocks = next.UnlockQualifiedSkills(false, s.hasSkill)
+				unlocks = s.unlockQualifiedSkills(next, false)
 			}
 		}
 		reply[4] = byte(level)

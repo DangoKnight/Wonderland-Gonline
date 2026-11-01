@@ -352,14 +352,19 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 	var packets [][]byte
 	changed := false
 	for _, use := range uses {
+		gain := use.SkillEXP
+		if gain == 0 {
+			gain = game.CombatSkillEXPPerUse
+		}
+		gain = uint32(ScaleExperience(uint64(gain), s.expRateMultiplier))
 		if use.Actor == m.self {
 			before := append([]game.LearnedSkill(nil), next.Skills...)
-			updates := next.AddSkillEXP(use.Skill, 1)
+			updates := next.AddSkillEXP(use.Skill, gain)
 			changed = changed || len(updates) > 0
 			packets = append(packets, updates...)
 			for i, skill := range next.Skills {
 				if skill.Grade > before[i].Grade {
-					packets = append(packets, next.UnlockQualifiedSkills(true, s.hasSkill)...)
+					packets = append(packets, s.unlockQualifiedSkills(&next, true)...)
 					break
 				}
 			}
@@ -370,7 +375,7 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 						changed = true
 					}
 				}
-				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, 1, c.pets.slot(next.Pets[i].ID))...)
+				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, gain, c.pets.slot(next.Pets[i].ID))...)
 			}
 		}
 	}
@@ -550,7 +555,7 @@ func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition
 	var dropped []string
 	r := s.rules()
 	r.DropRateMultiplier = s.dropRateMultiplier
-	for _, m := range run.b.Defenders {
+	for _, m := range run.b.DefenderHistory() {
 		if m.Captured || m.Kind != battle.Monster || run.b.PvP {
 			continue
 		}
@@ -631,7 +636,11 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 	// RunOutcome: the battle callback branch (trigger 4) continues the event.
 	next := s.World.OutcomeBranch(c.character, c.view, es.mapID, es.ev, run.source, result, es.branch)
 	if next < 0 || c.character.Map != es.mapID {
+		if next < 0 && outcome == battle.Victory && c.character.Map == es.mapID && es.click > 0 {
+			s.sendOrClose(c, s.World.HideActor(c.view, es.mapID, es.click))
+		}
 		_ = s.cancelInteraction(c)
+		s.sendOrClose(c, s.World.Sync(c.character, c.view, false)...)
 		return
 	}
 	_ = s.startEvent(context.Background(), c, es.click, es.ev, next, true)

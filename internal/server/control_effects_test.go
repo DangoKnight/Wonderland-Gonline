@@ -43,7 +43,8 @@ func TestSQLControlAbilityBlocksWithoutDamageAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 11051 {
-			found = sk.EXP == 1
+			// A successful status cast awards 15 support EXP plus 25 buff EXP.
+			found = sk.EXP == 40
 		}
 	}
 	if !found {
@@ -87,7 +88,8 @@ func TestSQLVanishProtectsAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 15190 {
-			found = sk.EXP == 1
+			// A successful status cast awards 15 support EXP plus 25 buff EXP.
+			found = sk.EXP == 40
 		}
 	}
 	if !found {
@@ -131,7 +133,8 @@ func TestSQLStoneWallProtectsWithoutDamageAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 11055 {
-			found = sk.EXP == 1
+			// A successful status cast awards 15 support EXP plus 25 buff EXP.
+			found = sk.EXP == 40
 		}
 	}
 	if !found {
@@ -177,7 +180,8 @@ func TestSQLWaterShieldAllowsPhysicalDamageAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 11080 {
-			found = sk.EXP == 1
+			// A successful status cast awards 15 support EXP plus 25 buff EXP.
+			found = sk.EXP == 40
 		}
 	}
 	if !found {
@@ -223,7 +227,8 @@ func TestSQLShieldDefenseBuffsStatsAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 11057 {
-			found = sk.EXP == 1
+			// A successful status cast awards 15 support EXP plus 25 buff EXP.
+			found = sk.EXP == 40
 		}
 	}
 	if !found {

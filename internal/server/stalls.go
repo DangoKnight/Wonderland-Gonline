@@ -11,10 +11,12 @@ import (
 const stallTitleMaxBytes = 64
 
 type stallListing struct {
+	Index byte
 	Item  game.TradeItem
 	Price uint32
 }
 type playerStall struct {
+	Native   bool
 	Title    string
 	Listings []stallListing
 }
@@ -27,10 +29,16 @@ func (s *Server) closeStall(c *Session) {
 	if c.stall == nil {
 		return
 	}
+	native := c.stall.Native
 	c.stall = nil
 	p := stallSign(c, "")
 	s.broadcastWorld(c, p)
 	s.sendOrClose(c, p)
+	if native {
+		gone := protocol.Builder{protocol.CommandInventory, protocol.InventoryStallDespawn}.U32(c.character.ID)
+		s.broadcastWorld(c, gone)
+		s.sendOrClose(c, gone, []byte{protocol.CommandInventory, protocol.InventoryStallFormClose, protocol.StallItemShopType})
+	}
 }
 func (s *Server) viewStall(c, seller *Session) error {
 	if seller == nil || seller.stall == nil || !seller.ready || !tradeNear(c, seller) {
@@ -40,6 +48,9 @@ func (s *Server) viewStall(c, seller *Session) error {
 	p = p.U8(byte(len(seller.stall.Listings)))
 	for _, row := range seller.stall.Listings {
 		p = p.U8(row.Item.Slot).U16(row.Item.Item.ID).U32(row.Price).U8(row.Item.Count)
+	}
+	if seller.stall.Native {
+		return s.sendAll(c, [][]byte{nativeStallBrowse(seller), p})
 	}
 	return c.send(p)
 }
@@ -75,7 +86,7 @@ func (s *Server) stallCommand(ctx context.Context, c *Session, p []byte) error {
 			if c.character.ActiveVehicle == item.ID {
 				return c.send(tradeMessage("Dismount before selling this vehicle."))
 			}
-			next.Listings = append(next.Listings, stallListing{Item: game.TradeItem{Slot: slot, Count: quantity, Item: item}, Price: price})
+			next.Listings = append(next.Listings, stallListing{Index: byte(len(next.Listings)), Item: game.TradeItem{Slot: slot, Count: quantity, Item: item}, Price: price})
 		}
 		if r.Err() != nil || r.Remaining() != 0 {
 			return protocol.ErrMalformed

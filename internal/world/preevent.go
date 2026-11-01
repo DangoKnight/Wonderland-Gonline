@@ -1,6 +1,7 @@
 package world
 
 import (
+	"slices"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
@@ -15,22 +16,34 @@ type rule struct {
 	actions    []assets.Operation
 }
 
-// rules groups PreEvent branches: a branch with actions starts a rule, and following
-// branches without actions add AND conditions to it.
+// rules uses the authored condition count. Unrelated condition-only records must
+// not attach themselves to the preceding rule (reference revisions fd63dac/0966c3d).
 func rules(ev assets.Event) []rule {
 	var out []rule
-	for _, br := range ev.Branches {
-		if len(br.Operations) > 0 || len(out) == 0 {
-			out = append(out, rule{conditions: [][21]byte{br.Condition}, actions: br.Operations})
-		} else {
-			last := &out[len(out)-1]
-			last.conditions = append(last.conditions, br.Condition)
+	for i, br := range ev.Branches {
+		if len(br.Operations) == 0 {
+			continue
+		}
+		count := 1 + DecodeCond(br.Condition).ExtraConditions()
+		if i+count > len(ev.Branches) {
+			continue // Truncated conditions cannot authorize an action.
+		}
+		r := rule{actions: br.Operations}
+		valid := true
+		for j := i; j < i+count; j++ {
+			if j > i && len(ev.Branches[j].Operations) != 0 {
+				valid = false
+			}
+			r.conditions = append(r.conditions, ev.Branches[j].Condition)
+		}
+		if valid {
+			out = append(out, r)
 		}
 	}
 	return out
 }
 
-func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event) []rule {
+func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event, views ...*View) []rule {
 	all := rules(ev)
 	// Sealed Bead's type-6 fallback must not override its quest-specific rules.
 	if mapID != game.MapID12508 || ev.ClickID != 2 {
@@ -38,7 +51,7 @@ func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event) []r
 	}
 	specific := false
 	for _, r := range all {
-		if w.ruleMatches(c, mapID, r) && r.conditions[0][0] != 6 {
+		if w.ruleMatches(c, mapID, r, views...) && r.conditions[0][0] != 6 {
 			specific = true
 		}
 	}
@@ -54,9 +67,9 @@ func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event) []r
 	return out
 }
 
-func (w *World) ruleMatches(c *game.Character, mapID uint16, r rule) bool {
+func (w *World) ruleMatches(c *game.Character, mapID uint16, r rule, views ...*View) bool {
 	for _, cond := range r.conditions {
-		if !w.preEventCondition(c, mapID, cond) {
+		if !w.preEventCondition(c, mapID, cond, views...) {
 			return false
 		}
 	}
@@ -87,7 +100,7 @@ func questActive(c *game.Character, id uint16) (game.Quest, bool) {
 }
 
 // preEventCondition is MatchesPreEventCondition: no event context.
-func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte) bool {
+func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte, views ...*View) bool {
 	kind, w1, w2, w3, w4, w5, w6 := d[0], le16(d[:], 1), le16(d[:], 3), le16(d[:], 5), le16(d[:], 7), le16(d[:], 9), le16(d[:], 11)
 	// Holy's wine delivery conceals the record keeper only during an active delivery.
 	if mapID == game.MapID11013 && kind == 5 && w1 == 13056 && w2 == 1 && w3 == 1 && w4 == 0x0301 && w5 == 0 && w6&255 == 0 {
@@ -95,7 +108,11 @@ func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte) b
 			return false
 		}
 	}
-	return w.condition(c, nil, mapID, nil, d)
+	var view *View
+	if len(views) > 0 {
+		view = views[0]
+	}
+	return w.condition(c, view, mapID, nil, d)
 }
 
 // condition is EveEventRuntime.MatchesCondition. ev is nil for PreEvents.
@@ -113,9 +130,13 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 	case ConditionEmptyOperands:
 		return w1 == 0 && w2 == 0 && w3 == 0 && w4 == 0
 	case ConditionQuest:
-		q, active := questActive(c, w1)
+		q, exists := c.Quests[uint32(w1)]
+		active := exists && (q.State == game.InProgress || q.State == game.Completed)
 		if w2 == 2 {
-			return !active
+			if op == 0 {
+				return !exists || q.State != game.InProgress
+			}
+			return compare(int64(questState(c, w1)), value, op)
 		}
 		if w2 != 1 {
 			return false
@@ -123,10 +144,28 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		mark := int64(0)
 		if active {
 			mark = int64(q.Step)
+			if q.State == game.Completed && mark == 0 {
+				mark = 1
+			}
+		}
+		if !active && (op == CompareLessOrEqual || (op == CompareLess && value > 1) || op == CompareGreater || op == CompareGreaterOrEqual) {
+			return false
 		}
 		return compare(mark, value, op)
 	case ConditionSubject:
 		switch w1 {
+		case SubjectGender:
+			male := c.Body == game.BodySmallMale || c.Body == game.BodyBigMale
+			return (w2 == GenderMale && male) || (w2 == GenderFemale && !male)
+		case SubjectElement, SubjectRebornJob:
+			actual := uint16(c.Element)
+			if w1 == SubjectRebornJob {
+				actual = uint16(c.Job)
+			}
+			if op == CompareNotEqual {
+				return actual != w2
+			}
+			return actual == w2
 		case 1:
 			switch w2 {
 			case 1:
@@ -212,7 +251,11 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		return compare(grade, value, op)
 	case ConditionWaterGathering:
 		// Only the four verified water timers have native condition semantics.
-		if !game.IsWaterGatheringTimer(w1) || w2 < 1 || w2 > 2 || w3 != 0 || w4 != 0 || w5 != 0 || w6&255 != 0 {
+		known := slices.Contains(w.catalog.EventGathering.Timers, w1)
+		if w.catalog.EventGathering.Timers == nil {
+			known = game.IsWaterGatheringTimer(w1)
+		}
+		if !known || w2 < 1 || w2 > 2 || w3 != 0 || w4 != 0 || w5 != 0 || w6&255 != 0 {
 			return false
 		}
 		return c.EventTimerActive(w1, now) == (w2 == 1)
@@ -224,7 +267,15 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		if v != nil {
 			team += int64(v.Team.Load())
 		}
-		return ev != nil && mapID == game.MapID11052 && ev.ClickID == 3 && w1 == 1 && w2 == 0 && w3 == 0 && compare(team, value, op)
+		return w1 == 1 && w2 == 0 && w3 == 0 && compare(team, value, op)
+	case ConditionMissionVariable:
+		actual := int64(0)
+		if v != nil {
+			actual = int64(v.MissionVariables[w1])
+		}
+		return (w2 == MissionVariableAdd && compare(actual, value, op)) || (w2 == MissionVariableAbsent && actual == 0)
+	case ConditionCompanionRebirth:
+		return w1 == uint16(c.CompanionRebirthState())
 	case ConditionCompanionEquipment:
 		// EveEventRuntime enables only Elin's three authored weapon gates.
 		if mapID != storyElinWeaponMap || w1 != storyElinTemplate ||
@@ -294,7 +345,7 @@ func (w *World) propCondition(c *game.Character, v *View, mapID uint16, ev *asse
 		}
 	}
 	if mode == 3 {
-		if state, declared := w.PropState(c, mapID, actor); declared {
+		if state, declared := w.PropState(c, mapID, actor, v); declared {
 			return compare(int64(state), value, op)
 		}
 	}
@@ -308,13 +359,13 @@ func ChestKey(mapID, event uint16) uint32 { return uint32(mapID)*1000 + uint32(e
 // PropState is PreEventInterpreter.TryGetNativePropState: the frame PreEvents author for
 // an actor (action 2/5 with word 1), where later matching rules win. declared reports
 // whether any rule mentions the actor; undeclared props start closed (0).
-func (w *World) PropState(c *game.Character, mapID, actor uint16) (state int32, declared bool) {
+func (w *World) PropState(c *game.Character, mapID, actor uint16, views ...*View) (state int32, declared bool) {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return 0, false
 	}
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
+		for _, r := range w.applicable(c, mapID, ev, views...) {
 			var frames []int32
 			for _, a := range r.actions {
 				if a.Data[0] == 2 && le16(a.Data[:], 1) == actor && le16(a.Data[:], 3) == 5 && le16(a.Data[:], 5) == 1 {
@@ -325,7 +376,7 @@ func (w *World) PropState(c *game.Character, mapID, actor uint16) (state int32, 
 				continue
 			}
 			declared = true
-			if w.ruleMatches(c, mapID, r) {
+			if w.ruleMatches(c, mapID, r, views...) {
 				state = frames[len(frames)-1]
 			}
 		}
@@ -456,8 +507,8 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 	}
 	// Rules are cumulative in file order; later matches override earlier ones.
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
-			if !w.ruleMatches(c, mapID, r) {
+		for _, r := range w.applicable(c, mapID, ev, view) {
+			if !w.ruleMatches(c, mapID, r, view) {
 				continue
 			}
 			for _, a := range r.actions {

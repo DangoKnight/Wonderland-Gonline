@@ -28,7 +28,7 @@ func (s *Server) gmClearSkills(ctx context.Context, actor *Session, arguments []
 	}
 	next := target.character.Clone()
 	next.Skills = game.StarterSkills(next.Body, next.Head, next.Element)
-	next.UnlockQualifiedSkills(false, s.hasSkill)
+	s.unlockQualifiedSkills(&next, false)
 
 	snapshotCharacter := skillSnapshotWithRemovals(*target.character, next)
 	snapshot, err := s.nativeStatsSnapshot(snapshotCharacter).BaseStatsPacket(func(id uint16) (uint16, bool) {

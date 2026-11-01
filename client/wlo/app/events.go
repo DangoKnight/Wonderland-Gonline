@@ -139,7 +139,7 @@ func (c *Client) eventFrame(s []byte) {
 	case eventKindTalk:
 		c.faceConversation(subject, actor, s[eventFrameMode] == npcTalkTurn)
 		c.event.done = false
-		c.say(subject, actor, talk)
+		c.say(subject, actor, uint32(talk)|uint32(s[eventFrameText+2])<<16)
 	case eventKindQuestion:
 		c.faceConversation(subject, actor, true)
 		c.ask(subject, actor, talk, s[eventFrameMode])
@@ -233,7 +233,7 @@ func (c *Client) eventTrack(subject byte, value uint32) {
 }
 
 // say is kind 1: the line talk spoken by an NPC or the player.
-func (c *Client) say(subject byte, actor, talk uint16) {
+func (c *Client) say(subject byte, actor uint16, talk uint32) {
 	c.loadTalks()
 	text := clientassets.Big5Text(c.talks[talk])
 	c.Talk.Say(text, c.speaker(subject, actor), c.World.Player.Name)
@@ -254,7 +254,7 @@ func (c *Client) loadTalks() {
 		c.talks = c.resources.talks
 		if err != nil {
 			log.Printf("talk: %v", err)
-			c.talks = map[uint16]string{}
+			c.talks = map[uint32]string{}
 		}
 	}
 }
@@ -366,7 +366,7 @@ func (c *Client) questionText(e world.QuestionEntry) []byte {
 	switch e.Kind {
 	case world.QuestionText:
 		c.loadTalks()
-		return clientassets.Big5Text(c.talks[e.Value])
+		return clientassets.Big5Text(c.talks[uint32(e.Value)])
 	case world.QuestionItem:
 		if it, ok := c.items[e.Value]; ok {
 			return clientassets.Big5Text(it.Definition.Name)

@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	robinsonFirstContactEvent    = 8
+	robinsonFirstContactBranch   = 1
 	robinsonRecruitmentEvent     = 19
 	robinsonRaftBranch           = 1
 	robinsonDialogueBranch       = 3
@@ -90,6 +92,8 @@ func (s *Server) storyContinuation(ctx context.Context, c *Session, es *eventSes
 	nextEvent, click := event, es.click
 	follow := false
 	switch {
+	case onBeach(mapID) && event == robinsonFirstContactEvent && branch == robinsonFirstContactBranch:
+		follow = true
 	case mapID == game.MapID11077 && event == 7 && branch == 5:
 		nextEvent, click, follow = 12, 13, true
 	case mapID == game.MapID12052 && event == 6 && (branch == 1 || branch == 6 || branch == 14):

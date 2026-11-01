@@ -101,12 +101,16 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 	packets := [][]byte{turnPacket(a.Actor), r.spend(a.Actor, a.Skill)}
 	var results []targetResult
 	var defeated [][]byte
+	a.SkillEXP = game.CombatSkillEXPPerUse
 	for _, target := range targets {
 		result := targetResult{target: target, result: protocol.BattleHitMiss, stat: game.StatCurrentHP, mode: effectNormalHitMode}
 		if !r.attackMisses(a.Actor, target, a.Skill) {
 			result.result = protocol.BattleHitLanded
 			result.defended = defending[target.key()]
 			result.amount, result.mode = r.strikeDamage(a, target, result.defended, 1)
+			if target == selected {
+				a.SkillEXP = game.CombatSkillEXP(result.amount, target.HP, target.MaxHP)
+			}
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
 			if target.Dead() {

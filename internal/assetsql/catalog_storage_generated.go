@@ -8,6 +8,955 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
+type MapTransitionsRow struct {
+	MapTransitionsOrdinal   int `gorm:"column:map_transitions_ordinal;primaryKey;autoIncrement:false"`
+	ValueFromMap            uint16
+	ValueEntry              uint16
+	ValueDestinationName    string
+	ValueDestinationMap     uint16
+	ValueDestinationX       uint16
+	ValueDestinationY       uint16
+	ValueQuest              uint32
+	ValueTalk               uint32
+	ValueItemsPresent       bool
+	ValueSkipIfOwnedPresent bool
+}
+
+func (MapTransitionsRow) TableName() string { return "catalog_map_transitions" }
+func writeMapTransitions(tx *gorm.DB, values []assets.MapTransition) error {
+	var rows []MapTransitionsRow
+	for key, value := range values {
+		row := MapTransitionsRow{MapTransitionsOrdinal: key}
+		row.ValueFromMap = value.FromMap
+		row.ValueEntry = value.Entry
+		row.ValueDestinationName = value.Destination.Name
+		row.ValueDestinationMap = value.Destination.Map
+		row.ValueDestinationX = value.Destination.X
+		row.ValueDestinationY = value.Destination.Y
+		row.ValueQuest = value.Quest
+		row.ValueTalk = value.Talk
+		row.ValueItemsPresent = value.Items != nil
+		row.ValueSkipIfOwnedPresent = value.SkipIfOwned != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeMapTransitionsItems(tx, value.Items, key); err != nil {
+			return err
+		}
+		if err := writeMapTransitionsSkipIfOwned(tx, value.SkipIfOwned, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readMapTransitions(tx *gorm.DB) ([]assets.MapTransition, error) {
+	result := make([]assets.MapTransition, 0)
+	var rows []MapTransitionsRow
+	query := tx
+	if err := query.Order("map_transitions_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.MapTransition
+		value.FromMap = row.ValueFromMap
+		value.Entry = row.ValueEntry
+		value.Destination.Name = row.ValueDestinationName
+		value.Destination.Map = row.ValueDestinationMap
+		value.Destination.X = row.ValueDestinationX
+		value.Destination.Y = row.ValueDestinationY
+		value.Quest = row.ValueQuest
+		value.Talk = row.ValueTalk
+		if row.ValueItemsPresent {
+			var err error
+			value.Items, err = readMapTransitionsItems(tx, row.MapTransitionsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueSkipIfOwnedPresent {
+			var err error
+			value.SkipIfOwned, err = readMapTransitionsSkipIfOwned(tx, row.MapTransitionsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.MapTransitionsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type MapTransitionsItemsRow struct {
+	MapTransitionsOrdinal      int                `gorm:"column:map_transitions_ordinal;primaryKey;autoIncrement:false"`
+	MapTransitionsItemsOrdinal int                `gorm:"column:map_transitions_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                     *MapTransitionsRow `gorm:"belongsTo:Parent;foreignKey:MapTransitionsOrdinal;references:MapTransitionsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueItemID                uint16
+	ValueQuantity              uint8
+}
+
+func (MapTransitionsItemsRow) TableName() string { return "catalog_map_transitions_items" }
+func writeMapTransitionsItems(tx *gorm.DB, values []assets.BoxedItem, MapTransitionsOrdinal int) error {
+	var rows []MapTransitionsItemsRow
+	for key, value := range values {
+		row := MapTransitionsItemsRow{MapTransitionsOrdinal: MapTransitionsOrdinal, MapTransitionsItemsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueQuantity = value.Quantity
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readMapTransitionsItems(tx *gorm.DB, MapTransitionsOrdinal int) ([]assets.BoxedItem, error) {
+	result := make([]assets.BoxedItem, 0)
+	var rows []MapTransitionsItemsRow
+	query := tx
+	query = query.Where("map_transitions_ordinal = ?", MapTransitionsOrdinal)
+	if err := query.Order("map_transitions_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.BoxedItem
+		value.ItemID = row.ValueItemID
+		value.Quantity = row.ValueQuantity
+		if row.MapTransitionsItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type MapTransitionsSkipIfOwnedRow struct {
+	MapTransitionsOrdinal            int                `gorm:"column:map_transitions_ordinal;primaryKey;autoIncrement:false"`
+	MapTransitionsSkipIfOwnedOrdinal int                `gorm:"column:map_transitions_skip_if_owned_ordinal;primaryKey;autoIncrement:false"`
+	Parent                           *MapTransitionsRow `gorm:"belongsTo:Parent;foreignKey:MapTransitionsOrdinal;references:MapTransitionsOrdinal;constraint:OnDelete:CASCADE"`
+	Value                            uint16
+}
+
+func (MapTransitionsSkipIfOwnedRow) TableName() string {
+	return "catalog_map_transitions_skip_if_owned"
+}
+func writeMapTransitionsSkipIfOwned(tx *gorm.DB, values []uint16, MapTransitionsOrdinal int) error {
+	var rows []MapTransitionsSkipIfOwnedRow
+	for key, value := range values {
+		row := MapTransitionsSkipIfOwnedRow{MapTransitionsOrdinal: MapTransitionsOrdinal, MapTransitionsSkipIfOwnedOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readMapTransitionsSkipIfOwned(tx *gorm.DB, MapTransitionsOrdinal int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []MapTransitionsSkipIfOwnedRow
+	query := tx
+	query = query.Where("map_transitions_ordinal = ?", MapTransitionsOrdinal)
+	if err := query.Order("map_transitions_skip_if_owned_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.MapTransitionsSkipIfOwnedOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type TentToolHostsRow struct {
+	TentToolHostsOrdinal int `gorm:"column:tent_tool_hosts_ordinal;primaryKey;autoIncrement:false"`
+	Value                uint16
+}
+
+func (TentToolHostsRow) TableName() string { return "catalog_tent_tool_hosts" }
+func writeTentToolHosts(tx *gorm.DB, values []uint16) error {
+	var rows []TentToolHostsRow
+	for key, value := range values {
+		row := TentToolHostsRow{TentToolHostsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTentToolHosts(tx *gorm.DB) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []TentToolHostsRow
+	query := tx
+	if err := query.Order("tent_tool_hosts_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.TentToolHostsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type ChestPropCategoriesRow struct {
+	ChestPropCategoriesKey uint16 `gorm:"column:chest_prop_categories_key;primaryKey;autoIncrement:false"`
+	Value                  string
+}
+
+func (ChestPropCategoriesRow) TableName() string { return "catalog_chest_prop_categories" }
+func writeChestPropCategories(tx *gorm.DB, values map[uint16]string) error {
+	var rows []ChestPropCategoriesRow
+	for key, value := range values {
+		row := ChestPropCategoriesRow{ChestPropCategoriesKey: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readChestPropCategories(tx *gorm.DB) (map[uint16]string, error) {
+	result := make(map[uint16]string)
+	var rows []ChestPropCategoriesRow
+	query := tx
+	if err := query.Order("chest_prop_categories_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value string
+		value = row.Value
+		result[row.ChestPropCategoriesKey] = value
+	}
+	return result, nil
+}
+
+type TravelRow struct {
+	TravelKey                 int `gorm:"column:travel_key;primaryKey;autoIncrement:false"`
+	ValueReturnScrollsPresent bool
+	ValueBambooItemsPresent   bool
+	ValueScrollsPresent       bool
+	ValueDestinationsPresent  bool
+}
+
+func (TravelRow) TableName() string { return "catalog_travel" }
+func writeTravel(tx *gorm.DB, values assets.TravelRules) error {
+	var rows []TravelRow
+	{
+		key, value := 1, values
+		row := TravelRow{TravelKey: key}
+		row.ValueReturnScrollsPresent = value.ReturnScrolls != nil
+		row.ValueBambooItemsPresent = value.BambooItems != nil
+		row.ValueScrollsPresent = value.Scrolls != nil
+		row.ValueDestinationsPresent = value.Destinations != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	{
+		key, value := 1, values
+		if err := writeTravelReturnScrolls(tx, value.ReturnScrolls, key); err != nil {
+			return err
+		}
+		if err := writeTravelBambooItems(tx, value.BambooItems, key); err != nil {
+			return err
+		}
+		if err := writeTravelScrolls(tx, value.Scrolls, key); err != nil {
+			return err
+		}
+		if err := writeTravelDestinations(tx, value.Destinations, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTravel(tx *gorm.DB) (assets.TravelRules, error) {
+	var result assets.TravelRules
+	var rows []TravelRow
+	query := tx
+	if err := query.Order("travel_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	if len(rows) != 1 {
+		return result, fmt.Errorf("missing singleton catalog row")
+	}
+	for _, row := range rows {
+		var value assets.TravelRules
+		if row.ValueReturnScrollsPresent {
+			var err error
+			value.ReturnScrolls, err = readTravelReturnScrolls(tx, row.TravelKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueBambooItemsPresent {
+			var err error
+			value.BambooItems, err = readTravelBambooItems(tx, row.TravelKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueScrollsPresent {
+			var err error
+			value.Scrolls, err = readTravelScrolls(tx, row.TravelKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValueDestinationsPresent {
+			var err error
+			value.Destinations, err = readTravelDestinations(tx, row.TravelKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result = value
+	}
+	return result, nil
+}
+
+type TravelReturnScrollsRow struct {
+	TravelKey              int        `gorm:"column:travel_key;primaryKey;autoIncrement:false"`
+	TravelReturnScrollsKey uint16     `gorm:"column:travel_return_scrolls_key;primaryKey;autoIncrement:false"`
+	Parent                 *TravelRow `gorm:"belongsTo:Parent;foreignKey:TravelKey;references:TravelKey;constraint:OnDelete:CASCADE"`
+	ValueName              string
+	ValueMap               uint16
+	ValueX                 uint16
+	ValueY                 uint16
+}
+
+func (TravelReturnScrollsRow) TableName() string { return "catalog_travel_return_scrolls" }
+func writeTravelReturnScrolls(tx *gorm.DB, values map[uint16]assets.TravelDestination, TravelKey int) error {
+	var rows []TravelReturnScrollsRow
+	for key, value := range values {
+		row := TravelReturnScrollsRow{TravelKey: TravelKey, TravelReturnScrollsKey: key}
+		row.ValueName = value.Name
+		row.ValueMap = value.Map
+		row.ValueX = value.X
+		row.ValueY = value.Y
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTravelReturnScrolls(tx *gorm.DB, TravelKey int) (map[uint16]assets.TravelDestination, error) {
+	result := make(map[uint16]assets.TravelDestination)
+	var rows []TravelReturnScrollsRow
+	query := tx
+	query = query.Where("travel_key = ?", TravelKey)
+	if err := query.Order("travel_return_scrolls_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.TravelDestination
+		value.Name = row.ValueName
+		value.Map = row.ValueMap
+		value.X = row.ValueX
+		value.Y = row.ValueY
+		result[row.TravelReturnScrollsKey] = value
+	}
+	return result, nil
+}
+
+type TravelBambooItemsRow struct {
+	TravelKey                int        `gorm:"column:travel_key;primaryKey;autoIncrement:false"`
+	TravelBambooItemsOrdinal int        `gorm:"column:travel_bamboo_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                   *TravelRow `gorm:"belongsTo:Parent;foreignKey:TravelKey;references:TravelKey;constraint:OnDelete:CASCADE"`
+	Value                    uint16
+}
+
+func (TravelBambooItemsRow) TableName() string { return "catalog_travel_bamboo_items" }
+func writeTravelBambooItems(tx *gorm.DB, values []uint16, TravelKey int) error {
+	var rows []TravelBambooItemsRow
+	for key, value := range values {
+		row := TravelBambooItemsRow{TravelKey: TravelKey, TravelBambooItemsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTravelBambooItems(tx *gorm.DB, TravelKey int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []TravelBambooItemsRow
+	query := tx
+	query = query.Where("travel_key = ?", TravelKey)
+	if err := query.Order("travel_bamboo_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.TravelBambooItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type TravelScrollsRow struct {
+	TravelKey        int        `gorm:"column:travel_key;primaryKey;autoIncrement:false"`
+	TravelScrollsKey uint16     `gorm:"column:travel_scrolls_key;primaryKey;autoIncrement:false"`
+	Parent           *TravelRow `gorm:"belongsTo:Parent;foreignKey:TravelKey;references:TravelKey;constraint:OnDelete:CASCADE"`
+	Value            uint8
+}
+
+func (TravelScrollsRow) TableName() string { return "catalog_travel_scrolls" }
+func writeTravelScrolls(tx *gorm.DB, values map[uint16]uint8, TravelKey int) error {
+	var rows []TravelScrollsRow
+	for key, value := range values {
+		row := TravelScrollsRow{TravelKey: TravelKey, TravelScrollsKey: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTravelScrolls(tx *gorm.DB, TravelKey int) (map[uint16]uint8, error) {
+	result := make(map[uint16]uint8)
+	var rows []TravelScrollsRow
+	query := tx
+	query = query.Where("travel_key = ?", TravelKey)
+	if err := query.Order("travel_scrolls_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint8
+		value = row.Value
+		result[row.TravelScrollsKey] = value
+	}
+	return result, nil
+}
+
+type TravelDestinationsRow struct {
+	TravelKey             int        `gorm:"column:travel_key;primaryKey;autoIncrement:false"`
+	TravelDestinationsKey uint8      `gorm:"column:travel_destinations_key;primaryKey;autoIncrement:false"`
+	Parent                *TravelRow `gorm:"belongsTo:Parent;foreignKey:TravelKey;references:TravelKey;constraint:OnDelete:CASCADE"`
+	ValueName             string
+	ValueMap              uint16
+	ValueX                uint16
+	ValueY                uint16
+}
+
+func (TravelDestinationsRow) TableName() string { return "catalog_travel_destinations" }
+func writeTravelDestinations(tx *gorm.DB, values map[uint8]assets.TravelDestination, TravelKey int) error {
+	var rows []TravelDestinationsRow
+	for key, value := range values {
+		row := TravelDestinationsRow{TravelKey: TravelKey, TravelDestinationsKey: key}
+		row.ValueName = value.Name
+		row.ValueMap = value.Map
+		row.ValueX = value.X
+		row.ValueY = value.Y
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTravelDestinations(tx *gorm.DB, TravelKey int) (map[uint8]assets.TravelDestination, error) {
+	result := make(map[uint8]assets.TravelDestination)
+	var rows []TravelDestinationsRow
+	query := tx
+	query = query.Where("travel_key = ?", TravelKey)
+	if err := query.Order("travel_destinations_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.TravelDestination
+		value.Name = row.ValueName
+		value.Map = row.ValueMap
+		value.X = row.ValueX
+		value.Y = row.ValueY
+		result[row.TravelDestinationsKey] = value
+	}
+	return result, nil
+}
+
+type NPCShopDefaultsRow struct {
+	NPCShopDefaultsKey uint16 `gorm:"column:n_p_c_shop_defaults_key;primaryKey;autoIncrement:false"`
+	ValuePresent       bool
+}
+
+func (NPCShopDefaultsRow) TableName() string { return "catalog_n_p_c_shop_defaults" }
+func writeNPCShopDefaults(tx *gorm.DB, values map[uint16][]uint16) error {
+	var rows []NPCShopDefaultsRow
+	for key, value := range values {
+		row := NPCShopDefaultsRow{NPCShopDefaultsKey: key}
+		row.ValuePresent = value != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeNPCShopDefaultsValues(tx, value, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readNPCShopDefaults(tx *gorm.DB) (map[uint16][]uint16, error) {
+	result := make(map[uint16][]uint16)
+	var rows []NPCShopDefaultsRow
+	query := tx
+	if err := query.Order("n_p_c_shop_defaults_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value []uint16
+		if row.ValuePresent {
+			var err error
+			value, err = readNPCShopDefaultsValues(tx, row.NPCShopDefaultsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.NPCShopDefaultsKey] = value
+	}
+	return result, nil
+}
+
+type NPCShopDefaultsValuesRow struct {
+	NPCShopDefaultsKey           uint16              `gorm:"column:n_p_c_shop_defaults_key;primaryKey;autoIncrement:false"`
+	NPCShopDefaultsValuesOrdinal int                 `gorm:"column:n_p_c_shop_defaults_values_ordinal;primaryKey;autoIncrement:false"`
+	Parent                       *NPCShopDefaultsRow `gorm:"belongsTo:Parent;foreignKey:NPCShopDefaultsKey;references:NPCShopDefaultsKey;constraint:OnDelete:CASCADE"`
+	Value                        uint16
+}
+
+func (NPCShopDefaultsValuesRow) TableName() string { return "catalog_n_p_c_shop_defaults_values" }
+func writeNPCShopDefaultsValues(tx *gorm.DB, values []uint16, NPCShopDefaultsKey uint16) error {
+	var rows []NPCShopDefaultsValuesRow
+	for key, value := range values {
+		row := NPCShopDefaultsValuesRow{NPCShopDefaultsKey: NPCShopDefaultsKey, NPCShopDefaultsValuesOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readNPCShopDefaultsValues(tx *gorm.DB, NPCShopDefaultsKey uint16) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []NPCShopDefaultsValuesRow
+	query := tx
+	query = query.Where("n_p_c_shop_defaults_key = ?", NPCShopDefaultsKey)
+	if err := query.Order("n_p_c_shop_defaults_values_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.NPCShopDefaultsValuesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type TentSurfacesRow struct {
+	TentSurfacesKey uint16 `gorm:"column:tent_surfaces_key;primaryKey;autoIncrement:false"`
+	Value           uint8
+}
+
+func (TentSurfacesRow) TableName() string { return "catalog_tent_surfaces" }
+func writeTentSurfaces(tx *gorm.DB, values map[uint16]uint8) error {
+	var rows []TentSurfacesRow
+	for key, value := range values {
+		row := TentSurfacesRow{TentSurfacesKey: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readTentSurfaces(tx *gorm.DB) (map[uint16]uint8, error) {
+	result := make(map[uint16]uint8)
+	var rows []TentSurfacesRow
+	query := tx
+	if err := query.Order("tent_surfaces_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint8
+		value = row.Value
+		result[row.TentSurfacesKey] = value
+	}
+	return result, nil
+}
+
+type BoxedItemsRow struct {
+	BoxedItemsKey uint16 `gorm:"column:boxed_items_key;primaryKey;autoIncrement:false"`
+	ValueItemID   uint16
+	ValueQuantity uint8
+}
+
+func (BoxedItemsRow) TableName() string { return "catalog_boxed_items" }
+func writeBoxedItems(tx *gorm.DB, values map[uint16]assets.BoxedItem) error {
+	var rows []BoxedItemsRow
+	for key, value := range values {
+		row := BoxedItemsRow{BoxedItemsKey: key}
+		row.ValueItemID = value.ItemID
+		row.ValueQuantity = value.Quantity
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readBoxedItems(tx *gorm.DB) (map[uint16]assets.BoxedItem, error) {
+	result := make(map[uint16]assets.BoxedItem)
+	var rows []BoxedItemsRow
+	query := tx
+	if err := query.Order("boxed_items_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.BoxedItem
+		value.ItemID = row.ValueItemID
+		value.Quantity = row.ValueQuantity
+		result[row.BoxedItemsKey] = value
+	}
+	return result, nil
+}
+
+type SkillEvolutionsRow struct {
+	SkillEvolutionsOrdinal int `gorm:"column:skill_evolutions_ordinal;primaryKey;autoIncrement:false"`
+	ValueFromSkill         uint16
+	ValueToSkill           uint16
+	ValueRequiredGrade     uint8
+}
+
+func (SkillEvolutionsRow) TableName() string { return "catalog_skill_evolutions" }
+func writeSkillEvolutions(tx *gorm.DB, values []assets.SkillEvolution) error {
+	var rows []SkillEvolutionsRow
+	for key, value := range values {
+		row := SkillEvolutionsRow{SkillEvolutionsOrdinal: key}
+		row.ValueFromSkill = value.FromSkill
+		row.ValueToSkill = value.ToSkill
+		row.ValueRequiredGrade = value.RequiredGrade
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readSkillEvolutions(tx *gorm.DB) ([]assets.SkillEvolution, error) {
+	result := make([]assets.SkillEvolution, 0)
+	var rows []SkillEvolutionsRow
+	query := tx
+	if err := query.Order("skill_evolutions_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.SkillEvolution
+		value.FromSkill = row.ValueFromSkill
+		value.ToSkill = row.ValueToSkill
+		value.RequiredGrade = row.ValueRequiredGrade
+		if row.SkillEvolutionsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type EventGatheringRow struct {
+	EventGatheringKey  int `gorm:"column:event_gathering_key;primaryKey;autoIncrement:false"`
+	ValueTimersPresent bool
+	ValuePoolsPresent  bool
+}
+
+func (EventGatheringRow) TableName() string { return "catalog_event_gathering" }
+func writeEventGathering(tx *gorm.DB, values assets.EventGatheringRules) error {
+	var rows []EventGatheringRow
+	{
+		key, value := 1, values
+		row := EventGatheringRow{EventGatheringKey: key}
+		row.ValueTimersPresent = value.Timers != nil
+		row.ValuePoolsPresent = value.Pools != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	{
+		key, value := 1, values
+		if err := writeEventGatheringTimers(tx, value.Timers, key); err != nil {
+			return err
+		}
+		if err := writeEventGatheringPools(tx, value.Pools, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readEventGathering(tx *gorm.DB) (assets.EventGatheringRules, error) {
+	var result assets.EventGatheringRules
+	var rows []EventGatheringRow
+	query := tx
+	if err := query.Order("event_gathering_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	if len(rows) != 1 {
+		return result, fmt.Errorf("missing singleton catalog row")
+	}
+	for _, row := range rows {
+		var value assets.EventGatheringRules
+		if row.ValueTimersPresent {
+			var err error
+			value.Timers, err = readEventGatheringTimers(tx, row.EventGatheringKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.ValuePoolsPresent {
+			var err error
+			value.Pools, err = readEventGatheringPools(tx, row.EventGatheringKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result = value
+	}
+	return result, nil
+}
+
+type EventGatheringTimersRow struct {
+	EventGatheringKey           int                `gorm:"column:event_gathering_key;primaryKey;autoIncrement:false"`
+	EventGatheringTimersOrdinal int                `gorm:"column:event_gathering_timers_ordinal;primaryKey;autoIncrement:false"`
+	Parent                      *EventGatheringRow `gorm:"belongsTo:Parent;foreignKey:EventGatheringKey;references:EventGatheringKey;constraint:OnDelete:CASCADE"`
+	Value                       uint16
+}
+
+func (EventGatheringTimersRow) TableName() string { return "catalog_event_gathering_timers" }
+func writeEventGatheringTimers(tx *gorm.DB, values []uint16, EventGatheringKey int) error {
+	var rows []EventGatheringTimersRow
+	for key, value := range values {
+		row := EventGatheringTimersRow{EventGatheringKey: EventGatheringKey, EventGatheringTimersOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readEventGatheringTimers(tx *gorm.DB, EventGatheringKey int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []EventGatheringTimersRow
+	query := tx
+	query = query.Where("event_gathering_key = ?", EventGatheringKey)
+	if err := query.Order("event_gathering_timers_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.EventGatheringTimersOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type EventGatheringPoolsRow struct {
+	EventGatheringKey          int                `gorm:"column:event_gathering_key;primaryKey;autoIncrement:false"`
+	EventGatheringPoolsOrdinal int                `gorm:"column:event_gathering_pools_ordinal;primaryKey;autoIncrement:false"`
+	Parent                     *EventGatheringRow `gorm:"belongsTo:Parent;foreignKey:EventGatheringKey;references:EventGatheringKey;constraint:OnDelete:CASCADE"`
+	ValueType                  uint16
+	ValueVariant               uint32
+	ValueItemsPresent          bool
+}
+
+func (EventGatheringPoolsRow) TableName() string { return "catalog_event_gathering_pools" }
+func writeEventGatheringPools(tx *gorm.DB, values []assets.EventGatheringPool, EventGatheringKey int) error {
+	var rows []EventGatheringPoolsRow
+	for key, value := range values {
+		row := EventGatheringPoolsRow{EventGatheringKey: EventGatheringKey, EventGatheringPoolsOrdinal: key}
+		row.ValueType = value.Type
+		row.ValueVariant = value.Variant
+		row.ValueItemsPresent = value.Items != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeEventGatheringPoolsItems(tx, value.Items, EventGatheringKey, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readEventGatheringPools(tx *gorm.DB, EventGatheringKey int) ([]assets.EventGatheringPool, error) {
+	result := make([]assets.EventGatheringPool, 0)
+	var rows []EventGatheringPoolsRow
+	query := tx
+	query = query.Where("event_gathering_key = ?", EventGatheringKey)
+	if err := query.Order("event_gathering_pools_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.EventGatheringPool
+		value.Type = row.ValueType
+		value.Variant = row.ValueVariant
+		if row.ValueItemsPresent {
+			var err error
+			value.Items, err = readEventGatheringPoolsItems(tx, row.EventGatheringKey, row.EventGatheringPoolsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.EventGatheringPoolsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type EventGatheringPoolsItemsRow struct {
+	EventGatheringKey               int                     `gorm:"column:event_gathering_key;primaryKey;autoIncrement:false"`
+	EventGatheringPoolsOrdinal      int                     `gorm:"column:event_gathering_pools_ordinal;primaryKey;autoIncrement:false"`
+	EventGatheringPoolsItemsOrdinal int                     `gorm:"column:event_gathering_pools_items_ordinal;primaryKey;autoIncrement:false"`
+	Parent                          *EventGatheringPoolsRow `gorm:"belongsTo:Parent;foreignKey:EventGatheringKey,EventGatheringPoolsOrdinal;references:EventGatheringKey,EventGatheringPoolsOrdinal;constraint:OnDelete:CASCADE"`
+	Value                           uint16
+}
+
+func (EventGatheringPoolsItemsRow) TableName() string { return "catalog_event_gathering_pools_items" }
+func writeEventGatheringPoolsItems(tx *gorm.DB, values []uint16, EventGatheringKey int, EventGatheringPoolsOrdinal int) error {
+	var rows []EventGatheringPoolsItemsRow
+	for key, value := range values {
+		row := EventGatheringPoolsItemsRow{EventGatheringKey: EventGatheringKey, EventGatheringPoolsOrdinal: EventGatheringPoolsOrdinal, EventGatheringPoolsItemsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readEventGatheringPoolsItems(tx *gorm.DB, EventGatheringKey int, EventGatheringPoolsOrdinal int) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []EventGatheringPoolsItemsRow
+	query := tx
+	query = query.Where("event_gathering_key = ?", EventGatheringKey)
+	query = query.Where("event_gathering_pools_ordinal = ?", EventGatheringPoolsOrdinal)
+	if err := query.Order("event_gathering_pools_items_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.EventGatheringPoolsItemsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type NPCBuyPricesRow struct {
+	NPCBuyPricesKey uint16 `gorm:"column:n_p_c_buy_prices_key;primaryKey;autoIncrement:false"`
+	Value           uint32
+}
+
+func (NPCBuyPricesRow) TableName() string { return "catalog_n_p_c_buy_prices" }
+func writeNPCBuyPrices(tx *gorm.DB, values map[uint16]uint32) error {
+	var rows []NPCBuyPricesRow
+	for key, value := range values {
+		row := NPCBuyPricesRow{NPCBuyPricesKey: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readNPCBuyPrices(tx *gorm.DB) (map[uint16]uint32, error) {
+	result := make(map[uint16]uint32)
+	var rows []NPCBuyPricesRow
+	query := tx
+	if err := query.Order("n_p_c_buy_prices_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		result[row.NPCBuyPricesKey] = value
+	}
+	return result, nil
+}
+
 type InstancesRow struct {
 	InstancesOrdinal  int `gorm:"column:instances_ordinal;primaryKey;autoIncrement:false"`
 	ValueID           uint16
@@ -2541,6 +3490,7 @@ type ChestPoolsRewardsRow struct {
 	ChestPoolsOrdinal        int            `gorm:"column:chest_pools_ordinal;primaryKey;autoIncrement:false"`
 	ChestPoolsRewardsOrdinal int            `gorm:"column:chest_pools_rewards_ordinal;primaryKey;autoIncrement:false"`
 	Parent                   *ChestPoolsRow `gorm:"belongsTo:Parent;foreignKey:ChestPoolsOrdinal;references:ChestPoolsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueGold                uint32
 	ValueItem                uint16
 	ValueName                string
 	ValueCount               uint8
@@ -2552,6 +3502,7 @@ func writeChestPoolsRewards(tx *gorm.DB, values []assets.ChestReward, ChestPools
 	var rows []ChestPoolsRewardsRow
 	for key, value := range values {
 		row := ChestPoolsRewardsRow{ChestPoolsOrdinal: ChestPoolsOrdinal, ChestPoolsRewardsOrdinal: key}
+		row.ValueGold = value.Gold
 		row.ValueItem = value.Item
 		row.ValueName = value.Name
 		row.ValueCount = value.Count
@@ -2575,6 +3526,7 @@ func readChestPoolsRewards(tx *gorm.DB, ChestPoolsOrdinal int) ([]assets.ChestRe
 	}
 	for _, row := range rows {
 		var value assets.ChestReward
+		value.Gold = row.ValueGold
 		value.Item = row.ValueItem
 		value.Name = row.ValueName
 		value.Count = row.ValueCount
@@ -4572,10 +5524,13 @@ type MapsNPCsRow struct {
 	ValueEventsPresent    bool
 	ValueLinks            []byte
 	ValueLinksPresent     bool
+	ValueSign             uint8
 	ValueTemplate         uint32
 	ValueRotation         uint8
 	ValueWalkBehavior     uint8
 	ValueWalkStepsPresent bool
+	ValueSpeed            uint8
+	ValueRoutesPresent    bool
 	ValueUnknownWords0    uint16
 	ValueUnknownWords1    uint16
 	ValueUnknownWords2    uint16
@@ -4596,10 +5551,13 @@ func writeMapsNPCs(tx *gorm.DB, values []assets.MapNPC, MapsKey uint16) error {
 		row.ValueEventsPresent = value.Events != nil
 		row.ValueLinks = value.Links
 		row.ValueLinksPresent = value.Links != nil
+		row.ValueSign = value.Sign
 		row.ValueTemplate = value.Template
 		row.ValueRotation = value.Rotation
 		row.ValueWalkBehavior = value.WalkBehavior
 		row.ValueWalkStepsPresent = value.WalkSteps != nil
+		row.ValueSpeed = value.Speed
+		row.ValueRoutesPresent = value.Routes != nil
 		row.ValueUnknownWords0 = value.UnknownWords[0]
 		row.ValueUnknownWords1 = value.UnknownWords[1]
 		row.ValueUnknownWords2 = value.UnknownWords[2]
@@ -4613,6 +5571,9 @@ func writeMapsNPCs(tx *gorm.DB, values []assets.MapNPC, MapsKey uint16) error {
 	}
 	for key, value := range values {
 		if err := writeMapsNPCsWalkSteps(tx, value.WalkSteps, MapsKey, key); err != nil {
+			return err
+		}
+		if err := writeMapsNPCsRoutes(tx, value.Routes, MapsKey, key); err != nil {
 			return err
 		}
 	}
@@ -4639,12 +5600,21 @@ func readMapsNPCs(tx *gorm.DB, MapsKey uint16) ([]assets.MapNPC, error) {
 		if row.ValueLinksPresent {
 			value.Links = append([]byte{}, row.ValueLinks...)
 		}
+		value.Sign = row.ValueSign
 		value.Template = row.ValueTemplate
 		value.Rotation = row.ValueRotation
 		value.WalkBehavior = row.ValueWalkBehavior
 		if row.ValueWalkStepsPresent {
 			var err error
 			value.WalkSteps, err = readMapsNPCsWalkSteps(tx, row.MapsKey, row.MapsNPCsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.Speed = row.ValueSpeed
+		if row.ValueRoutesPresent {
+			var err error
+			value.Routes, err = readMapsNPCsRoutes(tx, row.MapsKey, row.MapsNPCsOrdinal)
 			if err != nil {
 				return result, err
 			}
@@ -4703,6 +5673,105 @@ func readMapsNPCsWalkSteps(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int) ([]
 		value.Y = row.ValueY
 		value.Delay = row.ValueDelay
 		if row.MapsNPCsWalkStepsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type MapsNPCsRoutesRow struct {
+	MapsKey           uint16       `gorm:"column:maps_key;primaryKey;autoIncrement:false"`
+	MapsNPCsOrdinal   int          `gorm:"column:maps_n_p_cs_ordinal;primaryKey;autoIncrement:false"`
+	MapsNPCsRoutesKey uint8        `gorm:"column:maps_n_p_cs_routes_key;primaryKey;autoIncrement:false"`
+	Parent            *MapsNPCsRow `gorm:"belongsTo:Parent;foreignKey:MapsKey,MapsNPCsOrdinal;references:MapsKey,MapsNPCsOrdinal;constraint:OnDelete:CASCADE"`
+	ValuePresent      bool
+}
+
+func (MapsNPCsRoutesRow) TableName() string { return "catalog_maps_n_p_cs_routes" }
+func writeMapsNPCsRoutes(tx *gorm.DB, values map[uint8][]assets.RoutePoint, MapsKey uint16, MapsNPCsOrdinal int) error {
+	var rows []MapsNPCsRoutesRow
+	for key, value := range values {
+		row := MapsNPCsRoutesRow{MapsKey: MapsKey, MapsNPCsOrdinal: MapsNPCsOrdinal, MapsNPCsRoutesKey: key}
+		row.ValuePresent = value != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeMapsNPCsRoutesValues(tx, value, MapsKey, MapsNPCsOrdinal, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readMapsNPCsRoutes(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int) (map[uint8][]assets.RoutePoint, error) {
+	result := make(map[uint8][]assets.RoutePoint)
+	var rows []MapsNPCsRoutesRow
+	query := tx
+	query = query.Where("maps_key = ?", MapsKey)
+	query = query.Where("maps_n_p_cs_ordinal = ?", MapsNPCsOrdinal)
+	if err := query.Order("maps_n_p_cs_routes_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value []assets.RoutePoint
+		if row.ValuePresent {
+			var err error
+			value, err = readMapsNPCsRoutesValues(tx, row.MapsKey, row.MapsNPCsOrdinal, row.MapsNPCsRoutesKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.MapsNPCsRoutesKey] = value
+	}
+	return result, nil
+}
+
+type MapsNPCsRoutesValuesRow struct {
+	MapsKey                     uint16             `gorm:"column:maps_key;primaryKey;autoIncrement:false"`
+	MapsNPCsOrdinal             int                `gorm:"column:maps_n_p_cs_ordinal;primaryKey;autoIncrement:false"`
+	MapsNPCsRoutesKey           uint8              `gorm:"column:maps_n_p_cs_routes_key;primaryKey;autoIncrement:false"`
+	MapsNPCsRoutesValuesOrdinal int                `gorm:"column:maps_n_p_cs_routes_values_ordinal;primaryKey;autoIncrement:false"`
+	Parent                      *MapsNPCsRoutesRow `gorm:"belongsTo:Parent;foreignKey:MapsKey,MapsNPCsOrdinal,MapsNPCsRoutesKey;references:MapsKey,MapsNPCsOrdinal,MapsNPCsRoutesKey;constraint:OnDelete:CASCADE"`
+	ValueX                      uint32
+	ValueY                      uint32
+}
+
+func (MapsNPCsRoutesValuesRow) TableName() string { return "catalog_maps_n_p_cs_routes_values" }
+func writeMapsNPCsRoutesValues(tx *gorm.DB, values []assets.RoutePoint, MapsKey uint16, MapsNPCsOrdinal int, MapsNPCsRoutesKey uint8) error {
+	var rows []MapsNPCsRoutesValuesRow
+	for key, value := range values {
+		row := MapsNPCsRoutesValuesRow{MapsKey: MapsKey, MapsNPCsOrdinal: MapsNPCsOrdinal, MapsNPCsRoutesKey: MapsNPCsRoutesKey, MapsNPCsRoutesValuesOrdinal: key}
+		row.ValueX = value.X
+		row.ValueY = value.Y
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readMapsNPCsRoutesValues(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int, MapsNPCsRoutesKey uint8) ([]assets.RoutePoint, error) {
+	result := make([]assets.RoutePoint, 0)
+	var rows []MapsNPCsRoutesValuesRow
+	query := tx
+	query = query.Where("maps_key = ?", MapsKey)
+	query = query.Where("maps_n_p_cs_ordinal = ?", MapsNPCsOrdinal)
+	query = query.Where("maps_n_p_cs_routes_key = ?", MapsNPCsRoutesKey)
+	if err := query.Order("maps_n_p_cs_routes_values_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.RoutePoint
+		value.X = row.ValueX
+		value.Y = row.ValueY
+		if row.MapsNPCsRoutesValuesOrdinal != len(result) {
 			return result, fmt.Errorf("invalid catalog ordinal")
 		}
 		result = append(result, value)
@@ -5871,6 +6940,14 @@ func readWarnings(tx *gorm.DB) ([]string, error) {
 
 type catalogPresence struct {
 	ID                    int `gorm:"primaryKey;autoIncrement:false"`
+	MapTransitions        bool
+	TentToolHosts         bool
+	ChestPropCategories   bool
+	NPCShopDefaults       bool
+	TentSurfaces          bool
+	BoxedItems            bool
+	SkillEvolutions       bool
+	NPCBuyPrices          bool
 	Instances             bool
 	QuestDefinitions      bool
 	Manufacturing         bool
@@ -5902,6 +6979,26 @@ type catalogPresence struct {
 func (catalogPresence) TableName() string { return "catalog_presence" }
 func catalogTables() []any {
 	return []any{&catalogPresence{},
+		&MapTransitionsRow{},
+		&MapTransitionsItemsRow{},
+		&MapTransitionsSkipIfOwnedRow{},
+		&TentToolHostsRow{},
+		&ChestPropCategoriesRow{},
+		&TravelRow{},
+		&TravelReturnScrollsRow{},
+		&TravelBambooItemsRow{},
+		&TravelScrollsRow{},
+		&TravelDestinationsRow{},
+		&NPCShopDefaultsRow{},
+		&NPCShopDefaultsValuesRow{},
+		&TentSurfacesRow{},
+		&BoxedItemsRow{},
+		&SkillEvolutionsRow{},
+		&EventGatheringRow{},
+		&EventGatheringTimersRow{},
+		&EventGatheringPoolsRow{},
+		&EventGatheringPoolsItemsRow{},
+		&NPCBuyPricesRow{},
 		&InstancesRow{},
 		&QuestDefinitionsRow{},
 		&QuestDefinitionsAllLinkedMarkIDsRow{},
@@ -5976,6 +7073,8 @@ func catalogTables() []any {
 		&MapsExtendedGroupsRow{},
 		&MapsNPCsRow{},
 		&MapsNPCsWalkStepsRow{},
+		&MapsNPCsRoutesRow{},
+		&MapsNPCsRoutesValuesRow{},
 		&MapsItemsRow{},
 		&MapsWarpsRow{},
 		&MapsEventsRow{},
@@ -6069,6 +7168,12 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&MapsItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&MapsNPCsRoutesValuesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&MapsNPCsRoutesRow{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&MapsNPCsWalkStepsRow{}).Error; err != nil {
@@ -6293,10 +7398,78 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&InstancesRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&NPCBuyPricesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&EventGatheringPoolsItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&EventGatheringPoolsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&EventGatheringTimersRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&EventGatheringRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&SkillEvolutionsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&BoxedItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TentSurfacesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&NPCShopDefaultsValuesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&NPCShopDefaultsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TravelDestinationsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TravelScrollsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TravelBambooItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TravelReturnScrollsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TravelRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&ChestPropCategoriesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&TentToolHostsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&MapTransitionsSkipIfOwnedRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&MapTransitionsItemsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&MapTransitionsRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&catalogPresence{}).Error; err != nil {
 		return err
 	}
 	presence := catalogPresence{ID: catalogMetadataID}
+	presence.MapTransitions = c.MapTransitions != nil
+	presence.TentToolHosts = c.TentToolHosts != nil
+	presence.ChestPropCategories = c.ChestPropCategories != nil
+	presence.NPCShopDefaults = c.NPCShopDefaults != nil
+	presence.TentSurfaces = c.TentSurfaces != nil
+	presence.BoxedItems = c.BoxedItems != nil
+	presence.SkillEvolutions = c.SkillEvolutions != nil
+	presence.NPCBuyPrices = c.NPCBuyPrices != nil
 	presence.Instances = c.Instances != nil
 	presence.QuestDefinitions = c.QuestDefinitions != nil
 	presence.Manufacturing = c.Manufacturing != nil
@@ -6324,6 +7497,36 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetVouchers = c.PetVouchers != nil
 	presence.Warnings = c.Warnings != nil
 	if err := tx.Create(&presence).Error; err != nil {
+		return err
+	}
+	if err := writeMapTransitions(tx, c.MapTransitions); err != nil {
+		return err
+	}
+	if err := writeTentToolHosts(tx, c.TentToolHosts); err != nil {
+		return err
+	}
+	if err := writeChestPropCategories(tx, c.ChestPropCategories); err != nil {
+		return err
+	}
+	if err := writeTravel(tx, c.Travel); err != nil {
+		return err
+	}
+	if err := writeNPCShopDefaults(tx, c.NPCShopDefaults); err != nil {
+		return err
+	}
+	if err := writeTentSurfaces(tx, c.TentSurfaces); err != nil {
+		return err
+	}
+	if err := writeBoxedItems(tx, c.BoxedItems); err != nil {
+		return err
+	}
+	if err := writeSkillEvolutions(tx, c.SkillEvolutions); err != nil {
+		return err
+	}
+	if err := writeEventGathering(tx, c.EventGathering); err != nil {
+		return err
+	}
+	if err := writeNPCBuyPrices(tx, c.NPCBuyPrices); err != nil {
 		return err
 	}
 	if err := writeInstances(tx, c.Instances); err != nil {
@@ -6430,6 +7633,46 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	c := &assets.Catalog{}
 	var err error
+	c.MapTransitions, err = readMapTransitions(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.TentToolHosts, err = readTentToolHosts(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.ChestPropCategories, err = readChestPropCategories(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.Travel, err = readTravel(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.NPCShopDefaults, err = readNPCShopDefaults(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.TentSurfaces, err = readTentSurfaces(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.BoxedItems, err = readBoxedItems(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.SkillEvolutions, err = readSkillEvolutions(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.EventGathering, err = readEventGathering(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.NPCBuyPrices, err = readNPCBuyPrices(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Instances, err = readInstances(tx)
 	if err != nil {
 		return nil, err
@@ -6565,6 +7808,30 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	var presence catalogPresence
 	if err := tx.First(&presence, catalogMetadataID).Error; err != nil {
 		return nil, err
+	}
+	if !presence.MapTransitions {
+		c.MapTransitions = nil
+	}
+	if !presence.TentToolHosts {
+		c.TentToolHosts = nil
+	}
+	if !presence.ChestPropCategories {
+		c.ChestPropCategories = nil
+	}
+	if !presence.NPCShopDefaults {
+		c.NPCShopDefaults = nil
+	}
+	if !presence.TentSurfaces {
+		c.TentSurfaces = nil
+	}
+	if !presence.BoxedItems {
+		c.BoxedItems = nil
+	}
+	if !presence.SkillEvolutions {
+		c.SkillEvolutions = nil
+	}
+	if !presence.NPCBuyPrices {
+		c.NPCBuyPrices = nil
 	}
 	if !presence.Instances {
 		c.Instances = nil

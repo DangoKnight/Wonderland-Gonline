@@ -66,6 +66,8 @@ func TestPartySpeedChainPersistsEveryParticipantsSkill(t *testing.T) {
 		}
 	}
 	settle(t, s, leader)
+	// Each hit removes less than 1% of 10,000 HP: 10 base + ceil(percent) = 11 EXP.
+	// Starting at 99 leaves 10 EXP after the 100-point grade threshold.
 	for i, p := range players {
 		combos := 0
 		for _, packet := range wires[i].packets(t) {
@@ -80,7 +82,7 @@ func TestPartySpeedChainPersistsEveryParticipantsSkill(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(stored) == 0 || len(stored[0].Skills) != 1 || stored[0].Skills[0].Grade != 2 || stored[0].Skills[0].EXP != 0 || !stored[0].Reborn {
+		if len(stored) == 0 || len(stored[0].Skills) != 1 || stored[0].Skills[0].Grade != 2 || stored[0].Skills[0].EXP != 10 || !stored[0].Reborn {
 			t.Fatalf("member %d skill not saved: %+v", i, stored)
 		}
 	}

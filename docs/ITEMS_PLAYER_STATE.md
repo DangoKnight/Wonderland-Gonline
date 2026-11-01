@@ -2,8 +2,8 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v17** and structured assets
-schema **v13**. Tents were introduced in earlier schema versions.
+Current server startup requires gameplay schema **v18** and structured assets
+schema **v14**. Tents were introduced in earlier schema versions.
 Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. The upgrade replaces the configured
 databases in place; the originals remain in `backups/` for rollback.
@@ -27,11 +27,24 @@ an open home by owner character ID, :2 packs up the caller's home, and :3 exits.
 The client sees native map 63507; server scene identity also includes its owner.
 Different owners' homes cannot share local player visibility or interactions.
 
-The owner may place furniture, workbenches and decorations with AC62:1 and move
-or rotate them with AC62:3. Only floor zero is implemented. Movement uses the
-zero-based index in the current ordered furniture list, including after pickup.
-Only the owner can edit. Bag debit and insertion commit together; recovery leaves
-furniture intact if the bag is full. Metadata is preserved in both directions.
+The owner can place furniture with native AC62:1 (`slot:u8`, X/Y/Z UInt32,
+optional floor byte), pick it up with AC62:2 and move/rotate it with AC62:3.
+Native indices are one-based in the ordered root list; zero addresses the first
+root for compatibility. X/Y are tent-grid coordinates; Z is not a floor selector.
+The older zero-prefixed placement adapter remains available. Bounds and rotated
+footprints prevent overlapping native placements. An existing upgraded tent
+(type 2+) can place on floor one; new house upgrades remain pending.
+
+AC62:4 attaches an owned appliance to a configured host. The Work Platform
+(38049) accepts up to ten distinct tools, retaining each full item instance.
+Native AC62:4 tree snapshots include root/child indices and are sent after map
+acknowledgment, before releasing the scene gate. Pickup refunds the host and all
+its tools together; a full bag leaves the whole tree intact. SQL owns furniture,
+tool attachments, surfaces and access policy.
+
+New tents use Resource Recycling (38055) at (34,42) and the Work Platform at
+(37,42). Migration updates only the exact previous shared defaults; owned tents
+and edited defaults retain their content.
 
 Public chat commands provide workflows whose native requests are unimplemented
 in the reference:
@@ -134,11 +147,10 @@ Persist the gameplay result required for recovery, never the process lock.
 Coverage is centralized in [inventory and recovery checks](TESTING.md#inventory-and-recovery-checks). Live aLogin tent
 and furniture synchronization acceptance remains pending.
 
-AC60 decoration purchases, AC61 upstairs operations and AC62:4 special placement
-are empty or success-only source handlers. Their costs, unlock and transaction
-rules remain pending; they are not implemented as false successes. Initial floor
-and wallpaper references persist, but native decoration editing and house upgrades
-remain unresolved. AC59 and `/manufacture` retain workbench-name recipe matching;
+AC60 decoration purchases and AC61 upstairs operations remain empty or
+success-only source handlers. Their costs and unlock rules remain pending. Wallpaper and floor application now consume the selected item with the
+metadata update in one transaction. Arriving occupants receive the saved surfaces;
+house upgrades remain unresolved. AC59 and `/manufacture` retain workbench-name recipe matching;
 native AC64 validates placed owned benches, bag tools and plans. See
 [manufacturing](MANUFACTURING_CHARACTER_STATE.md#native-manufacturing).
 
@@ -151,8 +163,10 @@ normal, golden and Super Potential Pills transactionally for players and owned
 party pets. Failure/bonus rules are in [Potential Pills](NATIVE_COMMANDS.md#potential-pills).
 AC66 changes separate metadata without granting advancement.
 
-Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Furniture
-placement stays floor zero; occupant poses replay through AC32:2. Configured
+Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Native furniture
+placement accepts floor one for existing tents of type two or greater; the legacy
+placement adapter uses floor zero. Upgrade purchases and upstairs access remain
+unresolved. Occupant poses replay through AC32:2. Configured
 starters are granted and persisted at creation, without automatic login
 redelivery. Admin offers explicit mass online delivery.
 See [world/combat parity](WORLD_COMBAT_PARITY.md).
@@ -168,6 +182,23 @@ Furniture transfers, purchases, claims, item wear/consumption and inventory
 mutations retain immediate SQL transactions.
 
 
+## Boxes, saved travel points and companion altar
+
+`BoxedItems` contains deterministic box contents. Opening exchanges one owned box
+for its item in SQL before sending receipts. Missing definitions, locked boxes and
+failed delivery retain the box. Weighted gacha packs remain separate.
+
+AC74 records up to three Teleport Scroll points according to the scroll definition.
+Owned saved points persist in gameplay SQL and replay on login. AC23:89 uses the
+40 imported Bamboo Dragonfly destinations. Travel commits consumption and the
+recovery destination together. These requests currently require an ordinary world
+scene; unavailable destinations do not consume items.
+
+Native altar service 27 opens AC44:2; AC44:1 selects a client pet slot. It requires
+level 100, amity 60, no previous rebirth and no equipment. The transaction preserves
+allocated points, skills and amity and resets level/EXP. It grants no bonus points;
+AC69 ascension retains its separate amity-100/50-point policy.
+
 ## Manufacturing and extended character state
 
 Native AC64 now persists timed output escrow and checks owned plans/tools and all
@@ -176,3 +207,12 @@ decoration pairs live in typed gameplay v14 rows. GM rebirth, class bonuses and
 tent peer pose replay are implemented. See [manufacturing and character
 state](MANUFACTURING_CHARACTER_STATE.md) for packet layouts, SQL upgrade steps,
 recovery, funded potential training and the pending socket/upstairs rules.
+
+## Utility item use
+
+Notepad 34038 opens the SQL-backed quest journal. Remote Control 34058 opens its
+native control form. Kelan Scroll 30001 consumes one item with its SQL-defined
+return destination in the same transaction. These use real WLRI definitions;
+legacy Chocolate/White Rice IDs are not reinterpreted as utility items. Short
+AC23:15 self-use requests and normal AC23:96 share the same dispatcher. Owned
+vehicles use the existing validated mount/dismount workflow.

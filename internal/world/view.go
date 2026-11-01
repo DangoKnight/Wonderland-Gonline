@@ -19,6 +19,11 @@ type View struct {
 	Props       map[uint16]int32 // NativePropStates on mechanism maps
 	Actors      map[uint16]bool  // NativeActorVisibility on mechanism maps
 	Marks       map[uint16]bool  // SentNotebookMarks
+	// Mission variables belong to this scene visit, never to the durable character.
+	MissionVariables     map[uint16]int32
+	CompanionRebirthOpen bool
+	RebornFormOpen       bool
+	ShopItems            map[uint16]uint16 // Active native vendor slot -> item, scene scoped.
 	// Team is the player's team size beyond itself; the server updates it
 	// from another session's commands, so it is atomic.
 	Team atomic.Int32
@@ -32,18 +37,16 @@ func NewView() *View {
 
 // Reset clears the scene state for a new map entry.
 func (v *View) Reset() {
+	v.MissionVariables = map[uint16]int32{}
+	v.CompanionRebirthOpen = false
+	v.RebornFormOpen = false
+	v.ShopItems = nil
 	v.AdminActors = map[uint16]bool{}
 	v.Hidden, v.Markers, v.Props, v.Actors = map[uint16]bool{}, map[uint32]byte{}, map[uint16]int32{}, map[uint16]bool{}
 }
 
 // Mechanism maps keep authored prop and actor state for the current visit.
-func Mechanism(mapID uint16) bool {
-	switch mapID {
-	case game.MapID11157, game.MapID11158, game.MapID11159, game.MapID11166, game.MapID12380, game.MapID60014, game.MapID12523:
-		return true
-	}
-	return false
-}
+func Mechanism(mapID uint16) bool { return mapID != 0 }
 
 // coordinates is GetNpcCoordinates: the spawned actor, else its EVE record.
 func (w *World) coordinates(mapID, click uint16) (uint16, uint16) {
@@ -289,8 +292,8 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 		}
 	}
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
-			if !w.ruleMatches(c, mapID, r) {
+		for _, r := range w.applicable(c, mapID, ev, v) {
+			if !w.ruleMatches(c, mapID, r, v) {
 				continue
 			}
 			for _, a := range r.actions {
@@ -334,10 +337,17 @@ func (w *World) actionBlock(v *View, mapID uint16, a assets.Operation) [][]byte 
 	}
 	switch {
 	case kind == 7:
-		if p := ActorPose(click, le16(d, 5), s1); p != nil {
-			return [][]byte{p}
+		facing := s1
+		if d[13] != 0 {
+			facing = d[13]
 		}
-		return nil
+		return w.ActorPosePackets(v, mapID, click, le16(d, 5), facing)
+	case kind == 4 || kind == 10:
+		facing := s1
+		if d[13] != 0 {
+			facing = d[13]
+		}
+		return [][]byte{protocol.Builder{protocol.CommandScene, protocol.SceneActorFacing}.U16(click).U8(facing)}
 	case kind == 2 || (s1 == 0xff && s2 == 0xff):
 		return [][]byte{w.HideActor(v, mapID, click)}
 	case kind == 3:
@@ -347,7 +357,22 @@ func (w *World) actionBlock(v *View, mapID uint16, a assets.Operation) [][]byte 
 		return nil
 	}
 	x, y := w.coordinates(mapID, click)
+	if s1 == 0 && s2 == 0 {
+		state := w.idleFrame(w.template(mapID, click))
+		s1, s2 = byte(state), byte(state>>8)
+	}
 	return [][]byte{protocol.Builder{protocol.CommandScene, protocol.SceneActorPosition}.U16(click).U8(s1).U8(s2).U16(x).U16(y).U8(1).U32(0).U8(0)}
+}
+
+func (w *World) ActorPosePackets(v *View, mapID, click, animation uint16, facing byte) [][]byte {
+	p := ActorPose(click, animation, facing)
+	if p == nil || v != nil && v.Hidden[click] {
+		return nil
+	}
+	x, y := w.coordinates(mapID, click)
+	record := NPCRecord(click, uint16(0xff)|uint16(facing)<<8, x, y, false)
+	record[len(record)-1] = byte(animation)
+	return [][]byte{protocol.Builder{protocol.CommandScene, protocol.SceneActorPosition}.Bytes(record), p}
 }
 
 // ActorPose is SendActorPose: AC22:9 actor, animation, facing; nil when out of range.
@@ -366,7 +391,7 @@ func (w *World) Markers(c *game.Character, v *View, force bool) [][]byte {
 	if !ok {
 		return nil
 	}
-	native := w.nativeMarkers(c, mapID)
+	native := w.nativeMarkers(c, mapID, v)
 	var out [][]byte
 	for _, n := range m.data.NPCs {
 		icon, authored := native[uint32(n.ClickID)]
@@ -420,7 +445,7 @@ func (w *World) Markers(c *game.Character, v *View, force bool) [][]byte {
 
 // nativeMarkers is GetNativeMinimapMarkers: icons declared by PreEvent action 13, cleared
 // to zero unless a matching rule sets them.
-func (w *World) nativeMarkers(c *game.Character, mapID uint16) map[uint32]byte {
+func (w *World) nativeMarkers(c *game.Character, mapID uint16, views ...*View) map[uint32]byte {
 	out := map[uint32]byte{}
 	m := w.maps[mapID]
 	for _, ev := range m.data.PreEvents {
@@ -433,8 +458,8 @@ func (w *World) nativeMarkers(c *game.Character, mapID uint16) map[uint32]byte {
 		}
 	}
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
-			if !w.ruleMatches(c, mapID, r) {
+		for _, r := range w.applicable(c, mapID, ev, views...) {
+			if !w.ruleMatches(c, mapID, r, views...) {
 				continue
 			}
 			for _, a := range r.actions {

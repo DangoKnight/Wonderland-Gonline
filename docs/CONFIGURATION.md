@@ -262,7 +262,7 @@ GM rights are checked on every invocation and online revocations apply immediate
 | `pet <template ID> [name]` | Recruit a known NPC template and select it for battle. An owned companion keeps its progress; a reserved companion is restored; a hotel companion must first be retrieved. Optional names allow 1–16 printable bytes. |
 | `amity` (`petamity`) `[0-100]` | Set selected pet amity; default 100. |
 | `rebirth` (`petrebirth`) | Force selected pet rebirth, bypassing normal eligibility, resetting level/EXP and adding 50 points. Already reborn pets are refused. |
-| `reborn <Killer\|Warrior\|Knight\|Wit\|Priest\|Seer>` | Rebirth a level-100+ character once, with atomic class cape delivery, level/EXP reset and class bonuses; see [GM rebirth](MANUFACTURING_CHARACTER_STATE.md#gm-rebirth). |
+| `reborn <Killer\|Warrior\|Knight\|Wit\|Priest\|Seer>` | Rebirth a level-100+ character once, deducting 99 levels and learning the class skill; optional `force` bypasses level eligibility; see [GM rebirth](MANUFACTURING_CHARACTER_STATE.md#gm-rebirth). |
 | `palace <stage>` | Start an operator-defined SQL Palace trial using its normal admission and reward rules. |
 | `petlvl` (`petlevel`) `<level>` | Set pet level to 1–199 and reset EXP. Increases grant normal level points; lowering does not reclaim points. |
 | `petexp <gain>` | Add pet EXP using normal level growth. |
@@ -492,3 +492,14 @@ separate operation. `/reload quests` refreshes native EVE, actor visibility and
 the typed custom `QuestDefinitions` registry. Custom NPC acceptance, advancement
 and completion/reward execution remain dormant; registry editing/loading and PvE
 kill counters are implemented. See [quest administration](ADMINISTRATION.md#custom-quest-definitions-and-reachable-kill-counters).
+
+### Upstream administration additions
+
+`/packetdebug [on|off]` (alias `/debugpkt`) changes the existing SQL-backed log
+level between debug and info. Packet diagnostics retain credential redaction and
+bounded traces, including decoded dialogue and movie references.
+
+`/warp bangkok`, `/warp bangkokmonk`, `/warp monk` and `/warp 12600` use Bangkok's
+Temple approach (2450,450). Explicit-coordinate warps remain available.
+
+Persistent vendor administration uses `/bazaar`; see [bazaars](ECONOMY_SOCIAL.md#persistent-administrator-bazaars).

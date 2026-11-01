@@ -50,6 +50,7 @@ func (s *Server) gmCombat(_ context.Context, c *Session, command string, args []
 	for _, enemy := range enemies {
 		enemy.HP = 0
 	}
+	run.b.DiscardReinforcements()
 	s.endBattle(run, outcome)
 	return nil
 }

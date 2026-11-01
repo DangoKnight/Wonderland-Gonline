@@ -31,6 +31,10 @@ import (
 // (frames reload their page on demand).
 const maxCachedPageBytes = 256 << 20
 
+// Decoding verification archives expands hundreds of MiB per archive. A scene
+// with many distinct actors must not start an unbounded number concurrently.
+const maxNativeDecoders = 2
+
 // ErrNotFound reports an archive that no source provides.
 var ErrNotFound = errors.New("sprite archive not found")
 
@@ -41,13 +45,15 @@ type Manager struct {
 	// EditableDirs hold the editable export: <dir>/<archive>/editable.json.
 	EditableDirs []string
 
-	mu       sync.Mutex
-	archives map[string]*Archive
-	missing  map[string]bool
-	cached   int
-	pages    []*page // decoded pages in load order, for eviction
-	natives  []*nativeSource
-	closed   bool
+	mu          sync.Mutex
+	archives    map[string]*Archive
+	missing     map[string]bool
+	cached      int
+	pages       []*page // decoded pages in load order, for eviction
+	natives     []*nativeSource
+	closed      bool
+	nativeSlots chan struct{}
+	nativeDone  chan struct{}
 }
 
 // Archive is one loaded archive.
@@ -114,7 +120,8 @@ func NewManager(packDirs, editableDirs []string) *Manager {
 		return out
 	}
 	return &Manager{PackDirs: keep(packDirs), EditableDirs: keep(editableDirs),
-		archives: map[string]*Archive{}, missing: map[string]bool{}}
+		archives: map[string]*Archive{}, missing: map[string]bool{},
+		nativeSlots: make(chan struct{}, maxNativeDecoders), nativeDone: make(chan struct{})}
 }
 
 // Archive returns a loaded archive, or ErrNotFound.

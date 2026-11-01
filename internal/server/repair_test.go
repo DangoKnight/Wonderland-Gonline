@@ -37,7 +37,7 @@ func TestRepairWrenchPacketsPersistenceAndHealthyReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	record := append([]byte{23, 5, 5, 100, 0, 2, 0, 7, 8, 9}, make([]byte, 23)...)
-	effect := protocol.Builder{5, 5}.U32(c.character.ID).U16(60015)
+	effect := protocol.Builder{5, 5}.U32(c.character.ID).U16(0)
 	message := []byte("[Blacksmith Repair] Successfully restored item #100 to maximum durability!")
 	line := append([]byte{23, 57, 0, byte(len(message))}, message...)
 	want := [][]byte{{23, 9, 9, 1}, {23, 9, 5, 2}, record, effect, line, {36, 7, 5, 1}}

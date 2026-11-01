@@ -54,6 +54,9 @@ func (s *Server) nativeCommand(ctx context.Context, c *Session, p []byte) error 
 		if err != nil {
 			return err
 		}
+		if id == protocol.NativeDefaultMovieID {
+			s.acknowledgeStorm(c)
+		}
 		return c.send(protocol.Builder{protocol.CommandMovie, protocol.MoviePlaybackAcknowledgment}.U16(id).U8(protocol.NativeActive).U32(0))
 	case protocol.CommandMallMatrixRequest:
 		if p[1] != protocol.MallMatrixQuery {
@@ -81,6 +84,9 @@ func (s *Server) nativeCommand(ctx context.Context, c *Session, p []byte) error 
 		s.broadcastWorld(c, packet)
 		return c.send(packet)
 	case protocol.CommandTitle:
+		if len(p) == 3 && p[1] == protocol.CompanionRebirthRequest {
+			return s.companionRebirthCommand(ctx, c, p[2])
+		}
 		id, err := nativeWord(p, 0)
 		if err != nil {
 			return err

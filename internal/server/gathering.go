@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"math/big"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
@@ -14,7 +16,7 @@ import (
 // Caller holds worldMu. The whole water branch is intercepted before the ordinary
 // event loop so a failed timer claim cannot leave a reward or quest mark behind.
 func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, now time.Time) (bool, error) {
-	plan, involved := world.WaterGathering(c.character.Map, ev, branch)
+	plan, involved := s.World.PlanEventGathering(c.character.Map, ev, branch)
 	if !involved {
 		return false, nil
 	}
@@ -29,11 +31,22 @@ func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16
 		}
 		return true, s.finishEvent(c, es)
 	}
-	limit, known := s.stackLimit(plan.Item)
-	if plan.Timer == 0 || !known {
+	if plan.Timer == 0 || len(plan.Pools) == 0 {
 		return reject()
 	}
-	next, adds, err := s.Store.GatherWater(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, plan.Timer, plan.Item, limit, now, func(stored *game.Character) bool {
+	rewards := map[uint16]int{}
+	for _, pool := range plan.Pools {
+		draw, err := rand.Int(rand.Reader, big.NewInt(int64(len(pool))))
+		if err != nil {
+			return true, err
+		}
+		id := pool[draw.Int64()]
+		if _, known := s.stackLimit(id); !known {
+			return reject()
+		}
+		rewards[id]++
+	}
+	next, adds, err := s.Store.GatherResources(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, plan.Timer, rewards, now, func(stored *game.Character) bool {
 		return stored.Map == es.mapID && s.World.FindBranchAt(stored, c.view, es.mapID, ev, world.TriggerEntry, 0, 0, -1, now) == branch
 	}, s.Assets.Items, c.character.Clone())
 	if errors.Is(err, store.ErrGatheringUnavailable) || errors.Is(err, game.ErrInventoryFull) {

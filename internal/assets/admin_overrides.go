@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"wonderland-gonline/internal/game"
 )
 
 const AdminMapsAsset = "map_overrides.json"
@@ -14,6 +15,7 @@ const maxChestRespawnSeconds = 24 * 60 * 60
 const maxChestRewardWeight = math.MaxInt32
 
 type ChestReward struct {
+	Gold   uint32 `json:"gold,omitempty"`
 	Item   uint16 `json:"item_id"`
 	Name   string `json:"name"`
 	Count  byte   `json:"count"`
@@ -48,7 +50,10 @@ func ParseChestPools(raw []byte, c *Catalog) ([]ChestPool, error) {
 		}
 		var total uint64
 		for _, r := range pool.Rewards {
-			if _, ok := c.Items[r.Item]; !ok || r.Count == 0 || r.Weight == 0 {
+			_, known := c.Items[r.Item]
+			goldReward := r.Gold > 0 && r.Gold <= game.MaxGold && r.Item == 0
+			itemReward := r.Gold == 0 && known && r.Count > 0
+			if (!goldReward && !itemReward) || r.Weight == 0 {
 				return nil, errors.New("invalid chest reward")
 			}
 			total += uint64(r.Weight)

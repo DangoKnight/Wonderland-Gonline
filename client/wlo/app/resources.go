@@ -46,7 +46,7 @@ type Resources struct {
 	sceneMiniMaps             map[uint16]bool
 	npcTemplates              map[uint32]world.NPCTemplate
 	petPortraits              map[petPortraitKey]*surface.Surface
-	talks                     map[uint16]string
+	talks                     map[uint32]string
 	instanceDefinitions       []assets.InstanceDefinition
 	instanceDefinitionsLoaded bool
 	mountPositions            map[uint16]role.MountPlacement
@@ -61,8 +61,12 @@ func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 	}
 	r.root, r.spriteRoot = a.Root, spriteRoot
 	r.pics = picdb.New()
-	r.pics.LoadDir(a.MediaPath("menu", "skins", "default"), false, 0)
-	r.pics.LoadDir(a.MediaPath("menu", "Skins", "white"), true, 0)
+	if err := r.pics.LoadDir(a.MediaPath("menu", "skins", "default"), false, 0); err != nil {
+		return fmt.Errorf("default skin: %w", err)
+	}
+	if err := r.pics.LoadDir(a.MediaPath("menu", "Skins", "white"), true, 0); err != nil {
+		return fmt.Errorf("white skin: %w", err)
+	}
 	var err error
 	if r.font, err = clientassets.LoadFontAtlas(a.MediaPath("font", "TATPC1_TWN")); err != nil {
 		return err
@@ -123,7 +127,6 @@ func (r *Resources) loadScenes(a login.Assets) {
 // Close is called once after every session has stopped using the workspace.
 func (r *Resources) Close() error {
 	if r.sprites != nil {
-		r.sprites.WaitNative()
 		return r.sprites.Close()
 	}
 	return nil

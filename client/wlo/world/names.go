@@ -20,21 +20,29 @@ const (
 
 // Talks maps talk IDs to their text (Talk.dat, looked up by FUN_00332eac;
 // the text is the record's +6).
-func Talks(a login.Assets) (map[uint16]string, error) {
+func Talks(a login.Assets) (map[uint32]string, error) {
 	var doc struct {
 		Records []struct {
-			Text struct {
+			FileOffset uint32 `json:"file_offset"`
+			Text       struct {
 				Text string `json:"text"`
 			} `json:"text"`
 			Fields struct {
-				ID uint16 `json:"id"`
+				ID uint32 `json:"id"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
 	if err := readJSON(a.DataPath(talkExport), &doc); err != nil {
 		return nil, err
 	}
-	out := make(map[uint16]string, len(doc.Records))
+	out := make(map[uint32]string, len(doc.Records))
+	// Extended event operands can refer to original record offsets. Preserve the
+	// server's ID-first lookup precedence when an offset overlaps a real ID.
+	for _, r := range doc.Records {
+		if r.FileOffset != 0 {
+			out[r.FileOffset] = r.Text.Text
+		}
+	}
 	for _, r := range doc.Records {
 		out[r.Fields.ID] = r.Text.Text
 	}

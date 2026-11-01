@@ -43,9 +43,10 @@ Game content definitions belong in `assets.db`. Preserve the startup-only
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v17 stores character state in typed tables and owned child rows.
-v17 separates Party Invites from Joining Battle, preserving earlier invitation
-restrictions during upgrade. Structured asset schema v13 stores runtime definitions
+Gameplay schema v18 stores character state in typed tables and owned child rows.
+v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
+escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
+Battle while preserving earlier invitation restrictions. Structured asset schema v14 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -53,6 +54,10 @@ in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
 Regenerate asset models after changing catalog types with
 `go run ./tools/asset-schema-generator`, bump the structured schema version and
 provide an explicit preserving migration for installations using earlier versions.
+Keep content definitions, default initialization, validation and migrations with
+the owning feature. Migration runners coordinate schema versions and transaction
+boundaries; feature names identify the individual steps. Record
+reference repository revisions and import evidence in documentation.
 
 ## Transaction boundaries and session checkpoints
 
@@ -190,8 +195,8 @@ read. Avoid inventing wrappers for every one-line packet just to hide its bytes.
 
 Follow [test selection and correctness](TESTING.md#test-selection-and-correctness):
 use focused affected tests during development, the race detector for concurrency,
-and full suites for pre-commit validation. Commands, required environments and
-recorded results belong in TESTING.md. Review namespaces as well as values:
+and full server suites only before a push; commits use focused affected checks.
+Commands, required environments and recorded results belong in TESTING.md. Review namespaces as well as values:
 byte-for-byte tests cannot detect a misleading name.
 
 ## Editable sprite assets
@@ -224,7 +229,7 @@ publishing the startup snapshot. Keep file decoders for offline tools and
 independent compatibility tests.
 
 Use [test data and opt-ins](TESTING.md#test-data-and-opt-ins) for SQL/native inputs
-and absolute paths, and [pre-commit validation](TESTING.md#pre-commit-validation)
+and absolute paths, and [pre-push server validation](TESTING.md#pre-push-server-validation)
 for the separate server/client suites and installed-data timeout.
 
 ## Migration source inventory
@@ -1140,3 +1145,14 @@ until objectives and rewards are verified. Do not substitute guessed content.
 
 Native AC85 browser/create/detail requests and replies are separate from
 Gonline's explicit room-control extensions (200–203); see [Teams](TEAMS.md).
+
+## Private Server update 1ff5bba
+
+The separately pinned update ledger is [source-update-inventory.json](source-update-inventory.json).
+See [SOURCE_UPDATES.md](SOURCE_UPDATES.md) for imported behavior and explicit
+prototype/platform exclusions. Baseline source hashes remain unchanged. Asset v14
+adds the update's typed content and performs preserving migrations of exact old
+tent/poison defaults. Missing NPC route/sign/speed projections come from retained
+SQL map sections and preserve edited definitions. Poison compatibility is now 10% of maximum HP, minimum 15;
+customized effects remain authoritative. Native protocol goldens and compiled
+growth formulas retain their independent ownership.

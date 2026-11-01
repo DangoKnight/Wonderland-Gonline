@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"time"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/world"
@@ -105,8 +107,10 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			}
 		}
 	}
-	if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
-		return err
+	if c.tentOwner == 0 {
+		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
+			return err
+		}
 	}
 	if c.character.ActiveVehicle != 0 {
 		if err := c.send(vehicleMountPacket(c.character)); err != nil {
@@ -114,6 +118,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		}
 	}
 	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
+	if err := s.syncBazaars(context.Background(), c); err != nil {
 		return err
 	}
 	s.world[c.info.ID] = c
@@ -133,6 +140,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	}
 	if c.tentOwner != 0 {
 		if err := s.tentSnapshot(context.Background(), c); err != nil {
+			return err
+		}
+		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
 			return err
 		}
 		for _, peer := range peers {
@@ -155,6 +165,11 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if peer.stall != nil {
 			if err := c.send(stallSign(peer, peer.stall.Title)); err != nil {
 				return err
+			}
+			if peer.stall.Native {
+				if err := c.send(nativeStallMapState(peer)); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -408,18 +423,41 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 		}
 	}
 	var saved game.Character
+	var reward *assets.MapTransition
+	var adds []game.Addition
 	if e := s.Store.UpdateCharacter(ctx, c.account.ID, char.ID, func(stored *game.Character) error {
+		var err error
+		reward, adds, err = s.mapTransitionReward(stored, dst.Map)
+		if err != nil {
+			return err
+		}
 		stored.Map, stored.X, stored.Y = dst.Map, dst.X, dst.Y
 		stored.TentReturn = nil
 		saved = stored.Clone()
 		return nil
 	}); e != nil {
+		if errors.Is(e, game.ErrInventoryFull) {
+			return s.chatFeedback(c, "Make room for the exit reward before leaving.")
+		}
 		return e
+	}
+	if reward != nil {
+		char.Bag = saved.Bag
+		char.Quests = saved.Quests
 	}
 	// The narrow SQL warp committed a new location; retain its full durable
 	// checkpoint without treating other pending session fields as already saved.
 	c.autosaveBaseline = &saved
-	return s.teleportAfterSave(c, dst, portal)
+	if err := s.teleportAfterSave(c, dst, portal); err != nil {
+		return err
+	}
+	if reward != nil {
+		s.sendOrClose(c, char.Bag.AdditionPacket(adds))
+		if reward.Talk > 0 {
+			s.sendOrClose(c, speechFrame(3, 0, reward.Talk, 1))
+		}
+	}
+	return nil
 }
 
 // teleportAfterSave publishes an already durable destination. Caller holds worldMu.
@@ -434,6 +472,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	c.tentOwner = 0
 	char.TentReturn = nil
 	char.Map, char.X, char.Y = dst.Map, dst.X, dst.Y
+	c.bazaarQuotes = nil
 	s.mu.Lock()
 	c.info.Map = dst.Map
 	s.mu.Unlock()

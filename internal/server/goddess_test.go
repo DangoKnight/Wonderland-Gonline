@@ -53,7 +53,8 @@ func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
 			found := false
 			for _, sk := range stored[0].Skills {
 				if sk.ID == id {
-					found = sk.EXP == 1
+					// A successful status cast awards 15 support EXP plus 25 buff EXP.
+					found = sk.EXP == 40
 				}
 			}
 			if !found {

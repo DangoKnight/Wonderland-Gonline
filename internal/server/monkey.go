@@ -22,7 +22,8 @@ const (
 	monkeyNPCPortrait        = 3
 	monkeyPlayerPortrait     = 7
 	monkeyMovieFrameKind     = 5
-	monkeyMovieHoldMode      = 2
+	monkeyMoviePlayMode      = 1
+	monkeyRescueMovie        = 12000
 	nativeMoviePlay          = 1
 	nativeMoviePlayAlternate = 2
 )
@@ -89,6 +90,9 @@ func (s *Server) startMonkey(ctx context.Context, c *Session, click uint16) erro
 			lines = nil
 		}
 		if count < len(portraits) {
+			if len(movies) > 1 {
+				movies = movies[:1]
+			}
 			lines = append(lines, monkeyLine{monkeyFullPartyTalk, monkeyPlayerPortrait}, monkeyLine{20048, monkeyNPCPortrait})
 			recruit = false
 		}
@@ -111,7 +115,12 @@ func (s *Server) startMonkey(ctx context.Context, c *Session, click uint16) erro
 			op := movie.op
 			movieIndex++
 			es.onComplete = advance
-			return c.send(eventFrame(monkeyMovieFrameKind, 0, 0, monkeyMovieHoldMode, op.Value(), 0, op.Index, movie.branch))
+			packets := [][]byte{eventFrame(monkeyMovieFrameKind, 0, 0, monkeyMoviePlayMode, op.Value(), 0, op.Index, movie.branch)}
+			if movieIndex == 1 && op.Value() == monkeyRescueMovie {
+				es.cinematicPosture = true
+				packets = append(packets, protocol.Builder{protocol.CommandMovie, protocol.MovieWireCode12}.U16(monkeyRescueMovie), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode30, 0}.U32(c.character.ID).U8(1))
+			}
+			return s.sendAll(c, packets)
 		}
 		if index == len(lines) {
 			if recruit {

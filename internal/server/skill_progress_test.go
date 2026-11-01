@@ -18,7 +18,7 @@ func TestBattleSkillProgressIsDurable(t *testing.T) {
 		t.Fatal(packets, err)
 	}
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)
-	if err != nil || len(stored) == 0 || stored[0].Skills[0].Grade != 2 || stored[0].Skills[0].EXP != 0 {
+	if err != nil || len(stored) == 0 || stored[0].Skills[0].Grade != 2 || stored[0].Skills[0].EXP != 9 {
 		t.Fatal(stored, err)
 	}
 	packets, err = s.commitSkillUses(c, run, []battle.Action{{Actor: run.members[0].self, Skill: 65535}})

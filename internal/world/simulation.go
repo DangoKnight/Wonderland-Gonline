@@ -16,6 +16,8 @@ const (
 	actorStationaryDelay      = 300 * time.Second
 	actorContainerTemplateMin = 12000
 	actorContainerTemplateMax = 12999
+	actorChestTemplateMin     = 16000
+	actorChestTemplateMax     = 16011
 	actorSceneryTemplateMin   = 19000
 	actorSceneryTemplateMax   = 19999
 	actorMechanismTemplateMin = 25000
@@ -178,7 +180,7 @@ func (w *World) staticActor(mapID uint16, n NPC) bool {
 			return false
 		}
 	}
-	if n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax || n.Template >= actorSceneryTemplateMin && n.Template <= actorSceneryTemplateMax || n.Template >= actorMechanismTemplateMin && n.Template <= actorMechanismTemplateMax {
+	if n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax || n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax || n.Template >= actorSceneryTemplateMin && n.Template <= actorSceneryTemplateMax || n.Template >= actorMechanismTemplateMin && n.Template <= actorMechanismTemplateMax {
 		return true
 	}
 	for _, word := range []string{"chest", "box", "crate", "barrel", "pot", "machine", "wood", "stone", "clay", "mine", "herb", "tree", "door", "switch", "lever", "cabinet", "desk", "bed", "chair", "stove", "grass", "flower", "shell", "mushroom", "ore", "statue", "fountain", "sign", "well", "grave", "cart", "boat", "wreck", "tent", "fence", "portal", "warp", "prop", "object", "coconut", "driftwood", "bamboo"} {

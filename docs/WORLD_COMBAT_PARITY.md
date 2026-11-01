@@ -14,7 +14,7 @@ probabilities or override authored event conditions. Existing transactional
 resource-node grants retain their configured cooldowns.
 
 Gameplay schema v15 introduced `map_props.frame`, preserving old implicit broken
-frames with default one. Current startup requires gameplay v17 and assets v13.
+frames with default one. Current startup requires gameplay v18 and assets v14.
 Use the preserving in-place upgrade in [ASSET_DATABASE.md](ASSET_DATABASE.md);
 installation data is not reset.
 
@@ -60,16 +60,15 @@ PvP keeps the owner's explicit no-reward rule: no EXP, gold, loot or captures.
 Private Server's attacking-victory 150 EXP/100 gold grant is deliberately omitted.
 Native animation/HUD and multiplayer/load acceptance remain separate work.
 
-## Laura exit fallback remains pending
+## Laura exit gift
 
-The reference adds a gift on map 10001 → 10000 using IDs 32000, 32075 and quest
-10035. The extracted WLRI catalog has no item 32000, calls 32075 Chocolate and
-32001 White Rice; the actual Tent is 36002. Inspection of typed event operations
-on maps 10000/10001 found no matching positive item reward. These facts do not
-identify a verified replacement cutscene, remote or completion mark. No duplicate
-hardcoded fallback is added. Authored EVE rewards elsewhere retain their normal
-transactional execution. Verify native content/captures before implementing this
-separate fallback.
+Upstream 1ff5bba corrects the 10001 → 10000 exit reward to Tent 36002 and Remote
+Control 34058, with talk 30126 and completion mark 10035. Asset v14 stores the
+route and reward in `MapTransitions`. The exit resolves to (1892,1655) on map
+10000. Both items, the mark and the destination commit together. A full bag
+retains the old scene and items; a completed mark prevents repeat grants even
+after the tent is consumed or sold. Existing old-tent ownership suppresses the
+compatibility fallback. No player state from the source snapshot is imported.
 
 ## Starter Beach monkey cinematic
 
@@ -82,7 +81,8 @@ play the cinematic.
 
 The rescue controller now reads its movie operations from the assets database
 and sends the native AC20:1 kind-5 frames in order, waiting for AC20:6 after
-each movie. It then commits the companion and marks 12002/12003 together.
+each movie in playback mode one. Full-party attempts play only the first
+movie before their explanation. It then commits the companion and marks 12002/12003 together.
 Full-party attempts explain the capacity limit without completing the quest;
 cancelled movies and failed commits do not grant or hide the companion.
 Definitions without movie operations retain the older dialogue sequence.
@@ -102,5 +102,16 @@ movie 12000. Movie 11011 has the illustration background `JRPJRole_5_3`, rather
 than a map. `JRP` is resolved to the exported JPEG picture; the 832×640 artwork
 is drawn opaque at the authored camera origin and cropped to the 800×600 game
 viewport. It does not reuse the current map or its objects. Owned pet speakers
-prefer their roster nickname. Focused tests cover both movies' completion,
-the authored depth offset, visible illustration pixels and compiled GPU parity.
+prefer their roster nickname. Verification is recorded in [TESTING.md](TESTING.md).
+
+## Starter storm and beach rescue
+
+The storm event frame precedes its AC186:12 movie trigger. AC186:9 arms completion;
+premature AC20:6 requests are ignored. A run-scoped watchdog recovers a stalled
+accepted movie. Beach arrival immediately stages Robinson as actor one and starts
+the wake-up movie. The rescue releases posture/movement/scene gates without
+starting quest 12040 or automatically opening dialogue. A manual Robinson click
+starts first contact; event eight continues into its guide question within the
+same interaction. Authored portal click IDs take priority over reverse geometry;
+entry requests use the upstream two-cell margin. Scene-local prop and actor
+state now applies to every map, with quest-defined visibility replay after combat.

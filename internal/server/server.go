@@ -63,6 +63,8 @@ type Session struct {
 	event                *eventSession
 	arcade               *arcadeSession
 	arcadeNextPurchaseAt time.Time
+	stormAck             bool
+	stormStarted         time.Time
 	storm                bool // The ship storm movie is playing (PlayingStormCutscene).
 	beachPending         bool
 	beach                *beachRun
@@ -71,9 +73,10 @@ type Session struct {
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
 	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
-	gathering        *gatheringRun        // Guarded by worldMu.
-	marriageProposal *marriageProposal    // Guarded by worldMu.
-	guildInvitation  *guildInvitation     // Guarded by worldMu.
+	gathering        *gatheringRun     // Guarded by worldMu.
+	marriageProposal *marriageProposal // Guarded by worldMu.
+	guildInvitation  *guildInvitation  // Guarded by worldMu.
+	bazaarQuotes     map[uint32]store.Bazaar
 	stall            *playerStall         // Session-owned; guarded by worldMu.
 	trade            *tradeSession        // Guarded by worldMu.
 	friendRequests   map[uint32]time.Time // Guarded by worldMu.
@@ -453,6 +456,9 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 		}
 		return c.send([]byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionReady})
 	case protocol.LoginCancelCreation:
+		if len(p) > protocol.LoginCancelPacketBytes {
+			return s.createCompactCharacter(ctx, c, p)
+		}
 		// Creation was cancelled: the name reservation and the chosen empty
 		// slot are released; the client shows the roster it already has.
 		if len(p) != protocol.LoginCancelPacketBytes || c.account.ID == 0 || c.character != nil {
@@ -489,7 +495,7 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 				tentRecovered := recoverTentCharacter(&char)
 				vitalsChanged := char.RecalculateVitals(s.Assets.Items)
 				vehicleChanged := char.NormalizeVehicle(s.Assets.Items)
-				unlocks := char.UnlockQualifiedSkills(false, s.hasSkill)
+				unlocks := s.unlockQualifiedSkills(&char, true)
 				view, pets := world.NewView(), newPetRoster()
 				packets, e := s.worldEntryPackets(char, view, pets)
 				if e != nil {

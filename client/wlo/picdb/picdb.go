@@ -38,6 +38,8 @@ type Entry struct {
 	Name       string           // +0x14
 	Path       string           // +0x1c directory
 	Tint       uint32           // +0x20 $00BBGGRR added to every pixel
+	file       string           // Resolved filename, retained for deferred loading.
+	failed     bool             // A corrupt image is not decoded again every frame.
 }
 
 // DB is TSe_CachePicDB. Names are kept in a case-insensitive sorted list
@@ -53,6 +55,19 @@ type DB struct {
 	Missing []string
 }
 
+// UI bitmaps have their own budget, checked before decoders allocate pixels.
+const (
+	maxBitmapSide   = 16384
+	maxBitmapPixels = 16 << 20
+)
+
+func validateBitmapSize(width, height int) error {
+	if width <= 0 || height <= 0 || width > maxBitmapSide || height > maxBitmapSide || int64(width)*int64(height) > maxBitmapPixels {
+		return fmt.Errorf("UI bitmap dimensions exceed limits: %dx%d", width, height)
+	}
+	return nil
+}
+
 func New() *DB { return &DB{index: map[string]int{}} }
 
 func key(name string) string { return strings.ToLower(name) }
@@ -66,6 +81,7 @@ func (db *DB) LoadDir(dir string, loadNow bool, tint uint32) error {
 	}
 	var names []string
 	seen := map[string]bool{}
+	paths := map[string]string{}
 	for _, e := range entries {
 		logical := strings.TrimSuffix(e.Name(), clientimage.DescriptorSuffix)
 		if e.IsDir() || (!strings.EqualFold(filepath.Ext(logical), ".bmp") && !strings.HasSuffix(strings.ToLower(logical), ".bmp.png")) {
@@ -80,10 +96,16 @@ func (db *DB) LoadDir(dir string, loadNow bool, tint uint32) error {
 			seen[key(n)] = true
 			names = append(names, n)
 		}
+		// Preserve the PNG-over-BMP lookup rule without rereading and sorting
+		// this entire directory once for every registered image.
+		previous, exists := paths[key(n)]
+		if !exists || !strings.HasSuffix(strings.ToLower(previous), ".bmp.png") && strings.HasSuffix(strings.ToLower(logical), ".bmp.png") {
+			paths[key(n)] = logical
+		}
 	}
 	sort.Slice(names, func(i, j int) bool { return key(names[i]) < key(names[j]) })
 	for _, n := range names {
-		if err := db.Load(dir, n, loadNow, tint); err != nil {
+		if err := db.load(dir, n, filepath.Join(dir, paths[key(n)]), loadNow, tint); err != nil {
 			return err
 		}
 	}
@@ -94,6 +116,10 @@ func (db *DB) LoadDir(dir string, loadNow bool, tint uint32) error {
 // left alone, which lets an earlier directory override a later one. With
 // loadNow false only the record is made; pixels load on first use.
 func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
+	return db.load(dir, name, "", loadNow, tint)
+}
+
+func (db *DB) load(dir, name, path string, loadNow bool, tint uint32) error {
 	i, ok := db.index[key(name)]
 	if ok {
 		e := &db.Entries[i]
@@ -105,7 +131,9 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 			return nil
 		}
 	}
-	path := bitmapPath(dir, name)
+	if path == "" {
+		path = bitmapPath(dir, name)
+	}
 	if _, err := clientfs.Stat(path); err != nil {
 		if _, compiledErr := clientfs.Stat(path + clientimage.DescriptorSuffix); compiledErr != nil {
 			db.Missing = append(db.Missing, path)
@@ -117,6 +145,9 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 	if compiled, err := clientimage.Open(path); err == nil {
 		bounds := compiled.Bounds()
 		width, height = bounds.Dx(), bounds.Dy()
+		if err := validateBitmapSize(width, height); err != nil {
+			return err
+		}
 		if loadNow && tint == 0 && !db.RGB555 {
 			pixels, err := compiled.Pixels(bounds, clientimage.Keyed)
 			if err != nil {
@@ -127,7 +158,7 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 				db.Entries = append(db.Entries, Entry{})
 				db.index[key(name)] = i
 			}
-			db.Entries[i] = Entry{Image: &surface.Surface{W: width, H: height, Pix: pixels}, W: width, H: height, Loaded: true, Registered: true, Name: name, Path: dir, Tint: tint}
+			db.Entries[i] = Entry{Image: &surface.Surface{W: width, H: height, Pix: pixels}, W: width, H: height, Loaded: true, Registered: true, Name: name, Path: dir, Tint: tint, file: path}
 			return nil
 		}
 		if loadNow {
@@ -158,6 +189,9 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 		}
 		width, height = cfg.Width, cfg.Height
 	}
+	if err := validateBitmapSize(width, height); err != nil {
+		return err
+	}
 	if !ok {
 		i = len(db.Entries)
 		db.Entries = append(db.Entries, Entry{})
@@ -165,6 +199,7 @@ func (db *DB) Load(dir, name string, loadNow bool, tint uint32) error {
 	}
 	e := &db.Entries[i]
 	e.W, e.H, e.Registered, e.Loaded, e.Name, e.Path, e.Tint = width, height, true, loadNow, name, dir, tint
+	e.file = path
 	if loadNow {
 		e.Image = db.convert(img, tint)
 	}
@@ -185,11 +220,28 @@ func bitmapPath(dir, name string) string {
 
 func decodeBMP(path string) (image.Image, error) {
 	if compiled, err := clientimage.Open(path); err == nil {
+		if err := validateBitmapSize(compiled.Bounds().Dx(), compiled.Bounds().Dy()); err != nil {
+			return nil, err
+		}
 		return compiled.NRGBA(compiled.Bounds())
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
 	f, err := clientfs.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	cfg, _, err := image.DecodeConfig(f)
+	f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if err := validateBitmapSize(cfg.Width, cfg.Height); err != nil {
+		return nil, err
+	}
+	// Reopen rather than Seek: seeking a bundled file materializes the whole
+	// ZIP entry, including unrelated trailing bytes, in memory.
+	f, err = clientfs.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -277,9 +329,16 @@ func (db *DB) image(i int) *surface.Surface {
 		return nil
 	}
 	e := &db.Entries[i]
-	if e.Image == nil && e.Registered {
-		path := bitmapPath(e.Path, e.Name)
+	if e.Image == nil && e.Registered && !e.failed {
+		e.failed = true
+		path := e.file
+		if path == "" {
+			path = bitmapPath(e.Path, e.Name)
+		}
 		if compiled, err := clientimage.Open(path); err == nil && e.Tint == 0 && !db.RGB555 {
+			if validateBitmapSize(compiled.Bounds().Dx(), compiled.Bounds().Dy()) != nil {
+				return nil
+			}
 			if pix, err := compiled.Pixels(compiled.Bounds(), clientimage.Keyed); err == nil {
 				e.Image = &surface.Surface{W: e.W, H: e.H, Pix: pix}
 			}
@@ -420,6 +479,9 @@ func (db *DB) AddCompiled(name string, m *clientimage.Image) error {
 		return nil
 	}
 	b := m.Bounds()
+	if err := validateBitmapSize(b.Dx(), b.Dy()); err != nil {
+		return err
+	}
 	if db.RGB555 {
 		img, err := m.NRGBA(b)
 		if err != nil {

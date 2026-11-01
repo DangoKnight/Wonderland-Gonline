@@ -1,6 +1,7 @@
 package world
 
 import (
+	"slices"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 )
@@ -22,6 +23,67 @@ const (
 )
 
 type WaterGatheringPlan struct{ Timer, Item uint16 }
+
+type EventGatheringPlan struct {
+	Timer uint16
+	Pools [][]uint16
+}
+
+// PlanEventGathering recognizes a complete reward/cooldown branch. An unknown
+// pool or a partial shape stays involved, so the ordinary interpreter cannot
+// grant any preceding rewards without acquiring the node's timer.
+func (w *World) PlanEventGathering(mapID uint16, ev *assets.Event, branch int) (EventGatheringPlan, bool) {
+	if w.catalog.EventGathering.Timers == nil {
+		old, involved := WaterGathering(mapID, ev, branch)
+		if old.Timer == 0 {
+			return EventGatheringPlan{}, involved
+		}
+		return EventGatheringPlan{Timer: old.Timer, Pools: [][]uint16{{old.Item}}}, true
+	}
+	var plan EventGatheringPlan
+	if ev == nil || branch < 0 || branch >= len(ev.Branches) {
+		return plan, false
+	}
+	ops := ev.Branches[branch].Operations
+	involved := false
+	for _, raw := range ops {
+		o := DecodeOp(raw)
+		if o.Code == ActionGather || o.Code == ActionPlayer && o.D1 == PlayerActionReward && o.D2 == waterRewardKind {
+			involved = true
+		}
+	}
+	if !involved {
+		return plan, false
+	}
+	i := 0
+	for i < len(ops) {
+		o := DecodeOp(ops[i])
+		if o.Code != ActionPlayer || o.D1 != PlayerActionReward || o.D2 != waterRewardKind {
+			break
+		}
+		pool := w.catalog.EventGatheringPool(o.D3, o.Value())
+		if len(pool) == 0 {
+			return EventGatheringPlan{}, true
+		}
+		plan.Pools = append(plan.Pools, pool)
+		i++
+	}
+	if i == 0 || i >= len(ops) || len(ops) > i+2 {
+		return EventGatheringPlan{}, true
+	}
+	timer := DecodeOp(ops[i])
+	if timer.Code != ActionGather || !slices.Contains(w.catalog.EventGathering.Timers, timer.D1) || timer.D2 != waterTimerStart || timer.D3 != 0 || timer.Value() != uint32(game.WaterGatheringCooldown.Seconds()) {
+		return EventGatheringPlan{}, true
+	}
+	if len(ops) == i+2 {
+		mark := DecodeOp(ops[i+1])
+		if mark.Code != ActionQuestMark || mark.D1 != timer.D1 || mark.D2 != waterGatheringMarkState || mark.D3 != waterGatheringMarkStep || mark.Value() != waterGatheringMarkStep {
+			return EventGatheringPlan{}, true
+		}
+	}
+	plan.Timer = timer.D1
+	return plan, true
+}
 
 func waterReward(op Op) bool {
 	return op.Code == ActionPlayer && op.D1 == PlayerActionReward && op.D2 == waterRewardKind && op.D3 == waterRewardPool && (op.Value() == seaWaterVariant || op.Value() == freshWaterVariant)

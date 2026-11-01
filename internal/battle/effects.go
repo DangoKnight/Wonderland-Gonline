@@ -3,6 +3,7 @@ package battle
 import (
 	"math"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -198,6 +199,7 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 		}
 	}
 
+	a.SkillEXP = game.SupportSkillEXPPerUse + game.BuffSkillEXPBonus
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
 }
 

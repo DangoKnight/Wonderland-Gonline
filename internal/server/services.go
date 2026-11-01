@@ -13,6 +13,15 @@ import (
 // openService opens a service window. Caller holds worldMu.
 func (s *Server) openService(c *Session, action uint16) error {
 	switch action {
+	case world.ServiceRebornJobSelection:
+		if c.character.Reborn || c.character.Level < game.RebornMinimumLevel {
+			return c.send(headBanner("Rebirth requires level 100 and a character that has not reborn."))
+		}
+		c.view.RebornFormOpen = true
+		return c.send([]byte{protocol.CommandRebirthJobSelection, protocol.RebirthJobConfirm})
+	case world.ServiceCompanionRebirth:
+		c.view.CompanionRebirthOpen = true
+		return c.send([]byte{protocol.CommandCompanionRebirth, protocol.CompanionRebirthOpen})
 	case world.ServicePetHotel:
 		return s.sendAll(c, append(s.hotelPackets(c.character), []byte{protocol.CommandNPCService, protocol.PetHotelOpen}))
 	case world.ServiceWeaponShop, world.ServicePropsShop, world.ServiceArmorShop: // Weapon shop, props shop, armor shop: selling only, as in C#.
@@ -21,10 +30,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 			mode = 1
 		}
 		c.saleMode, c.saleMap = mode, c.character.Map
-		if mode == 0 {
-			return c.send([]byte{protocol.CommandShop, protocol.ShopEquipmentWindow})
-		}
-		return c.send([]byte{protocol.CommandShop, protocol.ShopPropsWindow})
+		return s.openNPCShop(c, action)
 	case world.ServicePropsKeeper, world.ServiceStockKeeper: // Props keeper and stock keeper both open item storage.
 		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
 	case world.ServiceClinic, world.ServiceClinicAlternate: // Clinic: offer a free rest when HP or SP is missing.
@@ -77,6 +83,9 @@ const (
 // sellItems is AC27:2 (Inventory.SellToNpc): whole selected stacks, the last byte is
 // the shop mode. Equipment sells only in mode 0 and other items only in mode 1.
 func (s *Server) sellItems(ctx context.Context, c *Session, p []byte) error {
+	if len(p) >= 2 && p[1] == protocol.ShopBuy {
+		return s.buyNPCItems(ctx, c, p)
+	}
 	if len(p) < 2 || p[1] != protocol.ShopSell {
 		return nil
 	}

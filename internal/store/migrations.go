@@ -1,10 +1,14 @@
 package store
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+)
 
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
-// Runtime reads and writes use GORM; schema-specific SQL stays in this file.
-const schemaVersion = 17
+// Runtime reads and writes use GORM. Feature-owned steps below share this
+// versioned transaction; each owning module retains its DDL and constraints.
+const schemaVersion = 18
 
 func (s *Store) migrate() error {
 	var version int
@@ -246,9 +250,6 @@ func (s *Store) migrate() error {
 			}
 		}
 	}
-	if _, e = tx.Exec(`CREATE TABLE IF NOT EXISTS manufacture_jobs(character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,bench INTEGER NOT NULL,formula INTEGER NOT NULL,item_id INTEGER NOT NULL,count INTEGER NOT NULL,tent_output INTEGER NOT NULL,floor INTEGER NOT NULL,due_at INTEGER NOT NULL,remaining_millis INTEGER NOT NULL,paused INTEGER NOT NULL);`); e != nil {
-		return e
-	}
 	var propFramePresent int
 	if e = tx.QueryRow("SELECT count(*) FROM pragma_table_info('map_props') WHERE name='frame'").Scan(&propFramePresent); e != nil {
 		return e
@@ -258,7 +259,14 @@ func (s *Store) migrate() error {
 			return e
 		}
 	}
-	if _, e = tx.Exec("PRAGMA user_version=17"); e != nil {
+	for _, migrate := range []func(*sql.Tx) error{
+		migrateTeleportPoints, migrateTentTools, migrateManufacturing, migrateBazaars,
+	} {
+		if e = migrate(tx); e != nil {
+			return e
+		}
+	}
+	if _, e = tx.Exec("PRAGMA user_version=18"); e != nil {
 		return e
 	}
 	return tx.Commit()

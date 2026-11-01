@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 13
+const catalogSchemaVersion = 14
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -362,6 +362,19 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 14 {
+			for _, migrate := range []func(*gorm.DB) error{
+				migrateNPCRoutes, migrateMapTransitions, migrateTentToolHosts,
+				migrateTentSurfaces, migrateNPCShopDefaults, migrateNPCBuyPrices,
+				migrateTravel, migrateBoxedItems, migrateSkillEvolutions,
+				migrateEventGathering, migrateChestDefaults, migratePoisonDefaults,
+				migrateTentDefaults,
+			} {
+				if err := migrate(tx); err != nil {
+					return err
+				}
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -403,6 +416,50 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err = applyAuthoredSynthesis(tx, &c.Economy); err != nil {
 		return err
 	}
+	seedPoisonUpgrade(c)
+	c.MapTransitions, err = defaultMapTransitions()
+	if err != nil {
+		return err
+	}
+	c.TentToolHosts, err = defaultTentToolHosts()
+	if err != nil {
+		return err
+	}
+	c.ChestPropCategories, err = defaultChestPropCategories()
+	if err != nil {
+		return err
+	}
+	c.NPCShopDefaults, err = defaultNPCShopDefaults()
+	if err != nil {
+		return err
+	}
+	c.NPCBuyPrices, err = defaultNPCBuyPrices()
+	if err != nil {
+		return err
+	}
+	c.Travel, err = defaultTravel()
+	if err != nil {
+		return err
+	}
+	c.TentSurfaces, err = defaultTentSurfaces()
+	if err != nil {
+		return err
+	}
+	c.BoxedItems, err = defaultBoxedItems()
+	if err != nil {
+		return err
+	}
+	c.SkillEvolutions, err = defaultSkillEvolutions()
+	if err != nil {
+		return err
+	}
+	c.EventGathering, err = defaultEventGathering()
+	if err != nil {
+		return err
+	}
+	if err = seedNewChestDefaults(c); err != nil {
+		return err
+	}
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
 		if err := tx.Migrator().CreateTable(model); err != nil {
 			return err
@@ -436,6 +493,16 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	c, err := readCatalog(tx)
 	if err != nil {
 		return nil, err
+	}
+	for _, name := range []string{"MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {
+		if err = validateDefinition(name, c); err != nil {
+			return nil, err
+		}
+	}
+	if len(c.ChestPools) > 0 {
+		if err = validateDefinition("ChestPools", c); err != nil {
+			return nil, err
+		}
 	}
 	if err = assets.ValidateInstances(c.Instances); err != nil {
 		return nil, err
@@ -487,3 +554,39 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 
 // SaveEditedCatalog commits the validated administrator candidate.
 func SaveEditedCatalog(tx *gorm.DB, c *assets.Catalog) error { return writeCatalog(tx, c) }
+
+// migrateCatalogDataset adds an owned root and its child tables in generated
+// parent-first order. Existing roots (including intentionally empty definitions)
+// retain their rows; defaults are written only when the root table is new.
+func migrateCatalogDataset(tx *gorm.DB, table, presence string, initialize func() error) error {
+	created := false
+	for _, model := range catalogTables() {
+		name := model.(interface{ TableName() string }).TableName()
+		if name != table && !strings.HasPrefix(name, table+"_") {
+			continue
+		}
+		if tx.Migrator().HasTable(model) {
+			continue
+		}
+		if err := tx.Migrator().CreateTable(model); err != nil {
+			return err
+		}
+		if name == table {
+			created = true
+		}
+	}
+	if created {
+		if err := initialize(); err != nil {
+			return err
+		}
+	}
+	if presence == "" {
+		return nil
+	}
+	if !tx.Migrator().HasColumn(&catalogPresence{}, presence) {
+		if err := tx.Migrator().AddColumn(&catalogPresence{}, presence); err != nil {
+			return err
+		}
+	}
+	return tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update(presence, true).Error
+}

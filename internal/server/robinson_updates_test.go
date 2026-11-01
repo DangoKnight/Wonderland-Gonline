@@ -57,8 +57,8 @@ func TestRobinsonRecoveryCandidateScopeAndOrdering(t *testing.T) {
 }
 
 // The same unmodified SQL EVE scripts drive both original rescue maps. This
-// reproduces upstream Test-RobinsonFullChain without its mocked Windows runtime.
-func TestNativeRobinsonUpstreamFullChainAndRecovery(t *testing.T) {
+// reproduces reference Test-RobinsonFullChain without its mocked Windows runtime.
+func TestNativeRobinsonFullChainAndRecovery(t *testing.T) {
 	catalog, err := installedCatalog(t)
 	if err != nil {
 		t.Fatal(err)

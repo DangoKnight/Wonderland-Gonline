@@ -72,12 +72,15 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	if !ok || c.battle != nil {
 		return nil
 	}
+	unlock := func() error {
+		return s.sendAll(c, [][]byte{{protocol.CommandNPCService, protocol.PetHotelStorageUnlock}, {protocol.CommandNPCService, protocol.PetHotelModalUnlock}})
+	}
 	next := c.character.Clone()
 	var outgoing, incoming []game.Pet
 	for _, slot := range deposits {
 		i := slices.IndexFunc(next.Pets, func(p game.Pet) bool { return c.pets.slot(p.ID) == slot })
 		if i < 0 || next.Pets[i].ID == 0 {
-			return nil
+			return unlock()
 		}
 		outgoing = append(outgoing, next.Pets[i])
 		next.Pets = slices.Delete(next.Pets, i, i+1)
@@ -85,19 +88,19 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	for _, slot := range withdrawals {
 		i := slices.IndexFunc(next.HotelPets, func(p game.Pet) bool { return p.Slot == slot })
 		if i < 0 || next.HotelPets[i].ID == 0 {
-			return nil
+			return unlock()
 		}
 		incoming = append(incoming, next.HotelPets[i])
 		next.HotelPets = slices.Delete(next.HotelPets, i, i+1)
 	}
 	if len(next.Pets)+len(incoming) > game.MaxPets || len(next.HotelPets)+len(outgoing) > game.MaxHotelPets {
-		return nil
+		return unlock()
 	}
 	team := append(slices.Clone(next.Pets), incoming...)
 	for i, pet := range team {
 		for _, other := range team[:i] {
 			if game.SamePet(pet.ID, other.ID) {
-				return nil
+				return unlock()
 			}
 		}
 	}
@@ -109,9 +112,6 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 		}
 	}
 	var packets [][]byte
-	for _, slot := range withdrawals {
-		packets = append(packets, []byte{protocol.CommandNPCService, protocol.NPCServiceWireCode4, slot})
-	}
 	activeRemoved := false
 	mountRemoved := false
 	for _, pet := range outgoing {
@@ -137,8 +137,9 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	for _, pet := range outgoing {
 		c.pets.release(pet.ID)
 	}
-	for _, pet := range incoming {
+	for i, pet := range incoming {
 		c.pets.register(pet.ID)
+		packets = append(packets, []byte{protocol.CommandNPCService, protocol.PetHotelCopyToTeam, withdrawals[i], c.pets.slot(pet.ID)}, []byte{protocol.CommandNPCService, protocol.NPCServiceWireCode4, withdrawals[i]})
 	}
 	if mountRemoved {
 		packets = append(unmountPackets(next.ID), packets...)
@@ -156,5 +157,7 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	for _, pet := range incoming {
 		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
 	}
-	return s.sendAll(c, append(packets, s.hotelPackets(c.character)...))
+	packets = append(packets, s.hotelPackets(c.character)...)
+	packets = append(packets, []byte{protocol.CommandNPCService, protocol.PetHotelStorageUnlock}, []byte{protocol.CommandNPCService, protocol.PetHotelModalUnlock})
+	return s.sendAll(c, packets)
 }

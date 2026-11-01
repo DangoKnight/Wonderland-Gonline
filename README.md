@@ -107,7 +107,7 @@ Account names accept 4–14 ASCII letters, digits or underscores. The JSON API a
 
 ## Testing
 
-See [TESTING.md](docs/TESTING.md) for focused checks, pre-commit validation,
+See [TESTING.md](docs/TESTING.md) for focused checks, pre-push server validation,
 server/client module commands, optional assets, graphics tests and live acceptance.
 
 ## Layout

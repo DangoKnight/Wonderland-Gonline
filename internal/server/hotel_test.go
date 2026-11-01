@@ -46,7 +46,11 @@ func TestHotelExchangeAndPersistence(t *testing.T) {
 		if err := s.worldCommand(ctx, c, p); err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(before, *c.character) || len(wire.packets(t)) != 0 {
+		packets := wire.packets(t)
+		if len(packets) != 0 && (!contains(packets, []byte{31, 8}) || !contains(packets, []byte{31, 12})) {
+			t.Fatal("failed exchange unlock", packets)
+		}
+		if !reflect.DeepEqual(before, *c.character) {
 			t.Fatal("rejected request mutated state")
 		}
 	}
@@ -54,6 +58,9 @@ func TestHotelExchangeAndPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := wire.packets(t)
+	if !contains(got, []byte{31, 5, 1, 1}) || !contains(got, []byte{31, 8}) || !contains(got, []byte{31, 12}) {
+		t.Fatal("native copy/unlock", got)
+	}
 	if !contains(got, []byte{31, 3, 1, 1}) || !contains(got, protocol.Builder{15, 2}.U32(next.ID).U8(1)) || !contains(got, []byte{19, 2}) {
 		t.Fatal("missing exchange packets", got)
 	}

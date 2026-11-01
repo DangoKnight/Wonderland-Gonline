@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
+var DefinitionNames = []string{"MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -136,6 +136,26 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 func validateDefinition(name string, c *assets.Catalog) error {
 	marshal := func(v any) []byte { raw, _ := json.Marshal(v); return raw }
 	switch name {
+	case "MapTransitions":
+		return validateMapTransitions(c.MapTransitions)
+	case "TentToolHosts":
+		return validateTentToolHosts(c.TentToolHosts)
+	case "ChestPropCategories":
+		return validateChestPropCategories(c.ChestPropCategories)
+	case "NPCShopDefaults":
+		return validateNPCShopDefaults(c.NPCShopDefaults)
+	case "NPCBuyPrices":
+		return validateNPCBuyPrices(c.NPCBuyPrices)
+	case "Travel":
+		return validateTravel(c.Travel)
+	case "TentSurfaces":
+		return validateTentSurfaces(c.TentSurfaces)
+	case "BoxedItems":
+		return validateBoxedItems(c.BoxedItems)
+	case "SkillEvolutions":
+		return validateSkillEvolutions(c.SkillEvolutions)
+	case "EventGathering":
+		return validateEventGathering(c.EventGathering)
 	case "QuestDefinitions":
 		return assets.ValidateQuestDefinitions(c)
 	case "Manufacturing":

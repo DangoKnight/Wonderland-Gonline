@@ -12,7 +12,7 @@ import (
 
 func manufactureStartPacket(job *store.ManufactureJob, now time.Time) []byte {
 	seconds := max(int64(0), (job.DueAt-now.UnixMilli()+time.Second.Milliseconds()-1)/time.Second.Milliseconds())
-	return protocol.Builder{protocol.CommandTentManufacture, protocol.TentManufactureStart, job.Bench}.U16(job.ItemID).U32(uint32(seconds)).U8(1)
+	return protocol.Builder{protocol.CommandTentManufacture, protocol.TentManufactureStart, job.Bench}.U16(job.ItemID).U32(uint32(seconds)).U8(max(byte(1), job.Batch))
 }
 func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
@@ -22,18 +22,41 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 	now := time.Now()
 	switch p[1] {
 	case protocol.TentManufactureStart:
-		if len(p) != protocol.TentManufactureStartBytes {
+		if len(p) != protocol.TentManufactureStartBytes && len(p) != protocol.TentManufactureNativeStartBytes && len(p) != protocol.TentManufactureNativeBatchBytes {
 			return protocol.ErrMalformed
 		}
 		if !gmIdle(c) || c.tentOwner != c.character.ID {
 			return s.chatFeedback(c, "Manufacture inside your own tent.")
 		}
+		bench := uint16(p[2])
+		batch := byte(1)
 		id := protocol.NewReader(p[3:]).U16()
+		native := len(p) != protocol.TentManufactureStartBytes
+		if native {
+			r := protocol.NewReader(p[2:])
+			bench = r.U16()
+			id = r.U16()
+			if len(p) == protocol.TentManufactureNativeBatchBytes {
+				batch = max(byte(1), r.U8())
+			}
+		}
 		formula, known := s.Assets.Manufacturing[id]
 		if !known {
 			return s.chatFeedback(c, "This manufacturing formula is unavailable.")
 		}
-		next, job, removes, err := s.Store.StartManufacturing(ctx, ref, p[2], formula, now, s.Assets.Items, *c.character)
+		var next game.Character
+		var job *store.ManufactureJob
+		var removes []game.Addition
+		var err error
+		if native {
+			surface := s.Assets.TentSurfaces[formula.Output.ItemID]
+			definition := s.Assets.Items[formula.Output.ItemID]
+			w, h := definition.Footprint()
+			formula.TentOutput = surface == 0 && (definition.Type == game.ItemTypeAppliance || definition.Type == game.ItemTypeTentDecoration) && (w > 1 || h > 1)
+			next, job, removes, err = s.Store.StartNativeManufacturing(ctx, ref, bench, formula, batch, surface, now, s.Assets.Items, *c.character)
+		} else {
+			next, job, removes, err = s.Store.StartManufacturing(ctx, ref, byte(bench), formula, now, s.Assets.Items, *c.character)
+		}
 		if err != nil {
 			return s.chatFeedback(c, "Manufacturing could not start: "+err.Error())
 		}
@@ -64,6 +87,19 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 		bench := current.Bench
 		if len(p) == protocol.TentManufactureControlBytes {
 			bench = p[2]
+		}
+		if current.Native && p[1] == protocol.TentManufactureStop {
+			next, adds, err := s.Store.CancelNativeManufacturing(ctx, ref, bench, s.Assets.Items, *c.character)
+			if err != nil {
+				return s.chatFeedback(c, "Manufacturing could not be cancelled: "+err.Error())
+			}
+			s.adoptSavedCharacter(c, next)
+			c.manufacturing = nil
+			c.manufacturingLoaded = true
+			if len(adds) > 0 {
+				s.sendOrClose(c, c.character.Bag.AdditionPacket(adds))
+			}
+			return c.send([]byte{protocol.CommandTentManufacture, protocol.TentManufactureStop, bench})
 		}
 		job, err := s.Store.PauseManufacturing(ctx, ref, bench, p[1] == protocol.TentManufactureStop, now)
 		if err != nil {
@@ -113,17 +149,16 @@ func (s *Server) completeManufacture(ctx context.Context, c *Session, now time.T
 	}
 	s.adoptSavedCharacter(c, next)
 	c.manufacturing = nil
-	if completed.TentOutput {
+	if completed.TentOutput || completed.Surface != 0 {
 		if err = s.refreshTent(ctx, c.character.ID); err != nil {
 			return err
 		}
-	} else {
+	}
+	if len(adds) > 0 {
 		s.sendOrClose(c, c.character.Bag.AdditionPacket(adds), []byte{protocol.CommandTentManufacture, protocol.TentManufactureBagComplete})
 	}
 	s.sendOrClose(c, []byte{protocol.CommandTentManufacture, protocol.TentManufactureContinue, completed.Bench}, []byte{protocol.CommandTentManufacture, protocol.TentManufactureStopped, completed.Bench})
-	effect := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRepairEffect}.U32(c.character.ID).U16(manufactureSparkleEffect)
-	s.broadcastWorld(c, effect)
-	s.sendOrClose(c, effect)
+	s.clearShapeshift(c)
 	return nil
 }
 func (s *Server) tickManufacturing(ctx context.Context, now time.Time) {

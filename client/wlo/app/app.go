@@ -123,7 +123,7 @@ type Client struct {
 	sport              *sportPlay // the running minigame
 	sceneMusic         map[uint16]string
 	eventMusic         string // event kind 15's track (+0x732c)
-	talks              map[uint16]string
+	talks              map[uint32]string
 	event              eventState
 	petAnnouncements   [][]byte
 	petAnnouncement    bool

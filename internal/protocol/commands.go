@@ -70,6 +70,9 @@ const (
 	// Native AC0:19 displays "Repeated Login" when the rejected socket closes.
 	DiscoveryAlreadyLoggedIn           = 19
 	DiscoveryCharacterCreationRejected = 30
+	HandshakeCompactCreationResult     = 3
+	CompactCreationSucceeded           = 0
+	CompactCreationFailed              = 1
 	// Unresolved wire meaning; retain the numeric code until verified.
 	DiscoveryWireCode32 = 32
 )
@@ -103,7 +106,7 @@ const (
 // CharacterState subcommands (AC5).
 const (
 	CharacterStateEquipmentSnapshot = 0
-	CharacterStateRepairEffect      = 5
+	CharacterStateShapeshift        = 5
 	// Unresolved wire meaning; retain the numeric code until verified.
 	CharacterStateWireCode3     = 3
 	CharacterStateRefresh       = 4
@@ -288,6 +291,7 @@ const (
 // Scene subcommands (AC22).
 const (
 	SceneActorState    = 1
+	SceneActorFacing   = 1
 	SceneActorWalk     = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
 	SceneActorPosition = 4
 	// Unresolved wire meaning; retain the numeric code until verified.
@@ -439,15 +443,26 @@ const (
 
 // Shop subcommands (AC27).
 const (
-	ShopSell            = 2
-	ShopPropsWindow     = 3
-	ShopEquipmentWindow = 4
+	ShopSell             = 2
+	ShopBuy              = 1
+	CommandShopCatalog   = 35
+	ShopCatalogOpen      = 12
+	ShopCatalogWeapons   = 0x0001FB84
+	ShopCatalogArmor     = 0x0001FB83
+	ShopCatalogProps     = 0x0001FB85
+	ShopBuySuccess       = 0
+	ShopBuyRejected      = 1
+	ShopBuyNotEnoughGold = 2
+	ShopBuyInventoryFull = 3
+	ShopPropsWindow      = 3
+	ShopEquipmentWindow  = 4
 )
 
 // LegacyStorage subcommands (AC29).
 const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	LegacyStorageWireCode6 = 6
+	RemoteControlOpen      = 6
 )
 
 // Storage subcommands (AC30).
@@ -616,6 +631,9 @@ const (
 	PetHotelDeposit            = 3
 	PetHotelTransfer           = 4
 	PetHotelOpen               = 7
+	PetHotelCopyToTeam         = 5
+	PetHotelStorageUnlock      = 8
+	PetHotelModalUnlock        = 12
 	StorageWithdraw            = 1
 	StorageDeposit             = 2
 	StorageReorder             = 3
@@ -716,8 +734,36 @@ const (
 	NativeInactive                = 0
 )
 
+// AC44's three-byte native request is form_NPCUpgrade. The legacy title adapter
+// uses a word operand and remains separately supported for existing Go clients.
+const (
+	CommandCompanionRebirth     = 44
+	CompanionRebirthRequest     = 1
+	CompanionRebirthOpen        = 2
+	CompanionRebirthSuccess     = 0
+	CompanionRebirthNoPet       = 2
+	CompanionRebirthLevel       = 3
+	CompanionRebirthAlready     = 6
+	CompanionRebirthAmity       = 7
+	CompanionRebirthEquipment   = 8
+	CompanionRebirthUnavailable = 255
+)
+
 const NativeDefaultRebornJob = 1
 const RebornJobMetadata = 11
+
+const (
+	CommandTeleportScroll    = 74
+	TeleportScrollRecord     = 1
+	TeleportScrollTravel     = 2
+	InventoryBambooDragonfly = 89
+)
+
+const (
+	CommandRebirthJobSelection = 79
+	RebirthJobConfirm          = 1
+	RebirthJobChange           = 2
+)
 
 // LoginSelect is retained for older callers; AC63:0 returns to the account form.
 // Deprecated: use LoginReturn. Character selection uses LoginSelectAlternate.
@@ -875,12 +921,24 @@ const (
 
 // Native player stalls (AC56).
 const (
-	CommandStall = 56
-	StallOpen    = 1
-	StallClose   = 2
-	StallView    = 3
-	StallBuy     = 4
-	StallSign    = 30
+	CommandStall                  = 56
+	StallOpen                     = 1
+	StallClose                    = 2
+	StallView                     = 3
+	StallBuy                      = 4
+	StallSign                     = 30
+	InventoryStallOpen            = 30
+	InventoryStallClose           = 31
+	InventoryStallBrowse          = 32
+	InventoryStallPurchase        = 33
+	InventoryPetStallPurchase     = 63
+	InventoryVehicleStallPurchase = 68
+	InventoryPetStallBrowse       = 113
+	InventoryVehicleStallBrowse   = 133
+	InventoryStallMapState        = 31
+	InventoryStallDespawn         = 32
+	InventoryStallFormClose       = 165
+	StallItemShopType             = 1
 )
 
 // Guild gameplay (AC39), distinct from inbound chat AC2:6.
@@ -910,20 +968,22 @@ const (
 
 // Native manufacturing (AC59). The reference wire handler selects Forge.
 const (
-	CommandGemSocket            = 37
-	GemSocketRequestBytes       = 4
-	CommandTentManufacture      = 64
-	TentManufactureStart        = 1
-	TentManufactureContinue     = 2
-	TentManufactureStop         = 3
-	TentManufactureStopped      = 4
-	TentManufactureBagComplete  = 9
-	TentManufactureStartBytes   = 5
-	TentManufactureControlBytes = 3
-	CommandManufacture          = 59
-	ManufactureRequestBytes     = 8
-	ManufactureFailed           = 0
-	ManufactureSucceeded        = 1
+	CommandGemSocket                = 37
+	GemSocketRequestBytes           = 4
+	CommandTentManufacture          = 64
+	TentManufactureStart            = 1
+	TentManufactureContinue         = 2
+	TentManufactureStop             = 3
+	TentManufactureStopped          = 4
+	TentManufactureBagComplete      = 9
+	TentManufactureStartBytes       = 5
+	TentManufactureNativeStartBytes = 6
+	TentManufactureNativeBatchBytes = 7
+	TentManufactureControlBytes     = 3
+	CommandManufacture              = 59
+	ManufactureRequestBytes         = 8
+	ManufactureFailed               = 0
+	ManufactureSucceeded            = 1
 )
 
 // Fixed Economy/Social inbound payload sizes include command and subcommand.
@@ -948,6 +1008,20 @@ const (
 	TentOpened                  = 59
 	TentOpenedStatus            = 2
 	TentPlaceFurniture          = 1
+	TentPickupFurniture         = 2
+	TentAttachTool              = 4
+	TentFurnitureTree           = 4
+	TentToolAttached            = 5
+	TentInteriorLayout          = 12
+	TentTreeHeaderBytes         = 6
+	TentTreeItemBytes           = 57
+	TentTreeRecordBytes         = 59
+	TentNativePlaceBytes        = 15
+	TentNativePlaceFloorBytes   = 16
+	TentNativeToolBytes         = 5
+	TentNativePickupBytes       = 4
+	TentFloorSurface            = 14
+	TentWallpaperSurface        = 15
 	TentMoveFurniture           = 3
 	TentFurnitureSucceeded      = 1
 	InventoryTentFurniture      = 3
@@ -1002,4 +1076,18 @@ const (
 	InstanceLevelTooLow         = 2
 	InstanceRoomsFull           = 1
 	InstanceRejected            = 255
+)
+
+// Alternative stall adapters used by upstream clients. Incoming event controls
+// share numeric codes with unrelated outgoing event presentation frames.
+const (
+	CommandBazaar    = 53
+	BazaarOpen       = 1
+	BazaarBuy        = 2
+	BazaarClose      = 3
+	BazaarQuery      = 4
+	EventStallOpen   = 10
+	EventStallClose  = 13
+	EventStallBrowse = 14
+	EventStallBuy    = 17
 )

@@ -1,0 +1,49 @@
+package server
+
+import (
+	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
+)
+
+const (
+	tentTreeBeforeFloorPadding = 9
+	tentTreeAfterFloorPadding  = 8
+	tentTreeGroundZ            = 1
+	tentTreeAttachedFloor      = 1
+)
+
+// tentTreeRecord is the native item's 57-byte body after its UInt16 client index.
+func tentTreeRecord(index, id uint16, x, y, z uint32, rotation byte, parent uint16, children []uint16, floor byte) []byte {
+	p := protocol.Builder{}.U16(index).U16(id).U32(x).U32(y).U32(z).U8(rotation).U16(parent).U16(0)
+	for i := 0; i < game.MaxTentToolAttachments; i++ {
+		child := uint16(0)
+		if i < len(children) {
+			child = children[i]
+		}
+		p = p.U16(child)
+	}
+	return p.Bytes(make([]byte, tentTreeBeforeFloorPadding)).U8(floor).Bytes(make([]byte, tentTreeAfterFloorPadding))
+}
+
+// nativeTentTree sends roots followed by child tools. Client indices are dense
+// and independent of SQL slots, which remain stable when a sibling is removed.
+func nativeTentTree(t store.Tent) []byte {
+	p := protocol.Builder{protocol.CommandTentFurniture, protocol.TentFurnitureTree}.U32(t.OwnerID)
+	next := uint16(len(t.Items) + 1)
+	var children [][]byte
+	for i, row := range t.Items {
+		index := uint16(i + 1)
+		var slots []uint16
+		for _, tool := range row.Tools {
+			slots = append(slots, next)
+			children = append(children, tentTreeRecord(next, tool.ItemID, 0, 0, 0, 0, index, nil, tentTreeAttachedFloor))
+			next++
+		}
+		p = p.Bytes(tentTreeRecord(index, row.ItemID, uint32(row.X), uint32(row.Y), tentTreeGroundZ, row.Rotation, 0, slots, row.Floor))
+	}
+	for _, record := range children {
+		p = p.Bytes(record)
+	}
+	return p
+}

@@ -40,6 +40,9 @@ func (s *Server) openPackCommand(ctx context.Context, c *Session, p []byte) erro
 	if err != nil || handled {
 		return err
 	}
+	if handled, err := s.openBoxedItem(ctx, c, byte(slot)); handled || err != nil {
+		return err
+	}
 	return c.send(headBanner("This pack has no configured rewards. Item retained."))
 }
 

@@ -104,3 +104,29 @@ func TestGemSocketIncompleteSourceDoesNotConsume(t *testing.T) {
 		t.Fatal("incomplete socket handler claimed success")
 	}
 }
+
+func TestNativeManufactureWordBenchBatchAndCancellation(t *testing.T) {
+	s, c, wire := nativeManufactureFixture(t)
+	ctx := context.Background()
+	c.character.TentReturn = &game.Location{Map: 10019}
+	c.character.Bag[0].Damage = 7
+	c.character.Bag[0].Metadata[0] = 9
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.dispatch(ctx, c, []byte{64, 1, 1, 0, 12, 0, 2}); err != nil || c.manufacturing == nil || !c.character.Bag[0].Empty() {
+		t.Fatal(c.manufacturing, err)
+	}
+	if !contains(wire.packets(t), []byte{64, 1, 1, 177, 125, 20, 0, 0, 0, 2}) {
+		t.Fatal("native batch ACK")
+	}
+	if err := s.dispatch(ctx, c, []byte{64, 3, 1}); err != nil || c.manufacturing != nil || c.character.Bag[0].Count != 10 || c.character.Bag[0].Damage != 7 || c.character.Bag[0].Metadata[0] != 9 {
+		t.Fatal(c.character.Bag, err)
+	}
+	if !contains(wire.packets(t), []byte{64, 3, 1}) {
+		t.Fatal("cancel ACK")
+	}
+	if err := s.dispatch(ctx, c, []byte{64, 3, 1}); err != nil || c.character.Bag[0].Count != 10 {
+		t.Fatal("duplicate refund", err)
+	}
+}

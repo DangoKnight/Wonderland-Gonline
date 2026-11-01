@@ -160,8 +160,8 @@ func TestMonkeyAuthoredMoviesBeforeAtomicRecruitment(t *testing.T) {
 			if err := s.worldCommand(ctx, c, []byte{20, 1, 1, 0}); err != nil {
 				t.Fatal(err)
 			}
-			first := []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 2, 224, 46, 0, 0, 0, 0, 7}
-			if packets := wire.packets(t); len(packets) != 2 || !bytes.Equal(packets[1], first) {
+			first := []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 1, 224, 46, 0, 0, 0, 0, 7}
+			if packets := wire.packets(t); len(packets) != 4 || !bytes.Equal(packets[1], first) {
 				t.Fatal("first authored movie", packets)
 			}
 			if scenario == "cancel" {
@@ -176,7 +176,21 @@ func TestMonkeyAuthoredMoviesBeforeAtomicRecruitment(t *testing.T) {
 			if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
 				t.Fatal(err)
 			}
-			second := []byte{20, 1, 0, 0, 0, 2, 5, 0, 0, 0, 2, 3, 43, 0, 0, 0, 0, 7}
+			if scenario == "full" {
+				if packets := wire.packets(t); !contains(packets, dialogueFrame(1, 7, 0, 31146)) {
+					t.Fatal("full-party follow-up", packets)
+				}
+				for i := 0; i < 2; i++ {
+					if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if c.event != nil || c.character.Quests[12002].ID != 0 {
+					t.Fatal("full party consumed rescue")
+				}
+				return
+			}
+			second := []byte{20, 1, 0, 0, 0, 2, 5, 0, 0, 0, 1, 3, 43, 0, 0, 0, 0, 7}
 			if packets := wire.packets(t); len(packets) != 1 || !bytes.Equal(packets[0], second) {
 				t.Fatal("second authored movie", packets)
 			}

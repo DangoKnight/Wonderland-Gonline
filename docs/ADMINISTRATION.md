@@ -143,7 +143,7 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v17 and structured asset schema v13.
+Current startup requires gameplay schema v18 and structured asset schema v14.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
 the preserving offline migration procedure for an existing installation. The
 [administration validation record](TESTING.md#administration-validation-history)
@@ -275,8 +275,8 @@ Fishing rules are available through the `Fishing` dataset; see [FISHING.md](FISH
 The definition editor also exposes `Manufacturing` (native formula IDs, five
 materials, plan/tool, duration and destination) and `RebornClasses` (enabled
 classes and WLRI cape mappings). Validate and save through the existing optimistic
-SQL edit flow. `/reborn <class>` requires GM authority and performs cape grant,
-class/level/EXP reset and vitals in one owned-state transaction. See
+SQL edit flow. `/reborn <class>` requires GM authority, learns the class skill,
+deducts 99 levels and recalculates EXP/vitals in one owned-state transaction. See
 [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 

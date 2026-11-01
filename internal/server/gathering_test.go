@@ -32,6 +32,47 @@ func waterGatheringFixture(t *testing.T) (*Server, *Session, *captureConn, *asse
 	return s, c, wires[0], &ev
 }
 
+func TestEventGatheringMultiplePoolsAtomicCooldown(t *testing.T) {
+	s, c, _, _ := waterGatheringFixture(t)
+	s.Assets.Items[11101] = game.ItemDefinition{ID: 11101, Type: 1}
+	s.Assets.EventGathering = assets.EventGatheringRules{Timers: []uint16{11008}, Pools: []assets.EventGatheringPool{
+		{Type: 1, Variant: 1, Items: []uint16{32176}},
+		{Type: 2, Variant: 2, Items: []uint16{11101}},
+	}}
+	ev := assets.Event{ClickID: 88, Branches: []assets.Branch{{Index: 1, Condition: evCond(14, 11008, 2, 0, 0, 0), Operations: []assets.Operation{
+		evOp(1, 1, 1, 6, 1, 1), evOp(2, 1, 1, 6, 2, 2), evOp(3, 14, 11008, 1, 0, 180),
+	}}}}
+	m := s.Assets.Maps[c.character.Map]
+	m.Events = []assets.Event{ev}
+	s.Assets.Maps[c.character.Map] = m
+	s.World = world.New(s.Assets)
+	now := time.Now().UTC()
+	handled, err := s.tryWaterGathering(context.Background(), c, 88, &ev, 0, now)
+	if !handled || err != nil {
+		t.Fatal(handled, err)
+	}
+	var food, sword int
+	for _, it := range c.character.Bag {
+		switch it.ID {
+		case 32176:
+			food += int(it.Count)
+		case 11101:
+			sword += int(it.Count)
+		}
+	}
+	if food != 51 || sword != 1 || !c.character.EventTimers[11008].Equal(now.Add(180*time.Second)) {
+		t.Fatal("incomplete multi-pool reward")
+	}
+	before := c.character.Bag
+	if _, err := s.tryWaterGathering(context.Background(), c, 88, &ev, 0, now); err != nil || c.character.Bag != before {
+		t.Fatal("replay granted", err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || stored[0].Bag != before || stored[0].Quests[11008].Step != 1 {
+		t.Fatal("multi-pool durability", err)
+	}
+}
+
 func TestWaterGatheringNativePacketsAndCooldown(t *testing.T) {
 	s, c, wire, ev := waterGatheringFixture(t)
 	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)

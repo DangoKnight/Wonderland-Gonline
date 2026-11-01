@@ -29,6 +29,14 @@ native function; binaries were not fully disassembled and every authored data
 value was not reverified. This was static review, not runtime or aLogin acceptance.
 Historical verification reports are not evidence that current tests passed.
 
+## Current source update — 2026-11-01
+
+The latest pinned source is `1ff5bbaec5da623ee05a2d083ced16dac4176a7e`: 38 commits
+and 431 changed files after the reviewed `e63e9fe` revision. See
+[imported behavior and explicit exclusions](SOURCE_UPDATES.md)
+and the separate [per-file update ledger](source-update-inventory.json). The
+566-file baseline counts below remain historical evidence.
+
 ## Upstream follow-up — 2026-10-04
 
 Reviewed both new `Develop` commits, `63d8c421` and `e63e9fea`, through
@@ -69,7 +77,7 @@ were unchanged.
 | Events and quests       | Native EVE branches, callbacks, choices, marks, journal, atomic rewards, story continuations, minigames, companion identity and visibility                             | Typed custom quest definitions/editor and transactional kill counters implemented; dormant progression is additional integration. Shared prop reset/replay and generic NPC greeting implemented; native acceptance pending |
 | Combat                  | PvE/PvP formations, action ownership, turns/timeouts, capture, damage/elements/criticals, effects, shields, combos, loot/progression and authored continuations        | ACK broadcast and owner/party entry refresh implemented; PvP rewards deliberately omitted; native animation/area acceptance remains pending                                                                                |
 | Companions and vehicles | Party/hotel/reserve rosters, vouchers, skills, gear, feeding/amity, pet rebirth, mounts, vehicle ownership/wear and travel                                             | Character/pet potential metadata and GM rebirth/classes implemented; clinic heals accompanying pets; funded normal/golden/Super pill training implemented; mercenary eligibility and native acceptance pending             |
-| Items and tents         | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Reachable type restrictions are verified; unverified special effects remain on hold; two-floor decoration metadata persisted; placement remains floor zero; upstairs access pending                                        |
+| Items and tents         | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Reachable type restrictions are verified; unverified special effects remain on hold; two-floor decoration metadata persisted; native floor-one placement accepts existing upgraded tents; upgrade purchases/upstairs access pending                                        |
 | Economy                 | Atomic mall/forging/gacha/Lucky Draw, bank balances, trades, stalls, synthesis, two-input manufacture, gathering and parcel escrow                                     | AC59 and timed AC64 implemented; AC37 socket effects remain unfinished in the reference; some legacy aliases absent                                                                                                        |
 | Social                  | Chat/preferences, friendships, parties, guild membership/ranks/insignia/rosters, marriage, mail and SQL administration                                                 | Job/nickname presentation implemented; Cupid model is absent but reference excludes it from transmitted lists; success-only guild/mail/alliance aliases remain on hold                                                     |
 | Administration          | Accounts/security, sessions/bans, mall balances, character editors, GM studio, content editors, logs/audit, guilds/marriages/mail, operations/config editing           | Offline status, native announcement channels, live tab refresh, scoped actors, linked quest edits, combined reports and SQL quest registry implemented; MySQL workflows replaced by SQLite                                 |
@@ -135,10 +143,9 @@ These do not block porting reachable implemented reference behavior:
   remains authoritative. Mark metadata seeds use actual native IDs and text, without
   guessed rewards, map/NPC mappings or objectives from English titles.
   Wiring the dormant engine into gameplay is new integration work.
-- **Laura exit fallback:** source gift IDs identify missing/food WLRI items and
-  no matching reward was found in the inspected map 10000/10001 operations.
-  Keep the fallback pending verified tent/remote/cutscene/mark data; see
-  [world/combat parity](WORLD_COMBAT_PARITY.md).
+- **Laura exit gift:** the new source corrects the tent/remote IDs. Asset v14
+  imports the route and one-time transactional reward; see
+  [world/combat parity](WORLD_COMBAT_PARITY.md#laura-exit-gift).
 - **Combat research:** verified native area/grade patterns, hit/resistance rules
   beyond compatibility formulas and multi-target/status animation acceptance.
   The source resolves one target; explicit SQL area execution is a Go addition.
@@ -156,10 +163,10 @@ These do not block porting reachable implemented reference behavior:
 - **Manufacturing and rebirth acceptance:** timer units and native HUD class
   contributions require aLogin verification. AC37 has no implemented socket
   effect in the reference and its gem IDs identify WLRI oil; reject without
-  consuming items. Reborn class skills are absent from the source; default cape
-  variants are authored WLRI mappings. See [details](MANUFACTURING_CHARACTER_STATE.md).
-- **Housing:** source AC60 decoration purchase, AC61 upstairs and AC62:4 special
-  placement are empty/success-only. Garage/team/pet/RiceBall blocks are commented
+  consuming items. Reborn class skills are now imported; cape
+  mappings support Transfer Mirror class changes. See [details](MANUFACTURING_CHARACTER_STATE.md).
+- **Housing:** source AC60 decoration purchase and AC61 upstairs remain
+  empty/success-only. AC62:4 now attaches configured appliances to work platforms. Garage/team/pet/RiceBall blocks are commented
   or incomplete. Verified upgrade/purchase rules require further work.
 - **Compatibility:** optional MySQL provider and real source cross-backend
   migration, forum password conversion and unsupported import metadata. These

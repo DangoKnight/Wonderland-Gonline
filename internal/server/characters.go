@@ -93,7 +93,7 @@ func (s *Server) createCharacter(ctx context.Context, c *Session, p []byte) erro
 		if e != nil {
 			return s.rejectCharacterCreation(c, "build_character", e)
 		}
-		char.UnlockQualifiedSkills(false, s.hasSkill)
+		s.unlockQualifiedSkills(&char, false)
 		view, pets := world.NewView(), newPetRoster()
 		packets, e := s.worldEntryPackets(char, view, pets)
 		if e != nil {
@@ -153,6 +153,10 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 }
 
 func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, pets *petRoster, packets [][]byte) error {
+	points, err := s.Store.TeleportPoints(context.Background(), store.CharacterRef{Account: c.account.ID, ID: char.ID})
+	if err != nil {
+		return err
+	}
 	c.character = &char
 	c.openTent, c.tentOwner = nil, 0
 	baseline := char.Clone()
@@ -167,7 +171,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.ready = false
 	c.motdSent = false
 	c.warped = false
-	c.storm, c.beachPending, c.beach, c.battle = false, false, nil, nil
+	c.storm, c.stormAck, c.beachPending, c.beach, c.battle = false, false, false, nil, nil
 	c.restMap, c.saleMode = 0, -1
 	c.encounter = encounterState{next: firstEncounter}
 	c.encounter.enterMap()
@@ -195,6 +199,13 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 		}
 	}
 	s.Log.Info("world entry sent", s.sessionLogAttrs(c)...)
+	for point := byte(1); point <= store.MaxTeleportPoints; point++ {
+		if location, ok := points[point]; ok {
+			if err := c.send(teleportPointPacket(point, location)); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

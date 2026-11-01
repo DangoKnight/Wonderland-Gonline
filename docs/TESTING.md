@@ -11,7 +11,7 @@ Machine-readable historical evidence remains in [source-inventory.json](source-i
 - [Test selection and correctness](#test-selection-and-correctness)
 - [Environment requirements](#environment-requirements)
 - [Development checks](#development-checks)
-- [Pre-commit validation](#pre-commit-validation)
+- [Pre-push server validation](#pre-push-server-validation)
 - [Test data and opt-ins](#test-data-and-opt-ins)
 - [Subsystem checks](#subsystem-checks)
 - [Graphics, snapshots and benchmarks](#gpu-parity-and-snapshots)
@@ -19,13 +19,14 @@ Machine-readable historical evidence remains in [source-inventory.json](source-i
 - [Native-client acceptance and recorded outcomes](#native-client-acceptance)
 - [Historical validation reports](#historical-validation-reports)
 - [Benchmarks](#benchmarks)
+- [Resource exhaustion review](#resource-exhaustion-review--2026-11-01)
 
 ## Test selection and correctness
 
 During development, run only affected modules and integrations. Use `-run` within
-large packages such as `internal/server` and `client/wlo/app`; reserve full module
-suites for pre-commit validation. Use `-race` for changed concurrency, shared
-caches, session ownership or resource lifetimes. Include relevant native-data
+large packages such as `internal/server` and `client/wlo/app`, including before
+commits. Run full server validation only before a push. Use `-race` for changed
+concurrency, shared caches, session ownership or resource lifetimes. Include relevant native-data
 compatibility checks for protocol/event changes. Confirm that a selection
 actually runs tests: `[no tests to run]` does not validate that package.
 
@@ -79,9 +80,10 @@ Use `-count=1` when fresh execution is needed. Narrow packages/selections furthe
 for small changes. Source-only runs use repository exports; compiled paths and
 other opt-ins are listed below.
 
-## Pre-commit validation
+## Pre-push server validation
 
-Run from the repository root with a current imported assets database:
+Run the full server checks only before a push, from the repository root with a
+current imported assets database:
 
 ```sh
 WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" go test -race -timeout 60m ./...
@@ -357,7 +359,7 @@ go test ./internal/clientassets -count=1
 ```
 
 These inputs are original resources, not the runtime SQL database or loose
-exported `data/`. Use the separate [pre-commit procedure](#pre-commit-validation)
+exported `data/`. Use the separate [full-validation procedure](#pre-push-server-validation)
 for full client suites; avoid leaving native-data variables set for unrelated
 package selections.
 
@@ -547,7 +549,7 @@ go run ./cmd/live-test -config config.local.json \
   -scenario fishing-skilled -output var/live-tests/fishing-skilled-01
 ```
 
-Use a current assets database (schema v13, including the item dimensions
+Use a current assets database (schema v14, including the item dimensions
 introduced in v11). If testing
 with an upgraded copy, add `-assets-database /absolute/path/to/assets.db`.
 See [asset database upgrades](ASSET_DATABASE.md) if preparation reports a schema
@@ -985,3 +987,151 @@ and [the roadmap](CLIENT_ROADMAP.md).
 - A native 11016.jpg frame was rendered through Ebitengine and visually inspected. No player, NPC, UI composition or gameplay compatibility is implied by rendering a background.
 - Image payloads are capped at 64 MiB and decoded dimensions at 128 million pixels. Unsupported/corrupt resources display an error and remain browsable. Additional expansion archives have not yet received the same complete image census.
 - JMA/JXA and JXAN asset decoding is implemented in `internal/clientassets` and `cmd/sprite-export`. All selected client resources are exported under `data/sprites`; see [the sprite export documentation](../data/sprites/README.md). The native SHA padding and AES key expansion quirks are covered by independent golden vectors and authenticated native sprite tests. Three orphan JXAN files have no corresponding pixel archives in the source directory.
+
+### Source update verification — 2026-11-01
+
+The update ledger covers 38 commits and all 431 changed files through `1ff5bba`.
+Source hashes were rechecked byte-for-byte against the pinned archive, and every
+Go evidence path resolves. Prototype/platform exclusions are documented in
+[SOURCE_UPDATES.md](SOURCE_UPDATES.md); they are not counted as working features.
+
+Focused race checks cover native companion/job rebirth, deterministic boxes,
+mission/PreEvent conditions, generalized gathering, proficiency and reinforcement
+waves, NPC shopping, personal/persistent bazaars, native tent trees/tools,
+manufacturing batch/refund/restart, travel and Laura's one-time exit gift.
+Independent packet expectations cover 24-bit speech, reinforcement records,
+furniture trees, item/pet/vehicle browse layouts and cancellation acknowledgments.
+Client regressions retain 24-bit talk references and ID-over-offset lookup precedence.
+Failure paths include full bags, stale quotes/funds, repeated claims, SQL rollback,
+scarce-stock races and preservation of instance metadata. The final focused
+battery uses:
+
+```sh
+GOCACHE=/tmp/wonderland-precommit-go-cache go test -race \
+  ./internal/assetsql ./internal/world ./internal/game ./internal/battle \
+  ./internal/store ./internal/server \
+  -run 'Test(CatalogDefinition|NPCRoutesMigration|QuestLifecycle|MissionVariables|RebirthLevelDeduction|EventSpeech|PoisonDefault|Tent|NativeManufactur|Manufacturing|Bazaar|NativeStall|AlternativeStall|CompactCreation|SpeechTrace|Repair|GMReborn|RebirthJob|CompanionRebirth|Boxed|EventGathering|TeleportScroll|KelanReturn|BambooDragonfly|Reinforcement|StormAndBeach|Robinson|Hotel|CombatSkill|BattleSkill)' -count=1
+```
+
+Disposable SQLite backup copies of installed asset v13/gameplay v17 were upgraded
+through `database-migrate`, including content and integrity verification. The
+result is asset v14/gameplay v18, with 19 boxes, 124 evolution links, 7,130 NPC
+buy prices, three fallback shop catalogs, the exit reward and travel tables.
+Native poison definitions migrate to 10%/minimum 15. Round trips cover all ten
+new catalog roots; separate checks preserve edited tent/poison defaults and
+existing owned state. The upgrade also projects 1,512 event-route entries (2,029
+points) from retained map sections. A migration regression checks reordered/added
+NPCs, edited walking steps, signs/speeds and repeat-upgrade preservation. Native
+ship/Fred scenarios and installed manufacturing/tent reference checks passed against the upgraded copy.
+
+The installed databases remain at v13/v17; they were not overwritten. The sibling
+working checkout and original source inventory hashes are unchanged. Tests use
+`GOCACHE=/tmp/wonderland-precommit-go-cache` to avoid the read-only host cache.
+The client port catalog was regenerated (12,130 functions, 900 citations,
+228 regions, zero unclassified regions, 29/91 receive commands with branches).
+Command coverage is not full interface or feature acceptance.
+
+Both module `go vet` runs and the focused client race checks pass (app: 203.646s).
+The complete client race run reached its
+30-minute outer timeout during active asset loading, without preceding assertion
+failures or race reports; it is incomplete, not a pass. Final validation uses the
+full server race suite, the full client suite without `-race`, and focused client
+race checks for changed dialogue/event/voice/lookup paths. Loopback socket access
+is enabled. The full server race suite passed (server: 793.903s; assets SQL:
+77.541s), as did the full client suite (app: 251.513s). These runs preceded the
+owner’s instruction to reserve full server validation for pushes. Commands used:
+
+```sh
+WONDERLAND_TEST_ASSETS_DB=/absolute/path/to/upgraded-copy/assets.db \
+  GOCACHE=/tmp/wonderland-precommit-go-cache go test -race -timeout=60m ./...
+cd client
+GOCACHE=/tmp/wonderland-precommit-go-cache go test -timeout=60m ./...
+GOCACHE=/tmp/wonderland-precommit-go-cache go test -race -timeout=10m \
+  ./wlo/app ./wlo/world \
+  -run 'Test(Dialogue|NPCTalk|TalkWrap|CatTalk|Question|StepCompleteAcknowledged|RouteEvent|EventTurns|EventMusic|TalksPreserves)' -count=1
+```
+
+Interactive aLogin captures, the new Go-client native-form interfaces,
+multiplayer/load/soak and crash acceptance remain pending. No default-suite result
+implies those optional or live checks passed.
+
+
+### Resource exhaustion review — 2026-11-01
+
+The timed-out client race run was actively registering skin images in
+`picdb.LoadDir`, not waiting on a deadlock. A focused CPU profile attributed about
+75% of sampled time to race runtime/external instrumentation. The same installed
+client-entry/dialogue test took 1.558s without `-race` and 25.689s with it after
+hardening. These are individual local measurements, not production latency or
+load acceptance. Each app test constructs an isolated client and repeats cold
+resource preparation; production workspace sessions share their resources.
+
+The review found and addressed these amplification paths:
+
+| Finding | Exposure and change |
+| --- | --- |
+| Quadratic skin registration | The directory was reread/sorted for each image. `LoadDir` now resolves filenames in one enumeration and retains them for deferred loading. Three one-iteration samples at 1,000 tiny images improved from median 121.3ms / 130.0MB allocated to 8.60ms / 6.70MB. Case-insensitive names, PNG precedence, first-directory overrides and compiled/loose rendering are preserved. |
+| Unbounded native verification expansion | Editable `sprites.json` trusted its declared expansion size and had no JSON allocation ceiling. Input is capped at 128 MiB and decoded payloads at 512 MiB before decompression. All 107 installed exports fit; the largest is about 67 MiB of JSON and 198 MiB decoded. At most two native decoders run per workspace manager, and close cancels queued work. |
+| Oversized/repeated UI decoding | PNG/BMP configuration and compiled dimensions are checked before pixel allocation: maximum side 16,384 and maximum area 16,777,216 pixels. Failed deferred decoding is attempted once per resource load, and skin preparation propagates errors. |
+
+The asset findings require malformed or unusually large local/supplied assets;
+this pass did not demonstrate a remote player's ability to supply those bytes.
+Bounds cover the reviewed UI/native-verification paths, not every client decoder.
+Native verification files are still retained until manager close; an aggregate
+disk/cache budget across distinct archives remains a follow-up.
+
+A separate potential multiplayer denial-of-service path remains: synchronous
+peer writes in [broadcastWorld](../internal/server/world.go) occur while holding
+`worldMu`, and [Session.send](../internal/server/server.go) permits ten seconds
+per write. A non-reading peer whose socket buffer fills can delay unrelated
+world actions; multiple slow peers can amplify it. Existing packet/connection
+limits do not remove outbound backpressure. This is a code-level finding, not
+a completed live exploit/load reproduction. A bounded per-session writer queue
+with disconnect-on-overflow should move network waits outside the global lock
+while preserving packet ordering and transaction receipts. That networking change
+has not been made in this pass.
+
+Focused validation covers oversized/sparse JSON, excessive declared expansion,
+checksum/length mismatch, oversized PNG headers, decode failure caching,
+PNG/case precedence, compiled-image parity and native close/cancellation races.
+The queued-close race check passes 20 repetitions. Resource package race checks
+pass (picdb: 1.176s; sprites: 5.497s), as do the focused app/shared-workspace checks
+(49.485s), JSON guard tests and affected-package `go vet`. Commands:
+
+```sh
+go test -race ./internal/clientassets -run '^TestSpriteJSON' -count=1
+cd client
+go test -race ./wlo/picdb ./wlo/sprites -count=1
+go test -race ./wlo/sprites -run '^TestCloseCancelsQueuedNativeDecode$' -count=20
+go test -race -timeout=5m ./wlo/app \
+  -run '^Test(WorkspaceSharedAssetsAndIndependentSessions|NativePresentationAndAllocation)$' -count=1
+go test ./wlo/picdb -run '^$' -bench '^BenchmarkLoadDir$' -benchtime=1x -count=3 -benchmem
+```
+
+The full server/client results above precede this resource-hardening follow-up.
+Only affected tests are rerun here; full server validation is reserved for a push.
+
+
+### Migration ownership verification — 2026-11-01
+
+Definitions, embedded defaults, validation and additive asset migrations live
+with their owning features. Gameplay v18 DDL lives with teleport points, tent
+tools, manufacturing and bazaars; the schema runners coordinate their existing
+version and transaction boundaries. Source-labelled modules/tests were replaced
+by domain names. The reference ledger is [source-update-inventory.json](source-update-inventory.json).
+
+Focused race checks pass for catalog migration/rollback/administration, NPC routes,
+tent/poison defaults, event/mission conditions, speech packets, rebirth/proficiency,
+travel, manufacturing, tent tools and bazaars. Preservation checks reenter the v14
+upgrade with edited box quantities/NPC prices and deliberately empty skill
+links. Existing edits and deletions survive. Generated SQL models are byte-identical
+after regeneration; all 431 reference hashes and evidence paths still verify.
+Affected-package `go vet` passes. No full server suite was run for this refactor.
+
+```sh
+go test -race ./internal/assetsql ./internal/world ./internal/game ./internal/server \
+  -run '^Test(CatalogDefinition|StructuredCatalogMigration|StructuredAdministration|NPCRoutesMigration|TentDefaultsMigration|PoisonDefault|QuestLifecycleAndCharacterSubjects|MissionVariablesAndPreEventGroups|EventSpeech24BitGolden|CombatSkillEXP|RebirthLevelDeductionAndLevel199|Boxed|EventGathering|TeleportScroll|KelanReturn|BambooDragonfly|MapTransition|NativeNPCShop|NPCShop|NativeRebirthJob)' -count=1
+go test -race ./internal/store ./internal/server \
+  -run '^Test(TeleportPoints|Tent|NativeManufacturing|Manufacturing|Bazaar|CharacterMetadataV13|NativeStall|AlternativeStall)' -count=1
+go vet ./internal/assets ./internal/assetsql ./internal/world ./internal/game ./internal/store ./internal/server
+```

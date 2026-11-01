@@ -62,14 +62,14 @@ func TestSpiderStoryArrivalRecovery(t *testing.T) {
 }
 
 func TestStormAndBeachRescue(t *testing.T) {
-	beachIntroDelay, beachTimeout = 10*time.Millisecond, time.Hour
-	defer func() { beachIntroDelay, beachTimeout = 800*time.Millisecond, 25*time.Second }()
+	beachTimeout = time.Hour
+	defer func() { beachTimeout = 25 * time.Second }()
 	s, players, wires := worldFixture(t)
 	ctx := context.Background()
 	storm := evOp(2, 8, 1, 0, 0, 0)
 	storm.Data[7], storm.Data[8] = 0x00, 0x7b // dialog4 = 0x7B00
 	captain := assets.Event{ClickID: 11, Branches: []assets.Branch{{Index: 1, Condition: evCond(0, 0, 0, 0, 0, 0), Operations: []assets.Operation{evOp(1, 2, 10, 0, 30100, 0), storm}}}}
-	robinson := assets.Event{ClickID: 1, Branches: []assets.Branch{{Index: 1, Condition: evCond(5, beachQuest, 1, 0, 5, 1), Operations: []assets.Operation{evOp(1, 2, 1, 0, 20001, 0)}}}}
+	robinson := assets.Event{ClickID: 1, Branches: []assets.Branch{{Index: 1, Condition: evCond(5, beachQuest, 2, 0, 0, 0), Operations: []assets.Operation{evOp(1, 2, 1, 0, 20001, 0)}}}}
 	s.Assets.Maps[10017] = assets.Map{ID: 10017, NPCs: []assets.MapNPC{{ClickID: 10, Flags: 1, X: 1050, Y: 1080, Events: []byte{11}}}, Events: []assets.Event{captain}}
 	s.Assets.Maps[beachMap] = assets.Map{ID: beachMap, NPCs: []assets.MapNPC{{ClickID: 1, Flags: 1, X: 1000, Y: 2200}}, Events: []assets.Event{robinson}}
 	s.World = world.New(s.Assets)
@@ -83,9 +83,13 @@ func TestStormAndBeachRescue(t *testing.T) {
 	}
 	do(12, 1)
 	do(20, 1, 10, 0)
-	if got := do(20, 6); len(got) < 2 || !bytes.Equal(got[0], []byte{186, 12, 1, 0, 0, 0, 0}) || !c.storm {
+	if got := do(20, 6); len(got) < 2 || !bytes.Equal(got[0], []byte{20, 1, 0, 0, 0, 3, 5, 0, 0, 0, 2, 0x7b, 0, 0, 0, 0, 0, 0}) || !bytes.Equal(got[1], []byte{186, 12, 1, 0, 0, 0, 0}) || !c.storm {
 		t.Fatal("storm", got)
 	}
+	if got := do(20, 6); len(got) != 0 || !c.storm {
+		t.Fatal("premature storm ACK", got)
+	}
+	do(186, 9, 1, 0)
 	got := do(20, 6)
 	if !contains(got, protocol.Builder{12}.U32(c.character.ID).U16(beachMap).U16(1038).U16(2235).U16(0).U8(0)) || c.storm || !c.beachPending {
 		t.Fatal("storm did not end at the beach", got)
@@ -94,23 +98,8 @@ func TestStormAndBeachRescue(t *testing.T) {
 	if !contains(got, protocol.Builder{32, 2}.U32(c.character.ID).U8(9)) || !contains(got, []byte{22, 11, 6, 0, 0xff, 0xff}) || c.beach == nil {
 		t.Fatal("rescue start", got)
 	}
-	if got = do(20, 6); len(got) != 0 {
-		t.Fatal("acknowledgment before the wake-up animation", got)
-	}
-	for deadline := time.Now().Add(5 * time.Second); ; {
-		s.worldMu.Lock()
-		step := c.beach.step
-		s.worldMu.Unlock()
-		if step == 2 {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("wake-up animation did not start")
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
-	if got = wire.packets(t); len(got) != 1 || !bytes.Equal(got[0], eventFrame(5, 0, 0, 1, 12008, 0, 1, 0)) {
-		t.Fatal("wake-up", got)
+	if !contains(got, []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 1, 0xe8, 0x2e, 0, 0, 0, 0, 1}) || !contains(got, []byte{22, 12, 1, 11, 0, 5}) {
+		t.Fatal("immediate wake-up and actor", got)
 	}
 	for _, want := range [][]byte{{24, 1, 8, 47, 1}, {20, 10}, {24, 5, 97, 0, 1}, {22, 12, 1, 1, 0, 6}} {
 		if got = do(20, 6); !bytes.Equal(got[0], want) {
@@ -118,14 +107,20 @@ func TestStormAndBeachRescue(t *testing.T) {
 		}
 	}
 	got = do(20, 6)
-	// The player is released, then Robinson speaks because mark 12040 is now set.
-	if len(got) < 4 || !bytes.Equal(got[0], []byte{20, 8}) || !bytes.Equal(got[3], eventFrame(1, 3, 1, 1, 0, 20001, 1, 1)) || c.beach != nil || c.emote != 0 {
+	if !contains(got, []byte{20, 8}) || !contains(got, []byte{5, 4}) || c.beach != nil || c.emote != 0 || c.event != nil {
 		t.Fatal("rescue end", got)
 	}
 	chars, err := s.Store.Characters(ctx, c.account.ID)
-	if err != nil || chars[0].Map != beachMap || chars[0].Quests[beachQuest].Step != 1 {
-		t.Fatal("beach state not persisted", err)
+	if err != nil || chars[0].Map != beachMap {
+		t.Fatal("beach destination", err)
 	}
+	if _, exists := chars[0].Quests[beachQuest]; exists {
+		t.Fatal("presentation started Robinson quest")
+	}
+	if got = do(20, 1, 1, 0); c.event == nil || !contains(got, eventFrame(1, 3, 1, 1, 0, 20001, 1, 0)) {
+		t.Fatal("manual Robinson dialogue", got)
+	}
+
 }
 
 func TestStarterShipSceneTransitions(t *testing.T) {

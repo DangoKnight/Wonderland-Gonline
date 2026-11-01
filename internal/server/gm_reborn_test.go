@@ -8,7 +8,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-func TestGMRebornOwnershipCapeResetAndReplay(t *testing.T) {
+func TestGMRebornOwnershipJobSkillResetAndReplay(t *testing.T) {
 	s, c, wire, _ := mallFixture(t)
 	ctx := context.Background()
 	s.Assets.Items[25231] = game.ItemDefinition{ID: 25231, Type: 16, EquipSlot: 6}
@@ -23,11 +23,11 @@ func TestGMRebornOwnershipCapeResetAndReplay(t *testing.T) {
 	if err := s.gmReborn(ctx, c, "reborn", []string{"Killer"}); err != nil {
 		t.Fatal(err)
 	}
-	if !c.character.Reborn || c.character.Job != 1 || c.character.RebornJob != 0 || c.character.Level != 1 || c.character.EXP != 0 || c.character.Bag[0].ID != 25231 {
+	if !c.character.Reborn || c.character.Job != 1 || c.character.RebornJob != 1 || c.character.Level != 1 || c.character.EXP != 0 || c.character.Bag[0].ID != 0 {
 		t.Fatal(c.character)
 	}
-	if !contains(wire.packets(t), []byte{5, 5, 17, 39, 0, 0, 146, 234}) {
-		t.Fatal("reborn aura missing")
+	if !contains(wire.packets(t), []byte{5, 5, 17, 39, 0, 0, 0, 0}) {
+		t.Fatal("rebirth shape reset missing")
 	}
 	before := c.character.Clone()
 	if err := s.gmReborn(ctx, c, "reborn", []string{"Killer"}); err != nil || c.character.Bag != before.Bag || c.character.Job != before.Job {
@@ -39,7 +39,7 @@ func TestGMRebornOwnershipCapeResetAndReplay(t *testing.T) {
 	}
 }
 
-func TestGMRebornRejectsLowLevelAndFullBag(t *testing.T) {
+func TestGMRebornLowLevelGateAndFullBagAllowed(t *testing.T) {
 	for _, full := range []bool{false, true} {
 		t.Run(strconv.FormatBool(full), func(t *testing.T) {
 			s, c, _, _ := mallFixture(t)
@@ -59,11 +59,11 @@ func TestGMRebornRejectsLowLevelAndFullBag(t *testing.T) {
 			if err := s.gmReborn(ctx, c, "reborn", []string{"Killer"}); err != nil {
 				t.Fatal(err)
 			}
-			if c.character.Reborn || c.character.Job != 0 || c.character.Bag != before.Bag || c.character.Level != before.Level || c.character.EXP != before.EXP {
+			if c.character.Reborn != full || c.character.Bag != before.Bag || (!full && (c.character.Job != 0 || c.character.Level != before.Level || c.character.EXP != before.EXP)) {
 				t.Fatal("rejected rebirth changed character")
 			}
 			got, err := s.Store.Characters(ctx, c.account.ID)
-			if err != nil || got[0].Reborn || got[0].Bag != before.Bag {
+			if err != nil || got[0].Reborn != full || got[0].Bag != before.Bag {
 				t.Fatal("rejected rebirth changed SQL", err)
 			}
 		})

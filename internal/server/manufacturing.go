@@ -15,7 +15,6 @@ import (
 
 const (
 	manufactureChanceScale      = 100
-	manufactureSparkleEffect    = 60018
 	manufactureDefaultWorkbench = "Forge"
 )
 
@@ -119,9 +118,7 @@ func (s *Server) manufacture(ctx context.Context, c *Session, bench string, inpu
 			return false, s.chatFeedback(c, "Manufacturing attempt failed; materials and fee were consumed.")
 		}
 		s.sendOrClose(c, c.character.Bag.AdditionPacket(adds))
-		sparkle := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRepairEffect}.U32(c.character.ID).U16(manufactureSparkleEffect)
-		s.broadcastWorld(c, sparkle)
-		s.sendOrClose(c, sparkle)
+		s.clearShapeshift(c)
 		return true, nil
 	}
 	return false, s.chatFeedback(c, "No matching manufacturing recipe.")

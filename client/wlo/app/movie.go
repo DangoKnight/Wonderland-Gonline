@@ -189,7 +189,7 @@ func (c *Client) movieView(m *movie.Movie) (*world.World, error) {
 // player (the wide form) or an NPC template (its face or body).
 func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 	c.loadTalks()
-	text := clientassets.Big5Text(c.talks[l.Talk])
+	text := clientassets.Big5Text(c.talks[uint32(l.Talk)])
 	var who hud.Speaker
 	if l.Speaker == movie.PlayerTemplate {
 		who = c.speaker(eventSpeakerSelf, 0)
@@ -213,7 +213,7 @@ func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 		}
 	}
 	c.Talk.Say(text, who, c.World.Player.Name)
-	c.playDialogueVoice(l.Talk, l.Speaker)
+	c.playDialogueVoice(uint32(l.Talk), l.Speaker)
 }
 
 // sync copies the movie's actors and camera into its view.

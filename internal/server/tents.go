@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/store"
@@ -74,11 +75,22 @@ func (s *Server) tentSnapshot(ctx context.Context, c *Session) error {
 	if err != nil {
 		return err
 	}
-	packets := [][]byte{{protocol.CommandInventory, protocol.InventoryTentFurniture}}
-	for _, row := range tent.Items {
-		packets = append(packets, protocol.Builder{protocol.CommandInventory, protocol.InventoryTentFurniture}.U16(row.ItemID).U32(uint32(row.X)).U32(uint32(row.Y)).U32(uint32(row.Floor)).U8(1).U8(row.Rotation).U16(0))
+	packets := [][]byte{
+		{protocol.CommandTent, protocol.TentInteriorLayout, max(byte(1), tent.Type), 0},
+		protocol.Builder{protocol.CommandTentFurniture, protocol.TentFloorSurface}.U16(tent.Floor),
+		protocol.Builder{protocol.CommandTentFurniture, protocol.TentWallpaperSurface}.U16(tent.Wallpaper),
 	}
-	packets = append(packets, protocol.Builder{protocol.CommandTent, protocol.TentInteriorStatus}.U16(0), []byte{protocol.CommandInventory, protocol.InventoryTentPlayers})
+	if tent.Enlarged {
+		packets = append(packets, []byte{protocol.CommandTent, protocol.TentInteriorLayout, max(byte(1), tent.Type), 1})
+	}
+	if c.ready {
+		tree := nativeTentTree(tent)
+		if len(tree) > protocol.MaxPayload {
+			return errors.New("tent furniture exceeds the native snapshot limit")
+		}
+		packets = append(packets, tree)
+	}
+	packets = append(packets, []byte{protocol.CommandTent, protocol.TentInteriorStatus, tentLockedByte(tent.Locked), 0}, []byte{protocol.CommandInventory, protocol.InventoryTentPlayers})
 	occupants := append(s.peers(c), c)
 	for _, peer := range occupants {
 		if peer.invisible {
@@ -234,22 +246,99 @@ func (s *Server) tentFurnitureCommand(ctx context.Context, c *Session, p []byte)
 	r := protocol.NewReader(p[2:])
 	ref := store.CharacterRef{Account: c.account.ID, ID: c.character.ID}
 	switch p[1] {
-	case protocol.TentPlaceFurniture:
-		if len(p) != protocol.TentPlaceRequestBytes {
+	case protocol.TentAttachTool:
+		if len(p) != protocol.TentNativeToolBytes {
 			return protocol.ErrMalformed
 		}
-		_ = r.U8()
+		slot, host := r.U8(), r.U16()
+		next, tent, err := s.Store.AttachTentTool(ctx, ref, slot, host, s.Assets.TentToolHosts, s.Assets.Items, *c.character)
+		if err != nil {
+			return c.send(systemLine("Attachment failed: " + err.Error()))
+		}
+		s.adoptSavedCharacter(c, next)
+		hostIndex := host
+		if hostIndex == 0 {
+			hostIndex = 1
+		}
+		root := tent.Items[hostIndex-1]
+		accessory := len(tent.Items)
+		for i, row := range tent.Items {
+			accessory += len(row.Tools)
+			if i == int(hostIndex)-1 {
+				break
+			}
+		}
+		confirmation := protocol.Builder{protocol.CommandTentFurniture, protocol.TentToolAttached}.U16(uint16(accessory)).U16(root.Tools[len(root.Tools)-1].ItemID).U16(hostIndex)
+		s.broadcastWorld(c, confirmation)
+		if err := s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, confirmation}); err != nil {
+			return err
+		}
+	case protocol.TentPickupFurniture:
+		if len(p) != protocol.TentNativePickupBytes {
+			return protocol.ErrMalformed
+		}
+		raw := r.U16()
+		index := raw
+		if index > 0 {
+			index--
+		}
+		next, adds, err := s.Store.PickUpTentItem(ctx, ref, index, s.Assets.Items, *c.character)
+		if err != nil {
+			return c.send(systemLine("Pickup failed: " + err.Error()))
+		}
+		s.adoptSavedCharacter(c, next)
+		if err := s.sendAll(c, [][]byte{next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandTentFurniture, protocol.TentPickupFurniture}.U16(raw)}); err != nil {
+			return err
+		}
+	case protocol.TentPlaceFurniture:
+		legacy := len(p) == protocol.TentPlaceRequestBytes && p[2] == 0
+		if !legacy && len(p) != protocol.TentNativePlaceBytes && len(p) != protocol.TentNativePlaceFloorBytes {
+			return protocol.ErrMalformed
+		}
+		if legacy {
+			_ = r.U8()
+		}
 		slot := r.U8()
-		x, y, floor := r.U32(), r.U32(), r.U32()
-		if slot < 1 || slot > game.BagSize || x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor != 0 {
+		x, y, third := r.U32(), r.U32(), r.U32()
+		floor := uint32(0)
+		if legacy {
+			floor = third
+		} else if r.Remaining() > 0 {
+			floor = uint32(r.U8())
+		}
+		if slot < 1 || slot > game.BagSize || x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor > 1 || r.Err() != nil {
 			return protocol.ErrMalformed
 		}
 		item := c.character.Bag[slot-1]
 		def, known := s.Assets.Items[item.ID]
+		if kind, ok := s.Assets.TentSurfaces[item.ID]; ok && known && !item.Empty() && !item.Locked {
+			wallpaper := kind == assets.TentSurfaceWallpaper
+			if !wallpaper && kind != assets.TentSurfaceFloor {
+				return nil
+			}
+			next, _, err := s.Store.ApplyTentSurface(ctx, ref, slot, item, wallpaper, byte(floor), c.character.Clone())
+			if err != nil {
+				return c.send(systemLine("Decoration failed: " + err.Error()))
+			}
+			s.adoptSavedCharacter(c, next)
+			sub := byte(protocol.TentFloorSurface)
+			if wallpaper {
+				sub = protocol.TentWallpaperSurface
+			}
+			packet := protocol.Builder{protocol.CommandTentFurniture, sub}.U16(item.ID)
+			s.broadcastWorld(c, packet)
+			return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, packet})
+		}
 		if item.Empty() || item.Locked || !known || (def.Type != tentFurnitureType && def.Type != tentWorkbenchType && def.Type != tentDecorationType) {
 			return c.send(systemLine("Select an available furniture or decoration item."))
 		}
-		next, err := s.Store.PlaceTentItem(ctx, ref, slot, uint16(x), uint16(y), item)
+		var next game.Character
+		var err error
+		if legacy {
+			next, err = s.Store.PlaceTentItem(ctx, ref, slot, uint16(x), uint16(y), item)
+		} else {
+			next, err = s.Store.PlaceNativeTentItem(ctx, ref, slot, uint16(x), uint16(y), byte(floor), item, s.Assets.Items, *c.character)
+		}
 		if err != nil {
 			return c.send(systemLine("Placement failed: " + err.Error()))
 		}
@@ -257,20 +346,32 @@ func (s *Server) tentFurnitureCommand(ctx context.Context, c *Session, p []byte)
 			return err
 		}
 		s.adoptSavedCharacter(c, next)
-		s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, []byte{protocol.CommandTentFurniture, protocol.TentPlaceFurniture, protocol.TentFurnitureSucceeded})
+		s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1})
+		if legacy {
+			s.sendOrClose(c, []byte{protocol.CommandTentFurniture, protocol.TentPlaceFurniture, protocol.TentFurnitureSucceeded})
+		} else {
+			tent, err := s.Store.Tent(ctx, c.character.ID)
+			if err != nil {
+				return err
+			}
+			row := tent.Items[len(tent.Items)-1]
+			confirmation := protocol.Builder{protocol.CommandTentFurniture, protocol.TentPlaceFurniture}.Bytes(tentTreeRecord(uint16(len(tent.Items)), row.ItemID, uint32(row.X), uint32(row.Y), 1, row.Rotation, 0, nil, row.Floor))
+			s.sendOrClose(c, confirmation)
+		}
+
 	case protocol.TentMoveFurniture:
 		if len(p) != protocol.TentMoveRequestBytes && len(p) != protocol.TentMoveRotatedRequestBytes {
 			return protocol.ErrMalformed
 		}
-		index, x, y, floor := r.U16(), r.U32(), r.U32(), r.U32()
+		index, x, y, _ := r.U16(), r.U32(), r.U32(), r.U32()
 		rotation := byte(0)
 		if r.Remaining() > 0 {
 			rotation = r.U8()
 		}
-		if x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor != 0 || rotation > tentRotationMax {
+		if x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || rotation > tentRotationMax {
 			return protocol.ErrMalformed
 		}
-		if err := s.Store.MoveTentItem(ctx, ref, index, uint16(x), uint16(y), byte(floor), rotation); err != nil {
+		if err := s.Store.MoveNativeTentItem(ctx, ref, index, uint16(x), uint16(y), rotation, s.Assets.Items); err != nil {
 			return c.send(systemLine(err.Error()))
 		}
 	default:
@@ -334,4 +435,11 @@ func recoverTentCharacter(c *game.Character) bool {
 	c.Map, c.X, c.Y = dst.Map, dst.X, dst.Y
 	c.TentReturn = nil
 	return true
+}
+
+func tentLockedByte(locked bool) byte {
+	if locked {
+		return 1
+	}
+	return 0
 }

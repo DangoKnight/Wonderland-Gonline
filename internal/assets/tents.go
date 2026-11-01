@@ -15,3 +15,8 @@ type TentFurnitureDefault struct {
 	Floor    byte   `json:"floor"`
 	Rotation byte   `json:"rotation"`
 }
+
+const (
+	TentSurfaceWallpaper byte = 1
+	TentSurfaceFloor     byte = 2
+)

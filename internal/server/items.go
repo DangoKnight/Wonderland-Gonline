@@ -6,6 +6,7 @@ import (
 	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/world"
 )
 
 // headBanner is Player.SendHeadBanner: AC2:16 with raw, unprefixed ASCII text.
@@ -22,6 +23,15 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return protocol.ErrMalformed
 	}
 	switch p[1] {
+	case protocol.InventoryPetStallPurchase, protocol.InventoryVehicleStallPurchase:
+		return s.bazaarTypedPurchase(ctx, c, p)
+	case protocol.InventoryStallOpen, protocol.InventoryStallClose, protocol.InventoryStallBrowse, protocol.InventoryStallPurchase:
+		return s.nativeStallCommand(ctx, c, p)
+	case protocol.InventoryBambooDragonfly:
+		if len(p) != 5 {
+			return protocol.ErrMalformed
+		}
+		return s.bambooDragonfly(ctx, c, p[2], p[3])
 	case protocol.InventoryStallListRequest:
 		// AC23.Recv77 supplies only the empty global-list layout. Keep both
 		// native loading replies; actual player shops use AC56 map signs/view.
@@ -40,6 +50,7 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return s.startFishing(ctx, c, slot)
 	case protocol.InventoryMallBalance, protocol.InventoryMallCatalog, protocol.InventoryMallBuy:
 		if p[1] == protocol.InventoryFishingStop {
+			c.gathering = nil
 			if err := fishingStopRequest(p); err != nil {
 				return err
 			}
@@ -92,10 +103,16 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		}
 		return s.useItem(ctx, c, p[2])
 	case protocol.InventoryItemUse:
-		if len(p) < 6 {
-			return nil
+		switch len(p) {
+		case 3:
+			return s.useItem(ctx, c, p[2])
+		case 4:
+			return s.useItemOn(ctx, c, p[2], p[3], 0)
+		case 6:
+			return s.useItemOn(ctx, c, p[2], p[3], uint16(p[4])|uint16(p[5])<<8)
+		default:
+			return protocol.ErrMalformed
 		}
-		return s.useItemOn(ctx, c, p[2], p[3], uint16(p[4])|uint16(p[5])<<8)
 	case protocol.InventoryDestroy:
 		if len(p) < 5 {
 			return protocol.ErrMalformed
@@ -319,7 +336,7 @@ func (s *Server) allocateStats(ctx context.Context, c *Session, p []byte) error 
 	full := next.Combat(s.Assets.Items)
 	next.MaxHP, next.MaxSP = uint32(max(full.MaxHP, 1)), uint32(max(full.MaxSP, 0))
 	next.HP, next.SP = min(next.HP, next.MaxHP), min(next.SP, next.MaxSP)
-	unlocks := next.UnlockQualifiedSkills(true, s.hasSkill)
+	unlocks := s.unlockQualifiedSkills(&next, true)
 	if e := s.commit(ctx, c, next); e != nil {
 		return e
 	}
@@ -352,15 +369,32 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 	if handled, err := s.redeemVoucher(ctx, c, slot, 1, 0); handled || err != nil {
 		return err
 	}
+	if handled, err := s.openBoxedItem(ctx, c, slot); handled || err != nil {
+		return err
+	}
 	if handled, err := s.openGachaPack(ctx, c, slot); handled || err != nil {
 		return err
 	}
 	id := c.character.Bag[slot-1].ID
 	switch def := s.Assets.Items[id]; {
+	case s.Assets.Travel.ReturnScrolls[id].Map > 0:
+		dst := s.Assets.Travel.ReturnScrolls[id]
+		return s.travelWithItem(ctx, c, slot, false, world.Destination{Map: dst.Map, X: dst.X, Y: dst.Y}, func(item game.Item) bool { return item.ID == id })
+	case s.Assets.Travel.Scrolls[id] > 0:
+		return nil // The native client opens its world map before AC74.
 	case id == tentItem:
 		return s.openPlayerTent(ctx, c, slot)
 	case def.EquipSlot >= 1 && def.EquipSlot <= 6:
 		return s.changeEquipment(ctx, c, slot, 0, true)
+	case id == game.NotepadItemID:
+		return s.sendAll(c, s.World.Journal(c.character, c.view))
+	case id == game.RemoteControlItemID:
+		return c.send([]byte{protocol.CommandLegacyStorage, protocol.RemoteControlOpen})
+	case def.Type == game.VehicleType:
+		if c.character.ActiveVehicle == id {
+			return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlDismountVehicle, 0}.U16(id))
+		}
+		return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlBoardVehicle, slot}.U16(id))
 	case id == starItem:
 		return c.send(systemLine("Stars are special quest tokens used for skill learning, resets, and rebirth quests."))
 	}
@@ -392,6 +426,17 @@ func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, ta
 		return c.send(headBanner(game.ErrItemLocked.Error()))
 	}
 	id := c.character.Bag[slot-1].ID
+	def := s.Assets.Items[id]
+	if count == 1 && target == 0 && (id == game.NotepadItemID || id == game.RemoteControlItemID || def.Type == game.VehicleType || def.EquipSlot >= 1 && def.EquipSlot <= 6 || s.Assets.Travel.Scrolls[id] > 0 || s.Assets.Travel.ReturnScrolls[id].Map > 0) {
+		return s.useItem(ctx, c, slot)
+	}
+	if _, boxed := s.Assets.BoxedItems[id]; boxed {
+		if count != 1 || target != 0 {
+			return nil
+		}
+		_, err := s.openBoxedItem(ctx, c, slot)
+		return err
+	}
 	if s.Assets.IsGachaPack(id) {
 		if count != 1 || target != 0 {
 			return c.send(headBanner("Open one pack at a time on your character."))

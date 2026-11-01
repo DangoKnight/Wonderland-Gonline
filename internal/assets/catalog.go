@@ -131,12 +131,22 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
-	Instances        []InstanceDefinition
-	QuestDefinitions map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
-	Manufacturing    map[uint16]ManufacturingFormula
-	RebornClasses    []RebornClass
-	Fishing          FishingRules
-	Terrains         map[uint16]Terrain
+	MapTransitions      []MapTransition
+	TentToolHosts       []uint16
+	ChestPropCategories map[uint16]string
+	Travel              TravelRules
+	NPCShopDefaults     map[uint16][]uint16
+	TentSurfaces        map[uint16]byte
+	BoxedItems          map[uint16]BoxedItem
+	SkillEvolutions     []SkillEvolution
+	EventGathering      EventGatheringRules
+	NPCBuyPrices        map[uint16]uint32
+	Instances           []InstanceDefinition
+	QuestDefinitions    map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
+	Manufacturing       map[uint16]ManufacturingFormula
+	RebornClasses       []RebornClass
+	Fishing             FishingRules
+	Terrains            map[uint16]Terrain
 
 	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`

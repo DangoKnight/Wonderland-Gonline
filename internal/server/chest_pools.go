@@ -5,18 +5,35 @@ import (
 	"strings"
 	"time"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/world"
 )
 
 func (s *Server) chestPool(mapID, click uint16) *assets.ChestPool {
-	var mapPool, fallback *assets.ChestPool
+	var mapPool, fallback, cratePool *assets.ChestPool
 	name := ""
+	kind := ""
 	if m, ok := s.World.Map(mapID); ok {
 		if n, ok := m.NPC(click); ok {
 			name = strings.ToLower(n.Name)
+			if n.Template <= 0xffff {
+				kind = s.Assets.ChestPropCategories[uint16(n.Template)]
+			}
 		}
 	}
+	if kind == "" {
+		for _, word := range []string{"crate", "cask", "barrel", "box", "cargo", "wreckage", "driftwood"} {
+			if strings.Contains(name, word) {
+				kind = "crate"
+				break
+			}
+		}
+		if kind == "" && strings.Contains(name, "ches") {
+			kind = "chest"
+		}
+	}
+	beach := mapID >= game.ShipwreckBeachFirstMapID && mapID <= game.ShipwreckBeachLastMapID
 	for i := range s.Assets.ChestPools {
 		pool := &s.Assets.ChestPools[i]
 		if pool.MapID != 0 {
@@ -26,6 +43,26 @@ func (s *Server) chestPool(mapID, click uint16) *assets.ChestPool {
 			continue
 		}
 		category := strings.ToLower(strings.TrimSpace(pool.Category))
+		switch category {
+		case "beach_crate":
+			if kind == "crate" {
+				if beach {
+					return pool
+				}
+				cratePool = pool
+			}
+			continue
+		case "beach_chest":
+			if beach && kind == "chest" {
+				return pool
+			}
+			continue
+		case "default_crate":
+			if cratePool == nil {
+				cratePool = pool
+			}
+			continue
+		}
 		if category == "default_chest" {
 			fallback = pool
 			continue
@@ -45,6 +82,9 @@ func (s *Server) chestPool(mapID, click uint16) *assets.ChestPool {
 				return pool
 			}
 		}
+	}
+	if kind == "crate" && cratePool != nil {
+		return cratePool
 	}
 	if mapPool != nil {
 		return mapPool

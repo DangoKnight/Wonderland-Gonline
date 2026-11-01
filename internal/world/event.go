@@ -210,10 +210,21 @@ func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *asset
 
 // Speech reports whether an action is a dialogue line the client acknowledges.
 func (o Op) PlayerSpeech() bool {
-	return o.Code == ActionPlayer && o.D1 == PlayerActionSpeech && o.D2 >= MinDialogueID
+	return o.Code == ActionPlayer && o.D1 == PlayerActionSpeech && o.TalkID() >= MinDialogueID
 }
 func (o Op) NPCSpeech() bool {
-	return o.Code == ActionActor && (o.D2 == ActorActionSpeech || o.D2 == ActorActionSpeechAlternate) && o.D3 >= MinDialogueID
+	return o.Code == ActionActor && (o.D2 == ActorActionSpeech || o.D2 == ActorActionSpeechAlternate) && o.TalkID() >= MinDialogueID
+}
+
+func (o Op) TalkID() uint32 {
+	low, high := o.D3, o.D4
+	if o.Code == ActionPlayer {
+		low, high = o.D2, o.D3
+	}
+	if high > MaxTalkIDHighByte {
+		high = 0
+	}
+	return uint32(low) | uint32(high)<<16
 }
 
 // Choice reports a player (1/4) or actor (2/6) question.
@@ -252,7 +263,9 @@ func (o Op) Unsupported() bool {
 		return o.D1 == 0 || o.D1 > 255
 	case ActionTransform:
 		return !o.BreillatTransform()
-	case ActionWireCode10, ActionGather, ActionWireCode16, ActionWireCode17:
+	case ActionMissionVariable:
+		return o.D2 != MissionVariableAdd
+	case ActionGather, ActionWireCode16:
 		return true
 	case ActionLearnSkill:
 		return o.D1 == 0 || o.D2 != 1 || o.D3 != 0 || o.Value() != 1

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"wonderland-gonline/internal/protocol"
 )
@@ -69,6 +70,20 @@ func packetTraceAttrs(p []byte, sent bool) []any {
 		}
 	}
 
+	if len(p) >= 18 && p[0] == protocol.CommandEvent && p[1] == protocol.EventFrame {
+		value := binary.LittleEndian.Uint32(p[11:15])
+		attrs = append(attrs, "event_step", p[5], "event_type", p[6], "event_subject", p[7], "event_actor", binary.LittleEndian.Uint16(p[8:10]), "event_mode", p[10], "event_value", value)
+		if p[6] == 1 {
+			talk := uint32(p[15]) | uint32(p[16])<<8 | uint32(p[17])<<16
+			if talk == 0 {
+				talk = value
+			}
+			attrs = append(attrs, "talk_id", talk)
+		}
+	}
+	if len(p) >= 4 && p[0] == protocol.CommandMovie {
+		attrs = append(attrs, "movie_id", binary.LittleEndian.Uint16(p[2:4]))
+	}
 	return attrs
 }
 

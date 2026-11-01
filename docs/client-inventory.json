@@ -5165,7 +5165,7 @@
   },
   {
    "command": 74,
-   "name": "",
+   "name": "TeleportScroll",
    "client": false
   },
   {
@@ -5190,7 +5190,7 @@
   },
   {
    "command": 79,
-   "name": "",
+   "name": "RebirthJobSelection",
    "client": false
   },
   {

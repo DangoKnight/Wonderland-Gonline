@@ -24,6 +24,14 @@ const (
 	ActionWireCode17        = 17
 )
 
+// Mission operations have no client presentation of their own.
+const (
+	ActionMissionMarker   = 10
+	ActionMissionVariable = 17
+	MissionVariableAdd    = 1
+	MissionVariableAbsent = 2
+)
+
 // Branch condition and callback kinds.
 const (
 	ConditionAlways             = 0
@@ -40,6 +48,16 @@ const (
 	ConditionWaterGathering     = 14
 	ConditionFreeBagSlots       = 15
 	ConditionCompanionEquipment = 17
+	ConditionMissionVariable    = 19
+	ConditionCompanionRebirth   = 21
+)
+
+const (
+	SubjectGender    = 3
+	SubjectElement   = 4
+	SubjectRebornJob = 5
+	GenderMale       = 7
+	GenderFemale     = 8
 )
 
 // Condition comparison operators.
@@ -58,6 +76,7 @@ const (
 	RegionDoor           = 2
 	TriggerEntry         = 0
 	MinDialogueID        = 10_000
+	MaxTalkIDHighByte    = 255
 	MaxDialogueWordID    = 65_000
 	MinMonsterTemplateID = 10_000
 )
@@ -93,12 +112,14 @@ const RegionCellPixels = 20
 
 // Service operands for ActionServiceOrTeleport (D1 below the map ID range).
 const (
-	ServiceWeaponShop      = 1
-	ServicePropsShop       = 2
-	ServiceArmorShop       = 3
-	ServicePropsKeeper     = 4
-	ServicePetHotel        = 5
-	ServiceClinic          = 6
-	ServiceClinicAlternate = 7
-	ServiceStockKeeper     = 9
+	ServiceWeaponShop         = 1
+	ServicePropsShop          = 2
+	ServiceArmorShop          = 3
+	ServicePropsKeeper        = 4
+	ServicePetHotel           = 5
+	ServiceClinic             = 6
+	ServiceClinicAlternate    = 7
+	ServiceStockKeeper        = 9
+	ServiceRebornJobSelection = 10
+	ServiceCompanionRebirth   = 27
 )

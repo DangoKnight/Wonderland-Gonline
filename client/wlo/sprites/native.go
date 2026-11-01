@@ -42,7 +42,7 @@ func (a *Archive) attachNative(dir string) {
 // sprites.json is open. The manager's lock is held.
 func (a *Archive) derive(s *Sprite) {
 	n := a.native
-	if n == nil || s.derived || n.failed {
+	if n == nil || s.derived || n.failed || a.m.closed {
 		return
 	}
 	if n.json == nil {
@@ -87,8 +87,24 @@ func (a *Archive) derive(s *Sprite) {
 }
 
 func (a *Archive) openNative(n *nativeSource) {
-	j, err := clientassets.OpenSpriteJSON(n.path)
 	m := a.m
+	select {
+	case m.nativeSlots <- struct{}{}:
+		defer func() { <-m.nativeSlots }()
+	case <-m.nativeDone:
+		m.mu.Lock()
+		n.failed = true
+		m.mu.Unlock()
+		return
+	}
+	m.mu.Lock()
+	if m.closed {
+		n.failed = true
+		m.mu.Unlock()
+		return
+	}
+	m.mu.Unlock()
+	j, err := clientassets.OpenSpriteJSON(n.path)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if err != nil {
@@ -98,6 +114,7 @@ func (a *Archive) openNative(n *nativeSource) {
 	}
 	if m.closed {
 		j.Close()
+		n.failed = true
 		return
 	}
 	n.json = j
@@ -110,7 +127,10 @@ func (a *Archive) openNative(n *nativeSource) {
 func (m *Manager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.closed = true
+	if !m.closed {
+		m.closed = true
+		close(m.nativeDone)
+	}
 	var first error
 	for _, n := range m.natives {
 		if err := n.json.Close(); err != nil && first == nil {

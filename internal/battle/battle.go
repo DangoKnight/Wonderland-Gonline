@@ -92,6 +92,7 @@ type Action struct {
 	Kind          string // attack, defend, catch, flee, heal, effect, monster
 	Redirected    bool   // Target selected by an active redirection effect.
 	Skill         uint16
+	SkillEXP      uint32 // Award computed from the resolved primary target, once per cast.
 	TX, TY        byte
 	comboSpeed    int
 	speedRecorded bool
@@ -128,6 +129,8 @@ type Rules struct {
 
 // Battle owns both sides of a PvE or PvP encounter.
 type Battle struct {
+	Reinforcements       [MaxEnemies][]Enemy
+	defeatedDefenders    []*Fighter
 	Attackers, Defenders []*Fighter
 	Pending              map[int]Action
 	Turn                 int
@@ -205,22 +208,29 @@ func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, 
 func New(players []*Fighter, enemies []Enemy) *Battle {
 	b := &Battle{Attackers: players, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
 	for i, e := range enemies {
-		if i == MaxEnemies {
-			break
+		if i >= MaxEnemies {
+			slot := i % MaxEnemies
+			b.Reinforcements[slot] = append(b.Reinforcements[slot], e)
+			continue
 		}
-		sp, atk, def, spd := MonsterStats(e.Level)
-		if e.Attack > 0 {
-			atk = e.Attack
-		}
-		click := e.ClickID
-		if click == 0 {
-			click = uint16(2000 + i)
-		}
-		b.Defenders = append(b.Defenders, &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
-			Skills: e.Skills, Level: byte(min(255, e.Level)), Element: e.Element, MaxHP: max(1, e.HP), HP: max(1, e.HP), MaxSP: sp, SP: sp,
-			Atk: atk, Def: def, Matk: atk, Mdef: def, Spd: spd, X: enemySlots[i][0], Y: enemySlots[i][1]})
+		b.Defenders = append(b.Defenders, enemyFighter(e, i))
 	}
+
 	return b
+}
+
+func enemyFighter(e Enemy, i int) *Fighter {
+	sp, atk, def, spd := MonsterStats(e.Level)
+	if e.Attack > 0 {
+		atk = e.Attack
+	}
+	click := e.ClickID
+	if click == 0 {
+		click = uint16(2000 + i)
+	}
+	return &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
+		Skills: e.Skills, Level: byte(min(255, e.Level)), Element: e.Element, MaxHP: max(1, e.HP), HP: max(1, e.HP), MaxSP: sp, SP: sp,
+		Atk: atk, Def: def, Matk: atk, Mdef: def, Spd: spd, X: enemySlots[i][0], Y: enemySlots[i][1]}
 }
 
 func record(p protocol.Builder, side byte, f *Fighter, kind byte, click uint16, owner uint32) protocol.Builder {
@@ -693,7 +703,7 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 			s, _ := r.attack(b, offensive, defending)
 			steps = append(steps, s...)
 		}
-		if allDead(b.Defenders) {
+		if allDead(b.Defenders) && !b.HasReinforcements() {
 			return steps, Victory
 		}
 		for _, a := range step {
@@ -705,7 +715,7 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 			return steps, Defeat
 		}
 	}
-	if allDead(b.Defenders) {
+	if allDead(b.Defenders) && !b.HasReinforcements() {
 		return steps, Victory
 	}
 	if allDead(b.Attackers) {
@@ -713,6 +723,9 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 	}
 	for _, f := range b.all() {
 		f.tickEffects()
+	}
+	if reinforcement := b.spawnReinforcements(); len(reinforcement) > 0 {
+		steps = append(steps, Step{Packets: reinforcement, Delay: reinforcementDelay})
 	}
 	return steps, Continue
 }
@@ -747,6 +760,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 	packets = append(packets, r.spend(actor, a.Skill), turnPacket(actor))
 	var results []targetResult
 	for _, target := range targets {
+		hpBefore := target.HP
 		stat, amount := byte(0), 0
 		switch {
 		case isRevive(s) && target.Dead():
@@ -757,6 +771,13 @@ func (r Rules) support(b *Battle, a Action) Step {
 			target.HP, stat = min(target.MaxHP, target.HP+amount), game.StatCurrentHP
 		}
 		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
+		if a.SkillEXP == 0 {
+			if isRevive(s) {
+				a.SkillEXP = game.SupportSkillEXPPerUse + game.ReviveSkillEXPBonus
+			} else {
+				a.SkillEXP = game.HealingSkillEXP(amount, hpBefore, target.MaxHP)
+			}
+		}
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, a.Skill, results))
 	for _, target := range targets {
@@ -917,7 +938,9 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 			total := 0
 			var delay time.Duration
 			var landed []Action
-			for _, a := range combo {
+			for i := range combo {
+				a := combo[i]
+				combo[i].SkillEXP = game.CombatSkillEXPPerUse
 				actor := a.Actor
 				if a.Skill > 0 && !Basic(a.Skill) {
 					packets = append(packets, r.spend(actor, a.Skill))
@@ -934,6 +957,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				landed = append(landed, a)
 				guarded := defending[target.key()]
 				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
+				combo[i].SkillEXP = game.CombatSkillEXP(dmg, max(0, target.HP-total), target.MaxHP)
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
 				skill := a.Skill
 				if skill == 0 {
@@ -1076,7 +1100,7 @@ func (b *Battle) Rewards() (exp, gold uint64) {
 	if b.PvP {
 		return 0, 0
 	}
-	for _, m := range b.Defenders {
+	for _, m := range b.DefenderHistory() {
 		if m.Captured || m.Kind != Monster {
 			continue
 		}

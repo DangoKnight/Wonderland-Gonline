@@ -133,7 +133,7 @@ func questPropOpened(m *Map, n NPC, c *game.Character) bool {
 	if expiry, ok := c.ChestRespawns[ChestKey(c.Map, n.ClickID)]; ok {
 		return time.Now().Before(expiry)
 	}
-	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= 12000 && n.Template <= 12999)) {
+	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax) || (n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax)) {
 		return false
 	}
 	for _, ev := range m.data.Events {

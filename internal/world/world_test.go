@@ -45,6 +45,7 @@ func fixture() *World {
 		}}},
 		Events: []assets.Event{{ClickID: 4, Branches: []assets.Branch{{Condition: cond(5, 600, 1, 0, 5, 1)}}}},
 	}
+	m.PreEvents[0].Branches[0].Condition[12] = 2 // Authored AND-condition count.
 	return New(&assets.Catalog{Maps: map[uint16]assets.Map{m.ID: m}, NPCs: map[uint16]assets.NPC{100: {ID: 100, Type: 6}, 200: {ID: 200, Type: 1}}})
 }
 
@@ -156,6 +157,7 @@ func TestPortalLookupPriorities(t *testing.T) {
 		ok              bool
 	}{
 		{"reverse geometry", 11000, 99, 1010, 1000, Destination{11001, 100, 200}, true},
+		{"click ID beats nearby reverse", 11000, 9, 1010, 1000, Destination{11002, 300, 400}, true},
 		{"click ID", 11000, 9, 5000, 5000, Destination{11002, 300, 400}, true},
 		{"index", 11000, 2, 0, 0, Destination{11002, 300, 400}, true},
 		{"gray code", 11000, 13, 0, 0, Destination{11002, 300, 400}, true},

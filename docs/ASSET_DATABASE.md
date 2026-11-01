@@ -44,10 +44,10 @@ their backed-up sidecars to the configured paths. The configuration paths stay
 the same. Progress written after cutover will not exist in the original
 snapshots. Keep the backups until acceptance testing finishes.
 
-Gameplay schema v17 automatically converts older character rows transactionally
+Gameplay schema v18 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 13 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 14 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -196,7 +196,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v13. The upgrade procedure upgrades existing v14 installations
+Asset schema is now v14. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -219,7 +219,7 @@ typed dimension columns; it does not regenerate or overwrite them.
 
 Before deploying this version, stop the server and run the upgrade above
 (`go run ./cmd/database-migrate -config config.local.json`). Gameplay remains
-schema v17. Inventory anchors are preserved; old overlapping placements require
+schema v18. Inventory anchors are preserved; old overlapping placements require
 an explicit correction and are never silently discarded or repacked.
 
 ### Instance definitions (asset v12)
@@ -240,5 +240,31 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v13. See
+before running the new server; runtime requires v14. See
 [fruit machines](MINIGAMES.md#fruit-machines).
+
+### Private Server update content (asset v14, gameplay v18)
+
+Boxes, travel, map transitions, NPC shops/prices, skill evolutions, gathering,
+tent tools/surfaces and chests each own their initialization, validation and
+preserving migration in `internal/assetsql`. The catalog runner coordinates these
+steps within the versioned SQL transaction.
+Gameplay migrations likewise live with teleport points, tent tools, manufacturing
+and bazaars in `internal/store`; its version runner retains the common transaction.
+
+Asset v14 adds typed box rewards, skill evolution links, EVE gathering pools and
+timers, NPC buy prices/catalogs, tent surfaces/tool hosts, chest classifications,
+travel destinations and map-exit rewards. Runtime and administrator edits use
+these tables. The initializer never reloads their JSON/CSV inputs during gameplay.
+It appends available new chest categories and changes only exact prior tent and
+poison defaults; administrator content and owned tents remain intact.
+It also supplies the previously missing NPC event-route child tables and sign/speed
+columns from map sections retained in SQL, matching click IDs so edited NPC names,
+positions and walking steps remain intact. Chest rewards gain a typed gold column.
+
+Gameplay v18 adds `character_teleport_points`, `tent_tools`, manufacturing input
+escrow and native batch/cancellation fields, plus `bazaar_stalls` and
+`bazaar_listings`. All are typed, owned or related SQL rows. Upgrades retain
+accounts, balances, jobs, inventory, quests and server settings. Existing legacy
+manufacturing jobs retain pause/resume semantics. The source development database's
+accounts, settings, stock and administrative vendor row are not seeded here.

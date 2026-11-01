@@ -14,15 +14,16 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
-	chestReward  *assets.ChestReward
-	mapID, click uint16
-	ev           *assets.Event
-	branch       int
-	index        int
-	transition   bool
-	onComplete   func() error
-	onChoice     func(byte) error
-	onMinigame   func(byte) error
+	chestReward      *assets.ChestReward
+	mapID, click     uint16
+	ev               *assets.Event
+	branch           int
+	index            int
+	transition       bool
+	cinematicPosture bool
+	onComplete       func() error
+	onChoice         func(byte) error
+	onMinigame       func(byte) error
 }
 
 const clickResume = 1500 * time.Millisecond
@@ -30,7 +31,16 @@ const clickResume = 1500 * time.Millisecond
 // eventFrame is BuildEventFrame, the native AC20:1 layout: type, subject, actor, mode,
 // value, text or question, branch.
 func eventFrame(kind, subject byte, actor uint16, mode byte, value uint32, text uint16, step, branch byte) []byte {
+	if kind == 1 {
+		branch = 0
+	} // Speech ends with a 24-bit talk ID, not a branch byte.
 	return protocol.Builder{protocol.CommandEvent, protocol.EventFrame, 0, 0, 0, step, kind, subject}.U16(actor).U8(mode).U32(value).U16(text).U8(branch)
+}
+
+func speechFrame(subject byte, actor uint16, talk uint32, step byte) []byte {
+	p := eventFrame(1, subject, actor, 1, 0, uint16(talk), step, 0)
+	p[len(p)-1] = byte(talk >> 16)
+	return p
 }
 
 // dialogueFrame is the legacy single-line dialogue packet with a 24-bit talk ID.
@@ -98,8 +108,12 @@ func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
+	posture := c.event != nil && c.event.cinematicPosture
 	s.endEvent(c)
 	c.resumeAt = time.Now().Add(clickResume)
+	if posture {
+		s.sendOrClose(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode30, 0}.U32(c.character.ID).U8(0), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
+	}
 	return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
 }
 
@@ -127,6 +141,8 @@ func (s *Server) rejectDisabled(c *Session) error {
 // The caller holds worldMu.
 func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 	switch p[1] {
+	case protocol.EventStallOpen, protocol.EventStallClose, protocol.EventStallBrowse, protocol.EventStallBuy:
+		return s.eventStallCommand(ctx, c, p)
 	case protocol.EventActorClick:
 		return s.npcClick(ctx, c, p[2:])
 	case protocol.EventAcknowledge:
@@ -135,6 +151,9 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // The minigame result's own acknowledgment.
 		}
 		if c.storm {
+			if !c.stormAck {
+				return nil
+			}
 			return s.endStorm(ctx, c)
 		}
 		if c.beach != nil {
@@ -197,6 +216,7 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 	}
 	c.lastClick, c.lastClickMap = click, char.Map
 	c.restMap, c.saleMode = 0, -1
+	c.view.ShopItems = nil
 	if c.view.Hidden[click] || !s.World.VisibleIn(char, c.view, char.Map, click) {
 		if e := c.send(s.World.HideActor(c.view, char.Map, click)); e != nil {
 			return e
@@ -434,6 +454,13 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 						reward := rollChestReward(*pool)
 						es.chestReward = &reward
 					}
+					if es.chestReward.Gold > 0 {
+						gold += int64(es.chestReward.Gold)
+						if gold > game.MaxGold {
+							return false
+						}
+						continue
+					}
 					op.D3, amount = es.chestReward.Item, int32(es.chestReward.Count)
 				}
 			}
@@ -514,6 +541,9 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 				}
 				next := s.World.FindBranch(c.character, c.view, es.mapID, es.ev, world.ConditionChoiceResult, question, uint16(choice), -1)
 				if next < 0 {
+					if handled, err := s.merchantChoice(c, es, uint16(choice)); handled {
+						return err
+					}
 					return s.finishEvent(c, es)
 				}
 				return s.startEvent(ctx, c, es.click, es.ev, next, true)
@@ -538,9 +568,9 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			es.onComplete = resume
 			switch {
 			case op.PlayerSpeech():
-				return c.send(eventFrame(1, 7, 0, 1, 0, op.D2, op.Index, br.Index))
+				return c.send(speechFrame(7, 0, op.TalkID(), op.Index))
 			case op.NPCSpeech():
-				return c.send(eventFrame(1, 3, op.D1, 1, 0, op.D3, op.Index, br.Index))
+				return c.send(speechFrame(3, op.D1, op.TalkID(), op.Index))
 			case movie && es.mapID == 11005 && (es.ev.ClickID == 25 || es.ev.ClickID == 26) && op.Value() == 25010 && laterMovie(br.Operations[es.index:], 156):
 				// Holding the first of these movies would stop the second from playing.
 				return c.send(eventFrame(5, 0, 0, 1, 25010, 0, op.Index, br.Index))
@@ -680,6 +710,14 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 	char := c.character
 	br := es.ev.Branches[es.branch]
 	switch op.Code {
+	case world.ActionMissionMarker:
+		return true, nil
+	case world.ActionMissionVariable:
+		if op.D2 != world.MissionVariableAdd {
+			return false, nil
+		}
+		c.view.MissionVariables[op.D1] += int32(op.Value())
+		return true, nil
 	case world.ActionTransform:
 		return s.convertBreillat(ctx, c, es, op)
 	case world.ActionPlayer:
@@ -851,6 +889,9 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 			reward := rollChestReward(*pool)
 			es.chestReward = &reward
 		}
+		if es.chestReward.Gold > 0 {
+			return s.claimQuestChestGold(ctx, c, es, *pool, es.chestReward.Gold)
+		}
 		op.D3 = es.chestReward.Item
 		amount = int32(es.chestReward.Count)
 	}
@@ -958,11 +999,15 @@ func (s *Server) actorAction(ctx context.Context, c *Session, es *eventSession, 
 	}
 	switch op.D2 {
 	case world.ActorActionPose:
-		p := world.ActorPose(op.D1, op.D3, byte(op.Value()))
-		if p == nil {
+		facing := byte(op.Value())
+		if byte(op.DW2) != 0 {
+			facing = byte(op.DW2)
+		}
+		packets := s.World.ActorPosePackets(c.view, mapID, op.D1, op.D3, facing)
+		if len(packets) == 0 {
 			return false, nil
 		}
-		return true, c.send(p)
+		return true, s.sendAll(c, packets)
 	case world.ActorActionPath:
 		return true, c.send(eventFrame(4, 3, op.D1, byte(op.D3), op.Value(), 0, op.Index, br.Index))
 	case world.ActorActionPropState:
@@ -1103,7 +1148,9 @@ func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16,
 }
 
 // tryEntry is TryExecuteEntry for the area ID an AC20:8 step reports. Doors accept a
-// one-cell margin because the request can precede the last movement update.
+// two-cell margin because the request can precede the last movement update.
+const nativeEntryMarginCells = 2
+
 func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, error) {
 	area, ok := s.World.Entry(c.character.Map, id)
 	if !ok {
@@ -1112,13 +1159,7 @@ func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, err
 	if c.event != nil {
 		return true, nil
 	}
-	margin := int32(1)
-	switch {
-	case c.character.Map == game.MapID11075 && id == 2:
-		margin = 2
-	case area.Kind == 1:
-		margin = 0
-	}
+	margin := int32(nativeEntryMarginCells)
 	if !area.Inside(c.character.X, c.character.Y, margin) {
 		return true, c.send([]byte{protocol.CommandEvent, protocol.EventResume})
 	}

@@ -57,8 +57,7 @@ func (s *Server) repairCommand(ctx context.Context, c *Session, p []byte) error 
 	if err := s.sendAll(c, packets); err != nil {
 		return err
 	}
-	effect := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRepairEffect}.U32(next.ID).U16(game.RepairHammerEffectID)
-	s.broadcastWorld(c, effect)
+	s.clearShapeshift(c)
 	reply[3] = protocol.RepairSucceeded
-	return s.sendAll(c, [][]byte{effect, systemLine(fmt.Sprintf("[Blacksmith Repair] Successfully restored item #%d to maximum durability!", item.ID)), reply})
+	return s.sendAll(c, [][]byte{systemLine(fmt.Sprintf("[Blacksmith Repair] Successfully restored item #%d to maximum durability!", item.ID)), reply})
 }

@@ -5,9 +5,19 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 const TentItemLimit = 65535
+const maxTentTreeNodes = (protocol.MaxPayload - protocol.TentTreeHeaderBytes) / protocol.TentTreeRecordBytes
+
+func tentTreeNodes(t Tent) int {
+	n := len(t.Items)
+	for _, item := range t.Items {
+		n += len(item.Tools)
+	}
+	return n
+}
 
 type Tent struct {
 	OwnerID    uint32 `gorm:"primaryKey;autoIncrement:false"`
@@ -24,8 +34,9 @@ type Tent struct {
 func (Tent) TableName() string { return "tents" }
 
 type TentItem struct {
-	OwnerID         uint32 `gorm:"primaryKey;autoIncrement:false"`
-	Slot            uint16 `gorm:"primaryKey;autoIncrement:false"`
+	Tools           []TentTool `gorm:"-"`
+	OwnerID         uint32     `gorm:"primaryKey;autoIncrement:false"`
+	Slot            uint16     `gorm:"primaryKey;autoIncrement:false"`
 	ItemID          uint16
 	Count           byte
 	Damage          byte
@@ -41,12 +52,77 @@ func loadTent(tx *gorm.DB, owner uint32) (Tent, error) {
 		return t, err
 	}
 	err := tx.Where("owner_id = ?", owner).Order("slot").Find(&t.Items).Error
-	return t, err
+	if err != nil {
+		return t, err
+	}
+	var tools []TentTool
+	if err := tx.Where("owner_id = ?", owner).Order("host_slot,ordinal").Find(&tools).Error; err != nil {
+		return t, err
+	}
+	byHost := map[uint16][]TentTool{}
+	for _, tool := range tools {
+		byHost[tool.HostSlot] = append(byHost[tool.HostSlot], tool)
+	}
+	for i := range t.Items {
+		t.Items[i].Tools = byHost[t.Items[i].Slot]
+	}
+	return t, nil
 }
 func (s *Store) Tent(ctx context.Context, owner uint32) (Tent, error) {
 	var t Tent
 	err := s.transaction(ctx, func(tx *gorm.DB) error { var err error; t, err = loadTent(tx, owner); return err })
 	return t, err
+}
+
+// ApplyTentSurface commits inventory consumption with the decor metadata. The
+// owner/ref and exact instance are rechecked inside the same transaction.
+func (s *Store) ApplyTentSurface(ctx context.Context, ref CharacterRef, slot byte, expected game.Item, wallpaper bool, floor byte, reservations ...game.Character) (game.Character, Tent, error) {
+	var next game.Character
+	var tent Tent
+	if slot < 1 || slot > game.BagSize || expected.Empty() || expected.Locked || floor > 1 {
+		return next, tent, game.ErrInvalidItem
+	}
+	err := s.transaction(ctx, func(tx *gorm.DB) error {
+		var err error
+		next, err = loadCharacter(tx, ref)
+		if err != nil {
+			return err
+		}
+		if err = preserveItemReservations(&next, reservations); err != nil {
+			return err
+		}
+		if next.Map != game.TentMapID || next.TentReturn == nil || next.Bag[slot-1] != expected {
+			return game.ErrInvalidItem
+		}
+		tent, err = loadTent(tx, ref.ID)
+		if err != nil {
+			return err
+		}
+		if floor == 1 && tent.Type < tentExpandedType {
+			return game.ErrInvalidItem
+		}
+		if err = next.Bag.Remove(slot, 1); err != nil {
+			return err
+		}
+		if wallpaper {
+			if floor == 0 {
+				tent.Wallpaper = expected.ID
+			} else {
+				tent.Wallpaper2 = expected.ID
+			}
+		} else {
+			if floor == 0 {
+				tent.Floor = expected.ID
+			} else {
+				tent.Floor2 = expected.ID
+			}
+		}
+		if err = tx.Omit("Items").Save(&tent).Error; err != nil {
+			return err
+		}
+		return saveCharacter(tx, ref, next)
+	})
+	return next, tent, err
 }
 func (s *Store) EnsureTent(ctx context.Context, ref CharacterRef, floor, wallpaper uint16, defaults []TentItem) (Tent, error) {
 	var result Tent
@@ -79,12 +155,26 @@ func (s *Store) EnsureTent(ctx context.Context, ref CharacterRef, floor, wallpap
 	return result, err
 }
 func (s *Store) PlaceTentItem(ctx context.Context, ref CharacterRef, bagSlot byte, x, y uint16, expected game.Item) (game.Character, error) {
+	return s.placeTentItem(ctx, ref, bagSlot, x, y, 0, expected, nil, false)
+}
+
+func (s *Store) PlaceNativeTentItem(ctx context.Context, ref CharacterRef, bagSlot byte, x, y uint16, floor byte, expected game.Item, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, error) {
+	return s.placeTentItem(ctx, ref, bagSlot, x, y, floor, expected, items, true, reservations...)
+}
+
+func (s *Store) placeTentItem(ctx context.Context, ref CharacterRef, bagSlot byte, x, y uint16, floor byte, expected game.Item, items map[uint16]game.ItemDefinition, strict bool, reservations ...game.Character) (game.Character, error) {
 	var next game.Character
 	err := s.transaction(ctx, func(tx *gorm.DB) error {
 		var err error
 		next, err = loadCharacter(tx, ref)
 		if err != nil {
 			return err
+		}
+		if err = preserveItemReservations(&next, reservations); err != nil {
+			return err
+		}
+		if expected.Locked {
+			return game.ErrItemLocked
 		}
 		if bagSlot < 1 || bagSlot > game.BagSize || next.Bag[bagSlot-1] != expected {
 			return game.ErrTradeChanged
@@ -93,7 +183,15 @@ func (s *Store) PlaceTentItem(ctx context.Context, ref CharacterRef, bagSlot byt
 		if err != nil {
 			return err
 		}
-		if len(tent.Items) >= TentItemLimit {
+		if strict {
+			if next.Map != game.TentMapID || next.TentReturn == nil {
+				return game.ErrInvalidItem
+			}
+			if !tentPlacementAvailable(tent, TentItem{ItemID: expected.ID, X: x, Y: y, Floor: floor}, items, nil) {
+				return ErrTentPlacement
+			}
+		}
+		if len(tent.Items) >= TentItemLimit || tentTreeNodes(tent) >= maxTentTreeNodes {
 			return errors.New("tent is full")
 		}
 		index := uint16(0)
@@ -107,7 +205,7 @@ func (s *Store) PlaceTentItem(ctx context.Context, ref CharacterRef, bagSlot byt
 		if err = next.Bag.Remove(bagSlot, 1); err != nil {
 			return err
 		}
-		row := TentItem{OwnerID: ref.ID, Slot: index, ItemID: expected.ID, Count: 1, Damage: expected.Damage, Metadata: append([]byte(nil), expected.Metadata[:]...), X: x, Y: y}
+		row := TentItem{OwnerID: ref.ID, Slot: index, ItemID: expected.ID, Count: 1, Damage: expected.Damage, Metadata: append([]byte(nil), expected.Metadata[:]...), X: x, Y: y, Floor: floor}
 		if err = tx.Create(&row).Error; err != nil {
 			return err
 		}
@@ -160,6 +258,19 @@ func (s *Store) PickUpTentItem(ctx context.Context, ref CharacterRef, index uint
 		adds, err = next.Bag.Grant(item, 1, def.StackLimit(), items)
 		if err != nil {
 			return err
+		}
+		for _, tool := range row.Tools {
+			definition, known := items[tool.ItemID]
+			if !known || len(tool.Metadata) != game.ItemMetadataBytes {
+				return game.ErrInvalidItem
+			}
+			it := game.Item{ID: tool.ItemID, Damage: tool.Damage}
+			copy(it.Metadata[:], tool.Metadata)
+			part, err := next.Bag.Grant(it, 1, definition.StackLimit(), items)
+			if err != nil {
+				return err
+			}
+			adds = append(adds, part...)
 		}
 		if err = saveCharacter(tx, ref, next); err != nil {
 			return err

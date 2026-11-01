@@ -240,9 +240,21 @@ func (s *Server) commandTeleport(ctx context.Context, c *Session, dst world.Dest
 	return s.teleport(ctx, c, dst, 0)
 }
 
+const (
+	gmBangkokMapID   = 12600
+	gmBangkokTempleX = 2450
+	gmBangkokTempleY = 450
+)
+
 func (s *Server) gmWarp(ctx context.Context, c *Session, words []string) error {
 	if len(words) == 2 {
+		if alias := strings.ToLower(words[1]); alias == "bangkok" || alias == "bangkokmonk" || alias == "monk" {
+			return s.commandTeleport(ctx, c, world.Destination{Map: gmBangkokMapID, X: gmBangkokTempleX, Y: gmBangkokTempleY})
+		}
 		if m, e := strconv.ParseUint(words[1], 10, 16); e == nil {
+			if m == gmBangkokMapID {
+				return s.commandTeleport(ctx, c, world.Destination{Map: gmBangkokMapID, X: gmBangkokTempleX, Y: gmBangkokTempleY})
+			}
 			return s.commandTeleport(ctx, c, world.Destination{Map: uint16(m), X: 600, Y: 600})
 		}
 		if target := s.findOnline(words[1]); target != nil {

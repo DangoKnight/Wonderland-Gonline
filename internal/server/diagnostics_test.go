@@ -151,3 +151,12 @@ func TestNativeCompoundPacketTrace(t *testing.T) {
 		t.Fatal("compound request bytes not logged")
 	}
 }
+
+func TestSpeechTraceDecodesFullTalkReference(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger.Debug("speech", packetTraceAttrs([]byte{20, 1, 0, 0, 0, 2, 1, 3, 4, 0, 1, 0, 0, 0, 0, 0x56, 0x34, 0x12}, true)...)
+	if !strings.Contains(logs.String(), `"talk_id":1193046`) || !strings.Contains(logs.String(), `"event_actor":4`) {
+		t.Fatal(logs.String())
+	}
+}

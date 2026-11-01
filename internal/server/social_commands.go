@@ -12,7 +12,6 @@ import (
 )
 
 const marriageProposalTTL = time.Minute
-const weddingFireworksEffect = 60010
 
 type marriageProposal struct {
 	From *Session
@@ -81,9 +80,7 @@ func (s *Server) socialChatCommand(ctx context.Context, c *Session, name string,
 				s.sendOrClose(peer, peer.character.Bag.AdditionPacket(adds[i]))
 			}
 		}
-		effect := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRepairEffect}.U32(proposer.character.ID).U16(weddingFireworksEffect)
-		s.broadcastWorld(proposer, effect)
-		s.sendOrClose(proposer, effect)
+		s.clearShapeshift(proposer)
 		message := tradeMessage("Congratulations! " + proposer.character.Name + " and " + c.character.Name + " are married.")
 		s.broadcastWorld(c, message)
 		return true, c.send(message)

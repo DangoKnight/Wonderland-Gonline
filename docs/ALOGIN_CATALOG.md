@@ -120,12 +120,12 @@ The receive dispatcher (`FUN_002dde1c`) handles **91** commands; the Go client h
 | 70 | Territory |  |
 | 71 | ArcadeGame | yes |
 | 72 | — |  |
-| 74 | — |  |
+| 74 | TeleportScroll |  |
 | 75 | Mall |  |
 | 76 | — |  |
 | 77 | PalaceTrial |  |
 | 78 | — |  |
-| 79 | — |  |
+| 79 | RebirthJobSelection |  |
 | 80 | — |  |
 | 81 | — |  |
 | 82 | — |  |

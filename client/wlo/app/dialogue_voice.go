@@ -27,7 +27,7 @@ var companionVoiceActors = map[byte]byte{201: 3, 206: 6, 211: 2, 216: 5, 221: 1,
 // FUN_0034d3e8 prefers a speaker-specific recording, then the plain talk
 // ID. The base odd archive wins over odd_d01 for specific recordings;
 // the native plain-ID fallback consults only odd.
-func (c *Client) dialogueVoice(talk uint16, speaker uint32) string {
+func (c *Client) dialogueVoice(talk uint32, speaker uint32) string {
 	suffix := ""
 	if speaker == movie.PlayerTemplate {
 		p := c.World.Player
@@ -56,7 +56,7 @@ func (c *Client) dialogueVoice(talk uint16, speaker uint32) string {
 	return ""
 }
 
-func (c *Client) playDialogueVoice(talk uint16, speaker uint32) {
+func (c *Client) playDialogueVoice(talk uint32, speaker uint32) {
 	if c.World != nil && c.Env.Sound != nil {
 		if c.sfx != nil {
 			c.sfx.StopVoice()

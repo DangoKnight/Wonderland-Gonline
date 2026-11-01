@@ -29,11 +29,15 @@ func (s *Server) harvestProp(ctx context.Context, c *Session, n world.NPC) (bool
 	}
 	reward := rollChestReward(*pool)
 	def, known := s.Assets.Items[reward.Item]
-	if !known {
+	if !known && reward.Gold == 0 {
 		return true, s.sendAll(c, [][]byte{headBanner("The node reward is unavailable."), {protocol.CommandEvent, protocol.EventResume}})
 	}
-	next, adds, err := s.Store.ClaimMapProp(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, game.Item{ID: reward.Item, Count: reward.Count}, def.StackLimit(), time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, s.Assets.Items, *c.character)
-	if errors.Is(err, store.ErrPropEmpty) || errors.Is(err, game.ErrInventoryFull) {
+	item := game.Item{ID: reward.Item, Count: reward.Count}
+	if reward.Gold > 0 {
+		item = game.Item{}
+	}
+	next, adds, err := s.Store.ClaimMapPropReward(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, item, def.StackLimit(), reward.Gold, time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, s.Assets.Items, *c.character)
+	if errors.Is(err, store.ErrPropEmpty) || errors.Is(err, store.ErrPropRewardUnavailable) || errors.Is(err, game.ErrInventoryFull) {
 		return true, s.sendAll(c, [][]byte{headBanner(err.Error()), {protocol.CommandEvent, protocol.EventResume}})
 	}
 	if err != nil {
@@ -43,7 +47,11 @@ func (s *Server) harvestProp(ctx context.Context, c *Session, n world.NPC) (bool
 	s.closeStall(c)
 	s.cancelTrade(c)
 	s.publishProp(next.Map, n.ClickID, propBrokenFrame)
-	return true, s.sendAll(c, [][]byte{next.Bag.AdditionPacket(adds), {protocol.CommandEvent, protocol.EventStepComplete}, {protocol.CommandEvent, protocol.EventResume}})
+	receipt := next.Bag.AdditionPacket(adds)
+	if reward.Gold > 0 {
+		receipt = protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold)
+	}
+	return true, s.sendAll(c, [][]byte{receipt, {protocol.CommandEvent, protocol.EventStepComplete}, {protocol.CommandEvent, protocol.EventResume}})
 }
 func (s *Server) publishProp(mapID, click uint16, frame byte) {
 	for _, c := range s.world {

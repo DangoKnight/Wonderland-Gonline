@@ -301,3 +301,13 @@ func TestEventMusic(t *testing.T) {
 		t.Fatalf("track %q after restore", c.eventMusic)
 	}
 }
+
+func TestDialogueRetainsTwentyFourBitTalkReference(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.talks = map[uint32]string{0x123456: "Extended dialogue", 0x3456: "Truncated dialogue"}
+	// Independent AC20:1 bytes: actor one, talk reference 0x123456.
+	c.dispatch([]byte{20, 1, 0, 0, 0, 1, 1, 3, 1, 0, 1, 0, 0, 0, 0, 0x56, 0x34, 0x12})
+	if !c.Talk.Shown() || len(c.Talk.Lines()) != 1 || string(c.Talk.Lines()[0]) != "Extended dialogue" {
+		t.Fatal(c.Talk.Lines())
+	}
+}

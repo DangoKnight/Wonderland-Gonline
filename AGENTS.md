@@ -16,7 +16,8 @@ only dirty state according to DEVELOPMENT.md. Compiled growth formulas remain in
 ## Test scope
 
 During development, run only tests relevant to the modified modules and their
-affected integrations. Reserve full test-suite runs for pre-commit validation.
+affected integrations, including before commits. Run full server validation only
+before a push.
 Use focused test selections within large packages and the race detector when
 changing concurrent behavior.
 

@@ -25,7 +25,11 @@ func (MapProp) TableName() string { return "map_props" }
 // ClaimMapProp claims the shared node and grants its complete reward together.
 // A full bag or failed write leaves the node available to every player.
 func (s *Store) ClaimMapProp(ctx context.Context, ref CharacterRef, mapID, click uint16, item game.Item, maxStack byte, now time.Time, cooldown time.Duration, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
-	if mapID == 0 || click == 0 || cooldown <= 0 || cooldown > maxMapPropCooldown || item.ID == 0 || item.Count == 0 || maxStack == 0 {
+	return s.ClaimMapPropReward(ctx, ref, mapID, click, item, maxStack, 0, now, cooldown, items, reservations...)
+}
+
+func (s *Store) ClaimMapPropReward(ctx context.Context, ref CharacterRef, mapID, click uint16, item game.Item, maxStack byte, gold uint32, now time.Time, cooldown time.Duration, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
+	if mapID == 0 || click == 0 || cooldown <= 0 || cooldown > maxMapPropCooldown || gold == 0 && (item.ID == 0 || item.Count == 0 || maxStack == 0) || gold > 0 && (!item.Empty() || gold > game.MaxGold) {
 		return game.Character{}, nil, errors.New("invalid prop claim")
 	}
 	var next game.Character
@@ -49,9 +53,16 @@ func (s *Store) ClaimMapProp(ctx context.Context, ref CharacterRef, mapID, click
 		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
 		}
-		adds, err = next.Bag.Grant(item, int(item.Count), maxStack, items)
-		if err != nil {
-			return err
+		if gold > 0 {
+			if uint64(next.Gold)+uint64(gold) > game.MaxGold {
+				return ErrPropRewardUnavailable
+			}
+			next.Gold += gold
+		} else {
+			adds, err = next.Bag.Grant(item, int(item.Count), maxStack, items)
+			if err != nil {
+				return err
+			}
 		}
 		if err = next.Validate(); err != nil {
 			return err
@@ -67,6 +78,9 @@ func (s *Store) ClaimMapProp(ctx context.Context, ref CharacterRef, mapID, click
 	}
 	return next, adds, nil
 }
+
+var ErrPropRewardUnavailable = errors.New("node reward exceeds the carrying limit")
+
 func (s *Store) ActiveMapProps(ctx context.Context, mapID uint16, now time.Time) ([]MapProp, error) {
 	var out []MapProp
 	err := s.orm.WithContext(ctx).Where("map_id = ? AND respawn_at > ?", mapID, now.UnixMilli()).Order("click_id").Find(&out).Error
