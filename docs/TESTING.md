@@ -1135,3 +1135,24 @@ go test -race ./internal/store ./internal/server \
   -run '^Test(TeleportPoints|Tent|NativeManufacturing|Manufacturing|Bazaar|CharacterMetadataV13|NativeStall|AlternativeStall)' -count=1
 go vet ./internal/assets ./internal/assetsql ./internal/world ./internal/game ./internal/store ./internal/server
 ```
+
+
+### Pull request integration — 2026-11-01
+
+Five native-client contributions were reconciled with the newer server and Go
+client implementation. The PR head revisions are preserved as merge parents.
+
+| PR | Resulting behavior |
+| --- | --- |
+| [#1](https://github.com/DangoKnight/Wonderland-Gonline/pull/1) | Region kind 3 resolves authored portal events instead of colliding warp IDs. |
+| [#2](https://github.com/DangoKnight/Wonderland-Gonline/pull/2) | Subject kind 3 accepts exact body IDs 1–4 as well as gender codes 7/8. |
+| [#3](https://github.com/DangoKnight/Wonderland-Gonline/pull/3) | Existing native trade, exact metadata, locked offers and atomic pair commits retained; protocol documentation reconciled with independent fixtures. |
+| [#4](https://github.com/DangoKnight/Wonderland-Gonline/pull/4) | Native five-byte slot/price offers, styles, scene-list completion and bag-slot browse keys supported alongside the six-byte compatibility form; guarded pair purchases retained. |
+| [#5](https://github.com/DangoKnight/Wonderland-Gonline/pull/5) | Native item prices supplement SQL initialization, fallback buy/sell choices are separate, and existing pet-hotel acknowledgments are retained. |
+
+Focused race checks cover portal areas, every body/gender combination, trading
+replay/metadata/rollback/concurrent acceptance, native and legacy stalls, native
+cart forms, SQL price initialization/edit preservation and repeated hotel use.
+No GitHub status checks, workflow runs or reviews were present on the reviewed
+heads. Final pre-push validation is pending; full server validation is run once
+for the integrated result, with focused follow-ups for any failures.

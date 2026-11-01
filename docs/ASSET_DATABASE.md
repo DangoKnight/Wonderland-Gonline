@@ -255,7 +255,9 @@ and bazaars in `internal/store`; its version runner retains the common transacti
 Asset v14 adds typed box rewards, skill evolution links, EVE gathering pools and
 timers, NPC buy prices/catalogs, tent surfaces/tool hosts, chest classifications,
 travel destinations and map-exit rewards. Runtime and administrator edits use
-these tables. The initializer never reloads their JSON/CSV inputs during gameplay.
+these tables. NPC buy prices are projected from retained decoded Item.dat rows
+at offset `0x72` during initialization, supplementing the authored CSV fallback.
+Existing typed price edits remain authoritative; runtime never rederives prices. The initializer never reloads their JSON/CSV inputs during gameplay.
 It appends available new chest categories and changes only exact prior tent and
 poison defaults; administrator content and owned tents remain intact.
 It also supplies the previously missing NPC event-route child tables and sign/speed

@@ -45,3 +45,44 @@ func TestDoctorHotelChoiceWithoutDatabase(t *testing.T) {
 		t.Fatal("late choice reopened hotel")
 	}
 }
+
+func TestMerchantFallbackSeparatesBuyAndSell(t *testing.T) {
+	for _, buy := range []bool{false, true} {
+		name := "sell"
+		if buy {
+			name = "buy"
+		}
+		t.Run(name, func(t *testing.T) {
+			s, players, wires := tradeFixture(t)
+			c := players[0]
+			handled, err := s.fallbackService(context.Background(), c, world.NPC{ClickID: 22, Template: 13007})
+			if !handled || err != nil {
+				t.Fatal(handled, err)
+			}
+			if err := c.event.onChoice(30); err != nil {
+				t.Fatal(err)
+			}
+			wires[0].Reset()
+			choice := byte(31)
+			if buy {
+				choice = 30
+			}
+			if err := c.event.onChoice(choice); err != nil {
+				t.Fatal(err)
+			}
+			packets := wires[0].packets(t)
+			hasBuy, hasSell := false, false
+			for _, p := range packets {
+				if len(p) >= 2 && p[0] == 35 && p[1] == 12 {
+					hasBuy = true
+				}
+				if len(p) == 2 && p[0] == 27 && p[1] == 3 {
+					hasSell = true
+				}
+			}
+			if hasBuy != buy || hasSell == buy || c.event != nil || !buy && len(c.view.ShopItems) != 0 {
+				t.Fatal("merchant choice opened the wrong service", packets)
+			}
+		})
+	}
+}

@@ -48,7 +48,7 @@ func (s *Server) openNPCShop(c *Session, service uint16) error {
 			c.view.ShopItems[uint16(i+1)] = id
 		}
 	}
-	if c.event != nil {
+	if c.event != nil && c.event.ev != nil && c.event.branch >= 0 && c.event.branch < len(c.event.ev.Branches) {
 		cond := world.DecodeCond(c.event.ev.Branches[c.event.branch].Condition)
 		if cond.Kind == world.ConditionChoiceResult && merchantSellChoice(cond.W2) {
 			return s.openNPCSaleWindow(c)

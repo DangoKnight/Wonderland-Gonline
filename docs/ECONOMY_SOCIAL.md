@@ -67,7 +67,11 @@ interactions cannot sell. A stall's distance limit matches player trading.
 
 Native item stalls also accept AC23:30/31/32/33 for open, close, browse and
 purchase. Browse packets contain up to five native rows; quoted item IDs and
-prices must still match. AC23:77 retains its separate empty market list.
+prices must still match. Native AC23:30 opens with a title, style and five-byte
+bag-slot/price records, offering the whole stack; six-byte quantity records remain
+an explicit compatibility form. Native listings retain bag-slot keys and replay
+map state/styles, with AC56:30 zero terminating the scene stall list.
+AC23:77 retains its separate empty market list.
 Persistent administrator bazaars and pet/vehicle stalls use typed SQL stock and
 transactional purchases; see [the source update](SOURCE_UPDATES.md). Purchase
 history remains pending.

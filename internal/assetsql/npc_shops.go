@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
+	"wonderland-gonline/internal/assets"
 )
 
 //go:embed npc_shop_defaults.json
@@ -48,7 +49,7 @@ func migrateNPCShopDefaults(tx *gorm.DB) error {
 //go:embed npc_buy_prices_defaults.csv
 var npcBuyPricesDefaults string
 
-func defaultNPCBuyPrices() (map[uint16]uint32, error) {
+func defaultNPCBuyPrices(items map[uint16]assets.NativeItem) (map[uint16]uint32, error) {
 	records, err := csv.NewReader(strings.NewReader(npcBuyPricesDefaults)).ReadAll()
 	if err != nil {
 		return nil, err
@@ -68,6 +69,9 @@ func defaultNPCBuyPrices() (map[uint16]uint32, error) {
 		}
 		values[uint16(id)] = uint32(price)
 	}
+	for id, price := range nativeBuyPrices(items) {
+		values[id] = price
+	}
 	return values, validateNPCBuyPrices(values)
 }
 
@@ -82,10 +86,26 @@ func validateNPCBuyPrices(values map[uint16]uint32) error {
 
 func migrateNPCBuyPrices(tx *gorm.DB) error {
 	return migrateCatalogDataset(tx, "catalog_n_p_c_buy_prices", "npc_buy_prices", func() error {
-		values, err := defaultNPCBuyPrices()
+		items, err := readNativeItems(tx)
+		if err != nil {
+			return err
+		}
+		values, err := defaultNPCBuyPrices(items)
 		if err != nil {
 			return err
 		}
 		return writeNPCBuyPrices(tx, values)
 	})
+}
+
+// Native buy prices are projected only by offline initialization/migration.
+// Gameplay and administration continue to use the editable typed SQL dataset.
+func nativeBuyPrices(items map[uint16]assets.NativeItem) map[uint16]uint32 {
+	prices := make(map[uint16]uint32, len(items))
+	for id, item := range items {
+		if price := item.BuyPrice(); price > 0 {
+			prices[id] = price
+		}
+	}
+	return prices
 }

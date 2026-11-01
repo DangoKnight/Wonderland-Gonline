@@ -45,7 +45,8 @@ func TestCatalogDefinitionMigrationsPreserveEdits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Items[10002].Name != "Local edit" || c.BoxedItems[26001].ItemID != 11101 || c.BoxedItems[26001].Quantity != 1 || len(c.SkillEvolutions) < 100 || len(c.EventGathering.Pools) < 10 || c.NPCBuyPrices[10002] != 10 {
+	// The independent Item.dat golden has decoded price 0xf6d1ac87.
+	if c.Items[10002].Name != "Local edit" || c.BoxedItems[26001].ItemID != 11101 || c.BoxedItems[26001].Quantity != 1 || len(c.SkillEvolutions) < 100 || len(c.EventGathering.Pools) < 10 || c.NPCBuyPrices[10002] != 4140936327 {
 		t.Fatal("missing content or overwritten edits")
 	}
 	if err := db.Model(&BoxedItemsRow{}).Where("boxed_items_key = ?", 26001).Update("value_quantity", 2).Error; err != nil {
@@ -80,19 +81,23 @@ func TestCatalogDefinitionMigrationsPreserveEdits(t *testing.T) {
 }
 
 func TestCatalogDefinitionDefaultsStructuredRoundTrip(t *testing.T) {
-	c := &assets.Catalog{}
+	path := runtimeDatabaseFixture(t)
+	source, err := loadLegacyFixture(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &assets.Catalog{NativeItems: source.NativeItems}
 	c.MapTransitions = catalogDefaultForTest(t, defaultMapTransitions)
 	c.TentToolHosts = catalogDefaultForTest(t, defaultTentToolHosts)
 	c.ChestPropCategories = catalogDefaultForTest(t, defaultChestPropCategories)
 	c.NPCShopDefaults = catalogDefaultForTest(t, defaultNPCShopDefaults)
-	c.NPCBuyPrices = catalogDefaultForTest(t, defaultNPCBuyPrices)
+	c.NPCBuyPrices = catalogDefaultForTest(t, func() (map[uint16]uint32, error) { return defaultNPCBuyPrices(c.NativeItems) })
 	c.Travel = catalogDefaultForTest(t, defaultTravel)
 	c.TentSurfaces = catalogDefaultForTest(t, defaultTentSurfaces)
 	c.BoxedItems = catalogDefaultForTest(t, defaultBoxedItems)
 	c.SkillEvolutions = catalogDefaultForTest(t, defaultSkillEvolutions)
 	c.EventGathering = catalogDefaultForTest(t, defaultEventGathering)
 
-	path := runtimeDatabaseFixture(t)
 	if err := MigrateDatabase(path); err != nil {
 		t.Fatal(err)
 	}

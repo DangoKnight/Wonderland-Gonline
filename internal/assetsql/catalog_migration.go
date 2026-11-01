@@ -433,7 +433,7 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	c.NPCBuyPrices, err = defaultNPCBuyPrices()
+	c.NPCBuyPrices, err = defaultNPCBuyPrices(c.NativeItems)
 	if err != nil {
 		return err
 	}

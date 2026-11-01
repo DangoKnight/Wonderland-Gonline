@@ -106,8 +106,22 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 			if err := c.send([]byte{protocol.CommandEvent, protocol.EventResume}); err != nil {
 				return err
 			}
-			if choice == 30 || choice == 31 {
-				if err := s.openService(c, uint16(kind)); err != nil {
+			service := uint16(kind)
+			if n.Template == npcArmorMerchantTemplate || strings.Contains(strings.ToLower(n.Name), "armor") {
+				service = world.ServiceArmorShop
+			}
+			if choice == 30 || choice == 1 {
+				if err := s.openService(c, service); err != nil {
+					return err
+				}
+			}
+			if merchantSellChoice(uint16(choice)) {
+				c.saleMode, c.saleMap = 0, c.character.Map
+				if service == world.ServicePropsShop {
+					c.saleMode = 1
+				}
+				c.view.ShopItems = nil
+				if err := s.openNPCSaleWindow(c); err != nil {
 					return err
 				}
 			}

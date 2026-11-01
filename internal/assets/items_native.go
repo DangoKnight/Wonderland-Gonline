@@ -33,6 +33,7 @@ const (
 	nativeItemDescriptionLengthOffset = 146
 	nativeItemDescriptionOffset       = 147
 	nativeItemDescriptionBytes        = 254
+	nativeItemBuyPriceOffset          = 114
 )
 
 // Disk offsets traced from aLogin's FUN_003cdfa4. Its in-memory object has a
@@ -120,6 +121,11 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		return nil, fmt.Errorf("native item catalog: no item definitions")
 	}
 	return out, nil
+}
+
+// BuyPrice is the native shop price stored at Item.dat +0x72.
+func (item *NativeItem) BuyPrice() uint32 {
+	return le.Uint32(item.Record[nativeItemBuyPriceOffset:])
 }
 
 // InitializeInventoryDimensions seeds projections made before dimensions were
