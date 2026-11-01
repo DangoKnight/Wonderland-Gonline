@@ -256,3 +256,19 @@ func TestRidingVehicleConditions(t *testing.T) {
 		t.Fatal("dismount condition did not qualify")
 	}
 }
+
+func TestSubjectBodyAndGenderConditions(t *testing.T) {
+	w := New(&assets.Catalog{Maps: map[uint16]assets.Map{}})
+	for body, male := range map[uint16]bool{1: true, 2: false, 3: true, 4: false} {
+		c := &game.Character{Body: body, Quests: map[uint32]game.Quest{}}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, 7, 0, 0, 0)); got != male {
+			t.Fatalf("body %d male=%v got %v", body, male, got)
+		}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, 8, 0, 0, 0)); got == male {
+			t.Fatalf("body %d female mismatch", body)
+		}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, body, 0, 0, 0)); !got {
+			t.Fatalf("body %d exact match failed", body)
+		}
+	}
+}

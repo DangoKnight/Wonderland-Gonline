@@ -154,7 +154,11 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		return compare(mark, value, op)
 	case ConditionSubject:
 		switch w1 {
-		case SubjectGender:
+		case SubjectBodyOrGender:
+			switch w2 {
+			case game.BodySmallMale, game.BodySmallFemale, game.BodyBigMale, game.BodyBigFemale:
+				return c.Body == w2
+			}
 			male := c.Body == game.BodySmallMale || c.Body == game.BodyBigMale
 			return (w2 == GenderMale && male) || (w2 == GenderFemale && !male)
 		case SubjectElement, SubjectRebornJob:

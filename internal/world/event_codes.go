@@ -53,11 +53,11 @@ const (
 )
 
 const (
-	SubjectGender    = 3
-	SubjectElement   = 4
-	SubjectRebornJob = 5
-	GenderMale       = 7
-	GenderFemale     = 8
+	SubjectBodyOrGender = 3
+	SubjectElement      = 4
+	SubjectRebornJob    = 5
+	GenderMale          = 7
+	GenderFemale        = 8
 )
 
 // Condition comparison operators.
