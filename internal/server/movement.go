@@ -67,6 +67,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	if x != prevX || y != prevY {
 		s.stopFishing(c)
 		s.cancelTrade(c)
+		c.catalogID, c.saleMode, c.saleMap = 0, -1, 0
 		c.arrived = false
 	}
 	s.Log.Debug("movement destination accepted", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)

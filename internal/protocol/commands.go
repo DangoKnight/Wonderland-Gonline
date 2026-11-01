@@ -391,6 +391,7 @@ const (
 
 // Shop subcommands (AC27).
 const (
+	ShopBuy             = 1
 	ShopSell            = 2
 	ShopPropsWindow     = 3
 	ShopEquipmentWindow = 4
@@ -419,11 +420,12 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	NPCServiceWireCode3 = 3
 	// Unresolved wire meaning; retain the numeric code until verified.
-	NPCServiceWireCode4 = 4
-	// Unresolved wire meaning; retain the numeric code until verified.
-	NPCServiceWireCode6 = 6
-	// Unresolved wire meaning; retain the numeric code until verified.
-	NPCServiceWireCode7 = 7
+	NPCServiceWireCode4  = 4
+	NPCServiceWireCode5  = 5
+	NPCServiceWireCode6  = 6
+	NPCServiceWireCode7  = 7
+	NPCServiceWireCode8  = 8
+	NPCServiceWireCode12 = 12
 )
 
 // Pose subcommands (AC32).
@@ -447,6 +449,7 @@ const (
 	CharacterSelectionDelete      = 2
 	CharacterSelectionReady       = 11
 	CharacterSelectionRecordPoint = 12
+	CharacterSelectionShopCatalog = 12
 )
 
 // BattleAction subcommands (AC50).

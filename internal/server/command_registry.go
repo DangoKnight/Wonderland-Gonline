@@ -72,7 +72,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandEvent:              {handler: (*Server).eventCommand, policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true, BlockedDuringTrade: true}},
 	protocol.CommandInventory:          {handler: (*Server).itemCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.InventoryStallListRequest, protocol.InventoryMallCatalog, protocol.InventoryMallBalance)},
 	protocol.CommandTrade:              {handler: (*Server).tradeCommand, policy: protocol.CommandPolicy{World: true}},
-	protocol.CommandShop:               {handler: (*Server).sellItems, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandShop:               {handler: (*Server).shopCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandStorage:            {handler: (*Server).storageCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandNPCService:         {handler: (*Server).npcServiceCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPose:               {handler: withoutContext((*Server).emote), policy: protocol.CommandPolicy{World: true}, beforeWorldGates: matchingSubcommands(protocol.PoseStop)},

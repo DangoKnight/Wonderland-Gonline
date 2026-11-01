@@ -32,7 +32,7 @@ func TestShopSale(t *testing.T) {
 	if err := s.openService(c, 2); err != nil {
 		t.Fatal(err)
 	}
-	if got := wires[0].packets(t); !bytes.Equal(got[0], []byte{27, 3}) {
+	if got := wires[0].packets(t); len(got) != 2 || !bytes.Equal(got[0], protocol.Builder{35, 12}.U32(npcCatalogProps)) || !bytes.Equal(got[1], []byte{27, 3}) {
 		t.Fatal("props shop", got)
 	}
 	if got := sell(1, 0); !bytes.Equal(got[0], []byte{27, 2, saleRejected}) {

@@ -106,7 +106,12 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 			if err := c.send([]byte{protocol.CommandEvent, protocol.EventResume}); err != nil {
 				return err
 			}
-			if choice == 30 || choice == 31 {
+			if choice == 30 {
+				if err := s.openShopBuy(c, uint16(kind)); err != nil {
+					return err
+				}
+			}
+			if choice == 31 {
 				if err := s.openService(c, uint16(kind)); err != nil {
 					return err
 				}

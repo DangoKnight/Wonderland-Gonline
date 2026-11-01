@@ -163,6 +163,7 @@ type Catalog struct {
 	Drops                 map[uint32][]Drop // monster_drops.txt by monster template.
 	Critical              game.CriticalHits
 	SalePrices            map[uint16]SalePrice
+	BuyPrices             map[uint16]uint32
 	GachaPacks            map[uint16]GachaPack
 	UnavailableGachaPacks map[uint16]GachaPackIssue
 	AlchemyRecipes        []AlchemyRecipe

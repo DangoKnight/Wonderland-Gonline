@@ -175,3 +175,11 @@ func TestTranslatedClientNativeItemCatalog(t *testing.T) {
 		t.Fatal("translated catalog decoded hash", got)
 	}
 }
+
+func TestNativeItemBuyPrice(t *testing.T) {
+	var item NativeItem
+	item.Record[114], item.Record[115], item.Record[116], item.Record[117] = 0x2a, 0, 0, 0
+	if bought := item.BuyPrice(); bought != 42 {
+		t.Fatalf("buy price %d", bought)
+	}
+}

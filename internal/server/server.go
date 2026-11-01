@@ -86,6 +86,7 @@ type Session struct {
 	partyVitals   [8]int64
 	saleMode      int // NpcSaleMode: -1 closed, 0 equipment, 1 other items.
 	saleMap       uint16
+	catalogID     uint32    // CurrentShopCatalogId for the open vendor window.
 	resumeAt      time.Time // NpcClickResumeAt: ignore a repeated click after an interaction.
 	lastClick     uint16
 	lastClickMap  uint16

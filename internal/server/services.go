@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/binary"
+	"fmt"
+	"sort"
 	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -15,16 +18,23 @@ func (s *Server) openService(c *Session, action uint16) error {
 	switch action {
 	case world.ServicePetHotel:
 		return s.sendAll(c, append(s.hotelPackets(c.character), []byte{protocol.CommandNPCService, protocol.PetHotelOpen}))
-	case world.ServiceWeaponShop, world.ServicePropsShop, world.ServiceArmorShop: // Weapon shop, props shop, armor shop: selling only, as in C#.
+	case world.ServiceWeaponShop, world.ServicePropsShop, world.ServiceArmorShop: // Weapon shop, props shop, armor shop.
+		catalog := uint32(npcCatalogProps)
+		if action == world.ServiceWeaponShop {
+			catalog = npcCatalogWeapon
+		} else if action == world.ServiceArmorShop {
+			catalog = npcCatalogArmor
+		}
 		mode := 0
 		if action == world.ServicePropsShop {
 			mode = 1
 		}
-		c.saleMode, c.saleMap = mode, c.character.Map
+		c.catalogID, c.saleMode, c.saleMap = catalog, mode, c.character.Map
+		catalogPacket := protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionShopCatalog}.U32(catalog)
 		if mode == 0 {
-			return c.send([]byte{protocol.CommandShop, protocol.ShopEquipmentWindow})
+			return s.sendAll(c, [][]byte{catalogPacket, {protocol.CommandShop, protocol.ShopEquipmentWindow}})
 		}
-		return c.send([]byte{protocol.CommandShop, protocol.ShopPropsWindow})
+		return s.sendAll(c, [][]byte{catalogPacket, {protocol.CommandShop, protocol.ShopPropsWindow}})
 	case world.ServicePropsKeeper, world.ServiceStockKeeper: // Props keeper and stock keeper both open item storage.
 		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
 	case world.ServiceClinic, world.ServiceClinicAlternate: // Clinic: offer a free rest when HP or SP is missing.
@@ -134,6 +144,219 @@ func (s *Server) sell(ctx context.Context, c *Session, slots []byte, mode int) (
 		return 0, nil, e
 	}
 	return saleSuccess, append(packets, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold)), nil
+}
+
+// NPC vendor purchase (AC27:1). Prices are a flat ten gold until the full
+// NPC buy-price table is imported; the catalog comes from Eve.Interactive.
+const npcBuyFlatPrice = 10
+
+const (
+	npcCatalogArmor  = 0x0001FB83
+	npcCatalogWeapon = 0x0001FB84
+	npcCatalogProps  = 0x0001FB85
+)
+
+var fallbackWeaponCatalog = []uint16{17064, 14032, 21061, 18032, 15032, 24067}
+var fallbackPropsCatalog = []uint16{32011, 32002, 45001, 45007, 42008, 45007}
+
+type shopCartEntry struct {
+	slot   uint16
+	amount byte
+}
+
+// parseShopCart mirrors Inventory.ResolveCatalogItem's four native cart forms.
+func parseShopCart(data []byte) []shopCartEntry {
+	if len(data) == 0 {
+		return nil
+	}
+	out := []shopCartEntry{}
+	if (len(data)-1)%2 == 0 && int(data[0]) == (len(data)-1)/2 {
+		for i := 1; i+1 < len(data); i += 2 {
+			out = append(out, shopCartEntry{uint16(data[i]), data[i+1]})
+		}
+		return out
+	}
+	if (len(data)-1)%3 == 0 && int(data[0]) == (len(data)-1)/3 {
+		for i := 1; i+2 < len(data); i += 3 {
+			out = append(out, shopCartEntry{binary.LittleEndian.Uint16(data[i:]), data[i+2]})
+		}
+		return out
+	}
+	if len(data)%3 == 0 {
+		for i := 0; i+2 < len(data); i += 3 {
+			out = append(out, shopCartEntry{binary.LittleEndian.Uint16(data[i:]), data[i+2]})
+		}
+		return out
+	}
+	if len(data)%2 == 0 {
+		for i := 0; i+1 < len(data); i += 2 {
+			out = append(out, shopCartEntry{uint16(data[i]), data[i+1]})
+		}
+	}
+	return out
+}
+
+func (s *Server) openShopBuy(c *Session, service uint16) error {
+	catalog := uint32(npcCatalogProps)
+	if service == uint16(world.ServiceWeaponShop) {
+		catalog = npcCatalogWeapon
+	} else if service == uint16(world.ServiceArmorShop) {
+		catalog = npcCatalogArmor
+	}
+	c.catalogID, c.saleMap = catalog, c.character.Map
+	return c.send(protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionShopCatalog}.U32(catalog))
+}
+
+func (s *Server) resolveCatalogItem(c *Session, catalog uint32, slot uint16) uint16 {
+	if slot >= 1000 {
+		return slot
+	}
+	shopType := byte(3)
+	if catalog == npcCatalogWeapon || catalog == npcCatalogArmor {
+		shopType = 2
+	}
+	if m, ok := s.Assets.Maps[c.character.Map]; ok {
+		for attempt := 0; attempt < 2; attempt++ {
+			for _, group := range m.Interactive {
+				if len(group.Header) == 0 || len(group.Members) < 5 {
+					continue
+				}
+				if attempt == 0 && group.Header[0] != shopType {
+					continue
+				}
+				if attempt == 1 && group.Header[0] != 2 && group.Header[0] != 3 {
+					continue
+				}
+				count := len(group.Members) / 5
+				for i := 0; i < count; i++ {
+					member := group.Members[i*5:]
+					if member[0] != byte(slot) {
+						continue
+					}
+					if id := uint16(member[1]) | uint16(member[2])<<8; id > 0 {
+						return id
+					}
+				}
+				if slot >= 1 && int(slot) <= count {
+					member := group.Members[(int(slot)-1)*5:]
+					if id := uint16(member[1]) | uint16(member[2])<<8; id > 0 {
+						return id
+					}
+				}
+			}
+		}
+	}
+	fallback := fallbackPropsCatalog
+	if shopType == 2 {
+		fallback = fallbackWeaponCatalog
+	}
+	if slot >= 1 && int(slot) <= len(fallback) {
+		return fallback[slot-1]
+	}
+	return 0
+}
+
+func (s *Server) shopCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 2 {
+		return nil
+	}
+	switch p[1] {
+	case protocol.ShopBuy:
+		return s.buyItems(ctx, c, p[2:])
+	case protocol.ShopSell:
+		return s.sellItems(ctx, c, p)
+	}
+	return nil
+}
+
+// buyPrice follows Inventory.BuyFromNpc: the NPC buy table, then ten times the
+// sale price, then a flat ten gold for rows absent from both tables.
+func (s *Server) buyPrice(id uint16) uint32 {
+	if price := s.Assets.BuyPrices[id]; price > 0 {
+		return price
+	}
+	if sale, ok := s.Assets.SalePrices[id]; ok && sale.Price > 0 {
+		return sale.Price * 10
+	}
+	return npcBuyFlatPrice
+}
+
+func (s *Server) buyItems(ctx context.Context, c *Session, data []byte) error {
+	result := byte(1)
+	cart := parseShopCart(data)
+	var packets [][]byte
+	if s.Log != nil {
+		s.Log.Info("shop buy", "session", c.info.ID, "catalog", c.catalogID, "data", fmt.Sprintf("% x", data), "entries", len(cart))
+	}
+	if len(cart) > 0 && len(cart) <= 10 {
+		requested := map[uint16]int{}
+		total := uint64(0)
+		valid := true
+		for _, entry := range cart {
+			if entry.amount == 0 {
+				continue
+			}
+			id := s.resolveCatalogItem(c, c.catalogID, entry.slot)
+			if s.Log != nil {
+				s.Log.Info("shop buy item", "session", c.info.ID, "slot", entry.slot, "amount", entry.amount, "item", id)
+			}
+			if id == 0 {
+				valid = false
+				break
+			}
+			if _, ok := s.Assets.Items[id]; !ok {
+				valid = false
+				break
+			}
+			requested[id] += int(entry.amount)
+			total += uint64(s.buyPrice(id)) * uint64(entry.amount)
+		}
+		if valid && len(requested) > 0 {
+			next := c.character.Clone()
+			switch {
+			case total > game.MaxGold || uint64(next.Gold) < total:
+				result = 2
+			default:
+				probe := next.Bag
+				full := false
+				for id, count := range requested {
+					if _, err := probe.Grant(game.Item{ID: id}, count, s.Assets.Items[id].StackLimit(), s.Assets.Items); err != nil {
+						full = true
+						break
+					}
+				}
+				if full {
+					result = 3
+				} else {
+					next.Gold -= uint32(total)
+					ids := make([]int, 0, len(requested))
+					for id := range requested {
+						ids = append(ids, int(id))
+					}
+					sort.Ints(ids)
+					var adds []game.Addition
+					for _, raw := range ids {
+						id := uint16(raw)
+						granted, err := next.Bag.Grant(game.Item{ID: id}, requested[id], s.Assets.Items[id].StackLimit(), s.Assets.Items)
+						if err != nil {
+							return err
+						}
+						adds = append(adds, granted...)
+					}
+					if err := s.commit(ctx, c, next); err != nil {
+						return err
+					}
+					packets = append(packets, next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold))
+					result = 0
+				}
+			}
+		}
+	}
+	if s.Log != nil {
+		s.Log.Info("shop buy result", "session", c.info.ID, "result", result, "gold", c.character.Gold)
+	}
+	packets = append(packets, []byte{protocol.CommandShop, protocol.ShopBuy, result}, []byte{protocol.CommandShop, protocol.ShopSell, result})
+	return s.sendAll(c, packets)
 }
 
 // storageCommand is AC30: 1 withdraws and 2 deposits selected slots; with two slots,

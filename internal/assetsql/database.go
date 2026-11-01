@@ -70,7 +70,20 @@ func LoadDatabase(path string) (*assets.Catalog, error) {
 		return nil, fmt.Errorf("assets database %s: %w", path, err)
 	}
 	catalog.AssetsDatabase = path
+	catalog.BuyPrices = nativeBuyPrices(catalog.NativeItems)
 	return catalog, nil
+}
+
+// nativeBuyPrices reads the decoded Item.dat record, whose +0x72 dword is the
+// shop price shown by the native client.
+func nativeBuyPrices(items map[uint16]assets.NativeItem) map[uint16]uint32 {
+	prices := make(map[uint16]uint32, len(items))
+	for id, item := range items {
+		if price := item.BuyPrice(); price > 0 {
+			prices[id] = price
+		}
+	}
+	return prices
 }
 
 // loadLegacyTransaction is used only by offline conversion and reference tests.

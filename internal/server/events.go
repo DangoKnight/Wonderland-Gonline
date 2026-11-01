@@ -196,7 +196,7 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 		return release()
 	}
 	c.lastClick, c.lastClickMap = click, char.Map
-	c.restMap, c.saleMode = 0, -1
+	c.restMap, c.saleMode, c.catalogID = 0, -1, 0
 	if c.view.Hidden[click] || !s.World.VisibleIn(char, c.view, char.Map, click) {
 		if e := c.send(s.World.HideActor(c.view, char.Map, click)); e != nil {
 			return e
