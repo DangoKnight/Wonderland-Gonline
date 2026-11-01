@@ -50,6 +50,10 @@ type Player struct {
 	Nickname    []byte
 	Presence    byte
 	Direction   int32
+	// The social profile after the nickname (AC3 → +0x20aa, +0x20ac..):
+	// blood type, birth year as an offset from 1900, month and day; 0 is
+	// unset.
+	Blood, BirthYear, BirthMonth, BirthDay byte
 }
 
 var errShort = errors.New("AC3: packet too short")
@@ -72,6 +76,9 @@ func ParseSelf(p []byte) (Player, error) {
 	pl.Name = r.str()
 	if len(r.b) > 0 {
 		pl.Nickname = r.str()
+	}
+	if len(r.b) >= 4 {
+		pl.Blood, pl.BirthYear, pl.BirthMonth, pl.BirthDay = r.u8(), r.u8(), r.u8(), r.u8()
 	}
 	if r.bad {
 		return pl, errShort
@@ -112,7 +119,9 @@ type World struct {
 	Questions map[uint16]Question
 	// Areas are the map's event areas (MapAreas); lightsFrom starts the
 	// door lights' frames.
-	Areas      []Area
+	Areas []Area
+	// Mines are the map's mines (MapMines), for the minimap.
+	Mines      []Mine
 	lightsFrom time.Time
 	// OnLeg is called as each leg of a walk starts, with the facing and
 	// the waypoint (the client sends 6/1).

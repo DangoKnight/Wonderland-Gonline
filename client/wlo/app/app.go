@@ -87,6 +87,12 @@ type Client struct {
 	TeamState          *team.State
 	teamAppearances    map[uint32]*world.Peer
 	joinTeamTarget     bool
+	friendTarget       bool // Make Friends' target mode 5 (friends.go)
+	tradeTarget        bool // Trade Items' target mode 9 (trade.go)
+	tradeAllowed       bool // the player's +0x5791, set by 25/44 2
+	Business           *hud.Business
+	Trade              *inventory.TradeForm
+	friendAsk          *friendAsk // the open friend question
 	remote             remoteRuntime
 	battle             battleView
 	InventoryState     *inventory.State
@@ -103,10 +109,20 @@ type Client struct {
 	Chat               *hud.ChatLog     // the chat log over the map
 	npcTemplates       map[uint32]world.NPCTemplate
 	Talk               *hud.Talk // the event talk window
-	Music              *Music    // background music, nil without audio
+	MiniMap            *hud.MiniMap
+	Social             *hud.Social
+	MailSend           *hud.MailSend
+	Mailbox            *hud.Mailbox
+	MailRead           *hud.MailRead
+	MailCompose        *hud.MailCompose
+	talkConfirm        func()
+	gmFace             *role.NPC
+	friendFaces        map[uint32]*role.Human
+	Music              *Music // background music, nil without audio
 	movie              *moviePlay
 	sport              *sportPlay // the running minigame
 	sceneMusic         map[uint16]string
+	eventMusic         string // event kind 15's track (+0x732c)
 	talks              map[uint16]string
 	event              eventState
 	petAnnouncements   [][]byte
@@ -154,6 +170,8 @@ type Client struct {
 	// freezes the scene behind it (lost.go).
 	Lost *LostForm
 	fade fadeState
+	// sceneFade is the battle entry/exit transition (transition.go).
+	sceneFade sceneFade
 	// Unhandled receives packets the login phase does not handle.
 	Unhandled func(p []byte)
 }
@@ -233,6 +251,8 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.MainButtons)
 	c.HotKeys = hud.NewHotKeyForm(c.Env, ScreenWidth, ScreenHeight)
 	c.UI.Add(c.HotKeys)
+	c.newMiniMap()
+	c.newSocial(formula)
 	c.ChatBar = hud.NewInputBar(c.Env)
 	c.UI.Add(c.ChatBar)
 	c.ChatBar.Message.OnEnter = c.sendChat
@@ -241,6 +261,8 @@ func New(o Options) (*Client, error) {
 	c.ChatBar.Whisper.OnBlur = c.whisperBlur
 	c.ChatBar.OnWhisperName = c.whisperEnter
 	c.ChatBar.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
+	c.ChatBar.Now = func() time.Time { return c.Now() }
+	c.ChatBar.OpenMailbox = c.Mailbox.Toggle
 	c.ChatBar.Focus = func(f seui.Control) { c.Input.Focused = f }
 	c.ChatBar.InTeam, c.ChatBar.InGuild = c.inTeam, c.inGuild
 	c.Chat = hud.NewChatLog(c.Env)
@@ -286,6 +308,7 @@ func New(o Options) (*Client, error) {
 	c.initCompound()
 	c.initSkills()
 	c.initTeam()
+	c.initTrade()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -307,8 +330,10 @@ func (c *Client) frame(draw bool) {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
 	}
 	c.Input.Hovered = nil // FUN_0040f97c
+	c.sceneFadeTick(c.Now())
+	c.friendAskTick(c.Now())
 	if c.World != nil && c.fade.frozen == nil {
-		c.World.JoinTeamSelection = c.joinTeamTarget
+		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Step(c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
@@ -318,6 +343,7 @@ func (c *Client) frame(draw bool) {
 			c.World.Hover(c.Input.X, c.Input.Y)
 		}
 		c.reachNPC()
+		c.syncMiniMap()
 		c.eventTick()
 		c.areaTick()
 		c.ambientTick()
@@ -338,6 +364,9 @@ func (c *Client) frame(draw bool) {
 		c.drawBackground()
 	}
 	now := c.Now()
+	if draw {
+		c.drawSceneFade()
+	}
 	c.drawFade(now)
 	if !c.Login.LoginTime.IsZero() && now.Sub(c.Login.LoginTime) > loginTimeout {
 		c.Notices.Show(noticeTimeout, timeoutNotice, now)
@@ -363,6 +392,7 @@ func (c *Client) frame(draw bool) {
 				c.Inventory.DrawDragged()
 				c.Compound.DrawDragged()
 				c.drawHotbarDrag()
+				c.Social.DrawDragged()
 			}
 		}
 	}
@@ -410,6 +440,12 @@ func (c *Client) handleNet() {
 // phase reaches.
 func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
+		return
+	}
+	if c.friendsPacket(p) {
+		return
+	}
+	if c.tradePacket(p) {
 		return
 	}
 	if c.teamPacket(p) {
@@ -547,6 +583,8 @@ func (c *Client) dispatch(p []byte) {
 		}
 	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameEnd:
 		c.endSport()
+	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionMallBalance && c.sport != nil:
+		c.sportBalance(s)
 	case p[0] == protocol.CommandPosition:
 		if id, mapID, x, y, ok := world.ParsePlace(s); ok && c.World != nil {
 			if id == c.World.Player.ID && mapID == c.World.Player.Map {
@@ -576,6 +614,11 @@ func (c *Client) dispatch(p []byte) {
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorWalk:
 		// Native AC22:2, dispatch 0x002e55fc -> FUN_0041869c.
 		if c.World != nil && !c.World.ApplyActorWalk(s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorAction:
+		// AC22:12 (FUN_00459d88) sets a minimap sign.
+		if c.World != nil && !c.World.ApplySign(s[1:]) && c.Unhandled != nil {
 			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPosition:
@@ -637,6 +680,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.HotKeys.Show()
 	c.ChatBar.Show()
 	c.Chat.Show()
+	c.setupMiniMap()
 	c.welcome()
 }
 

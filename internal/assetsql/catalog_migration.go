@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 12
+const catalogSchemaVersion = 13
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -352,6 +352,13 @@ func migrateCatalog(tx *gorm.DB) error {
 				}
 			}
 			if err := tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update("instances", true).Error; err != nil {
+				return err
+			}
+		}
+		if schema.Version < 13 {
+			// v13 adds the fruit machines' definitions beside existing,
+			// possibly edited, arcade machines.
+			if err := appendMissingArcades(tx); err != nil {
 				return err
 			}
 		}

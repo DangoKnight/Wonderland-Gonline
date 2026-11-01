@@ -5,7 +5,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -37,14 +36,17 @@ func tradeDo(t *testing.T, s *Server, c *Session, p []byte) {
 		t.Fatal(err)
 	}
 }
+
+// tradeOffer is the Confirm button's AC25:2: gold, then bag slots.
+func tradeOffer(gold uint32, slots ...byte) []byte {
+	return protocol.Builder{25, 2}.U32(gold).Bytes(slots)
+}
+
+// openTrade requests a trade, which aLogin opens on both sides at once.
 func openTrade(t *testing.T, s *Server, players []*Session, wires []*captureConn) {
 	t.Helper()
 	a, b := players[0], players[1]
 	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
-	if !contains(wires[1].packets(t), protocol.Builder{25, 1}.U32(a.character.ID)) {
-		t.Fatal("trade request not forwarded")
-	}
-	tradeDo(t, s, b, []byte{25, 2, 1})
 	if a.trade == nil || a.trade != b.trade {
 		t.Fatal("trade did not open")
 	}
@@ -68,24 +70,28 @@ func tradeStored(t *testing.T, s *Server, players []*Session) [2]game.Character 
 	return result
 }
 
-func TestTradeDispatcherOfferAndAtomicCompletion(t *testing.T) {
+func TestTradeNativeOfferAndAtomicCompletion(t *testing.T) {
 	s, players, wires := tradeFixture(t)
 	openTrade(t, s, players, wires)
 	a, b := players[0], players[1]
-	tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
-	offer := protocol.Builder{25, 3}.U32(0).U8(1).U16(32176).U8(3).U8(2)
-	if p := wires[1].packets(t); len(p) != 1 || !bytes.Equal(p[0], offer) {
-		t.Fatal("offer wire", p)
+	tradeDo(t, s, a, tradeOffer(0, 1))
+	// FUN_003c704c: gold, then ID, count, damage, metadata 2..7, 0..1, 8..25.
+	golden := []byte{25, 3, 0, 0, 0, 0, 0xb0, 0x7d, 10, 2, 0, 0, 0, 0, 7, 0, 0, 0}
+	golden = append(golden, make([]byte, 18)...)
+	if p := wires[1].packets(t); len(p) != 1 || !bytes.Equal(p[0], golden) {
+		t.Fatalf("offer wire %v", p)
 	}
-	tradeDo(t, s, b, protocol.Builder{25, 4}.U32(50))
+	tradeDo(t, s, b, tradeOffer(50))
+	if p := wires[0].packets(t); len(p) != 1 || !bytes.Equal(p[0], []byte{25, 3, 50, 0, 0, 0}) {
+		t.Fatalf("gold offer wire %v", p)
+	}
 	wires[0].Reset()
-	tradeDo(t, s, a, []byte{25, 5}) // Native lock action is a no-op.
-	tradeDo(t, s, a, []byte{25, 6})
+	tradeDo(t, s, a, []byte{25, 3, 1})
 	if wires[0].Len() != 0 || a.character.Gold != 100 || a.character.Bag[0].Count != 10 {
-		t.Fatal("first confirmation transferred assets")
+		t.Fatal("first acceptance transferred assets")
 	}
-	tradeDo(t, s, b, []byte{25, 6})
-	if a.trade != nil || b.trade != nil || a.character.Gold != 150 || b.character.Gold != 150 || a.character.Bag[0].Count != 7 || b.character.Bag[1].Count != 3 || b.character.Bag[1].Damage != 2 || b.character.Bag[1].Metadata[6] != 7 {
+	tradeDo(t, s, b, []byte{25, 3, 1})
+	if a.trade != nil || b.trade != nil || a.character.Gold != 150 || b.character.Gold != 150 || !a.character.Bag[0].Empty() || b.character.Bag[1].Count != 10 || b.character.Bag[1].Damage != 2 || b.character.Bag[1].Metadata[6] != 7 {
 		t.Fatal("trade result incorrect")
 	}
 	for _, wire := range wires[:2] {
@@ -97,65 +103,80 @@ func TestTradeDispatcherOfferAndAtomicCompletion(t *testing.T) {
 		t.Fatal("trade leaked to another map")
 	}
 	stored := tradeStored(t, s, players)
-	if stored[0].Gold != 150 || stored[1].Gold != 150 || stored[0].Bag[0].Count != 7 || stored[1].Bag[1].Metadata[6] != 7 {
+	if stored[0].Gold != 150 || stored[1].Gold != 150 || !stored[0].Bag[0].Empty() || stored[1].Bag[1].Metadata[6] != 7 {
 		t.Fatal("pair result not durable")
 	}
-	tradeDo(t, s, a, []byte{25, 6})
-	tradeDo(t, s, b, []byte{25, 6})
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	// The client answers 25/2 by closing its form, which sends a cancel.
+	tradeDo(t, s, a, []byte{25, 3, 2})
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	tradeDo(t, s, b, []byte{25, 3, 1})
 	if wires[0].Len() != 0 || wires[1].Len() != 0 || a.character.Gold+b.character.Gold != 300 {
 		t.Fatal("completion replayed")
 	}
 }
 
-func TestTradeOfferRevisionResetsBothConfirmations(t *testing.T) {
+func TestTradeAcceptNeedsBothLockedOffers(t *testing.T) {
 	s, players, wires := tradeFixture(t)
 	openTrade(t, s, players, wires)
 	a, b := players[0], players[1]
-	tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
-	tradeDo(t, s, a, []byte{25, 6})
-	tradeDo(t, s, b, protocol.Builder{25, 4}.U32(500)) // Clamp to owned gold, including the displayed offer.
-	if p := wires[0].packets(t); len(p) != 1 || !bytes.Equal(p[0], protocol.Builder{25, 3}.U32(200).U8(0)) {
-		t.Fatal("displayed gold differed from reserved gold", p)
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	tradeDo(t, s, a, tradeOffer(20, 1))
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	if a.trade == nil || a.trade.accepted != [2]bool{} {
+		t.Fatal("acceptance before both offers counted")
 	}
-	tradeDo(t, s, b, []byte{25, 6})
-	if a.trade == nil || a.character.Gold != 100 {
-		t.Fatal("old confirmation accepted revised offer")
+	tradeDo(t, s, a, tradeOffer(90)) // A locked offer does not change.
+	if a.trade.offers[0].Gold != 20 || len(a.trade.offers[0].Items) != 1 {
+		t.Fatal("locked offer replaced")
 	}
-	tradeDo(t, s, a, protocol.Builder{25, 4}.U32(10)) // Gold replaces the item offer, matching C#.
-	if len(a.trade.offers[0].Items) != 0 || a.trade.accepted != [2]bool{} {
-		t.Fatal("replacement retained items or confirmations")
-	}
-	for _, wire := range wires {
-		wire.Reset()
-	}
-	tradeDo(t, s, a, []byte{25, 6})
-	tradeDo(t, s, b, []byte{25, 6})
-	if a.character.Bag[0].Count != 10 || b.character.Bag[0].Count != 20 || a.character.Gold != 290 || b.character.Gold != 10 {
-		t.Fatal("replacement did not trade only gold")
+	tradeDo(t, s, b, tradeOffer(0))
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	tradeDo(t, s, b, []byte{25, 3, 1})
+	if a.character.Gold != 80 || b.character.Gold != 220 || !a.character.Bag[0].Empty() || b.character.Bag[1].Count != 10 {
+		t.Fatal("locked offers not exchanged")
 	}
 }
 
-func TestTradeRefusesMalformedAndUnsolicitedReplies(t *testing.T) {
+func TestTradeRefusesMalformedAndUnavailable(t *testing.T) {
 	s, players, wires := tradeFixture(t)
-	for _, p := range [][]byte{{25}, {25, 1, 0}, {25, 2}, {25, 3, 1, 1}, {25, 4, 0}, {25, 5, 1}, {25, 6, 1}, {25, 7, 1}} {
-		if err := s.dispatch(context.Background(), players[0], p); err == nil {
+	a, b := players[0], players[1]
+	for _, p := range [][]byte{{25}, {25, 1, 0}, {25, 2, 0, 0, 0}, {25, 3}, {25, 3, 1, 1}, {25, 3, 9}, {25, 4, 0, 0, 0, 0}, append(tradeOffer(0), make([]byte, 21)...)} {
+		if err := s.dispatch(context.Background(), a, p); err == nil {
 			t.Fatal("malformed trade accepted", p)
 		}
 	}
-	tradeDo(t, s, players[1], []byte{25, 2, 1})
-	if players[1].trade != nil {
-		t.Fatal("unsolicited accept opened trade")
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(a.character.ID))
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(players[2].character.ID))
+	if a.trade != nil || !contains(wires[0].packets(t), []byte{25, 2, 1}) {
+		t.Fatal("trade with an absent player accepted")
 	}
-	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[0].character.ID))
-	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[2].character.ID))
-	if players[0].trade != nil || players[1].tradeRequest != nil || wires[2].Len() != 0 {
+	tradeDo(t, s, players[2], []byte{12, 1})
+	wires[2].Reset()
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(players[2].character.ID))
+	if a.trade != nil || wires[2].Len() != 0 || !contains(wires[0].packets(t), []byte{25, 2, 5}) {
 		t.Fatal("self/cross-map trade accepted")
 	}
-	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[1].character.ID))
-	players[1].tradeRequest.at = time.Now().Add(-2 * tradeRequestTTL)
-	tradeDo(t, s, players[1], []byte{25, 2, 1})
-	if players[0].trade != nil || players[1].trade != nil {
-		t.Fatal("expired request accepted")
+	openTrade(t, s, players, wires)
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
+	if !contains(wires[0].packets(t), []byte{25, 2, 11}) {
+		t.Fatal("second trade not refused")
+	}
+	for _, p := range [][]byte{tradeOffer(0, 0), tradeOffer(0, 51), tradeOffer(0, 2, 2)} {
+		if err := s.dispatch(context.Background(), a, p); err == nil {
+			t.Fatal("bad slots accepted", p)
+		}
+	}
+	tradeDo(t, s, a, tradeOffer(0, 2)) // An empty slot ends the trade.
+	if a.trade != nil || b.trade != nil || !contains(wires[0].packets(t), []byte{25, 2, 8}) || !contains(wires[1].packets(t), []byte{25, 2, 9}) {
+		t.Fatal("empty slot offer kept trade")
+	}
+	openTrade(t, s, players, wires)
+	tradeDo(t, s, a, tradeOffer(101))
+	if a.trade != nil || !contains(wires[0].packets(t), []byte{25, 2, 6}) || !contains(wires[1].packets(t), []byte{25, 2, 9}) {
+		t.Fatal("unowned gold offer kept trade")
 	}
 }
 
@@ -165,7 +186,7 @@ func TestTradeCancellationReleasesInventories(t *testing.T) {
 			s, players, wires := tradeFixture(t)
 			openTrade(t, s, players, wires)
 			a, b := players[0], players[1]
-			tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
+			tradeDo(t, s, a, tradeOffer(0, 1))
 			for _, wire := range wires {
 				wire.Reset()
 			}
@@ -174,13 +195,18 @@ func TestTradeCancellationReleasesInventories(t *testing.T) {
 				t.Fatal("offered item changed while window open")
 			}
 			wires[0].Reset()
+			partner, own := byte(9), []byte{25, 2, 3}
 			switch action {
 			case "cancel":
-				tradeDo(t, s, b, []byte{25, 7})
+				tradeDo(t, s, b, []byte{25, 3, 2})
+				a, b = b, a
+				wires[0], wires[1] = wires[1], wires[0]
+				own = nil
 			case "move":
 				tradeDo(t, s, a, protocol.Builder{6, 1, 0}.U16(a.character.X+1).U16(a.character.Y))
 			case "disconnect":
 				s.leaveWorld(a)
+				partner, own = 1, nil
 			case "mutation":
 				next := a.character.Clone()
 				next.Gold++
@@ -188,11 +214,17 @@ func TestTradeCancellationReleasesInventories(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if a.trade != nil || b.trade != nil || a.character.Bag[0].Count != 10 || b.character.Bag[0].Count != 20 {
+			if a.trade != nil || b.trade != nil || players[0].character.Bag[0].Count != 10 || players[1].character.Bag[0].Count != 20 {
 				t.Fatal("cancel changed offered items or retained session")
 			}
-			if !contains(wires[1].packets(t), []byte{25, 2, 2}) {
+			if !contains(wires[1].packets(t), []byte{25, 2, partner}) {
 				t.Fatal("partner not told of cancellation")
+			}
+			if own != nil && !contains(wires[0].packets(t), own) {
+				t.Fatal("own window not closed")
+			}
+			if own == nil && contains(wires[0].packets(t), []byte{25, 2, 3}) {
+				t.Fatal("closed window told again")
 			}
 		})
 	}
@@ -204,8 +236,8 @@ func TestTradeSaveFailureAndStaleMetadataNeverPublishSuccess(t *testing.T) {
 			s, players, wires := tradeFixture(t)
 			openTrade(t, s, players, wires)
 			a, b := players[0], players[1]
-			tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
-			tradeDo(t, s, b, protocol.Builder{25, 4}.U32(50))
+			tradeDo(t, s, a, tradeOffer(0, 1))
+			tradeDo(t, s, b, tradeOffer(50))
 			for _, wire := range wires {
 				wire.Reset()
 			}
@@ -216,8 +248,8 @@ func TestTradeSaveFailureAndStaleMetadataNeverPublishSuccess(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			tradeDo(t, s, a, []byte{25, 6})
-			err := s.dispatch(context.Background(), b, []byte{25, 6})
+			tradeDo(t, s, a, []byte{25, 3, 1})
+			err := s.dispatch(context.Background(), b, []byte{25, 3, 1})
 			if failure == "database" && err == nil {
 				t.Fatal("failed DB save was ignored")
 			}
@@ -225,19 +257,19 @@ func TestTradeSaveFailureAndStaleMetadataNeverPublishSuccess(t *testing.T) {
 				t.Fatal("failed trade adopted assets")
 			}
 			for _, wire := range wires[:2] {
-				if contains(wire.packets(t), []byte{25, 2, 4}) {
-					t.Fatal("failed trade sent success")
+				if p := wire.packets(t); contains(p, []byte{25, 2, 4}) || !contains(p, []byte{25, 2, 8}) {
+					t.Fatal("failed trade result", p)
 				}
 			}
 		})
 	}
 }
 
-func TestTradeConcurrentConfirmIsCommittedOnce(t *testing.T) {
+func TestTradeConcurrentAcceptIsCommittedOnce(t *testing.T) {
 	s, players, wires := tradeFixture(t)
 	openTrade(t, s, players, wires)
-	tradeDo(t, s, players[0], []byte{25, 3, 1, 1, 3})
-	tradeDo(t, s, players[1], protocol.Builder{25, 4}.U32(50))
+	tradeDo(t, s, players[0], tradeOffer(0, 1))
+	tradeDo(t, s, players[1], tradeOffer(50))
 	for _, wire := range wires {
 		wire.Reset()
 	}
@@ -246,7 +278,7 @@ func TestTradeConcurrentConfirmIsCommittedOnce(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		c := players[i%2]
 		wg.Add(1)
-		go func() { defer wg.Done(); errors <- s.dispatch(context.Background(), c, []byte{25, 6}) }()
+		go func() { defer wg.Done(); errors <- s.dispatch(context.Background(), c, []byte{25, 3, 1}) }()
 	}
 	wg.Wait()
 	close(errors)
@@ -255,8 +287,8 @@ func TestTradeConcurrentConfirmIsCommittedOnce(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if players[0].character.Gold != 150 || players[1].character.Gold != 150 || players[0].character.Bag[0].Count != 7 || players[1].character.Bag[1].Count != 3 {
-		t.Fatal("concurrent confirmation duplicated assets")
+	if players[0].character.Gold != 150 || players[1].character.Gold != 150 || !players[0].character.Bag[0].Empty() || players[1].character.Bag[1].Count != 10 {
+		t.Fatal("concurrent acceptance duplicated assets")
 	}
 	for _, wire := range wires[:2] {
 		count := 0
@@ -271,20 +303,6 @@ func TestTradeConcurrentConfirmIsCommittedOnce(t *testing.T) {
 	}
 }
 
-func TestTradePendingRequesterDepartureClosesPrompt(t *testing.T) {
-	s, players, wires := tradeFixture(t)
-	tradeDo(t, s, players[0], protocol.Builder{25, 1}.U32(players[1].character.ID))
-	wires[1].Reset()
-	s.leaveWorld(players[0])
-	if players[1].tradeRequest != nil || !contains(wires[1].packets(t), []byte{25, 2, 2}) {
-		t.Fatal("departed requester retained prompt")
-	}
-	tradeDo(t, s, players[1], []byte{25, 2, 1})
-	if players[1].trade != nil {
-		t.Fatal("departed requester accepted")
-	}
-}
-
 func TestTradeTransfersMountedVehicleAndDismountsOwner(t *testing.T) {
 	s, players, wires := tradeFixture(t)
 	a, b := players[0], players[1]
@@ -296,9 +314,10 @@ func TestTradeTransfersMountedVehicleAndDismountsOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 	openTrade(t, s, players, wires)
-	tradeDo(t, s, a, []byte{25, 3, 1, 2, 1})
-	tradeDo(t, s, a, []byte{25, 6})
-	tradeDo(t, s, b, []byte{25, 6})
+	tradeDo(t, s, a, tradeOffer(0, 2))
+	tradeDo(t, s, b, tradeOffer(0))
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	tradeDo(t, s, b, []byte{25, 3, 1})
 	if a.character.ActiveVehicle != 0 || a.character.VehicleSlot != 0 || !a.character.Bag[1].Empty() {
 		t.Fatal("transferred vehicle retained by owner")
 	}

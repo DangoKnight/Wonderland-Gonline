@@ -80,15 +80,16 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandBattleAction:       {handler: withoutContext((*Server).battleCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, RequiresBattle: true}},
 	protocol.CommandMinigame:           {handler: withoutContext((*Server).minigameCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true}},
 	protocol.CommandArcadeGame:         {handler: (*Server).arcadeCommand, policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true, BlockedDuringTrade: true}},
-	protocol.CommandMallCheckout:       {handler: (*Server).mallCheckoutCommand, policy: protocol.CommandPolicy{World: true}},
-	protocol.CommandMall:               {handler: (*Server).mallCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.MallRefresh)},
-	protocol.CommandPackContents:       {handler: withoutContext((*Server).packContentsCommand), policy: protocol.CommandPolicy{World: true}},
-	protocol.CommandEquipmentRepair:    {handler: (*Server).repairCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandBank:               {handler: (*Server).bankCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandAlchemy:            {handler: (*Server).hotbarOrAlchemyCommand, beforeWorldGates: isNativeHotbarAssignment, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandPetFeeding:         {handler: (*Server).petFeedingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandPetTraining:        {handler: (*Server).petTrainingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
-	protocol.CommandPetRebirth:         {handler: (*Server).petRebirthCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	// The fruit machines query their balance with AC34:1 while the minigame runs.
+	protocol.CommandMallCheckout:    {handler: (*Server).mallCheckoutCommand, policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true}},
+	protocol.CommandMall:            {handler: (*Server).mallCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.MallRefresh)},
+	protocol.CommandPackContents:    {handler: withoutContext((*Server).packContentsCommand), policy: protocol.CommandPolicy{World: true}},
+	protocol.CommandEquipmentRepair: {handler: (*Server).repairCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandBank:            {handler: (*Server).bankCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandAlchemy:         {handler: (*Server).hotbarOrAlchemyCommand, beforeWorldGates: isNativeHotbarAssignment, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandPetFeeding:      {handler: (*Server).petFeedingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandPetTraining:     {handler: (*Server).petTrainingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandPetRebirth:      {handler: (*Server).petRebirthCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 }
 
 // These read-only native synchronization requests also run while loading or in

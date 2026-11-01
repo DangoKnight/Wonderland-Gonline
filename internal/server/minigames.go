@@ -29,7 +29,22 @@ func (s *Server) startMinigame(ctx context.Context, c *Session, es *eventSession
 		}
 		return s.startEvent(ctx, c, es.click, es.ev, branch, true)
 	}
-	return s.sendAll(c, [][]byte{{protocol.CommandMinigame, protocol.MinigameStart, byte(op.D1), byte(seed), byte(seed >> 8), byte(seed >> 16)}, {protocol.CommandEvent, protocol.EventHold}})
+	start := []byte{protocol.CommandMinigame, protocol.MinigameStart, byte(op.D1), byte(seed), byte(seed >> 8), byte(seed >> 16)}
+	if op.D1 == protocol.MinigameThrow {
+		start = append(start, throwSceneVariants[es.mapID])
+	}
+	return s.sendAll(c, [][]byte{start, {protocol.CommandEvent, protocol.EventHold}})
+}
+
+// throwSceneVariants pick the dodgeball game's scene. FUN_001ae968 draws
+// battle scene 59000 + the start packet's sixth byte, which the EVE launch
+// operations do not carry and no capture records. These compatibility
+// choices give the two launches a fitting battle scene: the Mayan Tribe
+// plays on Jungle (59090), Large Island on Beach (59050). Other maps send
+// 0, scene 59000, which has no record: the original then draws no scene.
+var throwSceneVariants = map[uint16]byte{
+	12150: 90,
+	60008: 50,
 }
 
 // minigameCommand handles native AC57:1. Reports have no game identifier; only

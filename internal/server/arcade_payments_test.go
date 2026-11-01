@@ -301,3 +301,70 @@ func TestArcadeCannotForcePrizesWithInventorySpace(t *testing.T) {
 		t.Fatal("rejected play charged")
 	}
 }
+
+// TestArcadeFruitMachines: Mario 1 pays with its kind alone, Mario 2 and 3
+// with a payment byte; three matching reels come back as reply 3, other
+// lines as reply 4 with the lamp, and a full bag as reply 5.
+func TestArcadeFruitMachines(t *testing.T) {
+	for _, tc := range []struct {
+		kind    byte
+		request []byte
+		reels   [3]byte
+		want    []byte
+	}{
+		{11, []byte{71, 11}, [3]byte{4, 4, 4}, []byte{71, 11, 3, 1, 4, 4, 4, 1}},
+		{12, []byte{71, 12, 1}, [3]byte{2, 8, 5}, []byte{71, 12, 4, 1, 2, 8, 5, 1, 1}},
+		{14, []byte{71, 14, 1}, [3]byte{8, 8, 8}, []byte{71, 14, 3, 1, 8, 8, 8, 1}},
+	} {
+		s, c, wire := paidArcadeFixture(t, tc.kind)
+		s.Assets.Arcades[0].Rewards[0].Reels = tc.reels
+		if err := s.dispatch(context.Background(), c, tc.request); err != nil {
+			t.Fatal(err)
+		}
+		got := wire.packets(t)
+		if len(got) == 0 || !bytes.Equal(got[len(got)-1], tc.want) {
+			t.Fatalf("kind %d: %x, want %x", tc.kind, got, tc.want)
+		}
+	}
+	for _, bad := range [][]byte{{71, 11, 1}, {71, 12}, {71, 14, 1, 0}} {
+		if _, err := parseArcadePayment(bad); !errors.Is(err, protocol.ErrMalformed) {
+			t.Fatalf("%x: %v", bad, err)
+		}
+	}
+	// Mario 1 takes no tokens.
+	s, c, wire := paidArcadeFixture(t, 11)
+	s.Assets.Arcades[0].TokenCount = 0
+	if err := s.dispatch(context.Background(), c, []byte{71, 11}); err != nil {
+		t.Fatal(err)
+	}
+	wire.packets(t)
+	// A full bag answers reply 5 and takes nothing.
+	s, c, wire = paidArcadeFixture(t, 12)
+	for i := range c.character.Bag {
+		c.character.Bag[i] = game.Item{ID: 10002, Count: 1}
+	}
+	s.Assets.Items[10002] = game.ItemDefinition{ID: 10002, Type: 4}
+	arcadeSaveBag(t, s, c)
+	if err := s.dispatch(context.Background(), c, []byte{71, 12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	got := wire.packets(t)
+	balances, _ := s.Store.MallBalances(context.Background(), c.account.ID)
+	if len(got) != 1 || !bytes.Equal(got[0], []byte{71, 12, 5}) || balances.Points != 100 {
+		t.Fatalf("full bag: %x, points %d", got, balances.Points)
+	}
+}
+
+// TestArcadeBalanceDuringMinigame: the fruit machines' AC34:1 query is
+// answered while an event minigame holds the player.
+func TestArcadeBalanceDuringMinigame(t *testing.T) {
+	s, c, wire, _ := mallFixture(t)
+	c.event = &eventSession{onMinigame: func(byte) error { return nil }}
+	if err := s.dispatch(context.Background(), c, []byte{34, 1, 0}); err != nil {
+		t.Fatal(err)
+	}
+	got := wire.packets(t)
+	if len(got) == 0 || got[len(got)-1][0] != 35 || got[len(got)-1][1] != 4 {
+		t.Fatalf("no 35/4: %x", got)
+	}
+}

@@ -37,15 +37,17 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		if reflect.DeepEqual(durable, after) || reflect.DeepEqual(before, after) {
 			return nil
 		}
-		// Merge only buffered same-map position when every other cached field
-		// agrees with authoritative SQL. Never rewrite owned child rows for walking.
+		// Merge only buffered same-map position and resting HP/SP when every
+		// other cached field agrees with authoritative SQL. Never rewrite owned
+		// child rows for walking or resting.
 		afterState, durableState := after, durable
-		afterState.X, afterState.Y = 0, 0
-		durableState.X, durableState.Y = 0, 0
+		afterState.X, afterState.Y, afterState.HP, afterState.SP = 0, 0, 0, 0
+		durableState.X, durableState.Y, durableState.HP, durableState.SP = 0, 0, 0, 0
 		if before.Map == after.Map && durable.Map == before.Map &&
-			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y {
-			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ?", ref.ID, before.Map, before.X, before.Y).
-				Updates(map[string]any{"x": next.X, "y": next.Y})
+			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y &&
+			durable.HP == before.HP && durable.SP == before.SP {
+			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ? AND hp = ? AND sp = ?", ref.ID, before.Map, before.X, before.Y, before.HP, before.SP).
+				Updates(map[string]any{"x": next.X, "y": next.Y, "hp": next.HP, "sp": next.SP})
 			if result.Error != nil {
 				return result.Error
 			}

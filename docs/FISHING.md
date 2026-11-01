@@ -147,13 +147,12 @@ before a catch commits. Offline time does not generate rewards.
 
 ## Upgrading
 
-Stop the server, then follow [the database copy procedure](ASSET_DATABASE.md).
-`go run ./cmd/database-migrate -config config.local.json -output-dir <new-directory>`
-creates upgraded copies without replacing the source databases. The v7 → v8
+Stop the server, then follow [the database upgrade procedure](ASSET_DATABASE.md).
+`go run ./cmd/database-migrate -config config.local.json` upgrades the configured
+databases in place and keeps the originals in `backups/`. The v7 → v8
 upgrade changes fish weights only where both grade and weight still match the
 old defaults. Custom weights/grades, removed rewards and other rules are preserved.
-Repeating migration never reapplies the multiplier. Point the startup
-configuration at those copies before starting the updated binary. The gameplay
+Repeating migration never reapplies the multiplier. The gameplay
 upgrade is additive; no reset or loss of accounts is required.
 
 Focused verification covers weight boundaries, shoreline/bounds, native start/

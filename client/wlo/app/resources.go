@@ -43,6 +43,7 @@ type Resources struct {
 	mapScenes                 map[uint16]uint16
 	sceneWeather              map[uint16]byte
 	sceneMusic                map[uint16]string
+	sceneMiniMaps             map[uint16]bool
 	npcTemplates              map[uint32]world.NPCTemplate
 	petPortraits              map[petPortraitKey]*surface.Surface
 	talks                     map[uint16]string

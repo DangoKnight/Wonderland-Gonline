@@ -46,14 +46,20 @@ type FixedButton struct {
 
 func NewFixedButton(env *Env, owner Control) *FixedButton {
 	b := &FixedButton{}
-	b.initComponent(b, env, owner)
+	b.InitFixedButton(b, env, owner)
+	return b
+}
+
+// InitFixedButton initialises an embedded FixedButton; derived controls
+// call it from their constructors.
+func (b *FixedButton) InitFixedButton(self Control, env *Env, owner Control) {
+	b.initComponent(self, env, owner)
 	b.setFontSize(0)
 	b.Enabled = true
 	b.Name = "TSe_FixedButton"
 	b.Icon, b.TextStyle = -1, 2
 	b.AnimImage = -1
 	b.Now = time.Now
-	return b
 }
 
 // SetAnimation is FUN_0046bd0c in the original argument order: picture,

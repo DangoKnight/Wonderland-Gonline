@@ -22,6 +22,9 @@ type Peer struct {
 	Walker         Walker
 }
 
+// EffectiveLevel is FUN_00485490 on the peer's level and rebirth.
+func (p *Peer) EffectiveLevel() int { return int(p.Level) + int(p.Rebirth)*rebirthLevels }
+
 var errShortOther = errors.New("AC4: packet too short")
 
 // ParseOther reads AC4 after its command byte: ID, body, element, level,

@@ -17,9 +17,9 @@ functions:
 | Status | Functions | Subsystems |
 |---|---:|---|
 | Ported | ~800 | UI framework, login and character selection, creation, text, cursor, game data, asset decoding |
-| Partial | ~1,750 | Main frame loop, packet dispatch, roles, ground, events and doors, movies and weather, talk windows, chat, HUD, sound |
-| Started | ~2,800 | Items and equipment, NPC services and feature forms, minigames (sport manager, moles, hunting, dreams, lucky, memory; egg and slot client flows) |
-| Not started | ~1,700 | Minimap, trade, social, shops, housing, pets, the other minigames, GM tools |
+| Partial | ~3,200 | Main frame loop, packet dispatch, items and equipment, roles and pets, ground, events and doors, movies and weather, talk windows, chat, HUD, sound, options |
+| Started | ~2,950 | NPC services and feature forms, minigames (including dodgeball and fruit machines), social and mail, item trades, scene minimap |
+| Not started | ~330 | Housing, shops and IM mall, GM tools |
 
 The original handles 91 server commands; the Go client has receive branches for
 29. Individual subcommands and their interfaces can still be incomplete. The server
@@ -50,19 +50,27 @@ commands are handled.
 
 Finish everything a new character meets before the first battle.
 
-- Events: the remaining event kinds (2-4, 7 and up), NPC walk-in areas (20/2,
-  20/3), the treasure light, **NPCs turning to the player**, speech bubbles and
+- Events: event kinds 0 and 2, NPC walk-in areas (20/2, 20/3), the treasure
+  light and
   remaining event motion presentation. Server-driven NPC roaming now renders
-  through AC22:2 with native speed, facing, interruption and arrival handling.
-  Native received AC32 expressions and held poses now render; their selection interface is pending.
-- Chat log: alternate backgrounds, VIP marks and
-  character speech bubbles. Click-through, scrolling, lock, modes, resizing, whispers and
+  through AC22:2 with native speed, facing, interruption and arrival handling,
+  and talking NPCs turn to the player. Event NPC routes (kind 4), turns
+  (kinds 11 and 14) and event music (kind 15) are ported.
+  Native received AC32 expressions and held poses render, with selection and
+  Alt shortcuts in the Social window's Emote tab.
+- Chat log: alternate backgrounds and VIP marks (this build shows no chat
+  speech bubbles: `FUN_00428ed0` skips its body). Click-through, scrolling, lock, modes, resizing, whispers and
   the native emoticon picker, log renderer and editor preview with atomic code editing are implemented.
 - HUD actions: wire the button bars and hot keys to their forms as those forms
   arrive; the status info form.
-- Minimap and world map (`CH_TMiniMapForm`, `Tse_MapFrame`).
-- Roles: gesture selection, titles, riding/pets and friend-list presence UI.
-  AC32 expressions/poses and AC10 names/nicknames/presence metadata are handled.
+- Minimap and world map (`CH_TMiniMapForm`, `Tse_MapFrame`). The scene
+  minimap (`<map>_Mini_Form`, signs, the player's face, minimize and
+  reload) is ported; the tiled-map minimap, the map frame and the world
+  map remain.
+- Roles: titles, passenger presentation, additional vehicle classes and transforms.
+  AC32 expressions/poses and AC10 names/nicknames/presence metadata are handled;
+  friend rows show presence in the Social window, with server wire mismatches
+  recorded in [CLIENT.md](CLIENT.md).
 - Movies: weather overlays inside movies, actor trails and draw modes.
 - Commands: remaining Presence 10/Pose 32 UI, Quest 24 and StoryConstellation 15.
   Native Settings 33 is handled by the settings windows.
@@ -108,6 +116,14 @@ presentation from server compatibility formulas and remaining mechanics.
 
 ### Phase 4: Party, social and economy
 
+- The Social window is ported (Friend, Emote and Set Up tabs, sending mail),
+  with the mailbox, letters, the blinking mail icon, Make Friends and friend
+  questions, Old Mail and the compose form; name-addressed letters (14/6)
+  remain.
+- Item trading is ported: the toolbar's Business menu, Trade Items (target
+  mode 9) and the trade form (`TRe_TradeItemForm`), with the server's AC25
+  rewritten to aLogin's protocol. Pet and furniture trades, stalls and
+  vendors remain.
 - Teams (`TSe_TeamForm`, `TCY_TeamManage`), friends and mail (`TAC_ICQList`,
   `TSe_SendMailForm`), trade (`TCY_TradeMenu`), stalls and vendors, shops and
   the IM mall (`THL_ShoppingForm`), bank and storage, guilds (`TSe_ArmyForm`).
@@ -129,7 +145,9 @@ presentation from server compatibility formulas and remaining mechanics.
 - Housing and furniture (`TRE_FurnitureMng`, `TGdThing`), the remaining
   minigames and casino games (about 800 functions, many small and
   independent; the sport manager and local kinds 3/4/5/13/15 are playable;
-  paid kinds 6/8/10/19/22 have client flows and server purchases/rewards; see
+  paid kinds 6/8/10/19/22 have client flows and server purchases/rewards,
+  the fruit machines 11/12/14 are native ports with server purchases;
+  kind 1 (dodgeball) is playable; see
   [MINIGAMES.md](MINIGAMES.md)), options and
   rankings (`TCY_OptionForm`, `TLD_Top100Form`), organisations, GM tools.
 - Commands: Minigame 57 and the remaining unnamed commands.

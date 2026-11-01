@@ -94,5 +94,6 @@ funded training, verified sockets and class skills remain pending source systems
 Optional legacy SQLite import still rejects unsupported metadata explicitly;
 these additions do not silently reinterpret old string-packed fields.
 
-Upgrade using [the verified database-copy procedure](ASSET_DATABASE.md). Gameplay
-schema v15 and asset schema v9 are required. Installation databases are not reset.
+Upgrade using [the verified database upgrade procedure](ASSET_DATABASE.md). Gameplay
+schema v17 and asset schema v13 are required by the current server; this subsystem
+was introduced in gameplay v14 and asset v9. Installation databases are not reset.

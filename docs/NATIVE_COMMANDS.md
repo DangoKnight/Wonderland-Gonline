@@ -167,7 +167,9 @@ The live native-command run emits expressions as AC32:1 (not AC18). WLRI
 `FUN_00432478` calls `FUN_00430700` to restart a temporary expression animation;
 AC32:2 `FUN_00438684` sets the held pose. Expressions are now forwarded on every
 request to same-scene observers without overwriting or replaying the held pose.
-Only changed held poses are deduplicated. Debug logs include bounded AC32 payloads
+Only changed held poses are deduplicated; a position change clears the held pose,
+since native walking ends it without an AC32 report. Sitting and lying poses
+heal slowly (ITEMS_PLAYER_STATE.md, Resting recovery). Debug logs include bounded AC32 payloads
 for verifying expression IDs and recipients. The tester's original observer
 failure is recorded; the correction still needs live retesting.
 

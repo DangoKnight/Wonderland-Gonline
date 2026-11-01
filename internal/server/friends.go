@@ -45,11 +45,13 @@ func (s *Server) friendCommand(ctx context.Context, c *Session, p []byte) error 
 			return protocol.ErrMalformed
 		}
 		id := r.U32()
-		group := byte(1)
+		// Native clients always send the answer byte; the short form is
+		// retained as an acceptance for compatibility.
+		answer := byte(protocol.FriendsAnswerAccept)
 		if len(p) == 7 {
-			group = p[6]
+			answer = p[6]
 		}
-		return s.acceptFriend(ctx, c, id, group)
+		return s.acceptFriend(ctx, c, id, answer)
 	default:
 		return ErrUnsupported
 	}
@@ -83,11 +85,17 @@ func (s *Server) requestFriend(ctx context.Context, c *Session, id uint32) error
 	return nil
 }
 
-func (s *Server) acceptFriend(ctx context.Context, c *Session, id uint32, group byte) error {
+// acceptFriend answers a pending request. Any answer but acceptance is
+// reported to the asker with the same result byte, and no friendship forms.
+func (s *Server) acceptFriend(ctx context.Context, c *Session, id uint32, answer byte) error {
 	at, pending := c.friendRequests[id]
 	delete(c.friendRequests, id)
 	other := s.friendPlayer(id)
 	if !pending || time.Since(at) > friendRequestTTL || other == nil || other == c {
+		return nil
+	}
+	if answer != protocol.FriendsAnswerAccept {
+		s.sendOrClose(other, protocol.Builder{protocol.CommandFriends, protocol.FriendsAccept}.U32(c.character.ID).U8(answer))
 		return nil
 	}
 	if err := s.Store.AddFriend(ctx, c.character.ID, id); err != nil {
@@ -100,7 +108,7 @@ func (s *Server) acceptFriend(ctx context.Context, c *Session, id uint32, group 
 	for _, pair := range [][2]*Session{{other, c}, {c, other}} {
 		owner, friend := pair[0], pair[1]
 		online, _ := protocol.Builder{protocol.CommandFriends, protocol.FriendsAccepted}.U32(friend.character.ID).String(friend.character.Name)
-		s.sendOrClose(owner, protocol.Builder{protocol.CommandFriends, protocol.FriendsAccept}.U32(friend.character.ID).U8(group), protocol.Builder{protocol.CommandFriends, protocol.FriendsAcceptanceReply}.U32(friend.character.ID).U8(0), online, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(friend.character.ID).U8(255))
+		s.sendOrClose(owner, protocol.Builder{protocol.CommandFriends, protocol.FriendsAccept}.U32(friend.character.ID).U8(protocol.FriendsAnswerAccept), protocol.Builder{protocol.CommandFriends, protocol.FriendsAcceptanceReply}.U32(friend.character.ID).U8(0), online, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(friend.character.ID).U8(255))
 		if err := s.sendFriendList(ctx, owner); err != nil {
 			return err
 		}

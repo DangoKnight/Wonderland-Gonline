@@ -106,6 +106,10 @@ func TestWorldEntrySnapshotRestoresOptionalState(t *testing.T) {
 	if star < 0 || ready < star {
 		t.Fatal("story state absent or after ready marker")
 	}
+	// aLogin refuses Trade Items until 25/44 2 sets its online-time flag.
+	if !contains(packets, []byte{25, 44, 2}) {
+		t.Fatal("trade online-time flag missing")
+	}
 	if c.DiscoveredMonsters[0] != 43 {
 		t.Fatal("snapshot mutated durable discovery order")
 	}

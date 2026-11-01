@@ -245,7 +245,7 @@ func (s *Server) leaveWorld(c *Session) {
 	c.gathering = nil
 	s.stopFishing(c)
 	s.closeStall(c)
-	s.cancelTrade(c)
+	s.endTrade(c, 0, false, protocol.TradeResultDisconnected)
 	s.abandonBattle(c)
 	s.endEvent(c)
 	// C# keeps a disconnected player in its team; it leaves here.

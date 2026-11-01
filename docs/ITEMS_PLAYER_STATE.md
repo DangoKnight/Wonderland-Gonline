@@ -2,11 +2,11 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v15** and structured assets
-schema **v11**. Tents were introduced in earlier schema versions.
-Follow the preserving copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
-before deploying against older databases. Upgrade copies, then select their
-paths in the startup configuration. Source databases remain available for rollback.
+Current server startup requires gameplay schema **v17** and structured assets
+schema **v13**. Tents were introduced in earlier schema versions.
+Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
+before deploying against older databases. The upgrade replaces the configured
+databases in place; the originals remain in `backups/` for rollback.
 
 `assets.db` owns the `Tents` dataset: interior spawn coordinates, initial floor
 and wallpaper references, and ordered default furniture. Offline initialization
@@ -88,6 +88,27 @@ through an explicit inventory edit rather than silently removing items.
 Regression coverage includes fragmented space, grid boundaries, partial capacity,
 reservations, metadata, multi-cell moves/transfers, whole quest rewards, draw
 rollback, native ground pickup retry and preserving SQL migration.
+
+## Resting recovery
+
+Sitting or lying down heals slowly. This is a server rule of this port; neither
+aLogin nor the reference server defines one. A ready character holding a
+sitting pose (AC32:2 actions 46–53, the Emote grid's action 13) or lying pose
+(actions 26–27, grid action 4) outside a battle or event recovers 2% of their
+equipped maximum HP and SP, at least one point each, every three seconds
+(`restRecoveryPercent`, `restRecoveryInterval` in `internal/server/resting.go`),
+on the one-second world ticker. Each recovery sends AC8 absolute updates for
+current HP (25) and SP (26) only. Native clients end a held pose by walking
+without an AC32 report, so a position change clears the server's held pose;
+this also lets a player sit again after walking.
+
+Resting HP/SP are buffered session fields like walking: they update memory and
+mark the session dirty. The checkpoint writes them with X/Y in the guarded
+state-row update (matching the checkpointed X, Y, HP and SP), and adopting a
+committed SQL result keeps buffered recovery unless that transaction changed
+the vital, capped to the adopted maximum. Under healthy saves, a crash can lose
+up to one checkpoint interval of recovery; failed saves can extend that window.
+Disconnect and graceful shutdown attempt a final checkpoint.
 
 ## Item use and reservations
 

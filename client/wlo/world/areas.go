@@ -58,6 +58,8 @@ type Area struct {
 	// LightAt is the light's point: its picture is centred on it and its
 	// bottom sits a quarter of a frame below it.
 	LightAt image.Point
+	// Sign is the record's minimap icon (+0x3c, minimap.go).
+	Sign byte
 }
 
 // MapAreas reads the map's areas from its event record (FUN_003090f4).
@@ -72,7 +74,7 @@ func MapAreas(rec native.Map) []Area {
 		x2 := int(int32(binary.LittleEndian.Uint32(t[areaX2Offset:])))
 		y2 := int(int32(binary.LittleEndian.Uint32(t[areaY2Offset:])))
 		x, y := (x1-1)*cellSize, (y1-1)*cellSize
-		a := Area{ID: e.ClickID, Events: len(e.Events),
+		a := Area{ID: e.ClickID, Events: len(e.Events), Sign: t[areaSign],
 			Rect: image.Rect(x, y, x+(abs(x2-x1)+1)*cellSize, y+(abs(y2-y1)+1)*cellSize)}
 		switch t[areaDoor] {
 		case doorKindSmall:

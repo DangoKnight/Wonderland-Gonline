@@ -112,9 +112,12 @@ func TestMallCheckoutWorldGatesAndReadOnlyTrade(t *testing.T) {
 			if gate != "loading" && err != nil {
 				t.Fatal(err)
 			}
-			if gate == "trade" {
-				if packets := wire.packets(t); len(packets) != 3 || packets[2][0] != 35 || packets[2][1] != 4 || c.trade == nil {
-					t.Fatal("read-only checkout cancelled trade", packets)
+			if gate == "trade" || gate == "minigame" {
+				// The read-only query is answered without cancelling the trade or
+				// consuming the minigame; the fruit machines (sport kinds 11, 12
+				// and 14) send it while they run.
+				if packets := wire.packets(t); len(packets) != 3 || packets[2][0] != 35 || packets[2][1] != 4 || (gate == "trade" && c.trade == nil) || (gate == "minigame" && c.event == nil) {
+					t.Fatal("read-only checkout changed the interaction", packets)
 				}
 			} else if wire.Len() != 0 {
 				t.Fatal("checkout bypassed world interaction gate")

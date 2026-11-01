@@ -79,6 +79,8 @@ func (c *Client) resetInventory(p world.Player) {
 	c.TeamState.Reset(p.ID)
 	c.teamAppearances = nil
 	c.setJoinTeamTarget(false)
+	c.setFriendTarget(false)
+	c.resetTrade()
 	c.Inventory.AllocationReply()
 	c.Inventory.ResetUse()
 	c.Inventory.ResetRemote()
@@ -98,6 +100,8 @@ func (c *Client) resetInventory(p world.Player) {
 	}
 	c.refreshEquipment()
 	c.loadHotbar()
+	c.loadEmotes()
+	c.loadMail()
 }
 
 func (c *Client) refreshEquipment() {

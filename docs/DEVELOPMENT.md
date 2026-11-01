@@ -45,10 +45,10 @@ successful chain participants count, including pets, and singles receive no bonu
 
 Gameplay schema v17 stores character state in typed tables and owned child rows.
 v17 separates Party Invites from Joining Battle, preserving earlier invitation
-restrictions during upgrade. Structured asset schema v12 stores runtime definitions
+restrictions during upgrade. Structured asset schema v13 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
-runtime and administration must not consult them. Use the offline copy procedure
+runtime and administration must not consult them. Use the offline upgrade procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
 Regenerate asset models after changing catalog types with
 `go run ./tools/asset-schema-generator`, bump the structured schema version and
@@ -98,13 +98,17 @@ before enabling buffered persistence. A global world lock must not be held throu
 an unbounded batch of SQL writes. Any asynchronous saver needs immutable snapshots,
 per-session ordering and protection against logout/reconnect races.
 
-**Current implementation:** ordinary walking changes the session in memory.
+**Current implementation:** ordinary walking and resting HP/SP recovery change
+the session in memory. See [resting recovery](ITEMS_PLAYER_STATE.md#resting-recovery).
 `character_save_seconds` selects the startup checkpoint interval (default 30,
-accepted 1–3600 seconds). Clean sessions skip SQL entirely. Dirty ordinary walking
-uses guarded X/Y updates without rewriting inventory/pet/quest child rows; other
-pending state retains full-checkpoint conflict validation. Purchases and other
+accepted 1–3600 seconds). Clean sessions skip SQL entirely. Walking and resting
+use narrow X/Y/HP/SP updates guarded by the saved map, position and vitals,
+without rewriting inventory/pet/quest child rows; other pending state retains
+full-checkpoint conflict validation. Purchases and other
 SQL-returned results preserve pending walking when the transaction leaves the
-saved position unchanged. Warps and recoverable tent returns remain immediate.
+saved position unchanged. Buffered recovery is retained per vital when the
+transaction leaves that vital unchanged, capped to the adopted maximum.
+Warps and recoverable tent returns remain immediate.
 Disconnect and graceful shutdown attempt a final save; failures retain the
 checkpoint baseline and are logged. Gathering remains on the independent
 one-second world tick. Vehicle wear/consumption can commit during movement and
@@ -113,8 +117,8 @@ is deliberately not deferred.
 The saver currently serializes checkpoints under `worldMu`, with a bounded
 five-second batch context. This reduces per-packet SQL work but does not remove
 the global world lock or establish load/soak acceptance. Under healthy saves,
-a crash can lose up to one interval of ordinary movement; failed saves can extend
-that window. Runtime interval changes require restart. Tests cover no per-packet
+a crash can lose up to one interval of movement and resting recovery; failed
+saves can extend that window. Runtime interval changes require restart. Tests cover no per-packet
 writes, transaction-result merging, narrow updates, failure/retry, stale warps,
 ownership/deletion, disconnects and concurrent sessions.
 
@@ -150,7 +154,7 @@ package. Reuse an existing definition when the meaning is the same.
 
 ### Naming and values
 
-1. Name the meaning and namespace: `CommandTrade`, `TradeConfirm`, `MaxGold`,
+1. Name the meaning and namespace: `CommandTrade`, `TradeDecision`, `MaxGold`,
    `SecondCharacterIDOffset`, `npcInteractionRangePixels`.
 2. Keep separate definitions for equal values with different meanings. A bag
    capacity and an item stack limit happen to both be 50. Incoming and outgoing
@@ -570,8 +574,9 @@ handler. Tests retain independent raw opcode tables to verify routing parity.
 
 Use the gameplay store's `SendTextMail` transaction for AC14:1 text mail. Verify
 sender account ownership and recipient existence before acknowledging acceptance.
-Persist native text bytes losslessly; deliveries have a one-byte string length,
-so reject content above 255 bytes. Line breaks and tabs are allowed. Preserve the
+Persist native text bytes losslessly and reject content above 255 bytes.
+Deliveries carry the text as the rest of the packet without a length byte:
+aLogin reads everything after the date as the letter (case 0xe/1 at 0x2e29cc). Line breaks and tabs are allowed. Preserve the
 ignored native type byte without assigning parcel or attachment semantics.
 Use UTC OLE Automation timestamps in delivery packets.
 
@@ -628,8 +633,10 @@ Use numeric fallback names for unresolved modes.
 
 This handshake must not refresh catalogs, mall settings or status, which can clear
 the selected cart. It spends no points and grants no inventory. Keep checkout in
-the shared world gates; trade may allow this read-only query while the eventual
-purchase retains its mutation gate. Balance read failures cannot publish success
+the shared world gates; trade and running minigames may allow this read-only
+query while the eventual purchase retains its mutation gate. The fruit machines
+(sport kinds 11, 12 and 14) send it from their constructor, so a minigame gate
+would leave them without a balance. Balance read failures cannot publish success
 or overwrite the session cache. Preserve independent raw resume bytes and tests
 that submit the existing cart after the query.
 

@@ -31,8 +31,8 @@ func (c *Client) welcome() {
 
 // receiveChat is 2/0..2/7 (the receive cases at 0x2df0fb…0x2dfa42): the
 // speaker's ID and the text, shown on channel n with the speaker's name.
-// A Team line needs a known speaker. The speech bubble over the speaker
-// (FUN_00428ed0) is not ported.
+// A Team line needs a known speaker. There is no speech bubble: this
+// build's FUN_00428ed0 jumps past its body (0x428f06).
 func (c *Client) receiveChat(sub byte, s []byte) {
 	if len(s) < chatIDEnd || c.World == nil {
 		return

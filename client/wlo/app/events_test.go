@@ -221,3 +221,83 @@ func TestStepCompleteAcknowledged(t *testing.T) {
 		t.Fatalf("20/12 was acknowledged: %x", got)
 	}
 }
+
+// TestRouteEvent: a kind-4 frame walks the NPC along its route, and the
+// frame loop sends one 20/6 only after it arrives.
+func TestRouteEvent(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
+	n := &world.NPC{ClickID: 40, X: 1000, Y: 1000, Action: 8, Shown: true, Routes: map[byte][]image.Point{3: {{1100, 1000}}}}
+	c.World.NPCs[40] = n
+	p := []byte{protocol.CommandEvent, 1, 0, 0, 0, 1, eventKindRoute, eventSpeakerNPC}
+	p = binary.LittleEndian.AppendUint16(p, 40)
+	p = append(p, world.RouteWalk, 3, 0, 0, 0, 0, 0, 0)
+	c.dispatch(p)
+	c.eventTick()
+	if got := sent(); len(got) != 0 {
+		t.Fatalf("acknowledged before arrival: %x", got)
+	}
+	*now = now.Add(time.Second)
+	c.World.Step(*now)
+	c.eventTick()
+	c.eventTick()
+	ack := []byte{protocol.CommandEvent, protocol.EventAcknowledge}
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], ack) || n.X != 1100 {
+		t.Fatalf("sent %x, NPC at %d", got, n.X)
+	}
+}
+
+// eventFrameOf builds a frame of any kind (the server's BuildEventFrame).
+func eventFrameOf(kind, subject byte, actor uint16, mode byte, value uint32) []byte {
+	p := []byte{protocol.CommandEvent, 1, 0, 0, 0, 1, kind, subject}
+	p = binary.LittleEndian.AppendUint16(p, actor)
+	p = append(p, mode)
+	p = binary.LittleEndian.AppendUint32(p, value)
+	return append(p, 0, 0, 0)
+}
+
+// TestEventTurns: kind 14 turns the player toward an NPC or a direction,
+// and kind 11 turns an NPC toward the player, another NPC or a direction;
+// each is acknowledged at once.
+func TestEventTurns(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	sent := wire(t, c)
+	p := &c.World.Player
+	a := &world.NPC{ClickID: 41, X: p.X - 100, Y: p.Y, Action: 8, Shown: true}
+	b := &world.NPC{ClickID: 42, X: p.X - 100, Y: p.Y + 100, Action: 8, Shown: true}
+	c.World.NPCs[41], c.World.NPCs[42] = a, b
+	steps := []struct {
+		frame []byte
+		check func() bool
+	}{
+		{eventFrameOf(eventKindTurn, turnTowardNPC, 41, 0, 0), func() bool { return p.Direction == 8+world.FaceLeft }},
+		{eventFrameOf(eventKindTurn, turnDirection, 5, 0, 0), func() bool { return p.Direction == 8+world.FaceDown }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnPlayer, 0), func() bool { return a.Action == 8+world.FaceRight }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnNPC, 42), func() bool { return a.Action == 8+world.FaceDown }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnDirection, 1), func() bool { return a.Action == 8+world.FaceUp }},
+	}
+	for i, s := range steps {
+		c.dispatch(s.frame)
+		c.eventTick()
+		if !s.check() {
+			t.Errorf("step %d: player %d, NPC %d", i, p.Direction, a.Action)
+		}
+	}
+	if got := sent(); len(got) != len(steps) {
+		t.Fatalf("%d acknowledgements, want %d", len(got), len(steps))
+	}
+}
+
+// TestEventMusic: kind 15 subject 1 sets the event's track, which the map
+// music prefers, and subject 2 clears it.
+func TestEventMusic(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.dispatch(eventFrameOf(eventKindMusic, musicPlay, 0, 0, 18))
+	if c.eventMusic != "BGM0018" {
+		t.Fatalf("track %q", c.eventMusic)
+	}
+	c.dispatch(eventFrameOf(eventKindMusic, musicRestore, 0, 0, 0))
+	if c.eventMusic != "" {
+		t.Fatalf("track %q after restore", c.eventMusic)
+	}
+}

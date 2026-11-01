@@ -157,3 +157,35 @@ func TestPositionCheckpointDoesNotRewriteOwnedRows(t *testing.T) {
 		t.Fatal("external warp overwritten", err)
 	}
 }
+
+// TestAutosaveRestingVitals: buffered HP/SP save through the guarded state
+// update and never overwrite a vital SQL changed since the checkpoint.
+func TestAutosaveRestingVitals(t *testing.T) {
+	db, refs := pairFixture(t)
+	ctx := context.Background()
+	chars, err := db.Characters(ctx, refs[0].Account)
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseline := chars[0]
+	next := baseline.Clone()
+	next.X, next.HP = 321, 0
+	if written, err := db.AutosaveCharacter(ctx, refs[0], baseline, next); err != nil || !written {
+		t.Fatal(written, err)
+	}
+	saved, err := db.Characters(ctx, refs[0].Account)
+	if err != nil || saved[0].HP != 0 || saved[0].X != 321 {
+		t.Fatal(saved[0].HP, err)
+	}
+	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error {
+		c.HP = 1
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	pending := next.Clone()
+	pending.X = 322
+	if _, err := db.AutosaveCharacter(ctx, refs[0], next, pending); !errors.Is(err, ErrAutosaveConflict) {
+		t.Fatal(err)
+	}
+}

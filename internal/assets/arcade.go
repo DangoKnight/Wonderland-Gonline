@@ -54,7 +54,12 @@ func ArcadeKindSupported(kind byte) bool {
 	case protocol.ArcadeEgg, protocol.ArcadeSlots, protocol.ArcadeSlots2, protocol.ArcadeSlots3, protocol.ArcadeEgg2:
 		return true
 	}
-	return false
+	return ArcadeMario(kind)
+}
+
+// ArcadeMario reports a fruit machine, whose reels stop on positions 1-8.
+func ArcadeMario(kind byte) bool {
+	return kind == protocol.ArcadeMario || kind == protocol.ArcadeMario2 || kind == protocol.ArcadeMario3
 }
 
 // ValidateArcades also constrains the native presentation domain. Missing item
@@ -76,8 +81,12 @@ func ValidateArcades(games []ArcadeGame, items map[uint16]game.ItemDefinition) e
 				return fmt.Errorf("unknown arcade reward item %d", r.ItemID)
 			}
 			if g.Kind != protocol.ArcadeEgg && g.Kind != protocol.ArcadeEgg2 {
+				symbols := byte(protocol.ArcadeReelSymbols)
+				if ArcadeMario(g.Kind) {
+					symbols = protocol.ArcadeMarioReelPositions
+				}
 				for _, symbol := range r.Reels {
-					if symbol < 1 || symbol > protocol.ArcadeReelSymbols {
+					if symbol < 1 || symbol > symbols {
 						return fmt.Errorf("invalid arcade reel %d", symbol)
 					}
 				}
@@ -94,7 +103,8 @@ func ValidateArcades(games []ArcadeGame, items map[uint16]game.ItemDefinition) e
 
 // The native executable displays a fixed item for each index. SQL weights and
 // quantities are editable, but changing these identities would mislead aLogin.
-// WLRI ca19ee087b60: PTR_DAT_004c9944/004ca8e4/004c9888/004ca80c/004ca194.
+// WLRI ca19ee087b60: PTR_DAT_004c9944/004ca8e4/004c9888/004ca80c/004ca194;
+// the fruit machines reuse two of them and add PTR_DAT_004c9ec0.
 func ArcadePrizeItem(kind, index byte) uint16 {
 	tables := map[byte][protocol.ArcadePrizeCount]uint16{
 		protocol.ArcadeEgg:    {0, 32162, 46004, 33044, 34089, 30553, 22156, 30065, 30066, 30556, 22166},
@@ -102,6 +112,9 @@ func ArcadePrizeItem(kind, index byte) uint16 {
 		protocol.ArcadeSlots:  {30063, 61044, 61039, 61037, 61035, 61033, 61032, 61031, 61030, 61028, 61026},
 		protocol.ArcadeSlots2: {32095, 34123, 34116, 34115, 34114, 34112, 34111, 34110, 34109, 34108, 34107},
 		protocol.ArcadeSlots3: {30063, 62011, 62010, 62007, 62006, 62005, 62004, 62003, 62002, 62001, 62000},
+		protocol.ArcadeMario:  {32095, 34123, 34116, 34115, 34114, 34112, 34111, 34110, 34109, 34108, 34107},
+		protocol.ArcadeMario2: {30063, 61044, 61039, 61037, 61035, 61033, 61032, 61031, 61030, 61028, 61026},
+		protocol.ArcadeMario3: {30063, 62009, 34152, 21159, 24125, 23132, 34020, 34015, 34016, 32162, 33019},
 	}
 	if index >= protocol.ArcadePrizeCount {
 		return 0

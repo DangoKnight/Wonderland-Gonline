@@ -75,6 +75,14 @@ func (s *Server) adoptSavedCharacter(c *Session, next game.Character) {
 		if old.Map == checkpoint.Map && next.Map == checkpoint.Map && next.X == checkpoint.X && next.Y == checkpoint.Y {
 			next.X, next.Y = old.X, old.Y
 		}
+		// Resting recovery is buffered like walking; keep it unless the
+		// transaction set the vital itself.
+		if next.HP == checkpoint.HP && old.HP > next.HP {
+			next.HP = min(old.HP, max(next.HP, next.MaxHP))
+		}
+		if next.SP == checkpoint.SP && old.SP > next.SP {
+			next.SP = min(old.SP, max(next.SP, next.MaxSP))
+		}
 	}
 	*c.character = next
 	c.autosaveBaseline = &baseline

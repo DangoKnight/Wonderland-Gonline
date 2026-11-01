@@ -34,6 +34,10 @@ func (c *Client) updateCursor(now time.Time) {
 		shape = c.battleCursor()
 	} else if state == 0 && c.joinTeamTarget {
 		shape = cursor.ShapePoint
+	} else if state == 0 && c.friendTarget {
+		shape = cursor.ShapePointAlt // FUN_003ba9d8(…, 5)
+	} else if state == 0 && c.tradeTarget {
+		shape = cursor.ShapePoint // FUN_003ba9d8(…, 2)
 	} else if state == 0 && c.sportCursor() != 0 {
 		shape = c.sportCursor()
 	} else if state == 0 {

@@ -27,7 +27,7 @@ func TestCommandRegistryCompatibility(t *testing.T) {
 			p.IsDeleteCharacter() != (c == 35) ||
 			p.AllowedDuringBattle != contains(c, 2, 11, 50) ||
 			p.RequiresBattle != contains(c, 50) ||
-			p.AllowedDuringMinigame != contains(c, 2, 20, 57, 71) ||
+			p.AllowedDuringMinigame != contains(c, 2, 20, 34, 57, 71) ||
 			p.BlockedDuringTrade != contains(c, 5, 8, 15, 19, 20, 21, 23, 27, 30, 31, 36, 37, 40, 45, 56, 59, 62, 64, 65, 67, 68, 69, 71, 85, 75, 77, 90, 104) {
 			t.Errorf("command %d changed registration or interaction policy: %+v", c, p)
 		}

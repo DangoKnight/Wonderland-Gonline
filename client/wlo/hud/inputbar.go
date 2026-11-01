@@ -3,15 +3,15 @@ package hud
 import (
 	"image"
 	"strconv"
+	"time"
 
 	"wonderland-gonline/client/wlo/seui"
 )
 
 // InputBar is TSe_InputBar (constructor FUN_0026348c, paint FUN_00268194):
 // the chat bar along the bottom: the channel button, the whisper name and
-// message fields, the recent whisperers, and the emote button. Not ported
-// yet: the mail animation,
-// the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
+// message fields, the recent whisperers, the emote button and the mail
+// icon. Not ported yet: the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
 // and auto-play buttons.
 type InputBar struct {
 	seui.FixedForm
@@ -51,6 +51,13 @@ type InputBar struct {
 	recalled int      // +0x14c
 	channels [inputChannels + 1]int
 	mail     int
+	// MailUnread is +0x155 (FUN_00267c4c / FUN_00267c54).
+	MailUnread bool
+	mailFrame  int       // +0x156
+	mailAt     time.Time // +0x158
+	Now        func() time.Time
+	// OpenMailbox is the mail icon's press.
+	OpenMailbox func()
 }
 
 // Input bar channels (+0x140); each sends its own 2/x (FUN_002641c4).
@@ -65,17 +72,24 @@ const (
 )
 
 const (
-	inputChannels     = 5
-	channelListSlots  = 4
-	inputWidth        = 0x209
-	inputHeight       = 0x19
-	inputTop          = 0x23f
-	inputChannelX     = 6
-	inputChannelY     = 2
-	inputMailX        = 4
-	inputMailY        = 2
-	inputMailW        = 0x17
-	inputMailH        = 0x15
+	inputChannels    = 5
+	channelListSlots = 4
+	inputWidth       = 0x209
+	inputHeight      = 0x19
+	inputTop         = 0x23f
+	inputChannelX    = 6
+	inputChannelY    = 2
+	inputMailX       = 4
+	inputMailY       = 2
+	inputMailW       = 0x17
+	inputMailH       = 0x15
+	// FUN_00268084: while letters are unread (+0x155) the icon swaps its
+	// two frames every 800 ms (+0x160); a press in the 0x16-pixel square
+	// at (8, 1) opens the mailbox (FUN_002695d8).
+	inputMailBlink    = 800 * time.Millisecond
+	inputMailHitX     = 8
+	inputMailHitY     = 1
+	inputMailHit      = 0x16
 	inputSwitchLeft   = 0x1f
 	inputSwitchTop    = 2
 	inputSwitchW      = 0x28
@@ -260,12 +274,16 @@ func (b *InputBar) toggleList() { b.showList(!b.Frame.Visible) }
 // whose read-only field takes no hits, selects Whisper.
 var whisperArea = image.Rect(0x46, 0x240, 0x46+0x56, 0x240+0x16)
 
-// LeftDown is the bar's press (FUN_002695d8). The mail icon's press
-// (opening the mailbox) is not ported.
+// LeftDown is the bar's press (FUN_002695d8).
 func (b *InputBar) LeftDown(shift byte, x, y int) {
 	b.FixedForm.LeftDown(shift, x, y)
 	if image.Pt(x, y).In(whisperArea) {
 		b.SelectChannel(InputWhisper)
+	}
+	at := b.Abs()
+	icon := image.Rect(at.X+inputMailHitX, at.Y+inputMailHitY, at.X+inputMailHitX+inputMailHit, at.Y+inputMailHitY+inputMailHit)
+	if image.Pt(x, y).In(icon) && b.OpenMailbox != nil {
+		b.OpenMailbox()
 	}
 }
 
@@ -391,5 +409,14 @@ func (b *InputBar) Paint() {
 	if b.Channel >= 1 && b.Channel <= inputChannels {
 		pics.Draw(scr, b.channels[b.Channel], b.Left+inputChannelX, b.Top+inputChannelY, true)
 	}
-	pics.DrawRect(scr, b.mail, b.Left+inputMailX, b.Top+inputMailY, image.Rect(0, 0, inputMailW, inputMailH), true)
+	if !b.MailUnread {
+		b.mailFrame = 0
+	} else if b.Now != nil {
+		if now := b.Now(); now.Sub(b.mailAt) > inputMailBlink {
+			b.mailFrame = (b.mailFrame + 1) % 2
+			b.mailAt = now
+		}
+	}
+	frame := image.Rect(0, b.mailFrame*inputMailH, inputMailW, (b.mailFrame+1)*inputMailH)
+	pics.DrawRect(scr, b.mail, b.Left+inputMailX, b.Top+inputMailY, frame, true)
 }

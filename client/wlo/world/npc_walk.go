@@ -9,8 +9,8 @@ import (
 const (
 	actorWalkBytes    = 7 // AC22:2 payload: click U16, X/Y U16, speed U8.
 	actorSpeedDivisor = 8 // FUN_00482980, verified in matching binary instructions.
-	// First zero-speed command has no preceding speed to retain. Until the
-	// native EVE initial speed is projected, match the server's speed byte 2.
+	// A record speed of 0 leaves a zero-speed command nothing to retain;
+	// the original would not move it. Walk at the server's speed byte 2.
 	actorCompatibilityInitialSpeed = 2
 )
 
@@ -27,9 +27,9 @@ func (w *World) ApplyActorWalk(p []byte, now time.Time) bool {
 	}
 	n.stepWalk(now)
 	if p[6] != 0 {
-		n.walker.pixelsPerMillisecond = float64(p[6]) / actorSpeedDivisor * walkSpeed
+		n.walker.pixelsPerMillisecond = actorSpeed(p[6])
 	} else if n.walker.pixelsPerMillisecond == 0 {
-		n.walker.pixelsPerMillisecond = float64(actorCompatibilityInitialSpeed) / actorSpeedDivisor * walkSpeed
+		n.walker.pixelsPerMillisecond = actorSpeed(actorCompatibilityInitialSpeed)
 	}
 	pos := Player{X: n.X, Y: n.Y, Direction: int32(n.Action)}
 	goal := image.Pt(int(binary.LittleEndian.Uint16(p[2:])), int(binary.LittleEndian.Uint16(p[4:])))

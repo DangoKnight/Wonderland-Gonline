@@ -4,21 +4,20 @@ import (
 	"context"
 	"errors"
 	"math"
-	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/store"
 )
 
-const tradeRequestTTL = time.Minute
+// tradeOfferLimit is the trade form's 5 × 4 offer grid (FUN_003658a8).
+const tradeOfferLimit = 20
 
-type tradeRequest struct {
-	from *Session
-	at   time.Time
-}
+// tradeSession is one open trade. Each side locks its offer once (AC25:2)
+// and then accepts (AC25:3 1); the exchange runs when both have accepted.
 type tradeSession struct {
 	players  [2]*Session
 	offers   [2]game.TradeOffer
+	offered  [2]bool
 	accepted [2]bool
 }
 
@@ -28,6 +27,9 @@ func (t *tradeSession) side(c *Session) int {
 	}
 	return 1
 }
+
+// tradeMessage is a notice shared by the trading interactions (stalls,
+// manufacturing, social commands).
 func tradeMessage(message string) []byte {
 	p, _ := protocol.Builder{protocol.CommandInventory, protocol.InventoryMessage, 0}.String(message)
 	return p
@@ -38,181 +40,131 @@ func tradeAvailable(c *Session) bool {
 func tradeNear(a, b *Session) bool {
 	return sameScene(a, b) && math.Hypot(float64(int(a.character.X)-int(b.character.X)), float64(int(a.character.Y)-int(b.character.Y))) <= tradeRangePixels
 }
+func tradeEnded(result byte) []byte {
+	return []byte{protocol.CommandTrade, protocol.TradeEnded, result}
+}
 
-// tradeCommand ports AC25; caller holds worldMu. The native handler replaces the
-// whole offer on each item/gold update and AC25:5 has no server-side effect.
+// tradeCommand ports AC25 as aLogin speaks it; caller holds worldMu.
 func (s *Server) tradeCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
 	}
-	r := protocol.NewReader(p[2:])
 	switch p[1] {
 	case protocol.TradeRequest:
 		if len(p) != 6 {
 			return protocol.ErrMalformed
 		}
-		return s.requestTrade(c, r.U32())
-	case protocol.TradeReply:
+		return s.requestTrade(c, protocol.NewReader(p[2:]).U32())
+	case protocol.TradeOffer:
+		if len(p) < 6 || len(p)-6 > tradeOfferLimit {
+			return protocol.ErrMalformed
+		}
+		return s.offerTrade(c, protocol.NewReader(p[2:]).U32(), p[6:])
+	case protocol.TradeDecision:
 		if len(p) != 3 {
 			return protocol.ErrMalformed
 		}
-		if p[2] == protocol.TradeReplyAccepted {
-			return s.acceptTrade(c)
-		}
-		s.cancelTrade(c)
-		return nil
-	case protocol.TradeItemOffer:
-		if len(p) != 5 {
-			return protocol.ErrMalformed
-		}
-		if c.trade == nil {
+		switch p[2] {
+		case protocol.TradeDecisionAccept:
+			return s.acceptTrade(ctx, c)
+		case protocol.TradeDecisionCancel:
+			// The canceller's window is already closed (FUN_00367dfc).
+			s.endTrade(c, 0, false, protocol.TradeResultPartnerCanceled)
 			return nil
 		}
-		slot, count := p[3], p[4] // Trade window slot p[2] is unused by the reference.
-		if count == 0 {
-			return s.offerTrade(c, game.TradeOffer{})
-		}
-		if slot < 1 || slot > game.BagSize {
-			return nil
-		}
-		item := c.character.Bag[slot-1]
-		if item.Empty() || item.Locked {
-			return nil
-		}
-		if _, known := s.Assets.Items[item.ID]; !known {
-			return nil
-		}
-		return s.offerTrade(c, game.TradeOffer{Items: []game.TradeItem{{Slot: slot, Count: min(count, item.Count), Item: item}}})
-	case protocol.TradeGoldOffer:
-		if len(p) != 6 {
-			return protocol.ErrMalformed
-		}
-		return s.offerTrade(c, game.TradeOffer{Gold: min(r.U32(), c.character.Gold)})
-	case protocol.TradeOfferNoOp:
-		if len(p) != 2 {
-			return protocol.ErrMalformed
-		}
-		return nil
-	case protocol.TradeConfirm:
-		if len(p) != 2 {
-			return protocol.ErrMalformed
-		}
-		return s.confirmTrade(ctx, c)
-	case protocol.TradeCancel:
-		if len(p) != 2 {
-			return protocol.ErrMalformed
-		}
-		s.cancelTrade(c)
-		return nil
+		return protocol.ErrMalformed
 	default:
 		return ErrUnsupported
 	}
 }
 
+// requestTrade opens both windows at once: aLogin has no question for a
+// trade (25/1 received opens the form, FUN_003c6b18 → FUN_00367d80); the
+// target's trade setting is the consent.
 func (s *Server) requestTrade(c *Session, id uint32) error {
+	if c.trade != nil {
+		return c.send(tradeEnded(protocol.TradeResultAlreadyTrading))
+	}
 	target := s.mapPlayer(c, id)
-	if target == nil || target == c {
+	switch {
+	case target == c:
 		return nil
-	}
-	if !tradeAvailable(c) || !tradeAvailable(target) {
-		return c.send(tradeMessage("Either you or the target is already busy."))
-	}
-	if !tradeNear(c, target) {
-		return c.send(tradeMessage("You must be near the target to trade."))
-	}
-	if req := target.tradeRequest; req != nil && time.Since(req.at) < tradeRequestTTL {
-		// Do not replace a prompt with another requester: the reply contains no ID.
-		if req.from == c {
-			return nil
+	case target == nil:
+		for _, peer := range s.world {
+			if peer.character.ID == id {
+				return c.send(tradeEnded(protocol.TradeResultDifferentMaps))
+			}
 		}
-		return c.send(tradeMessage("The target already has a pending trade request."))
+		return c.send(tradeEnded(protocol.TradeResultDisconnected))
+	case !tradeAvailable(c) || !tradeAvailable(target):
+		return c.send(tradeEnded(protocol.TradeResultBusy))
+	case !tradeNear(c, target):
+		return c.send(tradeEnded(protocol.TradeResultUnavailable))
 	}
-	target.tradeRequest = &tradeRequest{from: c, at: time.Now()}
+	run := &tradeSession{players: [2]*Session{c, target}}
+	c.trade, target.trade = run, run
 	s.sendOrClose(target, protocol.Builder{protocol.CommandTrade, protocol.TradeRequest}.U32(c.character.ID))
-	return c.send(tradeMessage("Trade request sent to " + target.character.Name + "."))
+	return c.send(protocol.Builder{protocol.CommandTrade, protocol.TradeRequest}.U32(target.character.ID))
 }
 
-func (s *Server) acceptTrade(c *Session) error {
-	req := c.tradeRequest
-	c.tradeRequest = nil
-	if req == nil {
-		return nil
-	}
-	if time.Since(req.at) > tradeRequestTTL {
-		s.sendOrClose(req.from, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		s.sendOrClose(c, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		return nil
-	}
-	from := req.from
-	if !tradeAvailable(c) || !tradeAvailable(from) || s.world[from.info.ID] != from || !tradeNear(c, from) {
-		s.sendOrClose(from, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		s.sendOrClose(c, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		return c.send(tradeMessage("The trading partner is no longer available."))
-	}
-	s.clearTradeRequests(c)
-	s.clearTradeRequests(from)
-	run := &tradeSession{players: [2]*Session{from, c}}
-	from.trade, c.trade = run, run
-	s.sendOrClose(from, protocol.Builder{protocol.CommandTrade, protocol.TradeRequest}.U32(c.character.ID))
-	s.sendOrClose(c, protocol.Builder{protocol.CommandTrade, protocol.TradeRequest}.U32(from.character.ID))
-	return nil
-}
-
-func (s *Server) clearTradeRequests(c *Session) {
-	if pending := c.tradeRequest; pending != nil {
-		c.tradeRequest = nil
-		s.sendOrClose(pending.from, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		s.sendOrClose(c, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-	}
-	for _, peer := range s.world {
-		if peer.tradeRequest != nil && peer.tradeRequest.from == c {
-			peer.tradeRequest = nil
-			s.sendOrClose(peer, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-			s.sendOrClose(c, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-		}
-	}
-}
-
-func (s *Server) cancelTrade(c *Session) {
-	s.clearTradeRequests(c)
-	run := c.trade
-	if run == nil {
-		return
-	}
-	for _, player := range run.players {
-		if player.trade == run {
-			player.trade = nil
-		}
-	}
-	for _, player := range run.players {
-		s.sendOrClose(player, []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyRejected})
-	}
-}
-
-func (s *Server) offerTrade(c *Session, offer game.TradeOffer) error {
+// offerTrade is the Confirm button (FUN_003680f4): the gold and the bag
+// slots of whole stacks, locked until the trade ends.
+func (s *Server) offerTrade(c *Session, gold uint32, slots []byte) error {
 	run := c.trade
 	if run == nil {
 		return nil
 	}
 	side := run.side(c)
-	run.offers[side] = offer
-	run.accepted = [2]bool{} // Any revision invalidates both confirmations.
-	p := protocol.Builder{protocol.CommandTrade, protocol.TradeItemOffer}.U32(offer.Gold).U8(byte(len(offer.Items)))
-	for _, it := range offer.Items {
-		p = p.U16(it.Item.ID).U8(it.Count).U8(it.Item.Damage)
+	if run.offered[side] {
+		return nil
 	}
-	s.sendOrClose(run.players[1-side], p)
+	seen := map[byte]bool{}
+	for _, slot := range slots {
+		if slot < 1 || slot > game.BagSize || seen[slot] {
+			return protocol.ErrMalformed
+		}
+		seen[slot] = true
+	}
+	offer := game.TradeOffer{Gold: gold}
+	for _, slot := range slots {
+		item := c.character.Bag[slot-1]
+		if _, known := s.Assets.Items[item.ID]; item.Empty() || item.Locked || !known {
+			s.endTrade(c, protocol.TradeResultUnavailable, true, protocol.TradeResultPartnerCanceled)
+			return nil
+		}
+		offer.Items = append(offer.Items, game.TradeItem{Slot: slot, Count: item.Count, Item: item})
+	}
+	if gold > c.character.Gold {
+		s.endTrade(c, protocol.TradeResultNotEnoughGold, true, protocol.TradeResultPartnerCanceled)
+		return nil
+	}
+	run.offers[side], run.offered[side] = offer, true
+	s.sendOrClose(run.players[1-side], tradeOfferPacket(offer))
 	return nil
 }
 
-func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
+// tradeOfferPacket is AC25:3 as FUN_003c704c reads it: the gold, then per
+// item its ID, count and damage and the bag record's 26 metadata bytes with
+// the u32/u16 pair (bytes 2..7) ahead of bytes 0..1.
+func tradeOfferPacket(offer game.TradeOffer) []byte {
+	p := protocol.Builder{protocol.CommandTrade, protocol.TradePartnerOffer}.U32(offer.Gold)
+	for _, it := range offer.Items {
+		m := it.Item.Metadata
+		p = p.U16(it.Item.ID).U8(it.Count).U8(it.Item.Damage).Bytes(m[2:8]).Bytes(m[0:2]).Bytes(m[8:])
+	}
+	return p
+}
+
+// acceptTrade is the Trade button (0x368000): shown once both offers are
+// locked; the exchange commits when both sides have pressed it.
+func (s *Server) acceptTrade(ctx context.Context, c *Session) error {
 	run := c.trade
-	if run == nil {
+	if run == nil || !run.offered[0] || !run.offered[1] {
 		return nil
 	}
 	a, b := run.players[0], run.players[1]
 	if !a.ready || !b.ready || a.battle != nil || b.battle != nil || !tradeNear(a, b) {
-		s.cancelTrade(c)
+		s.endTrade(c, protocol.TradeResultUnavailable, true, protocol.TradeResultUnavailable)
 		return nil
 	}
 	run.accepted[run.side(c)] = true
@@ -236,11 +188,12 @@ func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
 		return nil
 	})
 	if err != nil {
-		s.cancelTrade(c)
+		code := byte(protocol.TradeResultUnavailable)
+		if errors.Is(err, game.ErrInventoryFull) {
+			code = protocol.TradeResultInventoryFull
+		}
+		s.endTrade(c, code, true, code)
 		if errors.Is(err, game.ErrTradeChanged) || errors.Is(err, game.ErrTradeGoldLimit) || errors.Is(err, game.ErrInventoryFull) || errors.Is(err, game.ErrInvalidItem) || errors.Is(err, game.ErrItemLocked) {
-			for _, player := range run.players {
-				s.sendOrClose(player, tradeMessage("Trade failed: "+err.Error()+"."))
-			}
 			return nil
 		}
 		return err
@@ -264,8 +217,32 @@ func (s *Server) confirmTrade(ctx context.Context, c *Session) error {
 		if len(result.Additions[i]) > 0 {
 			packets = append(packets, player.character.Bag.AdditionPacket(result.Additions[i]))
 		}
-		packets = append(packets, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(player.character.Gold), []byte{protocol.CommandTrade, protocol.TradeReply, protocol.TradeReplyCompleted}, tradeMessage("Trade completed successfully."))
+		packets = append(packets, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(player.character.Gold), tradeEnded(protocol.TradeResultCompleted))
 		s.sendOrClose(player, packets...)
 	}
 	return nil
+}
+
+// cancelTrade ends c's trade from the server's side: both windows close.
+func (s *Server) cancelTrade(c *Session) {
+	s.endTrade(c, protocol.TradeResultCanceled, true, protocol.TradeResultPartnerCanceled)
+}
+
+// endTrade closes the trade, telling c (when its window is still open) and
+// its partner why.
+func (s *Server) endTrade(c *Session, own byte, tellOwn bool, partner byte) {
+	run := c.trade
+	if run == nil {
+		return
+	}
+	for _, player := range run.players {
+		if player.trade == run {
+			player.trade = nil
+		}
+	}
+	other := run.players[1-run.side(c)]
+	if tellOwn {
+		s.sendOrClose(c, tradeEnded(own))
+	}
+	s.sendOrClose(other, tradeEnded(partner))
 }

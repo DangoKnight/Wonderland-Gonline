@@ -131,6 +131,20 @@ disposable fixtures and asset database copies; installed databases were unchange
 Interactive aLogin captures, multiplayer acceptance and load/soak/crash testing
 remain separate work below.
 
+## Native trade and social compatibility follow-up
+
+The current AC25 handler deliberately replaces the Private Server's incremental
+trade protocol with aLogin's immediate form opening, locked whole-stack/gold
+offers and bilateral acceptance. Metadata and both players' durable state commit
+atomically. Legacy offer revisions and the no-op lock request are no longer
+supported. See [item trades](ECONOMY_SOCIAL.md#player-item-trades).
+
+Native AC14:3 refusal/ignore answers no longer create friendships, and AC14:1
+delivery uses trailing text without the reference's string-length prefix.
+Client Social, mailbox and trade forms are documented in [CLIENT.md](CLIENT.md),
+including remaining wire mismatches. Source inventory notes record these
+compatibility replacements; automated fixtures do not establish live acceptance.
+
 ## On hold: unfinished source and further development
 
 These do not block porting reachable implemented reference behavior:

@@ -112,10 +112,10 @@ func TestBufferedMovementTradePreservesBothPlayers(t *testing.T) {
 	}
 	openTrade(t, s, players, wires)
 	a, b := players[0], players[1]
-	tradeDo(t, s, a, []byte{25, 3, 1, 1, 3})
-	tradeDo(t, s, b, protocol.Builder{25, 4}.U32(50))
-	tradeDo(t, s, a, []byte{25, 6})
-	tradeDo(t, s, b, []byte{25, 6})
+	tradeDo(t, s, a, tradeOffer(0, 1))
+	tradeDo(t, s, b, tradeOffer(50))
+	tradeDo(t, s, a, []byte{25, 3, 1})
+	tradeDo(t, s, b, []byte{25, 3, 1})
 	for i, c := range players[:2] {
 		if c.character.X != uint16(1100+i*10) || c.character.Gold != 150 {
 			t.Fatal("trade rewound position or failed to transfer", i)
@@ -123,7 +123,7 @@ func TestBufferedMovementTradePreservesBothPlayers(t *testing.T) {
 	}
 	s.autosaveCharacters(context.Background())
 	saved := tradeStored(t, s, players)
-	if saved[0].X != 1100 || saved[1].X != 1110 || saved[0].Gold != 150 || saved[1].Gold != 150 || saved[0].Bag[0].Count != 7 || saved[1].Bag[1].Count != 3 {
+	if saved[0].X != 1100 || saved[1].X != 1110 || saved[0].Gold != 150 || saved[1].Gold != 150 || !saved[0].Bag[0].Empty() || saved[1].Bag[1].Count != 10 {
 		t.Fatal("checkpoint lost trade or position", saved)
 	}
 }

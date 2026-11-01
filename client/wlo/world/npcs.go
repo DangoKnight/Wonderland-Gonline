@@ -203,7 +203,14 @@ type NPC struct {
 	Frame       int
 	// Depth moves the NPC's place among the depth-sorted figures (record
 	// +0x1180): a coconut up a palm sorts in front of the palm.
-	Depth  int
+	Depth int
+	// Sign is the record's minimap icon (+0x3c, minimap.go).
+	Sign byte
+	// Routes are the record's event routes by slot (npc_route.go).
+	Routes map[byte][]image.Point
+	// speed is the record's speed byte (+0x46 → +0xd48).
+	speed  byte
+	route  npcRoute
 	walker Walker
 }
 
@@ -360,7 +367,9 @@ func MapNPCs(rec native.Map, templates map[uint32]NPCTemplate, newPainter func(N
 	for _, r := range rec.NPCs {
 		n := &NPC{ClickID: r.ClickID, Template: r.Template, X: int(r.X), Y: int(r.Y),
 			Action: standFacing(r.Rotation), Shown: r.Flags&npcFlagShown != 0,
-			Depth: recordDepth(r.UnknownWords)}
+			Depth: recordDepth(r.UnknownWords), Routes: routePoints(r.Routes), speed: r.Speed, Sign: r.Sign}
+		// FUN_003030ec starts it at its record speed (+0x1ee0).
+		n.walker.pixelsPerMillisecond = actorSpeed(r.Speed)
 		if t, ok := templates[r.Template]; ok {
 			n.Info = t
 			if newPainter != nil {

@@ -273,3 +273,27 @@ func TestMinigameFullBagCannotPartiallyReward(t *testing.T) {
 		t.Fatal("full bag partially rewarded or retained interaction")
 	}
 }
+
+// TestThrowStartSceneVariant: the dodgeball game's 57/1 carries its battle
+// scene variant as a sixth byte; maps without one send 0.
+func TestThrowStartSceneVariant(t *testing.T) {
+	for _, tc := range []struct {
+		mapID   uint16
+		variant byte
+	}{{60008, 50}, {12150, 90}, {0, 0}} {
+		s, c, wire := eventFixture(t)
+		if tc.mapID != 0 {
+			c.character.Map = tc.mapID
+		}
+		ev := &assets.Event{ClickID: 10, Branches: []assets.Branch{
+			{Index: 1, Operations: []assets.Operation{evOp(1, 9, 1, 14304, 1, 0)}},
+		}}
+		if err := s.startEvent(context.Background(), c, 5, ev, 0, false); err != nil {
+			t.Fatal(err)
+		}
+		want := []byte{57, 1, 1, 0xe0, 0x37, 1, tc.variant}
+		if packets := wire.packets(t); !contains(packets, want) {
+			t.Fatalf("map %d: %x, want %x", tc.mapID, packets, want)
+		}
+	}
+}

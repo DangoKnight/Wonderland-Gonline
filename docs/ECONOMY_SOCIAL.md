@@ -2,9 +2,9 @@
 
 ## Database upgrade
 
-Current server startup requires gameplay schema **v15** and structured assets
-schema **v10**. Economy/social tables were introduced in earlier versions.
-Use the preserving offline copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
+Current server startup requires gameplay schema **v17** and structured assets
+schema **v13**. Economy/social tables were introduced in earlier versions.
+Use the preserving offline upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,
 relationships and administrator content edits are retained. Repeat migration
@@ -18,6 +18,27 @@ not change an existing installation. The seed projects the authored definitions
 in Private Server's `TentManufactureManager`, `GatheringManager`,
 `MarriageManager` and `AlchemyManager`; their item names are not assumed to match
 WLRI. Missing item definitions reject operations before consuming resources.
+
+## Player item trades
+
+AC25 follows aLogin's direction-specific protocol, replacing the Private Server
+request/reply and incremental-offer layout. AC25:1 with a target ID opens both
+trade forms immediately when both nearby players are available and allow trades.
+There is no pending invitation. World entry sends AC25:44 value 2 to enable the
+native client's online-time flag; the server imposes no online-time delay.
+
+AC25:2 locks one offer: gold as U32 followed by up to 20 distinct bag-slot bytes,
+each offering a whole stack. It cannot be revised after locking. The partner
+receives AC25:3 with gold and 30-byte item records, including damage and all
+26 metadata bytes. Once both offers are locked, AC25:3 value 1 from each player
+commits both inventories and balances in one SQL transaction against current
+ownership and exact offered records. Failed validation or persistence transfers
+nothing. Success publishes inventory/gold updates and AC25:2 result 4 after commit.
+
+AC25:3 value 2 cancels, notifying the partner with AC25:2 result 9. Disconnect
+uses result 1; other server interruptions close both forms with results 3 and 9.
+See [client controls and wire layouts](CLIENT.md#trade-ported-in-part-clientwloinventorytradego-clientwlohudbusinessgo-clientwloapptradego)
+for the remaining client restrictions and presentation gaps.
 
 ## Player stalls
 
@@ -167,8 +188,9 @@ by supplied username. Any future player HTTP checkout must authenticate ownershi
 and use the same SQL transaction guarantees as native purchases.
 
 Purchases, fees, transfers, rewards and parcel claims stay immediately durable.
-Buffered walking preserves pending position when adopting a committed SQL
-result. Guarded checkpoints must not undo balances, attachments or draw usage.
+Buffered walking and resting recovery preserve pending position and HP/SP
+when adopting a committed SQL result that leaves those saved fields unchanged.
+Guarded checkpoints must not undo balances, attachments or draw usage.
 See DEVELOPMENT.md for the persistence boundary and remaining concurrency limits.
 
 ## Focused migration verification

@@ -8,45 +8,46 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
-Stop the server and database editors before taking snapshots. Keep them stopped
-until configuration points to the upgraded copies. The migration preserves
-accounts, credentials, character state and existing asset edits.
+Stop the server and database editors first, and keep them stopped until the
+command finishes. The migration preserves accounts, credentials, character state
+and existing asset edits.
 
 ```sh
-go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v6
+go run ./cmd/database-migrate -config config.local.json
 ```
 
-The output directory must be new. The command opens source databases read-only,
-takes SQLite snapshots with committed WAL data, upgrades the copies, compares
-converted content, and checks SQLite integrity and foreign keys. It never
-replaces the originals. Failure removes the new output directory and returns a
-nonzero exit status. Taking both snapshots while the server is stopped ensures
-they represent the same installation state.
+The upgraded databases land at the paths the configuration already names
+(`var/assets.db` and `var/wonderland.db` by default), so the configuration does
+not change. The command opens each database read-only, takes an SQLite snapshot
+with committed WAL data into a staging directory beside it (`.migrate-<stamp>`),
+upgrades the copy, compares converted content, and checks SQLite integrity and
+foreign keys. Only when both copies verify does it move each original, with its
+`-wal`, `-shm` and `-journal` files, to `backups/pre-migrate-<stamp>/` beside it
+and the copy into its place. It refuses to overwrite an existing destination.
+A reported failure attempts to undo completed moves, removes staging files and
+returns a nonzero exit status; restoration errors are included in the error.
+The two replacements are separate filesystem operations: a process crash or
+power loss during cutover can leave a mixed pair. Keep writers stopped and
+inspect both configured paths and the `backups/pre-migrate-<stamp>/` directories
+before retrying.
 
-Set these startup parameters to activate the verified copies:
-
-```json
-{
-  "database": "var/migrated-v6/wonderland.db",
-  "assets_database": "var/migrated-v6/assets.db"
-}
-```
-
-Keep other configuration fields. Build and start the server:
+Build and start the server:
 
 ```sh
 go build -o bin/wonderland ./cmd/wonderland
 ./bin/wonderland -config config.local.json
 ```
 
-For rollback, stop the server and restore the original configuration paths.
-Progress written to the upgraded database after cutover will not exist in the
-original snapshot. Keep both copies until acceptance testing finishes.
+For rollback, stop the server and database editors, move the upgraded databases
+and any SQLite sidecars to a separate location, then restore both originals and
+their backed-up sidecars to the configured paths. The configuration paths stay
+the same. Progress written after cutover will not exist in the original
+snapshots. Keep the backups until acceptance testing finishes.
 
 Gameplay schema v17 automatically converts older character rows transactionally
-when `store.Open` opens a database. The offline copy command is the recommended
+when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 12 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 13 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -170,12 +171,12 @@ supported original SQLite player data into a new Go database.
 These databases own durable state; they do not require every online movement
 packet to produce SQL writes. Assets are served from validated SQL-derived memory
 catalogs. Sensitive mutable operations retain immediate atomic transactions.
-Walking uses dirty session checkpoints (default 30 seconds) under the policy in
-DEVELOPMENT.md. Position-only checkpoints update guarded X/Y columns; clean
-sessions need no SQL transaction. Gathering/world ticks remain independent.
-Stop the server
-before snapshots/upgrades so pending session state can flush and both databases
-represent the same installation.
+Walking and resting recovery use dirty session checkpoints (default 30 seconds)
+under the policy in [DEVELOPMENT.md](DEVELOPMENT.md#transaction-boundaries-and-session-checkpoints).
+Checkpoints for these fields update guarded X/Y/HP/SP columns without rewriting
+owned child rows; clean sessions need no SQL transaction. Gathering/world ticks
+remain independent. Stop the server before snapshots/upgrades so pending session
+state can flush and both databases represent the same installation.
 
 Fishing rules are available through the `Fishing` dataset; see [FISHING.md](FISHING.md).
 
@@ -194,7 +195,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v12. The copy procedure upgrades existing v14 installations
+Asset schema is now v13. The upgrade procedure upgrades existing v14 installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -215,9 +216,8 @@ retained SQL `value_record` bytes at disk offsets 406/407. Existing names,
 metadata and other authored definitions remain unchanged. Normal startup reads
 typed dimension columns; it does not regenerate or overwrite them.
 
-Before deploying this version, stop the server and run the copy procedure above
-(`go run ./cmd/database-migrate -config config.local.json -output-dir <new-directory>`),
-then select the verified copied databases in the configuration. Gameplay remains
+Before deploying this version, stop the server and run the upgrade above
+(`go run ./cmd/database-migrate -config config.local.json`). Gameplay remains
 schema v17. Inventory anchors are preserved; old overlapping placements require
 an explicit correction and are never silently discarded or repacked.
 
@@ -228,5 +228,16 @@ Definitions are seeded from retained SceneData.dat and Mark.dat SQL import rows,
 including native titles/descriptions, capacity, level, guild requirement, time
 limit, entry map and coordinates. Existing catalog edits remain intact. Runtime
 reads use these typed rows. Lobby membership remains in memory; verified dungeon
-objectives and rewards are pending. Follow the offline copy procedure above to
+objectives and rewards are pending. Follow the offline upgrade procedure above to
 upgrade an older installation before running the new server.
+
+### Fruit machines (asset v13)
+
+The upgrade appends missing seed definitions to `catalog_arcades*`, including the
+three fruit machines (sport kinds 11, 12 and 14), after the existing rows.
+Existing machines, including edited costs, weights and disabled states, remain
+unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
+explicit disabled row to preserve its unavailability. Machines whose prize
+items are missing are added disabled. Follow the offline upgrade procedure above
+before running the new server; runtime requires v13. See
+[fruit machines](MINIGAMES.md#fruit-machines).

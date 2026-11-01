@@ -458,8 +458,8 @@ reference placeholder limitations. Empty definitions disable Palace challenges.
 ## Structured database upgrade
 
 Server startup requires structured asset tables. Upgrade existing databases with
-`go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v1`,
-then set `database` and `assets_database` to the verified copies. See
+`go run ./cmd/database-migrate -config config.local.json`; the verified upgrades
+replace the configured databases and the originals move to `backups/` beside them. See
 [ASSET_DATABASE.md](ASSET_DATABASE.md). These paths are startup parameters; content
 definitions and durable settings remain in their respective SQL databases.
 
@@ -471,13 +471,14 @@ periodically, at disconnect and graceful shutdown. See
 [transaction boundaries](DEVELOPMENT.md#transaction-boundaries-and-session-checkpoints).
 
 `character_save_seconds` sets the startup interval (default 30 seconds). Omitted
-fields keep that default; zero is rejected. Clean sessions skip SQL. Position-only
-saves update X/Y with stale-position checks and do not rewrite owned inventory,
-pets or quests. Committed purchases preserve pending walking in the online copy.
+fields keep that default; zero is rejected. Clean sessions skip SQL. Walking and
+resting checkpoints update X/Y/HP/SP with stale-value checks and do not rewrite
+owned inventory, pets or quests. Committed purchases preserve pending walking
+and recovery when the corresponding saved fields are unchanged.
 Warps remain immediately durable, and gathering keeps its one-second cadence.
 
-With healthy checkpoints, a crash can lose up to one interval of ordinary movement;
-failed saves extend that window and are logged/retried. Disconnect/graceful
+With healthy checkpoints, a crash can lose up to one interval of movement and
+resting recovery; failed saves extend that window and are logged/retried. Disconnect/graceful
 shutdown attempts a final flush. Vehicle wear and resource consumption remain
 immediate even when triggered by movement. Checkpoints still hold the world lock
 through a bounded batch; multiplayer load/soak validation remains pending.

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"time"
 
@@ -24,9 +25,13 @@ import (
 //
 // Ported kinds: 1, a line of dialogue (FUN_00304fd0 case 1) spoken by a
 // map NPC (subject 3) or the player (subject 7), shown in the talk window
-// until clicked. Every other kind is acknowledged at once, as kind 2 is;
-// questions (kind 6, the map's question table at +0x5d9c) are cancelled
-// with 20/9 choice 40.
+// until clicked; 4, a map NPC walking one of its routes (world.WalkRoute),
+// acknowledged once every route walker has arrived; 5, movies; 6,
+// questions (the map's question table at +0x5d9c); 11 and 14, an NPC or
+// the player turning; and 15, the event's music. Kinds 7-10, 12 and 13
+// jump to the interpreter's end (table at 0x30502e) without finishing the
+// step, but this repository's server waits for 20/6 after kinds 9 and 13,
+// so they and every other kind are acknowledged at once, as kind 2 is.
 const (
 	// Frame layout after the command byte (0x2e3dc0).
 	eventFrameKind    = 5
@@ -39,11 +44,26 @@ const (
 	eventLastFrame = 6
 	// Kinds (+0x7113) and speakers (+0x7114).
 	eventKindTalk     = 1
-	eventKindQuestion = 6
+	eventKindRoute    = 4
 	eventKindMovie    = 5
-	npcTalkTurn       = 1
-	eventSpeakerNPC   = 3
-	eventSpeakerSelf  = 7
+	eventKindQuestion = 6
+	eventKindNPCTurn  = 11
+	eventKindTurn     = 14
+	eventKindMusic    = 15
+	// Kind 11 modes: toward the player, another NPC, or a direction.
+	npcTurnPlayer    = 1
+	npcTurnNPC       = 2
+	npcTurnDirection = 3
+	// Kind 14 subjects: toward an NPC, or a direction.
+	turnTowardNPC = 1
+	turnDirection = 2
+	// Kind 15 subjects: play a track, or return to the map's.
+	musicPlay    = 1
+	musicRestore = 2
+	// Speakers, and the talk mode that turns the NPC.
+	npcTalkTurn      = 1
+	eventSpeakerNPC  = 3
+	eventSpeakerSelf = 7
 	// eventChoiceCancel closes a question (the server's cancel value).
 	eventChoiceCancel = 40
 	// talkBodyAction is the body-mode pose: standing, facing down-left.
@@ -125,9 +145,91 @@ func (c *Client) eventFrame(s []byte) {
 		c.ask(subject, actor, talk, s[eventFrameMode])
 	case eventKindMovie:
 		c.startMovie(s)
+	case eventKindNPCTurn:
+		c.event.done = true
+		c.turnNPC(uint16(subject), s[eventFrameMode], int(binary.LittleEndian.Uint32(s[eventFrameValue:])))
+	case eventKindTurn:
+		c.event.done = true
+		c.turnPlayer(subject, actor)
+	case eventKindMusic:
+		c.event.done = true
+		c.eventTrack(subject, binary.LittleEndian.Uint32(s[eventFrameValue:]))
+	case eventKindRoute:
+		// Only map NPCs (subject 3) walk; the value is the route slot.
+		c.event.done = true
+		if subject == eventSpeakerNPC {
+			c.World.WalkRoute(actor, byte(binary.LittleEndian.Uint32(s[eventFrameValue:])), s[eventFrameMode], c.Now())
+		}
 	default:
 		c.event.done = true
 	}
+}
+
+// turnNPC is kind 11 (case 0xb): the NPC whose click ID is the subject
+// byte turns toward the player, another NPC, or a direction. The NPC's
+// +0x1efc check and FUN_0030a344's release are not ported.
+func (c *Client) turnNPC(click uint16, mode byte, value int) {
+	n := c.World.NPCs[click]
+	if n == nil {
+		return
+	}
+	var x, y int
+	switch mode {
+	case npcTurnPlayer:
+		x, y = c.World.Player.X, c.World.Player.Y
+	case npcTurnNPC:
+		o := c.World.NPCs[uint16(value)]
+		if o == nil {
+			return
+		}
+		x, y = o.X, o.Y
+	case npcTurnDirection:
+		var ok bool
+		if x, y, ok = world.DirectionPoint(n.X, n.Y, value); !ok {
+			return
+		}
+	default:
+		return
+	}
+	n.Action = world.TurnAction(n.Action, n.X, n.Y, x, y)
+}
+
+// turnPlayer is kind 14 (case 0xe): the player turns toward a map NPC or
+// a direction (the actor field).
+func (c *Client) turnPlayer(subject byte, actor uint16) {
+	p := &c.World.Player
+	var x, y int
+	switch subject {
+	case turnTowardNPC:
+		n := c.World.NPCs[actor]
+		if n == nil {
+			return
+		}
+		x, y = n.X, n.Y
+	case turnDirection:
+		var ok bool
+		if x, y, ok = world.DirectionPoint(p.X, p.Y, int(actor)); !ok {
+			return
+		}
+	default:
+		return
+	}
+	p.Direction = int32(world.TurnAction(int(p.Direction), p.X, p.Y, x, y))
+}
+
+// eventTrack is kind 15 (case 0xf): subject 1 makes BGM plus the value
+// (at least four digits) the event's track (+0x732c), which the music
+// function (FUN_00307eb8) prefers to the map's; subject 2 clears it.
+func (c *Client) eventTrack(subject byte, value uint32) {
+	switch subject {
+	case musicPlay:
+		c.eventMusic = fmt.Sprintf("BGM%04d", value)
+	case musicRestore:
+		c.eventMusic = ""
+	default:
+		return
+	}
+	c.playMapMusic()
 }
 
 // say is kind 1: the line talk spoken by an NPC or the player.
@@ -341,6 +443,10 @@ func (c *Client) eventTick() {
 		c.Talk.Say(c.petAnnouncements[0], hud.Speaker{}, c.World.Player.Name)
 		c.petAnnouncements = c.petAnnouncements[1:]
 		c.petAnnouncement = true
+	}
+	// FUN_00307300 holds a finished step while route walkers are queued.
+	if c.event.done && c.World != nil && !c.World.RoutesDone() {
+		return
 	}
 	if c.event.done {
 		c.event.done = false

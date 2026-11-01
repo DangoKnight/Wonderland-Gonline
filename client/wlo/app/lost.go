@@ -101,6 +101,10 @@ func (c *Client) disconnected() {
 		c.Team.Reset()
 		c.teamAppearances = nil
 		c.setJoinTeamTarget(false)
+		c.setFriendTarget(false)
+	}
+	if c.Trade != nil {
+		c.resetTrade()
 	}
 	if c.Compound != nil {
 		c.Compound.Reset()
@@ -142,6 +146,7 @@ func (c *Client) lostPrev() {
 		c.fade.frozen.Close()
 	}
 	c.fade = fadeState{}
+	c.sceneFade = sceneFade{}
 	c.G.InGame = false
 	c.World = nil
 	c.petAnnouncements = nil

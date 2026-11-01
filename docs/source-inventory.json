@@ -1230,7 +1230,7 @@
 			"status": "partial",
 			"sha256": "ea8df54b39bff9c4ac940ea55f7950b3f9dee6f3273d5015c0c7f79cf2a0bf19",
 			"go_files": ["internal/server/friends.go", "internal/store/friends.go"],
-			"notes": "Friend requests/presence and text mail implemented; friend job/nickname fields absent.",
+			"notes": "Friend requests/presence and text mail implemented. Native AC14:3 answer 1 accepts; refusal/ignore answers notify the asker without creating a friendship. AC14:1 delivery uses trailing text without a length prefix to match aLogin. Friend list class/nickname fields are sent, but native job/extra-byte ordering and VIP/presence interpretation still differ; see docs/CLIENT.md. Tests: internal/server/friends_test.go and internal/server/mail_test.go.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -1423,7 +1423,7 @@
 			"status": "partial",
 			"sha256": "1c4f93e1f6acdd34d2d8ec1f8849c3df235162acaf974148a1ef7b8865823491",
 			"go_files": ["internal/server/trade.go"],
-			"notes": "All requests registered; manager atomic-state parity requires review.",
+			"notes": "The legacy incremental AC25 layout is replaced by verified aLogin direction-specific operations: request 1 opens both forms, offer 2 locks whole stacks and gold, decision 3 accepts/cancels, and reply 2 closes with a native result. Both players commit atomically after accepting locked offers; metadata and rollback are covered by internal/server/trade_test.go. This does not claim legacy wire parity; see docs/CLIENT.md.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -3263,7 +3263,7 @@
 			"status": "ported",
 			"sha256": "d95ee31a49d18414048b43569b537eaa69f41c3188f21f23b676b3c577c374a9",
 			"go_files": ["internal/server/trade.go", "internal/game/trade.go"],
-			"notes": "All native request/reply/item/gold/confirm/cancel paths and source no-op lock supported. Go resets acceptance on revisions, preserves item damage/forge metadata, validates exact offers and commits both characters atomically. Source grants by ID and separately saves, risking metadata loss or partial transfers; these defects are corrected.",
+			"notes": "The trade manager is replaced by the aLogin AC25 lifecycle: immediate bilateral opening, one locked whole-stack/gold offer per side, then bilateral acceptance or cancellation. Legacy incremental revisions and the no-op lock request are no longer accepted. Go preserves damage and all item metadata, validates exact offers against current SQL ownership and commits both characters atomically. Source grants by ID and separate saves are deliberately replaced; native wire, cancellation, stale metadata, rollback and concurrent acceptance tests are in internal/server/trade_test.go. Native-client acceptance remains pending.",
 			"audit_verdict": "replaced"
 		},
 		{

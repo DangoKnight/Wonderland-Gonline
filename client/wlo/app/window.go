@@ -143,7 +143,10 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		g.C.GroundHold(held, x, y)
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-			if g.C.dropHotbar(x, y) {
+			if g.C.Social != nil && g.C.Social.Drop(x, y) {
+				g.C.Input.Pressed = nil
+				g.C.Input.Captured = nil
+			} else if g.C.dropHotbar(x, y) {
 				g.C.Input.Pressed = nil
 				g.C.Input.Captured = nil
 			} else {

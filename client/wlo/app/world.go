@@ -43,6 +43,7 @@ func (c *Client) loadNPCs(w *world.World) {
 	w.NPCs = world.MapNPCs(rec, c.npcTemplates, paint)
 	w.Questions = world.MapQuestions(rec)
 	w.Areas = world.MapAreas(rec)
+	w.Mines = world.MapMines(rec)
 }
 
 // warp is AC12 for the player: the map loads (again, when it changed) at
@@ -95,7 +96,9 @@ func (c *Client) warp(p []byte) {
 		c.World = w
 		c.applyWaterVehicle()
 		c.applyLocalSettings()
+		c.eventMusic = "" // FUN_002f2fd0 clears the event's track
 		c.playMapMusic()
+		c.setupMiniMap()
 		c.MainStatus.Portrait = w.Body
 	} else {
 		c.World.Player = pl
@@ -137,6 +140,9 @@ func (c *Client) GroundClick(x, y int) {
 	if c.sportClick(x, y) {
 		return
 	}
+	if c.Talk.Choosing() && c.pickConfirm(x, y) {
+		return
+	}
 	if c.Talk.Choosing() {
 		c.pickAnswer(x, y)
 		return
@@ -148,7 +154,7 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
-	if c.teamTargetAt(x, y) {
+	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}
 	if n := c.World.NPCAt(x, y); n != nil {
@@ -181,6 +187,7 @@ func (c *Client) walkToward(x, y int, marked bool) {
 // GroundHold is called while the left button stays down: a press that
 // started a walk re-aims it at the pointer every 400 ms. Release ends it.
 func (c *Client) GroundHold(held bool, x, y int) {
+	c.sportRelease(held, x, y)
 	if !held || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil {
 		c.groundHeld, c.groundSince = false, time.Time{}
 		return

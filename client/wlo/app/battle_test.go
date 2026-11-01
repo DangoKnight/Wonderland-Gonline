@@ -24,7 +24,14 @@ func enterBattle(t *testing.T) (*Client, *time.Time, func() [][]byte) {
 	for _, p := range [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), enemy, {50, 6, 4, 2, 0}, {52, 1}} {
 		c.dispatch(p)
 	}
+	finishSceneFade(c, now)
 	return c, now, sent
+}
+
+// finishSceneFade lets a battle transition run its 15 frames.
+func finishSceneFade(c *Client, now *time.Time) {
+	*now = now.Add(sceneFadeSteps * sceneFadeFrame)
+	c.sceneFadeTick(c.Now())
 }
 func TestBattleSceneCommandsAndExit(t *testing.T) {
 	c, now, sent := enterBattle(t)

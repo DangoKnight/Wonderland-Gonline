@@ -89,9 +89,14 @@ func (m *Music) stop() {
 	}
 }
 
-// playMapMusic plays the current map's scene track.
+// playMapMusic plays the current map's scene track, or the event's track
+// (event kind 15) while one is set.
 func (c *Client) playMapMusic() {
 	if c.Music == nil || c.World == nil {
+		return
+	}
+	if c.eventMusic != "" {
+		c.Music.Play(musicDir + c.eventMusic + musicExt)
 		return
 	}
 	if c.sceneMusic == nil {

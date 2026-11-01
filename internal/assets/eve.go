@@ -25,19 +25,54 @@ type Map struct {
 	PreEvents      []Event       `json:"pre_events"`
 }
 type MapNPC struct {
-	ClickID      uint16
-	Name         string
-	Flags        byte // Bit 0 is initial visibility.
-	X, Y         uint32
-	Events       []byte
-	Links        []byte // Door NPCs name their linked portal first.
+	ClickID uint16
+	Name    string
+	Flags   byte // Bit 0 is initial visibility.
+	X, Y    uint32
+	Events  []byte
+	Links   []byte // Door NPCs name their linked portal first.
+	// Sign (+0x3c, FUN_0047deb8) names the minimap icon Icon_Sign_<n>;
+	// 0 draws none.
+	Sign         byte
 	Template     uint32
 	Rotation     byte
 	WalkBehavior byte
 	WalkSteps    []WalkStep
+	// Speed (+0x46) is the walk speed in eighths of 0.16 px/ms
+	// (FUN_003030ec → FUN_00482980).
+	Speed byte
+	// Routes are the event paths ("ParaNode", FUN_0047e5b4 case 1) by
+	// slot 1..10, present ones only; event kind 4 walks them.
+	Routes       map[byte][]RoutePoint
 	UnknownWords [4]uint16
 }
 type WalkStep struct{ X, Y, Delay uint32 }
+type RoutePoint struct{ X, Y uint32 }
+
+// An NPC route record (0x5c bytes) is its slot, a presence byte, an unused
+// byte, the point count, then points 1..count at 4 + 8k: points start at
+// index 1, so at most ten fit.
+const (
+	npcRouteBytes     = 92
+	npcRouteSlots     = 10
+	npcRoutePresent   = 1
+	npcRouteCount     = 3
+	npcRoutePointBase = 4
+	npcRoutePoint     = 8
+)
+
+func parseRoute(b []byte) (slot byte, points []RoutePoint, ok bool) {
+	slot, n := b[0], int(b[npcRouteCount])
+	if b[npcRoutePresent] == 0 || slot == 0 || slot > npcRouteSlots || n > npcRouteSlots {
+		return 0, nil, false
+	}
+	for k := 1; k <= n; k++ {
+		o := npcRoutePointBase + k*npcRoutePoint
+		points = append(points, RoutePoint{le.Uint32(b[o:]), le.Uint32(b[o+4:])})
+	}
+	return slot, points, true
+}
+
 type GroundItem struct {
 	ClickID uint16
 	Name    string
@@ -148,7 +183,7 @@ func ParseEVEMap(id, scene uint16, data []byte) (Map, error) {
 				v.Y = r.U32()
 				v.Events = append([]byte(nil), r.Bytes(int(r.U8()))...)
 				v.Links = append([]byte(nil), r.Bytes(int(r.U8()))...)
-				r.U8()
+				v.Sign = r.U8()
 				v.Template = r.U32()
 				v.Rotation = r.U8()
 				v.WalkBehavior = r.U8()
@@ -157,9 +192,21 @@ func ParseEVEMap(id, scene uint16, data []byte) (Map, error) {
 				for range steps {
 					v.WalkSteps = append(v.WalkSteps, WalkStep{r.U32(), r.U32(), r.U32()})
 				}
-				r.Bytes(13)
-				patterns := int(r.U8())
-				r.Bytes(patterns * 92)
+				v.Speed = r.U8()
+				r.Bytes(12)
+				routes := int(r.U8())
+				for range routes {
+					b := r.Bytes(npcRouteBytes)
+					if len(b) < npcRouteBytes {
+						break
+					}
+					if slot, points, ok := parseRoute(b); ok {
+						if v.Routes == nil {
+							v.Routes = map[byte][]RoutePoint{}
+						}
+						v.Routes[slot] = points
+					}
+				}
 				for j := range v.UnknownWords {
 					v.UnknownWords[j] = r.U16()
 				}

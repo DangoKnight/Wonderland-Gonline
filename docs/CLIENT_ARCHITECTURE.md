@@ -471,9 +471,10 @@ native passenger presentation remain pending.
 
 ### Seated poses and raft recovery
 
-The default Alt+1 shortcut applies the native held sit pose (actions 16/17,
-`FUN_0027f248`, table `0x4bd7bc`, `FUN_00430f90`). It sends AC32:2 and renders
-locally; peers receive the server broadcast. Text input, battle/event holds and
+Alt+1..8 use the Social window's Emote slots (`FUN_0027f248`, table `0x4bd7bc`,
+`FUN_00430f90`); Alt+1 defaults to action 13, the kneeling sit (46..53 by facing).
+It sends AC32:2 with the faced action and renders locally; peers receive the server
+broadcast. See the Social window in [CLIENT.md](CLIENT.md). Text input, battle/event holds and
 mounted vehicles suppress this shortcut. Water riders use directional seated
 frames 46..53 (`FUN_00445950`); the vehicle retains its walking/standing direction.
 Dismounting restores ordinary body rendering. Raft composition also applies the

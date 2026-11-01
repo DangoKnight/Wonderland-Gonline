@@ -97,16 +97,14 @@ func (c *Client) initTeam() {
 	c.UI.Add(c.Team)
 	c.MainButtons.Buttons[mainTeamButton].OnClick = c.toggleTeam
 	c.FuncButtons.Buttons[joinTeamButton].OnClick = c.toggleJoinTeam
+	c.FuncButtons.Buttons[makeFriendsButton].OnClick = c.makeFriends
 }
 
 // Join Team is a world selection tool: clicking the toolbar arms it;
 // the next player click sends the native AC13:1 invitation request.
 func (c *Client) setJoinTeamTarget(active bool) {
 	c.joinTeamTarget = active
-	if c.World != nil {
-		c.World.JoinTeamSelection = active
-		c.World.Hover(-1, -1)
-	}
+	c.syncTargetSelection()
 	if c.FuncButtons != nil && c.FuncButtons.Buttons[joinTeamButton] != nil {
 		c.FuncButtons.Buttons[joinTeamButton].IconDown = active
 	}
@@ -116,7 +114,7 @@ func (c *Client) toggleJoinTeam() {
 		c.setJoinTeamTarget(false)
 		return
 	}
-	if c.World == nil || !c.Inventory.CanAct() || c.UI.Modal != nil {
+	if c.World == nil || !c.Inventory.CanAct() || c.UI.Modal != nil || c.toolbarBlocked(joinTeamButton) {
 		return
 	}
 	if c.inTeam() {
@@ -126,6 +124,8 @@ func (c *Client) toggleJoinTeam() {
 	c.Team.Hide()
 	c.World.StopWalk()
 	c.groundHeld = false
+	c.setFriendTarget(false)
+	c.setTradeTarget(false)
 	c.setJoinTeamTarget(true)
 }
 func (c *Client) toggleTeam() {
@@ -150,6 +150,14 @@ func (c *Client) TeamKey(key uint16, shift byte) bool {
 	}
 	if key == escapeKey && c.joinTeamTarget {
 		c.setJoinTeamTarget(false)
+		return true
+	}
+	if key == escapeKey && c.friendTarget {
+		c.setFriendTarget(false)
+		return true
+	}
+	if key == escapeKey && c.tradeTarget {
+		c.setTradeTarget(false)
 		return true
 	}
 	if key == escapeKey && c.Team.Visible && (c.UI.Active == c.Team || c.Input.Focused != nil && c.Input.Focused.Base().Root() == c.Team) {

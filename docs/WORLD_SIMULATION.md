@@ -83,14 +83,14 @@ catalog retain legacy unrestricted movement. There is no runtime file fallback.
 
 ## Upgrade and tuning
 
-The rebuilt server requires asset schema **v6**. Stop the server, then follow
-[ASSET_DATABASE.md](ASSET_DATABASE.md) to create verified database copies:
+The current server requires asset schema **v13**; terrain tables were introduced
+in v5. Stop the server, then follow
+[ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade the databases in place:
 
 ```sh
-go run ./cmd/database-migrate -config config.local.json -output-dir var/migrated-v6
+go run ./cmd/database-migrate -config config.local.json
 ```
 
-Point `assets_database` and `database` at the verified copies before restarting.
 The migration preserves accounts, character state and typed content edits. It
 projects existing imported Ground.MMG rows once; repeated migration preserves
 terrain edits. A complete installed export yields **1,147 terrain grids**.

@@ -34,14 +34,14 @@ func TestFriendDispatcherRequestAcceptListsAndRemoval(t *testing.T) {
 	if w[2].Len() != 0 {
 		t.Fatal("duplicate prompt")
 	}
-	tradeDo(t, s, b, protocol.Builder{14, 3}.U32(a.character.ID).U8(2))
+	tradeDo(t, s, b, protocol.Builder{14, 3}.U32(a.character.ID).U8(1))
 	for _, pair := range []struct {
 		owner, other *Session
 		wire         *captureConn
 	}{{a, b, w[0]}, {b, a, w[2]}} {
 		packets := pair.wire.packets(t)
 		id := pair.other.character.ID
-		if !contains(packets, protocol.Builder{14, 3}.U32(id).U8(2)) || !contains(packets, protocol.Builder{14, 9}.U32(id).U8(0)) || !contains(packets, protocol.Builder{10, 3}.U32(id).U8(255)) {
+		if !contains(packets, protocol.Builder{14, 3}.U32(id).U8(1)) || !contains(packets, protocol.Builder{14, 9}.U32(id).U8(0)) || !contains(packets, protocol.Builder{10, 3}.U32(id).U8(255)) {
 			t.Fatal("native accept packets missing", packets)
 		}
 		if !contains(packets, protocol.Builder{14, 11}.Bytes(friendEntry(*pair.other.character, true, true))) || !contains(packets, protocol.Builder{14, 5}.Bytes(friendEntry(*pair.other.character, false, true))) {
@@ -177,5 +177,30 @@ func TestFriendAccountDeletionRefreshesOnlinePeer(t *testing.T) {
 	friends, err := s.Store.Friends(context.Background(), a.character.ID)
 	if err != nil || len(friends) != 0 {
 		t.Fatal("deleted account retained relationship", err)
+	}
+}
+
+// TestFriendRefusalAndIgnore: aLogin's No (2) and timeout (3) answers form
+// no friendship; the asker hears the answer once.
+func TestFriendRefusalAndIgnore(t *testing.T) {
+	s, p, w := friendFixture(t)
+	a, b := p[0], p[2]
+	for _, answer := range []byte{protocol.FriendsAnswerRefuse, protocol.FriendsAnswerIgnore} {
+		tradeDo(t, s, a, protocol.Builder{14, 2}.U32(b.character.ID))
+		w[0].Reset()
+		w[2].Reset()
+		tradeDo(t, s, b, protocol.Builder{14, 3}.U32(a.character.ID).U8(answer))
+		if got := w[0].packets(t); len(got) != 1 || !contains(got, protocol.Builder{14, 3}.U32(b.character.ID).U8(answer)) || w[2].Len() != 0 {
+			t.Fatal("answer not reported to the asker", answer, got)
+		}
+		for _, c := range []*Session{a, b} {
+			if f, err := s.Store.Friends(context.Background(), c.character.ID); err != nil || len(f) != 0 {
+				t.Fatal("refused friendship saved", answer, f, err)
+			}
+		}
+		tradeDo(t, s, b, protocol.Builder{14, 3}.U32(a.character.ID).U8(protocol.FriendsAnswerAccept))
+		if w[0].Len() != 0 {
+			t.Fatal("answered request accepted later")
+		}
 	}
 }

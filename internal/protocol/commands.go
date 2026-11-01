@@ -225,6 +225,13 @@ const (
 	FriendsAcceptanceReply   = 9
 	FriendsAcceptanceSuccess = 0
 	FriendsTabs              = 11
+	// AC14:3's answer byte (aLogin: Yes 0x3bfc28, No FUN_003bfcb4, the
+	// question's timeout FUN_003c23e4); replies carry the same values
+	// (dispatcher case 0xe/3: " friend accepted", " refused to add",
+	// " ignored", otherwise "Player busy").
+	FriendsAnswerAccept = 1
+	FriendsAnswerRefuse = 2
+	FriendsAnswerIgnore = 3
 	// Unresolved wire meaning; retain the numeric code until verified.
 	FriendsWireCode13 = 13
 )
@@ -363,15 +370,55 @@ const (
 	QuestWireCode7 = 7
 )
 
-// Trade subcommands (AC25).
+// Trade subcommands (AC25), as aLogin sends and reads them (serializer case
+// 0x2cfd7c; dispatcher cases 0x2e92e6..0x2e930e). Each code means different
+// things by direction.
 const (
-	TradeRequest   = 1
-	TradeReply     = 2
-	TradeItemOffer = 3
-	TradeGoldOffer = 4
-	TradeOfferNoOp = 5
-	TradeConfirm   = 6
-	TradeCancel    = 7
+	// TradeRequest: the client asks to trade with [target u32]; the server
+	// opens both windows with [partner u32].
+	TradeRequest = 1
+	// TradeOffer: the client locks its offer, [gold u32][bag slot...];
+	// TradeEnded is the server's [result] that closes the window.
+	TradeOffer = 2
+	TradeEnded = 2
+	// TradeDecision: the client's [TradeDecisionAccept/Cancel];
+	// TradePartnerOffer is the server's [gold u32] and 30-byte item records.
+	TradeDecision     = 3
+	TradePartnerOffer = 3
+	// TradeOnlineTime tells the client whether the account may trade
+	// (dispatcher case 0x2c: 1 clears and 2 sets the player's +0x5791,
+	// which starts clear; Trade Items refuses with "Not enough online
+	// time to use!" while it is).
+	TradeOnlineTime = 0x2c
+)
+
+// AC25:44 values.
+const (
+	TradeOnlineTimeShort  = 1
+	TradeOnlineTimeEnough = 2
+)
+
+// AC25:3 client decisions (Trade button 0x368000, cancel FUN_00367dfc).
+const (
+	TradeDecisionAccept = 1
+	TradeDecisionCancel = 2
+)
+
+// AC25:2 results (FUN_003c6bd0's notices).
+const (
+	TradeResultSystemBusy      = 0  // "System busy, trade later"
+	TradeResultDisconnected    = 1  // "Player disconnected"
+	TradeResultBusy            = 2  // "Player is busy"
+	TradeResultCanceled        = 3  // "Trade canceled"
+	TradeResultCompleted       = 4  // "Trade complete"
+	TradeResultDifferentMaps   = 5  // "Players on diff maps"
+	TradeResultNotEnoughGold   = 6  // "Not enough Gold"
+	TradeResultInventoryFull   = 7  // "Player's inventory full"
+	TradeResultUnavailable     = 8  // "Can't trade now"
+	TradeResultPartnerCanceled = 9  // "Other player canceled trade"
+	TradeResultStallInUse      = 10 // "Stall is in use"
+	TradeResultAlreadyTrading  = 11 // "Can't have few trades"
+	TradeResultPetCrafting     = 14 // "Can't trade, pet is crafting"
 )
 
 // Bank/ATM operations (AC45). PIN and inter-character transfer remain unavailable.
@@ -432,6 +479,16 @@ const (
 	PoseBroadcast = 2
 )
 
+// Held AC32:2 poses are aLogin actions: the Emote grid's pose table
+// (0x4bd7bc) plus the facing. Lying down is grid action 4 (actions 26..27,
+// two facings); sitting is grid action 13 (actions 46..53, eight facings).
+const (
+	PoseLieFirst = 26
+	PoseLieLast  = 27
+	PoseSitFirst = 46
+	PoseSitLast  = 53
+)
+
 // Settings subcommands (AC33).
 const (
 	SettingsPK           = 1 // C->S: desired PK permission.
@@ -487,6 +544,9 @@ const (
 	MinigameStart  = 1
 	MinigameResult = 1
 	MinigameEnd    = 2
+	// MinigameThrow is sport kind 1, the dodgeball game, whose 57/1 carries a
+	// sixth byte: its battle scene variant.
+	MinigameThrow = 1
 )
 
 // Wire62 subcommands (AC62).
@@ -540,13 +600,6 @@ const (
 
 // AC15:10 has different meanings by direction.
 const PetControlVehicleMount = 10
-
-// AC25:2 reply values.
-const (
-	TradeReplyAccepted  = 1
-	TradeReplyRejected  = 2
-	TradeReplyCompleted = 4
-)
 
 // Direction-specific or context-specific requests and responses.
 const (

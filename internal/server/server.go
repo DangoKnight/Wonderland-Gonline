@@ -57,6 +57,7 @@ type Session struct {
 	manufacturingLoaded  bool
 	fishing              *fishingRun // Transient cast; guarded by worldMu.
 	emote                byte        // Current AC32 pose; guarded by worldMu.
+	restedAt             time.Time   // Last resting recovery while sitting or lying; guarded by worldMu.
 	view                 *world.View
 	pets                 *petRoster
 	event                *eventSession
@@ -70,12 +71,11 @@ type Session struct {
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
 	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
-	gathering        *gatheringRun     // Guarded by worldMu.
-	marriageProposal *marriageProposal // Guarded by worldMu.
-	guildInvitation  *guildInvitation  // Guarded by worldMu.
-	stall            *playerStall      // Session-owned; guarded by worldMu.
-	trade            *tradeSession     // Guarded by worldMu.
-	tradeRequest     *tradeRequest
+	gathering        *gatheringRun        // Guarded by worldMu.
+	marriageProposal *marriageProposal    // Guarded by worldMu.
+	guildInvitation  *guildInvitation     // Guarded by worldMu.
+	stall            *playerStall         // Session-owned; guarded by worldMu.
+	trade            *tradeSession        // Guarded by worldMu.
 	friendRequests   map[uint32]time.Time // Guarded by worldMu.
 	friendOnline     bool                 // Presence survives the map-loading phase of a warp.
 	walkMode         byte                 // AC16:4 runtime setting; guarded by worldMu.

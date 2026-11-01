@@ -218,10 +218,13 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.pendingActions = nil
 	}
 	if view.state.Active && !wasActive {
+		c.startSceneFade(sceneFadeEnterBattle)
 		c.World.StopWalk()
 		c.groundHeld = false
 		c.pendingNPC = nil
 		c.joinTeamTarget = false
+		c.friendTarget = false
+		c.tradeTarget = false
 		view.loadAttempted = false
 		view.bodies = nil
 		view.playing = nil
@@ -262,6 +265,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	}
 	if !view.state.Active && wasActive {
 		c.closeBattleView()
+		c.startSceneFade(sceneFadeLeaveBattle)
 		c.closeHotbarTarget()
 		c.remote.nextWalk = c.Now().Add(remoteWalkPause)
 	}
@@ -435,6 +439,10 @@ func (c *Client) battleFrame(draw bool) bool {
 	if !v.music {
 		v.music = true
 		c.playBattleMusic()
+	}
+	// The map keeps drawing until the entry transition has darkened it.
+	if c.enteringBattle() {
+		return false
 	}
 	v.stats = *c.Stats
 	for _, f := range v.state.Fighters {

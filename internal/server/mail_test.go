@@ -17,7 +17,7 @@ func nativeMailRequest(recipient uint32, body []byte) []byte {
 
 func TestTextMailNativeGolden(t *testing.T) {
 	packet, err := textMailPacket(store.TextMail{SenderID: 0x12345678, SentAtMillis: 0, Content: []byte{0xa4, 0xa4, 0xa4, 0xe5}})
-	expected := []byte{14, 1, 0x78, 0x56, 0x34, 0x12, 0, 0, 0, 0, 64, 248, 216, 64, 4, 0xa4, 0xa4, 0xa4, 0xe5}
+	expected := []byte{14, 1, 0x78, 0x56, 0x34, 0x12, 0, 0, 0, 0, 64, 248, 216, 64, 0xa4, 0xa4, 0xa4, 0xe5}
 	if err != nil || !bytes.Equal(packet, expected) {
 		t.Fatal(packet, err)
 	}
@@ -34,7 +34,7 @@ func TestTextMailLiveCrossMapAndDurableReceipt(t *testing.T) {
 		t.Fatal("sender did not receive native receipt")
 	}
 	messages := w[2].packets(t)
-	if len(messages) != 1 || len(messages[0]) != 15+len(body) || !bytes.Equal(messages[0][15:], body) || binary.LittleEndian.Uint32(messages[0][2:6]) != a.character.ID || messages[0][14] != byte(len(body)) {
+	if len(messages) != 1 || len(messages[0]) != 14+len(body) || !bytes.Equal(messages[0][14:], body) || binary.LittleEndian.Uint32(messages[0][2:6]) != a.character.ID {
 		t.Fatal(messages)
 	}
 	if w[1].Len() != 0 {
@@ -81,7 +81,7 @@ func TestTextMailDeferredUntilLoginAndWarpAcknowledgment(t *testing.T) {
 	second := w[2].packets(t)
 	count = 0
 	for _, packet := range second {
-		if len(packet) >= 15 && packet[0] == 14 && packet[1] == 1 && string(packet[15:]) == "loading" {
+		if len(packet) >= 14 && packet[0] == 14 && packet[1] == 1 && string(packet[14:]) == "loading" {
 			count++
 		}
 	}
@@ -158,7 +158,7 @@ func TestTextMailDeliveryBatchesKeepOrder(t *testing.T) {
 		t.Fatal(len(packets))
 	}
 	for i, packet := range packets {
-		if len(packet) != 16 || packet[15] != byte('A'+i) {
+		if len(packet) != 15 || packet[14] != byte('A'+i) {
 			t.Fatal(i, packet)
 		}
 	}

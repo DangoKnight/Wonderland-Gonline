@@ -215,7 +215,7 @@
    "start": "034b34",
    "end": "034cdc",
    "functions": 10,
-   "cited": 0,
+   "cited": 1,
    "classes": [],
    "strings": [],
    "subsystem": "rtl"
@@ -1490,7 +1490,7 @@
    "start": "1450d4",
    "end": "14a090",
    "functions": 50,
-   "cited": 0,
+   "cited": 27,
    "classes": [
     "TSportMario",
     "TSportMarioThird",
@@ -1778,7 +1778,7 @@
    "start": "16b448",
    "end": "16bcec",
    "functions": 24,
-   "cited": 0,
+   "cited": 7,
    "classes": [
     "TPicCatching",
     "TPic",
@@ -1953,7 +1953,7 @@
    "start": "180f64",
    "end": "198668",
    "functions": 267,
-   "cited": 3,
+   "cited": 5,
    "classes": [
     "TBeforeCareerForm",
     "TCareerForm",
@@ -2003,7 +2003,7 @@
    "start": "1ae788",
    "end": "1b742c",
    "functions": 82,
-   "cited": 20,
+   "cited": 56,
    "classes": [
     "CH_GameExplain",
     "CH_GameStartForm",
@@ -2045,7 +2045,7 @@
    "start": "1b9ca8",
    "end": "1d8a58",
    "functions": 229,
-   "cited": 1,
+   "cited": 14,
    "classes": [
     "TMailSaveBoxForm",
     "TPotentialForm",
@@ -2525,7 +2525,7 @@
    "start": "25b454",
    "end": "25d0ec",
    "functions": 7,
-   "cited": 0,
+   "cited": 2,
    "classes": [
     "TCY_ThrowMoenyMenu",
     "TCY_MoneyMenu",
@@ -2549,7 +2549,7 @@
    "start": "25fea0",
    "end": "2a7258",
    "functions": 465,
-   "cited": 62,
+   "cited": 83,
    "classes": [
     "TSe_TeamForm",
     "THotKeyImage",
@@ -2801,7 +2801,7 @@
    "start": "3030ec",
    "end": "30a510",
    "functions": 41,
-   "cited": 13,
+   "cited": 16,
    "classes": [
     "CH_TTrafficMenu",
     "CH_TMiniMapForm",
@@ -2823,7 +2823,7 @@
    "start": "30add4",
    "end": "312d24",
    "functions": 48,
-   "cited": 0,
+   "cited": 3,
    "classes": [
     "CH_TMiniMapForm",
     "CH_TMiniMapForm_World",
@@ -3045,7 +3045,7 @@
    "start": "34fad4",
    "end": "36e008",
    "functions": 202,
-   "cited": 13,
+   "cited": 25,
    "classes": [
     "TRe_GarageForm",
     "TSe_EquipForm2",
@@ -3086,7 +3086,7 @@
    "start": "36f144",
    "end": "377054",
    "functions": 90,
-   "cited": 5,
+   "cited": 14,
    "classes": [
     "TAvoid",
     "TEnterFight",
@@ -3102,7 +3102,7 @@
    "start": "378620",
    "end": "388fac",
    "functions": 69,
-   "cited": 3,
+   "cited": 4,
    "classes": [
     "TFightHum",
     "TFightField",
@@ -3121,7 +3121,7 @@
    "start": "389174",
    "end": "3a4258",
    "functions": 186,
-   "cited": 25,
+   "cited": 27,
    "classes": [
     "TFightHum",
     "TDZ_TestForm1",
@@ -3273,7 +3273,7 @@
    "start": "3bf274",
    "end": "3c62dc",
    "functions": 69,
-   "cited": 1,
+   "cited": 19,
    "classes": [
     "TAC_ICQList",
     "TSe_SendMailForm",
@@ -3296,7 +3296,7 @@
    "start": "3c674c",
    "end": "3c84cc",
    "functions": 9,
-   "cited": 0,
+   "cited": 4,
    "classes": [
     "TLight"
    ],
@@ -3603,7 +3603,7 @@
    "start": "41010c",
    "end": "458cd8",
    "functions": 525,
-   "cited": 60,
+   "cited": 65,
    "classes": [
     "TPlayers",
     "TBasePlayer",
@@ -3626,7 +3626,7 @@
    "start": "458ddc",
    "end": "45d090",
    "functions": 30,
-   "cited": 1,
+   "cited": 2,
    "classes": [
     "TIJL_JpgToBmp"
    ],
@@ -3658,7 +3658,7 @@
    "start": "45e048",
    "end": "464d74",
    "functions": 67,
-   "cited": 5,
+   "cited": 7,
    "classes": [
     "TSe_UIHandler",
     "TSe_GrBasic",
@@ -3681,7 +3681,7 @@
    "start": "4663b8",
    "end": "47b8d8",
    "functions": 403,
-   "cited": 212,
+   "cited": 217,
    "classes": [
     "TSe_ShortMsgPanel",
     "TBK_ImgListBox",
@@ -3736,7 +3736,7 @@
    "start": "47d1e8",
    "end": "47fcc0",
    "functions": 30,
-   "cited": 0,
+   "cited": 2,
    "classes": [
     "TRe_Npc",
     "TEveData",
@@ -3795,7 +3795,7 @@
    "start": "4827a8",
    "end": "485d44",
    "functions": 46,
-   "cited": 10,
+   "cited": 13,
    "classes": [
     "Twb_MemSur",
     "Twb_PlainPic"
@@ -3873,7 +3873,7 @@
    "start": "492ac4",
    "end": "4abccc",
    "functions": 183,
-   "cited": 17,
+   "cited": 18,
    "classes": [
     "TForm4"
    ],
@@ -3966,7 +3966,7 @@
     128
    ],
    "functions": 3879,
-   "cited": 5,
+   "cited": 6,
    "ranges": [
     "011280-0172d8",
     "0173d0-0174d8",
@@ -4164,7 +4164,7 @@
     284
    ],
    "functions": 194,
-   "cited": 17,
+   "cited": 18,
    "ranges": [
     "4913a4-4913cc",
     "492ac4-4abccc",
@@ -4202,7 +4202,7 @@
     267
    ],
    "functions": 481,
-   "cited": 217,
+   "cited": 224,
    "ranges": [
     "45d1d8-45dbdc",
     "45e048-464d74",
@@ -4220,7 +4220,7 @@
     276
    ],
    "functions": 56,
-   "cited": 12,
+   "cited": 15,
    "ranges": [
     "4827a8-485d44",
     "4868b8-486aac"
@@ -4271,14 +4271,14 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Server-driven roaming NPCs consume native AC22:2 with speed/facing, interrupted legs, background-session progression and AC22:4 movement cancellation. Not yet: gesture selection UI, passengers, additional vehicle classes, transforms.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Server-driven roaming NPCs consume native AC22:2 with speed/facing, interrupted legs, background-session progression and AC22:4 movement cancellation. Expression and held-pose selection uses the Social window's Emote tab and Alt shortcuts. Not yet: passengers, additional vehicle classes, transforms.",
    "regions": [
     262,
     263,
     264
    ],
    "functions": 567,
-   "cited": 68,
+   "cited": 74,
    "ranges": [
     "40f4b8-40f988",
     "41010c-458cd8",
@@ -4326,7 +4326,7 @@
     273
    ],
    "functions": 96,
-   "cited": 4,
+   "cited": 6,
    "ranges": [
     "1221c8-1221c8",
     "122264-122998",
@@ -4344,7 +4344,7 @@
    "title": "Events, NPC clicks, doors and areas",
    "go": "client/wlo/app (events.go, areas.go), client/wlo/world",
    "status": "partial",
-   "notes": "TEventManage: map NPC creation, clicks, the event interpreter (kinds 1, 5, 6), area triggers (20/8), door lights, sprite placement (FUN_002fe8e8). Not yet: event kinds 2-4 and 7+, NPC walk-in areas (20/2, 20/3), the treasure light.",
+   "notes": "TEventManage: map NPC creation, clicks, the event interpreter (kinds 1, 4, 5, 6, 11, 14, 15: dialogue, NPC routes, movies, questions, turns, event music), area triggers (20/8), door lights, sprite placement (FUN_002fe8e8). Not yet: event kinds 0 and 2, NPC walk-in areas (20/2, 20/3), the treasure light.",
    "regions": [
     211,
     212,
@@ -4353,7 +4353,7 @@
     254
    ],
    "functions": 90,
-   "cited": 25,
+   "cited": 28,
    "ranges": [
     "2fdc40-302cf8",
     "302d90-302e00",
@@ -4405,7 +4405,7 @@
    "title": "Chat log and input bar",
    "go": "client/wlo/hud (chatlog.go, inputbar.go), client/wlo/app (chat.go)",
    "status": "partial",
-   "notes": "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, immediate channel recoloring retained across message additions and rewrapping, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds, VIP marks and speech bubbles.",
+   "notes": "TTalkMsgForm, TSe_CharMsg: click-through hit test, scroll arrows/thumb/wheel, lock, three modes, native background tiling, unlocked dragging, shared mode geometry, resizing/rewrapping, window-relative ticker, immediate channel recoloring retained across message additions and rewrapping, whisper blur validation, native 31-code emoticon picker, log rendering and animated editor preview with atomic code editing. Not yet: alternate backgrounds and VIP marks (speech bubbles are disabled in this build).",
    "regions": [
     277,
     278
@@ -4422,14 +4422,14 @@
    "title": "HUD: status, hot keys, buttons, team, emotes",
    "go": "client/wlo/hud, client/wlo/team",
    "status": "partial",
-   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. Other toolbar actions remain pending.",
+   "notes": "TSe_MainStatus, TSe_HotKeyForm, the button bars, TSe_StatusInfoForm, TSe_TeamForm, TSe_EmotiomForm, skill buttons. Inventory, Skills, Teams and Options actions are wired. Teams supports native pet selection, Rest/Battle/Ride requests and replies, permanent dismissal confirmation, party invitations/declines, toolbar Join Team selection/cancellation and authoritative joining, leadership transfer, kicking/leaving, teammate vitals and companion/mount presentation. Pet riders retain native directional riding/standing/seated poses while their mounts move. Active pets follow native five-position owner trails, target the third history entry and use independent walking/standing actions for local and peer pets. Hotbar skill dragging, icons/hints, native AC40 lists, three pages, vertical/horizontal layouts, move/remove controls and F1-F8/manual battle activation are implemented; bindings save per character as local client preferences. Default Alt+1 sitting sends native held poses and renders locally. The toolbar's Trade opens the Business menu. Other toolbar actions remain pending.",
    "regions": [
     195,
     196,
     197
    ],
    "functions": 490,
-   "cited": 62,
+   "cited": 85,
    "ranges": [
     "259760-25b1ac",
     "25b454-25d0ec",
@@ -4450,16 +4450,16 @@
   {
    "key": "minimap",
    "title": "Minimap, world map and map frame",
-   "go": "",
-   "status": "todo",
-   "notes": "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data.",
+   "go": "client/wlo/hud (minimap.go), client/wlo/world (minimap.go), client/wlo/app (minimap.go)",
+   "status": "started",
+   "notes": "CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\\Map data. Ported: the scene minimap (CH_TMiniMapForm_World: <map>_Mini_Form, minimize/reload, Icon_Sign_ marks set by AC22:12, the player's face). Not yet: the tiled-map minimap built from Ground.MMG's cell grid, the map frame and the world map.",
    "regions": [
     214,
     215,
     168
    ],
    "functions": 85,
-   "cited": 0,
+   "cited": 3,
    "ranges": [
     "30add4-312d24",
     "312f74-314b00",
@@ -4518,7 +4518,7 @@
     169
    ],
    "functions": 715,
-   "cited": 26,
+   "cited": 51,
    "ranges": [
     "34fad4-36e008",
     "3c96f8-3cd798",
@@ -4553,7 +4553,7 @@
     231
    ],
    "functions": 356,
-   "cited": 38,
+   "cited": 50,
    "ranges": [
     "36e674-36e9e4",
     "36f144-377054",
@@ -4587,16 +4587,16 @@
   {
    "key": "trade",
    "title": "Trade, stalls and vendors",
-   "go": "",
-   "status": "todo",
-   "notes": "TCY_TradeMenu, vendor and stall forms, TTradeManage.",
+   "go": "client/wlo/inventory (trade.go), client/wlo/hud (business.go), client/wlo/app (trade.go)",
+   "status": "started",
+   "notes": "TCY_TradeMenu, vendor and stall forms, TTradeManage. Ported: the toolbar's Business menu (Form_Business_1), Trade Items (target mode 9, 25/1) and TRe_TradeItemForm (Form_TradeItem_1: bag, offer grids by item size, Confirm 25/2, Trade 25/3, 25/2 results, 25/44). Not yet: pet and furniture trades, stalls, vendors, Abandon.",
    "regions": [
     217,
     218,
     243
    ],
    "functions": 187,
-   "cited": 0,
+   "cited": 4,
    "ranges": [
     "315390-318d94",
     "319ea0-332c4c",
@@ -4606,9 +4606,9 @@
   {
    "key": "social",
    "title": "Friends, mail, guilds, weddings, PK",
-   "go": "",
-   "status": "todo",
-   "notes": "TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights.",
+   "go": "client/wlo/hud (social.go), client/wlo/app (social.go)",
+   "status": "started",
+   "notes": "TAC_ICQList, mail forms, TSe_ArmyForm (guilds), wedding and couple lists, block lists, PK and cooperative fights. Ported: the Social window (TSe_EmotiomForm, FUN_0027c6a4): the Friend tab (14/5 friend table with the GM entry, portraits, levels, element/presence/job icons, paging, ticks, Del Friend \u2192 14/4), the Emote tab (Ctrl phrases, TEmotionImage/TActionImage grids, Alt slots, AC32:1/2) and the Set Up tab (nickname, status, birthday and sun sign, blood type, AC10:1/2/3); TSe_SendMailForm with a TSe_Memo (14/1); the mailbox (Form_MailBox_1), letters (form_MailReceive_1) and the chat bar's mail icon; Make Friends (target mode 5, 14/2 and 14/3). Old Mail and the compose form (friends). Not yet: 14/6 name-addressed letters, Make Friends, TAC_ICQList, guilds, weddings, PK.",
    "regions": [
     241,
     242,
@@ -4622,7 +4622,7 @@
     199
    ],
    "functions": 370,
-   "cited": 2,
+   "cited": 20,
    "ranges": [
     "3be684-3bedb8",
     "3bf274-3c62dc",
@@ -4682,7 +4682,7 @@
     205
    ],
    "functions": 1493,
-   "cited": 35,
+   "cited": 50,
    "ranges": [
     "152a64-154dec",
     "1552f4-1553c8",
@@ -4786,7 +4786,7 @@
     240
    ],
    "functions": 811,
-   "cited": 61,
+   "cited": 131,
    "ranges": [
     "138268-1389b4",
     "138b58-138cf0",
@@ -5294,5 +5294,5 @@
    "client": false
   }
  ],
- "cited_functions": 720
+ "cited_functions": 900
 }

@@ -83,7 +83,6 @@ func (s *Server) stallCommand(ctx context.Context, c *Session, p []byte) error {
 		if !gmIdle(c) || !c.character.Preferences().TradeAllowed || c.invisible {
 			return c.send(tradeMessage("Finish active interactions before opening a stall."))
 		}
-		s.clearTradeRequests(c)
 		c.gathering = nil
 		c.stall = next
 		sign := stallSign(c, title)

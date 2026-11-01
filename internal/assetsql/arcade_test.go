@@ -23,12 +23,12 @@ func TestArcadeDefaultsNativeTablesAndEqualWeights(t *testing.T) {
 		}
 	}
 	got, err := defaultArcades(items)
-	if err != nil || len(got) != 5 {
+	if err != nil || len(got) != 8 {
 		t.Fatal(got, err)
 	}
 	for _, g := range got {
 		expected := int64(11)
-		if g.Kind == 6 || g.Kind == 22 {
+		if g.Kind == 6 || g.Kind == 22 || assets.ArcadeMario(g.Kind) {
 			expected = 10
 		}
 		if !g.Enabled || g.TotalWeight() != expected {
@@ -85,7 +85,7 @@ func TestArcadeSchemaV3UpgradeAndAdministrationPreserveEdits(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := LoadDatabase(path)
-	if err != nil || len(got.Arcades) != 5 || got.Items[10002].Name != "Existing v3 edit" {
+	if err != nil || len(got.Arcades) != 8 || got.Items[10002].Name != "Existing v3 edit" {
 		t.Fatal(got, err)
 	}
 	// This fixture lacks real prizes, so machines stay disabled. Weights remain
@@ -121,5 +121,58 @@ func TestArcadeSchemaV3UpgradeAndAdministrationPreserveEdits(t *testing.T) {
 	invalid, _ = json.Marshal(got.Arcades)
 	if err = db.Transaction(func(tx *gorm.DB) error { _, err := DefinitionCandidate(tx, "Arcades", invalid, nil); return err }); err == nil {
 		t.Fatal("native prize identity mismatch accepted")
+	}
+}
+
+// TestArcadeSchemaV12AddsFruitMachines: v13 appends the fruit machines
+// after the existing rows and leaves edited machines alone.
+func TestArcadeSchemaV12AddsFruitMachines(t *testing.T) {
+	path := runtimeDatabaseFixture(t)
+	if err := MigrateDatabase(path); err != nil {
+		t.Fatal(err)
+	}
+	db, err := assetdb.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer assetdb.Close(db)
+	// The v12 boundary: the first five machines, one of them edited.
+	var mario []ArcadesRow
+	if err = db.Where("value_kind IN ?", []int{11, 12, 14}).Find(&mario).Error; err != nil || len(mario) != 3 {
+		t.Fatal(mario, err)
+	}
+	for _, row := range mario {
+		if err = db.Where("arcades_ordinal = ?", row.ArcadesOrdinal).Delete(&ArcadesRewardsRow{}).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err = db.Delete(&row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err = db.Model(&ArcadesRow{}).Where("value_kind = ?", 8).Update("value_point_cost", 77).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err = db.Model(&catalogSchema{}).Where("id = ?", catalogMetadataID).Update("version", 12).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err = db.Transaction(migrateCatalog); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadDatabase(path)
+	if err != nil || len(got.Arcades) != 8 {
+		t.Fatal(got.Arcades, err)
+	}
+	kinds := []byte{}
+	for _, g := range got.Arcades {
+		kinds = append(kinds, g.Kind)
+		if g.Kind == 8 && g.PointCost != 77 {
+			t.Fatal("edited machine replaced", g)
+		}
+		if g.Kind == 11 && (g.PointCost != 25 || g.TokenCount != 0 || len(g.Rewards) != 10) {
+			t.Fatal("fruit machine", g)
+		}
+	}
+	if !reflect.DeepEqual(kinds, []byte{6, 8, 10, 19, 22, 11, 12, 14}) {
+		t.Fatal("order", kinds)
 	}
 }

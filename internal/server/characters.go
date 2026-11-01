@@ -135,7 +135,7 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	packets := [][]byte{{protocol.CommandEvent, protocol.EventResume}, {protocol.CommandQuest, protocol.QuestFlag, 183, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 53, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 52, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 54, 0, 0}, {protocol.CommandEvent, protocol.EventWireCode33, 0}, {protocol.CommandFriends, protocol.FriendsWireCode13, 3}, appearance, base}
 	packets = append(packets, s.monsterBookPackets(&char)...)
 	packets = append(packets, char.StatPackets(s.Assets.Items)...)
-	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
+	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandTrade, protocol.TradeOnlineTime, protocol.TradeOnlineTimeEnough}, []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	packets = append(packets, s.arrivalPackets(char, view, pets, 0)...)
 	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode15, 0}, []byte{protocol.CommandWire62, protocol.Wire62WireCode53, 2, 0}, recordPointStatus(char), []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode14, 2})
 	for slot := byte(1); slot <= 10; slot++ {

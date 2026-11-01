@@ -52,6 +52,15 @@ func parseArcadePayment(p []byte) (arcadePayment, error) {
 			return payment, protocol.ErrMalformed
 		}
 		payment.ticketSlot = p[2]
+	case protocol.ArcadeMario:
+		if len(p) != protocol.ArcadeMarioRequestBytes {
+			return payment, protocol.ErrMalformed
+		}
+	case protocol.ArcadeMario2, protocol.ArcadeMario3:
+		if len(p) != protocol.ArcadeEggRequestBytes {
+			return payment, protocol.ErrMalformed
+		}
+		payment.mode = p[2]
 	default:
 		return payment, ErrUnsupported
 	}
@@ -68,6 +77,13 @@ func (s *Server) arcadeCommand(ctx context.Context, c *Session, p []byte) error 
 	}
 	reject := func(message string) error {
 		return s.sendAll(c, [][]byte{headBanner("Arcade: " + message), {protocol.CommandArcadeGame, p[1], protocol.ArcadeRejected}})
+	}
+	bagFull := func() error {
+		if assets.ArcadeMario(p[1]) {
+			// The fruit machines show their own "Inventory Full" message.
+			return c.send([]byte{protocol.CommandArcadeGame, p[1], protocol.ArcadeMarioBagFull})
+		}
+		return reject("Make room in your inventory. No payment taken.")
 	}
 	active := c.arcade
 	if active == nil || active.kind != p[1] || active.mapID != c.character.Map || active.event != c.event || (active.event != nil && active.event.onMinigame == nil) {
@@ -175,7 +191,7 @@ func (s *Server) arcadeCommand(ctx context.Context, c *Session, p []byte) error 
 	case errors.Is(err, store.ErrMallFunds):
 		return reject("Insufficient points. No payment taken.")
 	case errors.Is(err, game.ErrInventoryFull):
-		return reject("Make room in your inventory. No payment taken.")
+		return bagFull()
 	case errors.Is(err, game.ErrInvalidItem), errors.Is(err, game.ErrItemLocked), errors.Is(err, store.ErrMallPurchase):
 		return reject("Check your payment items and inventory. No payment taken.")
 	case err != nil:
@@ -192,11 +208,34 @@ func (s *Server) arcadeCommand(ctx context.Context, c *Session, p []byte) error 
 	}
 	packets = append(packets, next.Bag.AdditionPacket(additions))
 	packets = append(packets, mallBalancePackets(balances)...)
-	outcome := []byte{protocol.CommandArcadeGame, definition.Kind, protocol.ArcadeAccepted, reward.Index}
-	if definition.Kind != protocol.ArcadeEgg && definition.Kind != protocol.ArcadeEgg2 {
+	packets = append(packets, arcadeOutcome(definition.Kind, reward))
+	return s.sendAll(c, packets)
+}
+
+// arcadeOutcome is a play's AC71 result. Eggs carry the prize and quantity,
+// slots the three reels too. Which fruit-machine reply the original server
+// chose is unrecorded; this compatibility rule sends three matching reels
+// with a prize as reply 3 (the bingo picture flashes) and anything else as
+// reply 4, whose lamp blinks for every prize but index 0.
+func arcadeOutcome(kind byte, reward assets.ArcadeReward) []byte {
+	outcome := []byte{protocol.CommandArcadeGame, kind, protocol.ArcadeAccepted, reward.Index}
+	switch {
+	case kind == protocol.ArcadeEgg || kind == protocol.ArcadeEgg2:
+	case assets.ArcadeMario(kind):
+		r := reward.Reels
+		if reward.Index != 0 && r[0] == r[1] && r[1] == r[2] {
+			outcome[2] = protocol.ArcadeMarioJackpot
+			outcome = append(outcome, r[:]...)
+		} else {
+			outcome[2] = protocol.ArcadeMarioPrize
+			lamp := byte(0)
+			if reward.Index != 0 {
+				lamp = protocol.ArcadeMarioLampWin
+			}
+			outcome = append(append(outcome, r[:]...), lamp)
+		}
+	default:
 		outcome = append(outcome, reward.Reels[:]...)
 	}
-	outcome = append(outcome, reward.Quantity)
-	packets = append(packets, outcome)
-	return s.sendAll(c, packets)
+	return append(outcome, reward.Quantity)
 }

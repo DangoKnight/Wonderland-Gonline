@@ -246,6 +246,7 @@ func (s *Server) runRespawns(ctx context.Context) {
 			s.respawnMapProps(ctx, now)
 			s.reviveMonsters(now)
 			s.simulateWorld(now)
+			s.restCharacters(now)
 			s.maintainGathering(ctx, now)
 		}
 	}

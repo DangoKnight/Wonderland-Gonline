@@ -9,6 +9,22 @@ simulation. This is a working core, **not complete native battle parity**.
   target and stat batches; AC51 batched absolute HP/SP; AC52 round readiness;
   AC53 defeat and action-submission acknowledgements. Decode batches before
   mutating state. Duplicate ready packets do not reset submitted actions.
+- Battle entry and exit transitions (`client/wlo/app/transition.go`), the
+  screen transition `FUN_0049a2e8` run each game frame by `FUN_0049a484`
+  after the scene and before the forms. Entering (mode 1): the battle
+  constructor (func 0x38bcdc) starts the battle music, then the map keeps
+  running and darkens with black at alpha 12 × step for steps 1..15; after
+  step 15 the callback 0x38c8f0 runs and the frame loop draws the battle
+  field (+0x565) at full brightness. Leaving (mode 2): when the player's battle
+  state clears, the frame loop (0x4a2b12) shows the map again under black
+  for steps 15 down to 1 and frees the battle (`FUN_0038fefc`) at the end;
+  `FUN_0039b81c` and `FUN_0038cb8c` start the same mode for a fled or departed
+  player. Neither darkens map 11009 (0x2af1). One step per 30 ms game frame;
+  battle packets received meanwhile queue and play once the field shows.
+  `TestBattleTransitions` checks the brightness of each step against the lit
+  map. No capture shows a transition frame. The other modes (3–14: wipes and
+  40 × 40 tile effects) are reached only from the debug form's buttons, and
+  map entry's mode 0xff only waits four frames without drawing.
 - Native 4 by 4 formation, player equipment and NPC/pet sprites, battle stances,
   defeated poses, names, HP/SP bars, hover highlighting and transient HUD vitals.
   Battle sprite clocks and state belong to each workspace session.

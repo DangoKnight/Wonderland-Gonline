@@ -468,7 +468,9 @@ type confirmation struct {
 	previewTemplate             world.NPCTemplate
 }
 
-func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func()) {
+// Confirm shows the question; the returned function dismisses this
+// question, if it is still open, without calling either answer.
+func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func()) func() {
 	if f.prompt != nil {
 		f.prompt.Hide()
 	}
@@ -533,6 +535,11 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 	f.Env.UI.Add(d)
 	d.Show()
 	f.Env.UI.SetModal(true, d)
+	return func() {
+		if f.prompt == d {
+			d.Hide()
+		}
+	}
 }
 func (d *confirmation) Hide() {
 	if d.Env.UI.Modal == d {
