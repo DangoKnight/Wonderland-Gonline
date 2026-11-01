@@ -151,6 +151,15 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 				}
 				return w3 >= 48001 && w3 <= 48042 && compare(riding, value, op)
 			}
+		case 3:
+			switch w2 {
+			case 1, 2, 3, 4:
+				return int64(c.Body) == int64(w2)
+			case 7, 8:
+				male := c.Body == 1 || c.Body == 3
+				return male == (w2 == 7)
+			}
+			return false
 		case 2:
 			_, present := c.Pet(uint32(w3))
 			switch w2 {
