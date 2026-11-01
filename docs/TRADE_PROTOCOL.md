@@ -33,8 +33,11 @@ Each partner-offer item record contains:
 | 10–11 | Instance metadata bytes 0–1 |
 | 12–29 | Instance metadata bytes 8–25 |
 
-There is no duplicated quantity field or appended five-byte padding. Damage and
-metadata are preserved. The body length is `6 + 30 * itemCount`.
+The native receiver passes `(uint)local_1c >> 24` to `FUN_003d7cdc`: this is the
+first quantity byte read after the item ID. The other bytes assembled in that
+temporary carry separate instance fields. There is no duplicated quantity field
+or appended five-byte padding. Damage and metadata are preserved. The body
+length is `6 + 30 * itemCount`.
 
 An offer locks once and cannot be replaced during that exchange. Both offers
 must be locked before either final acceptance counts. When both accept, one SQL

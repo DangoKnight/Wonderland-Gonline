@@ -1154,5 +1154,11 @@ Focused race checks cover portal areas, every body/gender combination, trading
 replay/metadata/rollback/concurrent acceptance, native and legacy stalls, native
 cart forms, SQL price initialization/edit preservation and repeated hotel use.
 No GitHub status checks, workflow runs or reviews were present on the reviewed
-heads. Final pre-push validation is pending; full server validation is run once
-for the integrated result, with focused follow-ups for any failures.
+heads. Final pre-push validation passes: the full server suite with the race
+detector and the migrated installed asset database (server package: 735.793s),
+the full client suite (app package: 179.440s), and `go vet ./...` in both modules.
+The initial isolated-checkout run was invalidated by missing client fixtures
+and temporary disk exhaustion; these results come from the complete workspace
+after removing those temporary copies. Offline migration and database integrity
+checks also pass on disposable copies; the regular databases were not upgraded.
+Live native-client acceptance has not been rerun for these integrations.
