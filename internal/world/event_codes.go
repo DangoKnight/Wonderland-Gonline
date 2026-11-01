@@ -74,6 +74,7 @@ const (
 const (
 	RegionEntry          = 1
 	RegionDoor           = 2
+	RegionArea           = 3
 	TriggerEntry         = 0
 	MinDialogueID        = 10_000
 	MaxTalkIDHighByte    = 255

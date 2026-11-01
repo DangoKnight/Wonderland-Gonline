@@ -348,7 +348,7 @@ func absCells(v int32) int32 {
 func (w *World) Entry(mapID, id uint16) (Area, bool) {
 	if m, ok := w.maps[mapID]; ok {
 		for _, e := range m.data.Entries {
-			if a := areaOf(e); a.ClickID == id && (a.Kind == RegionEntry || a.Kind == RegionDoor) {
+			if a := areaOf(e); a.ClickID == id && a.Kind >= RegionEntry && a.Kind <= RegionArea {
 				return a, true
 			}
 		}

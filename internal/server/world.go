@@ -370,6 +370,7 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 		return e
 	}
 	dst, ok := s.portalDestination(c, portal)
+	s.Log.Debug("portal", "map", char.Map, "portal", portal, "x", char.X, "y", char.Y, "to", dst.Map, "tx", dst.X, "ty", dst.Y, "found", ok)
 	if ok {
 		_, ok = s.World.Map(dst.Map)
 	}
