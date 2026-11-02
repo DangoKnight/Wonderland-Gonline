@@ -949,6 +949,36 @@ BMg/JMg directories begin with a UInt16 count followed by 32-byte records: a one
 
 Ground.MMG prefix decoding follows sibling `decompiled/aLogin_decompiled.c`, function `FUN_004121a8`: UInt32 scene width/height, a byte layer count with three UInt16 operands per layer, UInt16 grid width/height, and X-major raw cell bytes. The first anonymous record has dimensions 1472×960, grid 74×49, and one layer reference to resource 10000. The verified prefix consumes 3,645 bytes. That prefix-only path remains useful for native inspection. The normal client now resolves map/scene records from compiled runtime data or `ground_data.json`, including background layers, collision cells, sound zones and objects; unresolved trailing fields remain preserved. Runtime land traversal uses the native `0x17` blocked mask. See [client architecture](CLIENT_ARCHITECTURE.md).
 
+### Incoming handler details
+
+These addresses refer to the recorded `ca19ee087b60…` client build in
+`var/decompiled/aLogin_ca19ee087b60_full.c`. The dispatcher passes a buffer
+whose zero-based offset 0 is the subcommand; the action byte has already been
+removed. Delphi string-copy positions below are one-based.
+
+- `53/10` (`FUN_00445784`): the monster-book mask update. It reads
+  `(index, mask)` byte pairs at buffer offsets 1 and 2, then advances by two
+  while a complete pair remains. For each set mask bit, `FUN_00482abc` selects
+  a slot from 1 through 8 and the handler sets the discovery byte at
+  `*PTR_DAT_004caa18 + 0x3cac + (index - 1) * 8 + slot` to 1. It leaves other
+  discovery bytes unchanged, rebuilds the discovered-template list from the
+  marked entries, and sets the page count to integer `discovered / 10 + 1`.
+  The server currently sends individual template discoveries as `53/9`, also
+  an incoming client message (`FUN_0044566c`).
+- `184/2` (`FUN_00159bd0`): when the first buffer byte is `2`, the handler calls
+  `FUN_00159bfc` with a starting index of 2. That helper reads `(index, value)`
+  byte pairs at zero-based offsets 1 and 2, advancing by two until the buffer
+  ends or 1001 pairs have been processed. `FUN_00159c48` accepts indices 1
+  through 5 via `FUN_001599c0` and stores each value at object offset `5 + index`.
+- `199/14` (`FUN_00318ca4`): a system line. It obtains the buffer length through
+  `FUN_0001412c`, then copies `len - 1` bytes with `FUN_00014334` starting at
+  Delphi position 2 (zero-based offset 1), skipping the subcommand. It fills
+  the chat row through `FUN_001372ac` with `(System):` as the speaker.
+- `56`: the recorded native dispatcher's case body has no application action,
+  so that client ignores incoming AC56. The Go server uses `CommandStall` for
+  its additional stall messages. Native stalls use separate AC23 messages and
+  AC20 request adapters.
+
 ## Verification and limitations
 
 Native archive census results, resource-test environment variables and the
