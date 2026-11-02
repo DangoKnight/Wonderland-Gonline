@@ -722,19 +722,25 @@ func (s *Server) deliverPendingTextMail(ctx context.Context, c *Session) error {
 			return err
 		}
 		if len(messages) == 0 {
+			c.textMailPending = false
 			return nil
 		}
+		c.textMailPending = true
 		for _, message := range messages {
+			key := deliveryKey{deliveryTextMail, c.character.ID, message.ID}
+			if c.pendingMail[key] != nil {
+				continue
+			}
 			packet, err := serverwire.TextMailPacket(message)
 			if err != nil {
 				return err
 			}
-			if err := c.send(packet); err != nil {
+			if err := s.sendMailDelivery(ctx, c, key, [][]byte{packet}); err != nil {
 				return err
 			}
-			if err := s.Store.MarkTextMailDelivered(ctx, c.character.ID, message.ID); err != nil {
-				return err
-			}
+		}
+		if len(c.pendingMail) > 0 {
+			return nil
 		}
 	}
 }

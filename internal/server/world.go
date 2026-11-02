@@ -39,6 +39,9 @@ func (s *Server) peers(c *Session) []*Session {
 func (s *Server) acknowledgeWorld(c *Session) error {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if err := c.outputError(); err != nil {
+		return err
+	}
 	if c.ready {
 		return nil
 	}
@@ -203,6 +206,12 @@ func (s *Server) broadcastWorld(c *Session, packet []byte) {
 func (s *Server) leaveWorld(c *Session) {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if len(c.pendingMail) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), mailReceiptTimeout)
+		s.finishMailReceipts(ctx, c)
+		cancel()
+	}
+	delete(s.deliveries, c)
 	if c.openTent != nil {
 		if err := s.closePlayerTent(context.Background(), c); err != nil {
 			s.Log.Error("tent close on logout failed", "error", err)
@@ -303,6 +312,9 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	// A GM summon may move this character from another session; read it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if err := c.outputError(); err != nil {
+		return err
+	}
 	if c.tentOwner != 0 {
 		if !gmIdle(c) {
 			return nil

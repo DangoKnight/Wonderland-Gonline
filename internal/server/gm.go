@@ -100,7 +100,9 @@ func (s *Server) commandHelp(c *Session) error {
 	return nil
 }
 
-func gmIdle(c *Session) bool { return commandTravelAvailable(c) && c.trade == nil }
+func gmIdle(c *Session) bool {
+	return commandTravelAvailable(c) && c.trade == nil && c.outputError() == nil
+}
 
 func (s *Server) gmTarget(actor *Session, query string) (*Session, error) {
 	var target *Session
@@ -198,7 +200,7 @@ func (s *Server) gmKick(c *Session, reason string) {
 		reason = "Disconnected by a game master."
 	}
 	_ = s.chatFeedback(c, reason)
-	_ = c.conn.Close()
+	c.closeAfterFlush()
 }
 
 func (s *Server) gmModeration(ctx context.Context, c *Session, command string, args []string) error {

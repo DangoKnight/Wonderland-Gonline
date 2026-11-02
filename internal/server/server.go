@@ -39,12 +39,14 @@ type Server struct {
 	bannedIPs     atomic.Value
 	ipBanMu       sync.Mutex
 	// accountMu orders credential verification/publication against admin changes.
-	accountMu    sync.RWMutex
-	privilegeMu  sync.Mutex   // Orders persisted and live GM permissions.
-	catalogMu    sync.RWMutex // Pre-world and administration snapshots versus reload.
-	shutdown     chan struct{}
-	shutdownOnce sync.Once
-	shutdownAt   time.Time // Guarded by worldMu.
+	accountMu     sync.RWMutex
+	privilegeMu   sync.Mutex   // Orders persisted and live GM permissions.
+	catalogMu     sync.RWMutex // Pre-world and administration snapshots versus reload.
+	shutdown      chan struct{}
+	shutdownOnce  sync.Once
+	shutdownAt    time.Time             // Guarded by worldMu.
+	deliveryReady chan struct{}         // Coalesced, nonblocking write-completion wakeup.
+	deliveries    map[*Session]struct{} // Sessions with pending mail work; guarded by worldMu.
 	// worldMu orders visibility, movement, and logout packets across sessions.
 	worldMu        sync.Mutex
 	world          map[uint64]*Session
@@ -91,6 +93,8 @@ func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) 
 	s.Log = slog.New(serverlog.NewHandler(log.Handler(), s.logs))
 	s.bannedIPs.Store(map[string]bool{})
 	s.shutdown = make(chan struct{})
+	s.deliveryReady = make(chan struct{}, deliveryWakeCapacity)
+	s.deliveries = make(map[*Session]struct{})
 	s.name.Store(c.Name)
 	return s
 }
@@ -157,6 +161,8 @@ func (s *Server) Run(ctx context.Context) error {
 	s.wg.Add(1)
 	go func() { defer s.wg.Done(); s.runAutosave(ctx) }()
 	s.wg.Add(1)
+	go func() { defer s.wg.Done(); s.runDeliveryReceipts(ctx) }()
+	s.wg.Add(1)
 	go func() { defer s.wg.Done(); s.runShutdown(ctx) }()
 	errs := make(chan error, len(services))
 	for i, v := range services {
@@ -202,7 +208,7 @@ func (s *Server) accept(ctx context.Context, service string, l net.Listener) err
 			continue
 		}
 		id := s.next.Add(1)
-		c := &Session{conn: conn, log: s.Log, info: SessionInfo{ID: id, Service: service, Remote: conn.RemoteAddr().String(), Connected: time.Now().UTC()}, lastWindow: time.Now()}
+		c := s.networkSession(conn, service, id)
 		s.sessions[id] = c
 		s.wg.Add(1)
 		s.mu.Unlock()
@@ -211,7 +217,7 @@ func (s *Server) accept(ctx context.Context, service string, l net.Listener) err
 }
 func (s *Server) serve(ctx context.Context, c *Session) {
 	defer func() {
-		c.conn.Close()
+		c.finishOutput()
 		s.leaveWorld(c)
 		s.releaseName(c)
 		s.mu.Lock()
@@ -243,6 +249,9 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 			}
 			return
 		}
+		if c.outputError() != nil {
+			return
+		}
 		s.Log.Debug("packet received", append(serverlog.TraceAttrs(p, false), "session", c.info.ID)...)
 		s.received.Add(1)
 		now := time.Now()
@@ -259,6 +268,7 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 		s.partySync(c)
 		if errors.Is(e, errAlreadyLoggedIn) {
 			s.Log.Info("duplicate login rejected", s.sessionLogAttrs(c)...)
+			c.closeAfterFlush()
 			return // Native AC0 reasons are displayed by the socket disconnect callback.
 		}
 		if errors.Is(e, ErrUnsupported) {

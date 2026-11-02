@@ -11,8 +11,9 @@ Independent components have their own Go packages:
 | --- | --- |
 | [logging](logging/buffer.go) | Bounded administrative log capture, runtime levels, snapshot isolation, redaction and bounded packet traces. Owns its synchronization. |
 | [wire](wire/events.go) | Server packet builders grouped by events, messages, commerce, companions, world, housing and mail. Reads supplied snapshots; performs no database operations or socket writes. |
+| [transport](transport/conn.go) | Bounded per-connection output queues, ordered socket writes, write-completion receipts and writer shutdown. Owns no gameplay state or SQL operations. |
 
-Both packages are dependencies of `server`; neither imports it. Existing
+These packages are dependencies of `server`; none imports it. Existing
 `server.Server`, `server.Session`, `server.SessionInfo`, `server.LogEntry` and
 constructor APIs remain available to the executable, administration API and
 fixture tools. `LogEntry` aliases the logging component's record type.
@@ -36,7 +37,8 @@ fixture tools. `LogEntry` aliases the logging component's record type.
 
 The root remains one package because handlers coordinate private session state
 under `worldMu`, alongside the existing account/catalog/administration locks.
-Session fields, transport writes and checkpoint adoption live in `session.go`.
+Session fields, queue admission, mail receipt ownership and checkpoint adoption
+live in `session.go`; the transport component performs the socket writes.
 Moving a handler between files does not change its locking or transaction
 contract. Do not expose session fields or add callbacks between features solely
 to put an existing method in a different directory.
@@ -47,6 +49,13 @@ Extract another package when it has a narrow boundary and can own its state
 without depending on `Server` or mutable `Session` internals. Extend the existing
 feature file for small related helpers; split a feature when its responsibilities
 actually diverge.
+
+Accepted login/gameplay sockets always use `networkSession` and its transport
+queue. Synchronous session output remains only for socket-free administrator
+reply capture and deterministic fixture adapters. Launcher status keeps its
+direct, unframed response outside gameplay locking. `send` success means queue
+acceptance; use tracked write receipts for durable delivery markers. See the
+[outgoing networking policy](../../docs/DEVELOPMENT.md#outgoing-networking).
 
 Pure packet golden tests and trace checks live with their component. Tests that
 need shared session fixtures, persistence or multiple players stay in the root,

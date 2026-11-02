@@ -16,6 +16,7 @@ import (
 	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/server/transport"
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
@@ -23,6 +24,398 @@ import (
 func setAutosaveBaseline(c *Session) {
 	baseline := c.character.Clone()
 	c.autosaveBaseline = &baseline
+}
+
+type stalledOutputConn struct {
+	net.Conn
+	started chan struct{}
+	once    sync.Once
+}
+
+func (c *stalledOutputConn) Write(p []byte) (int, error) {
+	c.once.Do(func() { close(c.started) })
+	return c.Conn.Write(p)
+}
+func queuedPlayer(t *testing.T, s *Server, c *Session) (net.Conn, <-chan struct{}) {
+	t.Helper()
+	host, client := net.Pipe()
+	signal := &stalledOutputConn{Conn: host, started: make(chan struct{})}
+	c.conn = s.networkSession(signal, "world", c.info.ID).conn
+	t.Cleanup(func() { c.conn.Close(); client.Close(); c.finishOutput() })
+	return client, signal.started
+}
+func awaitSessionProgress(t *testing.T, done <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("session made no progress")
+	}
+}
+func awaitMailWrites(t *testing.T, s *Server, c *Session) {
+	t.Helper()
+	until := time.Now().Add(2 * time.Second)
+	for time.Now().Before(until) {
+		s.worldMu.Lock()
+		ready := true
+		for _, r := range c.pendingMail {
+			done, _ := r.Result()
+			ready = ready && done
+		}
+		s.worldMu.Unlock()
+		if ready {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("queued mail did not finish writing")
+}
+
+func TestQueuedOutputSlowPeerDoesNotHoldWorldLock(t *testing.T) {
+	s, players, _ := worldFixture(t)
+	s.Assets.Maps[20000] = assets.Map{ID: 20000}
+	s.World.ReloadCatalog(s.Assets)
+	for _, c := range players {
+		c.ready = true
+		s.world[c.info.ID] = c
+	}
+	_, started := queuedPlayer(t, s, players[1])
+	result := make(chan error, 1)
+	go func() { result <- s.worldCommand(context.Background(), players[0], []byte{6, 1, 2, 0xb0, 4, 0x14, 5}) }()
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("movement waited for its stalled peer")
+	}
+	awaitSessionProgress(t, started)
+	// The first socket is still blocked. Another map must acquire the same
+	// world lock and process its command without waiting for the write deadline.
+	go func() { result <- s.worldCommand(context.Background(), players[2], []byte{6, 1, 2, 0xb0, 4, 0x14, 5}) }()
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("slow peer blocked an unrelated map")
+	}
+	if players[2].character.X != 1200 || players[2].character.Y != 1300 {
+		t.Fatal("unrelated movement was not applied")
+	}
+}
+
+func TestQueuedTextMailWaitsForWriteAndRetriesFailedMarker(t *testing.T) {
+	s, c, _, path := mallFixture(t)
+	client, started := queuedPlayer(t, s, c)
+	s.world[c.info.ID] = c
+	s.friendSessions[c.character.ID] = c
+	ctx := context.Background()
+	message, err := s.Store.SendTextMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.ID, 0, []byte("durable receipt"), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.worldMu.Lock()
+	err = s.deliverPendingTextMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	awaitSessionProgress(t, started)
+	s.processDeliveryReceipts(ctx)
+	rows, err := s.Store.PendingTextMail(ctx, c.character.ID, 32)
+	if err != nil || len(rows) != 1 || rows[0].ID != message.ID {
+		t.Fatal("enqueue marked mail delivered", rows, err)
+	}
+	client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if p, err := protocol.Read(client); err != nil || !bytes.HasSuffix(p, []byte("durable receipt")) {
+		t.Fatal(p, err)
+	}
+	awaitMailWrites(t, s, c)
+	raw, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	if _, err := raw.Exec("CREATE TRIGGER reject_delivery BEFORE UPDATE OF delivered ON text_mail BEGIN SELECT RAISE(ABORT,'marker failed'); END"); err != nil {
+		t.Fatal(err)
+	}
+	s.processDeliveryReceipts(ctx)
+	rows, err = s.Store.PendingTextMail(ctx, c.character.ID, 32)
+	if err != nil || len(rows) != 1 {
+		t.Fatal("failed marker reported durable delivery", rows, err)
+	}
+	// A repeated delivery request must not enqueue the already-written packet
+	// again while its SQL marker is dirty.
+	s.worldMu.Lock()
+	err = s.deliverPendingTextMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.SetReadDeadline(time.Now().Add(30 * time.Millisecond))
+	if p, err := protocol.Read(client); err == nil {
+		t.Fatal("dirty marker duplicated a live delivery", p)
+	} else {
+		var timeout net.Error
+		if !errors.As(err, &timeout) || !timeout.Timeout() {
+			t.Fatal("marker failure disconnected a healthy socket", err)
+		}
+	}
+	if _, err := raw.Exec("DROP TRIGGER reject_delivery"); err != nil {
+		t.Fatal(err)
+	}
+	s.processDeliveryReceipts(ctx)
+	rows, err = s.Store.PendingTextMail(ctx, c.character.ID, 32)
+	if err != nil || len(rows) != 0 {
+		t.Fatal("marker retry failed", rows, err)
+	}
+}
+
+func TestQueuedMailWorkerContinuesBatchesInOrder(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	client, _ := queuedPlayer(t, s, c)
+	s.world[c.info.ID] = c
+	s.friendSessions[c.character.ID] = c
+	ctx, cancel := context.WithCancel(context.Background())
+	for i := 0; i < textMailDeliveryBatchSize+3; i++ {
+		if _, err := s.Store.SendTextMail(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.ID, 0, []byte{byte('A' + i)}, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s.worldMu.Lock()
+	err := s.deliverPendingTextMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { s.runDeliveryReceipts(ctx); close(done) }()
+	t.Cleanup(func() { cancel(); awaitSessionProgress(t, done) })
+	client.SetReadDeadline(time.Now().Add(3 * time.Second))
+	for i := 0; i < textMailDeliveryBatchSize+3; i++ {
+		p, err := protocol.Read(client)
+		if err != nil || len(p) == 0 || p[len(p)-1] != byte('A'+i) {
+			t.Fatal("mail order/batch continuation", i, p, err)
+		}
+	}
+	until := time.Now().Add(2 * time.Second)
+	for {
+		rows, err := s.Store.PendingTextMail(ctx, c.character.ID, 32)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(rows) == 0 {
+			break
+		}
+		if time.Now().After(until) {
+			t.Fatal("worker did not checkpoint successful delivery")
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func TestQueuedGiftWriteFailureRetainsClaimWithoutDuplicateGrant(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	client, started := queuedPlayer(t, s, c)
+	s.world[c.info.ID] = c
+	s.friendSessions[c.character.ID] = c
+	ctx := context.Background()
+	before := c.character.Gold
+	if err := s.Store.SendAdminMail(ctx, []uint32{c.character.ID}, store.AdminMail{Subject: "Gift", Body: "Queued", Gold: 10, ItemID: 32176, Count: 1}); err != nil {
+		t.Fatal(err)
+	}
+	s.worldMu.Lock()
+	err := s.deliverAdminMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	awaitSessionProgress(t, started)
+	rows, err := s.Store.PendingAdminMail(ctx, c.character.ID)
+	if err != nil || len(rows) != 1 || !rows[0].Claimed || rows[0].Delivered {
+		t.Fatal("gift claim/delivery boundary", rows, err)
+	}
+	if c.character.Gold != before+10 {
+		t.Fatal("gift did not commit before queueing")
+	}
+	s.worldMu.Lock()
+	err = s.deliverAdminMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil || c.character.Gold != before+10 {
+		t.Fatal("queued gift was granted again", err)
+	}
+	client.Close()
+	c.finishOutput()
+	s.processDeliveryReceipts(ctx)
+	rows, err = s.Store.PendingAdminMail(ctx, c.character.ID)
+	if err != nil || len(rows) != 1 || rows[0].Delivered {
+		t.Fatal("failed write cleared durable notification", rows, err)
+	}
+	// A fresh session's full snapshot restores the committed bag. Redelivering
+	// the notification must not run the gift grant a second time.
+	reconnected := &Session{conn: &captureConn{}, info: c.info, account: c.account, character: c.character, ready: true, view: world.NewView(), pets: newPetRoster()}
+	if err := s.deliverAdminMail(ctx, reconnected); err != nil {
+		t.Fatal(err)
+	}
+	if reconnected.character.Gold != before+10 || adminTestItemCount(reconnected.character.Bag, 32176) != 1 {
+		t.Fatal("reconnect duplicated gift")
+	}
+	rows, err = s.Store.PendingAdminMail(ctx, c.character.ID)
+	if err != nil || len(rows) != 0 {
+		t.Fatal("reconnect notification not checkpointed", rows, err)
+	}
+}
+
+func TestQueuedDisconnectFlushesNoticeAndStopsWriter(t *testing.T) {
+	s := New(config.Default(), nil, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	host, client := net.Pipe()
+	c := s.networkSession(host, "world", 1)
+	t.Cleanup(func() { c.conn.Close(); client.Close(); c.finishOutput() })
+	s.gmKick(c, "Disconnected by test")
+	client.SetReadDeadline(time.Now().Add(time.Second))
+	if p, err := protocol.Read(client); err != nil || !bytes.Contains(p, []byte("Disconnected by test")) {
+		t.Fatal("disconnect notice lost", p, err)
+	}
+	if _, err := protocol.Read(client); !errors.Is(err, io.EOF) {
+		t.Fatal("socket stayed open after notice", err)
+	}
+	awaitSessionProgress(t, c.conn.(*transport.Conn).Done())
+}
+
+func TestQueuedGiftMarkerWaitsForFinalPacket(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	client, _ := queuedPlayer(t, s, c)
+	ctx := context.Background()
+	if err := s.Store.SendAdminMail(ctx, []uint32{c.character.ID}, store.AdminMail{Subject: "Gift", Body: "Complete", Gold: 10, ItemID: 32176, Count: 1}); err != nil {
+		t.Fatal(err)
+	}
+	s.worldMu.Lock()
+	err := s.deliverAdminMail(ctx, c)
+	s.worldMu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	for i := 0; i < 3; i++ {
+		packet, err := protocol.Read(client)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i < 2 {
+			s.processDeliveryReceipts(ctx)
+			rows, err := s.Store.PendingAdminMail(ctx, c.character.ID)
+			if err != nil || len(rows) != 1 || !rows[0].Claimed {
+				t.Fatal("partial notification marked delivered", rows, err)
+			}
+		} else if !bytes.HasPrefix(packet, []byte{14, 1}) {
+			t.Fatal("notification was not last", packet)
+		}
+	}
+	awaitMailWrites(t, s, c)
+	s.processDeliveryReceipts(ctx)
+	rows, err := s.Store.PendingAdminMail(ctx, c.character.ID)
+	if err != nil || len(rows) != 0 {
+		t.Fatal("successful notification not marked", rows, err)
+	}
+}
+
+func TestQueuedClosingSessionRejectsGameplay(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	queuedPlayer(t, s, c)
+	before := c.character.Clone()
+	c.closeAfterFlush()
+	for _, p := range [][]byte{{6, 1, 2, 0xb0, 4, 0x14, 5}, {12, 1}, {20, 8, 1, 0}} {
+		if err := s.worldCommand(context.Background(), c, p); !errors.Is(err, net.ErrClosed) {
+			t.Fatal("closing session accepted command", p, err)
+		}
+	}
+	if c.character.X != before.X || c.character.Y != before.Y || c.character.Map != before.Map {
+		t.Fatal("closing session changed position")
+	}
+}
+
+type queuedTestListener struct {
+	connections chan net.Conn
+	closed      chan struct{}
+	once        sync.Once
+}
+
+func (l *queuedTestListener) Accept() (net.Conn, error) {
+	select {
+	case c := <-l.connections:
+		return c, nil
+	case <-l.closed:
+		return nil, net.ErrClosed
+	}
+}
+func (l *queuedTestListener) Close() error   { l.once.Do(func() { close(l.closed) }); return nil }
+func (l *queuedTestListener) Addr() net.Addr { return &net.TCPAddr{} }
+
+func TestQueuedAcceptAndShutdownJoinBlockedWriter(t *testing.T) {
+	s := New(config.Default(), nil, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	host, client := net.Pipe()
+	signal := &stalledOutputConn{Conn: host, started: make(chan struct{})}
+	l := &queuedTestListener{connections: make(chan net.Conn, 1), closed: make(chan struct{})}
+	l.connections <- signal
+	accepted := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() { s.accept(ctx, "world", l); close(accepted) }()
+	t.Cleanup(func() {
+		cancel()
+		l.Close()
+		client.Close()
+		awaitSessionProgress(t, accepted)
+		s.mu.Lock()
+		for _, c := range s.sessions {
+			c.conn.Close()
+		}
+		s.mu.Unlock()
+		joined := make(chan struct{})
+		go func() { s.wg.Wait(); close(joined) }()
+		awaitSessionProgress(t, joined)
+	})
+	var c *Session
+	until := time.Now().Add(2 * time.Second)
+	for c == nil && time.Now().Before(until) {
+		s.mu.Lock()
+		for _, session := range s.sessions {
+			c = session
+		}
+		s.mu.Unlock()
+		if c == nil {
+			time.Sleep(time.Millisecond)
+		}
+	}
+	if c == nil {
+		t.Fatal("accepted connection not published")
+	}
+	output, ok := c.conn.(*transport.Conn)
+	if !ok {
+		t.Fatal("accepted socket bypassed the writer queue")
+	}
+	if err := c.send([]byte{2, 16, 0}); err != nil {
+		t.Fatal(err)
+	}
+	awaitSessionProgress(t, signal.started)
+	// Match Run's shutdown order: stop accepting, close connections, join
+	// sessions. No client read is needed to release the in-flight writer.
+	cancel()
+	l.Close()
+	awaitSessionProgress(t, accepted)
+	c.conn.Close()
+	joined := make(chan struct{})
+	go func() { s.wg.Wait(); close(joined) }()
+	awaitSessionProgress(t, joined)
+	awaitSessionProgress(t, output.Done())
+	s.mu.Lock()
+	remaining := len(s.sessions)
+	s.mu.Unlock()
+	if remaining != 0 {
+		t.Fatal("closed connection remained registered")
+	}
 }
 
 func TestAutosaveActiveWarpAndFailureIsolation(t *testing.T) {
@@ -358,7 +751,7 @@ func TestIdleSocketPolicy(t *testing.T) {
 			if err := host.SetReadDeadline(time.Now().Add(-time.Second)); err != nil {
 				t.Fatal(err)
 			}
-			c := &Session{conn: acceleratedIdleConn{host}, info: SessionInfo{ID: 1}}
+			c := s.networkSession(acceleratedIdleConn{host}, "", 1)
 			if tc.world {
 				c.character = &game.Character{}
 			}
@@ -397,7 +790,7 @@ func TestDuplicateLoginClosesOnlyRejectedSocket(t *testing.T) {
 	s.sessions[active.info.ID] = active
 	host, client := net.Pipe()
 	defer client.Close()
-	rejected := &Session{conn: host, info: SessionInfo{ID: 3}, lastWindow: time.Now()}
+	rejected := s.networkSession(host, "", 3)
 	s.sessions[rejected.info.ID] = rejected
 	done := make(chan struct{})
 	go func() { s.serve(context.Background(), rejected); close(done) }()

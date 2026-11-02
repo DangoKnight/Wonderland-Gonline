@@ -582,8 +582,13 @@ ignored native type byte without assigning parcel or attachment semantics.
 Use UTC OLE Automation timestamps in delivery packets.
 
 Deliver pending messages only after the recipient's map snapshot is complete.
-Hold `worldMu` to serialize delivery with logout and map transitions. Mark each
-message delivered after its successful socket write; failed writes leave it queued.
+Hold `worldMu` to serialize queue admission with logout and map transitions.
+Mark each message delivered only after observing its successful socket-write
+receipt; queue acceptance is not delivery. Failed writes leave it queued. The
+mail receipt worker retries failed SQL markers without sending the same live
+notification twice, and continues subsequent batches only while the recipient
+is ready. Disconnect cleanup observes completed receipts before dropping the
+session. See [outgoing networking](#outgoing-networking).
 There is no native receipt acknowledgment, so delivery is at least once across a
 crash between writing and marking. Keep recipient failures isolated from senders.
 Foreign keys cascade mail when either character is deleted, preventing correspondence
@@ -1191,3 +1196,45 @@ around narrow responsibilities without exposing mutable session fields merely
 to satisfy a directory boundary. Preserve raw goldens, authored tables and source
 inventory evidence when moving code. Include affected subpackages in focused
 tests and pre-push validation.
+
+## Outgoing networking
+
+All accepted login/gameplay sockets use the bounded queue and single writer in
+`internal/server/transport`. Construct them through `Server.networkSession`
+before publishing a session. Handlers may enqueue while holding `worldMu`, but
+must never wait for a socket or a write receipt under that lock. The transport
+writer performs no SQL or gameplay callbacks and never takes server locks.
+Socket-free administrator reply capture and deterministic fixtures retain direct
+output; launcher status is a separate unframed response outside gameplay locking.
+
+Each connection admits at most 4,096 frames and 2 MiB of encoded frame data,
+including its in-flight write. Queue storage grows lazily. Payloads are copied
+into owned encoded frames, so later caller mutations cannot alter queued data.
+Frames remain ordered across concurrent producers and partial socket writes.
+Overflow disconnects the congested recipient; never silently discard arbitrary
+gameplay packets. Each frame expires ten seconds after enqueue, including queue
+residence, so a backlog cannot renew its timeout on every write.
+
+Successful `Session.send` means accepted into the queue. Keep purchases, trades,
+rewards and gift claims committed before enqueueing success packets. A later
+write failure must not undo or repeat a resource transaction. Mail delivery uses
+a receipt on the final packet of each notification; only a complete successful
+write permits its SQL delivery marker. Claimed GM gifts retain their claim if
+notification fails. Receipt signals are coalesced; the worker visits only
+sessions with pending mail work, retains dirty markers for retry, and uses a
+five-second batch context under the existing world ownership. A one-second tick
+retries deferred work without polling healthy players' mailboxes.
+
+Connection close cancels queued output and interrupts the current write without
+waiting for the writer. Session teardown joins it outside gameplay locks before
+processing completed mail receipts and releasing presence. Explicit final
+notices, including GM kicks and duplicate-login reasons, drain existing frames
+under their original deadlines before closing. Server shutdown may abort that
+drain. Closing sessions must reject further gameplay after acquiring world
+ownership, including map acknowledgments and portals.
+
+The global lock still serializes gameplay mutations and SQL work. This transport
+change isolates slow sockets; it does not remove database contention or establish
+concurrent-player capacity. Queue limits are compiled transport policy, with no
+new configuration keys or database schema changes. Verification is recorded in
+[TESTING.md](TESTING.md#outgoing-network-isolation--2026-11-01).

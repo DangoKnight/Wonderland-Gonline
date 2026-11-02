@@ -172,8 +172,8 @@
 			"lines": 262,
 			"status": "ported",
 			"sha256": "0ec1f4ca2e83e1c18251b1522adf10a7109b284ce2058682433796224eb91408",
-			"go_files": ["internal/server/server.go", "internal/protocol/packet.go"],
-			"notes": "Queued asynchronous socket operations replaced by synchronized Go session writes and owned connection loops.",
+			"go_files": ["internal/server/server.go", "internal/server/session.go", "internal/server/transport/conn.go", "internal/protocol/packet.go"],
+			"notes": "Accepted login/gameplay connections use bounded immutable output queues and one ordered writer per connection, with enqueue-age deadlines and disconnect-on-overflow. Owned session teardown joins the writer outside world locks; tracked socket receipts gate durable mail markers. Focused stalled-peer, receipt, and shutdown regressions live in internal/server/session_test.go and internal/server/transport/conn_test.go.",
 			"audit_verdict": "replaced"
 		},
 		{

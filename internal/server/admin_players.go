@@ -658,12 +658,18 @@ func (s *Server) deliverAdminMail(ctx context.Context, c *Session) error {
 	if err != nil {
 		return err
 	}
+	c.adminMailPending = false
 	if len(rows) > 0 {
 		if err := s.autosaveSession(ctx, c); err != nil {
 			return err
 		}
 	}
 	for _, message := range rows {
+		key := deliveryKey{deliveryAdminMail, c.character.ID, message.ID}
+		if c.pendingMail[key] != nil {
+			c.adminMailPending = true
+			continue
+		}
 		limit := byte(1)
 		if message.ItemID != 0 {
 			var ok bool
@@ -691,13 +697,11 @@ func (s *Server) deliverAdminMail(ctx context.Context, c *Session) error {
 			return err
 		}
 		packets = append(packets, packet)
-		if err = s.sendAll(c, packets); err != nil {
+		if err = s.sendMailDelivery(ctx, c, key, packets); err != nil {
 			c.conn.Close()
 			return err
 		}
-		if err = s.Store.MarkAdminMailDelivered(ctx, c.character.ID, message.ID); err != nil {
-			return err
-		}
+		c.adminMailPending = c.adminMailPending || c.pendingMail[key] != nil
 	}
 	return nil
 }

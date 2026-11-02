@@ -28,7 +28,7 @@ func TestLoginWireFlow(t *testing.T) {
 	s := New(config.Default(), db, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	client, host := net.Pipe()
 	defer client.Close()
-	c := &Session{conn: host, info: SessionInfo{ID: 1}, lastWindow: time.Now()}
+	c := s.networkSession(host, "", 1)
 	s.sessions[1] = c
 	done := make(chan struct{})
 	go func() { s.serve(context.Background(), c); close(done) }()

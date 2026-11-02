@@ -19,7 +19,7 @@ func TestRejectedCommandIsVisibleWithoutCredentials(t *testing.T) {
 	s := New(config.Default(), nil, &assets.Catalog{}, slog.New(slog.NewJSONHandler(&logs, nil)))
 	client, host := net.Pipe()
 	defer client.Close()
-	c := &Session{conn: host, info: SessionInfo{ID: 1, Service: "world"}, lastWindow: time.Now()}
+	c := s.networkSession(host, "world", 1)
 	done := make(chan struct{})
 	go func() { s.serve(context.Background(), c); close(done) }()
 	client.SetDeadline(time.Now().Add(5 * time.Second))

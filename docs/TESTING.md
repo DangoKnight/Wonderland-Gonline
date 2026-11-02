@@ -82,10 +82,11 @@ other opt-ins are listed below.
 
 Server packet builders and their pure golden tests live in
 `internal/server/wire`; bounded log capture and packet trace checks live in
-`internal/server/logging`. Include the affected component when changing it:
+`internal/server/logging`. Socket queue, expiry and close tests live in
+`internal/server/transport`. Include the affected component when changing it:
 
 ```sh
-go test -race ./internal/server/logging ./internal/server/wire -count=1
+go test -race ./internal/server/logging ./internal/server/wire ./internal/server/transport -count=1
 ```
 
 Session/persistence integration tests remain in `internal/server`, grouped by
@@ -1092,16 +1093,17 @@ Bounds cover the reviewed UI/native-verification paths, not every client decoder
 Native verification files are still retained until manager close; an aggregate
 disk/cache budget across distinct archives remains a follow-up.
 
-A separate potential multiplayer denial-of-service path remains: synchronous
+A separate potential multiplayer denial-of-service path was identified: synchronous
 peer writes in [broadcastWorld](../internal/server/world.go) occur while holding
-`worldMu`, and [Session.send](../internal/server/server.go) permits ten seconds
+`worldMu`, and the old [Session.send](../internal/server/session.go) permitted ten seconds
 per write. A non-reading peer whose socket buffer fills can delay unrelated
 world actions; multiple slow peers can amplify it. Existing packet/connection
 limits do not remove outbound backpressure. This is a code-level finding, not
-a completed live exploit/load reproduction. A bounded per-session writer queue
-with disconnect-on-overflow should move network waits outside the global lock
-while preserving packet ordering and transaction receipts. That networking change
-has not been made in this pass.
+a completed live exploit/load reproduction. The subsequent
+[outgoing network isolation](#outgoing-network-isolation--2026-11-01) change
+implements bounded per-session writer queues with disconnect-on-overflow,
+ordered delivery and actual write receipts for mail markers. Deterministic
+stalled-socket regressions verify that unrelated world actions now progress.
 
 Focused validation covers oversized/sparse JSON, excessive declared expansion,
 checksum/length mismatch, oversized PNG headers, decode failure caching,
@@ -1359,4 +1361,66 @@ WONDERLAND_TEST_DATA="$PWD/../Wonderland-Private-Server/Data" \
   -run '^Test(InstalledBreillat|Breillat|NativeXaolanRobbery|Xaolan|NativeFredFinale|NativeMonkeyRescue|NativeElin|NativeRobinson|NativeWaterfall|NativeStarterShip|Storm|Spider|StarterShip|Monkey|NissRest)' -count=1
 go vet ./internal/server/... ./internal/admin ./cmd/wonderland ./cmd/live-test
 go build -o /tmp/wonderland-server-layout-check ./cmd/wonderland
+```
+
+### Outgoing network isolation — 2026-11-01
+
+Accepted login/gameplay connections now enqueue immutable frames into a bounded
+per-session transport, with one socket writer outside `worldMu`. Limits are
+4,096 frames and 2 MiB of encoded data including the in-flight frame. A frame's
+ten-second deadline starts at enqueue, covering both queue residence and partial
+writes. Overflow closes that recipient; output is never silently dropped while
+keeping an inconsistent session connected. Queue storage grows lazily, and no
+goroutine is created per packet.
+
+Tracked receipts distinguish queue admission from completed writes. Native text
+mail and GM notification markers advance only after the final packet has been
+written. In-flight messages suppress duplicate live sends; failed SQL markers
+remain dirty for retry. Claimed GM resources stay committed across write failure
+and reconnect. A coalesced completion worker visits only sessions with pending
+mail, continues batches after map readiness, and never makes the socket writer
+take world ownership or perform SQL. Final disconnect notices can drain under
+their existing deadlines; shutdown can abort the drain and joins writers outside
+gameplay locks. Closing sessions reject new gameplay after acquiring ownership.
+
+Focused validation passes:
+
+- A blocked `net.Pipe` recipient stays unread while the initiating movement and
+  a command on another map both complete within their one-second test limits.
+  This directly exercises the old shared-lock failure condition.
+- Transport race tests pass 20 repetitions (3.968s): byte/frame bounds include
+  active writes; queued copies resist caller mutation; partial writes retain FIFO
+  framing; concurrent producers retain per-producer order; timeout/close/overflow
+  complete receipts; drain preserves final packets; expired queued data does not
+  receive a renewed deadline. Concurrent send/drain/close runs are included.
+- Queue-specific server checks pass (2.392s): actual-write mail markers, injected
+  marker failure/retry without duplicate sends or healthy-client disconnect,
+  continuation beyond the first 32 messages, final-packet gift receipts,
+  disconnect/reconnect without another grant, closing-session gates, GM notices,
+  and accepted-session cleanup while its writer is blocked.
+- The broader affected server race selection passes (58.433s), retaining
+  dispatch, world visibility, login/duplicate-login/idle, mail, trading/stalls,
+  shops, banking, tents, companion controls, Potential Pills, mall/Lucky Draw,
+  story/reload and recovery expectations. Protocol, logging and wire package
+  race checks also pass (1.011s, 1.008s and 1.010s).
+- Shutdown lifecycle validation passes with loopback access (1.488s). The first
+  sandbox attempt could not bind its local listener; that environmental failure
+  is not counted as a passing test. Affected-package vet and server build pass.
+
+The regular databases and their schemas remain unchanged. Full server validation
+is reserved for a push. This establishes deterministic slow-socket isolation,
+not live native-client acceptance, production latency or player capacity. SQL
+operations and game mutations retain existing world ownership, including the
+five-second context used for receipt processing.
+
+```sh
+go test -race -timeout=3m ./internal/server/transport -count=20
+go test -race -timeout=3m ./internal/server -run '^TestQueued' -count=1
+go test -race -timeout=5m ./internal/server \
+  -run '^Test(Queued|CommandRegistry|CreateEnter|WorldVisibility|ConcurrentWorld|FailedWorld|NativeMovementStop|TextMail|AdminMail|DuplicateLogin|ConcurrentLogin|LoginWire|IdleSocket|RejectedCommand|PacketTrace|Trade|NativeStall|NPCShop|Bank|Tent|PetControl|PotentialPill|MallCheckout|LuckyDraw|Story|GMReload|Resting)' -count=1
+# Requires permission to bind loopback listeners:
+go test -race ./internal/server -run '^TestGMShutdownCountdownUsesGracefulRunCleanup$' -count=1
+go test -race ./internal/protocol ./internal/server/logging ./internal/server/wire -count=1
+go vet ./internal/server/... ./internal/admin ./cmd/wonderland ./cmd/live-test
+go build -o /tmp/wonderland-outbound-server-check ./cmd/wonderland
 ```

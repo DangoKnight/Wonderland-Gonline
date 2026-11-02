@@ -231,6 +231,9 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	// Published state can change from other sessions (GM summons), so check it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if err := c.outputError(); err != nil {
+		return err
+	}
 	if p[0] == protocol.CommandLuckyDraw {
 		s.Log.Debug("Lucky Draw dispatch state", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map, "map_ready", c.ready, "warped", c.warped, "battle", c.battle != nil, "trade", c.trade != nil, "minigame", c.event != nil && c.event.onMinigame != nil)
 	}

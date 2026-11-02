@@ -1,7 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"io"
 	"log/slog"
 	"net"
 	"sync"
@@ -11,6 +14,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	serverlog "wonderland-gonline/internal/server/logging"
+	"wonderland-gonline/internal/server/transport"
 	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
@@ -28,6 +32,9 @@ type SessionInfo struct {
 }
 
 type Session struct {
+	pendingMail      map[deliveryKey]*transport.Receipt // Guarded by worldMu.
+	textMailPending  bool
+	adminMailPending bool
 	openTent         *openTent // Guarded by worldMu.
 	tentOwner        uint32    // Private scene identity; guarded by worldMu.
 	motdSent         bool      // One welcome popup per character login, guarded by worldMu.
@@ -99,9 +106,14 @@ type Session struct {
 }
 
 func (s *Session) send(p []byte) error {
+	if output, ok := s.conn.(*transport.Conn); ok {
+		return output.Send(p)
+	}
+	// Socket-free administrator reply capture and deterministic fixture adapters
+	// remain synchronous. Accepted gameplay/login sockets always use transport.
 	s.sendMu.Lock()
 	defer s.sendMu.Unlock()
-	if e := s.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); e != nil {
+	if e := s.conn.SetWriteDeadline(time.Now().Add(transport.WriteTimeout)); e != nil {
 		return e
 	}
 	err := protocol.Write(s.conn, p)
@@ -109,6 +121,213 @@ func (s *Session) send(p []byte) error {
 		s.log.Debug("packet sent", append(serverlog.TraceAttrs(p, true), "session", s.info.ID, "error", err)...)
 	}
 	return err
+}
+
+// Construct before publishing the session: its connection is immutable and all
+// existing Close call sites also stop its writer. Launcher status is unframed
+// and has no gameplay lock, so it keeps its direct one-response connection.
+func (s *Server) networkSession(conn net.Conn, service string, id uint64) *Session {
+	c := &Session{conn: conn, log: s.Log, info: SessionInfo{ID: id, Service: service, Remote: conn.RemoteAddr().String(), Connected: time.Now().UTC()}, lastWindow: time.Now()}
+	if service != "status" {
+		log := s.Log
+		c.conn = transport.New(conn, func(frame []byte, err error) {
+			if log.Enabled(context.Background(), slog.LevelDebug) {
+				p, _ := protocol.Read(bytes.NewReader(frame))
+				log.Debug("packet sent", append(serverlog.TraceAttrs(p, true), "session", id, "error", err)...)
+			}
+			if err != nil && !errors.Is(err, net.ErrClosed) && !errors.Is(err, io.ErrClosedPipe) {
+				log.Warn("client write failed", "session", id, "error", err)
+			}
+		})
+	}
+	return c
+}
+
+func (c *Session) closeAfterFlush() {
+	if output, ok := c.conn.(*transport.Conn); ok {
+		output.CloseAfterFlush()
+	} else {
+		c.conn.Close()
+	}
+}
+
+// Called outside gameplay locks. The writer never acquires server locks or
+// performs SQL, and Close interrupts an outstanding network write.
+func (c *Session) finishOutput() {
+	if output, ok := c.conn.(*transport.Conn); ok {
+		if !output.Draining() {
+			output.Close()
+		}
+		<-output.Done()
+	} else {
+		c.conn.Close()
+	}
+}
+
+func (c *Session) outputError() error {
+	if output, ok := c.conn.(*transport.Conn); ok && !output.Accepting() {
+		return net.ErrClosed
+	}
+	return nil
+}
+
+type deliveryKind byte
+
+const (
+	deliveryTextMail         deliveryKind = 1
+	deliveryAdminMail        deliveryKind = 2
+	deliveryWakeCapacity                  = 1
+	mailReceiptTimeout                    = 5 * time.Second
+	mailReceiptRetryInterval              = time.Second
+)
+
+type deliveryKey struct {
+	kind     deliveryKind
+	receiver uint32
+	id       uint64
+}
+
+func (s *Server) notifyDeliveryReady() {
+	select {
+	case s.deliveryReady <- struct{}{}:
+	default:
+	}
+}
+
+// Caller owns worldMu. A receipt on the final frame covers all preceding
+// frames in the same ordered connection. Queue acceptance never marks mail.
+func (s *Server) sendMailDelivery(ctx context.Context, c *Session, key deliveryKey, packets [][]byte) error {
+	if len(packets) == 0 {
+		return protocol.ErrMalformed
+	}
+	var receipt *transport.Receipt
+	for i, p := range packets {
+		if output, ok := c.conn.(*transport.Conn); ok && i == len(packets)-1 {
+			var err error
+			receipt, err = output.SendTracked(p, s.notifyDeliveryReady)
+			if err != nil {
+				return err
+			}
+		} else if err := c.send(p); err != nil {
+			return err
+		}
+	}
+	if receipt == nil {
+		return s.markMailDelivered(ctx, key)
+	}
+	if c.pendingMail == nil {
+		c.pendingMail = make(map[deliveryKey]*transport.Receipt)
+	}
+	c.pendingMail[key] = receipt
+	if s.deliveries == nil {
+		s.deliveries = make(map[*Session]struct{})
+	}
+	s.deliveries[c] = struct{}{}
+	return nil
+}
+func (s *Server) markMailDelivered(ctx context.Context, key deliveryKey) error {
+	switch key.kind {
+	case deliveryTextMail:
+		return s.Store.MarkTextMailDelivered(ctx, key.receiver, key.id)
+	case deliveryAdminMail:
+		return s.Store.MarkAdminMailDelivered(ctx, key.receiver, key.id)
+	}
+	return errors.New("unknown mail delivery kind")
+}
+
+// Completion observations do not touch character state on the writer goroutine.
+// Failed SQL markers stay dirty for retry, suppressing duplicate live delivery.
+func (s *Server) finishMailReceipts(ctx context.Context, c *Session) {
+	for key, receipt := range c.pendingMail {
+		if ctx.Err() != nil {
+			return
+		}
+		done, writeErr := receipt.Result()
+		if !done {
+			continue
+		}
+		if writeErr == nil {
+			if err := s.markMailDelivered(ctx, key); err != nil {
+				s.Log.Warn("mail delivery marker deferred", "recipient", key.receiver, "mail", key.id, "error", err)
+				continue
+			}
+		}
+		delete(c.pendingMail, key)
+	}
+}
+func (s *Server) processDeliveryReceipts(ctx context.Context) {
+	if ctx.Err() != nil {
+		return
+	}
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	ctx, cancel := context.WithTimeout(ctx, mailReceiptTimeout)
+	defer cancel()
+	process := func(c *Session) {
+		if ctx.Err() != nil {
+			return
+		}
+		if len(c.pendingMail) == 0 && !c.textMailPending && !c.adminMailPending {
+			delete(s.deliveries, c)
+			return
+		}
+		s.finishMailReceipts(ctx, c)
+		if ctx.Err() != nil {
+			return
+		}
+		if c.character == nil || !c.ready {
+			return
+		}
+		if output, ok := c.conn.(*transport.Conn); ok && !output.Accepting() {
+			if len(c.pendingMail) == 0 {
+				delete(s.deliveries, c)
+			}
+			return
+		}
+		textInFlight, adminInFlight := false, false
+		for key := range c.pendingMail {
+			textInFlight = textInFlight || key.kind == deliveryTextMail
+			adminInFlight = adminInFlight || key.kind == deliveryAdminMail
+		}
+		if c.textMailPending && !textInFlight {
+			if err := s.deliverPendingTextMail(ctx, c); err != nil {
+				s.Log.Warn("mail delivery deferred", "recipient", c.character.ID, "error", err)
+				if ctx.Err() != nil {
+					return
+				}
+				c.conn.Close()
+			}
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		if c.adminMailPending && !adminInFlight && gmIdle(c) {
+			if err := s.deliverAdminMail(ctx, c); err != nil {
+				s.Log.Warn("GM mail delivery deferred", "recipient", c.character.ID, "error", err)
+				if ctx.Err() != nil {
+					c.adminMailPending = true
+					return
+				}
+				c.conn.Close()
+			}
+		}
+	}
+	for c := range s.deliveries {
+		process(c)
+	}
+}
+func (s *Server) runDeliveryReceipts(ctx context.Context) {
+	ticker := time.NewTicker(mailReceiptRetryInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-s.deliveryReady:
+		case <-ticker.C:
+		}
+		s.processDeliveryReceipts(ctx)
+	}
 }
 
 func (s *Server) sendAll(c *Session, packets [][]byte) error {
