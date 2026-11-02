@@ -47,6 +47,8 @@ supplies extraction keys and is separate from the Go client.
 
 After completing asset/database setup, run from the repository root:
 
+### Linux/macOS (Bash)
+
 ```sh
 export CGO_ENABLED=1
 mkdir -p bin var
@@ -55,13 +57,42 @@ export WONDERLAND_ADMIN_TOKEN="$(openssl rand -hex 32)"
 ./bin/wonderland -config config.local.json -log-file var/server.jsonl
 ```
 
-The setup guide includes Windows PowerShell equivalents and token handling.
 Keep the server running and use a second terminal for the client:
 
 ```sh
 make build-client
 ./bin/wonderland-client
 ```
+
+### Windows (PowerShell)
+
+Install Go and a GCC/MinGW-w64 toolchain matching Go's target architecture,
+with both `go` and `gcc` available on `PATH`. After completing the
+[Windows asset/database setup](docs/GETTING_STARTED.md#windows-powershell),
+build and start the server from the repository root:
+
+```powershell
+$env:CGO_ENABLED = '1'
+New-Item -ItemType Directory -Force bin, var | Out-Null
+go build -o bin/wonderland.exe ./cmd/wonderland
+$env:WONDERLAND_ADMIN_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+.\bin\wonderland.exe -config config.local.json -log-file var/server.jsonl
+```
+
+Keep the server running. In a second PowerShell terminal at the repository root,
+compile the editable client assets, then build and run the client:
+
+```powershell
+go run ./cmd/client-bundle -source data -output bin/client-assets.zip -contract client/asset-contract.json
+Push-Location client
+go build -o ../bin/wonderland-client.exe .
+Pop-Location
+.\bin\wonderland-client.exe
+```
+
+These client commands perform the same asset compilation and Go build as
+`make build-client`, without requiring Make. Display `$env:WONDERLAND_ADMIN_TOKEN`
+in the server terminal to obtain the admin credential.
 
 Default endpoints are TCP 6414 (login/game), 6415 (world), 6416 (native launcher
 status), and HTTP `http://127.0.0.1:8080` (admin, registration and `/healthz`).

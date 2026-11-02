@@ -12,8 +12,8 @@ import (
 
 func TestCopyIncludesCommittedWALAndPreservesSource(t *testing.T) {
 	root := t.TempDir()
-	source := filepath.Join(root, "source.db")
-	destination := filepath.Join(root, "copy.db")
+	source := filepath.Join(root, "source #1.db")
+	destination := filepath.Join(root, "copy #1.db")
 	s, err := store.Open(source)
 	if err != nil {
 		t.Fatal(err)

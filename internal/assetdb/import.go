@@ -93,7 +93,12 @@ func openDatabaseMode(path string, readOnly, immutable bool) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	address := url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}
+	// A Windows drive needs a leading slash so file:///C:/... has no URI host.
+	slash := filepath.ToSlash(abs)
+	if !strings.HasPrefix(slash, "/") {
+		slash = "/" + slash
+	}
+	address := url.URL{Scheme: "file", Path: slash}
 	query := address.Query()
 	if readOnly {
 		query.Set("mode", "ro")

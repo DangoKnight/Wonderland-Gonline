@@ -9,7 +9,7 @@ import (
 
 func TestRuntimeReadOnlyDatabaseAndAuthoritativeRows(t *testing.T) {
 	root, data := fixture(t)
-	path := filepath.Join(root, "assets.db")
+	path := filepath.Join(root, "assets #1.db")
 	if _, err := Build(data, path, nil); err != nil {
 		t.Fatal(err)
 	}

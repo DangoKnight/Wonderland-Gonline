@@ -1490,3 +1490,27 @@ GOCACHE=/tmp/wonderland-precommit-go-cache go vet ./...
 GOCACHE=/tmp/wonderland-precommit-go-cache go test -json -timeout=60m ./...
 GOCACHE=/tmp/wonderland-precommit-go-cache go vet ./...
 ```
+
+### Windows database setup — 2026-11-02
+
+Native Windows asset opening and offline snapshot/integrity checks now use
+`file:///D:/...` paths, matching the gameplay store. Without the leading slash,
+SQLite rejected the drive letter as an invalid URI authority. The existing
+runtime-read and WAL-copy tests reproduced the failure before the fix; their
+fixture filenames now also include spaces and `#` to verify URI escaping.
+
+The focused Windows checks pass with the installed MinGW GCC compiler:
+
+```powershell
+$env:CGO_ENABLED = '1'
+go test ./internal/assetdb ./internal/dbmigration ./cmd/database-migrate -run '^(TestRuntime.*|TestCopy.*|TestUpgradeInPlace.*|Test.*Run.*)$' -count=1
+go build -o bin/wonderland.exe ./cmd/wonderland
+.\bin\wonderland.exe -config config.local.json -inspect-data
+```
+
+The configured databases already use asset schema v16 and gameplay schema v18.
+Read-only SQLite integrity and foreign-key checks pass for both. The asset
+catalog loads 7,312 items and 1,119 maps; four gacha packs remain disabled for
+missing item definitions. Gameplay contains no accounts or characters. Existing
+databases and configuration were preserved; no rebuild or migration was needed.
+These checks do not establish native-client gameplay acceptance.
