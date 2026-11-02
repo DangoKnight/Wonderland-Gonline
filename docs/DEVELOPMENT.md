@@ -46,7 +46,7 @@ successful chain participants count, including pets, and singles receive no bonu
 Gameplay schema v18 stores character state in typed tables and owned child rows.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v14 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v15 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -557,7 +557,7 @@ zero counts and empty stacks before indexing or mutating state.
 
 ## Inbound command routing
 
-Register each inbound opcode once in `internal/server/command_registry.go`, with
+Register each inbound opcode once in `internal/server/commands.go`, with
 its handler and `protocol.CommandPolicy`. The zero policy grants no world or
 interaction exceptions. Use `IsWorldCommand` and `IsDeleteCharacter` for semantic
 classification; classification does not validate payloads, authorize accounts,
@@ -1146,7 +1146,7 @@ until objectives and rewards are verified. Do not substitute guessed content.
 Native AC85 browser/create/detail requests and replies are separate from
 Gonline's explicit room-control extensions (200–203); see [Teams](TEAMS.md).
 
-## Private Server update 1ff5bba
+## Private Server updates
 
 The separately pinned update ledger is [source-update-inventory.json](source-update-inventory.json).
 See [SOURCE_UPDATES.md](SOURCE_UPDATES.md) for imported behavior and explicit
@@ -1156,3 +1156,38 @@ tent/poison defaults. Missing NPC route/sign/speed projections come from retaine
 SQL map sections and preserve edited definitions. Poison compatibility is now 10% of maximum HP, minimum 15;
 customized effects remain authoritative. Native protocol goldens and compiled
 growth formulas retain their independent ownership.
+
+The story follow-up through `5c36839` adds forward-only Waterfall Grotto mirror
+continuations and nonholding Fairy Altar movies. Existing visit-local scripted
+actor visibility and map-entry reset remain authoritative. These fixes require
+no database migration; the ledger preserves the earlier snapshot hashes.
+
+## Story definitions and execution
+
+Story-specific identities, prerequisites, links, presentation modes, actor rules,
+script repairs, recruitment/conversion parameters and cinematic steps belong to
+the typed `Story` dataset in assets.db (asset schema v15). Use reusable engine
+capabilities rather than adding map/event/mark switches. See [STORY_SYSTEM.md](STORY_SYSTEM.md)
+for scopes, gates, operation patterns, ordered rules and administration.
+Keep imported EVE programs and independent raw packet fixtures intact. Apply
+repairs to execution copies. Runtime constructors must not load seed defaults;
+seeds are for explicit offline initialization and native compatibility fixtures.
+Versioned migrations must retain edited and intentionally empty story definitions.
+Recheck sensitive story actions against owned SQL state and commit delivery plus
+checkpoints together before receipts. Preserve buffered walking when adopting SQL
+results. Bound automatic chains and retain per-session completion tokens; story
+content must not create unbounded execution or bypass battle/interaction gates.
+
+## Server component layout
+
+Use the [server component guide](../internal/server/README.md) to locate handlers
+and their integration tests. Keep session ownership and checkpoint adoption in
+`internal/server/session.go`; command registration and interaction policies belong
+in `internal/server/commands.go`. Group small related adapters with their owning
+feature. Independent packet construction belongs in `internal/server/wire`, and
+administrative log capture/tracing in `internal/server/logging`. These components
+must not import `server` or acquire gameplay ownership. Extract further packages
+around narrow responsibilities without exposing mutable session fields merely
+to satisfy a directory boundary. Preserve raw goldens, authored tables and source
+inventory evidence when moving code. Include affected subpackages in focused
+tests and pre-push validation.

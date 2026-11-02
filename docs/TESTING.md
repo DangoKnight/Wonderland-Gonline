@@ -80,6 +80,18 @@ Use `-count=1` when fresh execution is needed. Narrow packages/selections furthe
 for small changes. Source-only runs use repository exports; compiled paths and
 other opt-ins are listed below.
 
+Server packet builders and their pure golden tests live in
+`internal/server/wire`; bounded log capture and packet trace checks live in
+`internal/server/logging`. Include the affected component when changing it:
+
+```sh
+go test -race ./internal/server/logging ./internal/server/wire -count=1
+```
+
+Session/persistence integration tests remain in `internal/server`, grouped by
+feature. The [component guide](../internal/server/README.md) maps handlers to
+their files. Existing test names and `-run` selections remain valid.
+
 ## Pre-push server validation
 
 Run the full server checks only before a push, from the repository root with a
@@ -549,7 +561,7 @@ go run ./cmd/live-test -config config.local.json \
   -scenario fishing-skilled -output var/live-tests/fishing-skilled-01
 ```
 
-Use a current assets database (schema v14, including the item dimensions
+Use a current assets database (schema v15, including the item dimensions
 introduced in v11). If testing
 with an upgraded copy, add `-assets-database /absolute/path/to/assets.db`.
 See [asset database upgrades](ASSET_DATABASE.md) if preparation reports a schema
@@ -1162,3 +1174,189 @@ and temporary disk exhaustion; these results come from the complete workspace
 after removing those temporary copies. Offline migration and database integrity
 checks also pass on disposable copies; the regular databases were not upgraded.
 Live native-client acceptance has not been rerun for these integrations.
+
+### Story follow-up verification — 2026-11-01
+
+Private Server commits `d1020d3` and `5c36839` add Waterfall Grotto mirror
+continuation and Fairy Altar nonholding movies. Focused server race checks pass
+(7.407s): all four mirror events continue through subsequent beam/door rules
+without replaying earlier branches; runtime actor swaps survive event completion
+and reset on a new visit. The unmodified native EVE scripts also pass repeated
+turns in both directions for all four events. Fairy Altar events 2/3 emit movie
+mode 1, preserve the completion barrier and resume dialogue without a warp;
+unrelated events/maps retain their existing mode. Movie expectations use raw
+packet bytes independent of production builders.
+
+Affected world race checks pass (1.012s), covering forward selection, PreEvent
+and quest visibility, and mission rule grouping. `go vet` passes for game, world
+and server. No schema/data changes or installed database upgrades were needed.
+Full server validation remains reserved for a push. Native-script execution and
+wire checks do not establish live native-client HUD or puzzle acceptance.
+
+```sh
+WONDERLAND_TEST_DATA="$PWD/../Wonderland-Private-Server/Data" \
+go test -race -timeout=5m ./internal/server \
+  -run '^Test(NativeWaterfallMirrorChoices|WaterfallMirrorContinuationAndVisitReset|FairyAltarMovieResumesDialogue)$' -count=1
+go test -race ./internal/world \
+  -run '^Test(Story|PreEventVisibility|QuestVisibility|MissionVariablesAndPreEventGroups)' -count=1
+go vet ./internal/game ./internal/world ./internal/server
+```
+
+### Story system migration — 2026-11-01
+
+Existing story-specific selection, continuation, visibility, condition repairs,
+recovery, movie/choice modes, recruitment/conversion parameters, atomic reward
+checkpoints, battle fallbacks and starter cinematic steps now use typed asset
+schema v15 definitions. [STORY_SYSTEM.md](STORY_SYSTEM.md) documents authoring,
+SQL ownership, seed preservation and execution limits. Gameplay remains v18.
+
+Focused race validation passes:
+
+- Native EVE story parity (65.419s): eleven Breillat variants and exchanges,
+  Fred, Elin, S.Monkey, Robinson recovery, Xaolan rescue, Waterfall mirrors and
+  ship/storm transitions. Independent wire bytes and authored scripts retain
+  their expectations. Subsequent focused exchange/ship checks pass (27.311s).
+- Definition migration, structured storage, invalid-edit rollback, predicates,
+  visibility, ordering and outfit checks pass. Generated SQL models reproduce
+  byte-for-byte. Historical source hashes remain unchanged and capability-owner
+  evidence paths resolve.
+- Installed assets v13 upgrade to v15 passes on a disposable copy (18.315s),
+  including loading the complete default projection and repeat migration.
+  Existing edits and intentionally empty story definitions survive reentry into
+  the v15 upgrade; an injected seed write failure rolls the schema back.
+- Typed administrator publication/reload passes (64.317s): optimistic versions,
+  active-interaction guards, immutable old snapshots and refreshed policy indexes.
+  Existing general definition-edit rollback tests also pass.
+- Event/pet/battle integration checks pass (20.230s), including legacy reward
+  ownership, replay/capture exclusions and raw speech packets. Custom quest kill
+  counters and live administration checks pass separately (6.125s).
+- New content at unrelated map/event IDs runs through policies alone. Clearing
+  definitions does not restore compiled seeds. Automatic continuation cycles
+  release their interaction. Movie-handshake triggers remain map scoped.
+  Recruitment preserves fresh SQL state and buffered walking, and replay does
+  not grant another companion. Atomic exchanges can be authored independently
+  of appearance-conversion content.
+
+Affected-package `go vet` and the server build pass. The regular databases remain
+unchanged. No full server suite was run for this development migration; it is
+reserved for pre-push validation. Live native-client HUD, puzzle and multiplayer
+acceptance remain separate from script/wire tests.
+
+Representative commands (run from the repository root):
+
+```sh
+go test -race ./internal/assets ./internal/assetsql ./internal/world ./internal/game \
+  -run '^Test(Story|Structured|CatalogDefinition|QuestDefinitions|PreEventVisibility|QuestVisibility|Elin|Replace|ReloadEvents|FindBranch|MissionVariablesAndPreEventGroups|StarterScene)' -count=1
+WONDERLAND_TEST_DATA="$PWD/../Wonderland-Private-Server/Data" \
+  go test -race -timeout=8m ./internal/server \
+  -run '^Test(InstalledBreillat|Breillat|NativeXaolanRobbery|Xaolan|NativeFredFinale|NativeMonkeyRescue|NativeElin|NativeRobinson|NativeWaterfall|NativeStarterShip|Storm|Spider|StarterShip|Monkey|Story|NissRest)' -count=1
+WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" \
+  go test -race -timeout=5m ./internal/assetsql -run '^TestStoryInstalledMigration$' -count=1
+WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" \
+  go test -race -timeout=5m ./internal/server -run '^TestStorySQLPublicationAndReload$' -count=1
+go test -race ./internal/server \
+  -run '^Test(Story|NPCConversation|NPCEventRefusals|RegionsAndDoor|AreaRegion|EventSpeech|RecruitSelect|PetGrowthAndConditions|LegacyCombat|LegacyCompanion|GMFreshPetRecruit|ScriptedSharedProp|Waterfall|Fairy|Storm|Spider|Starter)' -count=1
+go vet ./internal/assets ./internal/assetsql ./internal/world ./internal/server ./internal/game
+go build -o bin/wonderland ./cmd/wonderland
+```
+
+### Story runtime optimizations — 2026-11-01
+
+The SQL-backed story migration now preorders candidate indexes, compiles grouped
+predicates, uses allocation-free first-match and ordinary multi-match iteration,
+caches unconditional event repairs and batches SQL projection reads. The SQL
+batch is local to one read and transaction; it does not cache player outcomes or
+replace transactional resource checks. See [STORY_SYSTEM.md](STORY_SYSTEM.md#execution-and-persistence)
+for reload and immutable-program ownership.
+
+Permanent benchmarks use the default authored story definitions and disposable
+story-only SQL tables. Medians of three 300ms runs on an Intel i5-13600K,
+Go 1.27.3, linux/amd64, GOMAXPROCS=20:
+
+| Operation | Before | After | Allocations before → after |
+| --- | ---: | ---: | ---: |
+| First movie policy | 175.6ns | 48.12ns | 2 → 0 |
+| Gated visibility policy | 692.2ns | 82.19ns | 3 → 0 |
+| Unmatched policy | 35.71ns | 37.37ns | 0 → 0 |
+| Multi-match visibility iteration | 665.5ns | 164.2ns | 3 → 0 |
+| Unconditional repair of a known event | 277.2ns | 14.37ns | 5 → 0 |
+| Complete story SQL projection | 7.01ms | 3.47ms | 46,527 → 26,448 |
+
+The projection now uses 45 queries instead of 391, with approximately 1.60MB
+allocated instead of 2.92MB. SQL is loaded at startup or administrative publication,
+not per story step. These are isolated operation measurements, not end-to-end
+server latency or concurrent-player capacity results. The miss path stays close
+to its prior cost; startup compilation moves work out of repeated gameplay reads.
+
+Focused race checks pass for authored global/local precedence, selection before
+actions mutate quest state, iterator early termination and lists above 256
+candidates, compiled/ad hoc gate grouping, current SQL-character rechecks,
+cross-player immutable repair reuse, conditional edit ordering and reload cache
+invalidation. Batched SQL round trips preserve sibling ownership, row order and
+nil/empty children; each required table is fetched once. Tests also retain
+ordinal/query/cancellation failures, skip unused child tables, read edits afresh
+within the same transaction and verify rollback. The combined affected-package
+selection passes (assetsql: 5.491s).
+
+Native-story race parity passes (67.882s), including the migration's existing
+raw-script and wire expectations. Administrator publication/reload passes
+(70.724s), and installed v13-to-v15 migration plus repeated loading passes on a
+disposable database copy (17.929s). Generated SQL output reproduces byte-for-byte;
+affected-package/generator vet and the server build pass. The optimization adds
+no schema version or migration. Regular databases remain unchanged. Full server
+validation remains reserved for a push, and live native-client acceptance has
+not been rerun.
+
+```sh
+go test ./internal/world ./internal/assetsql \
+  -run '^$' -bench '^BenchmarkStory' -benchtime=300ms -count=3 -benchmem
+go test -race ./internal/assets ./internal/assetsql ./internal/world ./internal/game \
+  -run '^Test(Story|Structured|CatalogDefinition|QuestDefinitions|PreEventVisibility|QuestVisibility|Elin|Replace|ReloadEvents|FindBranch|MissionVariablesAndPreEventGroups|StarterScene)' -count=1
+# Native and installed-SQL checks use the migration commands immediately above.
+go vet ./internal/assets ./internal/assetsql ./internal/world ./internal/server ./internal/game ./tools/asset-schema-generator
+go build -o /tmp/wonderland-story-server-check ./cmd/wonderland
+```
+
+### Server component layout — 2026-11-01
+
+The server root now has 34 implementation files and 39 integration-test files,
+down from 238 Go files. Related command adapters and tests are grouped by
+feature. Independent log capture/tracing and 32 packet builders live in
+`logging` and `wire` subpackages. Pure speech, text-mail and tent-tree goldens
+and trace tests moved beside their implementations with their raw expected bytes
+intact. Root constructor/session/administration APIs remain compatible.
+
+A one-off declaration comparison against the pre-layout workspace found all
+1,206 original functions and tests. After accounting for moved package names,
+their signatures and bodies are unchanged except that `New` now calls the
+logging handler constructor, which wraps the same handler and buffer. Session
+ownership, world locking, authored tables and SQL transaction boundaries remain
+unchanged. Source-inventory owner/test paths now resolve to the new files;
+historical source hashes and revisions are preserved.
+
+Validation passes:
+
+- Logging and wire package race checks: 1.007s and 1.009s. Existing root tests
+  also retain concurrent bounded/redacted snapshots and capture isolation.
+- Focused server race checks: 60.734s, covering dispatch/gates, log integration,
+  world visibility/concurrency, trading/stalls, NPC shops, banking, tents,
+  companion control, Potential Pills, mall checkout, Lucky Draw, story policies,
+  reloads, mail, native stopping, compounding, manufacturing, fishing and recovery.
+- Native-story race parity: 60.591s, including Breillat, Xaolan, Fred, Elin,
+  S.Monkey, Robinson, Waterfall and ship/storm sequences against original EVE.
+- Compilation of all server/component tests, affected server/admin/command vet,
+  and the server executable build.
+
+Full server validation remains reserved for a push. Regular databases were not
+modified, and live native-client acceptance was not rerun. Commands:
+
+```sh
+go test -race ./internal/server/logging ./internal/server/wire -count=1
+go test -race -timeout=6m ./internal/server \
+  -run '^Test(CommandRegistry|RejectedCommand|PacketTrace|AdminLog|RuntimeSettings|WorldVisibility|ConcurrentWorld|Trade|NativeStall|NPCShop|Bank|Tent|PetControl|PotentialPill|MallCheckout|LuckyDraw|Story|GMReload|TextMail|NativeMovementStop|Compounding|Manufactur|Fishing|Resting)' -count=1
+WONDERLAND_TEST_DATA="$PWD/../Wonderland-Private-Server/Data" \
+  go test -race -timeout=8m ./internal/server \
+  -run '^Test(InstalledBreillat|Breillat|NativeXaolanRobbery|Xaolan|NativeFredFinale|NativeMonkeyRescue|NativeElin|NativeRobinson|NativeWaterfall|NativeStarterShip|Storm|Spider|StarterShip|Monkey|NissRest)' -count=1
+go vet ./internal/server/... ./internal/admin ./cmd/wonderland ./cmd/live-test
+go build -o /tmp/wonderland-server-layout-check ./cmd/wonderland
+```

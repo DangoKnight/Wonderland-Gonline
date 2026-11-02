@@ -1,4 +1,5 @@
-// Package server hosts the legacy TCP endpoints and serializes each connection's commands.
+// Package server owns TCP services, live sessions and serialized gameplay handlers.
+// Its feature layout and component boundaries are documented in README.md.
 package server
 
 import (
@@ -17,6 +18,7 @@ import (
 	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverlog "wonderland-gonline/internal/server/logging"
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
@@ -29,99 +31,6 @@ var errAlreadyLoggedIn = errors.New("account is already logged in")
 type actorPursuit struct {
 	target   uint32
 	nextScan time.Time
-}
-
-type SessionInfo struct {
-	CharacterID   uint32    `json:"character_id,omitempty"`
-	CharacterName string    `json:"character_name,omitempty"`
-	Map           uint16    `json:"map,omitempty"`
-	ID            uint64    `json:"id"`
-	Service       string    `json:"service"`
-	Remote        string    `json:"remote"`
-	Username      string    `json:"username"`
-	Connected     time.Time `json:"connected"`
-}
-type Session struct {
-	openTent         *openTent // Guarded by worldMu.
-	tentOwner        uint32    // Private scene identity; guarded by worldMu.
-	motdSent         bool      // One welcome popup per character login, guarded by worldMu.
-	adminFeedback    *[]string // Scoped to a web action under worldMu.
-	invisible        bool      // GM ghost mode; guarded by worldMu.
-	pendingName      string
-	character        *game.Character
-	autosaveBaseline *game.Character // Last checkpoint; guarded by worldMu.
-	ready            bool
-	// warped marks a portal arrival; peers then receive no AC5:8 login refresh.
-	warped               bool
-	manufacturing        *store.ManufactureJob
-	manufacturingLoaded  bool
-	fishing              *fishingRun // Transient cast; guarded by worldMu.
-	emote                byte        // Current AC32 pose; guarded by worldMu.
-	restedAt             time.Time   // Last resting recovery while sitting or lying; guarded by worldMu.
-	view                 *world.View
-	pets                 *petRoster
-	event                *eventSession
-	arcade               *arcadeSession
-	arcadeNextPurchaseAt time.Time
-	stormAck             bool
-	stormStarted         time.Time
-	storm                bool // The ship storm movie is playing (PlayingStormCutscene).
-	beachPending         bool
-	beach                *beachRun
-	battle               *battleRun
-	encounter            encounterState
-	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
-	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.
-	// Trade state is guarded by worldMu.
-	gathering        *gatheringRun     // Guarded by worldMu.
-	marriageProposal *marriageProposal // Guarded by worldMu.
-	guildInvitation  *guildInvitation  // Guarded by worldMu.
-	bazaarQuotes     map[uint32]store.Bazaar
-	stall            *playerStall         // Session-owned; guarded by worldMu.
-	trade            *tradeSession        // Guarded by worldMu.
-	friendRequests   map[uint32]time.Time // Guarded by worldMu.
-	friendOnline     bool                 // Presence survives the map-loading phase of a warp.
-	walkMode         byte                 // AC16:4 runtime setting; guarded by worldMu.
-	// Team state, guarded by worldMu: the team, pending join requests by
-	// requester ID, and the vitals last reported to teammates.
-	party         *party
-	partyRequests map[uint32]time.Time
-	partyVitals   [8]int64
-	saleMode      int // NpcSaleMode: -1 closed, 0 equipment, 1 other items.
-	saleMap       uint16
-	resumeAt      time.Time // NpcClickResumeAt: ignore a repeated click after an interaction.
-	lastClick     uint16
-	lastClickMap  uint16
-	// arrived is set when the character lands on a map (login or warp) and
-	// cleared by its first move: the client reports the area it lands in
-	// (20/8) before moving, which must not send it back.
-	arrived bool
-	// resultAck is set by a minigame result: the client follows 57/1 with
-	// its own 20/6 (FUN_003bdfa4 marks the event step done), which must not
-	// acknowledge the outcome branch's first step.
-	resultAck  bool
-	info       SessionInfo
-	conn       net.Conn
-	account    store.Account
-	slot       byte
-	gmLevel    atomic.Uint32
-	sendMu     sync.Mutex
-	log        *slog.Logger
-	lastWindow time.Time
-	packets    int
-}
-
-func (s *Session) send(p []byte) error {
-	s.sendMu.Lock()
-	defer s.sendMu.Unlock()
-	if e := s.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); e != nil {
-		return e
-	}
-	err := protocol.Write(s.conn, p)
-	if s.log != nil {
-		s.log.Debug("packet sent", append(packetTraceAttrs(p, true), "session", s.info.ID, "error", err)...)
-	}
-	return err
 }
 
 type Server struct {
@@ -161,7 +70,7 @@ type Server struct {
 	unsupported    atomic.Uint64
 	name           atomic.Value
 
-	logs                      *logBuffer
+	logs                      *serverlog.Buffer
 	comboDamagePerParticipant bool                  // Immutable startup selection, captured by New.
 	petGrowthFormula          game.PetGrowthFormula // Immutable startup selection, captured by New.
 	expRateMultiplier         float64
@@ -173,13 +82,13 @@ type Server struct {
 
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {
 	s := &Server{comboDamagePerParticipant: c.ComboDamagePerParticipant, petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
-	s.logs = &logBuffer{}
+	s.logs = &serverlog.Buffer{}
 	if log.Enabled(context.Background(), slog.LevelDebug) {
 		s.logs.SetLevel("debug")
 	} else {
 		s.logs.SetLevel("info")
 	}
-	s.Log = slog.New(&adminLogHandler{base: log.Handler(), buffer: s.logs})
+	s.Log = slog.New(serverlog.NewHandler(log.Handler(), s.logs))
 	s.bannedIPs.Store(map[string]bool{})
 	s.shutdown = make(chan struct{})
 	s.name.Store(c.Name)
@@ -334,7 +243,7 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 			}
 			return
 		}
-		s.Log.Debug("packet received", append(packetTraceAttrs(p, false), "session", c.info.ID)...)
+		s.Log.Debug("packet received", append(serverlog.TraceAttrs(p, false), "session", c.info.ID)...)
 		s.received.Add(1)
 		now := time.Now()
 		if now.Sub(c.lastWindow) >= time.Second {
@@ -358,7 +267,7 @@ func (s *Server) serve(ctx context.Context, c *Session) {
 			continue
 		}
 		if e != nil {
-			s.Log.Warn("client command rejected", append(append(s.sessionLogAttrs(c), packetLogAttrs(p)...), "error", e)...)
+			s.Log.Warn("client command rejected", append(append(s.sessionLogAttrs(c), serverlog.PacketAttrs(p)...), "error", e)...)
 			return
 		}
 	}
@@ -551,3 +460,11 @@ func StatusPacket(online int, serverIDs ...uint16) []byte {
 	}
 	return packet
 }
+
+const (
+	maxPacketsPerSecond       = 200
+	npcInteractionRangePixels = 200
+	tradeRangePixels          = 180
+	defaultMinigameSeed       = 0x012af8
+	minigameSeedHighByte      = 1 << 16
+)

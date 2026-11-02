@@ -270,13 +270,10 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 	for id := range v.Hidden {
 		ids[id] = true
 	}
-	switch mapID {
-	case game.MapID12000:
-		for _, id := range []uint16{10, 14, 15, 16, 17, 18, 19, 20, 28, 29, 31, 32, 33, 34, 35, 36} {
+	for r := range w.StoryRules(assets.StorySyncActors, c, v, StoryContext{Map: mapID}) {
+		for _, id := range r.TargetActors {
 			ids[id] = true
 		}
-	case game.MapID12001:
-		ids[1], ids[2], ids[3] = true, true, true
 	}
 	order := make([]uint16, 0, len(ids))
 	for id := range ids {
@@ -332,7 +329,7 @@ func (w *World) actionBlock(v *View, mapID uint16, a assets.Operation) [][]byte 
 		return [][]byte{protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(click).U8(byte(s))}
 	}
 	// Guideposts and the honeycomb on map 12000 are permanent scenery.
-	if mapID == game.MapID12000 && (click == 17 || click == 10 || click == 31) {
+	if _, ok := w.StoryFirst(assets.StoryPreserveActor, nil, v, StoryContext{Map: mapID, Actor: click}); ok {
 		return nil
 	}
 	switch {

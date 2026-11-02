@@ -1,9 +1,9 @@
 # Native command compatibility
 
 These handlers port reachable Private Server action-code implementations. They
-use the registry in `internal/server/command_registry.go` and share existing
+use the registry in `internal/server/commands.go` and share existing
 movement, mall and character persistence helpers. Golden tests use independent
-raw expected packet bytes in `internal/server/native_commands_test.go`.
+raw expected packet bytes in `internal/server/commands_test.go`.
 Native-client acceptance is still required; unit tests establish handler behavior.
 
 | Request                                       | Behavior                                                                                                                                                      |
@@ -379,6 +379,6 @@ restores them on character entry, independently of server resource state.
 Private Server's AC40 handler implements four-byte synthesis instead. Go retains
 that legacy compatibility layout separately. Previously the seven-byte native
 assignment was rejected as malformed, closing the requesting connection. Tests
-in `internal/server/hotbar_test.go` cover Basic Attack, Defense, item/empty
+in `internal/server/crafting_test.go` cover Basic Attack, Defense, item/empty
 bindings, invalid layouts and unchanged resources; the existing alchemy tests
 verify synthesis still behaves as before.

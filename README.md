@@ -40,6 +40,7 @@ supplies extraction keys and is separate from the Go client.
 | [Database operations](docs/ASSET_DATABASE.md) | Asset rebuilds, SQL authority, backups and explicit gameplay reset |
 | [Items and player state](docs/ITEMS_PLAYER_STATE.md) | Tent controls, furniture, item reservations and recovery |
 | [Client](docs/CLIENT.md) | Graphics requirements, asset layout, inspection and packaging |
+| [Story system](docs/STORY_SYSTEM.md) | SQL story policies, event execution, authoring and recovery |
 | [Testing](docs/TESTING.md) | Automated checks, graphics/snapshots, live acceptance and recorded findings |
 
 ## Build and run
@@ -114,7 +115,7 @@ server/client module commands, optional assets, graphics tests and live acceptan
 
 - `cmd/wonderland`: executable, configuration, signals and shutdown.
 - `internal/protocol`: binary framing, XOR and bounded field readers.
-- `internal/server`: TCP lifecycle, sessions, launcher status and login handlers.
+- `internal/server`: TCP lifecycle and gameplay handlers grouped by feature; independent logging and packet-building packages. See the [server component guide](internal/server/README.md).
 - `internal/store`: GORM models, queries and transactions for accounts, character state, friendships and settings; versioned SQLite schema migrations.
 - `internal/game`: inventory, character creation and serialization, quest rewards, critical-hit rules, pets and stat/skill progression, connected to the corresponding server gameplay handlers.
 - `internal/battle`: deterministic PvE round engine producing animation steps; the server plays and commits them.

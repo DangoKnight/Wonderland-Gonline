@@ -214,6 +214,9 @@ func main() {
 		}
 		fmt.Fprintln(&b, "return nil\n}")
 		fmt.Fprintf(&b, "func read%s(tx *gorm.DB%s)(%s,error){\n", n.name, args, n.typ)
+		if n.name == "Story" {
+			fmt.Fprintln(&b, "tx=storyReadSession(tx)")
+		}
 		switch n.kind {
 		case "map":
 			fmt.Fprintf(&b, "result:=make(%s)\n", n.typ)
@@ -226,7 +229,21 @@ func main() {
 		for _, k := range inherited {
 			fmt.Fprintf(&b, "query=query.Where(%q,%s)\n", snake(k.name)+" = ?", k.name)
 		}
-		fmt.Fprintf(&b, "if err:=query.Order(%q).Find(&rows).Error;err!=nil{return result,err}\n", snake(last.name))
+		if strings.HasPrefix(n.name, "Story") {
+			order := []string{}
+			parent := []string{}
+			rowParent := []string{}
+			for _, k := range n.keys {
+				order = append(order, snake(k.name))
+			}
+			for _, k := range inherited {
+				parent = append(parent, "int64("+k.name+")")
+				rowParent = append(rowParent, "int64(row."+k.name+")")
+			}
+			fmt.Fprintf(&b, "loaded,err:=storyReadRows(query,%q,storyParentKey{%s},func(row *%sRow)storyParentKey{return storyParentKey{%s}});if err!=nil{return result,err};rows=loaded\n", strings.Join(order, ","), strings.Join(parent, ","), n.name, strings.Join(rowParent, ","))
+		} else {
+			fmt.Fprintf(&b, "if err:=query.Order(%q).Find(&rows).Error;err!=nil{return result,err}\n", snake(last.name))
+		}
 		if n.kind == "single" {
 			fmt.Fprintln(&b, "if len(rows)!=1{return result,fmt.Errorf(\"missing singleton catalog row\")}")
 		}

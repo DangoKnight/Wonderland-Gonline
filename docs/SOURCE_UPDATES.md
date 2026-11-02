@@ -1,19 +1,26 @@
 # Private Server update import
 
-This import reviews the 38 commits and 431 changed files from
+This import reviews the 40 commits and 431 distinct changed files from
 `e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1` through
-`1ff5bbaec5da623ee05a2d083ced16dac4176a7e` (2026-11-01).
+`5c368395146c0c54bb01bcee3ae88d50513beae8` (2026-11-01).
 The sibling's working checkout remains unchanged; its remote refs were fetched
 and the pinned revision was exported for review.
 
-[The update ledger](source-update-inventory.json) records every changed file,
-its exact source-byte hash, disposition and applicable Go owners. It supplements
+[The update ledger](source-update-inventory.json) preserves the original 431-file
+snapshot at `1ff5bba` and records the two subsequent commits and their two changed
+files separately under `follow_up_imports`, with exact source-byte hashes,
+dispositions and applicable Go owners. It supplements
 the original [baseline inventory](source-inventory.json), whose revision and
 normalized hashes remain intact. File counts describe review coverage, not a
 percentage of feature completion. Native-client acceptance remains separate.
 
 ## Imported behavior
 
+- Waterfall Grotto mirror events 1/2/3/5 continue forward through their authored
+  beam and door rules without replaying earlier branches. Existing visit-local
+  actor show/hide overrides already keep turned mirrors visible through entry
+  layout synchronization; leaving the map resets them. Fairy Altar events 2/3
+  use movie mode 1, allowing the HUD and dialogue to resume without a map load.
 - Asset v14 stores boxes, skill evolutions, EVE gathering pools/timers, NPC buy
   prices/catalogs, tent surfaces/tool hosts, chest classifications, travel and
   map-exit rewards in typed SQL tables. Embedded inputs are initialization seeds;
@@ -137,9 +144,12 @@ source working checkout was overwritten.
 ## Upgrade and verification
 
 Use the [offline database upgrade](ASSET_DATABASE.md) before running this version:
-asset v14 and gameplay v18 are required. The installed databases remain unchanged;
+asset v15 and gameplay v18 are required by the current server. The v15 story
+policy migration is described in [STORY_SYSTEM.md](STORY_SYSTEM.md). The installed databases remain unchanged;
 disposable upgraded copies are used for validation. Commands and results are
 centralized in [TESTING.md](TESTING.md#source-update-verification--2026-11-01).
+The two-commit story follow-up requires no schema/data changes; its focused
+checks are recorded [separately](TESTING.md#story-follow-up-verification--2026-11-01).
 
 Native-client captures, multiplayer/load acceptance and Go-client interfaces for
 new native server forms remain separate acceptance/roadmap work. Source prototype

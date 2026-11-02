@@ -47,7 +47,7 @@ snapshots. Keep the backups until acceptance testing finishes.
 Gameplay schema v18 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 14 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 15 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -196,7 +196,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v14. The upgrade procedure upgrades existing older installations
+Asset schema is now v15. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -240,7 +240,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v14. See
+before running the new server; runtime requires v15. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -270,3 +270,14 @@ escrow and native batch/cancellation fields, plus `bazaar_stalls` and
 accounts, balances, jobs, inventory, quests and server settings. Existing legacy
 manufacturing jobs retain pause/resume semantics. The source development database's
 accounts, settings, stock and administrative vendor row are not seeded here.
+
+### Story policies (asset v15)
+
+The preserving upgrade creates `catalog_story` and its typed child tables for
+rules, scopes, predicates, repairs, program guards, recruitment, transformations,
+reward checkpoints and cinematic cues. It seeds current story behavior only when
+the root table is new; repeat upgrades retain edits and deliberately empty
+collections. Gameplay remains v18, with existing quest progress unchanged.
+Runtime requires v15 and reads only SQL definitions. The `Story` administration
+dataset and `/reload quests` publish validated policies through the existing
+interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).

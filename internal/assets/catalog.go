@@ -131,6 +131,7 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
+	Story               StoryDefinitions `json:"story"`
 	MapTransitions      []MapTransition
 	TentToolHosts       []uint16
 	ChestPropCategories map[uint16]string
@@ -221,7 +222,7 @@ func (c *Catalog) Summary() Summary {
 // Load is the offline reference loader used by format and compatibility tests.
 // Server startup must use assetsql.LoadDatabase.
 func Load(dir, itemCatalog string) (*Catalog, error) {
-	c := &Catalog{Items: map[uint16]game.ItemDefinition{}, NPCs: map[uint16]NPC{}, Maps: map[uint16]Map{}, Warnings: []string{}, Mall: []MallItem{}, Marks: map[uint16]uint16{}, DisabledEvents: map[uint32]string{}}
+	c := &Catalog{Story: DefaultStoryDefinitions(), Items: map[uint16]game.ItemDefinition{}, NPCs: map[uint16]NPC{}, Maps: map[uint16]Map{}, Warnings: []string{}, Mall: []MallItem{}, Marks: map[uint16]uint16{}, DisabledEvents: map[uint32]string{}}
 	load := func(name string, fn func([]byte) error) {
 		b, e := os.ReadFile(filepath.Join(dir, name))
 		if e == nil {

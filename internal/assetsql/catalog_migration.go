@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 14
+const catalogSchemaVersion = 15
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -375,12 +375,18 @@ func migrateCatalog(tx *gorm.DB) error {
 				}
 			}
 		}
+		if schema.Version < 15 {
+			if err := migrateStory(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
 	if err != nil {
 		return err
 	}
+	c.Story = assets.DefaultStoryDefinitions()
 	c.Terrains, err = importedTerrains(tx)
 	if err != nil {
 		return err
@@ -494,7 +500,7 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, name := range []string{"MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {
+	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {
 		if err = validateDefinition(name, c); err != nil {
 			return nil, err
 		}

@@ -3,7 +3,7 @@
 ## Initialization
 
 Current server startup requires gameplay schema **v18** and structured assets
-schema **v14**. Tents were introduced in earlier schema versions.
+schema **v15**. Tents were introduced in earlier schema versions.
 Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. The upgrade replaces the configured
 databases in place; the originals remain in `backups/` for rollback.
@@ -109,7 +109,7 @@ aLogin nor the reference server defines one. A ready character holding a
 sitting pose (AC32:2 actions 46–53, the Emote grid's action 13) or lying pose
 (actions 26–27, grid action 4) outside a battle or event recovers 2% of their
 equipped maximum HP and SP, at least one point each, every three seconds
-(`restRecoveryPercent`, `restRecoveryInterval` in `internal/server/resting.go`),
+(`restRecoveryPercent`, `restRecoveryInterval` in `internal/server/simulation.go`),
 on the one-second world ticker. Each recovery sends AC8 absolute updates for
 current HP (25) and SP (26) only. Native clients end a held pose by walking
 without an AC32 report, so a position change clears the server's held pose;

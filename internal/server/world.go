@@ -3,11 +3,15 @@ package server
 import (
 	"context"
 	"errors"
+	"math"
+	"slices"
 	"sort"
+	"strings"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/world"
 )
 
@@ -29,27 +33,6 @@ func (s *Server) peers(c *Session) []*Session {
 	return peers
 }
 
-// peerPackets describes char to another player. Only a login arrival refreshes the sprite.
-func peerPackets(char game.Character, arriving, login bool) ([][]byte, error) {
-	appearance, err := char.AppearancePacket(true)
-	if err != nil {
-		return nil, err
-	}
-	packets := [][]byte{appearance, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(char.ID).Bytes(char.WornEquipment())}
-	if char.Title != 0 {
-		packets = append(packets, protocol.Builder{protocol.CommandTitle, protocol.TitleBroadcast}.U32(char.ID).U16(char.Title))
-	}
-	if arriving {
-		packets = append(packets, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(char.ID).U8(protocol.PresenceMapAvailable))
-		if login {
-			packets = append(packets, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
-		}
-	} else {
-		packets = append(packets, char.PositionPacket())
-	}
-	return packets, nil
-}
-
 // acknowledgeWorld publishes a character only after its map load has completed.
 // Packet writes are ordered under worldMu so movement cannot overtake a spawn,
 // and a disconnect cannot leave a stale appearance after a despawn.
@@ -66,7 +49,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		return err
 	}
 	if balances.Points != c.account.IM || balances.Bonus != c.account.IMBonus {
-		if err := s.sendAll(c, mallBalancePackets(balances)); err != nil {
+		if err := s.sendAll(c, serverwire.MallBalancePackets(balances)); err != nil {
 			return err
 		}
 		c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
@@ -76,7 +59,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 	}
-	arrival, err := peerPackets(*c.character, true, !c.warped)
+	arrival, err := serverwire.PeerPackets(*c.character, true, !c.warped)
 	if err != nil {
 		return err
 	}
@@ -87,7 +70,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if peer.invisible {
 			continue
 		}
-		packets, err := peerPackets(*peer.character, false, false)
+		packets, err := serverwire.PeerPackets(*peer.character, false, false)
 		if err != nil {
 			return err
 		}
@@ -113,7 +96,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		}
 	}
 	if c.character.ActiveVehicle != 0 {
-		if err := c.send(vehicleMountPacket(c.character)); err != nil {
+		if err := c.send(serverwire.VehicleMountPacket(c.character)); err != nil {
 			return err
 		}
 	}
@@ -158,7 +141,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 		if guild != nil && !peer.invisible {
-			if err := c.send(guildBadge(peer.character.ID, guild)); err != nil {
+			if err := c.send(serverwire.GuildBadge(peer.character.ID, guild)); err != nil {
 				return err
 			}
 		}
@@ -296,9 +279,12 @@ func (s *Server) depart(c *Session, packet []byte) {
 // journal. Peers are exchanged after AC12:1. It resets the view's scene state.
 func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *petRoster, portal byte) [][]byte {
 	var packets [][]byte
-	if char.Map == game.MapID60002 {
-		// The territory emblem must resolve to no bitmap; no owner is persisted.
-		packets = append(packets, protocol.Builder{protocol.CommandTerritory, protocol.TerritoryWireCode1, 23, 0}.U32(0))
+	for r := range s.World.StoryRules(assets.StoryArrivalPackets, &char, view, world.StoryContext{Map: char.Map}) {
+		for _, cue := range r.Cues {
+			if p, err := serverwire.StoryCuePacket(char, cue); err == nil {
+				packets = append(packets, p)
+			}
+		}
 	}
 	packets = append(packets, char.WarpPacket(uint16(portal)), char.PositionPacket(), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(char.ID).Bytes(char.WornEquipment()), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
 	packets = append(packets, s.World.MapInfo(&char, view, []uint32{char.ID})...)
@@ -373,7 +359,8 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 		return unfreeze()
 	}
 	from := char.Map
-	landQuestRaft := scripted && from == 11016 && char.ActiveVehicle == game.DisposableRaftItemID
+	_, consumeVehicle := s.World.StoryFirst(assets.StoryPortalConsumeVehicle, c.character, c.view, world.StoryContext{Map: from})
+	landQuestRaft := scripted && consumeVehicle
 	if e := s.teleport(ctx, c, dst, byte(portal)); e != nil {
 		return e
 	}
@@ -449,7 +436,7 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 	if reward != nil {
 		s.sendOrClose(c, char.Bag.AdditionPacket(adds))
 		if reward.Talk > 0 {
-			s.sendOrClose(c, speechFrame(3, 0, reward.Talk, 1))
+			s.sendOrClose(c, serverwire.SpeechFrame(3, 0, reward.Talk, 1))
 		}
 	}
 	return nil
@@ -483,4 +470,258 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 		}
 	}
 	return nil
+}
+
+const maxMonsterBookIndex = 5500
+
+// QuestManager.SendStoryConstellations uses active completion marks, rather
+// than Completed (which represents a removed mark). Order is native UI order.
+var storyStars = [...]struct {
+	mark uint32
+	star byte
+}{
+	{13087, 1},  // Xaolan: Cygnus.
+	{13173, 6},  // Niss.
+	{13203, 8},  // Roca.
+	{13151, 20}, // Clive: Bootes.
+}
+
+func storyConstellations(c *game.Character) []byte {
+	out := protocol.Builder{protocol.CommandStoryConstellation, protocol.StoryConstellationList, 0}
+	for _, reward := range storyStars {
+		q := c.Quests[reward.mark]
+		if q.State == game.InProgress && q.Step > 0 {
+			out = out.U8(reward.star)
+		}
+	}
+	out[2] = byte(len(out) - 3)
+	return out
+}
+
+func (s *Server) bookMonster(id uint16) bool {
+	npc, ok := s.Assets.NPCs[id]
+	return ok && npc.BookIndex > 0 && npc.BookIndex <= maxMonsterBookIndex
+}
+
+func (s *Server) monsterBookPackets(c *game.Character) [][]byte {
+	ids := append([]uint16(nil), c.DiscoveredMonsters...)
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	var out [][]byte
+	for i, id := range ids {
+		if s.bookMonster(id) && (i == 0 || ids[i-1] != id) {
+			out = append(out, protocol.Builder{protocol.CommandMonsterBook, protocol.MonsterBookDiscover}.U32(uint32(id)))
+		}
+	}
+	return out
+}
+
+// Stage discoveries in the same character transaction as victory rewards.
+// Return receipts separately so a failed save never publishes a discovery.
+func (s *Server) discoverBattleMonsters(c *game.Character, run *battleRun) [][]byte {
+	seen := make(map[uint16]bool, len(c.DiscoveredMonsters))
+	for _, id := range c.DiscoveredMonsters {
+		seen[id] = true
+	}
+	var out [][]byte
+	for _, monster := range run.b.Defenders {
+		if monster.Template == 0 || monster.Template > math.MaxUint16 {
+			continue
+		}
+		id := uint16(monster.Template)
+		if seen[id] || !s.bookMonster(id) {
+			continue
+		}
+		seen[id] = true
+		c.DiscoveredMonsters = append(c.DiscoveredMonsters, id)
+		out = append(out, protocol.Builder{protocol.CommandMonsterBook, protocol.MonsterBookDiscover}.U32(uint32(id)))
+	}
+	return out
+}
+
+// AC89:0 requests the scene status. AC92:1 acknowledges it. Both can arrive
+// before AC12:1 and must not publish world presence or mark the map ready.
+func (s *Server) sceneReadyCommand(c *Session, p []byte) error {
+	if len(p) < protocol.SceneReadyShortRequestBytes {
+		return protocol.ErrMalformed
+	}
+	// FUN_002c2394 at 002dcab0..002dcb3a appends a four-byte native
+	// encoded value to AC89:0. Private Server ignores it; it is synchronization
+	// metadata, never an authenticated character selector. Retain the short
+	// request supported by Go clients and require the exact native layout.
+	switch p[0] {
+	case protocol.CommandSceneReady:
+		if len(p) != protocol.SceneReadyShortRequestBytes && len(p) != protocol.SceneReadyNativeRequestBytes {
+			return protocol.ErrMalformed
+		}
+	case protocol.CommandSceneReadyAck:
+		// FUN_002c2394 at 002dcd61..002dcda5 appends a boolean via
+		// FUN_00113534. It is client metadata, not a map-ready flag.
+		if len(p) != protocol.SceneReadyAckRequestBytes && len(p) != protocol.SceneReadyNativeAckRequestBytes {
+			return protocol.ErrMalformed
+		}
+		if len(p) == protocol.SceneReadyNativeAckRequestBytes && p[2] > 1 {
+			return protocol.ErrMalformed
+		}
+	default:
+		return ErrUnsupported
+	}
+	if (p[0] == protocol.CommandSceneReady && p[1] != protocol.SceneReadyLoaded) ||
+		(p[0] == protocol.CommandSceneReadyAck && p[1] != protocol.SceneReadyAcknowledged) {
+		return ErrUnsupported
+	}
+	if p[0] == protocol.CommandSceneReady {
+		// Native itemmall capture, packet 2888, as documented in AC89.cs.
+		if err := c.send([]byte{protocol.CommandSceneReadyReply, protocol.SceneReadyStatus, 0, 1, 1, 3, 2, 3}); err != nil {
+			return err
+		}
+	}
+	if c.motdSent {
+		return nil
+	}
+	c.motdSent = true
+	if strings.TrimSpace(s.motd) == "" {
+		return nil
+	}
+	out, err := protocol.Builder{protocol.CommandInventory, protocol.InventoryMessage, 0}.String(s.motd)
+	if err != nil {
+		return err
+	}
+	return c.send(out)
+}
+
+// movementCommand runs with worldMu held by worldCommand.
+func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 2 {
+		return protocol.ErrMalformed
+	}
+	stopped := p[1] == protocol.MovementStop
+	// Native stop reports have the same coordinate prefix as AC6:1, followed
+	// by eight movement-check bytes. Outbound AC6:2 is a different lock packet.
+	if stopped {
+		if len(p) != protocol.MovementNativeRequestBytes {
+			return protocol.ErrMalformed
+		}
+	} else if len(p) < protocol.MovementRequestMinBytes || p[1] != protocol.MovementMove {
+		return protocol.ErrMalformed
+	}
+
+	r := protocol.NewReader(p[2:])
+	direction, x, y := r.U8(), r.U16(), r.U16()
+	validDirection := direction <= protocol.MovementDirectionMax
+	if stopped {
+		// Stops copy current pose/facing, including values beyond walking's 0..7.
+		validDirection = direction <= protocol.MovementStopPoseMax || direction == protocol.MovementStopWirePose99
+	}
+	if !validDirection {
+		return protocol.ErrMalformed
+	}
+	// AC06 ignores movement while an event holds the player.
+	if c.event != nil {
+		return nil
+	}
+	prevX, prevY := c.character.X, c.character.Y
+	valid := s.World.CanMove(c.character.Map, prevX, prevY, x, y)
+	nativeDestination := len(p) == protocol.MovementNativeRequestBytes
+	if nativeDestination {
+		// Native AC6 announces a destination before walking and resolves its
+		// route locally. The previously announced destination is not the current
+		// rendered position, so it cannot define a straight collision leg.
+		valid = s.World.CanMove(c.character.Map, x, y, x, y)
+	}
+	// Land collision bits cannot reject legitimate water/air travel. Preserve
+	// native vehicle movement within scene bounds for a validated active item;
+	// unowned or stale riding flags never grant the exception.
+	if _, mounted := c.character.Vehicle(c.character.VehicleSlot, c.character.ActiveVehicle, s.Assets.Items); mounted {
+		valid = s.World.Contains(c.character.Map, x, y)
+	}
+	if !valid {
+		s.Log.Debug("movement destination rejected", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)
+		if nativeDestination {
+			// AC7 resets the local avatar immediately. Sending the old destination
+			// here teleports a still-walking client; leave invalid clicks to its UI.
+			return nil
+		}
+		return c.send(c.character.PositionPacket())
+	}
+	// Keep recoverable walking in memory until a guarded checkpoint.
+	if c.autosaveBaseline == nil {
+		baseline := c.character.Clone()
+		c.autosaveBaseline = &baseline
+	}
+	if x != prevX || y != prevY {
+		// Moving away invalidates the NPC shop catalog and sale authority.
+		c.saleMode, c.saleMap = -1, 0
+		if c.view != nil {
+			c.view.ShopItems = nil
+		}
+		// Walking ends a held pose locally without an AC32 report.
+		c.emote = 0
+		s.stopFishing(c)
+		s.closeStall(c)
+		s.cancelTrade(c)
+		c.arrived = false
+	}
+	s.Log.Debug("movement destination accepted", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)
+	c.character.X, c.character.Y = x, y
+	packet := protocol.Builder{protocol.CommandMovement, protocol.MovementMove}.U32(c.character.ID).U8(direction).U16(x).U16(y)
+	s.broadcastWorld(c, packet)
+	if stopped {
+		// Peers understand AC6:1 with the stopped endpoint. The sender has
+		// already stopped locally: echoing AC6:1 could restart its movement.
+		// A stop correction is not another walking step; do not charge vehicle
+		// wear, roll encounters, or activate destination regions a second time.
+		return nil
+	}
+	if e := c.send(packet); e != nil {
+		return e
+	}
+	if c.tentOwner != 0 {
+		return nil
+	}
+	if ran, e := s.tryRegion(ctx, c, prevX, prevY, true); ran || e != nil {
+		return e
+	}
+	if x != prevX || y != prevY {
+		if err := s.wearVehicle(ctx, c); err != nil {
+			return err
+		}
+	}
+	return s.stepEncounter(c, prevX, prevY)
+}
+
+func (s *Server) mapTransitionReward(c *game.Character, to uint16) (*assets.MapTransition, []game.Addition, error) {
+	for _, rule := range s.Assets.MapTransitions {
+		if c.Map != rule.FromMap || to != rule.Destination.Map || rule.Quest == 0 || len(rule.Items) == 0 || c.Quests[rule.Quest].State == game.Completed {
+			continue
+		}
+		for _, item := range c.Bag {
+			if !item.Empty() && slices.Contains(rule.SkipIfOwned, item.ID) {
+				return nil, nil, nil
+			}
+		}
+		for _, grant := range rule.Items {
+			if _, known := s.Assets.Items[grant.ItemID]; !known {
+				return nil, nil, nil
+			}
+		}
+		var adds []game.Addition
+		for _, grant := range rule.Items {
+			definition, known := s.Assets.Items[grant.ItemID]
+			if !known {
+				return nil, nil, nil
+			}
+			added, err := c.Bag.Grant(game.Item{ID: grant.ItemID}, int(grant.Quantity), definition.StackLimit(), s.Assets.Items)
+			if err != nil {
+				return nil, nil, err
+			}
+			adds = append(adds, added...)
+		}
+		now := time.Now().UTC()
+		if c.Quests == nil {
+			c.Quests = map[uint32]game.Quest{}
+		}
+		c.Quests[rule.Quest] = game.Quest{ID: rule.Quest, State: game.Completed, Step: 1, StartedAt: now, CompletedAt: &now}
+		return &rule, adds, nil
+	}
+	return nil, nil, nil
 }

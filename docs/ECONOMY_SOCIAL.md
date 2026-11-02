@@ -3,7 +3,7 @@
 ## Database upgrade
 
 Current server startup requires gameplay schema **v18** and structured assets
-schema **v14**. Economy/social tables were introduced in earlier versions.
+schema **v15**. Economy/social tables were introduced in earlier versions.
 Use the preserving offline upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,

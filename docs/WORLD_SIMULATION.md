@@ -89,7 +89,7 @@ catalog retain legacy unrestricted movement. There is no runtime file fallback.
 
 ## Upgrade and tuning
 
-The current server requires asset schema **v14**; terrain tables were introduced
+The current server requires asset schema **v15**; terrain tables were introduced
 in v5. Stop the server, then follow
 [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade the databases in place:
 

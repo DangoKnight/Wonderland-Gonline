@@ -3,11 +3,380 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
+	"errors"
+	"io"
+	"log/slog"
 	"sync"
 	"testing"
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
+
+func TestBazaarNativeBrowseQuotedPurchaseAndPetVehicleLayouts(t *testing.T) {
+	s, c, wire, _ := mallFixture(t)
+	ctx := context.Background()
+	c.character.Gold = 500
+	c.character.Bag = game.Inventory{}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	b, err := s.Store.SaveBazaar(ctx, store.Bazaar{Name: "Merchant", Title: "Goods", Map: c.character.Map, X: c.character.X, Y: c.character.Y, Kind: store.BazaarItems, Listings: []store.BazaarListing{{ItemID: 32176, Quantity: 3, Price: 10}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	spawn := bazaarPackets(b)
+	if len(spawn[0]) == 0 || spawn[0][0] != 4 {
+		t.Fatal("invalid actor", spawn)
+	}
+	request := protocol.Builder{23, 33}.U32(b.VendorID).U8(0).U8(2).U16(32176).U32(10)
+	if err = s.nativeStallCommand(ctx, c, request); err != nil || c.character.Gold != 500 {
+		t.Fatal("purchase without browse", err)
+	}
+	wire.Reset()
+	if err = s.nativeStallCommand(ctx, c, protocol.Builder{23, 32}.U32(b.VendorID)); err != nil {
+		t.Fatal(err)
+	}
+	got := wire.packets(t)
+	if len(got) != 1 || len(got[0]) != 58 || got[0][19] != 0 || !bytes.Equal(got[0][20:28], []byte{176, 125, 3, 50, 10, 0, 0, 0}) {
+		t.Fatal("item browse", got)
+	}
+	if err = s.nativeStallCommand(ctx, c, request); err != nil || c.character.Gold != 480 || c.character.Bag[0].Count != 2 {
+		t.Fatal(c.character.Bag, err)
+	}
+	saved, _ := s.Store.Bazaar(ctx, b.VendorID)
+	if saved.Listings[0].Quantity != 1 {
+		t.Fatal(saved)
+	}
+	b.Kind = store.BazaarVehicles
+	b.Listings = []store.BazaarListing{{VendorID: b.VendorID, ItemID: 48010, Quantity: 1, Price: 10}}
+	want := []byte{23, 133, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 138, 187, 100, 100, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	binary.LittleEndian.PutUint32(want[2:], b.VendorID)
+	if packet := s.bazaarBrowsePacket(b); !bytes.Equal(packet, want) {
+		t.Fatal("vehicle browse", packet)
+	}
+	s.Assets.NPCs = map[uint16]assets.NPC{17162: {ID: 17162, Name: "S.Monkey", Type: 1, Level: 1, Element: 3, Stats: [5]uint16{10, 11, 12, 13, 14}}}
+	s.World = world.New(s.Assets)
+	b.Kind = store.BazaarPets
+	b.Listings = []store.BazaarListing{{VendorID: b.VendorID, ItemID: 17162, Quantity: 2, Price: 30}}
+	b, err = s.Store.SaveBazaar(ctx, b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet := s.bazaarBrowsePacket(b)
+	if len(packet) != 231 || !bytes.Equal(packet[:2], []byte{23, 113}) || !bytes.Equal(packet[6:14], []byte{0, 10, 67, 30, 0, 0, 0, 1}) || !bytes.Equal(packet[22:24], []byte{3, 0}) {
+		t.Fatal("pet browse", packet)
+	}
+	if err = s.browseBazaar(ctx, c, b.VendorID); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.bazaarTypedPurchase(ctx, c, protocol.Builder{23, 63}.U32(b.VendorID).U8(0)); err != nil || len(c.character.Pets) != 1 || c.character.Pets[0].ID != 17162 || c.character.Gold != 450 {
+		t.Fatal(c.character.Pets, err)
+	}
+}
+
+func TestNativeStallBrowsePurchaseAndQuote(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	seller, buyer := players[0], players[1]
+	open, _ := protocol.Builder{23, 30}.String("Goods")
+	open = open.U8(1).U8(1).U8(6).U32(3)
+	tradeDo(t, s, seller, open)
+	if seller.stall == nil || !seller.stall.Native {
+		t.Fatal("native stall not opened")
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	tradeDo(t, s, buyer, protocol.Builder{23, 32}.U32(seller.character.ID))
+	got := wires[1].packets(t)
+	if len(got) != 2 || len(got[0]) != 58 || got[0][0] != 23 || got[0][1] != 33 || got[0][19] != 0 || got[0][20] != 0xb0 || got[0][21] != 0x7d || got[0][22] != 6 || got[0][24] != 3 {
+		t.Fatal("native browse record", got)
+	}
+	buy := func(price uint32) []byte {
+		return protocol.Builder{23, 33}.U32(seller.character.ID).U8(0).U8(2).U16(32176).U32(price)
+	}
+	tradeDo(t, s, buyer, buy(4))
+	if seller.character.Gold != 100 || buyer.character.Gold != 200 {
+		t.Fatal("stale quote charged")
+	}
+	tradeDo(t, s, buyer, buy(3))
+	if seller.character.Gold != 106 || buyer.character.Gold != 194 || seller.stall.Listings[0].Item.Count != 4 || buyer.character.Bag[1].Count != 2 || buyer.character.Bag[1].Metadata[6] != 7 {
+		t.Fatal("native stall exchange")
+	}
+	stored := tradeStored(t, s, players)
+	if stored[0].Gold != 106 || stored[1].Gold != 194 || stored[1].Bag != buyer.character.Bag {
+		t.Fatal("native exchange not atomic")
+	}
+	if err := s.dispatch(context.Background(), seller, []byte{23, 31}); err != nil || seller.stall != nil {
+		t.Fatal("native close", err)
+	}
+}
+
+func TestAlternativeStallAdaptersUseOwnedInventory(t *testing.T) {
+	s, c, wire, _ := mallFixture(t)
+	ctx := context.Background()
+	c.character.Bag = game.Inventory{}
+	if err := s.bazaarCommand(ctx, c, []byte{53, 1}); err != nil || c.stall != nil {
+		t.Fatal("invented empty-bag offers", err)
+	}
+	c.character.Bag[0] = game.Item{ID: 32176, Count: 3}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	request, _ := protocol.Builder{53, 1}.String("Goods")
+	if err := s.bazaarCommand(ctx, c, request); err != nil || c.stall == nil || len(c.stall.Listings) != 1 || c.stall.Listings[0].Item.Slot != 1 || c.stall.Listings[0].Item.Item.ID != 32176 {
+		t.Fatal(c.stall, err)
+	}
+	wire.Reset()
+	if err := s.eventStallCommand(ctx, c, []byte{20, 13}); err != nil || c.stall != nil {
+		t.Fatal("event stall close", err)
+	}
+}
+
+func TestNativeStallFiveByteOffersPreserveStyleSlotsAndMetadata(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	seller, buyer := players[0], players[1]
+	// Native title, style two, then one five-byte (bag slot, price) record.
+	open := []byte{23, 30, 5, 'G', 'o', 'o', 'd', 's', 2, 1, 3, 0, 0, 0}
+	tradeDo(t, s, seller, open)
+	if seller.stall == nil || !seller.stall.NativeSlots || seller.stall.Style != 2 || seller.stall.Listings[0].Item.Count != 10 {
+		t.Fatal("native offer lost style, bag identity or whole-stack quantity")
+	}
+	if !contains(wires[0].packets(t), open) {
+		t.Fatal("native open acknowledgment changed")
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	tradeDo(t, s, buyer, protocol.Builder{23, 32}.U32(seller.character.ID))
+	packets := wires[1].packets(t)
+	if len(packets) != 2 || len(packets[0]) != 58 || packets[0][19] != 1 || packets[0][22] != 10 {
+		t.Fatal("native browse must use the original bag slot", packets)
+	}
+	tradeDo(t, s, buyer, protocol.Builder{23, 33}.U32(seller.character.ID).U8(1).U8(2).U16(32176).U32(3))
+	stored := tradeStored(t, s, players)
+	if stored[0].Gold != 106 || stored[1].Gold != 194 || stored[0].Bag[0].Count != 8 || stored[1].Bag[1].Count != 2 || stored[1].Bag[1].Damage != 2 || stored[1].Bag[1].Metadata[6] != 7 {
+		t.Fatal("native purchase lost ownership, funds or instance metadata")
+	}
+}
+
+func TestStallListDuringMapLoadingAndGameplay(t *testing.T) {
+	for _, ready := range []bool{false, true} {
+		name := "loading"
+		if ready {
+			name = "ready"
+		}
+		t.Run(name, func(t *testing.T) {
+			s := New(config.Default(), nil, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			wire := &captureConn{}
+			c := &Session{conn: wire, character: &game.Character{ID: 10001, Map: 10017}, ready: ready}
+			before := c.character.Clone()
+			for range 2 {
+				if err := s.dispatch(context.Background(), c, []byte{23, 77}); err != nil {
+					t.Fatal(err)
+				}
+				got := wire.packets(t)
+				if len(got) != 2 || !bytes.Equal(got[0], []byte{23, 4, 0}) || !bytes.Equal(got[1], []byte{23, 102}) {
+					t.Fatalf("stall list replies %x", got)
+				}
+			}
+			if err := s.dispatch(context.Background(), c, []byte{5, 7, 0}); err != nil {
+				t.Fatal(err)
+			}
+			got := wire.packets(t)
+			if len(got) != 1 || !bytes.Equal(got[0], []byte{5, 8, 0x11, 0x27, 0, 0, 0}) {
+				t.Fatalf("sprite refresh %x", got)
+			}
+			if err := s.dispatch(context.Background(), c, []byte{5, 4}); err != nil {
+				t.Fatal(err)
+			}
+			if got := wire.packets(t); len(got) != 0 {
+				t.Fatalf("state ping unexpectedly echoed %x", got)
+			}
+			if c.ready != ready || c.character.ID != before.ID || c.character.Map != before.Map || c.character.Bag != before.Bag {
+				t.Fatal("read-only request changed world or inventory state")
+			}
+			if !ready {
+				if err := s.dispatch(context.Background(), c, []byte{5, 17, 1}); !errors.Is(err, protocol.ErrMalformed) {
+					t.Fatalf("teleport allowed before map acknowledgment: %v", err)
+				}
+				for _, request := range [][]byte{{23, 26, 1, 0}, {75, 1, 1, 1, 0, 4, 1, 1, 0}} {
+					if err := s.dispatch(context.Background(), c, request); !errors.Is(err, protocol.ErrMalformed) {
+						t.Fatalf("mall purchase allowed before map acknowledgment: %v", err)
+					}
+				}
+				// Only read-only synchronization bypasses the map-loading guard.
+				if err := s.dispatch(context.Background(), c, []byte{23, 10, 1, 1, 2}); !errors.Is(err, protocol.ErrMalformed) {
+					t.Fatalf("inventory mutation allowed before map acknowledgment: %v", err)
+				}
+			}
+		})
+	}
+	s := New(config.Default(), nil, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err := s.dispatch(context.Background(), &Session{}, []byte{23, 77}); !errors.Is(err, protocol.ErrMalformed) {
+		t.Fatalf("list allowed without selected character: %v", err)
+	}
+}
+
+// stallOpen crafts AC23:1 with the serialized title, listing count and records.
+func stallOpen(title string, listings ...[]byte) []byte {
+	p, _ := protocol.Builder{protocol.CommandStall, protocol.StallOpen}.String(title)
+	p = p.U8(byte(len(listings)))
+	for _, row := range listings {
+		p = p.Bytes(row)
+	}
+	return p
+}
+
+func stallRecord(slot byte, id uint16, price uint32, count byte) []byte {
+	return protocol.Builder{}.U8(slot).U16(id).U32(price).U8(count)
+}
+
+// TestStallOpenRejectsMalformedOffers covers every rejected shape of AC23:1.
+func TestStallOpenRejectsMalformedOffers(t *testing.T) {
+	s, players, _ := tradeFixture(t)
+	seller := players[0]
+	cases := map[string][]byte{
+		"empty title":      stallOpen("", stallRecord(1, 32176, 10, 5)),
+		"no listings":      stallOpen("Shop"),
+		"slot zero":        stallOpen("Shop", stallRecord(0, 32176, 10, 5)),
+		"slot too high":    stallOpen("Shop", stallRecord(game.BagSize+1, 32176, 10, 5)),
+		"duplicate slot":   stallOpen("Shop", stallRecord(1, 32176, 10, 5), stallRecord(1, 32176, 10, 5)),
+		"zero price":       stallOpen("Shop", stallRecord(1, 32176, 0, 5)),
+		"zero quantity":    stallOpen("Shop", stallRecord(1, 32176, 10, 0)),
+		"malformed header": {protocol.CommandStall, protocol.StallOpen},
+	}
+	for name, packet := range cases {
+		t.Run(name, func(t *testing.T) {
+			if err := s.dispatch(context.Background(), seller, packet); !errors.Is(err, protocol.ErrMalformed) {
+				t.Fatalf("accepted malformed offer: %v", err)
+			}
+			if seller.stall != nil {
+				t.Fatal("malformed offer opened a stall")
+			}
+		})
+	}
+}
+
+// TestStallOpenRejectsChangedInventory checks the soft rejections that answer
+// with a system message instead of closing the connection.
+func TestStallOpenRejectsChangedInventory(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	seller := players[0]
+	cases := map[string][]byte{
+		"above the stack": stallOpen("Shop", stallRecord(1, 32176, 10, 11)),
+		"unknown item":    stallOpen("Shop", stallRecord(1, 9999, 10, 1)),
+		"empty slot":      stallOpen("Shop", stallRecord(2, 32176, 10, 1)),
+		"locked item":     stallOpen("Shop", stallRecord(1, 32176, 10, 1)),
+	}
+	for name, packet := range cases {
+		t.Run(name, func(t *testing.T) {
+			if name == "locked item" {
+				before := seller.character.Bag[0].Locked
+				seller.character.Bag[0].Locked = true
+				defer func() { seller.character.Bag[0].Locked = before }()
+			}
+			wires[0].Reset()
+			if err := s.dispatch(context.Background(), seller, packet); err != nil {
+				t.Fatalf("rejection should be a message, not an error: %v", err)
+			}
+			if seller.stall != nil {
+				t.Fatal("rejected offer opened a stall")
+			}
+			if got := wires[0].packets(t); len(got) == 0 {
+				t.Fatal("rejection produced no message for the seller")
+			}
+		})
+	}
+}
+
+// TestStallCloseIsIdempotent checks that a second close is a no-op and that the
+// removal packets reach peers once.
+func TestStallCloseIsIdempotent(t *testing.T) {
+	s, players, wires := tradeFixture(t)
+	seller, peer := players[0], players[1]
+	openTestStall(t, s, seller)
+	for _, wire := range wires {
+		wire.Reset()
+	}
+
+	tradeDo(t, s, seller, []byte{protocol.CommandStall, protocol.StallClose})
+	if seller.stall != nil {
+		t.Fatal("stall stayed open")
+	}
+	if first := len(wires[1].packets(t)); first == 0 {
+		t.Fatal("closing did not notify peers")
+	}
+
+	// packets() drains the wire, so a second close must leave it empty.
+	tradeDo(t, s, seller, []byte{protocol.CommandStall, protocol.StallClose})
+	if got := len(wires[1].packets(t)); got != 0 {
+		t.Fatalf("second close broadcast %d packet(s)", got)
+	}
+	if peer.stall != nil {
+		t.Fatal("closing one stall touched another player")
+	}
+}
+
+// TestStallViewAndPurchaseGuards covers the unavailable branches that protect
+// the window from stale or invalid requests.
+func TestStallViewAndPurchaseGuards(t *testing.T) {
+	s, players, _ := tradeFixture(t)
+	seller, buyer := players[0], players[1]
+	openTestStall(t, s, seller)
+
+	view := protocol.Builder{protocol.CommandStall, protocol.StallView}.U32(seller.character.ID)
+	if err := s.dispatch(context.Background(), buyer, view); err != nil {
+		t.Fatal(err)
+	}
+
+	// An unknown seller is reported as unavailable, not as a malformed packet.
+	missing := protocol.Builder{protocol.CommandStall, protocol.StallView}.U32(999)
+	if err := s.dispatch(context.Background(), buyer, missing); err != nil {
+		t.Fatal(err)
+	}
+
+	// Buying from yourself is refused.
+	self := protocol.Builder{protocol.CommandStall, protocol.StallBuy}.U32(buyer.character.ID).U8(1).U8(1)
+	if err := s.dispatch(context.Background(), buyer, self); err != nil {
+		t.Fatal(err)
+	}
+
+	// Buying while running a stall is refused.
+	before := tradeStored(t, s, players)
+	openTestStall(t, s, buyer)
+	other := protocol.Builder{protocol.CommandStall, protocol.StallBuy}.U32(seller.character.ID).U8(1).U8(1)
+	if err := s.dispatch(context.Background(), buyer, other); err != nil {
+		t.Fatal(err)
+	}
+	if after := tradeStored(t, s, players); after[0].Gold != before[0].Gold || after[1].Gold != before[1].Gold {
+		t.Fatal("purchase went through while the buyer ran a stall")
+	}
+	tradeDo(t, s, buyer, []byte{protocol.CommandStall, protocol.StallClose})
+
+	// A missing listing and a quantity above the listed stock answer with a message.
+	gone := protocol.Builder{protocol.CommandStall, protocol.StallBuy}.U32(seller.character.ID).U8(9).U8(1)
+	if err := s.dispatch(context.Background(), buyer, gone); err != nil {
+		t.Fatal(err)
+	}
+	tooMany := protocol.Builder{protocol.CommandStall, protocol.StallBuy}.U32(seller.character.ID).U8(1).U8(200)
+	if err := s.dispatch(context.Background(), buyer, tooMany); err != nil {
+		t.Fatal(err)
+	}
+
+	// A zero count is refused before the transaction runs.
+	zero := protocol.Builder{protocol.CommandStall, protocol.StallBuy}.U32(seller.character.ID).U8(1).U8(0)
+	if err := s.dispatch(context.Background(), buyer, zero); err != nil {
+		t.Fatal(err)
+	}
+	if after := tradeStored(t, s, players); after[0].Bag != before[0].Bag || after[1].Bag != before[1].Bag {
+		t.Fatal("guarded purchases changed bags")
+	}
+}
 
 func tradeFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	t.Helper()

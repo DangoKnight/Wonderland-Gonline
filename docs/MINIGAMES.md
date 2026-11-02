@@ -68,7 +68,7 @@ by this initializer.
 ## Server-owned paid games
 
 `client/wlo/minigame/arcade.go` contains the egg and slot presentation and AC71
-state machine. `internal/server/arcade_payments.go` implements their authoritative
+state machine. `internal/server/minigames.go` implements their authoritative
 AC71 purchases and rewards:
 
 - Charges, balances, purchases, prize selection and inventory grants belong to

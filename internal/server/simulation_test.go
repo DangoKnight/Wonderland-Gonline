@@ -9,8 +9,189 @@ import (
 	"wonderland-gonline/internal/battle"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/world"
 )
+
+// fieldFixture puts Alice on field map 30001 with a one-HP wild boar (click 4) beside
+// her and a second one (click 5) far away.
+func fieldFixture(t *testing.T) (*Server, *Session, *captureConn) {
+	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
+	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
+	s, players, wires := worldFixture(t)
+	s.Assets.Maps[30001] = assets.Map{ID: 30001, NPCs: []assets.MapNPC{{ClickID: 4, Flags: 1, X: 1050, Y: 1080, Template: 17100}, {ClickID: 5, Flags: 1, X: 3000, Y: 3000, Template: 17100}}}
+	s.Assets.NPCs = map[uint16]assets.NPC{17100: {ID: 17100, Name: "Wild Boar", Level: 2, HP: 1}}
+	s.World = world.New(s.Assets)
+	c := players[0]
+	c.character.Map = 30001
+	c.encounter = encounterState{next: firstEncounter}
+	c.encounter.enterMap()
+	if err := s.worldCommand(context.Background(), c, []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	wires[0].Reset()
+	return s, c, wires[0]
+}
+
+func TestWildMonsterClickDefeatAndRespawn(t *testing.T) {
+	s, c, wire := fieldFixture(t)
+	ctx := context.Background()
+	if !s.World.Wild(30001, world.NPC{ClickID: 4, Template: 17100}) || s.World.SafeTown(30001) || !s.World.SafeTown(10017) {
+		t.Fatal("classification")
+	}
+	if err := s.worldCommand(ctx, c, []byte{20, 1, 4, 0}); err != nil || c.battle == nil {
+		t.Fatal("wild click did not start a battle", err)
+	}
+	// A clicked monster has at least 50 HP, so attack until it falls.
+	for round := 0; c.battle != nil; round++ {
+		if round == 30 {
+			t.Fatal("battle did not end")
+		}
+		s.worldMu.Lock()
+		c.battle.members[0].self.HP = c.battle.members[0].self.MaxHP
+		s.worldMu.Unlock()
+		if err := s.worldCommand(ctx, c, []byte{50, 1, 4, 2, 2, 2}); err != nil {
+			t.Fatal(err)
+		}
+		settle(t, s, c)
+	}
+	got := wire.packets(t)
+	if !contains(got, protocol.Builder{22, 4}.Bytes(world.NPCRecord(4, 0, 1050, 1080, true))) || !s.World.Defeated(30001, 4) || !c.view.Hidden[4] {
+		t.Fatal("defeated monster not removed", got)
+	}
+	c.resumeAt = time.Time{}
+	if err := s.worldCommand(ctx, c, []byte{20, 1, 4, 0}); err != nil || c.battle != nil {
+		t.Fatal("defeated monster fought again", err)
+	}
+	wire.Reset()
+	s.reviveMonsters(time.Now().Add(world.MonsterRespawn + time.Second))
+	if got = wire.packets(t); len(got) != 1 || got[0][0] != 22 || c.view.Hidden[4] {
+		t.Fatal("respawn", got)
+	}
+}
+
+func TestFieldEncounters(t *testing.T) {
+	s, c, _ := fieldFixture(t)
+	ctx := context.Background()
+	move := func(x, y uint16) {
+		t.Helper()
+		if err := s.worldCommand(ctx, c, protocol.Builder{6, 1, 0}.U16(x).U16(y)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The map-entry grace period suppresses encounters.
+	c.encounter.next = 1
+	move(1500, 1500)
+	if c.battle != nil {
+		t.Fatal("battle during the grace period")
+	}
+	c.encounter.mapEnter = time.Now().Add(-time.Minute)
+	move(1510, 1500)
+	if c.battle == nil || len(c.battle.b.Defenders) < 1 || len(c.battle.b.Defenders) > 4 || c.battle.wild {
+		t.Fatal("random encounter", c.battle)
+	}
+	s.worldMu.Lock()
+	s.endBattle(c.battle, 3) // Flee.
+	s.worldMu.Unlock()
+	settle(t, s, c)
+	// After a battle, proximity re-arms only once the player is away from every monster.
+	c.encounter.battleEnd, c.encounter.next = time.Time{}, 100
+	move(1060, 1090)
+	if c.battle != nil {
+		t.Fatal("proximity encounter before re-arming")
+	}
+	move(1500, 1500)
+	move(1060, 1090)
+	if c.battle == nil || !c.battle.wild || c.battle.encounter != 4 {
+		t.Fatal("proximity encounter", c.battle)
+	}
+	if !bytes.Equal(battleState(c.character.ID, true)[:2], []byte{11, 4}) {
+		t.Fatal("state packet")
+	}
+}
+
+func TestRestingPoses(t *testing.T) {
+	for pose, want := range map[byte]bool{0: false, 9: false, 25: false, 26: true, 27: true, 28: false, 45: false, 46: true, 53: true, 54: false} {
+		if restingPose(pose) != want {
+			t.Errorf("pose %d resting = %v", pose, !want)
+		}
+	}
+}
+
+// TestRestingRecoversVitalsAndCheckpoints: sitting recovers HP and SP every
+// interval with AC8 reports, the checkpoint saves them without a full
+// rewrite, committed SQL results keep the buffered recovery, and walking
+// ends the pose.
+func TestRestingRecoversVitalsAndCheckpoints(t *testing.T) {
+	s, players, wires := chatFixture(t)
+	ctx := context.Background()
+	c := players[0]
+	s.world[c.info.ID] = c
+	c.ready = true
+	next := c.character.Clone()
+	next.HP, next.SP = 1, 0
+	if err := s.commit(ctx, c, next); err != nil {
+		t.Fatal(err)
+	}
+	full := c.character.Combat(s.Assets.Items)
+	maxHP, maxSP := uint32(full.MaxHP), uint32(full.MaxSP)
+	stepHP, stepSP := max(1, maxHP*restRecoveryPercent/100), max(1, maxSP*restRecoveryPercent/100)
+	t0 := time.Now()
+
+	s.rest(c, t0)
+	if c.character.HP != 1 || wires[0].Len() != 0 {
+		t.Fatal("standing characters recover")
+	}
+	if err := s.worldCommand(ctx, c, []byte{protocol.CommandPose, protocol.PoseBroadcast, protocol.PoseSitFirst + 2}); err != nil {
+		t.Fatal(err)
+	}
+	wires[0].Reset()
+	s.rest(c, t0)
+	s.rest(c, t0.Add(restRecoveryInterval-time.Millisecond))
+	if c.character.HP != 1 || wires[0].Len() != 0 {
+		t.Fatal("recovered before the interval")
+	}
+	s.rest(c, t0.Add(restRecoveryInterval))
+	hp, sp := 1+stepHP, stepSP
+	got := wires[0].packets(t)
+	if c.character.HP != hp || c.character.SP != sp || len(got) != 2 ||
+		!bytes.Equal(got[0], serverwire.VitalPacket(game.StatCurrentHP, hp)) || !bytes.Equal(got[1], serverwire.VitalPacket(game.StatCurrentSP, sp)) {
+		t.Fatalf("HP %d SP %d packets %x", c.character.HP, c.character.SP, got)
+	}
+
+	s.autosaveCharacters(ctx)
+	saved, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || saved[0].HP != hp || saved[0].SP != sp {
+		t.Fatal("checkpoint", saved[0].HP, saved[0].SP, err)
+	}
+
+	// A transaction result that leaves the vitals at the checkpoint keeps
+	// newer buffered recovery.
+	s.rest(c, t0.Add(2*restRecoveryInterval))
+	s.adoptSavedCharacter(c, saved[0])
+	if c.character.HP != hp+stepHP {
+		t.Fatal("committed result discarded buffered recovery", c.character.HP)
+	}
+
+	// Recovery stops at the maxima.
+	c.character.HP, c.character.SP = maxHP, maxSP
+	wires[0].Reset()
+	s.rest(c, t0.Add(4*restRecoveryInterval))
+	if c.character.HP != maxHP || wires[0].Len() != 0 {
+		t.Fatal("recovered past the maximum")
+	}
+
+	// Walking ends the held pose.
+	c.character.HP = 1
+	if err := s.worldCommand(ctx, c, []byte{6, 1, 2, 0xb0, 4, 0x14, 5}); err != nil {
+		t.Fatal(err)
+	}
+	s.rest(c, t0.Add(5*restRecoveryInterval))
+	s.rest(c, t0.Add(6*restRecoveryInterval))
+	if c.emote != 0 || c.character.HP != 1 {
+		t.Fatal("walking kept the resting pose", c.emote, c.character.HP)
+	}
+}
 
 func TestWorldSimulationMovementRejectionPreservesState(t *testing.T) {
 	s, players, wires := worldFixture(t)

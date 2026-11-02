@@ -29,10 +29,21 @@ native function; binaries were not fully disassembled and every authored data
 value was not reverified. This was static review, not runtime or aLogin acceptance.
 Historical verification reports are not evidence that current tests passed.
 
+## Story architecture
+
+Existing native story exceptions now use the typed SQL `Story` dataset (asset
+v15): selection/continuation, visibility, script repairs, recovery, recruitment,
+conversion, reward checkpoints and starter cinematics. Go owns reusable execution
+and transaction primitives. See [story authoring](STORY_SYSTEM.md). The custom
+registry's dormant acceptance/completion integration remains separate from this
+behavior-preserving migration.
+
 ## Current source update — 2026-11-01
 
-The latest pinned source is `1ff5bbaec5da623ee05a2d083ced16dac4176a7e`: 38 commits
-and 431 changed files after the reviewed `e63e9fe` revision. See
+The latest pinned source is `5c368395146c0c54bb01bcee3ae88d50513beae8`: 40 commits
+and 431 distinct changed files after the reviewed `e63e9fe` revision. The two
+commits after `1ff5bba` add Waterfall Grotto mirror continuation and Fairy Altar
+movie playback fixes; existing visit-local actor visibility is retained. See
 [imported behavior and explicit exclusions](SOURCE_UPDATES.md)
 and the separate [per-file update ledger](source-update-inventory.json). The
 566-file baseline counts below remain historical evidence.

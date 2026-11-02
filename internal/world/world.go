@@ -93,6 +93,7 @@ func (m *Map) npc(click uint16) (NPC, bool) {
 
 // World is safe for concurrent use. Map definitions are immutable; ground state has its own lock.
 type World struct {
+	story    *storyRuntime
 	maps     map[uint16]*Map
 	catalog  *assets.Catalog
 	ground   ground
@@ -108,6 +109,7 @@ func New(c *assets.Catalog) *World {
 	for id, m := range c.Maps {
 		w.maps[id] = newMap(m)
 	}
+	w.indexStory()
 	return w
 }
 
@@ -208,6 +210,7 @@ func (w *World) ReloadEvents(maps map[uint16]assets.Map) {
 			w.maps[id] = &copy
 		}
 	}
+	w.indexStoryRepairs()
 }
 
 // ReloadCatalog changes definitions while preserving runtime item/monster state.
@@ -219,4 +222,8 @@ func (w *World) ReloadCatalog(c *assets.Catalog) {
 	}
 	w.maps = maps
 	w.catalog = c
+	w.indexStory()
 }
+
+// ReloadStory publishes definitions under the same external ownership lock as events.
+func (w *World) ReloadStory(d assets.StoryDefinitions) { w.catalog.Story = d; w.indexStory() }

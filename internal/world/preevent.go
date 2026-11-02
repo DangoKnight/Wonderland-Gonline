@@ -46,12 +46,13 @@ func rules(ev assets.Event) []rule {
 func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event, views ...*View) []rule {
 	all := rules(ev)
 	// Sealed Bead's type-6 fallback must not override its quest-specific rules.
-	if mapID != game.MapID12508 || ev.ClickID != 2 {
+	policy, configured := w.StoryFirst(assets.StoryPreFallback, c, nil, StoryContext{Map: mapID, Event: ev.ClickID})
+	if !configured {
 		return all
 	}
 	specific := false
 	for _, r := range all {
-		if w.ruleMatches(c, mapID, r, views...) && r.conditions[0][0] != 6 {
+		if w.ruleMatches(c, mapID, r, views...) && r.conditions[0][0] != byte(policy.Value) {
 			specific = true
 		}
 	}
@@ -60,7 +61,7 @@ func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event, vie
 	}
 	out := all[:0:0]
 	for _, r := range all {
-		if !(len(r.conditions) == 1 && r.conditions[0][0] == 6) {
+		if !(len(r.conditions) == 1 && r.conditions[0][0] == byte(policy.Value)) {
 			out = append(out, r)
 		}
 	}
@@ -101,16 +102,12 @@ func questActive(c *game.Character, id uint16) (game.Quest, bool) {
 
 // preEventCondition is MatchesPreEventCondition: no event context.
 func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte, views ...*View) bool {
-	kind, w1, w2, w3, w4, w5, w6 := d[0], le16(d[:], 1), le16(d[:], 3), le16(d[:], 5), le16(d[:], 7), le16(d[:], 9), le16(d[:], 11)
-	// Holy's wine delivery conceals the record keeper only during an active delivery.
-	if mapID == game.MapID11013 && kind == 5 && w1 == 13056 && w2 == 1 && w3 == 1 && w4 == 0x0301 && w5 == 0 && w6&255 == 0 {
-		if q, ok := questActive(c, 13056); !ok || q.Step == 0 {
-			return false
-		}
-	}
 	var view *View
 	if len(views) > 0 {
 		view = views[0]
+	}
+	if r, ok := w.StoryFirst(assets.StoryPreCondition, c, view, StoryContext{Map: mapID, Raw: &d}); ok {
+		return r.Value != 0
 	}
 	return w.condition(c, view, mapID, nil, d)
 }
@@ -203,7 +200,12 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 				return !present
 			case 3:
 				// The only 2/2/3 record is Clive's prison branch with the active-Clive alternative.
-				return ev != nil && mapID == game.MapID11050 && ev.ClickID == 1 && w3 == 14175 && present
+				event := uint16(0)
+				if ev != nil {
+					event = ev.ClickID
+				}
+				r, ok := w.StoryFirst(assets.StoryCondition, c, v, StoryContext{Map: mapID, Event: event, Raw: &d})
+				return ok && r.Value != 0
 			case 5:
 				return compare(int64(max(0, game.MaxPets-len(c.Pets))), value, op)
 			case 6:
@@ -281,14 +283,17 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 	case ConditionCompanionRebirth:
 		return w1 == uint16(c.CompanionRebirthState())
 	case ConditionCompanionEquipment:
-		// EveEventRuntime enables only Elin's three authored weapon gates.
-		if mapID != storyElinWeaponMap || w1 != storyElinTemplate ||
-			!((w2 == storyElinNativeWeaponOperand4 && w3 == storyElinOriginalWeapon) ||
-				(w2 == storyElinNativeWeaponOperand1 && w3 == storyElinReplacementWeapon)) {
+		event := uint16(0)
+		if ev != nil {
+			event = ev.ClickID
+		}
+		policy, allowed := w.StoryFirst(assets.StoryEquipmentGate, c, v, StoryContext{Map: mapID, Event: event, Raw: &d})
+		if !allowed {
 			return false
 		}
-		index, present := c.Pet(storyElinTemplate)
-		return present && compare(int64(c.Pets[index].Equipment[storyWeaponEquipmentIndex].ID), int64(w3), op)
+		index, present := c.Pet(uint32(w1))
+		slot := int(policy.Value)
+		return present && slot >= 0 && slot < len(c.Pets[index].Equipment) && compare(int64(c.Pets[index].Equipment[slot].ID), int64(w3), op)
 	case ConditionFreeBagSlots:
 		free := int64(0)
 		for _, it := range c.Bag {
@@ -326,19 +331,11 @@ func (w *World) propCondition(c *game.Character, v *View, mapID uint16, ev *asse
 		}
 		return compare(0, value, op)
 	}
-	switch {
-	case mapID == game.MapID11036 && actor == 7 && mode == 3:
-		door, ok := questActive(c, 10024)
-		done, ok2 := questActive(c, 10025)
-		return flag((ok && door.Step >= 1) || (ok2 && done.Step == 1))
-	case mapID == game.MapID11037 && actor == 7 && mode == 3:
-		fate, ok := questActive(c, 13086)
-		done, ok2 := questActive(c, 13087)
-		return flag(ok && fate.Step > 0 && !(ok2 && done.Step > 0))
-	case mapID == game.MapID11015 && actor == 4 && mode == 3:
-		heretic, ok := questActive(c, 13024)
-		done, ok2 := questActive(c, 13025)
-		return flag((ok && heretic.Step >= 7) || (ok2 && done.Step > 0))
+	var raw [21]byte
+	raw[3] = byte(mode)
+	raw[4] = byte(mode >> 8)
+	if r, ok := w.StoryFirst(assets.StoryPropCondition, c, v, StoryContext{Map: mapID, Event: ev.ClickID, Actor: actor, Raw: &raw}); ok {
+		return compare(r.Value, value, op)
 	}
 	if expiry, configured := c.ChestRespawns[ChestKey(mapID, ev.ClickID)]; configured {
 		return flag(time.Now().Before(expiry))
@@ -410,47 +407,10 @@ func questStep(c *game.Character, id uint16) int {
 	return 0
 }
 
-// storyVisibility ports the hardcoded ShouldNpcBeVisible overrides that depend only on
-// quest marks. Companion-based overrides evaluate with an empty party.
-func storyVisibility(c *game.Character, mapID, click uint16) (visible, decided bool) {
-	switch {
-	case mapID == game.MapID12000 && (click == 17 || click == 10 || click == 31):
-		return true, true
-	case mapID == game.MapID11040 && click == 4:
-		if q, ok := questActive(c, 13102); ok && q.Step == 4 {
-			if done, ok := questActive(c, 13103); !ok || done.Step == 0 {
-				return true, true
-			}
-		}
-	case mapID == game.MapID11016 && click == 1:
-		// S. Monkey leaves once recruited (as a pet or by mark 12002).
-		_, monkey := c.Pet(17162)
-		_, alias := c.Pet(10727)
-		return !(monkey || alias || c.ActivePet == 17162 || c.ActivePet == 10727 || questState(c, 12002) == 3), true
-	case mapID == game.MapID12000:
-		switch click {
-		case 32:
-			return false, true
-		case 29:
-			return true, true
-		case 28:
-			st, step := questState(c, 13046), questStep(c, 13046)
-			return !(st == 2 || (st == 1 && step < 2 && questState(c, 13047) != 1)), true
-		case 20:
-			st, step := questState(c, 13046), questStep(c, 13046)
-			return st == 1 && step < 2 && questState(c, 13047) != 1, true
-		case 18, 19:
-			return questState(c, 13023) != 2, true
-		case 14:
-			st, step := questState(c, 12020), questStep(c, 12020)
-			return (st == 1 && step >= 2) || st == 3 || questState(c, 12021) == 1, true
-		case 15:
-			return questState(c, 12020) == 1 && questStep(c, 12020) == 1, true
-		case 16:
-			return !(questState(c, 13020) == 2 || questState(c, 13021) == 1), true
-		}
-	}
-	return false, false
+// storyVisibility applies the SQL-authored early visibility overrides.
+func (w *World) storyVisibility(c *game.Character, mapID, click uint16) (bool, bool) {
+	r, ok := w.StoryFirst(assets.StoryVisibility, c, nil, StoryContext{Map: mapID, Actor: click})
+	return r.Value != 0, ok
 }
 
 // Visible reports whether a map actor starts visible for a character.
@@ -483,7 +443,7 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 			}
 		}
 	}
-	if v, ok := storyVisibility(c, mapID, click); ok {
+	if v, ok := w.storyVisibility(c, mapID, click); ok {
 		return v
 	}
 	m, ok := w.maps[mapID]
@@ -528,28 +488,10 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 			}
 		}
 	}
-	if mapID == game.MapID60002 && (click == 43 || click == 44) {
-		if q, ok := questActive(c, 50042); ok && (q.Step == 1 || (q.Step > 1 && questState(c, 50047) == 1)) {
-			return true
-		}
-	}
-	if mapID == game.MapID12002 && (click == 2 || click == 7) && xaolanInFate(c) {
-		return false
-	}
-	if mapID == game.MapID12002 && (click == 2 || click == 3) {
-		if q, ok := questActive(c, 13033); ok && q.Step == 1 && questState(c, 13004) != 1 && questState(c, 13005) != 1 {
-			return click != 2 || !w.InParty(c, 14156)
-		}
+	if r, ok := w.StoryFirst(assets.StoryFinalVisibility, c, view, StoryContext{Map: mapID, Actor: click}); ok {
+		return r.Value != 0
 	}
 	return visible
-}
-
-func xaolanInFate(c *game.Character) bool {
-	if q, ok := questActive(c, 13087); ok && q.Step > 0 {
-		return true
-	}
-	q, ok := questActive(c, 13086)
-	return ok && q.Step >= 2
 }
 
 // Template is the Npc.dat data a pet or companion derives from.

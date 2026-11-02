@@ -20,6 +20,8 @@ func DecodeOp(o assets.Operation) Op {
 	return Op{Index: o.Index, Code: d[0], D1: le16(d, 1), D2: le16(d, 3), D3: le16(d, 5), D4: le16(d, 7), DW1: dw(9), DW2: dw(13), DW3: dw(17), raw: o}
 }
 
+func (o Op) Raw() [21]byte { return o.raw.Data }
+
 // Value is DecodeActionValue: an amount packed across dialog4's high byte and dword1.
 func (o Op) Value() uint32 { return uint32(o.D4>>8) | o.DW1<<8 }
 
@@ -139,31 +141,22 @@ func (w *World) FindBranch(c *game.Character, v *View, mapID uint16, ev *assets.
 
 // FindBranchAt evaluates every timer in the branch against one instant.
 func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *assets.Event, trigger byte, question, answer uint16, exclude int, now time.Time) int {
+	x := StoryContext{Map: mapID, Event: ev.ClickID}
+	_, forward := w.StoryFirst(assets.StoryForwardOnly, c, v, x)
 	first := 0
-	if exclude >= 0 && (DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult || storyForwardOnly(mapID, ev.ClickID)) {
+	if exclude >= 0 && (DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult || forward) {
 		first = exclude + 1
 	}
-	if mapID == storyXaolanHomeMap && (ev.ClickID == storyXaolanHomeFirst || ev.ClickID == storyXaolanHomeSecond) && xaolanFate(c) {
+	if _, blocked := w.StoryFirst(assets.StoryBlock, c, v, x); blocked {
 		return -1
 	}
 	order := make([]int, 0, len(ev.Branches))
-	// Native voucher hand-ins precede the broad greeting and transformation offer.
 	if trigger == TriggerEntry {
-		for i := first; i < len(ev.Branches); i++ {
-			if _, ok := BreillatExchange(ev, i); ok {
-				order = append(order, i)
-			}
-		}
-	}
-	// The broad greeting condition precedes the unlock condition in native data.
-	if trigger == TriggerEntry && IsBreillat(ev) && first <= BreillatOfferBranch-1 {
-		order = append(order, BreillatOfferBranch-1)
-	}
-	preferred := storyPreferredBranch(mapID, ev.ClickID)
-	if trigger == TriggerEntry && preferred != 0 {
-		for i := first; i < len(ev.Branches); i++ {
-			if ev.Branches[i].Index == preferred {
-				order = append(order, i)
+		for r := range w.StoryRules(assets.StoryPriority, c, v, x) {
+			for i := first; i < len(ev.Branches); i++ {
+				if ev.Branches[i].Index == byte(r.Value) {
+					order = append(order, i)
+				}
 			}
 		}
 	}
@@ -262,7 +255,7 @@ func (o Op) Unsupported() bool {
 	case ActionMinigame:
 		return o.D1 == 0 || o.D1 > 255
 	case ActionTransform:
-		return !o.BreillatTransform()
+		return false // Authorization and program shape are checked by the story policy.
 	case ActionMissionVariable:
 		return o.D2 != MissionVariableAdd
 	case ActionGather, ActionWireCode16:

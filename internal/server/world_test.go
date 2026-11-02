@@ -6,11 +6,13 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net"
 	"path/filepath"
-	"sync"
+	"strings"
 	"testing"
 	"time"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/battle"
 	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -18,376 +20,770 @@ import (
 	"wonderland-gonline/internal/world"
 )
 
-func worldFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
-	t.Helper()
-	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { db.Close() })
-	catalog := creationCatalog()
-	s := New(config.Default(), db, catalog, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	var sessions []*Session
-	var wires []*captureConn
-	for i, name := range []string{"Alice", "Bobby", "Carol"} {
-		a, err := db.Register(context.Background(), name, "password", "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		char, err := game.NewCharacter(a.CharacterID(1), 1, name, game.Appearance{Body: 1, Element: 3}, catalog.StarterItems, catalog.Items, time.Now())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if i == 2 {
-			char.Map = 20000
-		}
-		if err := db.CreateCharacter(context.Background(), a, char); err != nil {
-			t.Fatal(err)
-		}
-		wire := &captureConn{}
-		sessions = append(sessions, &Session{conn: wire, info: SessionInfo{ID: uint64(i + 1)}, account: a, character: &char, view: world.NewView(), pets: newPetRoster()})
-		wires = append(wires, wire)
-	}
-	return s, sessions, wires
-}
-
-func TestWorldVisibilityMovementAndLogout(t *testing.T) {
-	s, players, wires := worldFixture(t)
+func TestLauraExitRewardAtomicReplayAndCapacity(t *testing.T) {
+	s, c, wire, _ := mallFixture(t)
 	ctx := context.Background()
-	for _, i := range []int{0, 2} {
-		if err := s.worldCommand(ctx, players[i], []byte{12, 1}); err != nil {
-			t.Fatal(err)
-		}
-		wires[i].Reset()
+	s.Assets.MapTransitions = []assets.MapTransition{{FromMap: 10001, Entry: 1, Destination: assets.TravelDestination{Map: 10000, X: 1892, Y: 1655}, Quest: 10035, Talk: 30126, Items: []assets.BoxedItem{{ItemID: 36002, Quantity: 1}, {ItemID: 34058, Quantity: 1}}, SkipIfOwned: []uint16{36002}}}
+	s.Assets.Items[36002] = game.ItemDefinition{ID: 36002}
+	s.Assets.Items[34058] = game.ItemDefinition{ID: 34058}
+	s.Assets.Maps[10000] = assets.Map{ID: 10000}
+	s.Assets.Maps[10001] = assets.Map{ID: 10001}
+	s.World = world.New(s.Assets)
+	c.character.Map = 10001
+	c.character.Bag = game.Inventory{}
+	for i := range c.character.Bag {
+		c.character.Bag[i] = game.Item{ID: 32176, Count: 50}
 	}
-	if err := s.worldCommand(ctx, players[1], []byte{12, 1}); err != nil {
+	c.character.Bag[0] = game.Item{}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
 		t.Fatal(err)
 	}
-	a, b := wires[0].packets(t), wires[1].packets(t)
-	if len(a) != 4 || a[0][0] != 4 || !bytes.Equal(a[2][:2], []byte{10, 3}) || !bytes.Equal(a[3][:2], []byte{5, 8}) {
-		t.Fatalf("arrival packets: %v", a)
+	if err := s.teleport(ctx, c, world.Destination{Map: 10000, X: 1892, Y: 1655}, 1); err != nil || c.character.Map != 10001 || c.character.Quests[10035].ID != 0 || !c.character.Bag[0].Empty() {
+		t.Fatal("partial/full-bag gift", err)
 	}
-	if len(b) != 5 || b[0][0] != 4 || b[2][0] != 7 || !bytes.Equal(b[3], []byte{5, 4}) || !bytes.Equal(b[4], []byte{56, 30, 0}) {
-		t.Fatalf("snapshot packets: %v", b)
-	}
-	if wires[2].Len() != 0 {
-		t.Fatal("spawn leaked to another map")
-	}
-	if err := s.worldCommand(ctx, players[1], []byte{12, 1}); err != nil {
+	c.character.Bag[1] = game.Item{}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
 		t.Fatal(err)
 	}
-	if wires[0].Len() != 0 || wires[1].Len() != 0 {
-		t.Fatal("duplicate ACK replayed spawn")
+	wire.Reset()
+	if err := s.teleport(ctx, c, world.Destination{Map: 10000, X: 1892, Y: 1655}, 1); err != nil || c.character.Quests[10035].State != game.Completed || c.character.Bag[0].ID != 36002 || c.character.Bag[1].ID != 34058 {
+		t.Fatal(c.character.Bag, err)
 	}
-	move := protocol.Builder{6, 1, 2}.U16(1200).U16(1300)
-	if err := s.worldCommand(ctx, players[0], move); err != nil {
+	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 1, 3, 0, 0, 1, 0, 0, 0, 0, 0xae, 0x75, 0}) {
+		t.Fatal("Laura dialogue")
+	}
+	saved, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || saved[0].Map != 10000 || saved[0].Quests[10035].State != game.Completed {
+		t.Fatal("not durable", err)
+	}
+	c.character.Map = 10001
+	c.character.Bag[0] = game.Item{}
+	c.character.Bag[1] = game.Item{}
+	if err = s.commit(ctx, c, c.character.Clone()); err != nil {
 		t.Fatal(err)
 	}
-	want := protocol.Builder{6, 1}.U32(players[0].character.ID).U8(2).U16(1200).U16(1300)
-	for _, i := range []int{0, 1} {
-		packets := wires[i].packets(t)
-		if len(packets) != 1 || !bytes.Equal(packets[0], want) {
-			t.Fatalf("movement for %d: %v", i, packets)
-		}
-	}
-	if wires[2].Len() != 0 {
-		t.Fatal("movement leaked to another map")
-	}
-	s.leaveWorld(players[0])
-	packets := wires[1].packets(t)
-	want = protocol.Builder{12}.U32(players[0].character.ID).U16(0).U16(0).U16(0).U16(0).U8(0)
-	if len(packets) != 1 || !bytes.Equal(packets[0], want) {
-		t.Fatalf("despawn: %v", packets)
-	}
-	s.leaveWorld(players[0])
-	if wires[1].Len() != 0 || wires[2].Len() != 0 {
-		t.Fatal("logout duplicated or leaked")
-	}
-	if err := s.worldCommand(ctx, players[0], []byte{12, 1}); err != nil {
-		t.Fatal(err)
-	}
-	if len(wires[1].packets(t)) != 4 {
-		t.Fatal("returning player did not spawn exactly once")
+	if err = s.teleport(ctx, c, world.Destination{Map: 10000}, 1); err != nil || !c.character.Bag[0].Empty() {
+		t.Fatal("replayed gift", err)
 	}
 }
 
-func TestConcurrentWorldEntryAndMovement(t *testing.T) {
-	s, players, wires := worldFixture(t)
-	players[2].character.Map = players[0].character.Map
-	var wg sync.WaitGroup
-	errs := make(chan error, 3)
-	for _, player := range players {
-		wg.Add(1)
-		go func(c *Session) {
-			defer wg.Done()
-			if err := s.worldCommand(context.Background(), c, []byte{12, 1}); err != nil {
-				errs <- err
-				return
+func TestStarterScenesHidePlayerSnapshotsAndBroadcasts(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		mapID, scene uint16
+		private      bool
+	}{
+		{"ship", 10017, 10001, true},
+		{"cabin", 10027, 10002, true},
+		{"island", 10035, 10003, true},
+		{"public", 11016, 11016, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, p, w := worldFixture(t)
+			for _, c := range p[:2] {
+				c.character.Map = tc.mapID
 			}
-			for n := 0; n < 10; n++ {
-				if err := s.worldCommand(context.Background(), c, protocol.Builder{6, 1, 0}.U16(uint16(1100+n)).U16(1200)); err != nil {
-					errs <- err
-					return
+			s.Assets.Maps[tc.mapID] = assets.Map{ID: tc.mapID, Scene: tc.scene}
+			s.World = world.New(s.Assets)
+			ctx := context.Background()
+			if err := s.acknowledgeWorld(p[0]); err != nil {
+				t.Fatal(err)
+			}
+			w[0].Reset()
+			// A tent sign must not bypass the normal peer snapshot filter.
+			p[0].openTent = &openTent{Map: tc.mapID, X: 1000, Y: 1000, Slot: 1}
+			if err := s.acknowledgeWorld(p[1]); err != nil {
+				t.Fatal(err)
+			}
+			arrival := w[0].packets(t)
+			snapshot := w[1].packets(t)
+			if tc.private {
+				if len(arrival) != 0 || countPrefix(snapshot, 4) != 0 || hasPacket(snapshot, tentSign(p[0])) {
+					t.Fatal("private entry exposed a peer", arrival, snapshot)
+				}
+				if s.mapPlayer(p[0], p[1].character.ID) != nil {
+					t.Fatal("hidden player discoverable by local commands")
+				}
+			} else if countPrefix(arrival, 4) != 1 || countPrefix(snapshot, 4) != 1 || !hasPacket(snapshot, tentSign(p[0])) {
+				t.Fatal("public entry lost peers", arrival, snapshot)
+			}
+			if tc.private {
+				if err := s.enterTent(ctx, p[1], p[0].character.ID); err != nil {
+					t.Fatal(err)
+				}
+				if p[1].tentOwner != 0 || p[1].character.Map != tc.mapID {
+					t.Fatal("entered hidden player's tent")
+				}
+				w[1].Reset()
+			}
+			for _, packet := range [][]byte{
+				protocol.Builder{6, 1}.U32(p[0].character.ID).U8(2).U16(1200).U16(1300),
+				protocol.Builder{32, 1}.U32(p[0].character.ID).U8(1),
+				protocol.Builder{11, 4}.U32(p[0].character.ID).U8(1),
+				protocol.Builder{15, 4}.U32(p[0].character.ID).U32(12178),
+			} {
+				s.broadcastWorld(p[0], packet)
+				got := w[1].packets(t)
+				if tc.private && len(got) != 0 || !tc.private && (len(got) != 1 || !bytes.Equal(got[0], packet)) {
+					t.Fatal("broadcast visibility", got)
 				}
 			}
-		}(player)
-	}
-	wg.Wait()
-	close(errs)
-	for err := range errs {
-		t.Error(err)
-	}
-	for i, wire := range wires {
-		seen := map[uint32]bool{players[i].character.ID: true}
-		for _, packet := range wire.packets(t) {
-			if packet[0] == 4 {
-				seen[protocol.NewReader(packet[1:]).U32()] = true
+			p[0].party = &party{members: []*Session{p[0], p[1]}}
+			p[1].party = p[0].party
+			s.partyArrival(p[0])
+			if tc.private && countPrefix(w[1].packets(t), 13, 5) != 0 {
+				t.Fatal("party formation exposed a peer")
 			}
-			if packet[0] == 6 && !seen[protocol.NewReader(packet[2:]).U32()] {
-				t.Fatal("movement arrived before appearance")
+			if tc.private && len(s.battleTeam(p[0])) != 1 {
+				t.Fatal("hidden teammate entered personal battle")
 			}
-		}
-		if len(seen) != 3 {
-			t.Fatal("concurrent entry lost a peer", seen)
-		}
+			w[0].Reset()
+			w[1].Reset()
+			s.sendMap(tc.mapID, []byte{13, 5, 1, 0, 0, 0, 2, 0, 0, 0}, nil)
+			if tc.private && (w[0].Len() != 0 || w[1].Len() != 0) {
+				t.Fatal("map-wide formation exposed peers")
+			}
+			w[0].Reset()
+			w[1].Reset()
+			if err := s.closePlayerTent(ctx, p[0]); err != nil {
+				t.Fatal(err)
+			}
+			if tc.private && w[1].Len() != 0 {
+				t.Fatal("tent close exposed its owner")
+			}
+			w[0].Reset()
+			w[1].Reset()
+			s.leaveWorld(p[0])
+			if tc.private && countPrefix(w[1].packets(t), 12) != 0 {
+				t.Fatal("logout exposed a peer")
+			}
+		})
 	}
 }
 
-type failedWorldConn struct {
-	captureConn
-	closed bool
-}
-
-func (c *failedWorldConn) Write([]byte) (int, error) { return 0, errors.New("write failed") }
-func (c *failedWorldConn) Close() error              { c.closed = true; return nil }
-
-func TestFailedWorldRecipientDoesNotDisconnectActor(t *testing.T) {
-	s, players, _ := worldFixture(t)
-	if err := s.acknowledgeWorld(players[0]); err != nil {
-		t.Fatal(err)
+func TestStarterPlayerPolicyPreservesSharedTent(t *testing.T) {
+	s := &Server{World: world.New(&assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: map[uint16]assets.Map{10017: {ID: 10017, Scene: 10001}}})}
+	a := &Session{character: &game.Character{ID: 1, Map: 10017}, tentOwner: 1}
+	b := &Session{character: &game.Character{ID: 2, Map: 10017}, tentOwner: 1}
+	if !s.samePlayerScene(a, b) {
+		t.Fatal("shared tent occupants hidden")
 	}
-	failed := &failedWorldConn{}
-	players[0].conn = failed
-	if err := s.acknowledgeWorld(players[1]); err != nil {
-		t.Fatal(err)
+	b.tentOwner = 2
+	if s.samePlayerScene(a, b) {
+		t.Fatal("different tent owners share visibility")
 	}
-	if !failed.closed || !players[1].ready {
-		t.Fatal("failed recipient affected entrant")
-	}
-	failed = &failedWorldConn{}
-	players[2].conn = failed
-	if err := s.acknowledgeWorld(players[2]); err == nil {
-		t.Fatal("failed entrant was published")
-	}
-	if _, ok := s.world[players[2].info.ID]; ok {
-		t.Fatal("failed entrant retained in world")
+	a.tentOwner = 0
+	b.tentOwner = 0
+	if s.samePlayerScene(a, b) || !s.samePlayerScene(a, a) {
+		t.Fatal("starter visibility does not isolate other players")
 	}
 }
 
-func TestPortalWarpBetweenMaps(t *testing.T) {
+func TestStarterVisibilityChangesAtMapTransitions(t *testing.T) {
 	s, players, wires := worldFixture(t)
-	ctx := context.Background()
-	s.Assets.Maps[10017] = assets.Map{ID: 10017, Warps: []assets.Warp{{ClickID: 1, MapID: 20000, X: 500, Y: 600}}}
-	s.Assets.Maps[20000] = assets.Map{ID: 20000, Warps: []assets.Warp{{ClickID: 1, MapID: 10017, X: 1042, Y: 1075}}, NPCs: []assets.MapNPC{{ClickID: 1, Flags: 1, X: 10, Y: 20}}}
+	a, b := players[0], players[1]
+	s.Assets.Maps[10017] = assets.Map{ID: 10017, Scene: 10001}
+	s.Assets.Maps[20000] = assets.Map{ID: 20000, Scene: 20000}
 	s.World = world.New(s.Assets)
-	for i := range players {
-		if err := s.worldCommand(ctx, players[i], []byte{12, 1}); err != nil {
+	ctx := context.Background()
+	for _, c := range []*Session{a, b} {
+		if err := s.acknowledgeWorld(c); err != nil {
 			t.Fatal(err)
 		}
 	}
 	for _, w := range wires {
 		w.Reset()
 	}
-	alice := players[0].character.ID
-	if err := s.worldCommand(ctx, players[0], []byte{20, 8, 1, 0}); err != nil {
-		t.Fatal(err)
-	}
-	a := wires[0].packets(t)
-	want := [][]byte{{20, 7}, protocol.Builder{23, 32}.U32(alice), protocol.Builder{23, 112}.U32(alice), protocol.Builder{23, 132}.U32(alice), protocol.Builder{12}.U32(alice).U16(20000).U16(500).U16(600).U16(1).U8(0), protocol.Builder{7}.U32(alice).U16(20000).U16(500).U16(600)}
-	for i := range want {
-		if !bytes.Equal(a[i], want[i]) {
-			t.Fatalf("warp packet %d: %v", i, a[i])
+	warp := func(c *Session, mapID uint16) {
+		t.Helper()
+		s.worldMu.Lock()
+		err := s.teleport(ctx, c, world.Destination{Map: mapID, X: 1042, Y: 1075}, 0)
+		s.worldMu.Unlock()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = s.acknowledgeWorld(c); err != nil {
+			t.Fatal(err)
 		}
 	}
-	// Map info releases the scene, then visibility sync and the quest journal follow.
-	if !bytes.Equal(a[9][:2], []byte{22, 4}) || !bytes.Equal(a[14], []byte{20, 8}) || !bytes.Equal(a[15], []byte{22, 12, 1, 1, 0, 0}) || !bytes.Equal(a[len(a)-1][:2], []byte{24, 7}) {
-		t.Fatalf("map info: %v", a[8:])
+	warp(a, 20000)
+	for _, w := range wires {
+		w.Reset()
 	}
-	if b := wires[1].packets(t); len(b) != 1 || !bytes.Equal(b[0], want[4]) {
-		t.Fatalf("old-map departure: %v", b)
+	warp(b, 20000)
+	if countPrefix(wires[0].packets(t), 4) != 1 || countPrefix(wires[1].packets(t), 4) != 1 {
+		t.Fatal("public map did not restore peer appearances")
 	}
-	if wires[2].Len() != 0 || players[0].ready {
-		t.Fatal("warp published before map acknowledgment")
+	warp(a, 10017)
+	departure := wires[1].packets(t)
+	if countPrefix(departure, 12) != 1 || countPrefix(departure, 4) != 0 {
+		t.Fatal("public departure did not remove player", departure)
 	}
-	chars, err := s.Store.Characters(ctx, players[0].account.ID)
-	if err != nil || chars[0].Map != 20000 || chars[0].X != 500 {
-		t.Fatal("warp not persisted", chars, err)
-	}
-	if err := s.worldCommand(ctx, players[0], []byte{12, 1}); err != nil {
-		t.Fatal(err)
-	}
-	if c := wires[2].packets(t); len(c) != 3 || c[0][0] != 4 || !bytes.Equal(c[2][:2], []byte{10, 3}) {
-		t.Fatalf("warp arrival must omit the login sprite refresh: %v", c)
-	}
-	if a = wires[0].packets(t); len(a) != 5 || a[0][0] != 4 || !bytes.Equal(a[3], []byte{5, 4}) || !bytes.Equal(a[4], []byte{56, 30, 0}) {
-		t.Fatalf("destination snapshot: %v", a)
-	}
-	// Immediate reuse is debounced and only releases the client.
-	if err := s.worldCommand(ctx, players[0], []byte{20, 8, 1, 0}); err != nil {
-		t.Fatal(err)
-	}
-	if a = wires[0].packets(t); len(a) != 1 || !bytes.Equal(a[0], []byte{20, 8}) {
-		t.Fatalf("cooldown: %v", a)
-	}
-	if err := s.worldCommand(ctx, players[0], protocol.Builder{6, 1, 0}.U16(510).U16(610)); err != nil {
-		t.Fatal(err)
-	}
-	if wires[1].Len() != 0 || wires[2].Len() == 0 {
-		t.Fatal("movement not routed to destination map")
-	}
-	if err := s.worldCommand(ctx, players[1], []byte{20, 8, 1}); err == nil {
-		t.Fatal("truncated portal accepted")
+	wires[0].Reset()
+	wires[1].Reset()
+	warp(b, 10017)
+	if countPrefix(wires[0].packets(t), 4) != 0 || countPrefix(wires[1].packets(t), 4) != 0 {
+		t.Fatal("return to private map exposed a player")
 	}
 }
 
-func TestNativeMovementTrailingData(t *testing.T) {
+func TestClinicRestHealsAllAccompanyingPetsOnly(t *testing.T) {
 	s, players, wires := worldFixture(t)
+	c := players[0]
 	ctx := context.Background()
-	for i, player := range players {
-		if err := s.worldCommand(ctx, player, []byte{12, 1}); err != nil {
-			t.Fatal(err)
-		}
-		wires[i].Reset()
+	c.ready = true
+	c.character.Pets = []game.Pet{{ID: 17100, Level: 1, HP: 1, SP: 0, Base: game.Attributes{Constitution: 5, Wisdom: 5}}, {ID: 17101, Level: 1, HP: 1, SP: 0, Base: game.Attributes{Constitution: 5, Wisdom: 5}}}
+	c.character.HotelPets = []game.Pet{{ID: 17102, Level: 1, HP: 1}}
+	c.character.ReservePets = []game.Pet{{ID: 17103, Level: 1, HP: 1}}
+	for _, pet := range c.character.Pets {
+		c.pets.register(pet.ID)
 	}
-	for _, wire := range wires {
-		wire.Reset()
-	}
-	// Native movement is 15 bytes. Deliberately nonzero opaque trailing data
-	// proves that only the direction and coordinate prefix affects state.
-	request := []byte{6, 1, 2, 0xb0, 0x04, 0x14, 0x05, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}
-	if err := s.dispatch(ctx, players[0], request); err != nil {
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
 		t.Fatal(err)
 	}
-	expected := []byte{6, 1, 0x11, 0x27, 0, 0, 2, 0xb0, 0x04, 0x14, 0x05}
+	if err := s.openService(c, 6); err != nil {
+		t.Fatal(err)
+	}
+	if !contains(wires[0].packets(t), []byte{31, 2, 0, 0, 0, 0}) {
+		t.Fatal("injured pet did not produce free rest offer")
+	}
+	wires[0].Reset()
+	if err := s.worldCommand(ctx, c, []byte{31, 1}); err != nil {
+		t.Fatal(err)
+	}
+	packets := wires[0].packets(t)
+	for _, pet := range c.character.Pets {
+		full := pet.Combat(s.Assets.Items)
+		if pet.HP != full.MaxHP || pet.SP != full.MaxSP {
+			t.Fatal("unhealed pet", pet)
+		}
+		if !contains(packets, game.PetStat(c.pets.slot(pet.ID), 25, int64(full.MaxHP))) {
+			t.Fatal("pet HP not replayed")
+		}
+	}
+	if c.character.HotelPets[0].HP != 1 || c.character.ReservePets[0].HP != 1 {
+		t.Fatal("off-roster pets healed")
+	}
+	saved, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || saved[0].Pets[1].HP != c.character.Pets[1].HP {
+		t.Fatal("clinic persistence", err)
+	}
+	wires[0].Reset()
+	if err = s.worldCommand(ctx, c, []byte{31, 1}); err != nil || wires[0].Len() != 0 {
+		t.Fatal("rest confirmation replay")
+	}
+}
+
+func TestGenericNPCGreetingCallbackAndPrecedence(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	c.ready = true
+	s.Assets.Maps[c.character.Map] = assets.Map{ID: c.character.Map, NPCs: []assets.MapNPC{{ClickID: 5, Template: 14000, Name: "Villager", Flags: 1, X: uint32(c.character.X), Y: uint32(c.character.Y)}}}
+	s.Assets.Talks.ByID = map[uint32]string{0x21284c: "Welcome to Kelan Village."}
+	s.World = world.New(s.Assets)
+	if err := s.worldCommand(ctx, c, []byte{20, 1, 5, 0}); err != nil {
+		t.Fatal(err)
+	}
+	want := []byte{20, 1, 0, 0, 0, 1, 1, 3, 5, 0, 1, 0, 0, 0, 0, 0x4c, 0x28, 0x21}
+	if c.event == nil || !contains(wires[0].packets(t), want) {
+		t.Fatal("missing native fallback greeting")
+	}
+	wires[0].Reset()
+	if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil || c.event != nil || !contains(wires[0].packets(t), []byte{20, 8}) {
+		t.Fatal("greeting callback did not release", err)
+	}
+	// Hidden actors cannot reach the fallback or start an interaction.
+	c.view.Hidden[5] = true
+	c.resumeAt = time.Time{}
+	wires[0].Reset()
+	if err := s.worldCommand(ctx, c, []byte{20, 1, 5, 0}); err != nil || c.event != nil || contains(wires[0].packets(t), want) {
+		t.Fatal("hidden actor greeted", err)
+	}
+}
+
+func TestScriptedSharedPropReplayResetAndQuestIsolation(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	ctx := context.Background()
+	c := players[0]
+	mapID := c.character.Map
+	s.Assets.Maps[mapID] = assets.Map{ID: mapID, NPCs: []assets.MapNPC{{ClickID: 9, Template: 12001, Name: "Scripted barrel", Flags: 1, X: uint32(c.character.X), Y: uint32(c.character.Y), Events: []byte{1}}}}
+	s.World = world.New(s.Assets)
+	for i, p := range players {
+		p.ready = true
+		s.world[p.info.ID] = p
+		wires[i].Reset()
+	}
+	ev := &assets.Event{ClickID: 1, Branches: []assets.Branch{{Index: 1}}}
+	es := &eventSession{mapID: mapID, click: 9, ev: ev}
+	op := world.DecodeOp(evOp(1, 2, 9, 5, 1, 1))
+	handled, err := s.actorAction(ctx, c, es, op)
+	if err != nil || !handled {
+		t.Fatal("shared script", err)
+	}
+	want := []byte{22, 1, 9, 0, 1}
 	for _, i := range []int{0, 1} {
-		got := wires[i].packets(t)
-		if len(got) != 1 || !bytes.Equal(got[0], expected) {
-			t.Fatalf("native movement for player %d: %x", i, got)
+		if !contains(wires[i].packets(t), want) {
+			t.Fatal("map frame not shared", i)
 		}
 	}
 	if wires[2].Len() != 0 {
-		t.Fatal("native movement leaked to another map")
+		t.Fatal("foreign scene received frame")
 	}
-	s.autosaveCharacters(ctx)
-	stored, err := s.Store.Characters(ctx, players[0].account.ID)
-	if err != nil || len(stored) != 1 || stored[0].X != 1200 || stored[0].Y != 1300 || players[0].character.X != 1200 || players[0].character.Y != 1300 {
-		t.Fatalf("native movement not persisted: %v, %v", stored, err)
+	players[1].view = world.NewView()
+	wires[1].Reset()
+	if err = s.syncMapProps(ctx, players[1], time.Now()); err != nil || !contains(wires[1].packets(t), want) {
+		t.Fatal("scripted frame lost at entry", err)
 	}
-	for _, invalid := range [][]byte{request[:6], {6, 1, 8, 0, 0, 0, 0}} {
-		if err := s.dispatch(ctx, players[0], invalid); !errors.Is(err, protocol.ErrMalformed) {
-			t.Fatalf("invalid movement %x accepted: %v", invalid, err)
-		}
+	s.respawnMapProps(ctx, time.Now().Add(61*time.Second))
+	if !contains(wires[1].packets(t), []byte{22, 1, 9, 0, 0}) {
+		t.Fatal("missing 60-second reset")
 	}
-	if players[0].character.X != 1200 || players[0].character.Y != 1300 {
-		t.Fatal("invalid movement changed coordinates")
+	wires[0].Reset()
+	wires[1].Reset()
+	ev.Branches[0].Condition = evCond(5, 900, 1, 0, 0, 0)
+	if _, err = s.actorAction(ctx, c, es, op); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := s.Store.ActiveMapProps(ctx, mapID, time.Now())
+	if err != nil || len(rows) != 0 || wires[1].Len() != 0 || !contains(wires[0].packets(t), want) {
+		t.Fatal("quest prop leaked shared state", rows, err)
 	}
 }
 
-func TestNativeMovementStopUpdatesPeersAndCheckpoint(t *testing.T) {
+func TestStarterBulkGrantOwnership(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	ctx := context.Background()
+	c := players[0]
+	c.character.Bag = game.Inventory{}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	next := c.character.Clone()
+	// One recipient has room, one is full, and one is busy.
+	for i, p := range players {
+		p.ready = true
+		s.world[p.info.ID] = p
+		wires[i].Reset()
+	}
+	c.character = &next
+	baseline := next.Clone()
+	c.autosaveBaseline = &baseline
+	c.character.X += 10
+	other := players[1]
+	s.Assets.StarterItems = []game.StarterGrant{{ID: 32177, Count: 1}, {ID: 32176, Count: 1}}
+	s.Assets.Items[32177] = game.ItemDefinition{ID: 32177, Type: 23}
+	for i := range other.character.Bag {
+		other.character.Bag[i] = game.Item{ID: 32176, Count: 50}
+	}
+	if err := s.commit(ctx, other, other.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	players[2].event = &eventSession{}
+	result, err := s.AdminGiveStarterPacks(ctx)
+	if err != nil || len(result) != 3 || !result[0].Delivered || result[1].Delivered || result[2].Delivered {
+		t.Fatal("bulk outcomes", result, err)
+	}
+	if c.character.X != baseline.X+10 || bagCount(c.character.Bag, 32177) != 1 || bagCount(other.character.Bag, 32177) != 0 {
+		t.Fatal("partial grant or walking discarded")
+	}
+	if wires[1].Len() != 0 || wires[2].Len() != 0 {
+		t.Fatal("failed recipients received success")
+	}
+	audit, err := s.Store.Audit(ctx)
+	if err != nil || len(audit) == 0 || audit[len(audit)-1].Action != "starter pack grant" {
+		t.Fatal("grant audit missing", audit, err)
+	}
+}
+
+func TestBattleSubmissionACKBroadcastAndOwnerPetEntry(t *testing.T) {
+	s, players, wires := combatSessions(t)
+	a, d := players[0], players[1]
+	a.character.Pets = []game.Pet{{ID: 17100, Name: "Pet", Level: 3, HP: 100, SP: 100, Base: game.Attributes{Constitution: 5, Wisdom: 5}}}
+	a.character.Pets[0].Battle = true
+	a.pets.register(17100)
+	if err := s.worldCommand(context.Background(), a, pkRequest(d.character.ID)); err != nil {
+		t.Fatal(err)
+	}
+	run := a.battle
+	if run == nil {
+		t.Fatal("battle missing")
+	}
+	own := a.character.Pets[0].ProgressionPackets(a.pets.slot(17100), s.Assets.Items)
+	entry := wires[0].packets(t)
+	for i, packet := range entry {
+		if len(packet) == 2 && packet[0] == 20 && packet[1] == 12 && i < len(own) {
+			t.Fatal("battle UI preceded owner pet progression")
+		}
+	}
+	for _, p := range own {
+		if !contains(entry, p) {
+			t.Fatal("owner pet not refreshed before battle", p)
+		}
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	// Defender stays pending so the ACK can be checked before animation execution.
+	if err := s.worldCommand(context.Background(), a, []byte{50, 4, 4, 2, 1, 2}); err != nil {
+		t.Fatal(err)
+	}
+	ack := []byte{53, 5, 4, 2}
+	if !contains(wires[0].packets(t), ack) || !contains(wires[1].packets(t), ack) || wires[2].Len() != 0 {
+		t.Fatal("battle ACK scope")
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	if err := s.worldCommand(context.Background(), a, []byte{50, 4, 4, 2, 1, 2}); err != nil {
+		t.Fatal(err)
+	}
+	if contains(wires[1].packets(t), ack) {
+		t.Fatal("duplicate action ACK")
+	}
+	s.worldMu.Lock()
+	s.abandonBattle(a)
+	s.worldMu.Unlock()
+	settle(t, s, d)
+}
+
+func TestClinicFailedSaveRetainsOfferAndPetState(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	c := players[0]
-	ctx := context.Background()
-	for _, player := range players {
-		if err := s.worldCommand(ctx, player, []byte{12, 1}); err != nil {
+	c.ready = true
+	c.character.HP = 1
+	c.character.Pets = []game.Pet{{ID: 17100, Level: 1, HP: 1, SP: 0, Base: game.Attributes{Constitution: 5, Wisdom: 5}}}
+	if err := s.openService(c, 6); err != nil {
+		t.Fatal(err)
+	}
+	before := c.character.Clone()
+	wires[0].Reset()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := s.confirmRest(ctx, c); err == nil {
+		t.Fatal("cancelled save succeeded")
+	}
+	if c.restMap != c.character.Map || c.character.HP != before.HP || c.character.Pets[0].HP != before.Pets[0].HP || wires[0].Len() != 0 {
+		t.Fatal("failed rest consumed offer or changed state")
+	}
+	if err := s.confirmRest(context.Background(), c); err != nil || c.restMap != 0 {
+		t.Fatal("rest retry failed", err)
+	}
+}
+
+func TestWorldEntryRejectsInvalidCreationAllocation(t *testing.T) {
+	for _, stats := range [][]byte{{0, 0, 0, 0, 0}, {1, 1, 1, 1, 0}, {5, 5, 5, 5, 5}, {255, 255, 255, 255, 255}} {
+		t.Run(string(rune(stats[0]+65)), func(t *testing.T) {
+			db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			account, err := db.Register(context.Background(), "tester", "password", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := New(config.Default(), db, creationCatalog(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+			wire := &captureConn{}
+			c := &Session{account: account, slot: 1, conn: wire, info: SessionInfo{ID: 1}}
+			if _, err := s.reserveName(context.Background(), c, "BudgetHero"); err != nil {
+				t.Fatal(err)
+			}
+			p := createPayload()
+			copy(p[len(p)-5:], stats)
+			if err := s.dispatch(context.Background(), c, p); err != nil {
+				t.Fatal(err)
+			}
+			got := wire.packets(t)
+			if len(got) != 1 || !bytes.Equal(got[0], []byte{0, 30}) {
+				t.Fatal(got)
+			}
+			chars, err := db.Characters(context.Background(), account.ID)
+			if err != nil || len(chars) != 0 || c.character != nil {
+				t.Fatal("rejection persisted or entered world", err)
+			}
+			// Correcting the allocation on the same connection retains the reserved name.
+			if err := s.dispatch(context.Background(), c, createPayload()); err != nil || c.character == nil {
+				t.Fatal("valid retry failed", err)
+			}
+		})
+	}
+}
+
+func TestWorldEntryStoryConstellations(t *testing.T) {
+	c := &game.Character{Quests: map[uint32]game.Quest{}}
+	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 0}) {
+		t.Fatal(got)
+	}
+	for _, id := range []uint32{13087, 13173, 13203, 13151} {
+		c.Quests[id] = game.Quest{State: game.InProgress, Step: 1}
+	}
+	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 4, 1, 6, 8, 20}) {
+		t.Fatal(got)
+	}
+	c.Quests[13087] = game.Quest{State: game.Completed, Step: 1}
+	c.Quests[13173] = game.Quest{State: game.InProgress, Step: 0}
+	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 2, 8, 20}) {
+		t.Fatal(got)
+	}
+}
+
+func TestWorldEntrySnapshotRestoresOptionalState(t *testing.T) {
+	s, players, _ := worldFixture(t)
+	c := players[0].character
+	s.Assets.NPCs = map[uint16]assets.NPC{42: {BookIndex: 1}, 43: {BookIndex: 5500}, 44: {BookIndex: 5501}, 45: {BookIndex: 0}}
+	c.DiscoveredMonsters = []uint16{43, 42, 42, 44, 45, 60000}
+	c.Quests[13087] = game.Quest{State: game.InProgress, Step: 1}
+	packets, err := s.worldEntryPackets(*c, world.NewView(), newPetRoster())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var discoveries [][]byte
+	star, ready := -1, -1
+	for i, p := range packets {
+		if p[0] == 53 {
+			discoveries = append(discoveries, p)
+		}
+		if bytes.Equal(p, []byte{15, 19, 1, 1}) {
+			star = i
+		}
+		if bytes.Equal(p, []byte{1, 11}) {
+			ready = i
+		}
+	}
+	if len(discoveries) != 2 || !bytes.Equal(discoveries[0], []byte{53, 9, 42, 0, 0, 0}) || !bytes.Equal(discoveries[1], []byte{53, 9, 43, 0, 0, 0}) {
+		t.Fatal(discoveries)
+	}
+	if star < 0 || ready < star {
+		t.Fatal("story state absent or after ready marker")
+	}
+	// aLogin refuses Trade Items until 25/44 2 sets its online-time flag.
+	if !contains(packets, []byte{25, 44, 2}) {
+		t.Fatal("trade online-time flag missing")
+	}
+	if c.DiscoveredMonsters[0] != 43 {
+		t.Fatal("snapshot mutated durable discovery order")
+	}
+	clone := c.Clone()
+	clone.DiscoveredMonsters[0] = 99
+	if c.DiscoveredMonsters[0] != 43 {
+		t.Fatal("discovery state aliases clone")
+	}
+}
+
+func TestWorldEntryMonsterDiscoveryVictoryPersistence(t *testing.T) {
+	s, c, wire := battleFixture(t, 1)
+	s.Assets.NPCs[10500] = assets.NPC{ID: 10500, BookIndex: 2}
+	wire.Reset()
+	if err := s.worldCommand(context.Background(), c, []byte{50, 1, 4, 2, 2, 2}); err != nil {
+		t.Fatal(err)
+	}
+	settle(t, s, c)
+	if !contains(wire.packets(t), []byte{53, 9, 4, 41, 0, 0}) {
+		t.Fatal("missing committed monster discovery")
+	}
+	saved, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(saved) != 1 || len(saved[0].DiscoveredMonsters) != 1 || saved[0].DiscoveredMonsters[0] != 10500 {
+		t.Fatal("discovery not persisted", err)
+	}
+	run := &battleRun{b: &battle.Battle{Defenders: []*battle.Fighter{{Template: 10500}, {Template: 10500, Captured: true}, {Template: 70000}}}}
+	if got := s.discoverBattleMonsters(c.character, run); len(got) != 0 {
+		t.Fatal("repeat discovery", got)
+	}
+}
+
+func TestWorldEntrySceneReadyGoldenAndWelcomeOnce(t *testing.T) {
+	for _, first := range [][]byte{{89, 0}, {89, 0, 0x11, 0x27, 0, 0}, {89, 0, 0xff, 0xff, 0xff, 0xff}, {92, 1}, {92, 1, 0}, {92, 1, 1}} {
+		s, players, wires := worldFixture(t)
+		c := players[0]
+		wire := wires[0]
+		s.motd = "Welcome"
+		// These sync requests are valid while loading, but cannot publish presence.
+		if err := s.dispatch(context.Background(), c, first); err != nil {
 			t.Fatal(err)
 		}
-	}
-	// First announce a destination, then stop before reaching it.
-	if err := s.dispatch(ctx, c, []byte{6, 1, 2, 0xb0, 0x04, 0x14, 0x05, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
-		t.Fatal(err)
-	}
-	baseline := c.autosaveBaseline.Clone()
-	for _, wire := range wires {
+		got := wire.packets(t)
+		welcome := []byte{23, 57, 0, 7, 'W', 'e', 'l', 'c', 'o', 'm', 'e'}
+		if !contains(got, welcome) {
+			t.Fatal(got)
+		}
+		if first[0] == 89 && !contains(got, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {
+			t.Fatal(got)
+		}
+		if c.ready || len(s.world) != 0 || c.character.ID != 10001 || c.account.ID != 1 {
+			t.Fatal("scene sync published map readiness")
+		}
+		for _, p := range [][]byte{{89, 0}, {89, 0, 0x11, 0x27, 0, 0}, {92, 1}, {92, 1, 0}, {92, 1, 1}} {
+			if err := s.dispatch(context.Background(), c, p); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if contains(wire.packets(t), welcome) {
+			t.Fatal("welcome repeated")
+		}
+		char := c.character.Clone()
+		view, pets := world.NewView(), newPetRoster()
+		packets, err := s.worldEntryPackets(char, view, pets)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.enterWorld(c, char, view, pets, packets); err != nil {
+			t.Fatal(err)
+		}
 		wire.Reset()
+		if err := s.dispatch(context.Background(), c, []byte{92, 1}); err != nil {
+			t.Fatal(err)
+		}
+		if !contains(wire.packets(t), welcome) {
+			t.Fatal("new character login did not reset welcome")
+		}
+		for _, p := range [][]byte{{89}, {92}, {89, 0, 1}, {89, 0, 1, 2}, {89, 0, 1, 2, 3}, {89, 0, 1, 2, 3, 4, 5}, {92, 1, 2}, {92, 1, 0xff}, {92, 1, 0, 0}, {92, 1, 1, 2, 3, 4}} {
+			if err := s.dispatch(context.Background(), c, p); !errors.Is(err, protocol.ErrMalformed) {
+				t.Fatal(p, err)
+			}
+		}
+		for _, p := range [][]byte{{89, 1}, {92, 0}} {
+			if err := s.dispatch(context.Background(), c, p); !errors.Is(err, ErrUnsupported) {
+				t.Fatal(p, err)
+			}
+		}
 	}
-	packet := []byte{6, 2, 11, 0x4c, 0x04, 0xb0, 0x04, 1, 2, 3, 4, 5, 6, 7, 8}
-	if err := s.dispatch(ctx, c, packet); err != nil {
+}
+
+func TestWorldEntryWelcomeByteLimit(t *testing.T) {
+	s, _, _ := worldFixture(t)
+	settings := s.RuntimeSettings()
+	settings.MOTD = strings.Repeat("x", 255)
+	if err := s.UpdateRuntimeSettings(context.Background(), settings); err != nil {
 		t.Fatal(err)
 	}
-	if c.character.X != 1100 || c.character.Y != 1200 || store.CharacterVersion(*c.autosaveBaseline) != store.CharacterVersion(baseline) {
-		t.Fatal("stop did not preserve dirty checkpoint baseline")
+	settings.MOTD = strings.Repeat("x", 256)
+	if err := s.UpdateRuntimeSettings(context.Background(), settings); err == nil {
+		t.Fatal("accepted unencodable welcome")
 	}
-	want := []byte{6, 1, 0x11, 0x27, 0, 0, 11, 0x4c, 0x04, 0xb0, 0x04}
-	if got := wires[1].packets(t); len(got) != 1 || !bytes.Equal(got[0], want) {
-		t.Fatalf("peer stop position: %x", got)
-	}
-	if wires[0].Len() != 0 || wires[2].Len() != 0 {
-		t.Fatal("stop echoed to sender or leaked to another map")
-	}
-	stored, err := s.Store.Characters(ctx, c.account.ID)
-	if err != nil || stored[0].X != baseline.X || stored[0].Y != baseline.Y {
-		t.Fatal("stop wrote through before checkpoint", stored, err)
-	}
-	s.autosaveCharacters(ctx)
-	stored, err = s.Store.Characters(ctx, c.account.ID)
-	if err != nil || stored[0].X != 1100 || stored[0].Y != 1200 {
-		t.Fatal("stopped position not checkpointed", stored, err)
+	if len(s.RuntimeSettings().MOTD) != 255 {
+		t.Fatal("invalid settings published")
 	}
 }
 
-func TestNativeMovementStopRejectsMalformedWithoutMutation(t *testing.T) {
+func TestWorldEntryKeepsAuthenticatedSocketOnBothServices(t *testing.T) {
+	for _, service := range []string{"login", "world"} {
+		t.Run(service, func(t *testing.T) {
+			db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			_, err = db.Register(context.Background(), "tester", "password", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := New(config.Default(), db, creationCatalog(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan struct{})
+			go func() { defer close(done); s.accept(ctx, service, listener) }()
+			client, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
+			if err != nil {
+				cancel()
+				listener.Close()
+				<-done
+				t.Fatal(err)
+			}
+			defer func() { cancel(); client.Close(); listener.Close(); <-done; s.wg.Wait() }()
+			client.SetDeadline(time.Now().Add(10 * time.Second))
+			send := func(p []byte) {
+				t.Helper()
+				if err := protocol.Write(client, p); err != nil {
+					t.Fatal(err)
+				}
+			}
+			read := func() []byte {
+				t.Helper()
+				p, err := protocol.Read(client)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return p
+			}
+			send(loginPayload("tester"))
+			for i := 0; i < 3; i++ {
+				read()
+			}
+			send([]byte{63, 2, 1})
+			if p := read(); !bytes.Equal(p, []byte{1, 3, 0}) {
+				t.Fatal(p)
+			}
+			send([]byte{9, 2, 'S', 'o', 'c', 'k', 'e', 't', 'H', 'e', 'r', 'o'})
+			if p := read(); !bytes.Equal(p, []byte{9, 3, 0}) {
+				t.Fatal(p)
+			}
+			send(createPayload())
+			for count := 0; ; count++ {
+				if count > 100 {
+					t.Fatal("entry snapshot did not finish")
+				}
+				p := read()
+				if p[0] == 35 && p[1] == 12 {
+					break
+				}
+			}
+			// Native aLogin sends this six-byte sync while the map is loading.
+			// Its acknowledgment must arrive without closing the authenticated stream.
+			send([]byte{89, 0, 0x11, 0x27, 0, 0})
+			if p := read(); !bytes.Equal(p, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {
+				t.Fatal(p)
+			}
+			send([]byte{92, 1, 0})
+			send([]byte{12, 1})
+			for {
+				if bytes.Equal(read(), []byte{5, 4}) {
+					break
+				}
+			}
+			if p := read(); !bytes.Equal(p, []byte{56, 30, 0}) {
+				t.Fatal(p)
+			}
+			// A world action on the original stream proves that no reconnect/ticket is required.
+			send([]byte{89, 0})
+			if p := read(); !bytes.Equal(p, []byte{90, 1, 0, 1, 1, 3, 2, 3}) {
+				t.Fatal(p)
+			}
+		})
+	}
+}
+
+func TestWorldEntryFailedDiscoverySavePublishesNothing(t *testing.T) {
+	s, c, wire := battleFixture(t, 1000)
+	s.Assets.NPCs[10500] = assets.NPC{ID: 10500, BookIndex: 1}
+	wire.Reset()
+	s.Store.Close()
+	s.endBattle(c.battle, battle.Victory)
+	if len(c.character.DiscoveredMonsters) != 0 || wire.Len() != 0 {
+		t.Fatal("failed save published/adopted discovery")
+	}
+}
+
+func TestWorldEntryStoryRewardSynchronizesAfterCommit(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	c := players[0]
-	ctx := context.Background()
-	before := store.CharacterVersion(*c.character)
-	packet := []byte{6, 2, 2, 0x4c, 0x04, 0xb0, 0x04, 1, 2, 3, 4, 5, 6, 7, 8}
-	invalidDirection := append([]byte(nil), packet...)
-	invalidDirection[2] = 74
-	for _, invalid := range [][]byte{{6, 2}, packet[:14], append(append([]byte(nil), packet...), 0), invalidDirection} {
-		if err := s.dispatch(ctx, c, invalid); !errors.Is(err, protocol.ErrMalformed) {
-			t.Fatal("malformed stop accepted", invalid, err)
-		}
+	wire := wires[0]
+	s.Assets.Marks = map[uint16]uint16{13087: 1}
+	op := world.Op{Code: world.ActionQuestMark, D1: 13087, D2: 1}
+	// Value packs its low byte in the high byte of D4.
+	op.D4 = 1 << 8
+	ok, err := s.questMark(context.Background(), c, op)
+	if err != nil || !ok {
+		t.Fatal(ok, err)
 	}
-	if store.CharacterVersion(*c.character) != before || c.autosaveBaseline != nil {
-		t.Fatal("malformed stop mutated state")
+	if !contains(wire.packets(t), []byte{15, 19, 1, 1}) {
+		t.Fatal("story reward not synchronized")
 	}
-	for _, wire := range wires {
-		if wire.Len() != 0 {
-			t.Fatal("malformed stop published packets")
-		}
-	}
-}
-
-func TestNativeMovementStopPreservesEventLock(t *testing.T) {
-	s, players, wires := worldFixture(t)
-	c := players[0]
-	before := store.CharacterVersion(*c.character)
-	c.event = &eventSession{}
-	if err := s.movementCommand(context.Background(), c, []byte{6, 2, 3, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
-		t.Fatal(err)
-	}
-	if store.CharacterVersion(*c.character) != before || c.autosaveBaseline != nil {
-		t.Fatal("stop overrode event-held position")
-	}
-	for _, wire := range wires {
-		if wire.Len() != 0 {
-			t.Fatal("event-held stop published movement")
-		}
-	}
-}
-
-func TestNativeMovementStopPackedPoseValues(t *testing.T) {
-	s, players, _ := worldFixture(t)
-	for _, pose := range []byte{0, 7, 8, 15, 16, 17, 18, 45, 46, 53, 54, 61, 62, 65, 66, 73, 99} {
-		packet := []byte{6, 2, pose, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}
-		if err := s.movementCommand(context.Background(), players[0], packet); err != nil {
-			t.Fatalf("native packed pose %d rejected: %v", pose, err)
-		}
-	}
-	for _, pose := range []byte{74, 98, 100, 255} {
-		packet := []byte{6, 2, pose, 0x4c, 0x04, 0xb0, 0x04, 0, 0, 0, 0, 0, 0, 0, 0}
-		if err := s.movementCommand(context.Background(), players[0], packet); !errors.Is(err, protocol.ErrMalformed) {
-			t.Fatalf("unknown packed pose %d accepted: %v", pose, err)
-		}
+	saved, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || saved[0].Quests[13087].Step != 1 {
+		t.Fatal("story mark not committed", err)
 	}
 }

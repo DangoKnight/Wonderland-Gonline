@@ -8,6 +8,7 @@ import (
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/world"
 )
 
@@ -73,13 +74,13 @@ func TestNPCConversationRewardsAndMarks(t *testing.T) {
 		return wire.packets(t)
 	}
 	got := send(20, 1, 5, 0)
-	if len(got) != 2 || !bytes.Equal(got[0], []byte{6, 2, 1}) || !bytes.Equal(got[1], eventFrame(1, 3, 5, 1, 0, 10001, 1, 1)) {
+	if len(got) != 2 || !bytes.Equal(got[0], []byte{6, 2, 1}) || !bytes.Equal(got[1], serverwire.EventFrame(1, 3, 5, 1, 0, 10001, 1, 1)) {
 		t.Fatal("greeting", got)
 	}
 	if got = send(20, 1, 5, 0); len(got) != 0 {
 		t.Fatal("click during an event", got)
 	}
-	if got = send(20, 6); len(got) != 1 || !bytes.Equal(got[0], eventFrame(6, 3, 5, 0, 0, 77, 2, 1)) {
+	if got = send(20, 6); len(got) != 1 || !bytes.Equal(got[0], serverwire.EventFrame(6, 3, 5, 0, 0, 77, 2, 1)) {
 		t.Fatal("question", got)
 	}
 	if got = send(20, 6); len(got) != 0 {
@@ -88,7 +89,7 @@ func TestNPCConversationRewardsAndMarks(t *testing.T) {
 	got = send(20, 9, 30)
 	// Lock, gold, items with banner and fanfare, journal mark, then the player's line.
 	want := [][]byte{{6, 2, 1}, protocol.Builder{26, 4}.U32(100), protocol.Builder{23, 5, 2}.U16(32176).U8(2).U8(0).Bytes(make([]byte, 26)),
-		headBanner("Obtain Item #32176 x2"), {20, 10}, {24, 4, 0x84, 3}, {24, 1, 0x84, 3, 1}, eventFrame(1, 7, 0, 1, 0, 10002, 4, 2)}
+		serverwire.HeadBanner("Obtain Item #32176 x2"), {20, 10}, {24, 4, 0x84, 3}, {24, 1, 0x84, 3, 1}, serverwire.EventFrame(1, 7, 0, 1, 0, 10002, 4, 2)}
 	if len(got) != len(want) {
 		t.Fatal("rewards", got)
 	}
@@ -110,7 +111,7 @@ func TestNPCConversationRewardsAndMarks(t *testing.T) {
 		t.Fatal("resume guard", got)
 	}
 	c.resumeAt = time.Time{}
-	if got = send(20, 1, 5, 0); len(got) != 2 || !bytes.Equal(got[1], eventFrame(1, 3, 5, 1, 0, 10003, 1, 3)) {
+	if got = send(20, 1, 5, 0); len(got) != 2 || !bytes.Equal(got[1], serverwire.EventFrame(1, 3, 5, 1, 0, 10003, 1, 3)) {
 		t.Fatal("follow-up", got)
 	}
 	if got = send(20, 9, 40); len(got) != 2 || c.event != nil {
@@ -132,10 +133,10 @@ func TestNPCEventRefusals(t *testing.T) {
 	// A branch that would transform the player is refused before its first line.
 	// Finishing also sends the first minimap-marker refresh for this view.
 	got := click(6)
-	if len(got) < 4 || !bytes.Equal(got[1], headBanner("This quest action is not supported yet. Please report this quest.")) || !bytes.Equal(got[3], []byte{20, 8}) || !contains(got, []byte{22, 12, 1, 5, 0, 7}) {
+	if len(got) < 4 || !bytes.Equal(got[1], serverwire.HeadBanner("This quest action is not supported yet. Please report this quest.")) || !bytes.Equal(got[3], []byte{20, 8}) || !contains(got, []byte{22, 12, 1, 5, 0, 7}) {
 		t.Fatal("unsupported", got)
 	}
-	if got = click(7); len(got) != 3 || !bytes.Equal(got[2], headBanner("This quest is disabled: required game data is unavailable.")) {
+	if got = click(7); len(got) != 3 || !bytes.Equal(got[2], serverwire.HeadBanner("This quest is disabled: required game data is unavailable.")) {
 		t.Fatal("disabled", got)
 	}
 	if got = click(9); len(got) != 1 || !bytes.Equal(got[0], []byte{20, 8}) {
@@ -147,7 +148,7 @@ func TestNPCEventRefusals(t *testing.T) {
 	}
 	before := c.character.Bag
 	got = click(8)
-	if len(got) < 2 || !bytes.Equal(got[1], headBanner("Cannot receive reward. Check materials, bag space, gold, party slots and Pet Hotel.")) || c.character.Bag != before {
+	if len(got) < 2 || !bytes.Equal(got[1], serverwire.HeadBanner("Cannot receive reward. Check materials, bag space, gold, party slots and Pet Hotel.")) || c.character.Bag != before {
 		t.Fatal("full bag", got)
 	}
 	c.character.Bag[0] = game.Item{}
@@ -206,7 +207,7 @@ func TestRegionsAndDoorEntries(t *testing.T) {
 	}
 	// Walking into region 1 starts event 7; region 3 already contained Alice.
 	got := do(protocol.Builder{6, 1, 0}.U16(1210).U16(1075)...)
-	if !contains(got, eventFrame(1, 3, 0, 1, 0, 30001, 1, 1)) || c.event == nil {
+	if !contains(got, serverwire.EventFrame(1, 3, 0, 1, 0, 30001, 1, 1)) || c.event == nil {
 		t.Fatal("region", got)
 	}
 	// Movement during the event is ignored, not persisted.
@@ -228,14 +229,14 @@ func TestRegionsAndDoorEntries(t *testing.T) {
 	}
 	wire.Reset()
 	// A step reported as entry 2 runs the door's script instead of warping.
-	if got = do(20, 8, 2, 0); !contains(got, eventFrame(1, 3, 0, 1, 0, 30002, 1, 1)) {
+	if got = do(20, 8, 2, 0); !contains(got, serverwire.EventFrame(1, 3, 0, 1, 0, 30002, 1, 1)) {
 		t.Fatal("door entry", got)
 	}
 	do(20, 6)
 	wire.Reset()
 	// The client reports region 3 after a move the server already recorded.
 	c.character.X = 1400
-	if got = do(20, 4, 3, 0); !contains(got, eventFrame(1, 3, 0, 1, 0, 30003, 1, 1)) {
+	if got = do(20, 4, 3, 0); !contains(got, serverwire.EventFrame(1, 3, 0, 1, 0, 30003, 1, 1)) {
 		t.Fatal("region request", got)
 	}
 	do(20, 6)
@@ -264,7 +265,7 @@ func TestAreaRegionRunsAuthoredEvent(t *testing.T) {
 	if err := s.worldCommand(ctx, c, []byte{20, 8, 3, 0}); err != nil {
 		t.Fatal(err)
 	}
-	if got := wire.packets(t); !contains(got, eventFrame(1, 3, 0, 1, 0, 30003, 1, 1)) || c.event == nil {
+	if got := wire.packets(t); !contains(got, serverwire.EventFrame(1, 3, 0, 1, 0, 30003, 1, 1)) || c.event == nil {
 		t.Fatal("area region event", got)
 	}
 }

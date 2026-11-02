@@ -46,7 +46,7 @@ func fixture() *World {
 		Events: []assets.Event{{ClickID: 4, Branches: []assets.Branch{{Condition: cond(5, 600, 1, 0, 5, 1)}}}},
 	}
 	m.PreEvents[0].Branches[0].Condition[12] = 2 // Authored AND-condition count.
-	return New(&assets.Catalog{Maps: map[uint16]assets.Map{m.ID: m}, NPCs: map[uint16]assets.NPC{100: {ID: 100, Type: 6}, 200: {ID: 200, Type: 1}}})
+	return New(&assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: map[uint16]assets.Map{m.ID: m}, NPCs: map[uint16]assets.NPC{100: {ID: 100, Type: 6}, 200: {ID: 200, Type: 1}}})
 }
 
 func character(quests ...game.Quest) *game.Character {

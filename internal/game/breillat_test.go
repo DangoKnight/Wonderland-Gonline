@@ -2,7 +2,18 @@ package game
 
 import (
 	"errors"
+	"reflect"
 	"testing"
+)
+
+// Native EVE marks and appearance for Breillat's permanent character conversion.
+const (
+	BreillatTalkMark       = 50030
+	BreillatConversionMark = 50031
+	BreillatRequiredTalks  = 10
+	BreillatBody           = 4
+	BreillatHead           = 3
+	BreillatModel          = 13
 )
 
 func breillatOutfitItems() map[uint16]ItemDefinition {
@@ -26,7 +37,7 @@ func TestReplaceBreillatOutfit(t *testing.T) {
 	c.Equipment[1] = Item{ID: 21001, Count: 1}
 	c.Equipment[3] = original
 	c.Storage[0] = Item{ID: 21001, Count: 1}
-	if err := c.ReplaceBreillatOutfit(items); err != nil {
+	if err := c.ReplaceStarterOutfit(items, BreillatBody, BreillatHead); err != nil {
 		t.Fatal(err)
 	}
 	if c.Equipment.IDs() != [6]uint16{22007, 21009, 10002, 0, 24009, 0} {
@@ -74,7 +85,7 @@ func TestReplaceBreillatOutfitFailuresAreAtomic(t *testing.T) {
 				want = nil
 			}
 			before := c.Clone()
-			err := c.ReplaceBreillatOutfit(items)
+			err := c.ReplaceStarterOutfit(items, BreillatBody, BreillatHead)
 			if err == nil || want != nil && !errors.Is(err, want) {
 				t.Fatal(err)
 			}
@@ -92,10 +103,19 @@ func TestReplaceBreillatOutfitUsesFreedSpace(t *testing.T) {
 	}
 	c.Bag[0] = Item{ID: 24001, Count: 1}
 	c.Equipment[3] = Item{ID: 23001, Count: 1}
-	if err := c.ReplaceBreillatOutfit(breillatOutfitItems()); err != nil {
+	if err := c.ReplaceStarterOutfit(breillatOutfitItems(), BreillatBody, BreillatHead); err != nil {
 		t.Fatal(err)
 	}
 	if c.Bag[0].ID != 23001 {
 		t.Fatal("did not reuse removed standard item's space")
+	}
+}
+
+func TestReplaceStarterOutfitRejectsInvalidAppearance(t *testing.T) {
+	c := Character{Body: 1, Head: 0}
+	c.Equipment[1] = Item{ID: 21001, Count: 1}
+	before := c
+	if err := c.ReplaceStarterOutfit(breillatOutfitItems(), 0, 0); err == nil || !reflect.DeepEqual(before, c) {
+		t.Fatal("invalid target appearance changed equipment", err)
 	}
 }

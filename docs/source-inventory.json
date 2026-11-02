@@ -348,7 +348,7 @@
 				"internal/game/creation.go",
 				"internal/game/equipment.go",
 				"internal/game/migration_verification_test.go",
-				"internal/server/pet_equipment_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
 			"audit_verdict": "partial"
@@ -363,7 +363,7 @@
 				"internal/game/creation.go",
 				"internal/game/equipment.go",
 				"internal/game/migration_verification_test.go",
-				"internal/server/pet_equipment_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
 			"audit_verdict": "partial"
@@ -378,7 +378,7 @@
 				"internal/game/creation.go",
 				"internal/game/equipment.go",
 				"internal/game/migration_verification_test.go",
-				"internal/server/pet_equipment_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
 			"audit_verdict": "partial"
@@ -393,7 +393,7 @@
 				"internal/game/creation.go",
 				"internal/game/equipment.go",
 				"internal/game/migration_verification_test.go",
-				"internal/server/pet_equipment_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Focused caller review: stack/drop restrictions match Item.Stackable/Dropable across all 256 types; character/pet wear checks slot 1..6 and a single unlocked item, without level/body/use-type enforcement. Tradeable has no reference caller. Enum metadata alone does not enable special item effects; unverified effects remain on hold.",
 			"audit_verdict": "partial"
@@ -759,7 +759,7 @@
 			"lines": 505,
 			"status": "ported",
 			"sha256": "8ecef8a39fe1983dfdef18ca295cf11d587f3d31302a861103e13f8c3d4568b7",
-			"go_files": ["internal/server/admin_logs.go", "cmd/wonderland/main.go"],
+			"go_files": ["internal/server/logging/buffer.go", "cmd/wonderland/main.go"],
 			"notes": "Reviewed timestamp formatting, GUI/console output, severity filters, file queue flush and rotation. Go structured slog output and bounded administrator log buffer replace GUI and legacy text logger. Native file rotation policy is not copied; file output lifecycle is handled by the Go entrypoint.",
 			"audit_verdict": "replaced"
 		},
@@ -876,9 +876,8 @@
 				"internal/admin/web/tools.js",
 				"internal/server/admin_players.go",
 				"internal/store/admin_characters.go",
-				"internal/server/admin_character_refresh.go",
-				"internal/server/admin_quest_data.go",
-				"internal/server/admin_quest_port_test.go"
+				"internal/server/admin_assets.go",
+				"internal/server/admin_assets_test.go"
 			],
 			"notes": "Versioned inventory/stat/settings/quest tab edits now refresh live, preserving unrelated SQL fields and pending walking. Versioned actor controls support current same-scene map viewers or a selected session; prop break/restore commits the selected character linked quest before publication, without editing peers. Full state/roster edits retain reconnect. Combined actor/event reports replace the desktop display; unsafe offline inserts and duplicate pet insertion remain intentionally replaced.",
 			"audit_verdict": "partial"
@@ -900,12 +899,11 @@
 			"go_files": [
 				"internal/admin/tools.go",
 				"internal/admin/web/tools.js",
-				"internal/server/admin_live.go",
 				"internal/server/admin_players.go",
 				"internal/store/admin_social.go",
 				"internal/store/admin_mail.go",
-				"internal/server/admin_configuration.go",
-				"internal/server/starter_packs.go"
+				"internal/server/admin.go",
+				"internal/server/characters.go"
 			],
 			"notes": "Read all 2917 lines. Sessions, heal/gold/warp/kick, account/IP bans, guild notice/leader/member edits/disband, GM mail single/online/all dispatch/history/delete, battle snapshots/victory/abort and marriage annul/summon have actual Go handlers and SQL persistence. General character edits reconnect. Starter definitions have SQL editing and Operations exposes explicit mass online delivery, with per-recipient atomic grants and audit/results. Reference MySQL connection test, provider configuration and live database reconfiguration have no Go equivalent (Go is SQLite; startup configuration applies after restart). SQLite-to-MySQL action calls a concrete RCLibrary migration routine, so this is an unported provider workflow rather than merely a form placeholder. Source God Mode writes oversized HP/SP; Go provides durable god attributes and normalized vitals instead. Mail name lookup in source uses nonexistent charName column; Go accepts explicit receiver IDs. Mass online starter delivery now exposed in Operations with authentication, per-recipient audit/results and atomic packs; remaining desktop field/report/editor gaps persist.",
 			"audit_verdict": "partial"
@@ -936,12 +934,11 @@
 				"internal/admin/web/tools.js",
 				"internal/server/admin_players.go",
 				"internal/server/admin_assets.go",
-				"internal/server/runtime_settings.go",
-				"internal/server/admin_announcements.go",
-				"internal/server/admin_quest_data.go",
+				"internal/server/settings.go",
+				"internal/server/admin.go",
 				"internal/assets/quest_definitions.go",
 				"internal/assetsql/quest_definitions.go",
-				"internal/server/admin_quest_port_test.go"
+				"internal/server/admin_assets_test.go"
 			],
 			"notes": "Launcher offline status and notice/world/guild/whisper/banner announcement channels implemented. Combined NPC placement/event/decoded-opcode reports and typed custom quest registry editing are available. Native metadata replaces English-title reward/map/NPC guesses; Windows layout/local launcher and MySQL provider workflows remain architectural replacements.",
 			"audit_verdict": "partial"
@@ -971,8 +968,8 @@
 			"sha256": "3a2dda190dfc0d93d7937fe229c8f30030264334f5e60b3c7e830bde464603e0",
 			"go_files": [
 				"internal/server/server.go",
-				"internal/server/gm_operations.go",
-				"internal/server/autosave.go"
+				"internal/server/gm.go",
+				"internal/server/session.go"
 			],
 			"notes": "Read shutdown sequence: save settings/online characters, stop login/mall/world and report progress. Go context shutdown, final session autosaves and scheduled administrator shutdown replace the desktop dialog/thread joins.",
 			"audit_verdict": "replaced"
@@ -1018,7 +1015,7 @@
 			"lines": 39,
 			"status": "ported",
 			"sha256": "b4add6d669b546ecbad0667ed0832b95438710ca25005b5ccf902aa3093140f2",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Discovery name and category list are registered inbound responses; configuration replaces globals.",
 			"audit_verdict": "migrated"
 		},
@@ -1028,8 +1025,8 @@
 			"status": "ported",
 			"sha256": "48c52d390ff8415d52daf0bc7db1c9200959005ee49c7dd26aab37f0b1606f8c",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/migration_verification_test.go"
+				"internal/server/commands.go",
+				"internal/server/migration_test.go"
 			],
 			"notes": "Reference generic subcommand acknowledgements and UInt32 uptime handshake are independently verified across all 256 subcommands. No generic fallback is inferred for unregistered commands.",
 			"audit_verdict": "migrated"
@@ -1041,8 +1038,8 @@
 			"sha256": "6be70b0891226c6cefeaa3bf54ef2107f8a55567c30587a37ab2ef5fbf9fa549",
 			"go_files": [
 				"internal/server/chat.go",
-				"internal/server/gm_commands.go",
-				"internal/server/gm_reload.go"
+				"internal/server/gm.go",
+				"internal/server/gm_content.go"
 			],
 			"notes": "Local chat and every executable source GM command has a Go entry point; source global chat only logs. Quest reload now publishes typed custom definitions as well as native events/visibility; individual GM manager semantics require review.",
 			"audit_verdict": "partial"
@@ -1053,12 +1050,12 @@
 			"status": "ported",
 			"sha256": "340ea59753be97b88fef5a253071d2d1a8e5d7a5593fe60be46dd2c5e8af6ad3",
 			"go_files": [
-				"internal/server/world_entry.go",
-				"internal/server/command_registry.go",
+				"internal/server/world.go",
+				"internal/server/commands.go",
 				"internal/game/login_packets.go",
 				"client/wlo/app/app.go",
-				"internal/server/world_entry_test.go",
-				"internal/server/migration_verification_test.go"
+				"internal/server/world_test.go",
+				"internal/server/migration_test.go"
 			],
 			"notes": "Reference sends [3,sub,1] and [3,sub,character:u32]. These are incompatible with native AC3 self-character/map snapshots (client receive address 0x2dfdb3), so inbound AC3 remains unsupported rather than emitting short malformed appearance packets. Native AC12 publication and AC89/92 readiness are independently tested. This is a deliberate protocol replacement; native capture acceptance remains separate.",
 			"audit_verdict": "replaced"
@@ -1071,9 +1068,8 @@
 			"go_files": [
 				"internal/server/world.go",
 				"internal/game/character.go",
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "Inbound self-spawn now uses the native appearance serializer. Job, nickname and GM-bot presentation remain separate parity work.",
 			"audit_verdict": "partial"
@@ -1083,7 +1079,7 @@
 			"lines": 120,
 			"status": "ported",
 			"sha256": "b5056f2bfdd6dc43d2258bc0ccd4e1efc043413555aa0636a437dd909ad6096a",
-			"go_files": ["internal/server/characters.go", "internal/server/travel_commands.go"],
+			"go_files": ["internal/server/characters.go", "internal/server/travel.go"],
 			"notes": "Sprite refresh, ping and record/beach/Carnie menu travel have handlers with battle gates.",
 			"audit_verdict": "migrated"
 		},
@@ -1093,11 +1089,11 @@
 			"status": "ported",
 			"sha256": "500e547dd836aa76bfe39867c77d2c5a8c6457ec6a83bcca4ef926afa93cc2dc",
 			"go_files": [
-				"internal/server/movement.go",
-				"internal/server/encounters.go",
-				"internal/server/vehicles.go",
-				"internal/server/autosave.go",
-				"internal/server/buffered_movement_test.go",
+				"internal/server/world.go",
+				"internal/server/simulation.go",
+				"internal/server/travel.go",
+				"internal/server/session.go",
+				"internal/server/session_test.go",
 				"internal/store/autosave.go"
 			],
 			"notes": "Native movement layout, validation, peer broadcast and encounter flow are implemented. Ordinary walking is now buffered in the owning session; dirty guarded checkpoints default to 30 seconds and flush on disconnect. Immediate vehicle wear, map transitions and resource transactions are retained. This intentionally replaces reference per-packet/one-second persistence.",
@@ -1109,10 +1105,9 @@
 			"status": "ported",
 			"sha256": "4539902f10914a23c47e9cd6562ad9480da4376cb58a035a2b34e2e657f3d0ab",
 			"go_files": [
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
 				"internal/game/character.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands_test.go"
 			],
 			"notes": "Inbound waypoint synchronization is registered; reference X/Y and inferred map/X/Y forms use validated buffered movement, vehicle checks and encounter processing before the ACK. Native map-hint acceptance still needs captures.",
 			"audit_verdict": "replaced"
@@ -1123,13 +1118,13 @@
 			"status": "ported",
 			"sha256": "0586d836a927e158e3b916609abced1730ea9f3f6547a66eff9e74546a9a47b1",
 			"go_files": [
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
 				"internal/game/progress.go",
 				"internal/game/pets.go",
 				"internal/game/migration_verification_test.go",
-				"internal/server/items.go",
-				"internal/server/migration_verification_test.go",
-				"internal/server/skill_tree_test.go",
+				"internal/server/inventory.go",
+				"internal/server/migration_test.go",
+				"internal/server/characters_test.go",
 				"client/wlo/inventory/allocation.go",
 				"client/wlo/inventory/allocation_test.go",
 				"client/wlo/app/presentation_test.go"
@@ -1157,7 +1152,6 @@
 			"sha256": "7c81010f58aa6f2af39dde7969690e655961dce627c4aa6fcdfb49a5d3fc52ae",
 			"go_files": [
 				"internal/server/social.go",
-				"internal/server/friends.go",
 				"internal/store/friends.go",
 				"client/wlo/app/presentation.go",
 				"client/wlo/app/presentation_test.go",
@@ -1171,7 +1165,7 @@
 			"lines": 94,
 			"status": "ported",
 			"sha256": "2283ffdbeb01e58712d0e5d2e7980008d4ed5c6aac07279a6308bc2a904dec16",
-			"go_files": ["internal/server/lucky_draw.go"],
+			"go_files": ["internal/server/mall.go"],
 			"notes": "Actual reference reward grant replaced by weighted database definitions and durable three-per-day allowance as requested. Default rewards exclude obsolete 2013 Tanabata (30436) and Ghost Festival (30437) exchange items; the remaining outcomes and three Fun Tokens (34008), added by project policy, give nine equally weighted outcomes with consecutive native slots.",
 			"audit_verdict": "replaced"
 		},
@@ -1180,7 +1174,7 @@
 			"lines": 37,
 			"status": "pending",
 			"sha256": "f2ddca7af9668c8cf6c911ad811290a375f56d5bdf36af67b4bf897905c3c22a",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Fixed VIP tier/points without membership state.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1189,7 +1183,7 @@
 			"lines": 183,
 			"status": "ported",
 			"sha256": "ab9de30adefadd7f01d06d164a5b0fb1251c0369099a37a46afa8fc4b0050356",
-			"go_files": ["internal/server/combat_pvp.go", "internal/server/combat.go"],
+			"go_files": ["internal/server/combat.go"],
 			"notes": "Player PK and flee are implemented. NPC-click logs only; join/watch are source TODOs.",
 			"audit_verdict": "migrated"
 		},
@@ -1202,7 +1196,7 @@
 				"internal/server/world.go",
 				"internal/world/player_visibility.go",
 				"internal/world/player_visibility_test.go",
-				"internal/server/player_visibility_test.go",
+				"internal/server/world_test.go",
 				"internal/server/story.go",
 				"internal/server/events.go"
 			],
@@ -1215,11 +1209,10 @@
 			"status": "ported",
 			"sha256": "eb7f391522cfcb014fc5c788558ed57b44f7eb2f12697feb01535e3f1421dde4",
 			"go_files": [
-				"internal/server/party.go",
+				"internal/server/teams.go",
 				"internal/server/mall.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
-				"internal/server/command_registry.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "Party handlers and AC13:238 mall confirmation, authoritative balances and both catalogs are implemented.",
 			"audit_verdict": "migrated"
@@ -1229,8 +1222,8 @@
 			"lines": 588,
 			"status": "partial",
 			"sha256": "ea8df54b39bff9c4ac940ea55f7950b3f9dee6f3273d5015c0c7f79cf2a0bf19",
-			"go_files": ["internal/server/friends.go", "internal/store/friends.go"],
-			"notes": "Friend requests/presence and text mail implemented. Native AC14:3 answer 1 accepts; refusal/ignore answers notify the asker without creating a friendship. AC14:1 delivery uses trailing text without a length prefix to match aLogin. Friend list class/nickname fields are sent, but native job/extra-byte ordering and VIP/presence interpretation still differ; see docs/CLIENT.md. Tests: internal/server/friends_test.go and internal/server/mail_test.go.",
+			"go_files": ["internal/server/social.go", "internal/store/friends.go"],
+			"notes": "Friend requests/presence and text mail implemented. Native AC14:3 answer 1 accepts; refusal/ignore answers notify the asker without creating a friendship. AC14:1 delivery uses trailing text without a length prefix to match aLogin. Friend list class/nickname fields are sent, but native job/extra-byte ordering and VIP/presence interpretation still differ; see docs/CLIENT.md. Tests: internal/server/social_test.go and internal/server/social_test.go.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -1239,9 +1232,8 @@
 			"status": "ported",
 			"sha256": "ff3cd57d13ecd03765a429ebe079615cf1a55b76cef5d18282c324ba534eb425",
 			"go_files": [
-				"internal/server/pet_control.go",
-				"internal/server/mounts.go",
-				"internal/server/vehicles.go"
+				"internal/server/pets.go",
+				"internal/server/travel.go"
 			],
 			"notes": "Release/rename and vehicle/mount operations implemented. Starter Beach disposable-raft breaks now commit nearest-walkable terrain recovery with item consumption and send AC7 before break replies. Native six-byte owner-ID AC15:13 acknowledgments are accepted alongside the two-byte compatibility form; focused tests cover position persistence and single raft consumption. Go client raft rendering now applies native directional rider tables and canvas corrections, hides ordinary mounted hand weapons, and plays the vehicle destruction strip at the pre-recovery water position with the owner acknowledgment.",
 			"audit_verdict": "migrated"
@@ -1261,9 +1253,8 @@
 			"status": "ported",
 			"sha256": "df439e3f4b4e68f6e8691750d07bfe12662f7bb87d221ec20c656291fbfe976f",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "Inbound gesture broadcasts preserve the reference envelope and scene isolation, including sender echo.",
 			"audit_verdict": "migrated"
@@ -1274,9 +1265,8 @@
 			"status": "ported",
 			"sha256": "2eaa58772dd1c3c86ef2616bd0055cfc574c1cc52cb634f95cc557d1554e744c",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "AC183:17 emits both reference synchronization replies, including during loading/battle.",
 			"audit_verdict": "migrated"
@@ -1286,7 +1276,7 @@
 			"lines": 37,
 			"status": "pending",
 			"sha256": "5ad24515ffc731df6057ffdcd1738ca1930cee90f2400a941a0923ad049eaf12",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Gift voucher reports fixed success with no grant/consumption.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1296,9 +1286,8 @@
 			"status": "ported",
 			"sha256": "8d0d0498cbc890dcfd52965eaba0bc9ad5931ffe7590f5d52cd387c57d664951",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "AC186:9 echoes the optional cutscene ID with active status and reserved padding. Script/movie progression remains independently owned by events.",
 			"audit_verdict": "migrated"
@@ -1317,7 +1306,7 @@
 			"lines": 38,
 			"status": "pending",
 			"sha256": "8aab4aa8934e09169aae22546df581665928322055e30f120ca2d1325c3f84b7",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Attendance fixed success; no persisted allowance/reward.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1326,7 +1315,7 @@
 			"lines": 40,
 			"status": "pending",
 			"sha256": "e9fab44a0cc48e873c9b6daf6deb4117b5da97d764a5d59110c76f9c122582e2",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Anti-bot answer ignored and always accepted.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1345,10 +1334,9 @@
 			"status": "ported",
 			"sha256": "1ef85d1b4bb3f0ca1a9b0e7c44085379c66fefe71566c02f66e931d1c37ca6d8",
 			"go_files": [
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
 				"internal/server/mall.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands_test.go"
 			],
 			"notes": "Native mall window, slot purchase and balance aliases use SQL-backed catalog and atomic debit/delivery. One slot purchase delivers one bundle; invalid/full/funded failures do not charge.",
 			"audit_verdict": "replaced"
@@ -1361,9 +1349,8 @@
 			"go_files": [
 				"internal/server/simulation.go",
 				"internal/world/world.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
-				"internal/server/command_registry.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "Existing NPC packets and simulation plus generic inbound entity-active acknowledgement are implemented.",
 			"audit_verdict": "migrated"
@@ -1374,9 +1361,8 @@
 			"status": "ported",
 			"sha256": "d720e4a70f03db4fda77e5a510b52c55715d0e77eae7f1eb02ef550417f10e1b",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "AC226:255 sends the reference fixed matrix and zero claim-state snapshot. No claim/reward mutation is inferred from this synchronization request.",
 			"audit_verdict": "migrated"
@@ -1387,14 +1373,14 @@
 			"status": "partial",
 			"sha256": "a88a64a832d804cbf0c5a574334fcc7055fe61695a5264065390ac60f8d04fdb",
 			"go_files": [
-				"internal/server/items.go",
+				"internal/server/inventory.go",
 				"internal/server/mall.go",
 				"internal/server/fishing.go",
 				"internal/server/fishing_test.go",
 				"docs/FISHING.md",
-				"internal/server/potential.go",
+				"internal/server/progression.go",
 				"internal/game/potential.go",
-				"internal/server/potential_test.go",
+				"internal/server/progression_test.go",
 				"client/wlo/inventory/use.go",
 				"client/wlo/inventory/use_dialog.go",
 				"client/wlo/inventory/selection.go",
@@ -1413,7 +1399,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "06dae62a0167b10116b89f1577c0e3846b3d2b1804fcab31fc899ccd3e769728",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "PIN always reports unlocked without checking or persistence.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1431,7 +1417,7 @@
 			"lines": 67,
 			"status": "pending",
 			"sha256": "9b354e476158cc59150b8ce0abb2a78c8858e8c1e520b23d9da122c163cfd670",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Recruitment empty/status only, no state.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1440,7 +1426,7 @@
 			"lines": 43,
 			"status": "ported",
 			"sha256": "befbaa7e9eb11baf07f631337c438a9e4f1446c89e6aa33f461350704ba81021",
-			"go_files": ["internal/server/services.go"],
+			"go_files": ["internal/server/shops.go"],
 			"notes": "Selected-stack sales/trailing mode/result implemented.",
 			"audit_verdict": "migrated"
 		},
@@ -1449,7 +1435,7 @@
 			"lines": 50,
 			"status": "pending",
 			"sha256": "121c1d50b27e8bde1a5c0d730c730e6d6ce6e264672490e20e8065fa86571a60",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Fixed occupancy/switch success never transfer session.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1458,7 +1444,7 @@
 			"lines": 144,
 			"status": "ported",
 			"sha256": "d376282b7ff7bc76eaa81f20993a3966e22b70746ec78aae70ea87cb9f8f06e9",
-			"go_files": ["internal/server/services.go", "internal/protocol/commands.go"],
+			"go_files": ["internal/server/shops.go", "internal/protocol/commands.go"],
 			"notes": "Source incorrectly uses gold-bank opcode for item storage; Go uses native AC30 transfers.",
 			"audit_verdict": "replaced"
 		},
@@ -1467,7 +1453,7 @@
 			"lines": 103,
 			"status": "ported",
 			"sha256": "47f7ec41c54d55e61c68354cef46f00b17cd195883f8ebadae712f9ef5b1cba7",
-			"go_files": ["internal/server/services.go"],
+			"go_files": ["internal/server/shops.go"],
 			"notes": "Batch/targeted transfers and cleared authoritative snapshots implemented.",
 			"audit_verdict": "migrated"
 		},
@@ -1477,9 +1463,8 @@
 			"status": "ported",
 			"sha256": "331833a34923ea8334519b3c60dafffe9523ea8103bec0ad2e93b9f04efd36dc",
 			"go_files": [
-				"internal/server/hotel.go",
-				"internal/server/services.go",
-				"internal/server/world_combat_port_test.go"
+				"internal/server/shops.go",
+				"internal/server/world_test.go"
 			],
 			"notes": "Rest and atomic hotel exchange preserve pet data. Clinic confirmation now heals accompanying pets as well as owner, persists before replay, retains pending offer on failure and rejects stale travel/battle requests.",
 			"audit_verdict": "migrated"
@@ -1491,9 +1476,8 @@
 			"sha256": "9641cac19a33f7c5a669695a8968e20b18ea99df7fc75046f26f72132f9878f7",
 			"go_files": [
 				"internal/server/chat.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
+				"internal/server/commands_test.go",
 				"client/wlo/app/presentation.go",
 				"client/wlo/world/presentation.go",
 				"client/wlo/world/presentation_test.go",
@@ -1516,7 +1500,7 @@
 			"lines": 30,
 			"status": "ported",
 			"sha256": "8843b504d50c049f9060efd78a7da8ade400f207fa8d9cd2deec752517ded3bd",
-			"go_files": ["internal/server/mall_checkout.go"],
+			"go_files": ["internal/server/mall.go"],
 			"notes": "Balance-only cart resume preserves pending checkout; both mode values accepted.",
 			"audit_verdict": "migrated"
 		},
@@ -1534,7 +1518,7 @@
 			"lines": 46,
 			"status": "ported",
 			"sha256": "f9ce1c87100af5233e526d040b686fb6945b84898a9e744aafb56dff7f0467e9",
-			"go_files": ["internal/server/repair.go"],
+			"go_files": ["internal/server/inventory.go"],
 			"notes": "Registered repair handler delegates durability repair and sends result.",
 			"audit_verdict": "migrated"
 		},
@@ -1544,9 +1528,9 @@
 			"status": "partial",
 			"sha256": "1ab33a785b8e10f0f5bde720c1947d6ad7989baa2c3e5867f37f70dbf1ae8835",
 			"go_files": [
-				"internal/server/forging.go",
-				"internal/server/command_registry.go",
-				"internal/server/tent_manufacturing.go"
+				"internal/server/crafting.go",
+				"internal/server/commands.go",
+				"internal/server/manufacturing.go"
 			],
 			"notes": "Strict direct gem socket request registered; truthful failure retains resources. Reference ForgeGem consumes IDs that map to WLRI oil without changing equipment; socket effects and verified gems remain pending.",
 			"audit_verdict": "partial"
@@ -1558,11 +1542,11 @@
 			"sha256": "68c77291de9752a7dd5917f150e91cb4ccfea81c0e156ddb03f032b076c4bbf8",
 			"notes": "AC39:1 already routes to the native quest journal independently of guild membership. Verified repeated clear/active/250 completion-byte pair snapshots and private delivery. Membership, invitation ownership, ranks, messages, notice and insignia use SQL authorization; success-only vault/alliance/email placeholders remain on hold instead of false success.",
 			"go_files": [
-				"internal/server/guilds.go",
-				"internal/server/command_registry.go",
+				"internal/server/social.go",
+				"internal/server/commands.go",
 				"internal/world/view.go",
-				"internal/server/migration_verification_test.go",
-				"internal/server/economy_social_test.go"
+				"internal/server/migration_test.go",
+				"internal/server/social_test.go"
 			],
 			"audit_verdict": "migrated"
 		},
@@ -1572,10 +1556,8 @@
 			"status": "ported",
 			"sha256": "d6c90edb55a635cbba6421f478137e1dc4fce4d4b171ab1166408980ea8838e7",
 			"go_files": [
-				"internal/server/alchemy.go",
-				"internal/server/alchemy_test.go",
-				"internal/server/hotbar.go",
-				"internal/server/hotbar_test.go",
+				"internal/server/crafting.go",
+				"internal/server/crafting_test.go",
 				"internal/assets/alchemy.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
@@ -1587,7 +1569,7 @@
 			"lines": 49,
 			"status": "pending",
 			"sha256": "6ae2a244c81074eeb31350fb6d3691253345d13e96d77d1b41a939be8b9da27e",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Parcel inbox always empty and collection always succeeds without parcel state.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1596,7 +1578,7 @@
 			"lines": 46,
 			"status": "pending",
 			"sha256": "e01048267951cd5c3439db81bde3b8faa7cce1ccc4c75b0f6d78b3381940931d",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Tracker ignores quest objective and echoes player's present location; no actual navigation logic.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1606,10 +1588,9 @@
 			"status": "ported",
 			"sha256": "97bde68f17629ed4883e1978d8edd45f1cfa0417e1ad70ad491545d4c8b261c1",
 			"go_files": [
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
 				"internal/game/character.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
+				"internal/server/commands_test.go",
 				"internal/store/character_storage.go",
 				"internal/store/migrations.go",
 				"internal/store/native_metadata_test.go"
@@ -1623,10 +1604,9 @@
 			"status": "ported",
 			"sha256": "fa005d71531803d6d5bc3ffd9b1813c71aea8532ef2dbb898acad9ac051d4e2e",
 			"go_files": [
-				"internal/server/services.go",
-				"internal/server/banking.go",
-				"internal/server/banking_test.go",
-				"internal/server/migration_verification_test.go",
+				"internal/server/shops.go",
+				"internal/server/shops_test.go",
+				"internal/server/migration_test.go",
 				"internal/store/banking_test.go"
 			],
 			"notes": "Balance/deposit/withdraw and unknown-subcommand default balance query implemented. Verified all default subcommands with ignored operands, private reply and unchanged balances; restart, rollback, wallet/bank limits and ownership gates pass. PIN/transfer remain truthful unavailable responses because the reference only acknowledges success.",
@@ -1646,7 +1626,7 @@
 			"lines": 55,
 			"status": "pending",
 			"sha256": "430589e087a04f16e7a1fd4576885efc2723ee820efd61b35f999b5cbb8060dd",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Guild vault empty query and success acknowledgments never mutate items/funds.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1655,7 +1635,7 @@
 			"lines": 81,
 			"status": "partial",
 			"sha256": "0a19978587ea67b8e03221f5243736b02f65be02a45e44dec69e433ce097a7d4",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Category matrix emitted during discovery; inbound AC54 absent. Goods always empty and purchase always succeeds without payment/grant in source.",
 			"audit_verdict": "partial"
 		},
@@ -1664,7 +1644,7 @@
 			"lines": 17,
 			"status": "pending",
 			"sha256": "8c80cce287b34ab5963a8c2388ee9f0bff2bb33f40a7afb29bee68a785974b9b",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Source deliberately logs unsupported and leaves inventory unchanged.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1673,7 +1653,7 @@
 			"lines": 129,
 			"status": "partial",
 			"sha256": "f155d2ecaa30e44c4aa7c059c95e61d058f4a9915586e9ebdb445112a414266e",
-			"go_files": ["internal/server/stalls.go"],
+			"go_files": ["internal/server/trade.go"],
 			"notes": "Open/close/view/purchase registered; history is empty source response with no Go subcommand.",
 			"audit_verdict": "partial"
 		},
@@ -1691,7 +1671,7 @@
 			"lines": 53,
 			"status": "partial",
 			"sha256": "94120df0ec90db3a6d7296578a112724364c3e28a3e0a89b24ff622c03baba7f",
-			"go_files": ["internal/server/command_registry.go", "internal/server/manufacturing.go"],
+			"go_files": ["internal/server/commands.go", "internal/server/manufacturing.go"],
 			"notes": "Native two-input Forge request registered with strict payload layout and source reply; atomic SQL recipe execution.",
 			"audit_verdict": "migrated"
 		},
@@ -1701,7 +1681,7 @@
 			"status": "pending",
 			"sha256": "3a9a18dd423eb901cb479742d45b14889f35dfdfc592ea82af8b0d369b4561ab",
 			"notes": "Decor success echo never changes tent state or consumes item.",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"audit_verdict": "legacy_stub"
 		},
 		{
@@ -1710,7 +1690,7 @@
 			"status": "pending",
 			"sha256": "2370d047e478628bf46b1f7a51b85a4c38235b1ccb72be91ff852bbceb780aa3",
 			"notes": "Second-floor success echo never unlocks or moves anything.",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"audit_verdict": "legacy_stub"
 		},
 		{
@@ -1718,7 +1698,7 @@
 			"lines": 124,
 			"status": "partial",
 			"sha256": "61fed46a4aeeb26dd66d99b0cd008f7f17dac64cfde9dfd3bc742dcb7084c899",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Furniture place/move registered; exact forced-floor and metadata behavior require tent implementation review. Recv4 empty.",
 			"audit_verdict": "partial"
 		},
@@ -1739,7 +1719,6 @@
 			"go_files": [
 				"internal/server/manufacturing.go",
 				"internal/assets/alchemy.go",
-				"internal/server/tent_manufacturing.go",
 				"internal/store/manufacturing.go",
 				"internal/assetsql/manufacturing.go"
 			],
@@ -1761,10 +1740,9 @@
 			"status": "ported",
 			"sha256": "8055538601ec81be787d1933d5de3f6721e3c45d3011be08c4cb80081cff2f67",
 			"go_files": [
-				"internal/server/command_registry.go",
+				"internal/server/commands.go",
 				"internal/game/character.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
+				"internal/server/commands_test.go",
 				"internal/store/character_storage.go",
 				"internal/store/migrations.go",
 				"internal/store/native_metadata_test.go"
@@ -1779,8 +1757,7 @@
 			"sha256": "e746d64ecfa4f81224dd9ba35b82f0a7542c4ed19c10bf7515fcc157485265c9",
 			"go_files": [
 				"internal/server/pets.go",
-				"internal/server/pet_feeding.go",
-				"internal/server/pet_feeding_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Compared FeedPet/TryFeedPet: active registered battle pet, positive status-64 value above 100, capped amity, minimal needed consumption and native result. Strict known request layout and transactional consumption replace permissive unsafe payloads. Reconnect, failed saves, target ownership, locks and world gates tested.",
 			"audit_verdict": "migrated"
@@ -1793,8 +1770,7 @@
 			"go_files": [
 				"internal/server/pets.go",
 				"internal/game/pets.go",
-				"internal/server/pet_training.go",
-				"internal/server/pet_training_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Pet stat allocation is implemented. Reference subcode 1 increments Potential up to 100 for free and sends progression; Go explicitly rejects potential training while Potential metadata persists separately in typed gameplay rows. Reference never verifies or consumes the advertised pill; native AC23:126 now provides funded normal/golden/Super pill use with the verified WLRI rates. Native inventory AC23:126 now consumes normal, golden and Super Potential Pills transactionally using the official WLRI probabilities and recovered attribute table. AC68:1 remains rejected.",
 			"audit_verdict": "partial"
@@ -1807,8 +1783,7 @@
 			"go_files": [
 				"internal/server/pets.go",
 				"internal/game/pet_rebirth.go",
-				"internal/server/pet_rebirth.go",
-				"internal/server/pet_rebirth_test.go"
+				"internal/server/pets_test.go"
 			],
 			"notes": "Compared source level 100/amity 100 eligibility, one-time rebirth, level/EXP reset, 50-point bonus and unchanged base/skills/equipment/job. Derived vitals normalize before SQL save. Reject bonus overflow rather than wrapping; native result/list/progression, reload, duplicate/invalid requests and rollback tested.",
 			"audit_verdict": "migrated"
@@ -1818,7 +1793,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "00793c7d39da83675790a41ff5b07202ba7870d68edd7440832c0c5911af7358",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Reset success never changes attributes/consumes scroll.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1828,18 +1803,16 @@
 			"status": "ported",
 			"sha256": "1c11fec919b55d09cdb0a02ae4c1ea402fd4cc36337b9bf736cdbe2e73cbab87",
 			"go": [
-				"internal/server/arcade_payments.go",
-				"internal/server/arcade.go",
+				"internal/server/minigames.go",
 				"internal/assets/arcade.go",
 				"internal/assetsql/arcade.go"
 			],
 			"tests": [
-				"internal/server/arcade_payments_test.go",
-				"internal/server/arcade_test.go",
+				"internal/server/minigames_test.go",
 				"internal/assetsql/arcade_test.go"
 			],
 			"notes": "Fixed-score reference placeholder replaced by actual arcade payments/rewards.",
-			"go_files": ["internal/server/arcade.go"],
+			"go_files": ["internal/server/minigames.go"],
 			"audit_verdict": "replaced"
 		},
 		{
@@ -1847,7 +1820,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "b55d1c18c56cdb39e35e6f947f6cde0180c348d4597cb226a87d6b041ee25012",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Prize echo without ticket consumption/reward grant.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1856,7 +1829,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "954de7702a548fbe48af780dc4281ee23c7f6d771defab8e58e22df7a7dbe2dc",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Random sector without payment/grant; incomplete roulette.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1865,7 +1838,7 @@
 			"lines": 61,
 			"status": "ported",
 			"sha256": "eccf411ea25a6735761cf64478ee5d73eaf72b585519b3262d1ab8eecb075768",
-			"go_files": ["internal/server/mall.go", "internal/server/forging.go"],
+			"go_files": ["internal/server/mall.go", "internal/server/crafting.go"],
 			"notes": "Both carts, refresh, forging and game category implemented.",
 			"audit_verdict": "migrated"
 		},
@@ -1874,7 +1847,7 @@
 			"lines": 36,
 			"status": "pending",
 			"sha256": "3324f667f145bd6a7e168cece3908d98245cf18346b17e79e80415025b7c81ec",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Calendar always empty.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1892,7 +1865,7 @@
 			"lines": 37,
 			"status": "pending",
 			"sha256": "49508fe794522b8cde916d7ab2cbda2a401d281b6381fdebabdb588906fbc787",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Queue success without matchmaking state.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1901,7 +1874,7 @@
 			"lines": 36,
 			"status": "pending",
 			"sha256": "ef7685048601cfeb66266fee1faf2ffb5e892cbd52d09e013352ff4f077b7203",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "War status without territory/declaration/combat.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1910,7 +1883,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "2a4d87afe4de9b5632a7122c7b6ffdc854c1fcfffc858469a5863a3b4121b1fe",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Ranking always lists requester.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1919,7 +1892,7 @@
 			"lines": 36,
 			"status": "pending",
 			"sha256": "ab54ffd63e9a1a3e0beee84fbaa18cd9a1e4cce2c221e49aadb16b3eb684cbf0",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Achievements always empty.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1928,7 +1901,7 @@
 			"lines": 58,
 			"status": "pending",
 			"sha256": "87a9bc59a26bba7eb92d56543b1eed4503cd412d0955681be3e2d788eef20f8b",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Guild-message operations commented out.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1937,7 +1910,7 @@
 			"lines": 37,
 			"status": "pending",
 			"sha256": "589a012381ea8c2b2ddd747feb713bd55f660f4421856ff497d2a04c3bd330b1",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Fixed fuel/durability without mutation.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1946,7 +1919,7 @@
 			"lines": 129,
 			"status": "pending",
 			"sha256": "4287574b356dcb093caee59acd2dc4cae7b9e792feb4d6af259f6829277292a2",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Instance operations commented out.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1955,7 +1928,7 @@
 			"lines": 36,
 			"status": "pending",
 			"sha256": "d784a873703f8f63e916e557040ca0bc6915460d881ee3f2e9f225fea5da4de7",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Sailing status without navigation.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1965,9 +1938,8 @@
 			"status": "ported",
 			"sha256": "58ff1d3bba337b068f8b9e1a257fb55fb57d6954f31abeac86f2d33dc18cda4a",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go"
+				"internal/server/commands.go",
+				"internal/server/commands_test.go"
 			],
 			"notes": "Bath request restores authoritative HP/SP transactionally through shared vital recalculation, then publishes stats and native ACK. Source has no bath-location eligibility checks.",
 			"audit_verdict": "replaced"
@@ -1977,7 +1949,7 @@
 			"lines": 39,
 			"status": "pending",
 			"sha256": "5667fb2a67374f4f9078e3e2170065c2a9863b2945cb6f6f1cc50cebc224310f",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Plot success without farming state.",
 			"audit_verdict": "legacy_stub"
 		},
@@ -1986,7 +1958,7 @@
 			"lines": 41,
 			"status": "ported",
 			"sha256": "809bbcc9a50942990a1fa8fa94b7be46af75a11fdcc011e2e25b019c876f90e9",
-			"go_files": ["internal/server/world_entry.go"],
+			"go_files": ["internal/server/world.go"],
 			"notes": "Scene-ready ACK and deferred MOTD implemented.",
 			"audit_verdict": "migrated"
 		},
@@ -1996,9 +1968,8 @@
 			"status": "partial",
 			"sha256": "4146b3f5ac336224ee4cad21d0a4a72a108a6bdad29c7165fa85e160754f94e6",
 			"go_files": [
-				"internal/server/command_registry.go",
-				"internal/server/native_commands.go",
-				"internal/server/native_commands_test.go",
+				"internal/server/commands.go",
+				"internal/server/commands_test.go",
 				"docs/NATIVE_COMMANDS.md",
 				"internal/server/fishing.go",
 				"internal/server/fishing_test.go",
@@ -2016,7 +1987,7 @@
 			"lines": 21,
 			"status": "ported",
 			"sha256": "3ec5df88b334f62d205e8d15d6fa7f70734f2d0b11318d9f337cbb524f3d55c2",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Pack preview independently registered; no purchase/grant.",
 			"audit_verdict": "migrated"
 		},
@@ -2025,7 +1996,7 @@
 			"lines": 22,
 			"status": "ported",
 			"sha256": "03c13c42b329ff2d3e8b2190ce2d5f5bdd3fb1e4063e5118b23a615a0671861b",
-			"go_files": ["internal/server/world_entry.go", "internal/server/command_registry.go"],
+			"go_files": ["internal/server/world.go", "internal/server/commands.go"],
 			"notes": "Direct registry inspection confirms AC92 is registered: native short/long ACK validation and one-time deferred MOTD are implemented. Reference refreshes LastTeleportTime on every ACK; Go tracks arrival/encounter grace through scene transitions instead. Earlier missing-handler suspicion was disproved by following the registry constant.",
 			"audit_verdict": "replaced"
 		},
@@ -2142,7 +2113,7 @@
 			"lines": 214,
 			"status": "ported",
 			"sha256": "e6c2f2efc5d386021c36b955d5ee77c115e74a94685771c05ba49720c518f24a",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "CLR DLL loading/hash/copy/file watcher replaced by compiled Go handlers and SQL definitions; arbitrary dynamic CLR loading not supported.",
 			"audit_verdict": "retired"
 		},
@@ -2226,8 +2197,7 @@
 			"go_files": [
 				"internal/server/characters.go",
 				"internal/server/world.go",
-				"internal/server/world_entry.go",
-				"internal/server/autosave.go",
+				"internal/server/session.go",
 				"internal/server/server.go",
 				"internal/store/starter_packs.go"
 			],
@@ -2353,7 +2323,7 @@
 				"internal/store/admin_characters.go",
 				"internal/store/tents.go",
 				"internal/server/characters.go",
-				"internal/server/world_entry.go"
+				"internal/server/world.go"
 			],
 			"notes": "Reviewed all 2069 lines: name reservations, creation, deletion, character storage/settings/equipment, pets, friends, skills, quests, tents and discovery are implemented through normalized SQL transactions and current sessions. Go persists tent Locked/Enlarged/Type and both floor/wallpaper pairs; character Job/nickname/Potential and pet Potential are stored in typed rows and replay in applicable snapshots. Source SendOnlineCharacters/BroadcastNewPlayer, including synthetic GM bots, have no active callers (WorldServer calls are commented); their global-map broadcasts are dormant, not a live spawn requirement. Reference destructive schema repair and hardcoded staff-name ownership are replaced. SQL cascades and guild repair replace sequential deletion; Go correctly persists Reborn despite the source load omission.",
 			"audit_verdict": "partial"
@@ -2368,7 +2338,7 @@
 				"internal/assetsql/database.go",
 				"internal/assetsql/catalog_storage_generated.go",
 				"internal/assetsql/administration.go",
-				"internal/server/gm_reload.go",
+				"internal/server/gm_content.go",
 				"internal/assets/quest_definitions.go",
 				"internal/assetsql/quest_definitions.go"
 			],
@@ -2525,7 +2495,7 @@
 			"lines": 89,
 			"status": "pending",
 			"sha256": "a6c3b879222c8ab7f6663a07e67b4536590c2c8dcc4b999de98f36df789781e5",
-			"go_files": ["internal/server/combat_trials.go"],
+			"go_files": ["internal/server/combat_rewards.go"],
 			"notes": "Source lists twelve guardian stats but never starts combat; entering immediately awards a chest and claims victory. This is an unfinished trial placeholder, separate from the functional Go trials. Do not treat the table alone as a missing twelve-palace combat implementation.",
 			"audit_verdict": "legacy_incomplete"
 		},
@@ -2541,14 +2511,12 @@
 				"internal/battle/pvp.go",
 				"internal/battle/monster_ai.go",
 				"internal/server/combat.go",
-				"internal/server/combat_pvp.go",
-				"internal/server/combat_quests.go",
-				"internal/server/encounters.go",
+				"internal/server/combat_rewards.go",
+				"internal/server/simulation.go",
 				"internal/battle/targeting.go",
 				"internal/config/config.go",
-				"internal/server/world_combat_port_test.go",
-				"internal/server/custom_quests.go",
-				"internal/server/admin_quest_port_test.go"
+				"internal/server/world_test.go",
+				"internal/server/admin_assets_test.go"
 			],
 			"notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Battle submit ACK now broadcasts to participants; battle entry refreshes party HUD and owner pet progression. Registered quest kill objectives now increment in victory settlement, with ordered-step/source ID/name matching, captured-monster and PvP exclusions, duplicate prevention and save-before-receipt. The owner explicitly confirmed reward-free PvP, retaining intentional suppression of source 150 EXP/100 gold. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule. Owner pet entry progression and party refresh plus battle-scoped AC53:5 submit ACK broadcast implemented. Owner explicitly retains reward-free PvP rather than source 150 EXP/100 gold; native animation acceptance remains pending.",
 			"audit_verdict": "partial"
@@ -2558,7 +2526,7 @@
 			"lines": 130,
 			"status": "pending",
 			"sha256": "6971c7cc45b27f26f8724aefe1d69a8b2d726a548b7a2709c8004a95be9c377b",
-			"go_files": ["internal/server/combat_pvp.go"],
+			"go_files": ["internal/server/combat.go"],
 			"notes": "Reference stores duel requests and sends a battle-start banner/packet, but creates no combat instance, fighters, actions or settlement. Go actual duel engine replaces this unfinished shell; do not infer real reference PvP combat from StartPvPBattle's name.",
 			"audit_verdict": "legacy_incomplete"
 		},
@@ -2567,7 +2535,7 @@
 			"lines": 17,
 			"status": "pending",
 			"sha256": "6ba3943f4434c82a8b28d3351bc6f3c2615d8048fb141a890c20939ddfb3c0bb",
-			"go_files": ["internal/server/friends.go"],
+			"go_files": ["internal/server/social.go"],
 			"notes": "Core Cupid assistant instantiated in source friend lists; no Go assistant contact/model equivalent.",
 			"audit_verdict": "missing"
 		},
@@ -2576,7 +2544,7 @@
 			"lines": 35,
 			"status": "pending",
 			"sha256": "b6b7c66ef7c0d25ad54957c5742517019d7c0499ddb525f808478711cada7a18",
-			"go_files": ["internal/server/friends.go"],
+			"go_files": ["internal/server/social.go"],
 			"notes": "Core Cupid assistant instantiated in source friend lists; no Go assistant contact/model equivalent.",
 			"audit_verdict": "missing"
 		},
@@ -2591,15 +2559,13 @@
 				"internal/game/alchemy_progress.go",
 				"internal/game/alchemy_progress_test.go",
 				"internal/assets/compounding.go",
-				"internal/server/compounding.go",
-				"internal/server/compounding_test.go",
+				"internal/server/crafting.go",
+				"internal/server/crafting_test.go",
 				"client/wlo/inventory/compound_presentation.go",
 				"client/wlo/inventory/compound_tiers.go",
 				"internal/assets/alchemy.go",
-				"internal/server/alchemy.go",
-				"internal/server/synthesis.go",
 				"internal/assetsql/authored_synthesis.go",
-				"internal/server/migration_verification_test.go",
+				"internal/server/migration_test.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
 			"notes": "Historical input/output recipes, chances and fees remain preserved in SQL as provenance. The owner-approved rank/base compounding model replaces runtime table selection in AC23, AC40 and the chat shortcut. Two to five inputs, books, native AC23:14/87/101 tier selection with SQL-validated learned skills and progression through level 30 using Formula.dat EXP thresholds and cumulative AC8:1 stat 111/login counters, secondary-base loss, rank fallback and catastrophic junk outcomes use compiled probability curves. Fresh SQL ownership/resources/skills, output space and proficiency commit atomically; tests cover stale/duplicate requests, failed random sources, save/receipt failures and metadata. Native tier selectors and the cauldron/result-flight presentation are implemented in Client; the legacy AC23:122 broadcast is removed because native clients interpret it as fishing stop. See docs/COMPOUNDING.md.",
@@ -2610,7 +2576,7 @@
 			"lines": 61,
 			"status": "ported",
 			"sha256": "53d38af3dd9c045d5fcc4fb18dfcd91c998437a1ab24b1e394b886341195a9e4",
-			"go_files": ["internal/server/repair.go"],
+			"go_files": ["internal/server/inventory.go"],
 			"notes": "Repair payment/effect preserved; Go actually clears durability and persists it, fixing source charging without repairing.",
 			"audit_verdict": "replaced"
 		},
@@ -2619,7 +2585,7 @@
 			"lines": 65,
 			"status": "pending",
 			"sha256": "6d48918072e4d17ced887f70df54bfc85c3d0e3ea959a84e38d2a2127b4f2a45",
-			"go_files": ["internal/server/forging.go", "internal/server/tent_manufacturing.go"],
+			"go_files": ["internal/server/crafting.go", "internal/server/manufacturing.go"],
 			"notes": "Gem consumption/effect exists but no equipment stat/metadata change in source. Go registers direct AC37 with a truthful failure response; mall point forging is a separate implemented system. Direct AC37 safely rejects unfinished socket effects without consuming source oil IDs; mall forging unchanged.",
 			"audit_verdict": "legacy_incomplete"
 		},
@@ -2647,7 +2613,7 @@
 			"go_files": [
 				"internal/server/manufacturing.go",
 				"internal/store/owned_mutation.go",
-				"internal/server/migration_verification_test.go",
+				"internal/server/migration_test.go",
 				"internal/assetsql/migration_verification_test.go"
 			],
 			"notes": "Source two-input workbench matching and AC59 retained with authoritative SQL ingredient/fee/output transaction. Authored optional chance/fee handling added; failed attempts consume agreed cost, full output rollback preserves resources. Focused verification confirms the first matching workbench recipe wins; full bags and failed saves roll back ingredient/fee/output together.",
@@ -2796,9 +2762,9 @@
 			"go_files": [
 				"internal/game/inventory.go",
 				"internal/game/equipment.go",
-				"internal/server/pet_equipment.go",
-				"internal/server/items.go",
-				"internal/server/services.go"
+				"internal/server/pets.go",
+				"internal/server/inventory.go",
+				"internal/server/shops.go"
 			],
 			"notes": "Fifty-slot bag, additive metadata packets, moves, item grants/exchanges, quest changes, character/pet equipment and guarded NPC sale implemented. Go plans whole deliveries, checks full metadata for stacking, preserves locks and commits before success packets instead of source partial AddItem and unsafe destructive slot access. Raft wear lives in vehicle handling. Commented generic onItemUsed is a source placeholder; Go has additional actual consumable handling. Multi-slot follow-up: SQL item cell dimensions now drive contiguous 5-column inventory footprints, anchor-only persistence/packets, grant rollback, movement, storage, equipment, crafting and admin validation. Native TRE_ItemGrid dimensions supplement the legacy single-slot grant implementation; live client acceptance remains pending.",
 			"audit_verdict": "replaced"
@@ -2824,7 +2790,7 @@
 			"lines": 366,
 			"status": "ported",
 			"sha256": "941af17e1fa0d0c101073f4c66bcb0085dd7a8760f063a470c8570723c0f5c31",
-			"go_files": ["internal/server/chest_pools.go", "internal/assetsql/administration.go"],
+			"go_files": ["internal/server/props.go", "internal/assetsql/administration.go"],
 			"notes": "Reviewed map/category tables, category aliases and precedence, weighted reward selection and SQL editing. Go retains configured category/map/default pools; malformed/unknown-item pools are rejected rather than awarding the reference's hardcoded fallback item.",
 			"audit_verdict": "migrated"
 		},
@@ -2835,13 +2801,11 @@
 			"sha256": "2d6578e40076869cb8f494a93d524ba0da846a4349cc6c82c56549e898d22b48",
 			"go_files": [
 				"internal/server/events.go",
-				"internal/server/monkey.go",
-				"internal/server/breillat.go",
-				"internal/server/story_continuation.go",
+				"internal/server/story.go",
 				"internal/server/combat.go",
-				"internal/server/map_props.go",
+				"internal/server/props.go",
 				"internal/store/map_props.go",
-				"internal/server/robinson_updates_test.go"
+				"internal/server/story_native_test.go"
 			],
 			"notes": "Read every action and special sequence. Dialogue, records, rewards, marks, formations, services, minigames, movies, skills and markers implemented; Monkey and Breillat are transactional; Starter Beach Monkey rescue now plays authored movie operations (12000 and 11011) before the atomic companion/mark commit, with full-party/cancellation/save-failure checks. Starter transition narrowed to fix arcade miswarp. Scripted nonquest prop frames now share persisted state with a 60-second reset; actor hide/show continues its source per-character visibility behavior. Scripted shared prop frame now persists and resets after 60 seconds with map-entry replay; mark-conditioned frames remain per character and tents remain isolated. Upstream e63e9fe follow-up ports Robinson Event 19 dialogue-to-recruitment continuation and interrupted-dialogue recovery; see upstream_updates for separately hashed revision evidence.",
 			"audit_verdict": "partial"
@@ -2853,13 +2817,13 @@
 			"sha256": "f20e6fc00c8f95d5a72ddaa732386ba91c38903155b12f18740e43260b981de2",
 			"go_files": [
 				"internal/server/events.go",
-				"internal/server/story_continuation.go",
+				"internal/server/story.go",
 				"internal/world/event.go",
 				"internal/world/preevent.go",
 				"internal/world/story_rules.go",
-				"internal/server/robinson_updates_test.go"
+				"internal/server/story_native_test.go"
 			],
-			"notes": "Branch grouping, callbacks, reward preflight, token isolation, path groups up to ten actors, movie/choice ACK quirks, entry rectangles, region triggers, disabled events, minimap markers, companion reservation and all explicit story continuations present. Native unresolved actions remain rejected before mutations. Region cell indexing follows client decompilation instead of reference off-by-one. Interpreter action gap tracked in EveEventInterpreter separately. Upstream e63e9fe follow-up ports Robinson Event 19 dialogue-to-recruitment continuation and interrupted-dialogue recovery; see upstream_updates for separately hashed revision evidence.",
+			"notes": "Branch grouping, callbacks, reward preflight, token isolation, path groups up to ten actors, movie/choice ACK quirks, entry rectangles, region triggers, disabled events, minimap markers, companion reservation and all explicit story continuations present. Native unresolved actions remain rejected before mutations. Region cell indexing follows client decompilation instead of reference off-by-one. Interpreter action gap tracked in EveEventInterpreter separately. Upstream e63e9fe follow-up ports Robinson Event 19 dialogue-to-recruitment continuation and interrupted-dialogue recovery; see upstream_updates for separately hashed revision evidence. Private Server follow-up through 5c36839 is recorded with separate exact hashes in source-update-inventory.json: Waterfall Grotto continuation and Fairy Altar movie mode imported; existing visit-local actor visibility retained with regression coverage.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -2868,7 +2832,7 @@
 			"status": "ported",
 			"sha256": "db94232c59f7aa85ed35e54a9796a4a3a627d526979509d59d0f034184f3a5aa",
 			"go_files": [
-				"internal/server/gathering.go",
+				"internal/server/fishing.go",
 				"internal/world/gathering.go",
 				"internal/game/event_timers.go",
 				"internal/store/gathering.go"
@@ -2894,14 +2858,12 @@
 				"internal/world/simulation.go",
 				"internal/world/monsters.go",
 				"internal/server/simulation.go",
-				"internal/server/encounters.go",
 				"internal/server/combat.go",
 				"internal/world/simulation_test.go",
 				"internal/server/simulation_test.go",
-				"internal/server/service_fallback.go",
-				"internal/server/map_props.go",
-				"internal/server/events.go",
-				"internal/server/npc_greeting.go"
+				"internal/server/shops.go",
+				"internal/server/props.go",
+				"internal/server/events.go"
 			],
 			"notes": "All source patrol/bounds/roam timing, wild/static classification, native encounter priority, monster respawn and doctor/storage/bank/hotel/shop fallback flows compared. Go collision-aware actor simulation and transactional shared fallback harvesting replace unsafe reference grants. Generic unlinked nonservice NPC native welcome/callback is implemented after ordinary event/service/resource checks; scripted shared frames reset and replay. Generic native welcome fallback and callback now implemented after authored events/services/resource checks. Active, hidden and condition-blocked quests retain their gates. User-requested enhancement: bounded and random actors prefer longer collision-valid legs; bounded wandering, random roaming, patrols and pursuit use a common 1–3-second stationary wait after estimated arrival, replacing authored waypoint delays. All three types search nearby eligible targets every three seconds within 200 pixels and initiate existing encounters on contact. Bounded actors remain inside authored bounds; roamers and pathless patrols use the fixed 150-pixel-per-axis spawn area for wandering, acquisition and pursuit. Authored patrol cursors pause during pursuit and resume afterward. Movement-triggered proximity encounters also respect designated areas. Eligible player targets are retained without periodic replacement; losing a target restarts the three-second search interval. Player acquisition can interrupt nonplayer walking legs and stationary waits, while active pursuit legs retain their destinations until estimated native arrival (AC22:2 speed 2, nominal 40 pixels/second, verified against WLRI dispatcher and movement-helper assembly). Ambient contact checks run only after arrival and before another leg; snapshots interpolate current positions and interrupted legs start there, with no client arrival acknowledgement. Visible clicked/proximity/native roaming actors are reserved and hidden throughout battle, then respawn 30 seconds after any outcome or last-member disconnect; this intentionally replaces victory-only 60-second hiding.",
 			"audit_verdict": "partial"
@@ -2920,7 +2882,7 @@
 			"lines": 14,
 			"status": "ported",
 			"sha256": "4a24cd5f0413bd90373eb18960ebd264b8d9ee9e16758aab7a8931af50854fbe",
-			"go_files": ["internal/server/services.go"],
+			"go_files": ["internal/server/shops.go"],
 			"notes": "Shop slot/count data represented by Go transaction arguments.",
 			"audit_verdict": "replaced"
 		},
@@ -2961,11 +2923,11 @@
 				"internal/world/portal.go",
 				"internal/world/ground.go",
 				"internal/server/world.go",
-				"internal/server/items.go",
-				"internal/server/map_props.go",
+				"internal/server/inventory.go",
+				"internal/server/props.go",
 				"internal/server/tents.go",
 				"docs/WORLD_COMBAT_PARITY.md",
-				"internal/server/live_regressions_test.go"
+				"internal/server/regressions_test.go"
 			],
 			"notes": "Read all 1737 source lines and Go scene, portal, pickup/drop and warp bodies. Native actor and ground loading, pickup range/full bag behavior, metadata-preserving drops, respawns, visibility, peer equipment/pets/vehicles/poses, party follow, tent signs/locks/return and map-load acknowledgments exist. DLL spawns and original DB overlays are deliberately replaced by WLRI assets.db. Go uses an arrival guard instead of source 2500/4000-ms bounce guards and publishes peers after load ACK. Nonquest scripted prop frames now persist their shared reset deadline and replay at map entry. Source special/quest/tool teleport branches contain no movement implementation. The hardcoded Laura exit gift and mark 10035 have no direct Go fallback; WLRI item and typed map-event inspection did not verify a correct replacement; retain the fallback pending verified content. Shared prop entry replay and owner metadata preserved. Laura exit fallback investigated: 32000 absent, 32075 Chocolate, 32001 White Rice in WLRI, Tent 36002; no matching positive reward in map 10000/10001 typed operations. Keep fallback pending verified content rather than granting incorrect IDs. Live-client follow-up: Carnie scripted scene exit now shares the saved return/fallback used by regular portals; narrow teleports checkpoint their committed SQL state before arrival packets, preventing later walking/disconnect conflicts.",
 			"audit_verdict": "partial"
@@ -3013,10 +2975,9 @@
 			"sha256": "eed3debcece6b649ce29a3b1e39758b7cbb92c9c6a91dcace8cd439b45dca08d",
 			"go_files": [
 				"internal/server/pets.go",
-				"internal/server/pet_feeding.go",
 				"internal/server/combat.go",
-				"internal/server/battle_commit_test.go",
-				"internal/server/migration_verification_test.go"
+				"internal/server/combat_test.go",
+				"internal/server/migration_test.go"
 			],
 			"notes": "Compared feeding cap/consumption and defeat loss of one amity per knockout, desertion below 20, active pet/mount cleanup and client-slot removal. Go stages settlement and receipts until SQL commit, preserves an unrelated mount and suppresses PvP loyalty penalties as part of retained PvP policy. Threshold, repeated knockout, flee/defeat, rollback and duplicate settlement regressions pass.",
 			"audit_verdict": "migrated"
@@ -3027,10 +2988,9 @@
 			"status": "ported",
 			"sha256": "12e0d2e9d75918ea0980f3ba26d552868aeeef5e79c5622afabdbf4a41ce2878",
 			"go_files": [
-				"internal/server/items.go",
-				"internal/server/vouchers.go",
-				"internal/server/vouchers_test.go",
-				"internal/server/migration_verification_test.go"
+				"internal/server/inventory.go",
+				"internal/server/inventory_test.go",
+				"internal/server/migration_test.go"
 			],
 			"notes": "Compared one-item/self-only use, template/item availability, alias duplicate checks, four-pet party/client capacity and level-one/amity-60/full-vital initialization. Consumption and recruitment commit together, with client-slot reservation staged on a clone. Verified failed-save rollback, sparse persistent/client slot differences, duplicate redemption, refusal and persistence.",
 			"audit_verdict": "migrated"
@@ -3043,12 +3003,11 @@
 			"go_files": [
 				"internal/game/pets.go",
 				"internal/server/pets.go",
-				"internal/server/party.go",
+				"internal/server/teams.go",
 				"internal/server/world.go",
 				"internal/server/events.go",
-				"internal/server/services.go",
+				"internal/server/shops.go",
 				"internal/server/chat.go",
-				"internal/server/social_commands.go",
 				"internal/store/character_storage.go",
 				"internal/game/login_packets.go"
 			],
@@ -3077,7 +3036,7 @@
 				"internal/game/equipment.go",
 				"internal/game/character.go",
 				"internal/game/elemental_growth.go",
-				"internal/server/items.go",
+				"internal/server/inventory.go",
 				"internal/game/reborn.go"
 			],
 			"notes": "Reviewed equipment/stat methods, six-slot bonuses, forge contributions, native stat/outfit packets and EXP leveling. Go preserves approved compiled growth and now applies all six reborn-class innate multipliers before gear, with normalized reborn EXP progression and durable potential/class fields. Legacy string serialization is replaced by typed SQL. Native class HUD contribution acceptance remains pending.",
@@ -3088,7 +3047,7 @@
 			"lines": 158,
 			"status": "partial",
 			"sha256": "ac47c88a10f1ef58496edfb3efd206e2a931b75ab20f6d2020fe03ba5bca0d17",
-			"go_files": ["internal/server/friends.go", "internal/server/social.go"],
+			"go_files": ["internal/server/social.go"],
 			"notes": "Friend list/add/delete, appearance fields and SQL persistence are implemented. Native presentation includes saved nickname, actual class and rebirth flag. Source reserves Cupid slot zero but excludes it from transmitted lists; no visible assistant is itself a wire omission. Guild appearance remains separate.",
 			"audit_verdict": "partial"
 		},
@@ -3097,7 +3056,7 @@
 			"lines": 136,
 			"status": "ported",
 			"sha256": "3e3f5e30ce2835293c521fe72a3d8ef8cf643492e8a87d36c48e47aa69908fea",
-			"go_files": ["internal/server/gacha.go", "internal/game/gacha.go"],
+			"go_files": ["internal/server/mall.go", "internal/game/gacha.go"],
 			"notes": "Checked native preview, recognized unavailable packs, exact 10000-slot weighted selection, locked/battle guards, pack-for-reward capacity exchange and commit before reward receipt.",
 			"audit_verdict": "migrated"
 		},
@@ -3107,14 +3066,10 @@
 			"status": "partial",
 			"sha256": "c898317cbde40551b4181575fb471a77717ad69e9c2f8836868c376b05514b4f",
 			"go_files": [
-				"internal/server/gm_commands.go",
-				"internal/server/gm_reload.go",
-				"internal/server/gm_repair.go",
-				"internal/server/gm_moderation.go",
-				"internal/server/gm_operations.go",
-				"internal/server/gm_player.go",
-				"internal/server/gm_pets.go",
-				"internal/server/mall_adjust.go",
+				"internal/server/gm.go",
+				"internal/server/gm_content.go",
+				"internal/server/gm_progression.go",
+				"internal/server/mall.go",
 				"internal/store/accounts.go",
 				"internal/admin/admin.go"
 			],
@@ -3126,7 +3081,7 @@
 			"lines": 727,
 			"status": "partial",
 			"sha256": "ad15e73aa645950ba224ae9869e4ae4eb432ccabe8c4a8826c081761f49edb9a",
-			"go_files": ["internal/server/guilds.go", "internal/store/guilds.go"],
+			"go_files": ["internal/server/social.go", "internal/store/guilds.go"],
 			"notes": "Creation, membership, invitations, notices, ranks, insignia, SQL administration, login/logout presence and native roster implemented with stronger permission checks and persistence. Native member Job is always RosterNoJob in Go, since character jobs are not modeled. Text-file bootstrap replaced by SQL; leader transfer remains administrative.",
 			"audit_verdict": "partial"
 		},
@@ -3148,7 +3103,7 @@
 			"lines": 464,
 			"status": "partial",
 			"sha256": "7525d55d75bc8980e32861cc5ca0bfd6474b199952b1676437826245ecbae218",
-			"go_files": ["internal/server/mail.go", "internal/store/mail.go"],
+			"go_files": ["internal/server/social.go", "internal/store/mail.go"],
 			"notes": "Text mail separate from source attachment MailSystem; inspect parcel implementation for administrative dispatch/claim and legacy text-import coverage.",
 			"audit_verdict": "partial"
 		},
@@ -3166,7 +3121,7 @@
 			"lines": 204,
 			"status": "ported",
 			"sha256": "e9bcb4f023662553aeb1b720c79acdcb99ce20eaa69f85762e48f88f9de46cf2",
-			"go_files": ["internal/server/forging.go", "internal/game/forging.go"],
+			"go_files": ["internal/server/crafting.go", "internal/game/forging.go"],
 			"notes": "Checked scroll family progression and quantity, same-slot replacement preserving durability, point eligibility and excluded stat, 3-point payment, independent 50% success and cap 200. Go makes payment and forge metadata one durable transaction.",
 			"audit_verdict": "migrated"
 		},
@@ -3175,7 +3130,7 @@
 			"lines": 426,
 			"status": "ported",
 			"sha256": "60f87b7b7ee14e9f6023e9c039393502325b26928de4117d2029791b780fd28b",
-			"go_files": ["internal/server/social_commands.go", "internal/store/marriages.go"],
+			"go_files": ["internal/server/chat.go", "internal/store/marriages.go"],
 			"notes": "Proposal, acceptance, fee/rings/fireworks, divorce, spouse warp and SQL administration are implemented. Go validates both partners and inventories in an atomic transaction, expires pending proposals and looks up spouses across maps. Legacy marriages.txt migration is retired with the original runtime file model.",
 			"audit_verdict": "replaced"
 		},
@@ -3186,8 +3141,8 @@
 			"sha256": "02a0c1c1bc07db0ce91e8e995d4fd2e956e500b788106865b53439d49c92ff6d",
 			"go_files": [
 				"internal/world/view.go",
-				"internal/server/world_entry.go",
-				"internal/server/migration_verification_test.go"
+				"internal/server/world.go",
+				"internal/server/migration_test.go"
 			],
 			"notes": "Checked Mark.dat ID versus completion bit semantics, active mark removal/replacement, 200-mark and 2000-bit limits, packet layouts, and valid book-index filtering with persisted monster discovery before receipts. AC39:1 journal requests, including repeat replacement and no guild membership, now have independent raw packet regression evidence.",
 			"audit_verdict": "migrated"
@@ -3208,8 +3163,8 @@
 			"sha256": "9d68e9eb0068a97b9c241cbb1541831310f248c87f1831b522fb58366906b23c",
 			"go_files": [
 				"internal/game/character.go",
-				"internal/server/gm_commands.go",
-				"internal/server/gm_reborn.go",
+				"internal/server/gm.go",
+				"internal/server/gm_progression.go",
 				"internal/game/reborn.go",
 				"internal/assetsql/reborn_defaults.json"
 			],
@@ -3221,7 +3176,7 @@
 			"lines": 92,
 			"status": "pending",
 			"sha256": "92f645a19eb9e8a2aa528eb2d39214d376c6458a306489d80e667db5fee1d4ff",
-			"go_files": ["internal/server/items.go"],
+			"go_files": ["internal/server/inventory.go"],
 			"notes": "Inventory activation and status serialization are commented out; Set returns success without transformation. GMRiceBall has no callers in the reference. Timer uses elapsed Seconds component and cannot expire the 6000-second GM duration. Keep unfinished transformation system pending.",
 			"audit_verdict": "legacy_incomplete"
 		},
@@ -3230,7 +3185,7 @@
 			"lines": 185,
 			"status": "ported",
 			"sha256": "bc72517d6f7e420291f55a475ef025e176e42f3110883ccb05a7106364f500df",
-			"go_files": ["internal/server/stalls.go", "internal/game/trade.go"],
+			"go_files": ["internal/server/trade.go", "internal/game/trade.go"],
 			"notes": "Checked open/sign/list/close and item purchase. Go retains workflow and packet shapes, validates proximity and exact item metadata, and atomically transfers items/currency. Legacy unchecked stale listings, uint overflow and charging with full inventory are corrected.",
 			"audit_verdict": "replaced"
 		},
@@ -3242,8 +3197,7 @@
 			"go_files": [
 				"internal/server/characters.go",
 				"internal/assetsql/administration.go",
-				"internal/store/starter_packs.go",
-				"internal/server/starter_packs.go"
+				"internal/store/starter_packs.go"
 			],
 			"notes": "Creation uses configured SQL-backed starter grants and administration can edit the definition. Configured starter packs are persisted at character creation; login never refills them, deliberately replacing legacy level-one recovery by user policy. Authenticated mass online delivery remains explicit. Whole-pack SQL transaction and per-recipient audit replace unchecked partial source writes; busy/full recipients reported.",
 			"audit_verdict": "replaced"
@@ -3271,7 +3225,7 @@
 			"lines": 168,
 			"status": "ported",
 			"sha256": "2e10c7b7fa3587c77614a144cca399908440eacb1cf5ea8bae6695fdd2c2e8f3",
-			"go_files": ["internal/game/vehicles.go", "internal/server/vehicles.go"],
+			"go_files": ["internal/game/vehicles.go", "internal/server/travel.go"],
 			"notes": "Checked capsule/base IDs, exact owned slot validation, placement versus boarding, pet unride, native mount/dismount packets, disposable Robinson raft, guarded wreck deletion and map-entry synchronization. Fuel/HP/capacity fields in VehicleItem have no active implementation in the reference.",
 			"audit_verdict": "migrated"
 		},
@@ -3291,8 +3245,8 @@
 			"sha256": "0980e53e4940be2316e6cf2021bd1fe5fae96e45c14fa1030643d62bf05e2293",
 			"go_files": [
 				"internal/game/quest.go",
-				"internal/server/custom_quests.go",
-				"internal/server/admin_quest_port_test.go"
+				"internal/server/combat_rewards.go",
+				"internal/server/admin_assets_test.go"
 			],
 			"notes": "Quest state/step/kills and start/completion timestamps persist in typed gameplay rows. Live PvE kill counters now save with victory rewards and refresh the native journal after commit. Daily/cooldown metadata belongs to typed definitions; dormant acceptance/reset enforcement remains on hold.",
 			"audit_verdict": "partial"
@@ -3303,7 +3257,7 @@
 			"status": "ported",
 			"sha256": "2810f6c471c31c95c1becd54ff28130cbdd6a309245a3a4b88e77b8327189915",
 			"go_files": ["internal/world/preevent.go", "internal/world/view.go"],
-			"notes": "All native rule grouping, cumulative conditions, story overrides, visibility packets, prop frames/poses and minimap declarations matched to Go bodies. SQL QuestVisibility supports optional quest/step actor lists without full game_quests definition engine. Sealed Bead fallback, spring-return actors, Xaolan stages and permanent Kelan props preserved. Shared scripted mutation gap belongs to action executor, not this replay interpreter.",
+			"notes": "All native rule grouping, cumulative conditions, story overrides, visibility packets, prop frames/poses and minimap declarations matched to Go bodies. SQL QuestVisibility supports optional quest/step actor lists without full game_quests definition engine. Sealed Bead fallback, spring-return actors, Xaolan stages and permanent Kelan props preserved. Shared scripted mutation gap belongs to action executor, not this replay interpreter. Private Server follow-up through 5c36839 is recorded with separate exact hashes in source-update-inventory.json: Waterfall Grotto continuation and Fairy Altar movie mode imported; existing visit-local actor visibility retained with regression coverage.",
 			"audit_verdict": "migrated"
 		},
 		{
@@ -3346,13 +3300,12 @@
 				"internal/world/preevent.go",
 				"internal/server/pets.go",
 				"internal/game/pets.go",
-				"internal/server/world_entry.go",
-				"internal/server/combat_quests.go",
+				"internal/server/world.go",
+				"internal/server/combat_rewards.go",
 				"internal/store/character_storage.go",
 				"internal/assets/quest_definitions.go",
 				"internal/assetsql/quest_definitions.go",
-				"internal/server/custom_quests.go",
-				"internal/server/admin_quest_port_test.go"
+				"internal/server/admin_assets_test.go"
 			],
 			"notes": "Reachable custom registry editing/loading and PvE OnMonsterDefeated counters now implemented with source ID/name/ordered-step matching, capture/PvP exclusions and commit-before-receipt. Native Mark IDs/text seed safe metadata; source English-name grouping/rewards/maps/NPC guesses are intentionally replaced rather than gameplay authority. Custom accept/advance/complete/reset and NPC matching helpers have no external runtime caller and remain on hold. Native EVE and explicit QuestVisibility continue their existing roles.",
 			"audit_verdict": "partial"
@@ -3409,7 +3362,7 @@
 			"lines": 91,
 			"status": "ported",
 			"sha256": "04537d39d72141dc862538e1db6743c4bd3962aa3b527acc65d1a844e0f55372",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "Reflection-discovered handlers replaced by compiled immutable registry. Confirms missing AC registrations are not implicit fallback responses.",
 			"audit_verdict": "replaced"
 		},
@@ -3418,7 +3371,7 @@
 			"lines": 323,
 			"status": "partial",
 			"sha256": "f5c21f7da1574c457c14997a7df856ac7ccb065ff2d0714f618af8e3dcd66f4f",
-			"go_files": ["internal/admin/admin.go", "internal/server/mall_checkout.go"],
+			"go_files": ["internal/admin/admin.go", "internal/server/mall.go"],
 			"notes": "Source serves a public mall webpage and GET purchase by supplied username, and patches web0.DAT in nearby client directories. Go implements native authenticated mall checkout and administrator catalog access, but lacks this player-facing HTTP page/API. Client-file patching and purchasing as an unauthenticated named user should remain retired; any replacement needs an authenticated player session.",
 			"audit_verdict": "partial"
 		},
@@ -3472,7 +3425,7 @@
 			"lines": 48,
 			"status": "ported",
 			"sha256": "fe4698bf2d37fc77a85c30b56cee0923ee86be8a1f8d4ce8d0375226cff0e959",
-			"go_files": ["internal/server/command_registry.go"],
+			"go_files": ["internal/server/commands.go"],
 			"notes": "CLR DLL loading/hash/copy/file watcher replaced by compiled Go handlers and SQL definitions; arbitrary dynamic CLR loading not supported.",
 			"audit_verdict": "retired"
 		},
@@ -3500,10 +3453,10 @@
 			"status": "partial",
 			"sha256": "fdcdf32efa2379034f05b7e2d6c3d8eb7caab3154417a327725c937b2a542fa7",
 			"go_files": [
-				"internal/server/runtime_settings.go",
+				"internal/server/settings.go",
 				"internal/server/server.go",
 				"internal/store/settings.go",
-				"internal/server/admin_runtime_test.go",
+				"internal/server/admin_test.go",
 				"internal/protocol/status.go"
 			],
 			"notes": "Persisted offline launcher load byte zero now implemented alongside existing load colors. It leaves listeners and sessions running. Cluster remains fixed; unused source GoldRate/MaxPlayers knobs still have no enforcement callers.",
@@ -3577,7 +3530,7 @@
 				"internal/game/creation_test.go",
 				"internal/game/skill_tree_test.go",
 				"internal/server/characters_test.go",
-				"internal/server/gm_skills_test.go"
+				"internal/server/gm_progression_test.go"
 			],
 			"tests": [
 				"TestStarterSkillsOnlyUnconditionalElementalSkills",
@@ -3612,10 +3565,10 @@
 			"request": "[23,126,bagSlot,targetClientSlot]; target 0 player, 1–4 accompanying pet",
 			"reply": "[23,213,processed,target,newPotential]; processed means consumed attempt",
 			"implementation": [
-				"internal/server/potential.go",
+				"internal/server/progression.go",
 				"internal/game/potential.go",
 				"internal/game/pets.go",
-				"internal/server/diagnostics.go",
+				"internal/server/logging/trace.go",
 				"internal/store/owned_mutation.go"
 			],
 			"rules": "Cap 12; Super 34350 guaranteed; normal 34269 failure loses one level and newly unqualified tree skills; golden 34289 requires >=10 and preserves potential on failure. All valid outcomes consume one pill.",
@@ -4082,7 +4035,7 @@
 		{
 			"source": ".codex-verify/Patch-GachaClient.py",
 			"verdict": "retired",
-			"evidence": ["internal/server/items.go"],
+			"evidence": ["internal/server/inventory.go"],
 			"finding": "Read complete hash-guarded PE section/hooks generator for three custom dynamic packs. Go supports native client pack use without requiring this patched executable; client binary patching is retired.",
 			"sha256": "a16660b1da0d7ac9de018a7b0566bc0fb8c48487c3b037506eabcffafe3b2c55",
 			"lines": 54
@@ -4200,7 +4153,7 @@
 		{
 			"source": ".codex-verify/Test-Branch1.ps1",
 			"verdict": "partial",
-			"evidence": ["internal/server/drop_rate_test.go", "internal/server/events_test.go"],
+			"evidence": ["internal/server/gm_test.go", "internal/server/events_test.go"],
 			"finding": "Read full reflection suite: EXP scaling, quest isolation/grouping, drop boundaries, NPC cache edits, EVE load and missing MySQL source. Go has focused counterparts; custom registry/MySQL workflows remain partial. Early drop minimum assertions conflict with newer reference zero-rate tests.",
 			"sha256": "a8b66df764d034fc7a9a6100c9a23e4dcb171e0619400a4f0f6452b4a71ebc09",
 			"lines": 106
@@ -4208,7 +4161,7 @@
 		{
 			"source": ".codex-verify/Test-CaptureCompletion.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/battle/battle_test.go", "internal/server/battle_commit_test.go"],
+			"evidence": ["internal/battle/battle_test.go", "internal/server/combat_test.go"],
 			"finding": "Read full extracted-source harness: delayed capture mutation, success/failure, full/duplicate roster, invalid actors and no retarget. Go battle/transaction tests replace Windows harness; exact live rendering parity is not asserted.",
 			"sha256": "cdf30cc18dd28fa9fed492743dacaf1dbaef1f0b5b35c73e99d9f0f216f9ee73",
 			"lines": 120
@@ -4217,8 +4170,7 @@
 			"source": ".codex-verify/Test-CharacterStunt.ps1",
 			"verdict": "replaced",
 			"evidence": [
-				"internal/server/skill_tree_test.go",
-				"internal/server/skill_progress_test.go"
+				"internal/server/characters_test.go"
 			],
 			"finding": "Read full body/head stunt mapping, alias188/15003, grade/EXP and SQL reload checks. Go skill tests replace reflection fixtures; aliases are covered by reviewed serialization code.",
 			"sha256": "fa86354007de7001e9e6167a70c4d31cd2598a808ee6163ec8f559a1f42589da",
@@ -4228,8 +4180,8 @@
 			"source": ".codex-verify/Test-CheatPointsHp.ps1",
 			"verdict": "partial",
 			"evidence": [
-				"internal/server/gm_progress_test.go",
-				"internal/server/world_entry_test.go"
+				"internal/server/gm_progression_test.go",
+				"internal/server/world_test.go"
 			],
 			"finding": "Read complete native field replay, points overflow/GM authorization and GUI IL checks. Go points/login tests exist; Potential state/ID37 remains unported, so whole suite parity is not claimed.",
 			"sha256": "0edd7392efcd543cae64e58df5ac309d6222da4102bf1305063082de84a8af92",
@@ -4238,7 +4190,7 @@
 		{
 			"source": ".codex-verify/Test-ClientGacha.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/gacha_test.go", "internal/assets/gacha_test.go"],
+			"evidence": ["internal/server/mall_test.go", "internal/assets/gacha_test.go"],
 			"finding": "Read native 24-pool purchase/preview/open, exhaustive weight, duplicate IDs, full/locked bag, malformed/concurrent use assertions. Go has packet and SQL transaction tests; machine-specific fixtures/harness are retired.",
 			"sha256": "a8f0b31cba513b7487da61e110a1252422f38a35fc9787d12c5fb34686cc3cae",
 			"lines": 125
@@ -4254,7 +4206,7 @@
 		{
 			"source": ".codex-verify/Test-CombatIdle.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/battle_commit_test.go"],
+			"evidence": ["internal/server/combat_test.go"],
 			"finding": "Reviewed victory close/release ordering and per-action timing assertions. Go completion/playback architecture replaces reflected wall-clock checks; identical millisecond expectations are not implied.",
 			"sha256": "792b748f0c680c6f8fcb6f2b15857271902cb0b7c9cfd8c4c0a4acb931c06fdf",
 			"lines": 62
@@ -4262,7 +4214,7 @@
 		{
 			"source": ".codex-verify/Test-CombatPacing.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/battle_commit_test.go", "internal/assets/animation.go"],
+			"evidence": ["internal/server/combat_test.go", "internal/assets/animation.go"],
 			"finding": "Reviewed timing/flee cleanup, callback/cancellation and longest-combo-budget assertions. Go playback/SQL animation estimates replace extracted-source harness; no live-client timing validation performed here.",
 			"sha256": "c8ad0d965770d0f525d608e17406f787db3c8fd9f57eb0db29dbb4fbbbe8a3ae",
 			"lines": 142
@@ -4279,8 +4231,8 @@
 			"source": ".codex-verify/Test-CombatVitals.ps1",
 			"verdict": "replaced",
 			"evidence": [
-				"internal/server/world_entry_test.go",
-				"internal/server/combat_completion_test.go"
+				"internal/server/world_test.go",
+				"internal/server/combat_test.go"
 			],
 			"finding": "Reviewed each suite's native current/max HP/SP replay, synchronization ordering, item recovery and exit-vitals assertions. Go fixtures replace Windows harness; growth values intentionally follow current compiled parameters.",
 			"sha256": "e442790f38c918fbb956decf711cb84d646611be32a51e14a7ecca577cc3706d",
@@ -4297,7 +4249,7 @@
 		{
 			"source": ".codex-verify/Test-DefenseCapture.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/battle/battle_test.go", "internal/server/battle_commit_test.go"],
+			"evidence": ["internal/battle/battle_test.go", "internal/server/combat_test.go"],
 			"finding": "Reviewed native capture success/fail records and independent defense reactions. Go tests replace source-extracted harness; old hardcoded timing budgets are not authority over current animation data.",
 			"sha256": "96dffe37e8b3c2ea8b6d0c974434024d3617eb0a680d019a4ef37e4491cc2c96",
 			"lines": 92
@@ -4324,7 +4276,7 @@
 		{
 			"source": ".codex-verify/Test-Gacha.ps1",
 			"verdict": "retired",
-			"evidence": ["internal/server/gacha_test.go"],
+			"evidence": ["internal/server/mall_test.go"],
 			"finding": "Read assertions for earlier invented three-pack pools including Lucky34333. Later reference ClientGacha test withdraws those pools. Preserve atomicity/packet scenarios but do not migrate obsolete reward expectations.",
 			"sha256": "e801d8ba95ab4f67866a22bbd1def8cb4f1aded122aad64a0462508a35f1843e",
 			"lines": 121
@@ -4333,8 +4285,8 @@
 			"source": ".codex-verify/Test-HudVitals.ps1",
 			"verdict": "replaced",
 			"evidence": [
-				"internal/server/world_entry_test.go",
-				"internal/server/combat_completion_test.go"
+				"internal/server/world_test.go",
+				"internal/server/combat_test.go"
 			],
 			"finding": "Reviewed each suite's native current/max HP/SP replay, synchronization ordering, item recovery and exit-vitals assertions. Go fixtures replace Windows harness; growth values intentionally follow current compiled parameters.",
 			"sha256": "a2cb57d9d9e439e0d541963a68a4f94ff1a4c26f66d9ce14afe3ff964174b226",
@@ -4343,7 +4295,7 @@
 		{
 			"source": ".codex-verify/Test-InventoryFeedback.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/items_test.go", "internal/game/inventory_test.go"],
+			"evidence": ["internal/server/inventory_test.go", "internal/game/inventory_test.go"],
 			"finding": "Reviewed each suite's equip/swap/split/merge, additive packets, target identity, locked/full/invalid item and exactly-once assertions. Go tests replace Windows harness; message-channel expectations differ across reference revisions.",
 			"sha256": "1ebe57e1e0c78de909a64d4ba607dad95b9bc51c4ea97a524f21e283d6fa95d3",
 			"lines": 118
@@ -4353,7 +4305,7 @@
 			"verdict": "replaced",
 			"evidence": [
 				"internal/server/characters_test.go",
-				"internal/server/world_entry_test.go"
+				"internal/server/world_test.go"
 			],
 			"finding": "Reviewed cached/uncached fixture selection, equipment and unchanged-DB assertions. Go SQL tests replace assembly reflection.",
 			"sha256": "2672c58ceadd93f1aee19d7adc6a56b49bf73ac4a09cb66a56b2d32ccf627d74",
@@ -4362,7 +4314,7 @@
 		{
 			"source": ".codex-verify/Test-InventoryProtocol.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/items_test.go", "internal/game/inventory_test.go"],
+			"evidence": ["internal/server/inventory_test.go", "internal/game/inventory_test.go"],
 			"finding": "Reviewed each suite's equip/swap/split/merge, additive packets, target identity, locked/full/invalid item and exactly-once assertions. Go tests replace Windows harness; message-channel expectations differ across reference revisions.",
 			"sha256": "f7c28c203be8636289fd7c46508e6bf83b088a7cc0e5f98424057aa55501a1df",
 			"lines": 74
@@ -4370,7 +4322,7 @@
 		{
 			"source": ".codex-verify/Test-InventorySocket.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/items_test.go", "internal/game/inventory_test.go"],
+			"evidence": ["internal/server/inventory_test.go", "internal/game/inventory_test.go"],
 			"finding": "Reviewed each suite's equip/swap/split/merge, additive packets, target identity, locked/full/invalid item and exactly-once assertions. Go tests replace Windows harness; message-channel expectations differ across reference revisions.",
 			"sha256": "765a73a342ff171a72c7e8e5382601b99e53590e576361beae5d823ac7a666f1",
 			"lines": 97
@@ -4378,7 +4330,7 @@
 		{
 			"source": ".codex-verify/Test-ItemMall.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/mall_checkout_test.go", "internal/server/mall_test.go"],
+			"evidence": ["internal/server/mall_test.go", "internal/server/mall_catalog_test.go"],
 			"finding": "Reviewed each suite's read-only balance, cart/category identity, bundles, atomic capacity/currency gates, malformed/stale requests and bonus points. Go SQL tests replace harness; older bundle interpretation is superseded by native category model.",
 			"sha256": "77ca5faa7b3d49986a5955bc2fbac367c0efcc44089c6754c9844aef5a832ae2",
 			"lines": 102
@@ -4386,7 +4338,7 @@
 		{
 			"source": ".codex-verify/Test-ItemMallBefore.ps1",
 			"verdict": "retired",
-			"evidence": ["internal/server/mall_checkout_test.go"],
+			"evidence": ["internal/server/mall_test.go"],
 			"finding": "Read old-failure reproducer asserting query wrongly charges32 and publishes zero balance. This bug is not desired ported behavior.",
 			"sha256": "294742a476b06953b3e5e37d3d10e1e9d4b4117d8681284f36e276d28ebc4b13",
 			"lines": 54
@@ -4402,7 +4354,7 @@
 		{
 			"source": ".codex-verify/Test-MallCategory.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/mall_checkout_test.go", "internal/server/mall_test.go"],
+			"evidence": ["internal/server/mall_test.go", "internal/server/mall_catalog_test.go"],
 			"finding": "Reviewed each suite's read-only balance, cart/category identity, bundles, atomic capacity/currency gates, malformed/stale requests and bonus points. Go SQL tests replace harness; older bundle interpretation is superseded by native category model.",
 			"sha256": "559d4a0e13bb782f0007cfc7edd26bc6fb85640f995ad97cb4e89581771cc21f",
 			"lines": 109
@@ -4410,7 +4362,7 @@
 		{
 			"source": ".codex-verify/Test-MallForging.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/forging_test.go"],
+			"evidence": ["internal/server/crafting_test.go"],
 			"finding": "Reviewed family order, scroll costs, metadata/locks/concurrency, point success/failure/caps and bag/equip/vault reload assertions. Go transactions/tests replace fixtures; equal scenario coverage not claimed.",
 			"sha256": "4c66651396eb52e287c802047fd7ad395973c725a512c0ddc9a9e75dd78367f3",
 			"lines": 184
@@ -4418,7 +4370,7 @@
 		{
 			"source": ".codex-verify/Test-MallStock.ps1",
 			"verdict": "retired",
-			"evidence": ["internal/server/mall_test.go"],
+			"evidence": ["internal/server/mall_catalog_test.go"],
 			"finding": "Reviewed old206-offer/seven-food additions and catalog filtering/stale requests. Later reference withdraws mistaken offers; validation matters, not obsolete exact seed count.",
 			"sha256": "4ec1692d26348058cefb65d814d23e7c5579d5fd29b581cffb154889551f60cd",
 			"lines": 91
@@ -4426,7 +4378,7 @@
 		{
 			"source": ".codex-verify/Test-NativeLootGround.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/items_test.go", "internal/server/drop_rate_test.go"],
+			"evidence": ["internal/server/inventory_test.go", "internal/server/gm_test.go"],
 			"finding": "Reviewed native loot/zero-rate, ground aliases/distance/capacity/concurrent pickup and metadata. Go packet/model tests replace reflected fixture database.",
 			"sha256": "20a81bb71b1ec68fb3722082c9da1100458391fa7541be4cc0bf3c9642e8bb44",
 			"lines": 91
@@ -4434,7 +4386,7 @@
 		{
 			"source": ".codex-verify/Test-NoGmMessages.ps1",
 			"verdict": "partial",
-			"evidence": ["internal/server/items_test.go", "internal/server/chat_test.go"],
+			"evidence": ["internal/server/inventory_test.go", "internal/server/chat_test.go"],
 			"finding": "Reviewed inventory/amity/storage regressions and blanket suppression of system/GM broadcasts. Go feedback/configurable announcements differ in policy; not all original silence expectations should become parity tests.",
 			"sha256": "173649ed0c581b2707faa08545d294a8c2a0f81c86fffde8419976836197c748",
 			"lines": 184
@@ -4443,7 +4395,7 @@
 			"source": ".codex-verify/Test-NpcVisibility.ps1",
 			"verdict": "partial",
 			"evidence": [
-				"internal/server/map_props_test.go",
+				"internal/server/props_test.go",
 				"internal/world/quest_visibility_test.go"
 			],
 			"finding": "Reviewed each actor/cache/quest-phase/fixed-frame/idle/shared-prop suite. Go SQL shared props exist, but EVE view-only actions differ from reference map-wide timed updates.",
@@ -4453,7 +4405,7 @@
 		{
 			"source": ".codex-verify/Test-PetAmityFeedback.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/pet_feeding_test.go"],
+			"evidence": ["internal/server/pets_test.go"],
 			"finding": "Reviewed item amity/caps/needed consumption, client-slot stat64, invalid/locked targets and feedback. Go feeding tests replace Windows harness.",
 			"sha256": "449c8c3ecefa37b59604a61d5ad7476d3db9273dd3c1a5fe85f444f4006909db",
 			"lines": 131
@@ -4461,7 +4413,7 @@
 		{
 			"source": ".codex-verify/Test-PetBattleRoster.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/pet_control_test.go"],
+			"evidence": ["internal/server/pets_test.go"],
 			"finding": "Reviewed exclusive selection/rest flags, aliases/slots, unchanged roster and owner/peer ACKs in extracted handler harness. Go pet-control tests replace it.",
 			"sha256": "40e485faf898c81f942a110f081bcc3de9f7e4385e5dd8b9d7b2f4f29e17a2be",
 			"lines": 99
@@ -4485,7 +4437,7 @@
 		{
 			"source": ".codex-verify/Test-PetVouchers.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/vouchers_test.go"],
+			"evidence": ["internal/server/inventory_test.go"],
 			"finding": "Reviewed native mappings/identity, missing/full/locked/combat/duplicate gates, packets and SQL reload. Go transaction tests replace Windows fixtures.",
 			"sha256": "f50b3e4b491c51a713076d296959d13e8c326ff57ab38259e8e9c28caf0d5e85",
 			"lines": 141
@@ -4494,7 +4446,7 @@
 			"source": ".codex-verify/Test-PropsPhase.ps1",
 			"verdict": "partial",
 			"evidence": [
-				"internal/server/map_props_test.go",
+				"internal/server/props_test.go",
 				"internal/world/quest_visibility_test.go"
 			],
 			"finding": "Reviewed each actor/cache/quest-phase/fixed-frame/idle/shared-prop suite. Go SQL shared props exist, but EVE view-only actions differ from reference map-wide timed updates.",
@@ -4513,8 +4465,8 @@
 			"source": ".codex-verify/Test-QuietSkillLogin.ps1",
 			"verdict": "replaced",
 			"evidence": [
-				"internal/server/world_entry_test.go",
-				"internal/server/skill_tree_test.go"
+				"internal/server/world_test.go",
+				"internal/server/characters_test.go"
 			],
 			"finding": "Reviewed silent restore before single snapshot and genuine incremental unlock assertions. Go tests replace IL inspection.",
 			"sha256": "81cf722491308f9888e33591b3a0c447b63a73d00ce024127db78b78be2e0fcd",
@@ -4524,8 +4476,8 @@
 			"source": ".codex-verify/Test-StatAllocation.ps1",
 			"verdict": "replaced",
 			"evidence": [
-				"internal/server/skill_tree_test.go",
-				"internal/server/elemental_growth_test.go"
+				"internal/server/characters_test.go",
+				"internal/server/combat_test.go"
 			],
 			"finding": "Reviewed exact costs/batches/vital preservation/incremental unlocks. Go growth/allocation tests replace native replay; coefficients intentionally changed.",
 			"sha256": "bf4ba85c4c448763b83c8afde43b89a95d86b515d45ce5ff1fd61df9716dee11",
@@ -4534,7 +4486,7 @@
 		{
 			"source": ".codex-verify/Test-StorageRewardReplay.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/banking_test.go", "internal/server/items_test.go"],
+			"evidence": ["internal/server/shops_test.go", "internal/server/inventory_test.go"],
 			"finding": "Reviewed each additive reward/reopen, quick/drag/multi-slot transfer, capacity/lock/conservation/metadata/invalid-packet suite. Go SQL tests replace reflection fixtures; bank PIN/transfer placeholders separately on hold.",
 			"sha256": "71650dad4f3d73346c65540bf79cc8d7e059231a7bbfe2b18ad88934339260d5",
 			"lines": 206
@@ -4542,7 +4494,7 @@
 		{
 			"source": ".codex-verify/Test-StorageTransfers.ps1",
 			"verdict": "replaced",
-			"evidence": ["internal/server/banking_test.go", "internal/server/items_test.go"],
+			"evidence": ["internal/server/shops_test.go", "internal/server/inventory_test.go"],
 			"finding": "Reviewed each additive reward/reopen, quick/drag/multi-slot transfer, capacity/lock/conservation/metadata/invalid-packet suite. Go SQL tests replace reflection fixtures; bank PIN/transfer placeholders separately on hold.",
 			"sha256": "93c169dba86db4d56e7f6bee574b9b1bf230cc28ac521bcdc198d7c375f5b216",
 			"lines": 174
@@ -4550,7 +4502,7 @@
 		{
 			"source": ".codex-verify/Test-UpstreamMerge.ps1",
 			"verdict": "partial",
-			"evidence": ["internal/store/migrations.go", "internal/server/pet_control_test.go"],
+			"evidence": ["internal/store/migrations.go", "internal/server/pets_test.go"],
 			"finding": "Reviewed parameter/schema idempotence, tent return, pet points/amity/desertion, custom kill/time persistence and elements. Custom quest registry objectives remain partial; provider tooling retired.",
 			"sha256": "95f1f0d116a8496bdefbe679856bf132faa9a9b8be55cb12807e87d347cb8710",
 			"lines": 62
@@ -4591,8 +4543,7 @@
 			"source": ".codex-verify/story-regression/Test-FredFinale.ps1",
 			"verdict": "partial",
 			"evidence": [
-				"internal/server/story_test.go",
-				"internal/server/story_continuation_test.go"
+				"internal/server/story_test.go"
 			],
 			"finding": "Reviewed both suites independently: prerequisites/films/stars/capacity/reserves/stale callbacks/aliases/reconnect. Go continuation exists, but complete reference scenario matrices are not reproduced as direct Go tests; no end-to-end parity claim.",
 			"sha256": "3b3b00c0f2a0d7830762ed642886cee83defd88ef4b8b6e30ecbf75a1d383606",
@@ -4602,8 +4553,7 @@
 			"source": ".codex-verify/story-regression/Test-RocaDeath.ps1",
 			"verdict": "partial",
 			"evidence": [
-				"internal/server/story_test.go",
-				"internal/server/story_continuation_test.go"
+				"internal/server/story_test.go"
 			],
 			"finding": "Reviewed both suites independently: prerequisites/films/stars/capacity/reserves/stale callbacks/aliases/reconnect. Go continuation exists, but complete reference scenario matrices are not reproduced as direct Go tests; no end-to-end parity claim.",
 			"sha256": "834e649901548c9d67887b609b1747fddef73c694d5d33eb1a8714de0700042f",
@@ -4780,7 +4730,7 @@
 		{
 			"source": "Data/Config.settings.wlo",
 			"verdict": "replaced",
-			"evidence": ["internal/config/config.go", "internal/server/runtime_settings.go"],
+			"evidence": ["internal/config/config.go", "internal/server/settings.go"],
 			"finding": "Read XML: disabled updates, undefined DB provider, server name/welcome and login-event toggle. Startup JSON and SQL settings replace XML; updater/provider selection are retired.",
 			"sha256": "6092e6adc55d846aacc7ab816086213f070e3e9a11106747c51989795fe6c483",
 			"lines": 20
@@ -4896,7 +4846,7 @@
 		{
 			"source": "Data/TrafficSetting.txt",
 			"verdict": "replaced",
-			"evidence": ["tools/data_export/export.py", "internal/server/vehicles.go"],
+			"evidence": ["tools/data_export/export.py", "internal/server/travel.go"],
 			"finding": "Inspected section schema for 28 transport IDs, capsules, vouchers, capacity, medium, speed and rendering offsets. C# server does not load this text; Go uses SQL transport definitions and exports client metadata. Rendering fields do not establish server behavior.",
 			"sha256": "d1ed50deb1de7ab39137165096fbd81450ec1c7ac3fc80a1248a93292eb9aa70",
 			"lines": 745
@@ -5051,8 +5001,8 @@
 			"evidence": [
 				"internal/protocol/status.go",
 				"internal/config/config.go",
-				"internal/server/runtime_settings.go",
-				"internal/server/admin_runtime_test.go"
+				"internal/server/settings.go",
+				"internal/server/admin_test.go"
 			],
 			"finding": "Read cluster/server IDs and auto/offline/green/yellow/red mode. Go configured aliases and persisted runtime settings implement all load colors, including offline byte zero; cluster remains fixed.",
 			"sha256": "862959537db6e26d90692f187926cef28cf317c6ac123832243e1c138c0b3bc2",
@@ -5061,7 +5011,7 @@
 		{
 			"source": "Data/starter_items.json",
 			"verdict": "partial",
-			"evidence": ["internal/assetsql/database.go", "internal/server/items.go"],
+			"evidence": ["internal/assetsql/database.go", "internal/server/inventory.go"],
 			"finding": "Read all eight starter items/counts/order. SQL seed, atomic creation grants and explicit Admin bulk delivery exist. Legacy world-entry refill is deliberately disabled by user policy.",
 			"sha256": "997bc87901cc7e1fdcd7cd580e8161a8f73894cccd64a83f12eabe4960e7c98b",
 			"lines": 58
@@ -5309,7 +5259,7 @@
 		{
 			"source": "docker-compose.yaml",
 			"verdict": "missing",
-			"evidence": ["internal/store/store.go", "internal/server/admin_configuration.go"],
+			"evidence": ["internal/store/store.go", "internal/server/admin.go"],
 			"finding": "Reference provisions MySQL9.1 and phpMyAdmin with persistent volume. Go currently opens SQLite only; there is no equivalent MySQL deployment/provider workflow. This is infrastructure, not a gameplay blocker.",
 			"sha256": "abcfedeb18f1b347b15dde6abe29e698bc1d6119d3323ad6f59492475a1fd005",
 			"lines": 30
@@ -5573,7 +5523,7 @@
 		{
 			"source": "wlo.pserver.core/Plugin/app.config",
 			"verdict": "replaced",
-			"evidence": ["internal/server/admin_logs.go", "cmd/wonderland/main.go"],
+			"evidence": ["internal/server/logging/buffer.go", "cmd/wonderland/main.go"],
 			"finding": "Read log4net console/rolling-file filters and MySQL factory declarations. Go structured logging and configurable levels replace log4net; MySQL remains unported independently.",
 			"sha256": "8463be4352ff649f074b1f245aa15e35a013c4637368f8215a9fc1e01dfe64ef",
 			"lines": 66
@@ -5702,9 +5652,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5714,9 +5664,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5726,9 +5676,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5738,9 +5688,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5750,9 +5700,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5762,9 +5712,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5774,9 +5724,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5786,9 +5736,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5798,9 +5748,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5810,9 +5760,9 @@
 					"disposition": "reviewed",
 					"finding": "Read scenario/assertions and Windows mock harness. Native SQL Go regressions cover Robinson progression, capacity, durability and retry; existing native creation tests verify outfit/creation behavior. PowerShell harness not executed.",
 					"go_files": [
-						"internal/server/robinson_updates_test.go",
+						"internal/server/story_native_test.go",
 						"internal/server/characters_test.go",
-						"internal/server/world_combat_port_test.go"
+						"internal/server/world_test.go"
 					]
 				},
 				{
@@ -5889,8 +5839,8 @@
 					"finding": "Robinson Event 19 recovery candidate on actor 1 when mark 12047 is in progress and companion 12178/12032 is absent. Existing candidate ordering and normal branch/capacity checks retained.",
 					"go_files": [
 						"internal/server/events.go",
-						"internal/server/story_continuation.go",
-						"internal/server/robinson_updates_test.go"
+						"internal/server/story.go",
+						"internal/server/story_native_test.go"
 					]
 				},
 				{
@@ -5901,8 +5851,8 @@
 					"disposition": "migrated",
 					"finding": "Robinson branches 1 and 3 continue Event 19 on maps 10035 and 10039, allowing raft delivery, dialogue and recruitment to complete together.",
 					"go_files": [
-						"internal/server/story_continuation.go",
-						"internal/server/robinson_updates_test.go"
+						"internal/server/story.go",
+						"internal/server/story_native_test.go"
 					]
 				}
 			],
@@ -5940,7 +5890,7 @@
 			"implementation": "Peer start/stop replay and interruption cleanup; SQL rod presentation; post-commit owner catch chat, private AC2:16 named catch notification (no observer broadcast or discarded-catch success), and transient pickup flight; cumulative fishing EXP conversion on catches and login/admin/GM base-stat snapshots. Flight is a presentation adapter, not a captured original fishing sequence; crowded or reserved client ground slots skip the visual. No shared drops or duplicate claims created.",
 			"go_files": [
 				"internal/server/fishing.go",
-				"internal/server/fishing_feedback_test.go",
+				"internal/server/fishing_test.go",
 				"internal/assets/fishing.go",
 				"internal/server/world.go",
 				"internal/server/characters.go",
@@ -6022,8 +5972,8 @@
 			"go_files": [
 				"internal/server/chat.go",
 				"internal/server/chat_test.go",
-				"internal/server/diagnostics.go",
-				"internal/server/diagnostics_test.go",
+				"internal/server/logging/trace.go",
+				"internal/server/observability_test.go",
 				"internal/livetest/scenarios.go"
 			],
 			"tests": [
@@ -6039,7 +5989,7 @@
 			"implementation": "Native nickname/profile updates commit through SQL and preserve pending walking/baseline. Schema v16 preserving defaults and typed columns; reconnect profile bytes. Missing blood type/date warns without disconnect. Native 15-byte movement validates endpoint and skips forced resets on invalid clicks; short request and NPC straight-leg checks remain. Checklist 7 is developer-only; 8 is screenshot/reconnect comparison; 9 now covers actual Social Setup.",
 			"go_files": [
 				"internal/server/social.go",
-				"internal/server/movement.go",
+				"internal/server/world.go",
 				"internal/game/character.go",
 				"internal/game/login_packets.go",
 				"internal/store/character_storage.go",
@@ -6061,10 +6011,10 @@
 			"implementation": "Parse native 15-byte AC6:2 current-position prefix, accepting decompiled packed pose/facing values 0–73 and 99. Validate endpoint and active vehicle bounds; preserve event locks. Buffer position until guarded checkpoint; broadcast corrected endpoint as AC6:1 to visible peers without sender echo. Do not repeat regions/encounters/vehicle wear. Retain bounded AC6 payload logging.",
 			"limits": "Original failure trace has no operands or UI input. Decompilation confirms stop semantics and packed pose/facing values; eight trailing check-byte validation and live behavior remain pending.",
 			"go_files": [
-				"internal/server/movement.go",
-				"internal/server/diagnostics.go",
-				"internal/server/world_test.go",
-				"internal/server/diagnostics_test.go",
+				"internal/server/world.go",
+				"internal/server/logging/trace.go",
+				"internal/server/world_presence_test.go",
+				"internal/server/observability_test.go",
 				"internal/protocol/commands.go",
 				"internal/server/simulation_test.go"
 			],
@@ -6119,5 +6069,16 @@
 			"Staged and working-tree whitespace checks passed"
 		],
 		"scope": "Root Go module and embedded web assets. Nested client module unchanged and not rerun. Native raw-file tests requiring WONDERLAND_TEST_DATA were not enabled; optional SQL-backed server/world coverage was enabled separately. Interactive native-client checks retain their recorded status."
+	},
+	"story_system": {
+		"asset_schema": 15,
+		"gameplay_schema": 18,
+		"definitions": "internal/assets/story.go",
+		"seed": "internal/assets/story_defaults.json",
+		"database_owner": "internal/assetsql/story.go",
+		"documentation": "docs/STORY_SYSTEM.md",
+		"verification": "docs/TESTING.md#story-system-migration--2026-11-01",
+		"native_source_hashes": "unchanged",
+		"scope": "Existing story selection, continuation, visibility, repairs, recovery, presentation, recruitment, conversion, reward checkpoints, cinematic sequences and compatibility battle rewards use typed SQL content. Reusable execution, protocol encoding and resource transactions remain in Go."
 	}
 }

@@ -1,6 +1,6 @@
 {
   "base_revision": "e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1",
-  "revision": "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
+  "revision": "5c368395146c0c54bb01bcee3ae88d50513beae8",
   "status": "reviewed_runtime_import_verified",
   "commits": [
     "77d0b15cb50d677fbe2361e04ade2ba54889c9e6",
@@ -40,7 +40,9 @@
     "d005c3550cd9f7ee649cddd9f594b02cec46bbf1",
     "be2679a2a05d26e1d4b974a0d4ebf6d0c8dd07b6",
     "5fe8505f281ef1ad1ab94253ac759c9bb09202d7",
-    "1ff5bbaec5da623ee05a2d083ced16dac4176a7e"
+    "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
+    "d1020d32064a5dafa2b638ac76af085b8a941702",
+    "5c368395146c0c54bb01bcee3ae88d50513beae8"
   ],
   "changed_files": 431,
   "hash_method": "SHA-256 of exact pinned git archive bytes; historical baseline inventory unchanged.",
@@ -1267,8 +1269,8 @@
       "sha256_bytes": "54d42596286d3106dec3624c97db3de0654ed03d13281811b5a645b226dd8957",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/diagnostics.go",
-        "internal/server/gm_packet_debug.go"
+        "internal/server/logging/trace.go",
+        "internal/server/gm.go"
       ],
       "notes": "Structured packet diagnostics and durable debug-level control replace global raw-hex logging; credentials remain redacted."
     },
@@ -1299,8 +1301,8 @@
       "sha256_bytes": "b2802249ec1cf45aef2b6070e7c6dba3c956207a584e5a333dcf013ae00cbebe",
       "status": "platform_specific",
       "go_files": [
-        "internal/server/admin_state.go",
-        "internal/server/gm_bazaar.go"
+        "internal/server/admin.go",
+        "internal/server/gm_content.go"
       ],
       "notes": "WinForms modern layout and experimental lab controls are platform-specific. Existing web administration, SQL content editing and GM bazaar/log controls remain the Go administration interface; prototype lab actions are not production gameplay."
     },
@@ -1310,8 +1312,8 @@
       "sha256_bytes": "b4ffdd9277fd00d258753cbf5adc18e3021fe4dc573c0e16e781c6605ea9fff5",
       "status": "platform_specific",
       "go_files": [
-        "internal/server/admin_state.go",
-        "internal/server/gm_bazaar.go"
+        "internal/server/admin.go",
+        "internal/server/gm_content.go"
       ],
       "notes": "WinForms modern layout and experimental lab controls are platform-specific. Existing web administration, SQL content editing and GM bazaar/log controls remain the Go administration interface; prototype lab actions are not production gameplay."
     },
@@ -1321,8 +1323,8 @@
       "sha256_bytes": "bf802584ad0fd236c2868d17f5ec7484d02b76b7874469165ca46b686576d25c",
       "status": "platform_specific",
       "go_files": [
-        "internal/server/admin_state.go",
-        "internal/server/gm_bazaar.go"
+        "internal/server/admin.go",
+        "internal/server/gm_content.go"
       ],
       "notes": "WinForms modern layout and experimental lab controls are platform-specific. Existing web administration, SQL content editing and GM bazaar/log controls remain the Go administration interface; prototype lab actions are not production gameplay."
     },
@@ -1332,8 +1334,8 @@
       "sha256_bytes": "ed3d5f6ee333a8d9d13af2976af0561dc8ce64be2a9f99928b4dfac73f1a8f4c",
       "status": "ported",
       "go_files": [
-        "internal/server/gm_reborn.go",
-        "internal/server/gm_packet_debug.go",
+        "internal/server/gm_progression.go",
+        "internal/server/gm.go",
         "internal/server/chat.go",
         "internal/game/gm_progress.go"
       ],
@@ -1345,8 +1347,8 @@
       "sha256_bytes": "46c787177bc95897373e4623a62433fb71e6c8d07a3ffd5610c0ad5da830cecb",
       "status": "ported",
       "go_files": [
-        "internal/server/movement.go",
-        "internal/server/stalls.go"
+        "internal/server/world.go",
+        "internal/server/trade.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1389,7 +1391,7 @@
       "sha256_bytes": "e13a9808227b8f64a33b9626105fee798692e044e8a8cc786f7da0d84f158672",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/friends.go"
+        "internal/server/social.go"
       ],
       "notes": "Existing Go friend status publishes native AC14:5 roster records instead of misusing rename/offline subcommands."
     },
@@ -1420,7 +1422,7 @@
       "status": "ported",
       "go_files": [
         "internal/server/story.go",
-        "internal/server/native_commands.go"
+        "internal/server/commands.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1441,8 +1443,7 @@
       "status": "ported",
       "go_files": [
         "internal/server/story.go",
-        "internal/server/story_continuation.go",
-        "internal/server/stall_adapters.go",
+        "internal/server/trade.go",
         "internal/server/events.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -1474,10 +1475,9 @@
       "sha256_bytes": "50e54caf7486b9458ab7245ef302db08174b1ea3a6fd80f5fc5e9b122b1ccdb4",
       "status": "ported",
       "go_files": [
-        "internal/server/items.go",
-        "internal/server/native_stalls.go",
-        "internal/server/bazaars.go",
-        "internal/server/travel_items.go"
+        "internal/server/inventory.go",
+        "internal/server/trade.go",
+        "internal/server/travel.go"
       ],
       "notes": "Native boxes, validated travel, stalls and utility use imported. Existing fishing-stop/mall-refresh length compatibility retained. Chocolate/White Rice aliases and consumed-but-ineffective EXP potions are excluded."
     },
@@ -1509,7 +1509,7 @@
       "sha256_bytes": "c8fab9381394a404e99b98c1fd447730e5274f6082eaebd8bdc5ecfdc128e36d",
       "status": "ported",
       "go_files": [
-        "internal/server/npc_shops.go"
+        "internal/server/shops.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1519,7 +1519,7 @@
       "sha256_bytes": "c84b4894e70d5511fcb97c1a2878104a9e7b9b06eb03c4bfb1d4bfc5893a0107",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/services.go"
+        "internal/server/shops.go"
       ],
       "notes": "Existing storage uses inventory deltas and never resends additive full-bag snapshots for a transfer."
     },
@@ -1529,8 +1529,8 @@
       "sha256_bytes": "66948c55ad4dceaa391314cac114ca2a73b5310c4cbd33f3249618940316c2e1",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/services.go",
-        "internal/server/diagnostics.go"
+        "internal/server/shops.go",
+        "internal/server/logging/trace.go"
       ],
       "notes": "Changes are diagnostics only; existing typed storage transfer validation and bounded/redacted tracing cover them."
     },
@@ -1540,8 +1540,8 @@
       "sha256_bytes": "79872f0ff71f6b16ddfd940be149b6eef2b1fb6d26e41237266a978adfffc312",
       "status": "ported",
       "go_files": [
-        "internal/server/hotel.go",
-        "internal/server/hotel_test.go"
+        "internal/server/shops.go",
+        "internal/server/shops_test.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1593,7 +1593,7 @@
       "sha256_bytes": "8958160f1cf32e805f250869acde5d79902999c506c4b26b8c7c636304248df7",
       "status": "ported",
       "go_files": [
-        "internal/server/companion_rebirth.go"
+        "internal/server/pets.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1603,7 +1603,7 @@
       "sha256_bytes": "a0664ade624b7d11d6f41e4bd3dd102161223f326fc6756f61514abd60aca2a8",
       "status": "ported",
       "go_files": [
-        "internal/server/stall_adapters.go"
+        "internal/server/trade.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -1613,7 +1613,6 @@
       "sha256_bytes": "62fd651fa3c685b552afc1d30617e600cc03da256be90fc7c8629ade57db14a3",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/arcade.go",
         "internal/server/minigames.go"
       ],
       "notes": "Existing real event/arcade sessions are retained. New experimental SubmitScore(session=0) fallback cannot find a valid session and adds no effective runtime reward."
@@ -1625,7 +1624,7 @@
       "status": "ported",
       "go_files": [
         "internal/server/tents.go",
-        "internal/server/tent_tree.go",
+        "internal/server/wire/housing.go",
         "internal/store/tent_tools.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -1636,8 +1635,8 @@
       "sha256_bytes": "b615e053c9c1c6f5b5ee57f793c09da77a8f45d8504560048f7a520ba8b50ca1",
       "status": "ported",
       "go_files": [
-        "internal/server/compact_creation.go",
-        "internal/server/compact_creation_test.go"
+        "internal/server/characters.go",
+        "internal/server/characters_test.go"
       ],
       "notes": "Authenticated compact creation is length-disambiguated from native cancellation; both retain normal owned-slot, name and allocation checks. Registration/login already share ASCII credential validation."
     },
@@ -1648,7 +1647,7 @@
       "status": "ported",
       "go_files": [
         "internal/store/manufacturing.go",
-        "internal/server/tent_manufacturing.go",
+        "internal/server/manufacturing.go",
         "internal/store/manufacturing_batch_test.go"
       ],
       "notes": "Native batches and exact-instance refunds are durable; legacy starts retain pause/resume. One recoverable job per character is retained. Furniture/surfaces and offline timers are handled transactionally."
@@ -1670,7 +1669,7 @@
       "sha256_bytes": "a812ed30007d4d9e775c7f17a6d99af43f39a33e0123741be3cdbb63ad2d7af6",
       "status": "ported",
       "go_files": [
-        "internal/server/travel_items.go",
+        "internal/server/travel.go",
         "internal/store/teleport_points.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -1691,7 +1690,7 @@
       "sha256_bytes": "861d1a74bd1533fe773439bcbfbe6a8ff48eb15ac052adca70623f9475f67987",
       "status": "ported",
       "go_files": [
-        "internal/server/rebirth_job.go",
+        "internal/server/progression.go",
         "internal/game/reborn.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -1722,8 +1721,7 @@
       "sha256_bytes": "f1440162f05291a4030e132e7c5060f14b4a2f2570327fd9e2e447aa2730bfd0",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/instances.go",
-        "internal/server/instances.go"
+        "internal/server/teams.go"
       ],
       "notes": "Preserve verified native lobby layouts and SQL definitions; source room/wave trial engine does not start real dungeons or grant its advertised token."
     },
@@ -1764,8 +1762,8 @@
       "sha256_bytes": "7707f3a0bd677e41a7dce9281c104a67f6ae01964a103ca16254d55025985007",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/runtime_settings.go",
-        "internal/server/gm_packet_debug.go"
+        "internal/server/settings.go",
+        "internal/server/gm.go"
       ],
       "notes": "Existing SQL log-level control replaces the source startup/INI packet-debug boolean; initialization preserves operator settings."
     },
@@ -1778,7 +1776,7 @@
         "internal/server/characters.go",
         "internal/server/server.go",
         "internal/store/manufacturing.go",
-        "internal/server/bazaars.go"
+        "internal/server/trade.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3409,7 +3407,7 @@
         "internal/store/store.go",
         "internal/store/accounts.go"
       ],
-      "notes": "Registration and authentication already share 4\u201314 character credential validation and durable owned slots. Preserve hashed credentials and ASCII wire rules."
+      "notes": "Registration and authentication already share 4–14 character credential validation and durable owned slots. Preserve hashed credentials and ASCII wire rules."
     },
     {
       "source": "wlo.pserver.core/Game/Battle/AoeTargetResolver.cs",
@@ -3442,8 +3440,8 @@
       "sha256_bytes": "89a981b06b042f85e50686b7299fa1f5438a158138755843cacfe94437e5c1c9",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/compounding.go",
-        "internal/server/shapeshift.go"
+        "internal/server/crafting.go",
+        "internal/server/simulation.go"
       ],
       "notes": "Existing native rank-based compounding is an intentional replacement of the old two-item recipe engine. Shape resets use AC5:5 zero; upstream AC23:122 sparkle claims are excluded because the verified client uses it for fishing cleanup; no old recipe-policy regression."
     },
@@ -3453,8 +3451,8 @@
       "sha256_bytes": "1be13e86f462ca4d8b2ada62c56cdad4dfb033f530c64363b6c7fda8e57d01b3",
       "status": "ported",
       "go_files": [
-        "internal/server/repair.go",
-        "internal/server/shapeshift.go"
+        "internal/server/inventory.go",
+        "internal/server/simulation.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3464,8 +3462,8 @@
       "sha256_bytes": "8100c5dddce88b7892dece14bcbde2f5c832085f39e639c283c0adef3fba98c1",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/forging.go",
-        "internal/server/tent_manufacturing.go"
+        "internal/server/crafting.go",
+        "internal/server/manufacturing.go"
       ],
       "notes": "Source gem path still consumes an item without applying a socket. Existing verified funded forging remains; incomplete socket requests fail without consumption."
     },
@@ -3476,7 +3474,7 @@
       "status": "ported",
       "go_files": [
         "internal/server/manufacturing.go",
-        "internal/server/shapeshift.go"
+        "internal/server/simulation.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3657,9 +3655,8 @@
       "status": "ported",
       "go_files": [
         "internal/store/bazaars.go",
-        "internal/server/bazaars.go",
-        "internal/server/gm_bazaar.go",
-        "internal/server/stall_adapters.go"
+        "internal/server/trade.go",
+        "internal/server/gm_content.go"
       ],
       "notes": "Persistent typed administrator vendors and item/pet/vehicle native flows imported. Personal stalls use existing pair transactions. No invented fallback stock, arbitrary fake pet stats, unsafe free-item creation or operator snapshot row is seeded; administration uses /bazaar instead of WinForms."
     },
@@ -3729,7 +3726,7 @@
       "sha256_bytes": "591c99d14c910a6400c3e31028be1be1a2f36f981dfec96a3ac457ec4e71b19b",
       "status": "ported",
       "go_files": [
-        "internal/server/npc_shops.go",
+        "internal/server/shops.go",
         "internal/game/inventory.go",
         "internal/game/inventory_grid.go"
       ],
@@ -3752,7 +3749,7 @@
       "sha256_bytes": "47ea28c77166c80bf463bf1590497d6966c1f5bc4f065d341715755c95881324",
       "status": "ported",
       "go_files": [
-        "internal/server/chest_pools.go",
+        "internal/server/props.go",
         "internal/store/map_props.go",
         "internal/assetsql/chest_defaults.go"
       ],
@@ -3765,9 +3762,8 @@
       "status": "ported",
       "go_files": [
         "internal/server/events.go",
-        "internal/server/monkey.go",
         "internal/server/story.go",
-        "internal/server/services.go"
+        "internal/server/shops.go"
       ],
       "notes": "Reachable native story, mission, service, speech and movie changes imported. Experimental opcode16 guessed door arithmetic and packet-only dungeon wave rewards remain excluded."
     },
@@ -3777,9 +3773,9 @@
       "sha256_bytes": "d05d48c0fc6cf220304eac16bf0975b3b9cfbc3abc1cda6e2a40cb6f339bd6cc",
       "status": "ported",
       "go_files": [
-        "internal/server/story_continuation.go",
+        "internal/server/story.go",
         "internal/world/preevent.go",
-        "internal/server/npc_shops.go",
+        "internal/server/shops.go",
         "internal/server/combat.go"
       ],
       "notes": "Lifecycle/subject/AND conditions, 24-bit speech, first-contact continuation and visibility changes imported. Merchant interception is limited to real merchant templates rather than arbitrary question IDs or name substrings."
@@ -3812,9 +3808,9 @@
       "sha256_bytes": "7f0a102cc6bf6b11d8e173066b6203ac707e5e6b07672cf7457c88ad9682c9fd",
       "status": "ported",
       "go_files": [
-        "internal/server/map_props.go",
+        "internal/server/props.go",
         "internal/world/simulation.go",
-        "internal/server/npc_shops.go"
+        "internal/server/shops.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3824,7 +3820,7 @@
       "sha256_bytes": "b7467b568a618215699694eb00aef6c8b41a966df5a07f8e8e7ebdf813bddbd8",
       "status": "ported",
       "go_files": [
-        "internal/server/npc_shops.go"
+        "internal/server/shops.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3835,7 +3831,7 @@
       "status": "ported",
       "go_files": [
         "internal/world/portal.go",
-        "internal/server/map_transition_rewards.go",
+        "internal/server/world.go",
         "internal/assetsql/map_transitions_defaults.json"
       ],
       "notes": "Explicit portal priority, Laura route/gift, chest classification and tent lifecycle imported. Legacy development database shared route is represented in typed assets; mutable source rows are excluded."
@@ -3847,7 +3843,7 @@
       "status": "ported",
       "go_files": [
         "internal/game/pet_rebirth.go",
-        "internal/server/companion_rebirth.go"
+        "internal/server/pets.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3857,10 +3853,10 @@
       "sha256_bytes": "b24c9e357c39b180c75e7ccff283ecea84b76685f49ae870427833238bab6a67",
       "status": "ported",
       "go_files": [
-        "internal/server/bazaars.go",
-        "internal/server/diagnostics.go",
+        "internal/server/trade.go",
+        "internal/server/logging/trace.go",
         "internal/server/story.go",
-        "internal/server/npc_shops.go"
+        "internal/server/shops.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3870,7 +3866,7 @@
       "sha256_bytes": "2cdd877f2a6e68767d02a6c3d3e6abd12e916e0e48d4e67a56736033cd4cc451",
       "status": "ported",
       "go_files": [
-        "internal/server/travel_items.go",
+        "internal/server/travel.go",
         "internal/assetsql/travel_defaults.json"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -3881,7 +3877,7 @@
       "sha256_bytes": "8b0d07b37d515d5cf81c526dc08d8714a0efbe7da2ca0554d1dddb8f4a81267c",
       "status": "ported",
       "go_files": [
-        "internal/server/boxed_items.go",
+        "internal/server/inventory.go",
         "internal/assetsql/boxed_items.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -3904,7 +3900,7 @@
       "sha256_bytes": "bca6bb963b4bf39a4809fd422dab0c0bd44bbc049ffa526de0151eb5c3d3882e",
       "status": "already_covered_or_replaced",
       "go_files": [
-        "internal/server/gm_restat.go"
+        "internal/server/gm_progression.go"
       ],
       "notes": "Existing GM restat/stat snapshots avoid redundant old AC5:3 resends."
     },
@@ -3914,8 +3910,8 @@
       "sha256_bytes": "b8994c0795b567953be59cee6c3d453ce907324212b5a987b3c2efe9d105fb81",
       "status": "ported",
       "go_files": [
-        "internal/server/social_commands.go",
-        "internal/server/shapeshift.go"
+        "internal/server/chat.go",
+        "internal/server/simulation.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3926,8 +3922,8 @@
       "status": "ported",
       "go_files": [
         "internal/game/reborn.go",
-        "internal/server/gm_reborn.go",
-        "internal/server/rebirth_job.go"
+        "internal/server/gm_progression.go",
+        "internal/server/progression.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3949,7 +3945,7 @@
       "status": "ported",
       "go_files": [
         "internal/store/teleport_points.go",
-        "internal/server/travel_items.go"
+        "internal/server/travel.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
     },
@@ -3959,7 +3955,7 @@
       "sha256_bytes": "8bf8c0e2778a818c122003ca3c2309275b4ef7abf1a83ad7ed85aee0449a1312",
       "status": "ported",
       "go_files": [
-        "internal/server/tent_tree.go",
+        "internal/server/wire/housing.go",
         "internal/store/tents.go",
         "internal/store/tent_tools.go",
         "internal/store/tent_placement.go"
@@ -3985,7 +3981,7 @@
       "status": "already_covered_or_replaced",
       "go_files": [
         "internal/game/vehicles.go",
-        "internal/server/vehicles.go"
+        "internal/server/travel.go"
       ],
       "notes": "Retain real typed WLRI vehicle definitions and ownership/damage checks. Bamboo Dragonfly is an exotic teleport item; do not treat all source hardcoded ranges or utility IDs as mountable vehicles."
     },
@@ -4018,7 +4014,7 @@
       "sha256_bytes": "986b983504403626a9af7df7e10ae495a550416f46a4d2c292879c1dad91ed74",
       "status": "ported",
       "go_files": [
-        "internal/server/skill_unlock.go",
+        "internal/server/characters.go",
         "internal/game/combat_skill_exp.go"
       ],
       "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
@@ -4054,5 +4050,68 @@
     "resource_hardening": "focused client/root asset race checks, shared-workspace checks, repeated queued-close test and affected-package vet passed; see TESTING.md",
     "definition_ownership": "Feature modules own definitions, initialization, validation and preserving schema migrations; the catalog runner coordinates versioned steps.",
     "migration_ownership": "Focused asset/store/server/world/game race checks passed; preserving edits and deletions verified; generated SQL models unchanged. See TESTING.md."
+  },
+  "files_revision": "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
+  "verification_revision": "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
+  "follow_up_imports": [
+    {
+      "base_revision": "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
+      "revision": "5c368395146c0c54bb01bcee3ae88d50513beae8",
+      "commits": [
+        "d1020d32064a5dafa2b638ac76af085b8a941702",
+        "5c368395146c0c54bb01bcee3ae88d50513beae8"
+      ],
+      "changed_files": 2,
+      "status": "reviewed_runtime_import_verified",
+      "files": [
+        {
+          "source": "wlo.pserver.core/Game/Maps/Code/EveEventRuntime.cs",
+          "change": "M",
+          "sha256_bytes": "122d4ef735e89fb5043268008c8286c473d9b936bb4f7661e0f26552a16adb52",
+          "status": "ported",
+          "go_files": [
+            "internal/game/map_ids.go",
+            "internal/world/story_rules.go",
+            "internal/server/story.go",
+            "internal/server/events.go",
+            "internal/server/story_test.go",
+            "internal/world/story_rules_test.go"
+          ],
+          "notes": "Waterfall Grotto map 12464 mirror events 1/2/3/5 continue forward through authored beam/door rules; completed branches cannot restart earlier rules. Fairy Altar map 12465 events 2/3 use movie mode 1 so dialogue resumes without a map-load rendering hold."
+        },
+        {
+          "source": "wlo.pserver.core/Game/QuestRelated/PreEventInterpreter.cs",
+          "change": "M",
+          "sha256_bytes": "3729c0da22977ff69f65811ebfe3a8be2238fe55968051d03039cd82ae0a0bdd",
+          "status": "already_covered_or_replaced",
+          "go_files": [
+            "internal/world/preevent.go",
+            "internal/world/view.go",
+            "internal/server/events.go",
+            "internal/server/story_test.go"
+          ],
+          "notes": "Existing per-visit View.Actors show/hide overrides already preserve mirror swaps across unconditional entry-layout synchronization. Retain Go visibility precedence and visit reset; add synthetic and native-script regressions rather than replacing the visibility interpreter."
+        }
+      ],
+      "verification": {
+        "native_client_acceptance": "not run",
+        "database_changes": "none",
+        "focused_server_race": "passed: synthetic mirror continuation/visit reset, Fairy Altar movie wire mode/resume and repeated native EVE mirror choices (7.407s)",
+        "focused_world_race": "passed: story selection, PreEvent visibility, quest visibility and mission grouping (1.012s)",
+        "vet": "passed: internal/game, internal/world and internal/server",
+        "full_server": "not run for this follow-up; reserved for pre-push validation"
+      }
+    }
+  ],
+  "story_migration": {
+    "asset_schema": 15,
+    "gameplay_schema": 18,
+    "definitions": "internal/assets/story.go",
+    "seed": "internal/assets/story_defaults.json",
+    "database_owner": "internal/assetsql/story.go",
+    "documentation": "docs/STORY_SYSTEM.md",
+    "verification": "docs/TESTING.md#story-system-migration--2026-11-01",
+    "native_source_hashes": "unchanged",
+    "scope": "Existing story selection, continuation, visibility, repairs, recovery, presentation, recruitment, conversion, reward checkpoints, cinematic sequences and compatibility battle rewards use typed SQL content. Reusable execution, protocol encoding and resource transactions remain in Go."
   }
 }

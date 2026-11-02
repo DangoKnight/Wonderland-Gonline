@@ -25,7 +25,7 @@ func eventWorld() *World {
 	ev.Branches[2].Condition[12] = 2 // W6 high byte: two branches form branch 3's rule.
 	chest := assets.Event{ClickID: 9, Branches: []assets.Branch{{Index: 1, Condition: cond(5, 901, 1, 0, 0, 0), Operations: []assets.Operation{action(1, 2, 0, 5, 0, 0)}}}}
 	m := assets.Map{ID: 12345, NPCs: []assets.MapNPC{{ClickID: 5, Flags: 1, X: 10, Y: 10, Events: []byte{1}}, {ClickID: 9, Flags: 1, X: 20, Y: 20}}, Events: []assets.Event{ev, chest}}
-	return New(&assets.Catalog{Maps: map[uint16]assets.Map{m.ID: m}, Marks: map[uint16]uint16{900: 0, 901: 14}, DisabledEvents: map[uint32]string{}})
+	return New(&assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: map[uint16]assets.Map{m.ID: m}, Marks: map[uint16]uint16{900: 0, 901: 14}, DisabledEvents: map[uint32]string{}})
 }
 
 func TestFindBranch(t *testing.T) {
