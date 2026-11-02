@@ -739,6 +739,15 @@ Not ported: the door transition helper `FUN_003ba9d8(…, 10)` and `FUN_00173774
 
 ### Movies (started: `client/wlo/movie`, `client/wlo/app/movie.go`)
 
+The client handles the server's AC186 compatibility exchange before movie
+completion: `[186,12,id:u16,opaque:3]` produces `[186,9,id:u16]`. It consumes the
+server's `[186,9,id:u16,status:u8,reserved:u32]` reply without echoing it or
+finishing the event. Playback ends separately with AC20:6. The identifier is
+echoed for any received ID, without map or story exceptions. The layouts follow
+the existing Go server and Private Server `AC186.Recv9`; the wider meaning of
+native AC186 (`FUN_002a84ec`) remains unresolved. Client support for these two
+layouts does not establish complete native AC186 behavior.
+
 Story scenes (the shipwreck storm, the beach rescue) are `.sty` movies that the client plays itself: event kind 5 names one by its value (`<value>.sty`), and its mode sets the game mode (1 or 4, `PTR_DAT_004ca2f8` +0x1d), which hides the HUD and lowers the wide talk form (`FUN_00304fd0` case 5). `TMovie` (loader `FUN_0033e18c`, update `FUN_003406c4`, draw `FUN_00340404`):
 
 - **Data**: `data/media/sty/style_data.json` (768 movies). The export's field split doesn't follow the records, so each section is joined back into bytes: an actor is four ints (template — 0xffff the player — start stage, keyframe count, initial direction) and count + 1 keyframes of 45 bytes (facing, x, y, a flag, speed class, pose, three ints, sound index, loop flag, channel), NPCs one more int; the camera ("Map10003": the map whose scene is drawn) and pictures use 33-byte keyframes (x, y, flag, speed …); lines are records 1…n of `[speaker, talk, stage, delay]` (+4, +8, +0xc, +0x10; the loader reads n + 1 records and record 0 is unused, so the export's rows start two ints into it); the timeline gives each stage a wait (ms) and operands (overlay, two flash tracks, music, four bytes). `TestAllMovies` decodes every movie.
@@ -807,6 +816,11 @@ The long-term plan is [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md), and [ALOGIN_CATALO
 4. **Remove the legacy front end**: drop `client/ui` and `client/frontend.go` once the port covers what they show.
 
 ### Social window (ported in part: `client/wlo/hud/social*.go`, `client/wlo/app/social.go`, `client/wlo/app/emotes.go`)
+
+Ordinary dialogue and confirmations render above the window forms, including
+Social, Inventory and Settings. Covered controls do not intercept dialogue
+clicks. The dialogue skin remains translucent; movie dialogue retains its
+separate scene/zoom pass. See [layering verification](TESTING.md#client-dialogue-layering--2026-11-02).
 
 - **Opening**: the main menu's Social button (tag 5, `FUN_00295678` → `FUN_0027f8dc`) toggles the window held at `DAT_006c70d4` (constructor `FUN_0027c6a4`, class `TSe_EmotiomForm`, a `TSe_FixedForm`; paint `FUN_0027b41c`). It is 0x164 × 0x1ed and stands at (200, 31): the constructor centres it in the main form object's +0x2d0 → (+0x38, +0x3c) area, which every Social capture shows to be 756 × 555 (the fields are untraced). Tabs `Btn_FriendIcon_1`, `Btn_EmuationalIcon_1` and `Btn_setup_2` sit at y 0x2b from x 0x14, 0x55, 0x97; the selected one is drawn pressed (+0xf8). `Btn_Marry` (0xd9) shows only for a married player (+0x3ca4). Close buttons: `Btn_Close_1` at (0x98, 0x1ca) and `Btn_Close_s_1` at (0x130, 0x18).
 - **Friend tab** (`FUN_0027eeb4`, mode 2, picture `Form_Friend_2`; rows `FUN_0027b5e8`): five rows a page from the friend table (`DAT_0072a390`, 0x43-byte records). Labels, ticks and job icons step 0x41 down the rows; mail, element and presence icons step 0x42. Per row: the portrait at (0x38, 0x61 + row × 0x41) in action 1 (a player's face sprite; a body-0 entry draws face 0x1f94 of the `008` archive, the GM's cupid); the name at (0x57, 0x3d); "LV n" at (0xcd, 0x49) with `Num_White3_1` (`FUN_002627fc`); the element orb `Icon_Element_n_1` at 0x10e; presence at (0x104, 0x68): `Icon_online_1`, `Icon_Busy_1`, `Icon_inline_1` or `icon_offline_1`; the job icon at 0xb5 (`Icon_Asn` Killer … `Icon_Prophet` Prophet, with hints); nickname and guild values at x 0x84 (y 0x5f and 0x71); `icon_mail_1` over `icon_mailGary_1` at 0x131; a tick box at (0x131, 0x6b) for every friend but the GM. Page arrows `Btn_ArrowL_8`/`Btn_ArrowR_8` at y 0x188 and "page / pages" in `Num_MainInfo` at (0xa0, 400), the slash being its eleventh row.

@@ -22,14 +22,14 @@ in progress. See [port status](docs/PORTING.md) and
 
 Follow [the setup guide](docs/GETTING_STARTED.md) in this order:
 
-1. Install Go, CGO tooling, Python/Pillow, FFmpeg and Git LFS.
+1. Install Git, Go, CGO tooling, Python/Pillow and FFmpeg.
 2. Extract and verify the ignored assets from a matching WLRI installation.
 3. Create `config.local.json` and build the separate SQL assets database.
 4. Compile the server and start it with an admin token.
 5. Register an account, then build and run the Go client.
 
-Only the WLRI installation is needed for missing image/audio/video payloads;
-server gameplay definitions are already tracked. The native WLRI executable
+The WLRI installation supplies generated client tables, metadata and media;
+server-only definitions remain tracked. The native WLRI executable
 supplies extraction keys and is separate from the Go client.
 
 | Guide | Contents |
@@ -162,7 +162,7 @@ Unknown actions are counted and logged at debug level; they do not receive a fab
 
 ## License
 
-The source project's GPLv3 license is preserved in [LICENSE](LICENSE). See [NOTICE](NOTICE) for provenance. Tracked JSON exports contain game data;
+The source project's GPLv3 license is preserved in [LICENSE](LICENSE). See [NOTICE](NOTICE) for provenance. Local generated JSON exports contain game data;
 the original WLRI installation and ignored media payloads are supplied separately.
 
 ### Admin account actions
@@ -318,12 +318,15 @@ export format and remaining field interpretation.
 
 ## Complete data exports
 
-To restore ignored image, audio and video assets after cloning, follow the
+To restore ignored client tables, JSON metadata, images, audio and video after cloning, follow the
 [asset import procedure](docs/ASSET_IMPORT.md), using the path to your
-Wonderland-Client (WLRI) installation. No private-server checkout is required.
+original WLRI installation. Supply its location explicitly; no private-server
+checkout or particular directory layout is required.
 
-`data/` contains lossless exports of all client data resources and server-only
-resources, with translated-client copies preferred for overlapping files.
+`data/` holds local lossless client exports and tracked server-only definitions.
+Client-derived tables, sprite payloads, editable metadata and manifests are
+excluded from Git; their existing local copies remain usable. The setup exporter
+regenerates them from the original client and retains repository-owned server data.
 Regenerate with `python3 tools/data_export/export.py`, then verify with
 `python3 tools/data_export/verify.py`. The manifest accounts for 40 selected
 assets and every source file can be reconstructed byte for byte. Audio payloads remain local and ignored by Git. Original account databases

@@ -484,11 +484,11 @@ EXCLUDED_SOURCE_FILES={'serverdatabase.db', 'serverdatabase.db-wal',
                        'database.override.txt'}
 
 
-def inventory(client,server):
-    require(client.is_dir() and (server/'Data').is_dir(),'missing client data or server Data directory')
+def inventory(client,server=None):
+    require(client.is_dir() and (server is None or (server/'Data').is_dir()),'missing client data or server Data directory')
     selected={}
     shadowed={}
-    for path in sorted((server/'Data').rglob('*')):
+    for path in sorted((server/'Data').rglob('*')) if server is not None else ():
         if path.is_file():
             key=path.relative_to(server/'Data').as_posix().lower()
             if key in EXCLUDED_SOURCE_FILES:
@@ -503,21 +503,21 @@ def inventory(client,server):
             if key in selected:
                 shadowed[key]=selected[key][1]
             selected[key]=('client',path)
-    for path in sorted((server/'listdata').rglob('*')):
+    for path in sorted((server/'listdata').rglob('*')) if server is not None else ():
         if path.is_file():
             selected['listdata/'+path.relative_to(server/'listdata').as_posix().lower()]=('server-listdata',path)
     return selected,shadowed
 
 
 def export_all(client,server,destination):
-    client=client.resolve();server=server.resolve();destination=destination.resolve()
-    require(not destination.is_relative_to(client) and not destination.is_relative_to(server), 'output must be outside source projects')
+    client=client.resolve();server=server.resolve() if server is not None else None;destination=destination.resolve()
+    require(not destination.is_relative_to(client) and (server is None or not destination.is_relative_to(server)), 'output must be outside source projects')
     selected,shadowed=inventory(client,server)
     # Reject unsupported future assets rather than claim an incomplete export.
     for key,(_,source) in selected.items():
         require(key in FORMATS or key in CLIENT_OUTPUT_NAMES or key in ('item.dat','itemdat.wpdat','odd.dat','odd_d01.dat') or source.suffix.lower() in TEXT_SUFFIXES, 'unsupported data file: '+key)
-    manifest={'schema_version':SCHEMA_VERSION,'client_source':str(client),'server_source':str(server),
-              'priority':'client-over-server','scope':'Client/data, server/Data and server/listdata resources. Original account databases, SQLite sidecars, database-path overrides, source code, project metadata and licensing documents are excluded.',
+    manifest={'schema_version':SCHEMA_VERSION,'client_source':str(client),'server_source':str(server) if server is not None else None,
+              'priority':'client-over-server','scope':('Client/data resources.' if server is None else 'Client/data, server/Data and server/listdata resources.') + ' Original account databases, SQLite sidecars, database-path overrides, source code, project metadata and licensing documents are excluded.',
               'assets':[]}
     audio_archives=[]
     for key,(origin,source) in sorted(selected.items()):
@@ -599,9 +599,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--client',type=Path,default=REPO.parent/'Wonderland-Client'/'data')
     parser.add_argument('--server',type=Path,default=REPO.parent/'Wonderland-Private-Server')
+    parser.add_argument('--client-only',action='store_true',help='export client data without reading a Private Server checkout')
     parser.add_argument('--output',type=Path,default=REPO/'data')
     arguments=parser.parse_args()
-    export_all(arguments.client,arguments.server,arguments.output)
+    export_all(arguments.client,None if arguments.client_only else arguments.server,arguments.output)
 
 
 if __name__=='__main__':

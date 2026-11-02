@@ -15,6 +15,7 @@ import (
 	"wonderland-gonline/client/wlo/weather"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Movies (event kind 5, FUN_00304fd0 case 5): the frame's value names the
@@ -40,7 +41,38 @@ const (
 	// both hide the HUD and lower the wide talk form.
 	movieModeNormal = 1
 	movieModeWide   = 4
+	// AC186 layouts include command and subcommand. MovieWireCode12's
+	// remaining three bytes are opaque; only its identifier is echoed.
+	movieHandshakePacketBytes = 7
+	moviePlaybackReplyBytes   = 9
+	movieIdentifierOffset     = 2
 )
+
+// moviePacket implements the server's existing AC186 compatibility exchange:
+// [186,12,id:u16,opaque:3] -> [186,9,id:u16], followed by the server's
+// [186,9,id:u16,status:u8,reserved:u32] reply (Private Server AC186.Recv9).
+// This does not complete an event: the movie still finishes with AC20:6.
+// The native receive route is FUN_002a84ec; its wider AC186 semantics remain
+// unresolved, so this only handles the layouts supported by the server.
+func (c *Client) moviePacket(p []byte) bool {
+	if len(p) < movieIdentifierOffset {
+		return false
+	}
+	switch p[1] {
+	case protocol.MovieWireCode12:
+		if len(p) != movieHandshakePacketBytes {
+			return false
+		}
+		id := binary.LittleEndian.Uint16(p[movieIdentifierOffset:])
+		c.Net.Send(protocol.Builder{protocol.CommandMovie, protocol.MoviePlaybackAcknowledgment}.U16(id))
+		return true
+	case protocol.MoviePlaybackAcknowledgment:
+		// Consuming the server reply must not echo another request or
+		// release the current movie/dialogue's interaction lock.
+		return len(p) == moviePlaybackReplyBytes
+	}
+	return false
+}
 
 // moviePlay is a running movie.
 type moviePlay struct {

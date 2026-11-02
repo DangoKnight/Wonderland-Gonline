@@ -1514,3 +1514,217 @@ catalog loads 7,312 items and 1,119 maps; four gacha packs remain disabled for
 missing item definitions. Gameplay contains no accounts or characters. Existing
 databases and configuration were preserved; no rebuild or migration was needed.
 These checks do not establish native-client gameplay acceptance.
+
+### Client dialogue layering — 2026-11-02
+
+The Social Set Up confirmation was drawn as part of the world scene, underneath
+ordinary window forms. Normal dialogue now renders after those forms, and clears
+the covered control hover so its existing click handler receives the press.
+Movie dialogue keeps its scene/zoom rendering path; timed notices remain on top.
+
+The overlap was reproduced with Social, Inventory and Settings. A visual
+regression checks opaque dialogue text, buttons and frame pixels while allowing
+the skin's intentional transparency, then verifies confirmation clicks retain
+the underlying window. The focused Social, dialogue, movie and logout selection
+passes on Windows (33.148s). GPU parity passes across 21 states, including the
+Social confirmation (4.355s). The generated `social_confirmation.png` was
+visually inspected under ignored `var/dialogue-layer-check/`.
+
+From `client/`, with the installed editable assets:
+
+```powershell
+$env:CGO_ENABLED = '0'
+$env:SNAPSHOT_DIR = '../var/dialogue-layer-check'
+New-Item -ItemType Directory -Force $env:SNAPSHOT_DIR | Out-Null
+go test ./wlo/app -run '^Test(DialogueAbovePanels|SocialConfirmationSnapshot|FriendDelete|SetUpSave|NPCTalk|Question|NoticeSnapshot|BeachMovieEvent|StormMovieEffects|MonkeyRescueMovies|MonkeyMovieDepthAndIllustration|SnowMovie|.*Logout.*)$' -count=1 -timeout 4m
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^TestGPUClientParity$' -count=1 -timeout 5m
+```
+
+### Client right-click pose facing — 2026-11-02
+
+Right-clicking the scene now turns a stationary pose toward the cursor and sends
+the changed action through AC32:2. Window right-click actions retain priority.
+The native `FUN_0043b6ac` instructions at `0x43b702`–`0x43b770` were inspected
+directly in the WLRI `aLogin.exe` with SHA-256
+`ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`.
+They call the facing helper, collapse two-facing actions to halves, add the
+current action family and invoke the held-pose routine. The native source and
+independent wire fixtures remain unchanged.
+
+The focused client checks pass on Windows (app: 20.169s; world: 0.441s). They
+cover all eight sitting directions, camera offsets and off-center avatars,
+two-facing lying/stance/action families, alternate sitting, standing, unchanged
+facings, independent expressions and blocked input states. Expected AC32 bytes
+are independent literals. The regular databases and asset sources are untouched.
+
+From `client/`:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/app ./wlo/world -run '^Test(RightClickPose.*|EmoteTab|TurnAction|DirectionPoint|Facing|NativePoseBatchAndMalformed)$' -count=1 -timeout 3m
+go build -o ../bin/wonderland-client.exe .
+```
+
+Client catalog regeneration was attempted with
+`py tools/decompile/catalog.py --exe ../Wonderland-Client/aLogin.exe`, but the
+local `var/decompiled/reference/index.json` input is absent. The generated
+inventory/catalog were preserved. Native interactive acceptance remains pending.
+
+The decompilation inputs were subsequently restored under `var/decompiled`,
+with the matching WLRI executable under `var/ghidra`. Regeneration now succeeds:
+12,130 functions, 937 classes, 228 regions, 901 cited functions and 29/91 receive
+commands with a client branch. The new citation includes the right-click pose
+routine `FUN_0043b6ac`, whose body and main-form callers are present. The
+generator writes UTF-8/LF output and portable source paths on Windows. These
+inventory figures describe reference coverage, not feature completeness.
+
+### Ship Deck movie completion - 2026-11-02
+
+The captain's storm movie requires the AC186 handshake before AC20:6 completion.
+The server's original gate and raw-byte regression have been restored. The fix
+is in the client: AC186:12 echoes its identifier in AC186:9, and the server's
+AC186:9 reply is consumed without echoing or completing playback. There are no
+map/character/movie-ID exceptions or changes to asset definitions or databases.
+
+The client storm regression exercises the complete exchange and checks the
+ordered outgoing packets `[186,9,1,0]`, then `[20,6]`. Separate protocol fixtures
+cover other identifiers, loading without a world, opaque trailing fields,
+truncated/oversized packets, unsupported subcommands and reply-loop prevention.
+The server regression retains its premature-completion rejection and covers the
+persisted beach destination and rescue cleanup after the required handshake.
+
+From the repository root, then from `client/` respectively:
+
+```powershell
+$env:CGO_ENABLED = '1'
+go test -race ./internal/server -run '^Test(StormAndBeachRescue|StarterShipSceneTransitions|NativeStarterShipCabinTransitions|NativeSynchronizationGolden)$' -count=1 -timeout=5m
+
+$env:CGO_ENABLED = '0'
+go test ./wlo/app -run '^Test(MovieHandshakeWire|MovieHandshakeMalformed|StormMovieEffects|BeachMovieEvent|MonkeyRescueMovies)$' -count=1 -timeout=5m
+```
+
+The earlier server-only workaround is superseded by this client fix. Rebuild
+the client and keep the server's original handshake requirement. The owner
+subsequently confirmed that the Ship Deck story now works properly.
+
+### Following pet emotes and resting recovery - 2026-11-02
+
+Supported companion sprites mirror owner poses for local and remote players;
+unsupported animations retain normal following/standing. Native
+`FUN_00430680` supplies MoveKind 0's four-facing sitting conversion, verified
+against the real Roca sprite. The real-sprite integration also checks ordinary
+AC32 owner requests and native AC8:2 pet HP/SP updates. Sitting and lying
+screenshots under ignored `var/companion-rest-check/` were visually inspected.
+
+Player and active-pet recovery remains 2% of their individual equipped HP/SP
+maxima, minimum one, every three seconds. Focused server/store tests pass under
+the race detector, covering a full owner with an injured pet, inactive pets,
+caps, interaction/loading/battle gates, delayed checkpoints, rollback/retry,
+stale pet vitals, clean checkpoints and SQL-result merges. Recovery checkpoints
+update only state/vital columns; triggers reject inventory, pet and skill-row
+replacement. No schema or installed-data changes are required.
+
+The existing GPU/CPU full-client parity selection also passes. The asset compiler
+validated and reused all 72,829 entries (6,017.4 MiB of source); both Windows
+executables were rebuilt. The superseded server-workaround executable was removed.
+
+From the repository root:
+
+```powershell
+$env:CGO_ENABLED = '1'
+go test -race ./internal/server ./internal/store -run '^Test(Resting.*|SavedTransactionPreserves.*|Autosave.*|PositionCheckpoint.*|CleanCheckpointSkipsSQL|BufferedMovementFullCommitAdoptsCheckpointCoordinates)$' -count=1 -timeout=5m
+```
+
+From `client/`:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/world ./wlo/app -run '^Test(Companion.*|RightClickPose.*|AltOneKneelsAndSendsNativePose|NativePoseBatchAndMalformed|EmoteTab|TeamPet.*|MovieHandshakeWire|MovieHandshakeMalformed)$' -count=1 -timeout=4m
+```
+
+### Generated client exports stay local - 2026-11-02
+
+Client-derived files under `data/` and the generated client resource catalogs/
+PNG dimension baseline are ignored and removed from Git tracking while local
+copies remain. Server-only definitions, documentation, exporter code, authored
+compatibility policies and fixtures remain tracked. Historical Git/LFS objects
+are unaffected.
+
+`regenerate.py` now exports native client tables as well as media, requiring an
+explicit `--client` installation path. It builds a complete manifest
+using copies of the repository-owned server exports, without reading an original
+Private Server installation. The importer restores missing ignored JSON as well
+as media and preserves existing local files. Source-path comparisons support
+both Windows and POSIX paths.
+
+Focused Python exporter/restoration tests pass (20 tests; the existing symlink
+case skips where Windows lacks symlink privileges):
+
+```powershell
+$env:PYTHONUTF8 = '1'
+& ./var/asset-import-venv/Scripts/python.exe -m unittest discover -s tools/data_export -p 'test_import_untracked.py' -v
+& ./var/asset-import-venv/Scripts/python.exe -m unittest discover -s tools/data_export -p 'test_export.py' -v
+```
+
+The resource-catalog and first-build dimension-contract regressions also pass:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./cmd/client-assets ./internal/clientbundle -run '^Test(StagePackageAndVerify|Build.*)$' -count=1 -timeout=3m
+```
+
+The index audit excludes 545 generated paths (1,324,409,012 local bytes). Their
+local lengths and modification times remain unchanged; all 21 server-only
+exports reconstruct against their preserved source hashes without Private Server
+originals. No asset regeneration or database reset is performed by this change.
+
+### Sprite extraction across Windows drives - 2026-11-02
+
+An actual backed-up client-asset rebuild exposed a containment check that treated
+`filepath.Rel` failing across Windows volumes as an extraction failure. The
+exporter's temporary directory and original installation may reside on separate
+drives. Both sprite-export entry points now allow distinct volumes while still
+rejecting the source directory and its descendants on the same volume, including
+drive-letter case changes. Existing pixel, provenance and edit-preservation
+fixtures remain unchanged.
+
+`go test ./cmd/sprite-export -count=1 -timeout=3m` passes on Windows, including
+the cross-volume and containment regressions.
+
+The complete local rebuild then passed: SHA-256 backup verification covered
+26,036 files (5,742,968,012 bytes), and native verification reconstructed 40
+source resources. Verification covered 19,717 audio tracks, 6,257 sprites,
+816,578 frame records and every editable sprite pixel/placement, plus 3,796
+media sources. Picture export published 16,168 images after its own atlas checks.
+The 121 unresolved custom media formats and 18 missing-companion records match
+the backed-up source exports. Their retained bytes/metadata remain available.
+
+After installing the verified tree while preserving tracked server definitions
+and guides, the bundle compiler processed 72,829 files (71,320 reused) and the
+Windows client executable rebuilt. Installed `cmd/asset-build` verification,
+the focused dialogue/movie/companion selection and
+`TestCompiledBundleLoginAndSharedWorld` passed. The redundant rollback copy was
+removed only after all its files matched the independent backup; the original
+backup and SHA-256 manifest remain under ignored `var/backups/`.
+
+### Windows pre-push validation - 2026-11-02
+
+Full server race tests with the installed assets database, full client tests and
+both modules' `go vet` checks pass. Authenticated sprite tests used the explicitly
+selected matching installation through `WONDERLAND_SPRITE_CLIENT`. The server
+package's uncached run took 984.989s; the unchanged package was reused on the final
+full-suite run after correcting other packages' Windows checks.
+
+The checks exposed a rooted PNG-path validation gap on Windows: editable sheet
+names now require a local relative path and reject POSIX-rooted names on every
+platform. Database-role tests use a hard-link alias when Windows cannot create
+symlinks. POSIX file-mode assertions run only where those mode bits are supported;
+profile-content and fixture-isolation assertions still run on Windows. A migration
+fixture now closes its final reopened database before temporary-directory cleanup.
+
+Original screenshot comparisons skip only when their external capture file is
+absent. Existing captures still use the same pixel assertions, and other read/
+decode errors remain failures. No replacement reference images were generated.
+An old ignored temporary Go source snapshot was renamed to a non-Go suffix to
+keep it out of normal package discovery.

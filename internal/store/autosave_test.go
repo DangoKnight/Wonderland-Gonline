@@ -189,3 +189,63 @@ func TestAutosaveRestingVitals(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAutosavePetRestingVitals(t *testing.T) {
+	db, refs := pairFixture(t)
+	ctx, ref := context.Background(), refs[0]
+	if err := db.UpdateCharacter(ctx, ref.Account, ref.ID, func(c *game.Character) error {
+		c.Pets = []game.Pet{{ID: 123, Slot: 1, Level: 1, HP: 1, MaxHP: 20, MaxSP: 10}}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	chars, err := db.Characters(ctx, ref.Account)
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseline := chars[0]
+	next := baseline.Clone()
+	next.X, next.Pets[0].HP, next.Pets[0].SP = 321, 5, 3
+	for _, table := range []string{"character_items", "character_pets", "character_pet_skills"} {
+		if _, err := db.db.Exec("CREATE TRIGGER reject_rest_delete_" + table + " BEFORE DELETE ON " + table + " BEGIN SELECT RAISE(ABORT,'rest rewrote owned rows'); END"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.db.Exec("CREATE TRIGGER reject_pet_rest BEFORE UPDATE ON character_pets BEGIN SELECT RAISE(ABORT,'pet checkpoint failed'); END"); err != nil {
+		t.Fatal(err)
+	}
+	if written, err := db.AutosaveCharacter(ctx, ref, baseline, next); err == nil || written {
+		t.Fatal("pet failure committed a partial checkpoint", written, err)
+	}
+	saved, err := db.Characters(ctx, ref.Account)
+	if err != nil || saved[0].X != baseline.X || saved[0].Pets[0].HP != 1 {
+		t.Fatal("failed pet update did not roll back position", err)
+	}
+	if _, err := db.db.Exec("DROP TRIGGER reject_pet_rest"); err != nil {
+		t.Fatal(err)
+	}
+	if written, err := db.AutosaveCharacter(ctx, ref, baseline, next); err != nil || !written {
+		t.Fatal("retry", written, err)
+	}
+	saved, err = db.Characters(ctx, ref.Account)
+	if err != nil || saved[0].X != 321 || saved[0].Pets[0].HP != 5 || saved[0].Pets[0].SP != 3 {
+		t.Fatal("pet recovery not checkpointed", saved, err)
+	}
+	if written, err := db.AutosaveCharacter(ctx, ref, next, next); err != nil || written {
+		t.Fatal("clean pet checkpoint rewritten", written, err)
+	}
+	// A durable vital change must defeat a stale recovery snapshot, without
+	// undoing the change or saving the snapshot's newer walking position.
+	if _, err := db.db.Exec("UPDATE character_pets SET hp=2 WHERE character_id=? AND location='party'", ref.ID); err != nil {
+		t.Fatal(err)
+	}
+	pending := next.Clone()
+	pending.X, pending.Pets[0].HP = 322, 7
+	if _, err := db.AutosaveCharacter(ctx, ref, next, pending); !errors.Is(err, ErrAutosaveConflict) {
+		t.Fatal("stale pet vitals accepted", err)
+	}
+	saved, err = db.Characters(ctx, ref.Account)
+	if err != nil || saved[0].X != 321 || saved[0].Pets[0].HP != 2 {
+		t.Fatal("stale recovery overwrote SQL", err)
+	}
+}

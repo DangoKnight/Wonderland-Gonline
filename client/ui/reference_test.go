@@ -24,6 +24,9 @@ func testAssets(t *testing.T) *Assets {
 func compare(t *testing.T, name string, got *image.RGBA, tolerance int) (bad int) {
 	t.Helper()
 	f, err := os.Open(filepath.Join("..", "reference", "screenshots", "Login", name))
+	if os.IsNotExist(err) {
+		t.Skip("original reference capture is not installed:", name)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -332,6 +332,7 @@ func (c *Client) frame(draw bool) {
 	c.Input.Hovered = nil // FUN_0040f97c
 	c.sceneFadeTick(c.Now())
 	c.friendAskTick(c.Now())
+	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Step(c.Now())
@@ -357,7 +358,7 @@ func (c *Client) frame(draw bool) {
 		} else if !c.movieFrame() && draw {
 			c.World.Draw()
 			c.drawVehicleEffects()
-			c.Talk.Draw()
+			dialogueOverlay = true
 		}
 		c.sportFrame()
 	} else if c.fade.frozen == nil && draw {
@@ -394,6 +395,16 @@ func (c *Client) frame(draw bool) {
 				c.drawHotbarDrag()
 				c.Social.DrawDragged()
 			}
+		}
+	}
+	if dialogueOverlay {
+		// Dialogue and confirmations cover ordinary forms, including the
+		// window that opened them. Movie dialogue retains its zoomed scene pass.
+		c.Talk.Draw()
+		if c.Talk.Contains(c.Input.X, c.Input.Y) {
+			// Let the existing dialogue click handler receive the press instead
+			// of a panel control that was hit-tested underneath the overlay.
+			c.Input.Hovered = nil
 		}
 	}
 	if draw {
@@ -573,6 +584,10 @@ func (c *Client) dispatch(p []byte) {
 		// acknowledges it with 20/6, which moves server-driven sequences
 		// such as the beach rescue along.
 		c.event.done = true
+	case p[0] == protocol.CommandMovie:
+		if !c.moviePacket(p) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameStart:
 		c.startSport(s)
 	case p[0] == protocol.CommandArcadeGame:

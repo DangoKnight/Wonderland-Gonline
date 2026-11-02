@@ -108,7 +108,7 @@ func OpenEditableSprites(path string) (*EditableSprites, error) {
 }
 func safeSheetPath(path string) bool {
 	clean := filepath.Clean(filepath.FromSlash(path))
-	return path != "" && !filepath.IsAbs(clean) && clean != ".." && !strings.HasPrefix(clean, ".."+string(filepath.Separator)) && !strings.ContainsAny(path, "\\:") && strings.EqualFold(filepath.Ext(clean), ".png")
+	return path != "" && filepath.IsLocal(clean) && !strings.HasPrefix(path, "/") && !strings.ContainsAny(path, "\\:") && strings.EqualFold(filepath.Ext(clean), ".png")
 }
 
 // FrameImage loads PNGs lazily; original files and palette restrictions are not

@@ -47,6 +47,19 @@ players’ pets. AC7 relocation resets the trail; large discontinuities beyond
 the local walk range also reset it as a recovery fallback. Switching pets
 starts a fresh trail; name updates preserve the current walk.
 
+Following pets mirror their owner's held emote poses, for both the local player
+and peers, when their sprite contains that animation. MoveKind 0 pets use the
+native four-facing sitting conversion (`FUN_00430680`): player actions 46-53
+map to 47, 47, 49, 49, 51, 51, 51, 53. Missing animations keep the pet visible
+in its ordinary follow/stand state. Posing stops the pet's walk at its current
+trail position; standing or moving resumes following. The ordinary owner AC32
+packets drive this presentation, without an additional pet protocol.
+
+When the owner rests, the active following/battle pet shares the server's 2%
+HP/SP recovery every three seconds, capped to its own equipped maxima. A full
+owner does not prevent pet recovery. See [resting recovery](ITEMS_PLAYER_STATE.md#resting-recovery)
+for native vital reports and guarded buffered persistence.
+
 Pet riders use directional riding poses (18–25) while the mount walks.
 AdjustRidePetPos.txt may instead request standing or seated poses (46–53).
 The character’s land walking animation returns after dismounting.

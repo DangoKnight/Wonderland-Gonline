@@ -113,6 +113,11 @@ full-checkpoint conflict validation. Purchases and other
 SQL-returned results preserve pending walking when the transaction leaves the
 saved position unchanged. Buffered recovery is retained per vital when the
 transaction leaves that vital unchanged, capped to the adopted maximum.
+The active following pet recovers on the same resting tick. Its HP/SP are also
+buffered: checkpoints update only those columns in the owned party-pet row,
+guarded by pet identity and checkpointed vitals, in the same transaction as
+the character state. Pet recovery survives unrelated SQL results per vital;
+explicit vital changes and pet removal/replacement take precedence.
 Warps and recoverable tent returns remain immediate.
 Disconnect and graceful shutdown attempt a final save; failures retain the
 checkpoint baseline and are logged. Gathering remains on the independent
@@ -277,22 +282,27 @@ See [data/pictures/README.md](../data/pictures/README.md).
 ## Original asset inputs and decompiled outputs
 
 Original client assets come from the WLRI / Wonderland Rhode Island installation.
-The external-media regeneration/import procedure accepts
-`regenerate.py --client <installation-root>` and needs no private-server checkout. Static
-server-only tables already have tracked JSON exports; complete offline game-data
-regeneration remains `export.py --client <client-data> --server <private-server>`.
+The client table/media regeneration procedure accepts
+`regenerate.py --client <installation-root>` and needs no private-server checkout.
+Tracked server-only JSON exports supply the additional definitions for a complete
+SQL import tree. To re-export those from their original source too, use
+`export.py --client <client-data> --server <private-server>`.
 Keep original source assets, indexes and decryption inputs (including `aLogin.exe`)
 in their original projects. Exclude database-path overrides from asset export/import.
-Treat every asset and manifest in `data/` as a derived output. Never require
-existing `data/` assets or manifests to regenerate those outputs. Temporary
+Treat client assets and manifests in `data/` as derived outputs. Never require
+previously generated client data or manifests to regenerate those outputs.
+Retained `data/server/` definitions are versioned inputs and never supply native
+decryption keys. Temporary
 intermediates may be created during an export and must be cleaned up afterward.
 Do not retain decoded JMA files in `data/`. Preserve complete decoded bytes as
 zlib-compressed Base64 in `sprites.json` for palette indices and verification.
 PNG regeneration must start from fresh sibling-source decryption.
 
 Follow [ASSET_IMPORT.md](ASSET_IMPORT.md) to restore missing ignored payloads.
-Use `python3 tools/data_export/regenerate.py --output var/asset-import` for a fresh
+Use `python3 tools/data_export/regenerate.py --client <installation-root> --output var/asset-import` for a fresh
 source-only export of audio, sprites, pictures and remaining client media.
+Extraction instructions must use portable example paths and an explicit source;
+do not infer a developer's installation name or sibling-directory layout.
 Install the Python dependencies in `tools/data_export/requirements.txt` and make
 FFmpeg available. Media metadata documents unresolved source content;
 check it before claiming complete decryption. Run `verify_media.py` after a fresh
@@ -1100,6 +1110,20 @@ unqualified stat-tree skills; a golden failure retains potential. Consume one
 pill on either outcome, but none on a rejected request or failed persistence. See [native Potential Pills](NATIVE_COMMANDS.md#potential-pills).
 
 ## Client build and session ownership
+
+Client-derived exports under `data/` and generated client resource manifests/
+dimension baselines remain local and ignored, including JSON and lossless
+sprite payloads. Retain `data/server/`, documentation, exporter code, authored
+compatibility policies and independent fixtures. Regeneration reads the supplied
+original client installation and combines it with tracked server-only exports;
+it must not depend on a previous checkout's generated data or overwrite local
+asset edits. See [ASSET_IMPORT.md](ASSET_IMPORT.md).
+
+The Gonline client must implement the same protocol contract as the legacy
+client. Fix missing client requests, replies and sequencing in the client;
+do not relax server validation or add client-specific exceptions to accommodate
+an incomplete client implementation. Preserve independent raw-byte fixtures
+and verify the client against the existing server handshake and interaction gates.
 
 Use `make build-client` to validate/recompile editable assets before building Go.
 `client/asset-contract.json` holds PNG dimension compatibility constraints;

@@ -148,7 +148,7 @@ func (s *Server) acknowledgeStorm(c *Session) {
 	time.AfterFunc(beachTimeout, func() {
 		s.worldMu.Lock()
 		defer s.worldMu.Unlock()
-		if c.storm && c.stormAck && c.stormStarted == started && s.world[c.info.ID] == c {
+		if c.storm && c.stormAck && c.stormStarted.Equal(started) && s.world[c.info.ID] == c {
 			if err := s.endStorm(context.Background(), c); err != nil {
 				s.Log.Error("cinematic recovery failed", "error", err)
 			}

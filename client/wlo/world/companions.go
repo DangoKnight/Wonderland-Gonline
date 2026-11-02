@@ -3,6 +3,8 @@ package world
 import (
 	"image"
 	"time"
+
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -10,9 +12,14 @@ const (
 	companionTrailSamples = 5
 	companionTrailSpacing = 20
 	// FUN_00424a0c targets +0x220c/+0x2210, the third trail entry.
-	companionTrailTarget      = 2
-	companionTeleportDistance = walkReach * cellSize
+	companionTrailTarget        = 2
+	companionTeleportDistance   = walkReach * cellSize
+	companionFourFacingMoveKind = 0 // Npc.dat +0x57, FUN_00430680.
 )
+
+// FUN_00430680 folds the eight sitting directions to these four frames for
+// MoveKind 0 companions. Preserve its asymmetric direction-6 fallback.
+var companionSittingFacings = [...]int{47, 47, 49, 49, 51, 51, 51, 53}
 
 type Companion struct {
 	ID            uint32
@@ -24,6 +31,7 @@ type Companion struct {
 	trail         [companionTrailSamples]image.Point
 	ownerPosition image.Point
 	initialized   bool
+	posed         bool
 }
 
 // SetCompanion is owner-based AC15:4/AC19:1 presentation, separate from map NPCs.
@@ -55,6 +63,7 @@ func (w *World) companionOwner(owner uint32) *Player {
 func (c *Companion) reset(owner *Player) {
 	c.position = Player{X: owner.X, Y: owner.Y, Direction: standingAction + owner.Direction%directionsCount}
 	c.walker = Walker{}
+	c.posed = false
 	c.ownerPosition = image.Pt(owner.X, owner.Y)
 	for i := range c.trail {
 		c.trail[i] = c.ownerPosition
@@ -71,6 +80,23 @@ func (c *Companion) step(owner *Player, now time.Time) {
 		c.reset(owner)
 	}
 	c.ownerPosition = at
+	// Held poses arrive through the owner's normal AC32:2 state. Use the
+	// pet's actual sprite frames as its capability check, so creatures without
+	// a human emote keep following/standing rather than disappearing.
+	action := int(owner.Direction)
+	if c.Info.MoveKind == companionFourFacingMoveKind && action >= protocol.PoseSitFirst && action <= protocol.PoseSitLast {
+		action = companionSittingFacings[action-protocol.PoseSitFirst]
+	}
+	if ActionBase(action) > standingAction && c.supportsPose(action) {
+		c.walker.Stop(&c.position)
+		c.position.Direction = int32(action)
+		c.posed = true
+		return
+	}
+	if c.posed {
+		c.position.Direction = int32(PoseAction(standingAction, int(c.position.Direction)))
+		c.posed = false
+	}
 	c.walker.Step(&c.position, now)
 	if abs(at.X-c.trail[0].X) >= companionTrailSpacing || abs(at.Y-c.trail[0].Y) >= companionTrailSpacing {
 		for i := len(c.trail) - 1; i > 0; i-- {
@@ -87,6 +113,14 @@ func (c *Companion) step(owner *Player, now time.Time) {
 		return
 	}
 	c.walker.Start(&c.position, []image.Point{goal}, now)
+}
+
+func (c *Companion) supportsPose(action int) bool {
+	if painter, ok := c.Painter.(interface{ FrameSize(int) (int, int) }); ok {
+		w, h := painter.FrameSize(action)
+		return w > 0 && h > 0
+	}
+	return false
 }
 
 func (w *World) companionPosition(owner uint32) (int, int, int, bool) {

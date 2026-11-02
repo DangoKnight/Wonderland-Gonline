@@ -119,3 +119,75 @@ func TestCompanionNativeNameHeight(t *testing.T) {
 		}
 	}
 }
+
+type companionPosePainter struct {
+	paintCount
+	actions map[int]bool
+}
+
+func (p companionPosePainter) FrameSize(action int) (int, int) {
+	if p.actions[action] {
+		return 32, 48
+	}
+	return 0, 0
+}
+
+func TestCompanionMatchesSupportedOwnerPoses(t *testing.T) {
+	for _, peerOwner := range []bool{false, true} {
+		t.Run(map[bool]string{false: "self", true: "peer"}[peerOwner], func(t *testing.T) {
+			now := time.Unix(100, 0)
+			w := &World{Player: Player{ID: 1, X: 100, Y: 100, Direction: 10}}
+			owner := &w.Player
+			if peerOwner {
+				peer := &Peer{Player: Player{ID: 2, X: 100, Y: 100, Direction: 10}}
+				w.Peers = map[uint32]*Peer{2: peer}
+				owner = &peer.Player
+			}
+			painter := companionPosePainter{actions: map[int]bool{26: true, 27: true}}
+			for action := 46; action <= 53; action++ {
+				painter.actions[action] = true
+			}
+			w.SetCompanion(owner.ID, 123, nil, painter)
+			c := w.Companions[owner.ID]
+			c.Info.MoveKind = 1 // This sprite supports all eight sitting directions.
+			c.walker.Start(&c.position, []image.Point{{120, 100}}, now)
+			for _, action := range []int32{46, 47, 48, 49, 50, 51, 52, 53, 26, 27} {
+				owner.Direction = action
+				w.Step(now.Add(time.Second))
+				x, y, got, _ := w.companionPosition(owner.ID)
+				if got != int(action) || x != 100 || y != 100 || c.walker.Walking() {
+					t.Fatalf("pose %d: companion at %d,%d action %d walking %v", action, x, y, got, c.walker.Walking())
+				}
+			}
+			// The sprite has no wave frames: restore a visible standing pose.
+			owner.Direction = 36
+			w.Step(now.Add(2 * time.Second))
+			if _, _, action, _ := w.companionPosition(owner.ID); action < 8 || action > 15 || c.posed {
+				t.Fatalf("unsupported pose hid the pet: %d", action)
+			}
+			owner.Direction = 10
+			owner.X = 160
+			w.Step(now.Add(3 * time.Second))
+			owner.X = 180
+			w.Step(now.Add(4 * time.Second))
+			owner.X = 200
+			w.Step(now.Add(5 * time.Second))
+			w.Step(now.Add(6 * time.Second))
+			if x, _, _, _ := w.companionPosition(owner.ID); x == 100 {
+				t.Fatal("pet did not resume following after the pose")
+			}
+		})
+	}
+}
+
+func TestCompanionNativeSittingFacings(t *testing.T) {
+	w := &World{Player: Player{ID: 1, Direction: 8}}
+	w.SetCompanion(1, 123, nil, companionPosePainter{actions: map[int]bool{47: true, 49: true, 51: true, 53: true}})
+	for i, want := range []int{47, 47, 49, 49, 51, 51, 51, 53} {
+		w.Player.Direction = int32(46 + i)
+		w.Step(time.Unix(100, 0))
+		if _, _, action, _ := w.companionPosition(1); action != want {
+			t.Fatalf("owner pose %d pet pose %d want %d", 46+i, action, want)
+		}
+	}
+}

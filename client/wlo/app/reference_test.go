@@ -45,6 +45,9 @@ func testClient(t *testing.T) *Client {
 func compare(t *testing.T, name string, c *Client) int {
 	t.Helper()
 	f, err := os.Open(filepath.Join("..", "..", "reference", "screenshots", "Login", name))
+	if os.IsNotExist(err) {
+		t.Skip("original reference capture is not installed:", name)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

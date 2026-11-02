@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"wonderland-gonline/client/wlo/login"
 )
@@ -57,7 +58,7 @@ func TestWorkspaceProfileRestoresSessionsWithoutAuthentication(t *testing.T) {
 		t.Fatalf("incorrect profile: %+v", p)
 	}
 	info, _ := os.Stat(path)
-	if info.Mode().Perm() != 0600 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0600 {
 		t.Fatalf("profile permissions: %v", info.Mode())
 	}
 	if err := w.SaveProfile(); err != nil {

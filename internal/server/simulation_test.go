@@ -193,6 +193,76 @@ func TestRestingRecoversVitalsAndCheckpoints(t *testing.T) {
 	}
 }
 
+func TestRestingRecoversActivePetAndPlayer(t *testing.T) {
+	s, players, wires := chatFixture(t)
+	c, ctx := players[0], context.Background()
+	next := c.character.Clone()
+	next.HP, next.SP = 1, 0
+	pet := game.NewPet(14162, "Roca", 3, game.PetTemplate{}, s.Assets.Items)
+	pet.HP, pet.SP, pet.Battle = 1, 0, true
+	idle := game.NewPet(12032, "Robinson", 1, game.PetTemplate{}, s.Assets.Items)
+	idle.HP, idle.SP = 1, 0
+	next.Pets, next.ActivePet = []game.Pet{idle, pet}, pet.ID
+	if err := s.commit(ctx, c, next); err != nil {
+		t.Fatal(err)
+	}
+	c.pets = newPetRoster()
+	c.pets.register(idle.ID)
+	c.pets.register(pet.ID) // Client slot 2 differs from party slot 3.
+	c.emote = 46
+	t0 := time.Unix(100, 0)
+	s.rest(c, t0)
+	s.rest(c, t0.Add(restRecoveryInterval))
+	full := pet.Combat(s.Assets.Items)
+	hp, sp := 1+max(1, full.MaxHP*2/100), max(1, full.MaxSP*2/100)
+	if c.character.Pets[1].HP != hp || c.character.Pets[1].SP != sp || c.character.HP <= 1 || c.character.SP == 0 {
+		t.Fatalf("player/pet recovery: %+v %+v", c.character, c.character.Pets[1])
+	}
+	if c.character.Pets[0].HP != 1 || c.character.Pets[0].SP != 0 {
+		t.Fatal("inactive pet recovered")
+	}
+	got := wires[0].packets(t)
+	// Independent native AC8:2 records: collection 4, client slot 2, HP/SP.
+	wantHP := protocol.Builder{8, 2, 4, 2, 0, 25, 1}.U32(uint32(hp)).U32(0)
+	wantSP := protocol.Builder{8, 2, 4, 2, 0, 26, 1}.U32(uint32(sp)).U32(0)
+	if len(got) != 4 || !contains(got, wantHP) || !contains(got, wantSP) {
+		t.Fatal("player/pet vital packets", got)
+	}
+	saved, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || saved[0].Pets[1].HP != 1 || saved[0].HP != 1 {
+		t.Fatal("rest recovery wrote before checkpoint", err)
+	}
+	s.autosaveCharacters(ctx)
+	saved, err = s.Store.Characters(ctx, c.account.ID)
+	if err != nil || saved[0].Pets[1].HP != hp || saved[0].Pets[1].SP != sp {
+		t.Fatal("pet checkpoint", err)
+	}
+	// A full owner must not prevent the pet's last, capped recovery tick.
+	stats := c.character.Combat(s.Assets.Items)
+	c.character.HP, c.character.SP = uint32(stats.MaxHP), uint32(stats.MaxSP)
+	c.character.Pets[1].HP, c.character.Pets[1].SP = full.MaxHP-1, full.MaxSP-1
+	wires[0].Reset()
+	s.rest(c, t0.Add(2*restRecoveryInterval))
+	if c.character.Pets[1].HP != full.MaxHP || c.character.Pets[1].SP != full.MaxSP || len(wires[0].packets(t)) != 2 {
+		t.Fatal("full player blocked pet recovery or pet exceeded maxima")
+	}
+	// Event, battle, loading and non-resting poses reset the recovery clock.
+	for _, block := range []func(){
+		func() { c.event = &eventSession{} },
+		func() { c.battle = &battleRun{} },
+		func() { c.ready = false },
+		func() { c.emote = 8 },
+	} {
+		c.character.Pets[1].HP = 1
+		block()
+		s.rest(c, t0.Add(3*restRecoveryInterval))
+		if c.character.Pets[1].HP != 1 || !c.restedAt.IsZero() {
+			t.Fatal("blocked pet recovered")
+		}
+		c.event, c.battle, c.ready, c.emote = nil, nil, true, 26
+	}
+}
+
 func TestWorldSimulationMovementRejectionPreservesState(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	c := players[0]

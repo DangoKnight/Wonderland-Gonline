@@ -4,10 +4,46 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"wonderland-gonline/internal/clientassets"
 )
+
+func TestSpriteOutputLocation(t *testing.T) {
+	root := t.TempDir()
+	source := filepath.Join(root, "originals")
+	for _, tc := range []struct {
+		output string
+		allow  bool
+	}{
+		{source, false},
+		{filepath.Join(source, "nested", "export"), false},
+		{filepath.Join(root, "originals-export"), true},
+		{root, true},
+	} {
+		if err := ensureSpriteOutputOutside(source, tc.output); (err == nil) != tc.allow {
+			t.Fatalf("source %s output %s: %v", source, tc.output, err)
+		}
+	}
+}
+
+func TestSpriteOutputDifferentWindowsVolumes(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows volume semantics")
+	}
+	for _, tc := range [][2]string{
+		{`D:\original\jma`, `C:\temp\sprite-export`},
+		{`C:\original\jma`, `D:\rebuilt\sprites`},
+	} {
+		if err := ensureSpriteOutputOutside(tc[0], tc[1]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := ensureSpriteOutputOutside(`C:\original`, `c:\original\export`); err == nil {
+		t.Fatal("drive-letter case bypassed the source containment check")
+	}
+}
 
 func TestEditableExportPixelsAnchorsAndEmptyFrames(t *testing.T) {
 	root := t.TempDir()

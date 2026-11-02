@@ -10,6 +10,23 @@ import (
 	"wonderland-gonline/internal/spritepack"
 )
 
+// ensureSpriteOutputOutside accepts absolute paths on different Windows volumes:
+// filepath.Rel cannot represent that relationship, but they cannot overlap.
+// Same-volume paths still reject the source itself and every descendant.
+func ensureSpriteOutputOutside(source, output string) error {
+	if !strings.EqualFold(filepath.VolumeName(source), filepath.VolumeName(output)) {
+		return nil
+	}
+	relative, err := filepath.Rel(source, output)
+	if err != nil {
+		return err
+	}
+	if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("output must be outside original sprite source directory")
+	}
+	return nil
+}
+
 // exportEditableFromSource makes a fresh native decode in temporary storage.
 // Existing data/ files are outputs only; none supply palettes, pixels, actions,
 // encryption keys or other inputs for this regeneration.
@@ -27,12 +44,8 @@ func exportEditableFromSource(input, executable, output, selected string, overwr
 		return err
 	}
 	for _, root := range []string{inputPath, filepath.Dir(executablePath)} {
-		relative, err := filepath.Rel(root, outputPath)
-		if err != nil {
+		if err := ensureSpriteOutputOutside(root, outputPath); err != nil {
 			return err
-		}
-		if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return fmt.Errorf("output must be outside original sprite inputs and client executable directory")
 		}
 	}
 	if !overwrite {

@@ -169,12 +169,8 @@ func run(input, executable, output string) error {
 	if err != nil {
 		return err
 	}
-	relative, err := filepath.Rel(input, output)
-	if err != nil {
+	if err := ensureSpriteOutputOutside(input, output); err != nil {
 		return err
-	}
-	if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("output must be outside source directory")
 	}
 	executable, err = filepath.Abs(executable)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -100,7 +101,14 @@ func TestDatabaseRolesMustRemainSeparate(t *testing.T) {
 	}
 	alias := filepath.Join(root, "alias.db")
 	if err := os.Symlink(gameplay, alias); err != nil {
-		t.Fatal(err)
+		if runtime.GOOS != "windows" {
+			t.Fatal(err)
+		}
+		// Windows symlinks require privileges; a hard link still exercises
+		// physical-file identity rather than only comparing path strings.
+		if err := os.Link(gameplay, alias); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, assetPath := range []string{gameplay, filepath.Join(root, "sub", "..", "gameplay.db"), alias} {
 		c := Default()

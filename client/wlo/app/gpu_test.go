@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/internal/clientfs"
@@ -18,7 +19,7 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 20
+const gpuParityStages = 21
 
 func TestGPUClientParity(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
@@ -126,6 +127,16 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 20:
+			c.Social.Show()
+			c.Social.SelectTab(hud.SocialSetUp)
+			c.confirm([]byte("Ensure your data is correct. System will be sending bday gift on specified date. Log in game to receive it."), func() {})
+			start := c.Now()
+			for i := 1; i <= 10; i++ {
+				at := start.Add(time.Duration(i) * 20 * time.Millisecond)
+				c.Now = func() time.Time { return at }
+				c.Frame()
+			}
 		case 14:
 			w.Switch(0)
 			c = w.Current()

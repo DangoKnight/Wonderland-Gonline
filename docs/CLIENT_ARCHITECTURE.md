@@ -432,6 +432,17 @@ Weapons use their own +68 Y canvas correction (`FUN_002fe8e8`); mounted seated
 poses hide hand weapons except item type 6 (`FUN_00433318`). These corrections
 belong to the renderer; exported PNG anchors remain unchanged.
 
+Right-clicking the unobstructed scene turns a stationary character toward the
+cursor without changing its pose or position. `FUN_0043b6ac` computes the facing
+through `FUN_0041218c`, preserves the family through `FUN_00427150`, and calls
+`FUN_00430f90`. The client reuses `world.Facing` and `world.PoseAction`: kneeling
+and alternate sitting retain eight directions; lying and other two-facing
+actions retain their left/right variants. Camera offsets are applied before
+turning. Only changed facings send AC32:2; expressions keep their own animation.
+Window controls consume right-clicks first. Loading, walking, mounted vehicles,
+battles, movies, minigames, held interactions and modal/dialogue windows suppress
+scene turning. See [verification](TESTING.md#client-right-click-pose-facing--2026-11-02).
+
 AC15:15 plays the vehicle destruction strip (`FUN_00449f80`): Robinson's raft
 uses `images/48010_B`, three vertical frames at 70 ms per frame, centered at the
 vehicle's last water position. Missing vehicle artwork falls back to

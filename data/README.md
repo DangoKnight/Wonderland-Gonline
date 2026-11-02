@@ -110,8 +110,8 @@ combined payloads created by the full data exporter.
 One main audio stream lacks its final end-of-stream flag in the source; that
 anomaly is recorded as `source_warnings` and the source bytes are preserved.
 
-The tracks total about 1.43 GB and remain local and ignored by Git. JSON indexes
-and the track manifest remain available for version control. Regeneration reads the original `odd.dat` / `odd_d01.dat` files directly
+The tracks total about 1.43 GB and remain local and ignored by Git. Their JSON
+indexes and track manifest are also generated locally. Regeneration reads the original `odd.dat` / `odd_d01.dat` files directly
 from the sibling client; saved indexes and combined exports are never inputs.
 Original account databases and their SQLite sidecars are excluded from the
 asset export. Accounts and characters belong exclusively to Go gameplay storage.
@@ -145,10 +145,12 @@ The manifest retains archive/resource identity, dimensions and source hashes.
 
 ## Git storage policy
 
-Generated PNG images, decoded native sprite payloads and audio files remain local
-and are ignored by Git. JSON data, manifests, editable metadata and documentation
-remain tracked. Regenerate or obtain the image/audio payloads separately for a
-fresh checkout. Assets committed previously remain in Git/LFS history; stopping
+All client-derived exports remain local and ignored by Git, including root JSON
+tables, manifests, editable metadata, lossless decoded sprite payloads and media.
+Documentation and `server/` definitions remain tracked because the latter cannot
+be regenerated from the original client. Regenerate the client-derived tree for
+a fresh checkout. Existing local copies and edits are preserved when untracking.
+Assets committed previously remain in Git/LFS history; stopping
 tracking does not purge that history or remote LFS storage.
 
 ### Individual OGG tracks
@@ -163,22 +165,23 @@ Individual OGG files are ignored by Git, like their source containers.
 
 ## Regenerate from original sibling sources
 
-All files and manifests here are derived outputs. To restore missing ignored
-images, audio and video after cloning, only the `Wonderland-Client` (WLRI /
+Client files and manifests here are derived outputs. To restore missing ignored
+tables, metadata, images, audio and video after cloning, only the original client (WLRI /
 Wonderland Rhode Island) installation is required. Decryption keys come from
 its matching executable. See [the asset import procedure](../docs/ASSET_IMPORT.md).
 
 ```sh
 python3 tools/data_export/regenerate.py \
-  --client ../Wonderland-Client \
+  --client /absolute/path/to/WLRI-client \
   --output var/asset-import
 ```
 
 This produces `audio/`, `sprites/`, `pictures/` and `media/`, including PNG
 atlases, individual Ogg tracks, PCM sounds/voices and the preserved intro movie.
-It does not regenerate the tracked root gameplay tables or `server/` definitions.
-The restore tool checks matching media metadata before copying missing ignored
-payloads into `data/`. No saved asset provides decryption inputs.
+It regenerates the root client tables and combines their inventory with copies
+of tracked `server/` definitions, without requiring the old Private Server.
+The restore tool copies missing ignored tables, metadata and media into `data/`
+and preserves existing local files. No saved asset provides decryption inputs.
 
 To regenerate the complete static game-data export, use the separate offline
 `export.py --client <WLRI-root>/data --server <private-server-root> --output <new-directory>`

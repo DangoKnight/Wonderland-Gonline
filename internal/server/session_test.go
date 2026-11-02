@@ -26,6 +26,49 @@ func setAutosaveBaseline(c *Session) {
 	c.autosaveBaseline = &baseline
 }
 
+func TestSavedTransactionPreservesPetRecovery(t *testing.T) {
+	for _, mode := range []string{"unchanged", "changed_hp", "capped", "removed", "replaced"} {
+		t.Run(mode, func(t *testing.T) {
+			baseline := game.Character{Pets: []game.Pet{{ID: 123, Slot: 1, HP: 1, SP: 0, MaxHP: 20, MaxSP: 20}}}
+			pending, next := baseline.Clone(), baseline.Clone()
+			pending.Pets[0].HP, pending.Pets[0].SP = 10, 8
+			next.Gold = 99
+			switch mode {
+			case "changed_hp":
+				next.Pets[0].HP = 2
+			case "capped":
+				next.Pets[0].MaxHP = 5
+			case "removed":
+				next.Pets = nil
+			case "replaced":
+				next.Pets[0].ID = 456
+			}
+			c := &Session{character: &pending, autosaveBaseline: &baseline}
+			(&Server{}).adoptSavedCharacter(c, next)
+			if c.character.Gold != 99 || c.autosaveBaseline.Gold != 99 {
+				t.Fatal("transaction result lost")
+			}
+			if mode == "removed" {
+				if len(c.character.Pets) != 0 {
+					t.Fatal("removed pet resurrected")
+				}
+				return
+			}
+			wantHP, wantSP := int32(10), int32(8)
+			if mode == "changed_hp" {
+				wantHP = 2
+			} else if mode == "capped" {
+				wantHP = 5
+			} else if mode == "replaced" {
+				wantHP, wantSP = 1, 0
+			}
+			if c.character.Pets[0].HP != wantHP || c.character.Pets[0].SP != wantSP || c.autosaveBaseline.Pets[0].SP != 0 {
+				t.Fatal("pet recovery merge", c.character.Pets, c.autosaveBaseline.Pets)
+			}
+		})
+	}
+}
+
 type stalledOutputConn struct {
 	net.Conn
 	started chan struct{}

@@ -353,8 +353,9 @@ func (s *Server) clearShapeshift(c *Session) {
 
 // Resting recovery is a server rule of this port: neither aLogin nor the
 // reference server defines one. A character holding a sitting or lying
-// pose outside battles and events recovers restRecoveryPercent of their
-// maximum HP and SP (at least one point) every restRecoveryInterval.
+// pose outside battles and events and their active pet recover
+// restRecoveryPercent of their own maximum HP/SP (at least one point)
+// every restRecoveryInterval.
 const (
 	restRecoveryInterval = 3 * time.Second
 	restRecoveryPercent  = 2
@@ -399,21 +400,45 @@ func (s *Server) rest(c *Session, now time.Time) {
 		return min(maximum, current+max(1, maximum*restRecoveryPercent/100))
 	}
 	hp, sp := gain(c.character.HP, maxHP), gain(c.character.SP, maxSP)
-	if hp == c.character.HP && sp == c.character.SP {
-		return
-	}
-	if c.autosaveBaseline == nil {
-		baseline := c.character.Clone()
-		c.autosaveBaseline = &baseline
+	baseline := func() {
+		if c.autosaveBaseline == nil {
+			before := c.character.Clone()
+			c.autosaveBaseline = &before
+		}
 	}
 	var packets [][]byte
 	if hp != c.character.HP {
+		baseline()
 		c.character.HP = hp
 		packets = append(packets, serverwire.VitalPacket(game.StatCurrentHP, hp))
 	}
 	if sp != c.character.SP {
+		baseline()
 		c.character.SP = sp
 		packets = append(packets, serverwire.VitalPacket(game.StatCurrentSP, sp))
+	}
+	if pet := c.character.BattlePet(); pet != nil {
+		full := pet.Combat(s.Assets.Items)
+		hp := int32(gain(uint32(max(pet.HP, 0)), uint32(max(full.MaxHP, 1))))
+		sp := int32(gain(uint32(max(pet.SP, 0)), uint32(max(full.MaxSP, 0))))
+		var slot byte
+		if c.pets != nil {
+			slot = c.pets.slot(pet.ID)
+		}
+		if hp != pet.HP {
+			baseline()
+			pet.HP = hp
+			if slot != 0 {
+				packets = append(packets, game.PetStat(slot, game.StatCurrentHP, int64(hp)))
+			}
+		}
+		if sp != pet.SP {
+			baseline()
+			pet.SP = sp
+			if slot != 0 {
+				packets = append(packets, game.PetStat(slot, game.StatCurrentSP, int64(sp)))
+			}
+		}
 	}
 	if err := s.sendAll(c, packets); err != nil {
 		s.Log.Debug("resting recovery report failed", "session", c.info.ID, "error", err)

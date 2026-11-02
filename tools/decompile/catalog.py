@@ -173,7 +173,7 @@ def cited_addresses(root):
             if "third_party" in p.parts:
                 continue
             for m in re.findall(r"FUN_00([0-9a-f]{6})", p.read_text(errors="replace")):
-                out[int(m, 16)].add(str(p.relative_to(root)))
+                out[int(m, 16)].add(p.relative_to(root).as_posix())
     return out
 
 
@@ -279,8 +279,8 @@ def main():
     inventory = {"build": BUILD, "functions": len(full), "classes": len(classes), "regions": regions,
                  "subsystems": subs, "receive_commands": commands,
                  "cited_functions": len([a for a in full if a in cited])}
-    (root / "docs/client-inventory.json").write_text(json.dumps(inventory, indent=1) + "\n")
-    (root / "docs/ALOGIN_CATALOG.md").write_text(render(inventory))
+    (root / "docs/client-inventory.json").write_text(json.dumps(inventory, indent=1) + "\n", encoding="utf-8", newline="\n")
+    (root / "docs/ALOGIN_CATALOG.md").write_text(render(inventory), encoding="utf-8", newline="\n")
     print(f"{len(full)} functions, {inventory['cited_functions']} cited, {len(regions)} regions, "
           f"{len(loose)} unclassified, {sum(c['client'] for c in commands)}/{len(commands)} commands")
 

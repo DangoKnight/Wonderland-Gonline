@@ -67,12 +67,23 @@ func TestBeachMovieEvent(t *testing.T) {
 // and shows the "?" over the captain (S10238) in stage 2.
 func TestStormMovieEffects(t *testing.T) {
 	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
 	var music []int
 	c.dispatch(movieFrameFor(123, 1))
 	if !c.MoviePlaying() {
 		t.Fatal("no movie")
 	}
-	p := c.movie.p
+	mp := c.movie
+	p := mp.p
+	// Match the server's legacy exchange before the AC20:6 completion.
+	c.dispatch([]byte{186, 12, 1, 0, 0, 0, 0})
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{186, 9, 1, 0}) {
+		t.Fatalf("movie handshake: %v", got)
+	}
+	c.dispatch([]byte{186, 9, 1, 0, 1, 0, 0, 0, 0})
+	if c.movie != mp || c.event.done {
+		t.Fatal("handshake reply completed the movie early")
+	}
 	p.Music = func(i int) { music = append(music, i) }
 	red := map[int]bool{}
 	var passengers []int // NPCs present only in stages 17..18
@@ -122,6 +133,10 @@ func TestStormMovieEffects(t *testing.T) {
 	}
 	if c.MoviePlaying() {
 		t.Fatalf("movie still at stage %d", p.Stage)
+	}
+	c.Frame()
+	if got := sent(); len(got) != 2 || !bytes.Equal(got[0], []byte{186, 9, 1, 0}) || !bytes.Equal(got[1], []byte{20, 6}) {
+		t.Fatalf("movie wire sequence: %v, want handshake then completion", got)
 	}
 	if fmt.Sprint(lineStages) != "[2 4 5 14]" {
 		t.Errorf("lines shown in stages %v, want [2 4 5 14]", lineStages)

@@ -1,14 +1,17 @@
 """Check preservation and compatibility boundaries of local asset restoration."""
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
 import unittest
 from unittest import mock
 
 import regenerate
 
-from import_untracked import restore, EXTERNAL_ASSET_DIRECTORIES, EXTERNAL_IMPORT_FORMAT
+from import_untracked import restore, EXTERNAL_ASSET_DIRECTORIES, EXTERNAL_ASSET_FILES, EXTERNAL_IMPORT_FORMAT
+from verify import verify
 
 
 class ImportTests(unittest.TestCase):
@@ -79,18 +82,53 @@ class ImportTests(unittest.TestCase):
             restore(self.source, self.repo)
         self.assertFalse((self.repo / 'data' / 'sprite.png').exists())
 
+    def test_client_tables_and_metadata_restore_without_tracked_exports(self):
+        (self.repo / '.gitignore').write_text('/data/*\n!/data/server/\n')
+        subprocess.run(['git', 'rm', '--cached', 'data/editable.json'], cwd=self.repo, check=True, stdout=subprocess.DEVNULL)
+        for directory in EXTERNAL_ASSET_DIRECTORIES:
+            (self.source / directory).mkdir()
+        (self.source / 'item_data.json').write_text('{"items": []}')
+        (self.source / 'sprites' / 'sprites.json').write_text('{"decoded_archive_zlib_base64":"payload"}')
+        scope = {'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
+                 'directories': list(EXTERNAL_ASSET_DIRECTORIES), 'files': list(EXTERNAL_ASSET_FILES)}
+        (self.source / 'external_asset_import.json').write_text(json.dumps(scope))
+        self.assertEqual(restore(self.source, self.repo), 2)
+        self.assertTrue((self.repo / 'data' / 'item_data.json').exists())
+        self.assertTrue((self.repo / 'data' / 'sprites' / 'sprites.json').exists())
+        self.assertFalse((self.repo / 'data' / 'untracked.json').exists())
+        (self.repo / 'data' / 'item_data.json').write_text('edited')
+        self.assertEqual(restore(self.source, self.repo), 0)
+        self.assertEqual((self.repo / 'data' / 'item_data.json').read_text(), 'edited')
+
+    def test_reject_scope_with_unapproved_root_file(self):
+        scope = {'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
+                 'directories': list(EXTERNAL_ASSET_DIRECTORIES), 'files': ['server/database_data.json']}
+        (self.source / 'external_asset_import.json').write_text(json.dumps(scope))
+        with self.assertRaisesRegex(ValueError, 'file scope'):
+            restore(self.source, self.repo)
+
     def test_reject_destination_link_outside_data(self):
         elsewhere = Path(self.temp.name) / 'elsewhere'
         elsewhere.mkdir()
         (self.source / 'escape').mkdir()
         (self.source / 'escape' / 'sprite.png').write_bytes(b'pixels')
-        (self.repo / 'data' / 'escape').symlink_to(elsewhere, target_is_directory=True)
+        try:
+            (self.repo / 'data' / 'escape').symlink_to(elsewhere, target_is_directory=True)
+        except OSError as error:
+            if getattr(error, 'winerror', None) == 1314:
+                self.skipTest('Windows symlink privilege is unavailable')
+            raise
         with self.assertRaisesRegex(ValueError, 'escapes data'):
             restore(self.source, self.repo)
         self.assertFalse((elsewhere / 'sprite.png').exists())
 
 
 class RegenerationTests(unittest.TestCase):
+    def test_client_path_is_required_instead_of_inferred(self):
+        result = subprocess.run([sys.executable, str(Path(regenerate.__file__)), '--output', 'unused-output'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--client', result.stderr)
+
     def test_supplied_roots_reach_every_exporter(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -99,18 +137,39 @@ class RegenerationTests(unittest.TestCase):
             for directory in (client / 'data', client / 'jma', client / 'pic'):
                 directory.mkdir(parents=True)
             (client / 'aLogin.exe').write_bytes(b'matching executable')
-            with mock.patch.object(regenerate, 'extract') as audio, mock.patch.object(regenerate, 'export_media') as media, mock.patch.object(regenerate.subprocess, 'run') as commands:
+            with mock.patch.object(regenerate, 'export_all') as tables, mock.patch.object(regenerate, 'preserve_server_exports') as server, mock.patch.object(regenerate, 'export_media') as media, mock.patch.object(regenerate.subprocess, 'run') as commands:
                 regenerate.regenerate(output, client)
-            audio.assert_called_once_with(client / 'data', output / 'audio')
+            tables.assert_called_once_with(client / 'data', None, output)
+            server.assert_called_once_with(output, regenerate.REPO / 'data' / 'server')
             scope = json.loads((output / 'external_asset_import.json').read_text())
             self.assertEqual(scope['format'], EXTERNAL_IMPORT_FORMAT)
             self.assertEqual(scope['directories'], list(EXTERNAL_ASSET_DIRECTORIES))
+            self.assertEqual(scope['files'], list(EXTERNAL_ASSET_FILES))
             media.assert_called_once_with(client, output / 'media')
             sprite = commands.call_args_list[0].args[0]
             picture = commands.call_args_list[1].args[0]
             self.assertIn(str(client / 'jma'), sprite)
             self.assertIn(str(client / 'aLogin.exe'), sprite)
             self.assertIn(str(client / 'pic'), picture)
+
+    def test_preserved_server_exports_need_no_original_private_server(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            client, output, server = root / 'client-data', root / 'generated', root / 'server'
+            client.mkdir()
+            output.mkdir()
+            server.mkdir()
+            payload = b'authored server rule'
+            document = {'source': 'Z:/absent-private-server/Data/rules.txt',
+                        'source_sha256': hashlib.sha256(payload).hexdigest(),
+                        'source_bytes': len(payload), 'source_hex': payload.hex(), 'format': 'plaintext-text'}
+            (server / 'rules.json').write_text(json.dumps(document))
+            manifest = {'client_source': str(client), 'server_source': None,
+                        'priority': 'client-over-server', 'assets': []}
+            (output / 'asset_manifest.json').write_text(json.dumps(manifest))
+            regenerate.preserve_server_exports(output, server)
+            self.assertEqual((output / 'server' / 'rules.json').read_bytes(), (server / 'rules.json').read_bytes())
+            verify(output)
 
 
 if __name__ == '__main__':

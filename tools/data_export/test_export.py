@@ -10,6 +10,16 @@ from verify import reconstruct
 
 
 class DataExportTests(unittest.TestCase):
+    def test_client_only_inventory_does_not_need_private_server(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            client = Path(temporary)
+            (client / 'Formula.dat').write_bytes(b'formula')
+            (client / 'ServerDatabase.db').write_bytes(b'private gameplay data')
+            selected, shadowed = export.inventory(client)
+            self.assertEqual(set(selected), {'formula.dat'})
+            self.assertEqual(selected['formula.dat'][0], 'client')
+            self.assertEqual(shadowed, {})
+
     def test_native_fixture_width_wrap_and_header(self):
         # Independent wire values: Mark's byte 0x90 -> 249, word 0x2774 ->
         # 65529 and dword 0x082cd1b9 -> 4294967289 after subtracting seven.

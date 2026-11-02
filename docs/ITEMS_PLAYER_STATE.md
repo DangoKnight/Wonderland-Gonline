@@ -111,7 +111,12 @@ sitting pose (AC32:2 actions 46–53, the Emote grid's action 13) or lying pose
 equipped maximum HP and SP, at least one point each, every three seconds
 (`restRecoveryPercent`, `restRecoveryInterval` in `internal/server/simulation.go`),
 on the one-second world ticker. Each recovery sends AC8 absolute updates for
-current HP (25) and SP (26) only. Native clients end a held pose by walking
+current HP (25) and SP (26) only. The active following/battle pet recovers by the
+same percentage of its own equipped maxima, even when the player's vitals are
+already full. Inactive party, reserve and hotel pets do not recover. Pet updates
+use native AC8:2 with the pet's per-login client slot. Pet recovery depends on the
+owner resting, not on the pet having a matching sprite animation.
+Native clients end a held pose by walking
 without an AC32 report, so a position change clears the server's held pose;
 this also lets a player sit again after walking.
 
@@ -122,6 +127,13 @@ committed SQL result keeps buffered recovery unless that transaction changed
 the vital, capped to the adopted maximum. Under healthy saves, a crash can lose
 up to one checkpoint interval of recovery; failed saves can extend that window.
 Disconnect and graceful shutdown attempt a final checkpoint.
+
+Pet HP/SP share this buffered policy. Checkpoints update just the owned party
+pet's vital columns, alongside the character state in one SQL transaction; they
+do not rewrite pet equipment, skills or inventory. Pet identity and previous
+HP/SP guard stale checkpoints. Unrelated SQL results preserve pending recovery,
+capped to the adopted pet maxima; explicit vital updates and removal/replacement
+take precedence.
 
 ## Item use and reservations
 

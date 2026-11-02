@@ -455,6 +455,27 @@ func (s *Server) adoptSavedCharacter(c *Session, next game.Character) {
 		if next.SP == checkpoint.SP && old.SP > next.SP {
 			next.SP = min(old.SP, max(next.SP, next.MaxSP))
 		}
+		// Match exact owned identities, including inactive party members: a
+		// pet selection may change while its earlier recovery is still dirty.
+		for i := range next.Pets {
+			pet := &next.Pets[i]
+			for _, saved := range checkpoint.Pets {
+				if saved.ID != pet.ID {
+					continue
+				}
+				for _, pending := range old.Pets {
+					if pending.ID != pet.ID {
+						continue
+					}
+					if pet.HP == saved.HP && pending.HP > pet.HP {
+						pet.HP = min(pending.HP, max(pet.HP, pet.MaxHP))
+					}
+					if pet.SP == saved.SP && pending.SP > pet.SP {
+						pet.SP = min(pending.SP, max(pet.SP, pet.MaxSP))
+					}
+				}
+			}
+		}
 	}
 	*c.character = next
 	c.autosaveBaseline = &baseline

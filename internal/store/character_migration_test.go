@@ -79,6 +79,7 @@ func TestStructuredCharacterMigrationPreservesState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer s.Close()
 	got, err = s.Characters(context.Background(), a.ID)
 	if err != nil || got[0].Gold != 0 || len(got[0].Pets) != 0 || len(got[0].Skills) != 0 || len(got[0].EventTimers) != 0 || got[0].Bag[49].ID != 0 {
 		t.Fatalf("stale state restored: %#v %v", got, err)

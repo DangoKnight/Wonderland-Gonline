@@ -139,7 +139,9 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 			}
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-			ui.MouseDown(seui.ButtonRight, mouse, x, y)
+			if !ui.MouseDown(seui.ButtonRight, mouse, x, y) {
+				g.C.GroundRightClick(x, y)
+			}
 		}
 		g.C.GroundHold(held, x, y)
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {

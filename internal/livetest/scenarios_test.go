@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"wonderland-gonline/internal/assets"
@@ -143,7 +144,7 @@ func TestPrepareIsolationCredentialsAndRefuseOverwrite(t *testing.T) {
 	}
 	for _, path := range []string{report, filepath.Join(output, "config.json")} {
 		info, err := os.Stat(path)
-		if err != nil || info.Mode().Perm() != 0600 {
+		if err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0600) {
 			t.Fatal("insecure artifact", path, err)
 		}
 	}

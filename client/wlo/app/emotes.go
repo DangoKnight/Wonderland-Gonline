@@ -128,6 +128,35 @@ func (c *Client) playPose(cell int) bool {
 	return true
 }
 
+// GroundRightClick is FUN_0043b6ac: face a scene point while retaining the
+// current pose. FUN_0041218c supplies eight directions; two-facing poses map
+// directions 0..3 to their first action and 4..7 to their second. The native
+// path calls FUN_00430f90 and publishes the faced action through AC32:2.
+func (c *Client) GroundRightClick(x, y int) {
+	if c.emoteBlocked() || !c.mapReady || c.movie != nil || c.sport != nil ||
+		c.battle.state.Active || c.UI.Modal != nil || c.Input.Hovered != nil ||
+		c.Talk.Drawn() || c.World.Walking() || x < 0 || y < 0 || x >= ScreenWidth || y >= ScreenHeight {
+		return
+	}
+	p := &c.World.Player
+	base := world.ActionBase(int(p.Direction))
+	if base == 0 { // Walking or an unresolved action has no held facing to change.
+		return
+	}
+	cx, cy := c.World.Camera()
+	tx, ty := x+cx, y+cy
+	if tx == p.X && ty == p.Y {
+		return
+	}
+	facing := world.Facing(p.X, p.Y, tx, ty, 0)
+	action := byte(world.PoseAction(base, facing))
+	if int32(action) == p.Direction {
+		return
+	}
+	p.Direction = int32(action)
+	c.Net.Send([]byte{protocol.CommandPose, protocol.PoseBroadcast, action})
+}
+
 // EmoteKey is Alt+1..8 and Ctrl+1..5.
 func (c *Client) EmoteKey(key uint16, shift byte) bool {
 	if key < '1' || key > '9' || c.World == nil {
