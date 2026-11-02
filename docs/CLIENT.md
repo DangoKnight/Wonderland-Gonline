@@ -935,6 +935,24 @@ BMg/JMg directories begin with a UInt16 count followed by 32-byte records: a one
 
 Ground.MMG prefix decoding follows sibling `decompiled/aLogin_decompiled.c`, function `FUN_004121a8`: UInt32 scene width/height, a byte layer count with three UInt16 operands per layer, UInt16 grid width/height, and X-major raw cell bytes. The first anonymous record has dimensions 1472×960, grid 74×49, and one layer reference to resource 10000. The verified prefix consumes 3,645 bytes. That prefix-only path remains useful for native inspection. The normal client now resolves map/scene records from compiled runtime data or `ground_data.json`, including background layers, collision cells, sound zones and objects; unresolved trailing fields remain preserved. Runtime land traversal uses the native `0x17` blocked mask. See [client architecture](CLIENT_ARCHITECTURE.md).
 
+### Incoming handler details
+
+- `53/10` (`FUN_003e30e4`): the monster-book mask update. It walks the payload
+  from offset 2 in `(index, mask)` byte pairs while the packet length allows,
+  sets the bits of the eight-byte row at
+  `*PTR_DAT_004caa28 + 0x3cac + (index - 1) * 8` that `FUN_0048340c` accepts for
+  the mask byte, then recounts the marked rows and divides the total by ten for
+  the page count. This is the inbound direction of the monster book; the
+  outbound template discovery is `53/9`.
+- `184/2` (`FUN_00159c6c`): when the first byte is `2` the handler calls
+  `FUN_00159c98`, which walks `(byte, byte)` pairs from offset 1 and applies each
+  pair through `FUN_00159ce4`, stopping at the buffer length or after 1001 pairs.
+- `199/14` (`FUN_00319074`): a system line. It reads the buffer length through
+  `FUN_0001412c`, copies `len - 1` bytes starting at offset 2, and prints the
+  text through `FUN_00137348` with the `(System):` speaker.
+- `56`: the dispatcher case body is an empty `break`, so the native client
+  ignores the command; `CommandStall` exists only on the Go server side.
+
 ## Verification and limitations
 
 Native archive census results, resource-test environment variables and the
