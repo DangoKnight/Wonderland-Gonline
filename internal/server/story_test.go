@@ -304,7 +304,7 @@ func TestFairyAltarMovieResumesDialogue(t *testing.T) {
 	for _, tc := range []struct {
 		mapID, event uint16
 		mode         byte
-	}{{12465, 2, 1}, {12465, 3, 1}, {12465, 1, 2}, {12464, 2, 2}} {
+	}{{12465, 2, 1}, {12465, 3, 1}, {12465, 1, 1}, {12464, 2, 1}} {
 		t.Run(fmt.Sprintf("%d/%d", tc.mapID, tc.event), func(t *testing.T) {
 			s, c, wire := eventFixture(t)
 			c.character.Map = tc.mapID
@@ -395,7 +395,7 @@ func TestStoryDefinitionsControlArbitraryContent(t *testing.T) {
 	}}
 	s.Assets.Maps[mapID] = assets.Map{ID: mapID, Events: []assets.Event{ev}, NPCs: []assets.MapNPC{{ClickID: 8}}}
 	s.Assets.Story = assets.StoryDefinitions{Rules: []assets.StoryRule{
-		{ID: "custom_movie", Kind: assets.StoryMovieMode, Scope: assets.StoryScope{Maps: []uint16{mapID}, Events: []uint16{77}}, Value: 1},
+		{ID: "custom_movie", Kind: assets.StoryMovieMode, Scope: assets.StoryScope{Maps: []uint16{mapID}, Events: []uint16{77}}, Value: 2},
 		{ID: "custom_link", Kind: assets.StoryContinue, Scope: assets.StoryScope{Maps: []uint16{mapID}, Events: []uint16{77}}},
 		{ID: "custom_order", Kind: assets.StoryForwardOnly, Scope: assets.StoryScope{Maps: []uint16{mapID}, Events: []uint16{77}}},
 	}}
@@ -407,7 +407,7 @@ func TestStoryDefinitionsControlArbitraryContent(t *testing.T) {
 	if err := s.startEvent(context.Background(), c, 8, &ev, 0, true); err != nil {
 		t.Fatal(err)
 	}
-	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 1, 57, 48, 0, 0, 0, 0, 1}) {
+	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 2, 57, 48, 0, 0, 0, 0, 1}) {
 		t.Fatal("custom movie did not use policy mode")
 	}
 	if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {
@@ -416,14 +416,15 @@ func TestStoryDefinitionsControlArbitraryContent(t *testing.T) {
 	if c.event != nil || !c.view.Actors[8] {
 		t.Fatal("custom continuation not executed")
 	}
-	// Empty SQL definitions disable overrides; runtime must not reload seed files.
+	// Empty definitions disable the authored hold and continuation. The generic
+	// no-map-load movie policy remains active without restoring any seed content.
 	s.World.ReloadStory(assets.StoryDefinitions{})
 	c.view.Reset()
 	wire.Reset()
 	if err := s.startEvent(context.Background(), c, 8, &ev, 0, true); err != nil {
 		t.Fatal(err)
 	}
-	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 2, 57, 48, 0, 0, 0, 0, 1}) {
+	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, 1, 57, 48, 0, 0, 0, 0, 1}) {
 		t.Fatal("empty definitions restored a seed override")
 	}
 	if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {

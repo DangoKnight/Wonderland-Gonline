@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -19,6 +20,103 @@ import (
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
+
+func TestEventWarpRestoresUIOnMapAcknowledgment(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		event, newEvent bool
+		unlock          bool
+	}{
+		{"event", true, false, true}, {"regular", false, false, false}, {"new_interaction", true, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, players, wires := worldFixture(t)
+			c, wire := players[0], wires[0]
+			s.Assets.Maps[20000] = assets.Map{ID: 20000}
+			s.World = world.New(s.Assets)
+			s.world[c.info.ID] = c
+			c.ready = true
+			if tc.event {
+				c.event = &eventSession{mapID: c.character.Map}
+			}
+			if err := s.commandTeleport(context.Background(), c, world.Destination{Map: 20000, X: 500, Y: 600}); err != nil {
+				t.Fatal(err)
+			}
+			if c.restoreUIAfterMapLoad != tc.event || c.ready || c.event != nil {
+				t.Fatal("event warp ownership not captured")
+			}
+			if contains(wire.packets(t), []byte{6, 2, 0}) {
+				t.Fatal("UI released before map acknowledgment")
+			}
+			var active *eventSession
+			if tc.newEvent {
+				active = &eventSession{mapID: 20000}
+				c.event = active
+			}
+			if err := s.worldCommand(context.Background(), c, []byte{12, 1}); err != nil {
+				t.Fatal(err)
+			}
+			packets := wire.packets(t)
+			if contains(packets, []byte{6, 2, 0}) != tc.unlock || c.restoreUIAfterMapLoad {
+				t.Fatal("wrong map-load UI release", packets)
+			}
+			if tc.unlock {
+				found := false
+				for i := 0; i+2 < len(packets); i++ {
+					if bytes.Equal(packets[i], []byte{5, 4}) && bytes.Equal(packets[i+1], []byte{6, 2, 0}) && bytes.Equal(packets[i+2], []byte{20, 8}) {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatal("UI release not ordered after native scene-load completion", packets)
+				}
+			}
+			if tc.newEvent && c.event != active {
+				t.Fatal("map acknowledgment cancelled the new interaction")
+			}
+			if err := s.worldCommand(context.Background(), c, []byte{12, 1}); err != nil {
+				t.Fatal(err)
+			}
+			if wire.Len() != 0 {
+				t.Fatal("duplicate map acknowledgment repeated release")
+			}
+		})
+	}
+}
+
+func TestAreaEntryScriptsPrecedeCollidingWarpIDs(t *testing.T) {
+	for _, entry := range []byte{1, 2} {
+		t.Run(fmt.Sprint(entry), func(t *testing.T) {
+			s, players, _ := worldFixture(t)
+			c := players[0]
+			s.Assets.Maps[65000] = assets.Map{ID: 65000,
+				Entries: []assets.AreaEntry{areaEntry(1, 3, 53, 54, 53, 54, 7), areaEntry(2, 3, 53, 54, 53, 54, 8)},
+				Warps:   []assets.Warp{{ClickID: 1, MapID: 65001, X: 1, Y: 1}, {ClickID: 2, MapID: 65001, X: 1, Y: 1}},
+				Events: []assets.Event{
+					{ClickID: 7, Branches: []assets.Branch{{Index: 1, Operations: []assets.Operation{evOp(1, 7, 65002, 100, 200, 0)}}}},
+					{ClickID: 8, Branches: []assets.Branch{{Index: 1, Operations: []assets.Operation{evOp(1, 7, 65003, 300, 400, 0)}}}},
+				},
+			}
+			for _, id := range []uint16{65001, 65002, 65003} {
+				s.Assets.Maps[id] = assets.Map{ID: id}
+			}
+			s.World = world.New(s.Assets)
+			c.character.Map = 65000
+			c.ready = true
+			s.world[c.info.ID] = c
+			if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.worldCommand(context.Background(), c, []byte{20, 8, entry, 0}); err != nil {
+				t.Fatal(err)
+			}
+			want := uint16(65001) + uint16(entry)
+			if c.character.Map != want {
+				t.Fatal("area entry fell through to the colliding warp table", c.character.Map, want)
+			}
+		})
+	}
+}
 
 func TestLauraExitRewardAtomicReplayAndCapacity(t *testing.T) {
 	s, c, wire, _ := mallFixture(t)

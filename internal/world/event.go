@@ -14,6 +14,12 @@ type Op struct {
 	raw            assets.Operation
 }
 
+// MapLoad identifies the EVE operations that release a native movie's map hold.
+func (o Op) MapLoad() bool {
+	return o.Code == ActionPlayer && o.D1 == PlayerActionSceneTransition ||
+		o.Code == ActionServiceOrTeleport && o.D1 >= ServiceTeleportMinimumMapID
+}
+
 func DecodeOp(o assets.Operation) Op {
 	d := o.Data[:]
 	dw := func(i int) uint32 { return uint32(d[i]) | uint32(d[i+1])<<8 | uint32(d[i+2])<<16 | uint32(d[i+3])<<24 }

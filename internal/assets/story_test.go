@@ -39,3 +39,27 @@ func TestStoryDefinitionsValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestStoryRebornCheckpointValidationAndReferences(t *testing.T) {
+	rule := StoryRule{ID: "custom_checkpoint", Kind: StoryRebornCheckpoint, Gates: []StoryGate{{Source: "mark_exists", ID: 100001, Op: "eq", Value: 0}}, Marks: []StoryMark{{ID: 100000, Mode: "complete", PreserveStep: true, Value: 1}, {ID: 100001, Mode: "ensure_active", Value: 1}}}
+	c := &Catalog{Story: StoryDefinitions{Rules: []StoryRule{rule}}, QuestDefinitions: map[uint32]QuestDefinition{100000: {ID: 100000}, 100001: {ID: 100001}}}
+	if err := ValidateStoryCatalog(c); err != nil {
+		t.Fatal(err)
+	}
+	delete(c.QuestDefinitions, 100000)
+	if err := ValidateStoryCatalog(c); err == nil {
+		t.Fatal("unknown checkpoint mark accepted")
+	}
+	for _, change := range []func(*StoryRule){
+		func(r *StoryRule) { r.Marks = nil },
+		func(r *StoryRule) { r.Pattern.Code = new(byte) },
+		func(r *StoryRule) { r.Marks = []StoryMark{{ID: 1, Mode: "invented"}} },
+		func(r *StoryRule) { r.Kind = StoryVisibility },
+	} {
+		r := rule
+		change(&r)
+		if err := ValidateStoryDefinitions(StoryDefinitions{Rules: []StoryRule{r}}); err == nil {
+			t.Fatal("invalid checkpoint accepted")
+		}
+	}
+}

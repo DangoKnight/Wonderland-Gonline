@@ -66,13 +66,13 @@ func (s *Server) rejectDisabled(c *Session) error {
 	return c.send(serverwire.HeadBanner("This quest is disabled: required game data is unavailable."))
 }
 
-// eventCommand handles AC20:1 clicks, AC20:6 acknowledgments and AC20:9 choices.
+// eventCommand handles AC20:1 clicks, AC20:2 contacts, acknowledgments and choices.
 // The caller holds worldMu.
 func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 	switch p[1] {
 	case protocol.EventStallOpen, protocol.EventStallClose, protocol.EventStallBrowse, protocol.EventStallBuy:
 		return s.eventStallCommand(ctx, c, p)
-	case protocol.EventActorClick:
+	case protocol.EventActorClick, protocol.EventActorContact:
 		return s.npcClick(ctx, c, p[2:])
 	case protocol.EventAcknowledge:
 		if c.resultAck {
@@ -729,7 +729,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 		if op.D1 == 0 {
 			return false, nil
 		}
-		if op.D1 < 1000 {
+		if op.D1 < world.ServiceTeleportMinimumMapID {
 			return true, s.openService(c, op.D1)
 		}
 		dst := world.Destination{Map: op.D1, X: op.D2, Y: op.D3}
@@ -749,7 +749,14 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 			}
 		}
 		if op.D1 == 1 || op.D1 == 2 {
-			return true, c.send(serverwire.EventFrame(5, 0, 0, 2, op.Value(), 0, op.Index, br.Index))
+			mode := byte(protocol.EventMovieContinue)
+			for _, raw := range br.Operations[es.index:] {
+				if world.DecodeOp(raw).MapLoad() {
+					mode = protocol.EventMovieHoldForMapLoad
+					break
+				}
+			}
+			return true, c.send(serverwire.EventFrame(5, 0, 0, mode, op.Value(), 0, op.Index, br.Index))
 		}
 		return true, c.send([]byte{protocol.CommandEvent, protocol.EventStepComplete})
 	case world.ActionLearnSkill:

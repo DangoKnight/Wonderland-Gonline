@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/store"
@@ -252,13 +253,16 @@ func (s *Server) gmReborn(ctx context.Context, c *Session, command string, args 
 
 func (s *Server) performReborn(ctx context.Context, c *Session, job byte, force bool) error {
 	var skillPackets [][]byte
+	var marks []uint32
 	next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(next *game.Character) error {
 		if !next.RebornAs(job, force) {
 			return fmt.Errorf("rebirth requires level %d and a character that has not reborn", game.RebornMinimumLevel)
 		}
 		skillPackets = s.unlockQualifiedSkills(next, true)
 		next.Refill(s.Assets.Items)
-		return nil
+		var err error
+		marks, err = s.applyRebornCheckpoints(next, time.Now().UTC())
+		return err
 	}, *c.character)
 	if err != nil {
 		return s.chatFeedback(c, "Rebirth failed: "+err.Error())
@@ -285,6 +289,9 @@ func (s *Server) performReborn(ctx context.Context, c *Session, job byte, force 
 	effect := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateShapeshift}.U32(next.ID).U16(0)
 	s.broadcastWorld(c, effect)
 	packets = append(packets, effect)
+	for _, mark := range marks {
+		packets = append(packets, s.World.QuestUpdate(c.view, mark, next.Quests[mark])...)
+	}
 	if err = s.sendAll(c, packets); err != nil {
 		return err
 	}

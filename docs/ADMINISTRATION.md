@@ -143,7 +143,7 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v18 and structured asset schema v15.
+Current startup requires gameplay schema v18 and structured asset schema v16.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
 the preserving offline migration procedure for an existing installation. The
 [administration validation record](TESTING.md#administration-validation-history)
@@ -360,7 +360,7 @@ Authenticated actor/report endpoints:
 
 The **Story** definition dataset edits the typed rules, scopes, predicates,
 continuation links, repairs, visibility, recruitment/conversion parameters and
-cinematic sequences in asset schema v15. Native EVE rows remain intact. Editing
+cinematic sequences and rebirth checkpoints in asset schema v16. Native EVE rows remain intact. Editing
 uses the normal optimistic version, active-interaction gates, transactional SQL
 publication and reconnect flow. `/reload quests` also refreshes the compiled
 story policy index. See [STORY_SYSTEM.md](STORY_SYSTEM.md) for authoring examples

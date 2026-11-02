@@ -3,7 +3,7 @@
 ## Initialization
 
 Current server startup requires gameplay schema **v18** and structured assets
-schema **v15**. Tents were introduced in earlier schema versions.
+schema **v16**. Tents were introduced in earlier schema versions.
 Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. The upgrade replaces the configured
 databases in place; the originals remain in `backups/` for rollback.

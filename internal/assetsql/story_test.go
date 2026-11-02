@@ -3,11 +3,13 @@ package assetsql
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"wonderland-gonline/internal/assetdb"
@@ -27,6 +29,107 @@ func removeStoryProjection(t *testing.T, db *gorm.DB) {
 	}
 	if err := db.Model(&catalogSchema{}).Where("id = ?", catalogMetadataID).Update("version", 14).Error; err != nil {
 		t.Fatal(err)
+	}
+}
+
+func storyV15Fixture(t *testing.T, defs assets.StoryDefinitions) *gorm.DB {
+	t.Helper()
+	db := storyReadFixture(t, defs)
+	if err := db.Migrator().DropTable(&StoryRulesMarksRow{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("ALTER TABLE catalog_story_rules DROP COLUMN value_marks_present").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Migrator().CreateTable(&catalogSchema{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&catalogSchema{ID: catalogMetadataID, Version: 15}).Error; err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+func storyBeforeRebornCheckpoint() assets.StoryDefinitions {
+	d := assets.DefaultStoryDefinitions()
+	d.Rules = slices.DeleteFunc(d.Rules, func(r assets.StoryRule) bool { return r.Kind == assets.StoryRebornCheckpoint })
+	return d
+}
+
+func TestStoryRebornMigrationPreservesEditsAndOptOuts(t *testing.T) {
+	before := storyBeforeRebornCheckpoint()
+	before.Rules[0].Text = "Operator edit"
+	db := storyV15Fixture(t, before)
+	if err := db.Transaction(migrateCatalog); err != nil {
+		t.Fatal(err)
+	}
+	after, err := readStory(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := before
+	for _, rule := range assets.DefaultStoryDefinitions().Rules {
+		if rule.Kind == assets.StoryRebornCheckpoint {
+			want.Rules = append(want.Rules, rule)
+		}
+	}
+	if !reflect.DeepEqual(after, want) {
+		t.Fatal("v16 overwrote existing story content or failed to append the checkpoint")
+	}
+	// Remove the newly introduced rule and re-enter the upgrade. Its presence
+	// column records initialization, so intentional deletion stays authoritative.
+	last := len(after.Rules) - 1
+	if err := db.Where("story_key = ? AND story_rules_ordinal = ?", catalogMetadataID, last).Delete(&StoryRulesRow{}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Model(&catalogSchema{}).Where("id = ?", catalogMetadataID).Update("version", 15).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Transaction(migrateCatalog); err != nil {
+		t.Fatal(err)
+	}
+	again, err := readStory(db)
+	if err != nil || !reflect.DeepEqual(again, before) {
+		t.Fatal("deleted checkpoint was reseeded", err)
+	}
+	for _, defs := range []assets.StoryDefinitions{{}, {Rules: []assets.StoryRule{}}} {
+		t.Run(fmt.Sprint(defs.Rules != nil), func(t *testing.T) {
+			db := storyV15Fixture(t, defs)
+			if err := db.Transaction(migrateCatalog); err != nil {
+				t.Fatal(err)
+			}
+			got, err := readStory(db)
+			if err != nil || !reflect.DeepEqual(got, defs) {
+				t.Fatal("empty definitions were repopulated", err)
+			}
+		})
+	}
+}
+
+func TestStoryRebornMigrationRollback(t *testing.T) {
+	before := storyBeforeRebornCheckpoint()
+	db := storyV15Fixture(t, before)
+	const callback = "test:reject_reborn_checkpoint"
+	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
+		if tx.Statement.Table == "catalog_story_rules_marks" {
+			tx.AddError(errors.New("checkpoint seed failed"))
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	defer db.Callback().Create().Remove(callback)
+	if err := db.Transaction(migrateCatalog); err == nil {
+		t.Fatal("failed checkpoint seed committed")
+	}
+	if db.Migrator().HasColumn(&StoryRulesRow{}, "ValueMarksPresent") || db.Migrator().HasTable(&StoryRulesMarksRow{}) {
+		t.Fatal("partial v16 schema survived rollback")
+	}
+	got, err := readStory(db)
+	var schema catalogSchema
+	if err != nil || !reflect.DeepEqual(got, before) {
+		t.Fatal("rollback altered old rules", err)
+	}
+	if err := db.First(&schema, catalogMetadataID).Error; err != nil || schema.Version != 15 {
+		t.Fatal("rollback advanced version", schema, err)
 	}
 }
 

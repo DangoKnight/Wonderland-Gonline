@@ -1,6 +1,6 @@
 {
   "base_revision": "e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1",
-  "revision": "5c368395146c0c54bb01bcee3ae88d50513beae8",
+  "revision": "0cb6915d38982391fcf62fb0509da0b0966269ce",
   "status": "reviewed_runtime_import_verified",
   "commits": [
     "77d0b15cb50d677fbe2361e04ade2ba54889c9e6",
@@ -42,7 +42,8 @@
     "5fe8505f281ef1ad1ab94253ac759c9bb09202d7",
     "1ff5bbaec5da623ee05a2d083ced16dac4176a7e",
     "d1020d32064a5dafa2b638ac76af085b8a941702",
-    "5c368395146c0c54bb01bcee3ae88d50513beae8"
+    "5c368395146c0c54bb01bcee3ae88d50513beae8",
+    "0cb6915d38982391fcf62fb0509da0b0966269ce"
   ],
   "changed_files": 431,
   "hash_method": "SHA-256 of exact pinned git archive bytes; historical baseline inventory unchanged.",
@@ -3407,7 +3408,7 @@
         "internal/store/store.go",
         "internal/store/accounts.go"
       ],
-      "notes": "Registration and authentication already share 4–14 character credential validation and durable owned slots. Preserve hashed credentials and ASCII wire rules."
+      "notes": "Registration and authentication already share 4\u201314 character credential validation and durable owned slots. Preserve hashed credentials and ASCII wire rules."
     },
     {
       "source": "wlo.pserver.core/Game/Battle/AoeTargetResolver.cs",
@@ -4101,6 +4102,151 @@
         "vet": "passed: internal/game, internal/world and internal/server",
         "full_server": "not run for this follow-up; reserved for pre-push validation"
       }
+    },
+    {
+      "base_revision": "5c368395146c0c54bb01bcee3ae88d50513beae8",
+      "revision": "0cb6915d38982391fcf62fb0509da0b0966269ce",
+      "commits": [
+        "0cb6915d38982391fcf62fb0509da0b0966269ce"
+      ],
+      "changed_files": 7,
+      "status": "reviewed_runtime_import_verified",
+      "files": [
+        {
+          "source": "Data/ServerDataBase.db",
+          "change": "M",
+          "sha256_bytes": "5fddbc6287ceaaf0669ba478d0a8b91f093872135976f2a81c7b7e3d7ae8bce9",
+          "status": "excluded_operator_state_and_primary_key_churn",
+          "go_files": [],
+          "notes": "No schema or shared-definition changes. Changed player/operator rows are excluded. All 28 chest_drops rows have identical non-primary-key values; IDs 2157\u20132184 became 2437\u20132464. No binary database or operator data is imported."
+        },
+        {
+          "source": "Src/Network/ActionCodes/AC12.cs",
+          "change": "M",
+          "sha256_bytes": "f88c5aa1a5e7d36cb72e646c526ed8fea92b4e7b2b98ce6f27721281d2fbf26c",
+          "status": "ported",
+          "go_files": [
+            "internal/server/session.go",
+            "internal/server/world.go",
+            "internal/server/world_test.go"
+          ],
+          "notes": "Release interrupted event movement/UI once after the scene-load gate, after AC5:4 and before continuing arrival; skip unlock when a new event owns the interaction."
+        },
+        {
+          "source": "Src/Network/ActionCodes/AC20.cs",
+          "change": "M",
+          "sha256_bytes": "7e5dff7e4cfdc74b0c5df3fb58039ab41f36a130e7d836cc449742b102d2f1d0",
+          "status": "ported",
+          "go_files": [
+            "internal/protocol/commands.go",
+            "internal/server/events.go",
+            "internal/server/events_test.go"
+          ],
+          "notes": "Actor contact AC20:2 shares click-ID decoding and existing distance, visibility, loading and active-interaction validation. Native map 12132 actor 4 transitions to map 12141."
+        },
+        {
+          "source": "Src/Server/WorldServer.cs",
+          "change": "M",
+          "sha256_bytes": "bed1b6ec8663d373337774e58fd4dcf51de91ef55cd3fb9a354a50cafd7ea49b",
+          "status": "ported",
+          "go_files": [
+            "internal/server/server.go",
+            "internal/server/story.go",
+            "internal/server/gm_progression_test.go"
+          ],
+          "notes": "Repair configured rebirth checkpoints before character-selection publication using fresh owned SQL state. Already-complete characters skip writes. Quest identities remain editable Story content."
+        },
+        {
+          "source": "wlo.pserver.core/Game/Maps/Code/EveEventRuntime.cs",
+          "change": "M",
+          "sha256_bytes": "d25afbb45b75695922310f0192b577432024d914dd10e4d06381ba40d1a3051d",
+          "status": "ported_and_existing_precedence_retained",
+          "go_files": [
+            "internal/world/event.go",
+            "internal/world/event_codes.go",
+            "internal/server/events.go",
+            "internal/server/events_test.go",
+            "internal/server/world_test.go"
+          ],
+          "notes": "Movies use mode 1 without a later map-load operation, otherwise mode 2; preserve explicit SQL overrides and acknowledgment barriers. Entry kinds 1\u20133 already precede warp-table fallback; add colliding-ID kind-3 regression."
+        },
+        {
+          "source": "wlo.pserver.core/Game/Player.cs",
+          "change": "M",
+          "sha256_bytes": "94ad94bcd28349bf89f40857fb69fb90b863910759a861d2663046048d595142",
+          "status": "ported",
+          "go_files": [
+            "internal/server/session.go",
+            "internal/server/characters.go",
+            "internal/server/world.go",
+            "internal/server/world_test.go"
+          ],
+          "notes": "Record interrupted interaction only after a successful persisted warp; keep restore flag transient, preserve it across pending warps, reset at world entry and consume once at map acknowledgment."
+        },
+        {
+          "source": "wlo.pserver.core/Game/PlayerRelated/RebornManager.cs",
+          "change": "M",
+          "sha256_bytes": "a2d35824ba7419bb3bdf90fdb635f4458ece01f4a1e9b87c03c6bb8b7ae0a7c2",
+          "status": "ported",
+          "go_files": [
+            "internal/assets/story.go",
+            "internal/assets/story_defaults.json",
+            "internal/assets/story_validation.go",
+            "internal/assetsql/story.go",
+            "internal/assetsql/catalog_migration.go",
+            "internal/assetsql/catalog_storage_generated.go",
+            "internal/server/story.go",
+            "internal/server/gm_progression.go",
+            "internal/server/gm_progression_test.go",
+            "internal/assetsql/story_test.go"
+          ],
+          "notes": "Editable reborn_checkpoint policy completes trials while preserving positive step/completion time and starts post-rebirth mark only when absent. Rebirth, skills and both marks commit atomically. Asset v16 adds typed rule marks through a preserving migration; empty policies remain opt-outs."
+        }
+      ],
+      "database_review": {
+        "schema_changes": [],
+        "shared_definition_changes": false,
+        "excluded_player_tables": [
+          "characters",
+          "character_skills",
+          "character_monster_book",
+          "charquest",
+          "inventory",
+          "stats",
+          "sqlite_sequence"
+        ],
+        "chest_drops": {
+          "rows": 28,
+          "changed_columns": [
+            "id"
+          ],
+          "old_id_range": [
+            2157,
+            2184
+          ],
+          "new_id_range": [
+            2437,
+            2464
+          ],
+          "non_key_values_identical": true
+        }
+      },
+      "verification": {
+        "focused_race": "passed: assets 1.062s, assetsql 2.587s, world 1.032s, server 14.390s; contact/movie/UI/entry priority, checkpoint rollback/retry/fresh SQL/content overrides and migration preservation",
+        "native_story_race": "passed: 67.386s, including native actor contact transition and affected story playback",
+        "installed_assets_migration": "passed: disposable installed v13-to-v16 copy and repeated loading, 18.306s",
+        "sql_publication_reload": "passed: disposable SQL copy, 65.557s",
+        "generated_schema": "byte-for-byte reproducible",
+        "vet": "passed: internal/assets, internal/assetsql, internal/world, internal/server/..., internal/game, tools/asset-schema-generator",
+        "server_build": "passed: cmd/wonderland",
+        "installed_databases": "unchanged",
+        "native_client_acceptance": "not run",
+        "full_server": "passed before push: full root race suite against upgraded disposable assets v16; server 831.308s, assets SQL 95.568s",
+        "details": "docs/TESTING.md#contact-movie-and-rebirth-follow-up--2026-11-01",
+        "full_client": "passed without race detector: app 197.844s; explicit opt-in original-asset/GPU/snapshot/live-account checks remain skipped",
+        "pre_push_vet": "passed in both root and client modules",
+        "pre_push_details": "docs/TESTING.md#private-server-import-pre-push-validation--2026-11-01"
+      }
     }
   ],
   "story_migration": {
@@ -4112,6 +4258,13 @@
     "documentation": "docs/STORY_SYSTEM.md",
     "verification": "docs/TESTING.md#story-system-migration--2026-11-01",
     "native_source_hashes": "unchanged",
-    "scope": "Existing story selection, continuation, visibility, repairs, recovery, presentation, recruitment, conversion, reward checkpoints, cinematic sequences and compatibility battle rewards use typed SQL content. Reusable execution, protocol encoding and resource transactions remain in Go."
+    "scope": "Existing story selection, continuation, visibility, repairs, recovery, presentation, recruitment, conversion, reward checkpoints, cinematic sequences and compatibility battle rewards use typed SQL content. Reusable execution, protocol encoding and resource transactions remain in Go.",
+    "current_asset_schema": 16,
+    "rebirth_checkpoint_follow_up": {
+      "revision": "0cb6915d38982391fcf62fb0509da0b0966269ce",
+      "policy": "job_palace_rebirth_checkpoint",
+      "migration": "internal/assetsql/story.go",
+      "scope": "Typed rule mark lists; preserving v16 initialization; atomic rebirth and fresh-SQL pre-publication repair. Existing v15 migration evidence and native source hashes remain historical."
+    }
   }
 }

@@ -106,5 +106,5 @@ Optional legacy SQLite import still rejects unsupported metadata explicitly;
 these additions do not silently reinterpret old string-packed fields.
 
 Upgrade using [the verified database upgrade procedure](ASSET_DATABASE.md). Gameplay
-schema v18 and asset schema v15 are required by the current server; this subsystem
+schema v18 and asset schema v16 are required by the current server; this subsystem
 was introduced in gameplay v14 and asset v9. Installation databases are not reset.

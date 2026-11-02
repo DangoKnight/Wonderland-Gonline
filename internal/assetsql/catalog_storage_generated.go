@@ -412,6 +412,7 @@ type StoryRulesRow struct {
 	StoryKey                       int       `gorm:"column:story_key;primaryKey;autoIncrement:false"`
 	StoryRulesOrdinal              int       `gorm:"column:story_rules_ordinal;primaryKey;autoIncrement:false"`
 	Parent                         *StoryRow `gorm:"belongsTo:Parent;foreignKey:StoryKey;references:StoryKey;constraint:OnDelete:CASCADE"`
+	ValueMarksPresent              bool
 	ValueLaterMovie                uint32
 	ValueDestinationMap            uint16
 	ValueDestinationX              uint16
@@ -479,6 +480,7 @@ func writeStoryRules(tx *gorm.DB, values []assets.StoryRule, StoryKey int) error
 	var rows []StoryRulesRow
 	for key, value := range values {
 		row := StoryRulesRow{StoryKey: StoryKey, StoryRulesOrdinal: key}
+		row.ValueMarksPresent = value.Marks != nil
 		row.ValueLaterMovie = value.LaterMovie
 		row.ValueDestinationMap = value.Destination.Map
 		row.ValueDestinationX = value.Destination.X
@@ -583,6 +585,9 @@ func writeStoryRules(tx *gorm.DB, values []assets.StoryRule, StoryKey int) error
 		}
 	}
 	for key, value := range values {
+		if err := writeStoryRulesMarks(tx, value.Marks, StoryKey, key); err != nil {
+			return err
+		}
 		if err := writeStoryRulesTargetActors(tx, value.TargetActors, StoryKey, key); err != nil {
 			return err
 		}
@@ -619,6 +624,13 @@ func readStoryRules(tx *gorm.DB, StoryKey int) ([]assets.StoryRule, error) {
 	rows = loaded
 	for _, row := range rows {
 		var value assets.StoryRule
+		if row.ValueMarksPresent {
+			var err error
+			value.Marks, err = readStoryRulesMarks(tx, row.StoryKey, row.StoryRulesOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
 		value.LaterMovie = row.ValueLaterMovie
 		value.Destination.Map = row.ValueDestinationMap
 		value.Destination.X = row.ValueDestinationX
@@ -759,6 +771,62 @@ func readStoryRules(tx *gorm.DB, StoryKey int) ([]assets.StoryRule, error) {
 			}
 		}
 		if row.StoryRulesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type StoryRulesMarksRow struct {
+	StoryKey               int            `gorm:"column:story_key;primaryKey;autoIncrement:false"`
+	StoryRulesOrdinal      int            `gorm:"column:story_rules_ordinal;primaryKey;autoIncrement:false"`
+	StoryRulesMarksOrdinal int            `gorm:"column:story_rules_marks_ordinal;primaryKey;autoIncrement:false"`
+	Parent                 *StoryRulesRow `gorm:"belongsTo:Parent;foreignKey:StoryKey,StoryRulesOrdinal;references:StoryKey,StoryRulesOrdinal;constraint:OnDelete:CASCADE"`
+	ValuePreserveStep      bool
+	ValueID                uint32
+	ValueMode              string
+	ValueValue             int
+}
+
+func (StoryRulesMarksRow) TableName() string { return "catalog_story_rules_marks" }
+func writeStoryRulesMarks(tx *gorm.DB, values []assets.StoryMark, StoryKey int, StoryRulesOrdinal int) error {
+	var rows []StoryRulesMarksRow
+	for key, value := range values {
+		row := StoryRulesMarksRow{StoryKey: StoryKey, StoryRulesOrdinal: StoryRulesOrdinal, StoryRulesMarksOrdinal: key}
+		row.ValuePreserveStep = value.PreserveStep
+		row.ValueID = value.ID
+		row.ValueMode = value.Mode
+		row.ValueValue = value.Value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readStoryRulesMarks(tx *gorm.DB, StoryKey int, StoryRulesOrdinal int) ([]assets.StoryMark, error) {
+	result := make([]assets.StoryMark, 0)
+	var rows []StoryRulesMarksRow
+	query := tx
+	query = query.Where("story_key = ?", StoryKey)
+	query = query.Where("story_rules_ordinal = ?", StoryRulesOrdinal)
+	loaded, err := storyReadRows(query, "story_key,story_rules_ordinal,story_rules_marks_ordinal", storyParentKey{int64(StoryKey), int64(StoryRulesOrdinal)}, func(row *StoryRulesMarksRow) storyParentKey {
+		return storyParentKey{int64(row.StoryKey), int64(row.StoryRulesOrdinal)}
+	})
+	if err != nil {
+		return result, err
+	}
+	rows = loaded
+	for _, row := range rows {
+		var value assets.StoryMark
+		value.PreserveStep = row.ValuePreserveStep
+		value.ID = row.ValueID
+		value.Mode = row.ValueMode
+		value.Value = row.ValueValue
+		if row.StoryRulesMarksOrdinal != len(result) {
 			return result, fmt.Errorf("invalid catalog ordinal")
 		}
 		result = append(result, value)
@@ -10990,6 +11058,7 @@ func catalogTables() []any {
 		&StoryCompanionEquipmentEquipmentRow{},
 		&StoryCompanionAliasesRow{},
 		&StoryRulesRow{},
+		&StoryRulesMarksRow{},
 		&StoryRulesTargetActorsRow{},
 		&StoryRulesCuesRow{},
 		&StoryRulesCuesDataRow{},
@@ -11635,6 +11704,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&StoryRulesTargetActorsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&StoryRulesMarksRow{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&StoryRulesRow{}).Error; err != nil {

@@ -24,6 +24,9 @@ const (
 	ActionWireCode17        = 17
 )
 
+// Action 7 operands below this boundary identify NPC services, not maps.
+const ServiceTeleportMinimumMapID = 1000
+
 // Mission operations have no client presentation of their own.
 const (
 	ActionMissionMarker   = 10

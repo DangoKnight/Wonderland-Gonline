@@ -32,18 +32,19 @@ Historical verification reports are not evidence that current tests passed.
 ## Story architecture
 
 Existing native story exceptions now use the typed SQL `Story` dataset (asset
-v15): selection/continuation, visibility, script repairs, recovery, recruitment,
-conversion, reward checkpoints and starter cinematics. Go owns reusable execution
+v16): selection/continuation, visibility, script repairs, recovery, recruitment,
+conversion, reward checkpoints, rebirth checkpoints and starter cinematics. Go owns reusable execution
 and transaction primitives. See [story authoring](STORY_SYSTEM.md). The custom
 registry's dormant acceptance/completion integration remains separate from this
 behavior-preserving migration.
 
 ## Current source update — 2026-11-01
 
-The latest pinned source is `5c368395146c0c54bb01bcee3ae88d50513beae8`: 40 commits
-and 431 distinct changed files after the reviewed `e63e9fe` revision. The two
-commits after `1ff5bba` add Waterfall Grotto mirror continuation and Fairy Altar
-movie playback fixes; existing visit-local actor visibility is retained. See
+The latest pinned source is `0cb6915d38982391fcf62fb0509da0b0966269ce`: 41 commits
+and 431 distinct changed files after the reviewed `e63e9fe` revision. The three
+commits after `1ff5bba` add mirror continuation, movie playback, actor contact,
+event-warp UI restoration and data-driven rebirth checkpoint fixes; existing
+visit-local actor visibility and area-entry precedence are retained. See
 [imported behavior and explicit exclusions](SOURCE_UPDATES.md)
 and the separate [per-file update ledger](source-update-inventory.json). The
 566-file baseline counts below remain historical evidence.

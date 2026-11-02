@@ -97,6 +97,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
 			return err
 		}
+		if err := s.restoreMapLoadUI(c); err != nil {
+			return err
+		}
 	}
 	if c.character.ActiveVehicle != 0 {
 		if err := c.send(serverwire.VehicleMountPacket(c.character)); err != nil {
@@ -129,6 +132,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			return err
 		}
 		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
+			return err
+		}
+		if err := s.restoreMapLoadUI(c); err != nil {
 			return err
 		}
 		for _, peer := range peers {
@@ -189,6 +195,19 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	}
 	// AC12:1 also starts the authored arrival script.
 	return s.arrivalScript(c)
+}
+
+// Clear the pending release once after the scene-load gate is acknowledged.
+// An interaction already running on the new map owns its own movement/UI lock.
+func (s *Server) restoreMapLoadUI(c *Session) error {
+	if !c.restoreUIAfterMapLoad {
+		return nil
+	}
+	c.restoreUIAfterMapLoad = false
+	if c.event != nil {
+		return nil
+	}
+	return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
 }
 
 // broadcastWorld sends to map peers, excluding the actor. Caller holds worldMu.
@@ -473,6 +492,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	c.restMap = 0
 	c.ready, c.warped = false, true
 	c.arrived = true
+	c.restoreUIAfterMapLoad = c.restoreUIAfterMapLoad || c.event != nil
 	s.endEvent(c)
 	c.resumeAt = time.Time{}
 	c.encounter.enterMap()

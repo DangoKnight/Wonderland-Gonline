@@ -75,6 +75,15 @@ func ValidateStoryDefinitions(d StoryDefinitions) error {
 		if err := scope(r.Scope); err != nil {
 			return fmt.Errorf("story %s: %w", r.ID, err)
 		}
+		if err := marks(r.Marks); err != nil {
+			return fmt.Errorf("story %s: %w", r.ID, err)
+		}
+		if r.Kind == StoryRebornCheckpoint && (len(r.Marks) == 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || len(r.Scope.Actors) != 0 || r.Pattern != (StoryPattern{})) {
+			return fmt.Errorf("invalid reborn checkpoint %s", r.ID)
+		}
+		if r.Kind != StoryRebornCheckpoint && len(r.Marks) != 0 {
+			return fmt.Errorf("story %s: marks require a checkpoint rule", r.ID)
+		}
 		switch r.Kind {
 		case StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition:
 			if r.Value < 0 || r.Value > 1 {
@@ -295,6 +304,13 @@ func ValidateStoryCatalog(c *Catalog) error {
 
 		if r.Scope.AllowMissing {
 			continue
+		}
+		for _, mark := range r.Marks {
+			_, native := c.Marks[uint16(mark.ID)]
+			_, custom := c.QuestDefinitions[mark.ID]
+			if !custom && !(mark.ID <= math.MaxUint16 && native) {
+				return fmt.Errorf("story %s: unknown checkpoint mark %d", r.ID, mark.ID)
+			}
 		}
 		for _, g := range r.Gates {
 			if g.Source == "mark_state" || g.Source == "mark_step" || g.Source == "active_mark_step" || g.Source == "mark_exists" {

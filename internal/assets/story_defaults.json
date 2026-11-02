@@ -2571,6 +2571,34 @@
         }
       ],
       "pattern": {}
+    },
+    {
+      "id": "job_palace_rebirth_checkpoint",
+      "kind": "reborn_checkpoint",
+      "scope": {
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_exists",
+          "id": 15091,
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "marks": [
+        {
+          "id": 15090,
+          "mode": "complete",
+          "value": 1,
+          "preserve_step": true
+        },
+        {
+          "id": 15091,
+          "mode": "ensure_active",
+          "value": 1
+        }
+      ]
     }
   ],
   "recruitments": [

@@ -53,6 +53,7 @@ const (
 	StoryPreserveActor        = "preserve_actor"
 	StoryArrivalPackets       = "arrival_packets"
 	StoryPortalConsumeVehicle = "portal_consume_vehicle"
+	StoryRebornCheckpoint     = "reborn_checkpoint"
 )
 
 // Zero scope fields are wildcards. Multiple gates in one group are ANDed;
@@ -137,6 +138,7 @@ type StoryEdit struct {
 }
 
 type StoryRule struct {
+	Marks         []StoryMark      `json:"marks,omitempty"`
 	LaterMovie    uint32           `json:"later_movie,omitempty"`
 	Destination   StoryDestination `json:"destination"`
 	UsePreEvent   bool             `json:"use_pre_event,omitempty"`
@@ -160,6 +162,7 @@ type StoryRule struct {
 }
 
 type StoryMark struct {
+	// For completion, retain the previous timestamp and step, with Value as a floor.
 	PreserveStep bool   `json:"preserve_step,omitempty"`
 	ID           uint32 `json:"id"`
 	Mode         string `json:"mode"` // complete, advance, ensure_active, set
@@ -272,7 +275,7 @@ func DefaultStoryDefinitions() StoryDefinitions {
 
 func validateStoryStructure(d StoryDefinitions) error {
 	kinds := map[string]bool{}
-	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle} {
+	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
 		kinds[k] = true
 	}
 	seen := map[string]bool{}

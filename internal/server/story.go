@@ -448,7 +448,7 @@ func applyStoryMarks(c *game.Character, marks []assets.StoryMark, now time.Time)
 		if m.Mode == "ensure_active" && (q.State == game.Completed || q.State == game.InProgress && q.Step >= m.Value) {
 			continue
 		}
-		if q.State != game.InProgress {
+		if q.State != game.InProgress && !(m.Mode == "complete" && m.PreserveStep) {
 			q.Step = 0
 		}
 		q.ID = m.ID
@@ -459,10 +459,14 @@ func applyStoryMarks(c *game.Character, marks []assets.StoryMark, now time.Time)
 		switch m.Mode {
 		case "complete":
 			q.State = game.Completed
-			if !m.PreserveStep {
+			if m.PreserveStep {
+				q.Step = max(q.Step, m.Value)
+			} else {
 				q.Step = m.Value
 			}
-			q.CompletedAt = &now
+			if !m.PreserveStep || q.CompletedAt == nil {
+				q.CompletedAt = &now
+			}
 		case "advance":
 			q.State = game.InProgress
 			q.Step += m.Value
@@ -480,6 +484,36 @@ func applyStoryMarks(c *game.Character, marks []assets.StoryMark, now time.Time)
 		c.Quests[m.ID] = q
 	}
 	return nil
+}
+
+// Rebirth checkpoints are authored rules, applied to an owned SQL snapshot.
+// The same capability repairs older characters before their login snapshot.
+func (s *Server) applyRebornCheckpoints(c *game.Character, now time.Time) ([]uint32, error) {
+	if !c.Reborn {
+		return nil, nil
+	}
+	var changed []uint32
+	for rule := range s.World.StoryRules(assets.StoryRebornCheckpoint, c, nil, world.StoryContext{Map: c.Map}) {
+		if err := applyStoryMarks(c, rule.Marks, now); err != nil {
+			return nil, err
+		}
+		for _, mark := range rule.Marks {
+			changed = append(changed, mark.ID)
+		}
+	}
+	return changed, nil
+}
+func (s *Server) reconcileRebornCheckpoints(ctx context.Context, account uint32, snapshot game.Character) (game.Character, error) {
+	if !snapshot.Reborn {
+		return snapshot, nil
+	}
+	if _, ok := s.World.StoryFirst(assets.StoryRebornCheckpoint, &snapshot, nil, world.StoryContext{Map: snapshot.Map}); !ok {
+		return snapshot, nil
+	}
+	return s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: account, ID: snapshot.ID}, func(current *game.Character) error {
+		_, err := s.applyRebornCheckpoints(current, time.Now().UTC())
+		return err
+	})
 }
 
 func (s *Server) storyReward(mapID uint16, branch assets.Branch, op world.Op) (assets.StoryReward, bool) {

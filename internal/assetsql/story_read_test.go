@@ -38,7 +38,7 @@ func TestStoryBatchedReadPreservesProjectionAndQueryBound(t *testing.T) {
 	defs := assets.DefaultStoryDefinitions()
 	defs.Rules = append(defs.Rules,
 		assets.StoryRule{ID: "nil_children"},
-		assets.StoryRule{ID: "empty_children", Gates: []assets.StoryGate{}, Cues: []assets.StoryCue{{Data: []uint32{}}, {Data: nil}}},
+		assets.StoryRule{ID: "empty_children", Marks: []assets.StoryMark{}, Gates: []assets.StoryGate{}, Cues: []assets.StoryCue{{Data: []uint32{}}, {Data: nil}}},
 	)
 	defs.Cinematics = append(defs.Cinematics, assets.StoryCinematic{ID: "siblings", Steps: []assets.StoryCinematicStep{
 		{Cues: []assets.StoryCue{{Data: []uint32{1, 2}}, {Data: []uint32{3}}}},

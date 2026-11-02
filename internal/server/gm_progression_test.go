@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 )
@@ -25,6 +27,166 @@ func assertProgressSaved(t *testing.T, s *Server, c *Session) {
 	stored, _ := json.Marshal(chars[0])
 	if !bytes.Equal(current, stored) {
 		t.Fatal("session and durable progression differ")
+	}
+}
+
+func TestRebornStoryCheckpointPreservesTrialsAndCompletionTime(t *testing.T) {
+	for _, state := range []game.QuestState{game.NotStarted, game.InProgress, game.Completed} {
+		t.Run(strconv.Itoa(int(state)), func(t *testing.T) {
+			s, c, _, _ := mallFixture(t)
+			c.character.SetLevel(100)
+			c.character.Refill(s.Assets.Items)
+			old := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+			if state != game.NotStarted {
+				c.character.Quests[15090] = game.Quest{ID: 15090, State: state, Step: 12}
+				if state == game.Completed {
+					q := c.character.Quests[15090]
+					q.CompletedAt = &old
+					c.character.Quests[15090] = q
+				}
+			}
+			if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.performReborn(context.Background(), c, game.JobKiller, false); err != nil {
+				t.Fatal(err)
+			}
+			trials, done := c.character.Quests[15090], c.character.Quests[15091]
+			want := 12
+			if state == game.NotStarted {
+				want = 1
+			}
+			if !c.character.Reborn || trials.State != game.Completed || trials.Step != want || done.State != game.InProgress || done.Step != 1 {
+				t.Fatal("rebirth checkpoint", trials, done)
+			}
+			if state == game.Completed && (trials.CompletedAt == nil || !trials.CompletedAt.Equal(old)) {
+				t.Fatal("old completion timestamp replaced")
+			}
+			assertProgressSaved(t, s, c)
+		})
+	}
+}
+
+func TestRebornStoryCheckpointFailureRollsBackRebirth(t *testing.T) {
+	s, c, _, path := mallFixture(t)
+	ctx := context.Background()
+	c.character.SetLevel(100)
+	c.character.Refill(s.Assets.Items)
+	c.character.Quests[15090] = game.Quest{ID: 15090, State: game.InProgress, Step: 12}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	before := c.character.Clone()
+	raw, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	if _, err := raw.Exec("CREATE TRIGGER reject_reborn_checkpoint BEFORE INSERT ON character_quests WHEN NEW.quest_id=15091 BEGIN SELECT RAISE(ABORT,'checkpoint failed'); END"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.performReborn(ctx, c, game.JobKiller, false); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(*c.character, before) {
+		t.Fatal("failed checkpoint changed the live character")
+	}
+	assertProgressSaved(t, s, c)
+	if _, err := raw.Exec("DROP TRIGGER reject_reborn_checkpoint"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.performReborn(ctx, c, game.JobKiller, false); err != nil || !c.character.Reborn || c.character.Quests[15091].Step != 1 {
+		t.Fatal("checkpoint retry", err)
+	}
+}
+
+func TestRebornStoryLoginRepairUsesFreshSQLAndSkipsCompleted(t *testing.T) {
+	s, c, _, path := mallFixture(t)
+	ctx := context.Background()
+	c.character.RebornAs(game.JobKiller, true)
+	c.character.Refill(s.Assets.Items)
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	stale := c.character.Clone()
+	if err := s.Store.UpdateCharacter(ctx, c.account.ID, c.character.ID, func(current *game.Character) error {
+		current.Gold = 777
+		current.Quests[15090] = game.Quest{ID: 15090, State: game.InProgress, Step: 12}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	next, err := s.reconcileRebornCheckpoints(ctx, c.account.ID, stale)
+	if err != nil || next.Gold != 777 || next.Quests[15090].Step != 12 || next.Quests[15091].Step != 1 {
+		t.Fatal("backfill used stale state", next.Gold, err)
+	}
+	raw, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	if _, err := raw.Exec("CREATE TRIGGER reject_repeated_repair BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'unnecessary repair'); END"); err != nil {
+		t.Fatal(err)
+	}
+	again, err := s.reconcileRebornCheckpoints(ctx, c.account.ID, next)
+	if err != nil || !reflect.DeepEqual(again, next) {
+		t.Fatal("completed checkpoint was rewritten", err)
+	}
+}
+
+func TestRebornStoryCheckpointIsContentDriven(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	rule := assets.StoryRule{ID: "custom_rebirth", Kind: assets.StoryRebornCheckpoint, Scope: assets.StoryScope{AllowMissing: true}, Gates: []assets.StoryGate{{Source: "mark_exists", ID: 100001, Op: "eq", Value: 0}}, Marks: []assets.StoryMark{{ID: 100000, Mode: "complete", PreserveStep: true, Value: 1}, {ID: 100001, Mode: "ensure_active", Value: 1}}}
+	s.World.ReloadStory(assets.StoryDefinitions{Rules: []assets.StoryRule{rule}})
+	if err := s.performReborn(context.Background(), c, game.JobKiller, true); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.Quests[100001].Step != 1 || c.character.Quests[100000].State != game.Completed || c.character.Quests[15091].ID != 0 {
+		t.Fatal("checkpoint IDs remained hardcoded")
+	}
+	s.World.ReloadStory(assets.StoryDefinitions{})
+	delete(c.character.Quests, 100001)
+	next, err := s.reconcileRebornCheckpoints(context.Background(), c.account.ID, c.character.Clone())
+	if err != nil || next.Quests[100001].ID != 0 || next.Quests[15091].ID != 0 {
+		t.Fatal("cleared definitions restored a checkpoint", err)
+	}
+}
+
+func TestRebornStoryCheckpointRepairsDuringCharacterSelection(t *testing.T) {
+	s, c, _, _ := mallFixture(t)
+	ctx := context.Background()
+	c.character.RebornAs(game.JobKiller, true)
+	c.character.Refill(s.Assets.Items)
+	c.character.Quests[15090] = game.Quest{ID: 15090, State: game.InProgress, Step: 12}
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	login := &Session{conn: &captureConn{}, info: SessionInfo{ID: 77}, account: c.account}
+	if err := s.login(ctx, login, []byte{63, 2, 1}); err != nil {
+		t.Fatal(err)
+	}
+	if login.character == nil || login.character.Quests[15091].Step != 1 || login.character.Quests[15090].State != game.Completed {
+		t.Fatal("login snapshot preceded checkpoint repair")
+	}
+	stored, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || stored[0].Quests[15091].Step != 1 {
+		t.Fatal("login checkpoint not durable", err)
+	}
+	// The existing completion mark is authoritative even if a later content
+	// edit leaves the trial mark in progress.
+	if err := s.Store.UpdateCharacter(ctx, c.account.ID, c.character.ID, func(current *game.Character) error {
+		current.Quests[15090] = game.Quest{ID: 15090, State: game.InProgress, Step: 7}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	latest, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	latest[0], err = s.reconcileRebornCheckpoints(ctx, c.account.ID, latest[0])
+	if err != nil || latest[0].Quests[15090].Step != 7 || latest[0].Quests[15090].State != game.InProgress {
+		t.Fatal("existing completion did not suppress backfill", err)
 	}
 }
 

@@ -1,14 +1,14 @@
 # Private Server update import
 
-This import reviews the 40 commits and 431 distinct changed files from
+This import reviews the 41 commits and 431 distinct changed files from
 `e63e9feabc3b3bf596fe8a4f61d5d3e488c34ba1` through
-`5c368395146c0c54bb01bcee3ae88d50513beae8` (2026-11-01).
-The sibling's working checkout remains unchanged; its remote refs were fetched
-and the pinned revision was exported for review.
+`0cb6915d38982391fcf62fb0509da0b0966269ce` (2026-11-01).
+The sibling's working checkout remains unchanged; pinned source objects were
+obtained for review without switching its branch.
 
 [The update ledger](source-update-inventory.json) preserves the original 431-file
-snapshot at `1ff5bba` and records the two subsequent commits and their two changed
-files separately under `follow_up_imports`, with exact source-byte hashes,
+snapshot at `1ff5bba` and records subsequent imports separately under
+`follow_up_imports`, with exact source-byte hashes,
 dispositions and applicable Go owners. It supplements
 the original [baseline inventory](source-inventory.json), whose revision and
 normalized hashes remain intact. File counts describe review coverage, not a
@@ -16,6 +16,17 @@ percentage of feature completion. Native-client acceptance remains separate.
 
 ## Imported behavior
 
+- The `0cb6915` follow-up routes AC20:2 actor contact through normal click
+  validation. Movies without a later map-loading operation use mode 1, retaining
+  explicit SQL policy overrides and acknowledgment barriers. Event warps release
+  the old interaction's movement/UI lock once after map-load acknowledgment,
+  unless a new interaction owns it. Entry scripts already precede colliding warp
+  IDs; a regression now covers kind 3 as well.
+- Rebirth completion checkpoints use an editable SQL story rule. Rebirth commits
+  progression and marks atomically; selection repairs older reborn characters
+  from fresh SQL state before publishing their world snapshot. The default
+  completes trials mark 15090 without reducing its step or replacing its existing
+  completion time, then starts mark 15091 only if that mark is absent.
 - Waterfall Grotto mirror events 1/2/3/5 continue forward through their authored
   beam and door rules without replaying earlier branches. Existing visit-local
   actor show/hide overrides already keep turned mirrors visible through entry
@@ -144,12 +155,17 @@ source working checkout was overwritten.
 ## Upgrade and verification
 
 Use the [offline database upgrade](ASSET_DATABASE.md) before running this version:
-asset v15 and gameplay v18 are required by the current server. The v15 story
+asset v16 and gameplay v18 are required by the current server. The v15 story
 policy migration is described in [STORY_SYSTEM.md](STORY_SYSTEM.md). The installed databases remain unchanged;
 disposable upgraded copies are used for validation. Commands and results are
 centralized in [TESTING.md](TESTING.md#source-update-verification--2026-11-01).
 The two-commit story follow-up requires no schema/data changes; its focused
 checks are recorded [separately](TESTING.md#story-follow-up-verification--2026-11-01).
+The `0cb6915` follow-up adds the preserving asset v16 checkpoint migration;
+[its validation](TESTING.md#contact-movie-and-rebirth-follow-up--2026-11-01)
+uses disposable databases. Its source database has no schema or shared-content
+changes: player/operator rows changed, and all 28 chest-drop rows differ only in
+primary keys (2157–2184 became 2437–2464). Those changes are excluded.
 
 Native-client captures, multiplayer/load acceptance and Go-client interfaces for
 new native server forms remain separate acceptance/roadmap work. Source prototype

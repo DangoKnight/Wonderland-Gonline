@@ -277,6 +277,7 @@ const (
 // Event subcommands (AC20).
 const (
 	EventActorClick   = 1
+	EventActorContact = 2 // Touch-only actors share the click-ID request layout.
 	EventRegion       = 4
 	EventAcknowledge  = 6
 	EventClose        = 7
@@ -286,6 +287,12 @@ const (
 	EventBattleBegin  = 12
 	// Unresolved wire meaning; retain the numeric code until verified.
 	EventWireCode33 = 33
+)
+
+// Native movie modes: a map load releases mode 2's rendering hold.
+const (
+	EventMovieContinue       = 1
+	EventMovieHoldForMapLoad = 2
 )
 
 // Scene subcommands (AC22).

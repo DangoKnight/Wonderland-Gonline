@@ -269,3 +269,115 @@ func TestAreaRegionRunsAuthoredEvent(t *testing.T) {
 		t.Fatal("area region event", got)
 	}
 }
+
+func TestActorContactUsesClickValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		actor     byte
+		hide      bool
+		active    bool
+		wantEvent bool
+	}{
+		{"touch", 5, false, false, true}, {"far", 9, false, false, false}, {"hidden", 5, true, false, false}, {"busy", 5, false, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, c, wire := eventFixture(t)
+			if tc.hide {
+				c.view.Hidden[uint16(tc.actor)] = true
+			}
+			var previous *eventSession
+			if tc.active {
+				previous = &eventSession{}
+				c.event = previous
+			}
+			if err := s.worldCommand(context.Background(), c, []byte{20, 2, tc.actor, 0}); err != nil {
+				t.Fatal(err)
+			}
+			if tc.active {
+				if c.event != previous {
+					t.Fatal("contact replaced active interaction")
+				}
+				return
+			}
+			if (c.event != nil) != tc.wantEvent {
+				t.Fatal("contact eligibility", c.event)
+			}
+			if tc.wantEvent && !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 1, 3, 5, 0, 1, 0, 0, 0, 0, 0x11, 0x27, 0}) {
+				t.Fatal("touch did not use native click dialogue")
+			}
+		})
+	}
+}
+
+func TestMovieModeFollowsRemainingMapLoads(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		tail []assets.Operation
+		mode byte
+	}{
+		{"dialogue_only", []assets.Operation{evOp(2, 1, 2, 10000, 0, 0)}, 1},
+		{"scene_transition", []assets.Operation{evOp(2, 1, 3, 1, 0, 0)}, 2},
+		{"map_teleport", []assets.Operation{evOp(2, 7, 65001, 10, 20, 0)}, 2},
+		{"npc_service", []assets.Operation{evOp(2, 7, 6, 0, 0, 0)}, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, c, wire := eventFixture(t)
+			c.character.Map = 65000
+			ev := assets.Event{ClickID: 88, Branches: []assets.Branch{{Index: 1, Operations: append([]assets.Operation{evOp(1, 8, 1, 0, 0, 12345)}, tc.tail...)}}}
+			if err := s.startEvent(context.Background(), c, 0, &ev, 0, true); err != nil {
+				t.Fatal(err)
+			}
+			if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 1, 5, 0, 0, 0, tc.mode, 57, 48, 0, 0, 0, 0, 1}) || c.event == nil || c.event.onComplete == nil {
+				t.Fatal("movie mode or ACK barrier")
+			}
+		})
+	}
+}
+
+func TestMovieIgnoresMapLoadsBeforeItsCurrentStep(t *testing.T) {
+	s, c, wire := eventFixture(t)
+	ev := assets.Event{ClickID: 88, Branches: []assets.Branch{{Index: 1, Operations: []assets.Operation{evOp(1, 1, 3, 1, 0, 0), evOp(2, 8, 1, 0, 0, 12345)}}}}
+	es := &eventSession{ev: &ev, branch: 0, index: 2}
+	if ok, err := s.execute(context.Background(), c, es, world.DecodeOp(ev.Branches[0].Operations[1])); !ok || err != nil {
+		t.Fatal(ok, err)
+	}
+	if !contains(wire.packets(t), []byte{20, 1, 0, 0, 0, 2, 5, 0, 0, 0, 1, 57, 48, 0, 0, 0, 0, 1}) {
+		t.Fatal("earlier warp left movie holding")
+	}
+}
+
+func TestNativeActorContactTransition(t *testing.T) {
+	catalog, err := installedCatalog(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, c, _ := eventFixture(t)
+	s.Assets, s.World = catalog, world.New(catalog)
+	n, ok := s.World.NPC(12132, 4)
+	if !ok {
+		t.Fatal("native touch actor missing")
+	}
+	next := c.character.Clone()
+	next.Map, next.X, next.Y = 12132, n.X, n.Y
+	if err := s.commit(context.Background(), c, next); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.worldCommand(context.Background(), c, []byte{20, 2, 4, 0}); err != nil {
+		t.Fatal(err)
+	}
+	for steps := 0; c.event != nil && steps < 16; steps++ {
+		if c.event.onChoice != nil {
+			t.Fatal("unexpected touch choice")
+		}
+		if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.character.Map != 12141 || c.event != nil {
+		t.Fatal("native contact did not reach authored destination", c.character.Map)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || stored[0].Map != 12141 {
+		t.Fatal("contact transition not durable", err)
+	}
+}

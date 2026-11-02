@@ -172,6 +172,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.manufacturing = nil
 	c.manufacturingLoaded = false
 	c.ready = false
+	c.restoreUIAfterMapLoad = false
 	c.motdSent = false
 	c.warped = false
 	c.storm, c.stormAck, c.beachPending, c.beach, c.battle = false, false, false, nil, nil

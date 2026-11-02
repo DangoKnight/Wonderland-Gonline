@@ -46,7 +46,7 @@ successful chain participants count, including pets, and singles receive no bonu
 Gameplay schema v18 stores character state in typed tables and owned child rows.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v15 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v16 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -1171,7 +1171,7 @@ no database migration; the ledger preserves the earlier snapshot hashes.
 
 Story-specific identities, prerequisites, links, presentation modes, actor rules,
 script repairs, recruitment/conversion parameters and cinematic steps belong to
-the typed `Story` dataset in assets.db (asset schema v15). Use reusable engine
+the typed `Story` dataset in assets.db (asset schema v16). Use reusable engine
 capabilities rather than adding map/event/mark switches. See [STORY_SYSTEM.md](STORY_SYSTEM.md)
 for scopes, gates, operation patterns, ordered rules and administration.
 Keep imported EVE programs and independent raw packet fixtures intact. Apply

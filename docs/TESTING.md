@@ -562,7 +562,7 @@ go run ./cmd/live-test -config config.local.json \
   -scenario fishing-skilled -output var/live-tests/fishing-skilled-01
 ```
 
-Use a current assets database (schema v15, including the item dimensions
+Use a current assets database (schema v16, including the item dimensions
 introduced in v11). If testing
 with an upgraded copy, add `-assets-database /absolute/path/to/assets.db`.
 See [asset database upgrades](ASSET_DATABASE.md) if preparation reports a schema
@@ -1423,4 +1423,70 @@ go test -race ./internal/server -run '^TestGMShutdownCountdownUsesGracefulRunCle
 go test -race ./internal/protocol ./internal/server/logging ./internal/server/wire -count=1
 go vet ./internal/server/... ./internal/admin ./cmd/wonderland ./cmd/live-test
 go build -o /tmp/wonderland-outbound-server-check ./cmd/wonderland
+```
+
+### Contact, movie and rebirth follow-up — 2026-11-01
+
+Private Server `0cb6915` is imported with focused validation only. Independent
+raw packet expectations cover contact validation, movie modes and acknowledgment
+barriers, kind-3 entry precedence over colliding warp IDs, and one-time UI release
+after event warps. Checkpoint tests cover transactional rebirth rollback/retry,
+preserved trial steps/completion times, fresh SQL repair, character selection,
+already-complete no-write behavior, custom content IDs and cleared policies.
+
+The affected asset, SQL, world and server race selection passes (1.062s, 2.587s,
+1.032s and 14.390s). Native story parity, including map 12132 actor 4's contact
+transition to map 12141, passes (67.386s). Installed assets v13 upgrade to v16 and
+repeated loading pass on a disposable copy (18.306s); SQL publication/reload also
+passes (65.557s). Migration fixtures retain edited rules and nil/empty collections,
+preserve later deletion on repeats, and roll schema/data/version back on injected
+write failure. Generated SQL models reproduce byte for byte; affected-package vet
+and the server build pass.
+
+The seven changed source files have exact-byte hashes in the
+[follow-up ledger](source-update-inventory.json). SQLite schema and row comparison
+finds no shared-definition changes: player state and chest primary-key churn are
+excluded. Regular databases and the sibling checkout remain unchanged. Full server
+validation is reserved for a push; live native-client acceptance was not run.
+
+```sh
+go test -race -timeout=4m ./internal/assets ./internal/assetsql ./internal/world ./internal/server \
+  -run '^Test(Story|RebornStory|ActorContact|Movie|EventWarpRestores|AreaEntryScripts|FairyAltar|GMReborn|RebirthJob|CommandRegistry|AreaRegion|RegionsAndDoor|ReloadEvents)' -count=1
+WONDERLAND_TEST_DATA="$PWD/../Wonderland-Private-Server/Data" \
+  go test -race -timeout=8m ./internal/server \
+  -run '^Test(InstalledBreillat|Breillat|NativeXaolanRobbery|Xaolan|NativeFredFinale|NativeMonkeyRescue|NativeElin|NativeRobinson|NativeWaterfall|NativeStarterShip|NativeActorContact|Storm|Spider|StarterShip|Monkey|NissRest|FairyAltar)' -count=1
+WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" \
+  go test -race -timeout=5m ./internal/assetsql \
+  -run '^TestStoryInstalledMigration$' -count=1
+WONDERLAND_TEST_ASSETS_DB="$PWD/var/assets.db" \
+  go test -race -timeout=5m ./internal/server \
+  -run '^TestStorySQLPublicationAndReload$' -count=1
+go vet ./internal/assets ./internal/assetsql ./internal/world ./internal/server/... ./internal/game ./tools/asset-schema-generator
+go build -o /tmp/wonderland-private-0cb6915-server-check ./cmd/wonderland
+```
+
+### Private Server import pre-push validation — 2026-11-01
+
+The full root suite passes with the race detector against a disposable assets
+database upgraded from v13 to v16 (server package: 831.308s; assets SQL: 95.568s).
+The full client suite passes without the race detector (app: 197.844s), and
+`go vet ./...` passes in both modules. These checks cover the `0cb6915` import
+and the preceding story modularization and outgoing-network isolation commits.
+
+The run reports 1,789 passing test/subtest events and 14 skipped tests in the root
+module, plus 416 passing events and 37 skipped tests in the client. Explicitly
+opt-in original-asset, GPU, snapshot and live-account checks remain skipped;
+automated suites do not establish live native-client acceptance. The regular
+databases remain unchanged. Disposable snapshots were migrated with
+`cmd/database-migrate`, including integrity/content verification and retained
+backups; the test run used the resulting assets database.
+
+```sh
+WONDERLAND_TEST_ASSETS_DB=/tmp/wonderland-prepush-0cb6915/assets.db \
+  GOCACHE=/tmp/wonderland-precommit-go-cache \
+  go test -race -json -timeout=60m ./...
+GOCACHE=/tmp/wonderland-precommit-go-cache go vet ./...
+# From client/:
+GOCACHE=/tmp/wonderland-precommit-go-cache go test -json -timeout=60m ./...
+GOCACHE=/tmp/wonderland-precommit-go-cache go vet ./...
 ```

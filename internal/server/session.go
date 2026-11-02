@@ -32,18 +32,19 @@ type SessionInfo struct {
 }
 
 type Session struct {
-	pendingMail      map[deliveryKey]*transport.Receipt // Guarded by worldMu.
-	textMailPending  bool
-	adminMailPending bool
-	openTent         *openTent // Guarded by worldMu.
-	tentOwner        uint32    // Private scene identity; guarded by worldMu.
-	motdSent         bool      // One welcome popup per character login, guarded by worldMu.
-	adminFeedback    *[]string // Scoped to a web action under worldMu.
-	invisible        bool      // GM ghost mode; guarded by worldMu.
-	pendingName      string
-	character        *game.Character
-	autosaveBaseline *game.Character // Last checkpoint; guarded by worldMu.
-	ready            bool
+	pendingMail           map[deliveryKey]*transport.Receipt // Guarded by worldMu.
+	textMailPending       bool
+	adminMailPending      bool
+	openTent              *openTent // Guarded by worldMu.
+	tentOwner             uint32    // Private scene identity; guarded by worldMu.
+	motdSent              bool      // One welcome popup per character login, guarded by worldMu.
+	adminFeedback         *[]string // Scoped to a web action under worldMu.
+	invisible             bool      // GM ghost mode; guarded by worldMu.
+	pendingName           string
+	character             *game.Character
+	autosaveBaseline      *game.Character // Last checkpoint; guarded by worldMu.
+	ready                 bool
+	restoreUIAfterMapLoad bool // An event warp cut off its final client acknowledgment; guarded by worldMu.
 	// warped marks a portal arrival; peers then receive no AC5:8 login refresh.
 	warped               bool
 	manufacturing        *store.ManufactureJob

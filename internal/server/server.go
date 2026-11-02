@@ -411,6 +411,10 @@ func (s *Server) login(ctx context.Context, c *Session, p []byte) error {
 		for _, char := range chars {
 			if char.Slot == slot {
 				char = char.Clone()
+				char, e = s.reconcileRebornCheckpoints(ctx, c.account.ID, char)
+				if e != nil {
+					return e
+				}
 				tentRecovered := recoverTentCharacter(&char)
 				vitalsChanged := char.RecalculateVitals(s.Assets.Items)
 				vehicleChanged := char.NormalizeVehicle(s.Assets.Items)
