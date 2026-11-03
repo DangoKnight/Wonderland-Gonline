@@ -2425,3 +2425,56 @@ Use the full commands above with absolute `WONDERLAND_TEST_ASSETS_DB`,
 `WONDERLAND_TEST_GPU=1` for the client run. Native item goldens require the
 matching reference revision; other installation variants should be tested
 separately without changing those independent expected bytes/hashes.
+
+### Full pre-push validation - 2026-11-03
+
+Validated merge `91a8570`, including combat follow-up `df552ca`. The documentation
+merge preserves both main's incoming-handler reference and the client's Lucky
+Draw section.
+
+Completed root-module race coverage: **1,933 unique tests/subtests passed across
+28 tested packages**, with 12 opt-in/platform skips and eight packages without
+tests. This is aggregate coverage across the full run and its isolated retry,
+not a claim that one uninterrupted root command passed. Windows memory pressure
+interrupted `internal/server` near the end; comparison against its independently
+listed 584 top-level tests identified 88 interrupted/unexecuted cases. All 88
+passed in a fresh race-enabled process. The final inventory is **584/584 completed,
+zero remaining**, and no assertion or race failure remained.
+
+The complete client module passed **595 tests/subtests across 24 tested packages**,
+with compiled bundles, exported data and real GPU checks enabled. Its 35 skips
+include optional snapshots and native artwork subsequently exercised separately,
+as well as unavailable reference/live fixtures. Both modules passed full `go vet`
+and executable builds. Separate client battle/inventory state race suites passed;
+the item/round and result/slow-turn application race batches passed 27 and 18
+tests/subtests respectively, with compiled assets enabled.
+
+The initial temporary drive filled, and simultaneous asset-heavy race processes
+exceeded Windows' memory commit limit. Retried with temporary storage on `D:`,
+the ignored diagnostic Go utility outside package discovery, and heavy race
+batches running sequentially. A ten-minute application race attempt was incomplete
+during image decoding; the completed batches used the documented 60-minute outer
+limit. These retries changed neither production code nor expected test values.
+
+Additional checks passed: native asset decoders and encrypted sprites, original
+artwork archives and every exported font glyph, available UI/minigame snapshots,
+editable sprite verification (6,257 sprites and 816,578 frames), exported asset
+checksums, Go formatting, whitespace, Prettier, HTMLHint, and Python exporter/media
+tests (24 passed, one Windows symlink-privilege skip). Ten-second fuzz runs passed
+1,694,063 protocol inputs and 1,006,539 EVE inputs. The incremental client bundle
+build validated all 72,829 files (6,020.3 MiB source), reusing every entry.
+
+One local provenance caveat remains: strict source reconstruction against the
+manifest's recorded updated-client path reports an `Item.dat` source hash mismatch.
+The existing 7,312-item export and its recorded hash match both older installed
+client variants exactly; the updated installation contains a different file.
+Export integrity and the matching native-reference tests passed. No original
+files, exported payloads or independent golden hashes were overwritten to hide
+this discrepancy. Source-path reconstruction against that newer variant is not
+claimed as passed.
+
+Live-account tests, unavailable original screenshot/legacy sprite-pack fixtures
+and privileged Windows symlink checks remain unexecuted. Automated results do
+not establish live Legacy-client acceptance. Detailed logs, the complete test
+inventory, retry selections, final aggregate summary and rendered samples remain
+ignored under `var/validation/2026-11-03-prepush/`.
