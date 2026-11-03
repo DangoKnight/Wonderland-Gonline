@@ -354,9 +354,12 @@ func (c *Client) teamPacket(p []byte) bool {
 			c.showCompanion(binary.LittleEndian.Uint32(p[2:]), uint16(binary.LittleEndian.Uint32(p[6:])), p[13:13+nameLen])
 			return true
 		case protocol.PetControlWireCode1:
+			before := c.InventoryState.Pets
 			if c.InventoryState.ApplyPetRecruit(p, c.World.Player.ID) {
 				c.assignPetSkills()
+				c.announceNewPets(before)
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			}
 			return true
 		case protocol.PetControlPetSlot:

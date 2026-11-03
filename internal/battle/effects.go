@@ -14,6 +14,7 @@ const (
 )
 
 type ActiveEffect struct {
+	caster     *Fighter // Transient effect provenance; never serialized.
 	Source     uint16
 	Index      int
 	Definition assets.SkillEffect
@@ -34,6 +35,7 @@ func (f *Fighter) ApplyEffect(source uint16, index int, e assets.SkillEffect) {
 	for i := range f.Effects {
 		if f.Effects[i].Source == source && f.Effects[i].Index == index {
 			f.Effects[i].Definition = e
+			f.Effects[i].caster = nil
 			f.Effects[i].Turns = max(f.Effects[i].Turns, e.Rounds)
 			return
 		}
@@ -175,7 +177,7 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 				}
 			}
 			if !blocked {
-				target.ApplyEffect(a.Skill, indices[i], e)
+				target.applyEffectFrom(a.Actor, a.Skill, indices[i], e)
 			}
 			if emitted[target] {
 				continue
@@ -270,7 +272,7 @@ func (r Rules) applyHitEffects(actor, target *Fighter, skill uint16) {
 			continue
 		}
 		if !recipient.Dead() {
-			recipient.ApplyEffect(skill, i, e)
+			recipient.applyEffectFrom(actor, skill, i, e)
 		}
 	}
 }

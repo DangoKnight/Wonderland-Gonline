@@ -140,6 +140,9 @@ func (c *Client) refreshEquipment() {
 }
 
 func (c *Client) inventoryPacket(p []byte) {
+	if c.floorItemPacket(p) {
+		return
+	}
 	if c.World == nil || c.InventoryState == nil || len(p) < 2 {
 		return
 	}
@@ -152,7 +155,7 @@ func (c *Client) inventoryPacket(p []byte) {
 			}
 			return
 		}
-		if p[1] == protocol.InventoryItems {
+		if p[1] == protocol.InventoryItems || p[1] == protocol.InventoryAcquire {
 			c.recordBattleResultItems(bagBefore)
 		}
 		if p[1] == protocol.InventoryCompoundResult {
@@ -201,7 +204,7 @@ func (c *Client) inventoryPacket(p []byte) {
 		// AC23:15 acknowledges server-authoritative consumable use.
 
 	case protocol.InventoryWireCode212:
-		if len(p) == 7 && p[2] == 255 {
+		if len(p) == 7 && (p[2] == protocol.InventoryDestroyPrompt || p[2] == 255) {
 			c.Inventory.ConfirmDestroy(p[3], binary.LittleEndian.Uint16(p[4:]), p[6])
 		}
 	case protocol.InventoryMessage:

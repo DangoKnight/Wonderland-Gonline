@@ -143,10 +143,9 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 	}
 	bag := char.Bag
 	limit, known := s.stackLimit(target.Item.ID)
-	var adds []game.Addition
 	var e error
 	if known {
-		adds, e = bag.Grant(target.Item, 1, limit, s.Assets.Items)
+		_, e = bag.Grant(target.Item, 1, limit, s.Assets.Items)
 	}
 	// Unknown IDs cannot enter the bag; C# reports them as a full inventory too.
 	if !known || e != nil {
@@ -156,10 +155,12 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 		return e
 	}
 	s.World.Take(char.Map, target, time.Now())
-	if e = c.send(bag.AdditionPacket(adds)); e != nil {
+	if e = c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(1)); e != nil {
 		return e
 	}
-	if e = c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(1)); e != nil {
+	grant := target.Item
+	grant.Count = 1
+	if e = c.send(game.AcquisitionPacket(grant)); e != nil {
 		return e
 	}
 	s.broadcastWorld(c, protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(0))
@@ -177,7 +178,7 @@ func (s *Server) drop(ctx context.Context, c *Session, slot, count byte) error {
 	}
 	if !s.Assets.Items[item.ID].Droppable() {
 		// The client asks whether to destroy the item instead.
-		return c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode212, 255, slot}.U16(item.ID).U8(count))
+		return c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode212, protocol.InventoryDestroyPrompt, slot}.U16(item.ID).U8(count))
 	}
 	if count == 0 || count > item.Count {
 		return nil
@@ -193,11 +194,12 @@ func (s *Server) drop(ctx context.Context, c *Session, slot, count byte) error {
 	if e := s.saveBag(ctx, c, bag); e != nil {
 		return e
 	}
-	packet := s.World.Drop(char.Map, slots, item, char.X, char.Y)
-	if e := c.send([]byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count}); e != nil {
+	s.World.Drop(char.Map, slots, item, char.X, char.Y)
+	packet := protocol.Builder{protocol.CommandInventory, protocol.InventoryDrop}.U16(item.ID).U16(char.X).U16(char.Y).U32(0).Bytes(slots)
+	if e := c.send(packet); e != nil {
 		return e
 	}
-	if e := c.send(packet); e != nil {
+	if e := c.send([]byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count}); e != nil {
 		return e
 	}
 	s.broadcastWorld(c, packet)

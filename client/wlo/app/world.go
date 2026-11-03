@@ -157,6 +157,9 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
+	if c.pickupFloorItem(x, y) {
+		return
+	}
 	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}

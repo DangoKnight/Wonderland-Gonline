@@ -262,12 +262,12 @@ func TestGroundItemsAndBagMoves(t *testing.T) {
 		}
 	}
 	record := func(slot byte, id uint16, count byte) []byte {
-		return protocol.Builder{23, 5, slot}.U16(id).U8(count).U8(0).Bytes(make([]byte, 26))
+		return protocol.Builder{23, 6}.U16(id).U8(count).Bytes(make([]byte, 28))
 	}
 
 	// Slot 1 holds a full stack of the starter item, so the pickup opens slot 2.
 	command(alice, 23, 2, 5)
-	expect(0, record(2, 32176, 1), []byte{23, 2, 5, 0, 1})
+	expect(0, []byte{23, 2, 5, 0, 1}, record(2, 32176, 1))
 	expect(1, []byte{23, 2, 5, 0, 0})
 	command(alice, 23, 2, 5)
 	expect(0)
@@ -284,16 +284,16 @@ func TestGroundItemsAndBagMoves(t *testing.T) {
 
 	// Each dropped unit takes its own slot, skipping the native node's slot 5.
 	command(alice, 23, 3, 1, 2, 0)
-	dropped := protocol.Builder{23, 4, 3, 1, 0}.U32(32176).U16(1042).U16(1075).U32(0).U8(3).U16(2).U32(32176).U16(1042).U16(1075).U32(0)
-	expect(0, []byte{23, 9, 1, 2}, dropped)
+	dropped := protocol.Builder{23, 3}.U16(32176).U16(1042).U16(1075).U32(0).U8(1).U8(2)
+	expect(0, dropped, []byte{23, 9, 1, 2})
 	expect(1, dropped)
 	command(bobby, 23, 2, 2)
-	expect(1, record(2, 32176, 1), []byte{23, 2, 2, 0, 1})
+	expect(1, []byte{23, 2, 2, 0, 1}, record(2, 32176, 1))
 	expect(0, []byte{23, 2, 2, 0, 0})
 
 	alice.character.Bag[9] = game.Item{ID: 21001, Count: 1}
 	command(alice, 23, 3, 10, 1, 0)
-	expect(0, protocol.Builder{23, 212, 255, 10}.U16(21001).U8(1))
+	expect(0, protocol.Builder{23, 212, 7, 10}.U16(21001).U8(1))
 	command(alice, 23, 10, 2, 1, 20)
 	expect(0, []byte{23, 10, 2, 1, 20})
 	if alice.character.Bag[19].Count != 1 || !alice.character.Bag[1].Empty() {

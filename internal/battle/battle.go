@@ -61,7 +61,9 @@ type Fighter struct {
 	overkillAnnounced    bool
 	// Absent marks disconnected owners; Withdrawn also excludes their fighters
 	// from targeting, actions and subsequent rounds without changing their vitals.
-	Absent bool
+	Absent           bool
+	immediateSupport map[*Fighter]bool // Valid until this entity's next offensive action.
+	reviveSupport    map[*Fighter]bool // Successful revivers qualify for the rest of this battle.
 }
 
 // hurt lowers HP and counts a knock-out.
@@ -107,6 +109,7 @@ func (f *Fighter) key() int { return int(f.X)<<8 | int(f.Y) }
 
 // Action is a submitted command (PendingAction).
 type Action struct {
+	supporters    []*Fighter // Transient assistance snapshot before this attack.
 	Actor         *Fighter
 	Player        uint32
 	Kind          string // attack, defend, idle, catch, flee, heal, effect, monster
@@ -150,7 +153,8 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
-	Items map[uint16]assets.BattleItem
+	ExperienceFormula game.BattleEXPFormula
+	Items             map[uint16]assets.BattleItem
 	// Called synchronously during Round, before an item effect or success packet.
 	CommitItem func(Action, *Fighter, int, int) bool
 	// Selects 10 percent per actual combo participant instead of the fixed bonus.
@@ -161,6 +165,8 @@ type Rules struct {
 	NPCs               map[uint16]assets.NPC
 	// PrepareCapture commits any equipped net use before rolling or publishing.
 	PrepareCapture func(Action) (levelAllowance int, committed bool)
+	CommitCapture  func(Capture) (Step, bool)
+	RewardKill     func(*Fighter, []Action) Step
 	Timing         map[uint16]int
 	Critical       game.CriticalHits
 	Next           func(lo, hi int) int
@@ -169,6 +175,9 @@ type Rules struct {
 
 // Battle owns both sides of a PvE or PvP encounter.
 type Battle struct {
+	reviveSupport        map[experienceIdentity]map[*Fighter]bool
+	experience           map[experienceIdentity]uint64
+	experienceKills      map[*Fighter]bool
 	Reinforcements       [MaxEnemies][]Enemy
 	defeatedDefenders    []*Fighter
 	Attackers, Defenders []*Fighter
@@ -185,10 +194,11 @@ type Battle struct {
 
 // Capture is a caught monster for its owner's party.
 type Capture struct {
-	Owner    uint32
-	Template uint32
-	Name     string
-	Level    int
+	Committed bool // Recruitment was already saved during round calculation.
+	Owner     uint32
+	Template  uint32
+	Name      string
+	Level     int
 }
 
 // Grid positions (PvEBattleManager.*GridSlots).
@@ -247,6 +257,10 @@ func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, 
 
 // New builds a battle of one or more characters against enemies.
 func New(players []*Fighter, enemies []Enemy) *Battle {
+	for _, f := range players {
+		f.reviveSupport = nil
+		f.immediateSupport = nil
+	}
 	b := &Battle{Attackers: players, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
 	for i, e := range enemies {
 		if i >= MaxEnemies {
@@ -831,6 +845,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 	var results []targetResult
 	for _, target := range targets {
 		hpBefore := target.HP
+		cleansed := s.CleansesStatus() && r.needsCleanse(target, s)
 		stat, amount := byte(0), 0
 		switch {
 		case s.RestoresSP():
@@ -844,6 +859,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 		case isHeal(s):
 			amount = min(target.MaxHP-target.HP, max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15))
 			target.HP, stat = min(target.MaxHP, target.HP+amount), game.StatCurrentHP
+		}
+		if isRevive(s) && hpBefore <= 0 && target.HP > 0 {
+			b.recordReviveSupport(target, actor)
+		} else if amount > 0 || cleansed {
+			target.recordImmediateSupport(actor)
 		}
 		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
 		if a.SkillEXP == 0 {
@@ -937,9 +957,18 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 		steps = append(steps, Step{Packets: [][]byte{systemLine("Cannot capture " + target.Name + ": " + reason)}})
 		return steps, true
 	}
+	catch := Capture{Owner: owner, Template: target.Template, Name: target.Name, Level: int(target.Level)}
+	if r.CommitCapture != nil {
+		recruit, ok := r.CommitCapture(catch)
+		if !ok {
+			return nil, true
+		}
+		catch.Committed = true
+		steps = append(steps, recruit)
+	}
 	target.HP, target.Captured = 0, true
 	b.Roster[owner] = append(b.Roster[owner], target.Template)
-	b.Captures = append(b.Captures, Capture{Owner: owner, Template: target.Template, Name: target.Name, Level: int(target.Level)})
+	b.Captures = append(b.Captures, catch)
 	return steps, true
 }
 
@@ -1041,6 +1070,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				a := combo[i]
 				combo[i].SkillEXP = game.CombatSkillEXPPerUse
 				actor := a.Actor
+				a.supporters = actor.consumeSupport()
 				if a.Skill > 0 && !Basic(a.Skill) {
 					packets = append(packets, r.spend(actor, a.Skill))
 				}
@@ -1071,6 +1101,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				r.applyHitEffects(a.Actor, target, a.Skill)
 			}
 			steps = append(steps, Step{Packets: packets, Delay: delay, SkillUses: combo})
+			steps = r.appendKillReward(b, steps, target, landed)
 			steps = b.appendOverkill(steps, target)
 		}
 	}
@@ -1205,7 +1236,7 @@ func (b *Battle) Rewards() (exp, gold uint64) {
 		if m.Captured || m.Kind != Monster {
 			continue
 		}
-		exp += uint64(max(10, int(m.Level)*15))
+		exp += MonsterExperience(m.Level)
 		gold += uint64(max(5, int(m.Level)*8))
 	}
 	return exp, gold

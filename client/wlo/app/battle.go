@@ -205,6 +205,9 @@ type battleView struct {
 // Native receive handlers: FUN_003920a0 (action batches), FUN_00392d3c
 // (absolute stats), FUN_003970e4 (turn actor).
 func (c *Client) remoteBattlePacket(p []byte) bool {
+	if c.battleItemGainPacket(p) {
+		return true
+	}
 	if c.World == nil || len(p) < 2 {
 		return false
 	}
@@ -411,6 +414,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	return true
 }
 func (c *Client) closeBattleView() {
+	c.itemFlights = nil
 	if c.BattleSkills != nil {
 		c.BattleSkills.Hide()
 	}
@@ -797,6 +801,7 @@ func (c *Client) battleFrame(draw bool) bool {
 	}
 	c.drawDepartingPets(now, offset)
 	c.drawBattleEffects(now)
+	c.drawBattleItemGains(now, offset)
 	for _, f := range fighters {
 		c.drawBattleSlow(f, c.battleBody(f), positions[f.Cell], now)
 	}

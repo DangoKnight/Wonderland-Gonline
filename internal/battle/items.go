@@ -109,6 +109,9 @@ func (b *Battle) useItem(r Rules, a Action) []Step {
 		return nil
 	}
 	beforeHP, beforeSP := t.HP, t.SP
+	if info.HP < 0 {
+		a.supporters = a.Actor.consumeSupport()
+	}
 	if hp < t.HP {
 		t.hurt(-info.HP)
 	} else {
@@ -150,5 +153,7 @@ func (b *Battle) useItem(r Rules, a Action) []Step {
 	packet := protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}.U16(uint16(len(record))).Bytes(record)
 	step := Step{Packets: [][]byte{turnPacket(a.Actor), packet, StatSync(t.X, t.Y, game.StatCurrentHP, uint32(t.HP)), StatSync(t.X, t.Y, game.StatCurrentSP, uint32(t.SP))},
 		OwnerPackets: map[uint32][][]byte{a.Player: {{protocol.CommandInventory, protocol.InventoryRemove, a.ItemSlot, 1}}}, Delay: r.Delay(motion, "item")}
-	return b.appendOverkill([]Step{step}, t)
+	steps := []Step{step}
+	steps = r.appendKillReward(b, steps, t, []Action{a})
+	return b.appendOverkill(steps, t)
 }

@@ -56,7 +56,7 @@ func TestGMDropRateCommand(t *testing.T) {
 	}
 }
 
-func TestLiveDropRateReachesVictoryLoot(t *testing.T) {
+func TestLiveDropRateReachesKillLoot(t *testing.T) {
 	s, players, _ := chatFixture(t)
 	s.SetGMLevel(players[0].account.ID, 1)
 	say(t, s, players[0], "/droprate 100")
@@ -67,10 +67,17 @@ func TestLiveDropRateReachesVictoryLoot(t *testing.T) {
 	next := players[0].character.Clone()
 	next.Bag = game.Inventory{}
 	s.worldMu.Lock()
-	adds, _ := s.rollLoot(run, &next)
+	if err := s.commit(context.Background(), players[0], next); err != nil {
+		t.Fatal(err)
+	}
+	actor := battle.PlayerFighter(players[0].character, s.Assets.Items, 0)
+	run.members = []*battleMember{{c: players[0], self: actor}}
+	players[0].battle = run
+	step := s.commitCombatLoot(run, run.b.Defenders[0], []battle.Action{{Actor: actor}})
+	captured := s.commitCombatLoot(run, run.b.Defenders[1], []battle.Action{{Actor: actor}})
 	s.worldMu.Unlock()
-	if len(adds) != 1 || next.Bag[0].ID != 32176 || next.Bag[0].Count != 1 {
-		t.Fatal("multiplier/capture restriction not applied", adds, next.Bag[0])
+	if len(step.OwnerPackets[actor.ID]) != 2 || len(captured.OwnerPackets) != 0 || players[0].character.Bag[0].ID != 32176 || players[0].character.Bag[0].Count != 1 {
+		t.Fatal("multiplier/capture restriction not applied", step, players[0].character.Bag[0])
 	}
 }
 

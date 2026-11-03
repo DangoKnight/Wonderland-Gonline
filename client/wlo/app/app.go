@@ -143,15 +143,19 @@ type Client struct {
 	mapReady bool
 	held     bool // 6/2: the server holds the player
 
-	lib            *role.Library
-	items          map[uint16]assets.NativeItem
-	Skills         *skills.Form
-	BattleSkills   *skills.BattleForm
-	SkillState     *skills.State
-	hotbar         hotbarRuntime
-	waterTravel    waterTravelState
-	vehicleEffects vehicleEffectState
-	logoutPrompt   *logoutForm
+	lib                *role.Library
+	items              map[uint16]assets.NativeItem
+	Skills             *skills.Form
+	BattleSkills       *skills.BattleForm
+	floorItems         map[uint16]floorItem
+	floorMap           uint16
+	floorPendingPickup uint16
+	itemFlights        []battleItemFlight
+	SkillState         *skills.State
+	hotbar             hotbarRuntime
+	waterTravel        waterTravelState
+	vehicleEffects     vehicleEffectState
+	logoutPrompt       *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
 	// first entry.
 	sceneNames map[uint16]string
@@ -365,6 +369,7 @@ func (c *Client) frame(draw bool) {
 			// Battle owns the scene while the map and networking keep ticking.
 		} else if !c.movieFrame() && draw {
 			c.World.Draw()
+			c.drawFloorItems()
 			c.drawVehicleEffects()
 			dialogueOverlay = true
 		}
@@ -679,6 +684,8 @@ func (c *Client) dispatchNative(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.floorItems = nil
+	c.floorPendingPickup = 0
 	c.vehicleEffects = vehicleEffectState{}
 	c.waterTravel = waterTravelState{}
 	pl, err := world.ParseSelf(p)

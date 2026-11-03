@@ -7,6 +7,12 @@ import (
 
 const BagSize = 50
 
+// AcquisitionPacket is the slotless native AC23:6 grant. The final byte is
+// reserved; item metadata occupies the same 26 bytes as bag entries.
+func AcquisitionPacket(item Item) []byte {
+	return protocol.Builder{protocol.CommandInventory, protocol.InventoryAcquire}.U16(item.ID).U8(item.Count).U8(item.Damage).Bytes(item.Metadata[:]).U8(0)
+}
+
 var ErrInventoryFull = errors.New("inventory full")
 var ErrInvalidItem = errors.New("invalid item or slot")
 var ErrItemLocked = errors.New("item is reserved by an active operation")

@@ -30,6 +30,14 @@ are recalculated after those bonuses. Story recruitment and existing owned pets
 are unchanged. These server rules serve both legacy and Gonline clients. Asset
 schema v17 requires the preserving offline upgrade in `ASSET_DATABASE.md`.
 
+Recruitment is saved and delivered during round execution, after the capture
+animation and before the next action. New pets have zero EXP. Confirmed captures
+remain owned on subsequent escape or disconnect and are not awarded again at
+settlement. Kill loot uses a single roll copied to every contributing player/pet
+in the killing combo, with each pet's copy credited to its owner. Loot commits
+atomically across owners, then native acquisitions and item-flight messages play
+after the strike. See [live reference and policy](LEGACY_REWARDS_CAPTURE.md).
+
 ## Monster target selection weights
 
 Hostile monster casts and basic attacks choose among eligible opponents with

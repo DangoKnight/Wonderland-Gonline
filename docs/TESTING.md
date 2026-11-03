@@ -1,5 +1,64 @@
 # Testing and validation
 
+## Participation base EXP rate — 2026-11-03
+
+Participation mode now uses eight EXP per monster level, including eight for a
+level-one monster. Focused engine and server settlement tests verify the new
+base, unchanged simple-mode rate, combo bonus, inverse shares and battle-long
+revive assistance. The zero-level fallback treats malformed/unspecified levels
+as level one for participation mode. Vet and the server build pass.
+
+## Combo EXP pool bonus — 2026-11-03
+
+Participation EXP and server settlement checks pass with +40% for two distinct
+landed combo units, +50% for three, and ten additional percentage points per
+extra attacking unit. Tests cover solo/no bonus, support-only assistants,
+duplicate actors/supporters, two through eight combo units, fractional pool
+rounding and conserved inverse-level payouts. Updated server victory/escape/
+defeat/disconnect checks pass with the new shares. Simple EXP remains unchanged.
+
+## Battle-long revive assistance — 2026-11-03
+
+Focused participation, pet-switch and server settlement checks pass. Successful
+revives remain eligible through repeated kills and attacks; repeat revives
+deduplicate the caster, living-target no-ops do not qualify, returning pets keep
+their own revival history, replacements do not inherit it, and a fresh battle
+clears revival assistance. Ordinary healing retains next-attack lifetime.
+
+## Participation EXP — 2026-11-03
+
+Complete battle/game/config suites pass. Tests cover normalized inverse weights,
+exact pool conservation, deterministic remainders, the 200-base/three-participant
+example, solo EXP, killing versus nonlethal strikes, actual buff/heal/cast
+integration, active/expired/removed buffs, spent/no-op healing and deduplicated
+assistance. Race-enabled server checks pass for victory-only awards, separate
+player/pet shares, switched-out pets, defeat/escape/disconnect forfeiture, startup
+policy capture and existing native/chain combat integrations. Changed-package
+vet and `bin/wonderland-next.exe` build pass. No processes were restarted.
+
+## Battle gold startup policy — 2026-11-03
+
+Configuration tests cover omitted/enabled/disabled `battle_gold_enabled` and
+invalid types. Server integration verifies that enabled/disabled victory gold
+balances persist, EXP remains awarded, and mutating exported configuration after
+startup does not alter the captured policy. Quest-victory and native/chain round
+integration checks pass. Config/server vet and the updated server build pass.
+The default is enabled; changing the startup switch requires restart.
+
+## Immediate acquisitions and legacy inventory — 2026-11-03
+
+Passed complete affected battle/game/protocol and client inventory/battle suites.
+Focused server/store checks under the race detector cover multi-owner loot,
+second-recipient SQL rollback, deduplication, immediate capture persistence,
+disconnect retention, capture net use, native/chain delivery, pickup/drop order
+and amity-only knockout penalties. Client app checks cover the independent live
+AC23:6 bytes, native/chain acquisition and item flights, floor spawn/pickup,
+destruction marker 7, recruitment notices and result accounting. Updated the
+existing ground-item packet expectations to the captured order, keeping raw
+expected protocol bytes independent of production constants. Changed-package vet
+and both candidate builds pass. Visually checked `var/battle-acquisition.png`.
+No running server/client was restarted, and no database migration is added here.
+
 ## Wiki capture rules — 2026-11-03
 
 Battle and game suites pass, including capture level boundaries, net allowance,

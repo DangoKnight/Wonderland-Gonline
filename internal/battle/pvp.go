@@ -26,6 +26,12 @@ func Place(f *Fighter, side Side, slot int) {
 }
 
 func NewPvP(attackers, defenders []*Fighter) *Battle {
+	for _, side := range [][]*Fighter{attackers, defenders} {
+		for _, f := range side {
+			f.reviveSupport = nil
+			f.immediateSupport = nil
+		}
+	}
 	return &Battle{Attackers: attackers, Defenders: defenders, PvP: true, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
 }
 

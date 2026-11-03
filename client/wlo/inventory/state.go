@@ -60,6 +60,23 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 	}
 	bag, eq := s.Bag, s.Equipment
 	switch p[1] {
+	case protocol.InventoryAcquire:
+		if len(p) != protocol.InventoryAcquisitionBytes || p[4] == 0 || p[4] > game.MaxItemStack {
+			return true, false
+		}
+		item := game.Item{ID: binary.LittleEndian.Uint16(p[2:]), Count: p[4], Damage: p[5]}
+		copy(item.Metadata[:], p[6:6+game.ItemMetadataBytes])
+		definition, known := s.Items[item.ID]
+		if !known {
+			return true, false
+		}
+		definitions := map[uint16]game.ItemDefinition{}
+		for id, d := range s.Items {
+			definitions[id] = d.Definition
+		}
+		if _, err := bag.Grant(item, int(item.Count), definition.Definition.StackLimit(), definitions); err != nil {
+			return true, false
+		}
 	case protocol.InventoryItems:
 		if (len(p)-2)%bagRecordBytes != 0 {
 			return true, false

@@ -28,6 +28,8 @@ administrator edits. Compiled growth formulas remain in code.
 | `assets_database` | `var/assets.db` | Read-only static catalog loaded at startup; must already exist |
 | `combo_damage_per_participant` | `false` | Replace fixed ×1.3 combo damage with `1 + 0.1 × actual attackers` (players and pets); restart required; see [combos](COMBOS.md) |
 | `combat_round_chain` | `false` | Offer full-round combat delivery and batched choices to compatible Gonline clients; restart required. Legacy clients always retain native delivery; see [combat transport](COMBAT_TRANSPORT.md) |
+| `battle_gold_enabled` | `true` | Award ordinary monster battle gold on victory. Set `false` to disable it; quest/trial gold and EXP/items are unaffected. Startup-only policy; restart required. |
+| `battle_exp_formula` | `simple` | `simple` retains full battle EXP for each player/current pet; `participation` divides each kill's multiplied pool among its killing combo and eligible assistants, favoring lower levels. Victory only; restart required. See [battle EXP](BATTLE_EXPERIENCE.md). |
 | `pet_growth_formula` | `base_stats` | Automatic pet level-up weighting: `base_stats` or `combat_stats`; fixed until restart |
 | `max_connections` | `512` | Maximum concurrent TCP sessions across the game/status services; accepted range 1–100000 |
 | `idle_seconds` | `600` | Incoming-packet inactivity timeout during login, character selection and creation; 0 disables it, otherwise 1–86400 seconds |

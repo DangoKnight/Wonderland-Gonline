@@ -14,6 +14,10 @@ func (s *Server) combatRules(run *battleRun) battle.Rules {
 	}
 	r := s.rules()
 	r.Items = run.items
+	r.CommitCapture = func(catch battle.Capture) (battle.Step, bool) { return s.commitCombatCapture(run, catch) }
+	r.RewardKill = func(target *battle.Fighter, actors []battle.Action) battle.Step {
+		return s.commitCombatLoot(run, target, actors)
+	}
 	r.PrepareCapture = func(a battle.Action) (int, bool) {
 		for _, member := range run.active() {
 			if member.self.ID != a.Player {

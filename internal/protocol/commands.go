@@ -327,6 +327,9 @@ const (
 	InventoryDrop             = 3
 	InventoryGroundItems      = 4
 	InventoryItems            = 5
+	InventoryAcquire          = 6 // Slotless native inventory gain, 33 bytes.
+	InventoryAcquisitionBytes = 33
+	InventoryDestroyPrompt    = 7 // AC23:212 marker for undroppable items.
 	InventoryCompoundResult   = 8
 	InventoryRemove           = 9
 	InventoryMove             = 10
@@ -559,6 +562,7 @@ const (
 // BattleEffect subcommands (AC53).
 const (
 	BattleEffectOverkill = 3 // FUN_00393c58: remove through the upward flight state.
+	BattleEffectItemGain = 4 // Item ID, defeated cell, then recipient cell pairs.
 	// Compatibility alias. Ordinary knockouts do not send AC53:3.
 	BattleEffectDefeated  = BattleEffectOverkill
 	BattleEffectSubmitted = 5

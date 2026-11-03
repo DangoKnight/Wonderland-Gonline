@@ -39,7 +39,8 @@ are outside this server persistence policy.
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
 Game content definitions belong in `assets.db`. Preserve the startup-only
-`pet_growth_formula` selector and `combo_damage_per_participant` switch as server
+`pet_growth_formula` and `battle_exp_formula` selectors, `battle_gold_enabled`
+switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 

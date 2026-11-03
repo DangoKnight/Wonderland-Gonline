@@ -20,6 +20,8 @@ const (
 )
 
 type Config struct {
+	BattleEXPFormula          game.BattleEXPFormula `json:"battle_exp_formula"`
+	BattleGoldEnabled         bool                  `json:"battle_gold_enabled"`
 	CombatRoundChain          bool                  `json:"combat_round_chain"`
 	ComboDamagePerParticipant bool                  `json:"combo_damage_per_participant"`
 	CharacterSaveSeconds      int                   `json:"character_save_seconds"`
@@ -38,7 +40,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{CharacterSaveSeconds: defaultCharacterSaveSeconds, PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Gonline Server", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
+	return Config{BattleEXPFormula: game.BattleEXPSimple, BattleGoldEnabled: true, CharacterSaveSeconds: defaultCharacterSaveSeconds, PetGrowthFormula: game.PetGrowthBaseStats, StatusServerIDs: []uint16{protocol.StatusLegacyServerID, protocol.StatusDefaultServerID}, Name: "Wonderland Gonline Server", Login: "127.0.0.1:6414", World: "127.0.0.1:6415", Status: "127.0.0.1:6416", HTTP: "127.0.0.1:8080", Database: "var/wonderland.db", AssetsDatabase: "var/assets.db", MaxConnections: 512, IdleSeconds: defaultLoginIdleSeconds}
 }
 func Load(path string) (Config, error) {
 	c := Default()
@@ -64,6 +66,9 @@ func Load(path string) (Config, error) {
 // Validate checks a proposed startup configuration without changing listeners.
 func Validate(c Config) error { _, err := validate(c); return err }
 func validate(c Config) (Config, error) {
+	if !c.BattleEXPFormula.Valid() {
+		return c, fmt.Errorf("battle_exp_formula must be simple or participation")
+	}
 	if c.CharacterSaveSeconds < 1 || c.CharacterSaveSeconds > maxCharacterSaveSeconds {
 		return c, fmt.Errorf("character_save_seconds must be from 1 to %d", maxCharacterSaveSeconds)
 	}
