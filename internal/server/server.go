@@ -74,6 +74,7 @@ type Server struct {
 
 	logs                      *serverlog.Buffer
 	comboDamagePerParticipant bool                  // Immutable startup selection, captured by New.
+	combatRoundChain          bool                  // Offer full-round transport only when explicitly enabled at startup.
 	petGrowthFormula          game.PetGrowthFormula // Immutable startup selection, captured by New.
 	expRateMultiplier         float64
 	motd                      string
@@ -85,6 +86,7 @@ type Server struct {
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {
 	s := &Server{comboDamagePerParticipant: c.ComboDamagePerParticipant, petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
 	s.logs = &serverlog.Buffer{}
+	s.combatRoundChain = c.CombatRoundChain
 	if log.Enabled(context.Background(), slog.LevelDebug) {
 		s.logs.SetLevel("debug")
 	} else {

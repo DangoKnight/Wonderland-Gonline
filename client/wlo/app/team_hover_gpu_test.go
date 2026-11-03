@@ -14,6 +14,9 @@ func TestJoinTeamHoverGPU(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
 		t.Skip("set WONDERLAND_TEST_GPU=1")
 	}
+	if isolateGPUFixture(t) {
+		return
+	}
 	c, _, _ := enteredClient(t)
 	human := c.World.Body.(*role.Human)
 	human.Now = c.Now

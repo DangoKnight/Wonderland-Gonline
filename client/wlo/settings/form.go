@@ -80,9 +80,8 @@ func NewForm(env *seui.Env, state *State) *Form {
 	f.Music = button(env, f, "Btn_On_1", 289, 84, toggleWidth, buttonHeight, func() { state.Local.MusicOn = !state.Local.MusicOn; f.changed() })
 	f.Sound = button(env, f, "Btn_On_1", 250, 154, toggleWidth, buttonHeight, func() { state.Local.SoundOn = !state.Local.SoundOn; f.changed() })
 	f.Zoom = button(env, f, "Btn_On_1", 143, 185, toggleWidth, buttonHeight, func() {
-		if f.Notice != nil {
-			f.Notice("Zoom Mode rendering is not yet available.")
-		}
+		state.Local.Zoom = !state.Local.Zoom
+		f.changed()
 	})
 	for i := range 2 {
 		row := i

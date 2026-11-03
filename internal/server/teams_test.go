@@ -378,13 +378,16 @@ func TestTeamBattleFleeAndDisconnect(t *testing.T) {
 	}
 
 	s2, team, _ := teamBattle(t, 50000)
+	run := team[0].battle
+	run.member(team[1]).self.Level = run.b.Defenders[0].Level
+	run.b.Idle(run.member(team[0]).self)
 	if err := s2.worldCommand(ctx, team[1], []byte{11, 1, 3}); err != nil {
 		t.Fatal(err)
 	}
 	settle(t, s2, team[0])
 	settle(t, s2, team[1])
-	if team[0].battle != nil || team[1].battle != nil {
-		t.Fatal("a member's escape did not end the battle for the team")
+	if team[0].battle != run || run.b.Finished || team[1].battle != nil {
+		t.Fatal("member escape ended the remaining team's battle")
 	}
 }
 

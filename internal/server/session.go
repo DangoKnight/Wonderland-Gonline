@@ -64,6 +64,9 @@ type Session struct {
 	beachPending         bool
 	beach                *beachRun
 	battle               *battleRun
+	combatOffered        bool // Negotiated transport state; guarded by worldMu.
+	combatCapabilities   uint32
+	combatSequence       uint32
 	encounter            encounterState
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
 	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.

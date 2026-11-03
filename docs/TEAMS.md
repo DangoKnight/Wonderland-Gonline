@@ -15,6 +15,15 @@ Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 - The 24×24 small pet icon is centered within its 34×34 portrait cell.
 - Click its mode button to choose **Rest**, **Battle**, or **Ride**. Changes take
   effect after the server reply. Battle pets require sufficient amity and HP.
+- Teams can open during combat. Before choosing the player's command, **Rest**
+  withdraws the active pet and **Battle** switches to an eligible owned pet.
+  The switch consumes the player and pet commands for that round, with no attack
+  or defense; incoming pets retain saved HP/SP and cannot act or be targeted
+  until the next round, including by area attacks. Gonline shows
+  the new pet walking in while the old pet walks out, independently of the
+  AC11:5 waiting flag. AC52:1 unlocks commands without replaying entry.
+  **Ride**, rename, permanent dismissal and party changes remain unavailable during battle. This follows
+  native `FUN_00277728` and uses the same AC19 requests with both transports.
 - **Dismiss** opens a confirmation. Confirming permanently releases the pet;
   Cancel or Escape keeps it. The pet ID is rechecked before sending the request.
 - Use the bottom toolbar's party invitation tool, then click a player to request
@@ -28,6 +37,13 @@ Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 - Teammate rows show name, portrait, level, element and HP/SP gauges. Leaders can
   transfer leadership or dismiss a member. End Party/Leave uses confirmation.
 - Team chat checks actual party membership.
+
+During combat, either a player's or pet's successful **Flee** withdraws that
+player and pet together. Other participants keep fighting unless the team leader
+successfully flees. Overkill and logout do not count as leader escapes. An attempt
+at equal/higher level than the strongest living enemy always succeeds; otherwise
+its chance is `75 - floor(enemy level / 6)` percent. Failed attempts play the
+legacy falling animation and leave the actor in combat without a defense bonus.
 
 The server's native teammate stats now send HP and level in their correct fields.
 Private Server's previous mapping displayed a level-1 teammate with 181 HP as

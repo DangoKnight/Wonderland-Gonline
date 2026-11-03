@@ -13,6 +13,7 @@ import (
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/skills"
+	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
@@ -37,6 +38,7 @@ const (
 	battleSceneCameraY      = 232
 	battleCatchSkill        = 10008
 	battleFleeSkill         = 60041
+	battleFleeFailureSkill  = 60042               // Native run/trip/recover result; repeat still submits Flee.
 	battleDamageDigits      = "Num_YellowRed10_2" // FUN_0039e884.
 	battleSPDigits          = "Num_Blue10_1"
 	battleDigitStyle        = 4 // FUN_003b9c00: 20-pixel advance, centered.
@@ -131,6 +133,9 @@ type battlePlay struct {
 	at     time.Time
 	hits   uint64
 	sounds uint64
+	audio  []clientbattle.SoundCue
+	voice  string
+	voiced bool
 }
 type battleFloat struct {
 	cell   clientbattle.Cell
@@ -141,19 +146,33 @@ type battleFloat struct {
 	amount uint32
 }
 type battleView struct {
-	state          clientbattle.State
-	stats          world.Stats
-	assets         *clientbattle.Assets
-	loadAttempted  bool
-	bodies         map[clientbattle.Cell]*battleBody
-	playing        []battlePlay
-	floats         []battleFloat
-	menu           *seui.Form
-	selected       clientbattle.Cell
-	binding        *hud.Binding
-	previous       *seui.FixedButton
-	lastActions    map[clientbattle.Cell]battlePreviousAction
-	pendingActions map[clientbattle.Cell]battlePreviousAction
+	state               clientbattle.State
+	shown               map[clientbattle.Cell]clientbattle.Fighter
+	departures          map[clientbattle.Cell]time.Time
+	arrivals            map[clientbattle.Cell]time.Time
+	petDepartures       map[clientbattle.Cell]battlePetDeparture
+	presentedPets       map[clientbattle.Cell]uint64 // Visible presentation is independent of Waiting command eligibility.
+	petTransition       bool
+	transitionPackets   [][]byte
+	transitionBytes     int
+	replayingTransition bool
+	overkills           map[clientbattle.Cell]time.Time
+	closing             bool // AC11:0 received; finish presentation before the map fade.
+	victorySide         byte // AC11:12 names the winning side, rather than a victory boolean.
+	victoryVoiced       bool
+	voiceRandom         func(int) int // Per-session cosmetic roulette; nil uses math/rand.
+	stats               world.Stats
+	assets              *clientbattle.Assets
+	loadAttempted       bool
+	bodies              map[clientbattle.Cell]*battleBody
+	playing             []battlePlay
+	floats              []battleFloat
+	menu                *seui.Form
+	selected            clientbattle.Cell
+	binding             *hud.Binding
+	previous            *seui.FixedButton
+	lastActions         map[clientbattle.Cell]battlePreviousAction
+	pendingActions      map[clientbattle.Cell]battlePreviousAction
 	// The turn countdown (+0xce3): started when a round opens for one of
 	// our fighters, ticking each second, closing the choice at -1.
 	timerOn    bool
@@ -168,6 +187,9 @@ type battleView struct {
 	music      bool       // The battle scene's music has started.
 	reactions  []battlePlay
 	missing    map[string]bool // effect pictures absent from the exports
+	camera     image.Point
+	zoom       image.Rectangle
+	zoomCanvas *surface.Surface
 }
 
 // Native receive handlers: FUN_003920a0 (action batches), FUN_00392d3c
@@ -198,9 +220,18 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.state = clientbattle.State{Self: c.World.Player.ID}
 	}
 	wasActive, turn := view.state.Active, view.state.Turn
+	before := view.state
+	overkillAlreadyKnown := false
+	if len(p) == 4 && p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectOverkill {
+		if f := view.state.At(clientbattle.Cell{X: p[2], Y: p[3]}); f != nil {
+			overkillAlreadyKnown = f.Overkilled
+		}
+	}
 	oldDeaths := map[clientbattle.Cell]bool{}
+	oldHP := map[clientbattle.Cell]uint32{}
 	for _, f := range c.remote.battle.fighters {
 		oldDeaths[clientbattle.Cell{X: f.x, Y: f.y}] = f.countedDeath
+		oldHP[clientbattle.Cell{X: f.x, Y: f.y}] = f.hp
 	}
 	queued := len(view.state.Actions)
 	handled, valid := view.state.Apply(p)
@@ -217,7 +248,9 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.binding = nil
 		view.pendingActions = nil
 	}
-	if view.state.Active && !wasActive {
+	if view.state.Active && (!wasActive || p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation) {
+		c.beginBattleResults()
+		c.closeBattleView()
 		c.startSceneFade(sceneFadeEnterBattle)
 		c.World.StopWalk()
 		c.groundHeld = false
@@ -231,6 +264,64 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.floats = nil
 		view.selected = clientbattle.Cell{}
 		view.lastActions = nil
+	}
+	if p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateExit {
+		cell := clientbattle.Cell{X: p[2], Y: p[3]}
+		if f := view.state.At(cell); f != nil {
+			if f.Kind == clientbattle.Pet && !view.state.Finished {
+				view.petTransition = true
+				view.state.Ready, view.timerOn = false, false
+			}
+			if view.departures == nil {
+				view.departures = map[clientbattle.Cell]time.Time{}
+			}
+			if _, exists := view.departures[cell]; !exists {
+				view.departures[cell] = time.Time{}
+			}
+		}
+	}
+	if p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFinish && len(p) == 3 && view.victorySide == 0 {
+		if p[2] == clientbattle.Attacker || p[2] == clientbattle.Defender {
+			view.victorySide = p[2]
+		}
+	}
+	if p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateParticipant {
+		for i := 2; i < len(p); i += clientbattle.FighterRecordBytes {
+			cell := clientbattle.Cell{X: p[i+12], Y: p[i+13]}
+			if f := view.state.At(cell); f != nil && f.Kind == clientbattle.Pet {
+				if old := before.At(cell); old != nil && old.Kind == clientbattle.Pet {
+					if began, leaving := view.departures[cell]; leaving {
+						c.retainDepartingPet(*old, began)
+					}
+				}
+			}
+			delete(view.overkills, cell)
+			delete(view.departures, cell)
+			delete(view.shown, cell)
+			if f := view.state.At(cell); f != nil && f.Kind == clientbattle.Pet && view.state.Turn > 1 && !c.enteringBattle() {
+				if view.arrivals == nil {
+					view.arrivals = map[clientbattle.Cell]time.Time{}
+				}
+				view.arrivals[cell] = time.Time{}
+				if view.presentedPets == nil {
+					view.presentedPets = map[clientbattle.Cell]uint64{}
+				}
+				view.presentedPets[cell] = f.Generation
+				view.petTransition = true
+				view.timerOn = false
+			}
+		}
+	}
+	if p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectOverkill && !overkillAlreadyKnown {
+		cell := clientbattle.Cell{X: p[2], Y: p[3]}
+		if view.state.At(cell) != nil {
+			if view.overkills == nil {
+				view.overkills = map[clientbattle.Cell]time.Time{}
+			}
+			if _, exists := view.overkills[cell]; !exists {
+				view.overkills[cell] = time.Time{}
+			}
+		}
 	}
 	if p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectSubmitted {
 		cell := clientbattle.Cell{X: p[2], Y: p[3]}
@@ -253,6 +344,9 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 				continue
 			}
 			id := action.Skill
+			if id == battleFleeFailureSkill {
+				id = battleFleeSkill
+			}
 			old := view.lastActions[action.Actor]
 			if old.id == f.ID && old.owner == f.Owner && old.kind == f.Kind && (old.skill == id || f.Kind == clientbattle.Player && c.bindingSkillID(hud.Binding{ID: old.skill}) == id) {
 				id = old.skill
@@ -264,15 +358,26 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		}
 	}
 	if !view.state.Active && wasActive {
-		c.closeBattleView()
-		c.startSceneFade(sceneFadeLeaveBattle)
+		if len(before.Actions) > 0 || len(view.playing) > 0 || len(view.departures) > 0 || len(view.petDepartures) > 0 || len(view.arrivals) > 0 || len(view.overkills) > 0 {
+			// Networking and the server have left battle. Retain the scene and
+			// its queued motions, with all commands disabled, until they finish.
+			view.state = before
+			view.state.Ready, view.state.Finished = false, true
+			view.closing = true
+			view.auto = false
+		} else {
+			c.battleVictoryVoiceTick(before)
+			c.finishBattlePresentation()
+		}
 		c.closeHotbarTarget()
 		c.remote.nextWalk = c.Now().Add(remoteWalkPause)
 	}
-	b := remoteBattle{active: view.state.Active, ready: view.state.Ready, prompt: view.state.Prompt}
+	view.syncShown()
+	b := remoteBattle{active: view.state.Active && !view.closing, ready: view.state.Ready, prompt: view.state.Prompt}
+	vitalPacket := p[0] == protocol.CommandBattleAction && p[1] == protocol.BattleActionAnimation || p[0] == protocol.CommandBattleStat && p[1] == protocol.BattleStatValues || p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectOverkill
 	for _, f := range view.state.Fighters {
 		counted := oldDeaths[f.Cell]
-		if p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectDefeated && len(p) == 4 && f.X == p[2] && f.Y == p[3] && !counted {
+		if vitalPacket && f.HP == 0 && oldHP[f.Cell] > 0 && !counted {
 			counted = true
 			if f.Kind == clientbattle.Player && f.ID == c.World.Player.ID {
 				c.remote.playerDeaths++
@@ -290,6 +395,10 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	return true
 }
 func (c *Client) closeBattleView() {
+	c.combat.round = nil
+	c.combat.assembly = protocol.CombatAssembly{}
+	c.combat.choices = nil
+	c.combat.choiceToken = 0
 	if c.MainStatus != nil {
 		c.MainStatus.Stats = c.Stats
 	}
@@ -306,6 +415,17 @@ func (c *Client) closeBattleView() {
 	}
 	v.bodies = nil
 	v.playing = nil
+	v.reactions = nil
+	v.shown = nil
+	v.departures = nil
+	v.arrivals = nil
+	v.petDepartures = nil
+	v.presentedPets = nil
+	v.petTransition, v.replayingTransition = false, false
+	v.transitionPackets, v.transitionBytes = nil, 0
+	v.overkills = nil
+	v.closing = false
+	v.victorySide, v.victoryVoiced = 0, false
 	v.floats = nil
 	v.binding = nil
 	v.previous = nil
@@ -314,6 +434,12 @@ func (c *Client) closeBattleView() {
 	v.timerOn = false
 	v.timedOut = false
 	v.auto = false
+	v.camera = image.Point{}
+	v.zoom = image.Rectangle{}
+	if v.zoomCanvas != nil {
+		v.zoomCanvas.Close()
+		v.zoomCanvas = nil
+	}
 	if v.music {
 		v.music = false
 		c.playMapMusic()
@@ -444,8 +570,75 @@ func (c *Client) battleFrame(draw bool) bool {
 	if c.enteringBattle() {
 		return false
 	}
+	v.syncShown()
+	now := c.Now()
+	revealing := c.sceneFade.mode == sceneFadeRevealBattle
+	if !revealing {
+		c.battleArrivals(now)
+		c.drainBattleTransitionPackets()
+		c.combatRoundTick(now)
+		if !v.state.Active {
+			return false
+		}
+		for _, a := range v.state.Actions {
+			v.playing = append(v.playing, c.newBattlePlay(a, now, a.Actor))
+		}
+		v.state.Actions = nil
+		active := v.playing[:0]
+		for _, play := range v.playing {
+			if f := v.state.At(play.action.Actor); play.action.ActorGeneration != 0 && (f == nil || f.Generation != play.action.ActorGeneration) {
+				continue
+			}
+			m := clientbattle.Motion{}
+			if v.assets != nil {
+				m = v.assets.Motions[play.action.Skill]
+			}
+			c.battleAudio(&play, m, now)
+			duration := m.Duration()
+			if duration == 0 {
+				duration = battleFallbackDuration
+			}
+			motionDuration := duration
+			for _, sound := range play.audio {
+				duration = max(duration, m.EventAt(clientbattle.MotionEvent{Trigger: sound.Trigger})+sceneFadeFrame)
+			}
+			elapsed := now.Sub(play.at)
+			cues := len(m.Events)
+			if m.DamageMode == 0 || cues == 0 {
+				cues = 1
+			}
+			for i := 0; i < cues; i++ {
+				hitAt := motionDuration / 2
+				if len(m.Events) > 0 {
+					hitAt = m.EventAt(m.Events[min(i, len(m.Events)-1)])
+				}
+				mask := uint64(1) << i
+				if play.hits&mask == 0 && (elapsed >= hitAt || elapsed >= duration) {
+					play.hits |= mask
+					c.battleHit(play.action, now, play.at.Add(min(hitAt, duration)), m, i)
+				}
+			}
+			if elapsed < duration {
+				active = append(active, play)
+			}
+		}
+		v.playing = append(active, v.reactions...)
+		v.reactions = v.reactions[:0]
+	}
+	v.syncShown()
+	if !revealing {
+		c.battleDepartures(now)
+		c.battleArrivals(now)
+		c.battleOverkills(now)
+		c.battleVictoryVoiceTick(v.state)
+	}
+	if v.closing && len(v.playing) == 0 && len(v.state.Actions) == 0 && len(v.departures) == 0 && len(v.petDepartures) == 0 && len(v.arrivals) == 0 && len(v.overkills) == 0 {
+		c.finishBattlePresentation()
+		return false
+	}
 	v.stats = *c.Stats
-	for _, f := range v.state.Fighters {
+	for _, raw := range v.state.Fighters {
+		f := v.displayed(raw)
 		if f.Kind == clientbattle.Player && f.ID == v.state.Self {
 			v.stats.HP, v.stats.MaxHP = f.HP, f.MaxHP
 			v.stats.SP, v.stats.MaxSP = f.SP, f.MaxSP
@@ -454,52 +647,6 @@ func (c *Client) battleFrame(draw bool) bool {
 			break
 		}
 	}
-	now := c.Now()
-	for _, a := range v.state.Actions {
-		v.playing = append(v.playing, battlePlay{action: a, at: now})
-	}
-	v.state.Actions = nil
-	active := v.playing[:0]
-	for _, play := range v.playing {
-		m := clientbattle.Motion{}
-		if v.assets != nil {
-			m = v.assets.Motions[play.action.Skill]
-		}
-		for i, sound := range m.Sounds {
-			mask := uint64(1) << i
-			if play.sounds&mask == 0 && now.Sub(play.at) >= m.EventAt(clientbattle.MotionEvent{Trigger: sound.Trigger}) {
-				play.sounds |= mask
-				if sound.ID%10000 != 0 && c.Env.Sound != nil {
-					c.Env.Sound(fmt.Sprintf(`sound\SEB%04d.wav`, sound.ID%10000))
-				}
-			}
-		}
-		duration := m.Duration()
-		if duration == 0 {
-			duration = battleFallbackDuration
-		}
-		elapsed := now.Sub(play.at)
-		cues := len(m.Events)
-		if m.DamageMode == 0 || cues == 0 {
-			cues = 1
-		}
-		for i := 0; i < cues; i++ {
-			hitAt := duration / 2
-			if len(m.Events) > 0 {
-				hitAt = m.EventAt(m.Events[min(i, len(m.Events)-1)])
-			}
-			mask := uint64(1) << i
-			if play.hits&mask == 0 && (elapsed >= hitAt || elapsed >= duration) {
-				play.hits |= mask
-				c.battleHit(play.action, now, play.at.Add(min(hitAt, duration)), m, i)
-			}
-		}
-		if elapsed < duration {
-			active = append(active, play)
-		}
-	}
-	v.playing = append(active, v.reactions...)
-	v.reactions = v.reactions[:0]
 	// Background workspace sessions must expire presentation state too.
 	floats := v.floats[:0]
 	for _, f := range v.floats {
@@ -511,6 +658,7 @@ func (c *Client) battleFrame(draw bool) bool {
 	c.battleTimerTick(now)
 	c.battleAutoTick()
 	c.battleMenu()
+	c.battleCamera(now)
 	if !draw {
 		return true
 	}
@@ -522,16 +670,22 @@ func (c *Client) battleFrame(draw bool) bool {
 			if id := bg.Pictures[layer]; id != 0 {
 				i := c.Pics.Find(fmt.Sprint(id))
 				if i >= 0 {
-					x, y := -battleSceneCameraX, -battleSceneCameraY
+					x, y := -v.camera.X, -v.camera.Y
 					if layer < 2 {
-						y = int(bg.Heights[layer]) - battleSceneCameraY
+						y = int(bg.Heights[layer]) - v.camera.Y
+					}
+					if layer == 2 {
+						x, y = -battleSceneCameraX, -battleSceneCameraY
 					}
 					c.Pics.Draw(c.Screen, i, x, y, layer != 2)
 				}
 			}
 		}
 	}
-	fighters := append([]clientbattle.Fighter(nil), v.state.Fighters...)
+	fighters := make([]clientbattle.Fighter, 0, len(v.state.Fighters))
+	for _, f := range v.state.Fighters {
+		fighters = append(fighters, v.displayed(f))
+	}
 	positions := make(map[clientbattle.Cell]image.Point, len(fighters))
 	for _, f := range fighters {
 		positions[f.Cell] = f.Position()
@@ -543,9 +697,26 @@ func (c *Client) battleFrame(draw bool) bool {
 			}
 		}
 	}
+	for cell, at := range v.departures {
+		if !at.IsZero() {
+			positions[cell] = c.battleDepartureMotion().PositionAt(cell, clientbattle.Cell{}, now.Sub(at))
+		}
+	}
+	for cell, at := range v.arrivals {
+		motion := battleArrivalMotion()
+		elapsed := time.Duration(0)
+		if !at.IsZero() {
+			elapsed = now.Sub(at)
+		}
+		positions[cell] = motion.PositionAt(cell, clientbattle.Cell{}, motion.ReturnStart()+elapsed)
+	}
+	offset := image.Pt(battleSceneCameraX, battleSceneCameraY).Sub(v.camera)
+	for cell, at := range positions {
+		positions[cell] = at.Add(offset)
+	}
 	sort.SliceStable(fighters, func(i, j int) bool { return positions[fighters[i].Cell].Y < positions[fighters[j].Cell].Y })
 	for _, f := range fighters {
-		if f.Removed {
+		if f.Removed || f.Waiting && !v.petPresented(f) {
 			continue
 		}
 		b := c.battleBody(f)
@@ -571,37 +742,39 @@ func (c *Client) battleFrame(draw bool) bool {
 				}
 			}
 		}
+		if at, leaving := v.departures[f.Cell]; leaving && !at.IsZero() && f.HP > 0 {
+			action, frame = c.battleDepartureMotion().PoseAt(f.Cell, clientbattle.Cell{}, now.Sub(at), b.moveKind)
+		}
+		if began, arriving := v.arrivals[f.Cell]; arriving {
+			motion := battleArrivalMotion()
+			elapsed := time.Duration(0)
+			if !began.IsZero() {
+				elapsed = now.Sub(began)
+			}
+			elapsed += motion.ReturnStart()
+			action, frame = motion.PoseAt(f.Cell, clientbattle.Cell{}, elapsed, b.moveKind)
+			lift = motion.LiftAt(f.Cell, clientbattle.Cell{}, elapsed)
+		}
+		if began, flying := v.overkills[f.Cell]; flying && !began.IsZero() {
+			action, frame = battleDefeatedLeft, -1
+			if f.X <= 2 {
+				action = battleDefeatedRight
+			}
+			lift = min(int(now.Sub(began)/time.Millisecond), battleOverkillRisePixels)
+		}
 		// The shadow stays on the ground while a leap lifts the fighter
 		// (+0x2078 also lifts its name and bar).
 		world.DrawShadow(c.Screen, c.Pics, b.shadow, at.X, at.Y)
 		at.Y -= lift
 		lit := image.Pt(c.Input.X, c.Input.Y).In(image.Rect(at.X-30, at.Y-90, at.X+30, at.Y+8)) && !c.uiHovered
-		if b.human != nil {
-			b.human.Lit = lit
-			b.human.Hold(frame, false)
-			b.human.DrawBody(c.Screen, at.X, at.Y, int32(action))
-		}
-		if b.npc != nil {
-			// Compatibility: a monster sprite without a motion's action
-			// (some lack 39 or the run actions) keeps its battle stance
-			// instead of vanishing.
-			if w, _ := b.npc.FrameSize(action); w == 0 && action != battleIdleLeft && action != battleIdleRight {
-				action, frame = battleIdleLeft, -1
-				if f.X <= 2 {
-					action = battleIdleRight
-				}
-			}
-			b.npc.SetLit(lit)
-			b.npc.Hold(frame, false)
-			b.npc.Draw(c.Screen, at.X, at.Y, action)
-		}
+		c.drawBattleBody(f, b, at, action, frame, lit)
 		c.drawBattleFighterOverlay(f, b, at)
 	}
+	c.drawDepartingPets(now, offset)
 	c.drawBattleEffects(now)
-	c.drawBattleTimer(now)
 	for _, f := range v.floats {
 		elapsed := now.Sub(f.at)
-		at := f.cell.Position()
+		at := f.cell.Position().Add(offset)
 		y := at.Y - 60 - int(elapsed/(30*time.Millisecond))
 		if f.font != "" && c.Pics.Find(f.font) >= 0 {
 			minigame.DrawNumber(c.Screen, c.Pics, at.X, y, int(f.amount), true, battleDigitStyle, f.font)
@@ -609,15 +782,41 @@ func (c *Client) battleFrame(draw bool) bool {
 			c.Env.Text.Draw(at.X-len(f.text)*4, y, 0, false, true, c.Screen, f.text, 18, 160, 0, f.ink, 2)
 		}
 	}
+	c.zoomBattleScene()
+	c.drawBattleTimer(now)
 	return true
+}
+
+func (c *Client) drawBattleBody(f clientbattle.Fighter, b *battleBody, at image.Point, action, frame int, lit bool) {
+	if b.human != nil {
+		b.human.Lit = lit
+		b.human.Hold(frame, false)
+		b.human.DrawBody(c.Screen, at.X, at.Y, int32(action))
+	}
+	if b.npc != nil {
+		// Missing motion poses fall back to the fighter's battle stance.
+		if w, _ := b.npc.FrameSize(action); w == 0 && action != battleIdleLeft && action != battleIdleRight {
+			action, frame = battleIdleLeft, -1
+			if f.X <= 2 {
+				action = battleIdleRight
+			}
+		}
+		b.npc.SetLit(lit)
+		b.npc.Hold(frame, false)
+		b.npc.Draw(c.Screen, at.X, at.Y, action)
+	}
 }
 func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion clientbattle.Motion, cue int) {
 	for _, target := range a.Targets {
+		shown, exists := c.battle.shown[target.Cell]
+		if target.Generation != 0 && (!exists || target.Generation != shown.Generation) {
+			continue
+		}
 		// FUN_003790d4: hit targets play the attack's reaction motion.
 		if cue == 0 && motion.Reaction != 0 && target.Result != protocol.BattleHitMiss && target.Cell != a.Actor {
 			// It starts at the cue's time, so a late frame does not delay it.
 			if r, ok := c.battle.assets.Motions[motion.Reaction]; ok && now.Sub(cueAt) < r.Duration() {
-				c.battle.reactions = append(c.battle.reactions, battlePlay{action: clientbattle.Action{Actor: target.Cell, Skill: motion.Reaction}, at: cueAt})
+				c.battle.reactions = append(c.battle.reactions, c.newBattlePlay(clientbattle.Action{Actor: target.Cell, Skill: motion.Reaction}, cueAt, a.Actor))
 			}
 		}
 		if target.Result == protocol.BattleHitMiss {
@@ -627,10 +826,25 @@ func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion c
 			c.battle.floats = append(c.battle.floats, battleFloat{cell: target.Cell, text: []byte("Miss"), ink: battleTextInk, at: now})
 			continue
 		}
+		if target.Result != protocol.BattleHitLanded {
+			continue
+		}
+		f, exists := c.battle.shown[target.Cell]
+		if cue == 0 && a.Skill == battleCatchSkill && exists {
+			f.HP, f.Removed = 0, true
+		}
 		for _, result := range target.Stats {
 			amount := motion.DamageParts(result.Amount)[cue]
 			if amount == 0 {
 				continue
+			}
+			part := result
+			part.Amount = amount
+			switch result.Stat {
+			case game.StatCurrentHP:
+				f.HP = clientbattle.ApplyStatResult(f.HP, f.MaxHP, part)
+			case game.StatCurrentSP:
+				f.SP = uint16(clientbattle.ApplyStatResult(uint32(f.SP), uint32(f.MaxSP), part))
 			}
 			ink := uint16(0xf800)
 			font := battleDamageDigits
@@ -648,6 +862,9 @@ func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion c
 				font = battleSPDigits
 			}
 			c.battle.floats = append(c.battle.floats, battleFloat{cell: target.Cell, text: []byte(fmt.Sprint(amount)), ink: ink, at: now, font: font, amount: amount})
+		}
+		if exists {
+			c.battle.shown[target.Cell] = f
 		}
 	}
 }
@@ -684,7 +901,7 @@ func (c *Client) battleBinding(id uint16, actor remoteFighter) hud.Binding {
 func (c *Client) battleMenu() {
 	v := &c.battle
 	actor, ok := c.battleActor()
-	show := ok && v.binding == nil && len(v.playing) == 0 && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
+	show := ok && v.binding == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
 	if !show {
 		if v.menu != nil {
 			v.menu.Visible = false
@@ -803,7 +1020,7 @@ func (c *Client) submitBattleSpecial(actor, target remoteFighter, skill uint16, 
 		return
 	}
 	p := protocol.Builder{protocol.CommandBattleAction, sub, actor.x, actor.y, target.x, target.y}.U16(skill)
-	if err := c.Net.Send(p); err != nil {
+	if err := c.sendCombatChoice(p); err != nil {
 		c.Chat.Notice(err.Error())
 		return
 	}
@@ -816,7 +1033,7 @@ func (c *Client) submitBattleSpecial(actor, target remoteFighter, skill uint16, 
 }
 
 func (c *Client) battleAnimating() bool {
-	return c.battle.state.Active && (len(c.battle.playing) > 0 || len(c.battle.state.Actions) > 0)
+	return c.battle.state.Active && (c.combat.round != nil || c.combat.assembly.ID != 0 || c.sceneFade.mode == sceneFadeRevealBattle || c.enteringBattle() || len(c.battle.playing) > 0 || len(c.battle.state.Actions) > 0 || len(c.battle.overkills) > 0 || len(c.battle.departures) > 0 || len(c.battle.petDepartures) > 0 || len(c.battle.arrivals) > 0 || len(c.battle.transitionPackets) > 0)
 }
 
 func (c *Client) battleClick(x, y int) bool {
@@ -832,6 +1049,9 @@ func (c *Client) battleClick(x, y int) bool {
 	}
 	for _, target := range c.remote.battle.fighters {
 		cell := clientbattle.Cell{X: target.x, Y: target.y}
+		if f := c.battle.state.At(cell); f != nil && (f.Removed || f.Waiting) {
+			continue
+		}
 		at := cell.Position()
 		if !image.Pt(x, y).In(image.Rect(at.X-30, at.Y-90, at.X+30, at.Y+8)) {
 			continue
@@ -896,6 +1116,10 @@ func (c *Client) drawBattleFighterOverlay(f clientbattle.Fighter, b *battleBody,
 // (FUN_003920a0) stops it.
 func (c *Client) battleTimerTick(now time.Time) {
 	v := &c.battle
+	if c.combat.round != nil || v.closing || v.state.Finished || v.petTransition || c.enteringBattle() || c.sceneFade.mode == sceneFadeRevealBattle || len(v.overkills) > 0 {
+		v.timerOn = false
+		return
+	}
 	if len(v.state.Actions) > 0 || len(v.playing) > 0 {
 		v.timerOn = false
 	}
@@ -920,8 +1144,10 @@ func (c *Client) battleTimerTick(now time.Time) {
 		}
 	}
 	if v.timerShown < 0 {
+		c.flushCombatChoices()
 		v.timerOn = false
 		v.timedOut = true
+		v.state.Ready, c.remote.battle.ready = false, false
 		v.binding = nil
 		if c.Skills != nil {
 			c.Skills.Hide()
@@ -953,7 +1179,8 @@ func (c *Client) battleOverlay() {
 		return
 	}
 	for _, f := range v.state.Fighters {
-		if f.Removed {
+		f = v.displayed(f)
+		if f.Removed || f.Waiting {
 			continue
 		}
 		at := f.Position()
@@ -1099,7 +1326,8 @@ func (c *Client) drawBattleEffects(now time.Time) {
 			w, h := c.Pics.Size(i)
 			fh := h / max(e.Frames, 1)
 			r := image.Rect(0, (e.Frame-1)*fh, w, e.Frame*fh)
-			x, y := e.At.X-w/2, e.At.Y-fh/2
+			offset := battleCameraOrigin().Sub(v.camera)
+			x, y := e.At.X-w/2+offset.X, e.At.Y-fh/2+offset.Y
 			if c.Pics.Pixel(i, 0, 0) == battleEffectLightMarker {
 				c.Pics.DrawLight(c.Screen, i, x, y, r, battleEffectLightLevel)
 			} else {

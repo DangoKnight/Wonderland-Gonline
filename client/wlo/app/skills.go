@@ -23,6 +23,7 @@ func (c *Client) initSkills() {
 	c.SkillState = skills.NewState(catalog)
 	c.Skills = skills.NewForm(c.Env, catalog)
 	c.Skills.Targets = c.skillTargets
+	c.Skills.SingleClickUse = func() bool { return c.battle.state.Active }
 	c.Skills.LoadPictures = c.loadPictures
 	c.Skills.Notice = func(text string) { c.Notices.Show([]byte(text), inventoryWarningDuration, c.Now()) }
 	c.UI.Add(c.Skills)
@@ -32,7 +33,7 @@ func (c *Client) initSkills() {
 func (c *Client) toggleSkills() {
 	if c.Skills.Visible {
 		c.Skills.Hide()
-	} else if c.Inventory.CanAct() && c.UI.Modal == nil {
+	} else if c.canOpenModule() && c.UI.Modal == nil {
 		c.Skills.Show()
 	}
 }

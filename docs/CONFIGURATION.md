@@ -27,6 +27,7 @@ administrator edits. Compiled growth formulas remain in code.
 | `database` | `var/wonderland.db` | Persistent Go accounts, characters, relationships, settings and audit |
 | `assets_database` | `var/assets.db` | Read-only static catalog loaded at startup; must already exist |
 | `combo_damage_per_participant` | `false` | Replace fixed ×1.3 combo damage with `1 + 0.1 × actual attackers` (players and pets); restart required; see [combos](COMBOS.md) |
+| `combat_round_chain` | `false` | Offer full-round combat delivery and batched choices to compatible Gonline clients; restart required. Legacy clients always retain native delivery; see [combat transport](COMBAT_TRANSPORT.md) |
 | `pet_growth_formula` | `base_stats` | Automatic pet level-up weighting: `base_stats` or `combat_stats`; fixed until restart |
 | `max_connections` | `512` | Maximum concurrent TCP sessions across the game/status services; accepted range 1–100000 |
 | `idle_seconds` | `600` | Incoming-packet inactivity timeout during login, character selection and creation; 0 disables it, otherwise 1–86400 seconds |

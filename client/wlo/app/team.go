@@ -22,7 +22,22 @@ func (c *Client) initTeam() {
 	c.resources.loadInstances(c.Assets)
 	c.Team.Instances.Definitions = c.resources.instanceDefinitions
 	c.Team.CanAct = c.Inventory.CanAct
-	c.Team.Send = c.Net.Send
+	c.Team.InBattle = func() bool { return c.battle.state.Active }
+	c.Team.CanChangePet = c.canChangeBattlePet
+	c.Team.Send = func(p []byte) error {
+		if err := c.Net.Send(p); err != nil {
+			return err
+		}
+		if c.battle.state.Active && len(p) >= 2 && p[0] == protocol.CommandBattlePet {
+			// FUN_00277728 closes selection after AC19; no AC50 Defend is sent.
+			c.combat.choices, c.combat.choiceToken = nil, 0
+			c.battle.state.Ready, c.remote.battle.ready, c.battle.timerOn = false, false, false
+			c.battle.binding = nil
+			c.closeHotbarTarget()
+			c.Team.Hide()
+		}
+		return nil
+	}
 	c.Team.Notice = c.Chat.Notice
 	c.Team.NameOf = c.playerName
 	// Confirmation previews have their own fixed frame, independent of Inventory.
@@ -131,7 +146,7 @@ func (c *Client) toggleJoinTeam() {
 func (c *Client) toggleTeam() {
 	if c.Team.Visible {
 		c.Team.Hide()
-	} else if c.Inventory.CanAct() && c.UI.Modal == nil {
+	} else if c.canOpenModule() && c.UI.Modal == nil {
 		c.Team.Show()
 	}
 }
@@ -277,6 +292,7 @@ func (c *Client) teamPacket(p []byte) bool {
 			}
 			id := uint16(binary.LittleEndian.Uint32(p[2:]))
 			c.TeamState.BattlePet = id
+			c.remote.activePet = uint32(id)
 			c.showCompanion(c.World.Player.ID, id, nil)
 			return true
 		case protocol.BattlePetRest:
@@ -284,6 +300,7 @@ func (c *Client) teamPacket(p []byte) bool {
 				return true
 			}
 			c.TeamState.BattlePet = 0
+			c.remote.activePet = 0
 			delete(c.World.Companions, c.World.Player.ID)
 			return true
 		case protocol.BattlePetWireCode7:

@@ -35,7 +35,7 @@ func formationTargets(side []*Fighter, selected *Fighter, shape assets.SkillTarg
 	var result []*Fighter
 	seen := map[*Fighter]bool{}
 	add := func(f *Fighter) {
-		if f != nil && !f.Captured && !seen[f] && (includeDead || !f.Dead()) && len(result) < assets.MaxBattleSideTargets {
+		if f != nil && !f.Joining && !f.Captured && !f.Withdrawn && !f.Overkilled && !seen[f] && (includeDead || !f.Dead()) && len(result) < assets.MaxBattleSideTargets {
 			seen[f] = true
 			result = append(result, f)
 		}
@@ -100,7 +100,7 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 	targets := formationTargets(enemies, selected, shape, false)
 	packets := [][]byte{turnPacket(a.Actor), r.spend(a.Actor, a.Skill)}
 	var results []targetResult
-	var defeated [][]byte
+	var overkills []*Fighter
 	a.SkillEXP = game.CombatSkillEXPPerUse
 	for _, target := range targets {
 		result := targetResult{target: target, result: protocol.BattleHitMiss, stat: game.StatCurrentHP, mode: effectNormalHitMode}
@@ -113,17 +113,15 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 			}
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
-			if target.Dead() {
-				defeated = append(defeated, []byte{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, target.X, target.Y})
+			if target.Overkilled {
+				overkills = append(overkills, target)
 			}
 		}
 		results = append(results, result)
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	steps := []Step{{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}}
-	if len(defeated) > 0 {
-		steps = append(steps, Step{Packets: defeated})
-	}
+	steps = b.appendOverkills(steps, overkills...)
 	return steps
 }
 

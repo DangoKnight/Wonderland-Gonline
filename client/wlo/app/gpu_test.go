@@ -7,24 +7,27 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/role"
+	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 21
+const gpuParityStages = 69
 
-func TestGPUClientParity(t *testing.T) {
-	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
-		t.Skip("set WONDERLAND_TEST_GPU=1")
-	}
+func isolateGPUFixture(t *testing.T) bool {
+	t.Helper()
 	// RunGame owns process-global graphics state and shuts down the native
 	// backend on return. Keep that lifecycle out of subsequent CPU/UI tests.
 	if os.Getenv("WONDERLAND_TEST_GPU_CHILD") == "" {
@@ -32,13 +35,23 @@ func TestGPUClientParity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		cmd := exec.Command(executable, "-test.run=^TestGPUClientParity$", "-test.v", "-test.timeout=5m")
+		cmd := exec.Command(executable, "-test.run=^"+regexp.QuoteMeta(t.Name())+"$", "-test.v", "-test.timeout=5m")
 		cmd.Env = append(os.Environ(), "WONDERLAND_TEST_GPU_CHILD=1")
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("GPU parity subprocess: %v\n%s", err, output)
+			t.Fatalf("GPU fixture subprocess: %v\n%s", err, output)
 		}
-		t.Logf("GPU parity subprocess:\n%s", output)
+		t.Logf("GPU fixture subprocess:\n%s", output)
+		return true
+	}
+	return false
+}
+
+func TestGPUClientParity(t *testing.T) {
+	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
+		t.Skip("set WONDERLAND_TEST_GPU=1")
+	}
+	if isolateGPUFixture(t) {
 		return
 	}
 	root := filepath.Join("..", "..", "..", "data")
@@ -127,6 +140,237 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 67:
+			at := c.Now().Add(time.Second)
+			c.Now = func() time.Time { return at }
+			c.battleFrame(false)
+			c.dispatch([]byte{50, 1, 11, 0, 4, 2, 138, 234, 0, 1, 4, 2, 1, 0, 0})
+		case 68:
+			cell := clientbattle.Cell{X: 4, Y: 2}
+			motion := c.battle.assets.Motions[60042]
+			for elapsed := time.Duration(0); elapsed < motion.Duration(); elapsed += 10 * time.Millisecond {
+				pose, _ := motion.PoseAt(cell, clientbattle.Cell{}, elapsed, 0)
+				if pose == 64 || pose == 65 {
+					at := c.battle.playing[0].at.Add(elapsed)
+					c.Now = func() time.Time { return at }
+					break
+				}
+			}
+		case 60:
+			at := c.Now().Add(5 * time.Second)
+			c.Now = func() time.Time { return at }
+			c.battleFrame(false) // Complete the previous contact fixture.
+			incoming := remoteRecord(5, 4, 3, 2, 12032, 10001)
+			incoming[2], incoming[8] = 5, 2
+			for _, p := range [][]byte{{11, 1, 3, 2}, incoming, {50, 1, 17, 0, 2, 2, 17, 39, 0, 1, 4, 2, 1, 0, 1, 25, 25, 0, 0, 0, 1}} {
+				c.dispatch(p)
+			}
+		case 61:
+			motion := battleArrivalMotion()
+			at := c.battle.arrivals[clientbattle.Cell{X: 3, Y: 2}].Add((motion.Duration() - motion.ReturnStart()) / 2)
+			c.Now = func() time.Time { return at }
+		case 62:
+			at := c.battle.petDepartures[clientbattle.Cell{X: 3, Y: 2}].at.Add(c.battleDepartureMotion().Duration())
+			c.Now = func() time.Time { return at }
+		case 63:
+			at := c.Now().Add(time.Millisecond)
+			c.Now = func() time.Time { return at }
+		case 64:
+			at := c.Now().Add(5 * time.Second)
+			c.Now = func() time.Time { return at }
+		case 65:
+			c.dispatch([]byte{50, 6, 4, 2, 0})
+			c.dispatch([]byte{52, 1})
+		case 66:
+			at := c.Now().Add(time.Second)
+			c.Now = func() time.Time { return at }
+		case 53:
+			c.Team.Hide()
+			c.dispatch([]byte{11, 1, 3, 2, 0})
+			c.dispatch(remoteRecord(5, 4, 3, 2, 14162, 10001))
+			c.dispatch([]byte{50, 1, 17, 0, 2, 2, 17, 39, 0, 1, 3, 2, 1, 0, 1, 25, 25, 0, 0, 0, 1})
+		case 54:
+			motion := battleArrivalMotion()
+			at := c.battle.arrivals[clientbattle.Cell{X: 3, Y: 2}].Add((motion.Duration() - motion.ReturnStart()) / 2)
+			c.Now = func() time.Time { return at }
+		case 55:
+			at := c.battle.petDepartures[clientbattle.Cell{X: 3, Y: 2}].at.Add(c.battleDepartureMotion().Duration())
+			c.Now = func() time.Time { return at }
+		case 56:
+			at := c.Now().Add(time.Millisecond)
+			c.Now = func() time.Time { return at }
+		case 57, 58, 59:
+			motion := c.battle.assets.Motions[10001]
+			elapsed := motion.EventAt(motion.Events[0])
+			if g.stage == 57 {
+				elapsed /= 2
+			}
+			if g.stage == 59 {
+				elapsed = motion.Duration() + time.Second
+			}
+			at := c.battle.playing[0].at.Add(elapsed)
+			c.Now = func() time.Time { return at }
+		case 50:
+			c.resetBattleResults()
+			c.dispatch([]byte{20, 12})
+			c.dispatch([]byte{6, 2, 1})
+			enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
+			enemy[2] = 2
+			for _, packet := range [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), remoteRecord(5, 4, 3, 2, 12032, 10001), enemy, {50, 6, 4, 2, 0}, {52, 1}} {
+				c.dispatch(packet)
+			}
+			at := c.Now().Add(2 * sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+			c.sceneFadeTick(at)
+			c.MainButtons.Buttons[mainSocialButton].OnClick()
+		case 51:
+			c.Social.Hide()
+			c.MainButtons.Buttons[mainInventoryButton].OnClick()
+		case 52:
+			c.Inventory.Hide()
+			c.TeamState.BattlePet = 12032
+			c.InventoryState.Pets[1].Amity = 60
+			c.MainButtons.Buttons[mainTeamButton].OnClick()
+		case 46:
+			c.dispatch([]byte{8, 1, 36, 1, 232, 3, 0, 0, 0, 0, 0, 0})
+			c.dispatch([]byte{26, 4, 244, 1, 0, 0})
+			c.dispatch(resultItemPacket(50, 300, 3))
+			c.dispatch([]byte{11, 12, 1})
+			c.dispatch([]byte{11, 0, 17, 39, 0, 0, 0, 0})
+		case 47:
+			at := c.Now().Add(sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+		case 48:
+			lines := append([]string(nil), c.battleResults.lines...)
+			for i := 0; i < 20; i++ {
+				lines = append(lines, fmt.Sprintf("Material %02d x1", i))
+			}
+			c.battleResults.form.setLines(lines)
+		case 49:
+			f := c.battleResults.form
+			f.list.SetTop(len(f.list.Items) - f.list.RowsShown)
+		case 42:
+			enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
+			enemy[2] = 2
+			c.dispatch(remoteRecord(250, 2, 4, 2, 10001, 0))
+			c.dispatch(enemy)
+			at := c.Now().Add(2 * sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+			c.sceneFadeTick(at)
+			c.combat.enabled = true
+			data, err := protocol.EncodeCombatRound([]protocol.CombatStep{
+				{Packets: [][]byte{{50, 1, 17, 0, 4, 2, 17, 39, 0, 1, 2, 2, 1, 0, 1, 25, 25, 0, 0, 0, 1}}, Delay: time.Second},
+				{Packets: [][]byte{{51, 1, 4, 2, 26, 7, 0, 0, 0}}},
+			})
+			if err != nil {
+				g.err = err
+				return
+			}
+			chunks, err := protocol.CombatRoundChunks(100, data)
+			if err != nil {
+				g.err = err
+				return
+			}
+			for _, p := range chunks {
+				c.dispatch(p)
+			}
+			c.dispatch([]byte{254, 3, 101, 0, 0, 0, 4, 2})
+		case 43:
+			motion := c.battle.assets.Motions[10001]
+			at := c.battle.playing[0].at.Add(motion.EventAt(motion.Events[0]))
+			c.Now = func() time.Time { return at }
+		case 44:
+			at := c.Now().Add(time.Minute)
+			c.Now = func() time.Time { return at }
+		case 45:
+			at := c.Now().Add(time.Millisecond)
+			c.Now = func() time.Time { return at }
+		case 37:
+			c.dispatch([]byte{50, 1, 17, 0, 4, 2, 17, 39, 0, 1, 2, 2, 1, 0, 1, 25, 151, 0, 0, 0, 1})
+		case 38:
+			motion := c.battle.assets.Motions[10001]
+			at := c.battle.playing[0].at.Add(motion.EventAt(motion.Events[0]))
+			c.Now = func() time.Time { return at }
+			c.dispatch([]byte{53, 3, 2, 2})
+		case 39, 40:
+			at := c.Now().Add(150 * time.Millisecond)
+			c.Now = func() time.Time { return at }
+		case 41:
+			at := c.Now().Add(time.Minute)
+			c.Now = func() time.Time { return at }
+		case 33:
+			enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
+			enemy[2] = 2
+			c.dispatch(remoteRecord(250, 2, 4, 2, 10001, 0))
+			c.dispatch(enemy)
+		case 34:
+			at := c.Now().Add(sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+		case 35:
+			at := c.Now().Add(7 * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+		case 36:
+			at := c.Now().Add(8 * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+		case 26:
+			c.Input.X, c.Input.Y = -100, -100
+			enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
+			enemy[2] = 2
+			c.dispatch(remoteRecord(250, 2, 4, 2, 10001, 0))
+			c.dispatch(enemy)
+			at := c.Now().Add(2 * sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+			c.sceneFadeTick(at)
+		case 27:
+			c.dispatch([]byte{50, 1, 17, 0, 4, 2, 17, 39, 0, 1, 2, 2, 1, 0, 1, 25, 100, 0, 0, 0, 1})
+			c.dispatch([]byte{53, 1, 2, 2})
+			c.dispatch([]byte{11, 12, 1})
+			c.dispatch([]byte{11, 1, 4, 2, 0})
+			c.dispatch([]byte{11, 0, 17, 39, 0, 0, 0, 0})
+		case 28:
+			motion := c.battle.assets.Motions[10001]
+			at := c.battle.playing[0].at.Add(motion.EventAt(motion.Events[0]))
+			c.Now = func() time.Time { return at }
+		case 29:
+			at := c.Now().Add(time.Minute)
+			c.Now = func() time.Time { return at }
+		case 30, 31:
+			cell := clientbattle.Cell{X: 4, Y: 2}
+			duration := c.battleDepartureMotion().Duration()
+			if g.stage == 30 {
+				duration /= 4
+			}
+			at := c.battle.departures[cell].Add(duration)
+			c.Now = func() time.Time { return at }
+		case 32:
+			at := c.Now().Add(sceneFadeSteps * sceneFadeFrame)
+			c.Now = func() time.Time { return at }
+		case 23:
+			c.LuckyDraw.Hide()
+			c.InventoryState.Pets[1] = inventory.UsePet{ID: 12032, Name: []byte("Robinson"), Stats: world.Stats{Level: 3, HP: 100, MaxHP: 140, SP: 20, MaxSP: 40}}
+			c.dispatch([]byte{19, 1, 0, 47, 0, 0})
+			c.Frame()
+			c.Sprites.WaitNative()
+		case 24:
+			c.dispatch([]byte{8, 2, 4, 2, 0, 25, 1, 20, 0, 0, 0, 0, 0, 0, 0})
+			c.dispatch([]byte{8, 2, 4, 2, 0, 26, 1, 5, 0, 0, 0, 0, 0, 0, 0})
+			c.Input.X, c.Input.Y = 195, 60
+		case 25:
+			c.dispatch([]byte{19, 2})
+		case 21:
+			c.Talk.Hide()
+			c.Social.Hide()
+			c.mapReady = true
+			c.dispatch([]byte{104, 1, 1, 0, 2, 176, 125, 2, 216, 132, 3})
+			c.dispatch([]byte{104, 1, 2, 2, 1})
+			c.LuckyDraw.Show()
+		case 22:
+			catalog := []byte{104, 1, 1, 1, 20}
+			for i := 0; i < 20; i++ {
+				catalog = append(catalog, 216, 132, byte(i+1))
+			}
+			c.dispatch(catalog)
+			c.LuckyDraw.Preview.Open()
 		case 20:
 			c.Social.Show()
 			c.Social.SelectTab(hud.SocialSetUp)
@@ -238,6 +482,90 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			w.slide = sessionSlideTicks
 		}
 		w.Tick()
+		if g.stage == 68 && (len(c.battle.playing) != 1 || c.battle.shown[clientbattle.Cell{X: 4, Y: 2}].HP != 75 || len(c.battle.departures) != 0) {
+			g.err = fmt.Errorf("failed escape lost its native falling animation")
+			return
+		}
+		if g.stage >= 53 && g.stage <= 59 {
+			pet := c.battle.state.At(clientbattle.Cell{X: 3, Y: 2})
+			if pet == nil || pet.ID != 14162 ||
+				g.stage <= 54 && (len(c.battle.petDepartures) != 1 || len(c.battle.arrivals) != 1) ||
+				g.stage <= 55 && len(c.battle.playing) != 0 ||
+				g.stage >= 58 && c.battle.shown[pet.Cell].HP != 75 {
+				g.err = fmt.Errorf("concurrent pet switch failed at stage %d", g.stage)
+				return
+			}
+		}
+		if g.stage >= 60 {
+			pet := c.battle.state.At(clientbattle.Cell{X: 3, Y: 2})
+			if pet == nil || pet.ID != 12032 || !c.battle.petPresented(*pet) || pet.Waiting != (g.stage <= 64) ||
+				g.stage <= 61 && (len(c.battle.petDepartures) != 1 || len(c.battle.arrivals) != 1) ||
+				g.stage >= 62 && (len(c.battle.petDepartures) != 0 || len(c.battle.arrivals) != 0) {
+				g.err = fmt.Errorf("waiting pet visibility/readiness failed at stage %d", g.stage)
+				return
+			}
+		}
+		if g.stage >= 47 && g.stage <= 49 && (c.battleResults.form == nil || !c.battleResults.form.Visible) {
+			g.err = fmt.Errorf("post-combat results missing")
+			return
+		}
+		if g.stage >= 50 && (!c.battle.state.Active || c.Inventory.CanAct() ||
+			g.stage == 50 && !c.Social.Visible || g.stage == 51 && !c.Inventory.Visible || g.stage == 52 && !c.Team.Visible) {
+			g.err = fmt.Errorf("battle module missing at stage %d", g.stage)
+			return
+		}
+		if g.stage == 49 && c.battleResults.form.list.TopIndex == 0 {
+			g.err = fmt.Errorf("reward list did not scroll")
+			return
+		}
+		if g.stage == 39 && (len(c.battle.overkills) != 1 || c.battle.shown[clientbattle.Cell{X: 2, Y: 2}].Removed) {
+			g.err = fmt.Errorf("overkill flight missing")
+			return
+		}
+		if g.stage == 42 && (c.combat.round == nil || c.battle.shown[clientbattle.Cell{X: 2, Y: 2}].HP != 100) {
+			g.err = fmt.Errorf("round chain skipped contact timing")
+			return
+		}
+		if g.stage == 43 && c.battle.shown[clientbattle.Cell{X: 2, Y: 2}].HP != 75 {
+			g.err = fmt.Errorf("round chain contact missing")
+			return
+		}
+		if g.stage == 45 && (c.combat.round != nil || !c.battle.state.Ready || c.combat.choiceToken != 101) {
+			g.err = fmt.Errorf("round chain did not release readiness")
+			return
+		}
+		if g.stage == 40 && !c.battle.shown[clientbattle.Cell{X: 2, Y: 2}].Removed {
+			g.err = fmt.Errorf("overkill target did not vanish")
+			return
+		}
+		if g.stage >= 27 && g.stage <= 32 {
+			cell := clientbattle.Cell{X: 2, Y: 2}
+			switch {
+			case g.stage == 27 && (!c.battle.closing || c.battle.shown[cell].HP != 100):
+				g.err = fmt.Errorf("battle damage appeared before contact")
+			case g.stage == 28 && c.battle.shown[cell].HP != 0:
+				g.err = fmt.Errorf("battle damage absent at contact")
+			case g.stage == 28 && (c.battle.zoom.Dx() >= ScreenWidth || c.battle.zoomCanvas == nil || c.battle.camera == battleCameraOrigin()):
+				g.err = fmt.Errorf("battle camera/zoom absent at contact")
+			case g.stage == 30 && (!c.battle.state.Active || len(c.battle.departures) == 0):
+				g.err = fmt.Errorf("departure was cut short")
+			case g.stage == 31 && (c.battle.state.Active || c.sceneFade.mode != sceneFadeLeaveBattle):
+				g.err = fmt.Errorf("departure did not start map fade")
+			case g.stage == 32 && c.sceneFade.mode != sceneFadeNone:
+				g.err = fmt.Errorf("map fade did not finish")
+			}
+			if g.err != nil {
+				return
+			}
+		}
+		if (g.stage == 34 || g.stage == 35) && c.sceneFade.mode != sceneFadeRevealBattle {
+			g.err = fmt.Errorf("battle reveal missing at stage %d", g.stage)
+			return
+		}
+		if g.stage == 36 && c.sceneFade.mode != sceneFadeNone {
+			g.err = fmt.Errorf("battle reveal did not finish")
+			return
+		}
 	}
 	want := g.cpu.Compose().RGBA()
 	gpuSurface := g.gpu.Compose()

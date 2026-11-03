@@ -26,7 +26,7 @@ func newBarButton(env *seui.Env, owner seui.Control, picture string, left, top i
 // FuncBtnForm is TRE_FuncBtnForm (constructor FUN_00295fb8), the toolbar
 // at the top right: World PK, then Btn_1..Btn_9 every 0x25 pixels from
 // 0x1ae (Btn_7, Guild Invite, is hidden and the two after it move left),
-// and the item mall. The buttons have no actions yet.
+// and the item mall. The app wires supported actions to their forms.
 type FuncBtnForm struct {
 	seui.FixedForm
 	Buttons    [funcButtons + 1]*seui.FixedButton
@@ -68,7 +68,7 @@ func NewFuncBtnForm(env *seui.Env) *FuncBtnForm {
 		b := newBarButton(env, f, picture, slot*funcStep+funcLeft, 0, funcHints[i])
 		b.Tag = i
 		if i > funcHiddenButton {
-			// Cycles while an event or the lottery is open (not ported).
+			// The app enables Lucky Draw's animation when draws are available.
 			b.SetAnimation(picture, 0, funcAnimationLast, funcAnimationFirst, funcAnimationEvery, b.Height, b.Width, 0)
 		}
 		f.Buttons[i] = b

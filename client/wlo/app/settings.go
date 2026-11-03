@@ -44,7 +44,7 @@ func (c *Client) initSettings(path string) {
 	c.MainButtons.Buttons[mainSettingsButton].OnClick = func() {
 		if c.Settings.Visible {
 			c.Settings.Hide()
-		} else if c.Inventory.CanAct() {
+		} else if c.canOpenModule() {
 			c.Settings.Show()
 		}
 	}

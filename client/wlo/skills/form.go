@@ -50,6 +50,7 @@ type Form struct {
 	Notice                func(string)
 	LoadPictures          func(...string)
 	Use                   func(uint16, byte)
+	SingleClickUse        func() bool // Battle selection; ordinary browsing still supports dragging/details.
 	Tabs                  [Intro]*seui.FixedButton
 	Previous, Next, Close *seui.FixedButton
 	List                  *seui.SelectText
@@ -104,14 +105,27 @@ func NewForm(env *seui.Env, c *Catalog) *Form {
 	f.Scroll = s
 	f.Up = button(env, f, "Btn_ArrowUp_1", 246, 88, 17, 17, l.ScrollUp)
 	f.Down = button(env, f, "Btn_ArrowDn_1", 246, 306, 17, 17, l.ScrollDown)
-	l.OnSelect = func(i int) { l.Selected = i }
-	l.OnDblClick = func(i int) {
+	activate := func(i int) {
+		if !f.Visible {
+			return
+		}
 		if f.Use != nil && i >= 0 && i < len(f.rows) {
 			f.Use(f.rows[i], f.Selected)
 			return
 		}
 		if f.Notice != nil {
 			f.Notice("Skill targeting is not implemented in the Go client yet.")
+		}
+	}
+	l.OnSelect = func(i int) {
+		l.Selected = i
+		if f.SingleClickUse != nil && f.SingleClickUse() {
+			activate(i)
+		}
+	}
+	l.OnDblClick = func(i int) {
+		if f.SingleClickUse == nil || !f.SingleClickUse() {
+			activate(i)
 		}
 	}
 	f.SetTab(Physical)

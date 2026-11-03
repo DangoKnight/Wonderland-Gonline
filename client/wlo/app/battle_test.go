@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 	"time"
 	clientbattle "wonderland-gonline/client/wlo/battle"
@@ -14,23 +15,26 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-func enterBattle(t *testing.T) (*Client, *time.Time, func() [][]byte) {
+func enterBattle(t *testing.T, participants ...[]byte) (*Client, *time.Time, func() [][]byte) {
 	t.Helper()
 	c, now, _ := enteredClient(t)
 	c.mapReady = true
 	sent := wire(t, c)
 	enemy := remoteRecord(5, 7, 2, 2, 20001, 0)
 	enemy[2] = 2
-	for _, p := range [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), enemy, {50, 6, 4, 2, 0}, {52, 1}} {
+	packets := [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), enemy}
+	packets = append(packets, participants...)
+	packets = append(packets, []byte{50, 6, 4, 2, 0}, []byte{52, 1})
+	for _, p := range packets {
 		c.dispatch(p)
 	}
 	finishSceneFade(c, now)
 	return c, now, sent
 }
 
-// finishSceneFade lets a battle transition run its 15 frames.
+// finishSceneFade lets the map darken and the battle field reveal.
 func finishSceneFade(c *Client, now *time.Time) {
-	*now = now.Add(sceneFadeSteps * sceneFadeFrame)
+	*now = now.Add(2 * sceneFadeSteps * sceneFadeFrame)
 	c.sceneFadeTick(c.Now())
 }
 func TestBattleSceneCommandsAndExit(t *testing.T) {
@@ -142,6 +146,10 @@ func TestBattlePreviousActionUsesAcknowledgedHistory(t *testing.T) {
 	c.HotbarKey(27, 0)
 	c.InventoryState.Pets[0].ID = 17162
 	c.dispatch(remoteRecord(5, 4, 3, 2, 17162, 10001))
+	c.battleFrame(false)
+	arrival := battleArrivalMotion()
+	*now = now.Add(arrival.Duration() - arrival.ReturnStart())
+	c.battleFrame(false)
 	c.GroundClick(590, 370)
 	c.battleFrame(false)
 	if c.battle.previous.Visible {
@@ -302,7 +310,11 @@ func TestBattleNewTurnWaitsForPresentation(t *testing.T) {
 func TestBattleSoundsPlayOnce(t *testing.T) {
 	c, now, _ := enterBattle(t)
 	var sounds []string
-	c.Env.Sound = func(path string) { sounds = append(sounds, path) }
+	c.Env.Sound = func(path string) {
+		if strings.HasPrefix(path, `sound\SEB`) {
+			sounds = append(sounds, path)
+		}
+	}
 	c.dispatch([]byte{50, 1, 17, 0, 4, 2, 3, 0x2b, 0, 1, 2, 2, 1, 0, 1, 25, 20, 0, 0, 0, 1})
 	c.battleFrame(false)
 	*now = now.Add(time.Minute)

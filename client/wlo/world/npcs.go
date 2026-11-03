@@ -104,8 +104,9 @@ type NPCTemplate struct {
 	// 0x24/0x25); FUN_003747f4, FUN_003753ac.
 	MoveKind byte
 	// Sound is the wav#### a prop plays as it opens (+0x60, FUN_00408054).
-	Sound uint16
-	Voice byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
+	Sound           uint16
+	Voice           byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
+	BattleSoundBody byte // Npc.dat +0x27 including prefix: actor/weapon audio group.
 }
 
 // NPCPainter draws an NPC's sprite at its feet.
@@ -278,26 +279,27 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				Text string `json:"text"`
 			} `json:"name"`
 			Fields struct {
-				ID           uint32 `json:"id"`
-				Element      byte   `json:"element"`
-				Skill1       uint16 `json:"skill_1"`
-				Skill2       uint16 `json:"skill_2"`
-				Skill3       uint16 `json:"skill_3"`
-				Kind         byte   `json:"type"`
-				Look         uint16 `json:"unknown_u16_offset_14"`
-				Color1       uint32 `json:"unknown_u32_offset_18"`
-				Color2       uint32 `json:"unknown_u32_offset_22"`
-				Color3       uint32 `json:"unknown_u32_offset_26"`
-				Color4       uint32 `json:"unknown_u32_offset_30"`
-				HeightScale  byte   `json:"unknown_u8_offset_56"`
-				Shadow       byte   `json:"unknown_u8_offset_74"`
-				HeightPreset byte   `json:"unknown_u8_offset_87"`
-				MoveKind     byte   `json:"unknown_u8_offset_83"`
-				Face         uint16 `json:"unknown_u16_offset_88"`
-				Icon         uint16 `json:"unknown_u16_offset_16"`
-				TalkLow      byte   `json:"unknown_u8_offset_86"`
-				Sound        uint16 `json:"unknown_u16_offset_92"`
-				Voice        byte   `json:"unknown_u8_offset_104"`
+				ID              uint32 `json:"id"`
+				Element         byte   `json:"element"`
+				Skill1          uint16 `json:"skill_1"`
+				Skill2          uint16 `json:"skill_2"`
+				Skill3          uint16 `json:"skill_3"`
+				Kind            byte   `json:"type"`
+				Look            uint16 `json:"unknown_u16_offset_14"`
+				Color1          uint32 `json:"unknown_u32_offset_18"`
+				Color2          uint32 `json:"unknown_u32_offset_22"`
+				Color3          uint32 `json:"unknown_u32_offset_26"`
+				Color4          uint32 `json:"unknown_u32_offset_30"`
+				HeightScale     byte   `json:"unknown_u8_offset_56"`
+				Shadow          byte   `json:"unknown_u8_offset_74"`
+				HeightPreset    byte   `json:"unknown_u8_offset_87"`
+				MoveKind        byte   `json:"unknown_u8_offset_83"`
+				Face            uint16 `json:"unknown_u16_offset_88"`
+				Icon            uint16 `json:"unknown_u16_offset_16"`
+				TalkLow         byte   `json:"unknown_u8_offset_86"`
+				Sound           uint16 `json:"unknown_u16_offset_92"`
+				Voice           byte   `json:"unknown_u8_offset_104"`
+				BattleSoundBody byte   `json:"unknown_u8_offset_35"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
@@ -308,7 +310,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	for _, r := range doc.Records {
 		f := r.Fields
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind}
+			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody}
 	}
 	npcData.path, npcData.templates = path, out
 	return out, nil

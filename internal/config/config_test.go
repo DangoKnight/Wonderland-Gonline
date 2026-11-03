@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+func TestCombatRoundChainConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		json string
+		want bool
+	}{{`{}`, false}, {`{"combat_round_chain":false}`, false}, {`{"combat_round_chain":true}`, true}} {
+		path := filepath.Join(t.TempDir(), "config.json")
+		if err := os.WriteFile(path, []byte(tc.json), 0600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := Load(path)
+		if err != nil || got.CombatRoundChain != tc.want {
+			t.Fatal("combat round-chain startup setting", tc.json, got.CombatRoundChain, err)
+		}
+	}
+}
+
 func TestListenAddressUniqueness(t *testing.T) {
 	for _, tc := range []struct {
 		port  string

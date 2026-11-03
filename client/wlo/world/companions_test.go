@@ -2,6 +2,7 @@ package world
 
 import (
 	"image"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -135,59 +136,98 @@ func (p companionPosePainter) FrameSize(action int) (int, int) {
 func TestCompanionMatchesSupportedOwnerPoses(t *testing.T) {
 	for _, peerOwner := range []bool{false, true} {
 		t.Run(map[bool]string{false: "self", true: "peer"}[peerOwner], func(t *testing.T) {
-			now := time.Unix(100, 0)
-			w := &World{Player: Player{ID: 1, X: 100, Y: 100, Direction: 10}}
-			owner := &w.Player
-			if peerOwner {
-				peer := &Peer{Player: Player{ID: 2, X: 100, Y: 100, Direction: 10}}
-				w.Peers = map[uint32]*Peer{2: peer}
-				owner = &peer.Player
-			}
-			painter := companionPosePainter{actions: map[int]bool{26: true, 27: true}}
-			for action := 46; action <= 53; action++ {
-				painter.actions[action] = true
-			}
-			w.SetCompanion(owner.ID, 123, nil, painter)
-			c := w.Companions[owner.ID]
-			c.Info.MoveKind = 1 // This sprite supports all eight sitting directions.
-			c.walker.Start(&c.position, []image.Point{{120, 100}}, now)
-			for _, action := range []int32{46, 47, 48, 49, 50, 51, 52, 53, 26, 27} {
-				owner.Direction = action
-				w.Step(now.Add(time.Second))
-				x, y, got, _ := w.companionPosition(owner.ID)
-				if got != int(action) || x != 100 || y != 100 || c.walker.Walking() {
-					t.Fatalf("pose %d: companion at %d,%d action %d walking %v", action, x, y, got, c.walker.Walking())
-				}
-			}
-			// The sprite has no wave frames: restore a visible standing pose.
-			owner.Direction = 36
-			w.Step(now.Add(2 * time.Second))
-			if _, _, action, _ := w.companionPosition(owner.ID); action < 8 || action > 15 || c.posed {
-				t.Fatalf("unsupported pose hid the pet: %d", action)
-			}
-			owner.Direction = 10
-			owner.X = 160
-			w.Step(now.Add(3 * time.Second))
-			owner.X = 180
-			w.Step(now.Add(4 * time.Second))
-			owner.X = 200
-			w.Step(now.Add(5 * time.Second))
-			w.Step(now.Add(6 * time.Second))
-			if x, _, _, _ := w.companionPosition(owner.ID); x == 100 {
-				t.Fatal("pet did not resume following after the pose")
+			for facing := 0; facing < 8; facing++ {
+				t.Run(strconv.Itoa(facing), func(t *testing.T) {
+					now := time.Unix(100, 0)
+					w := &World{Player: Player{ID: 1, X: 100, Y: 100, Direction: int32(8 + facing)}}
+					owner := &w.Player
+					if peerOwner {
+						peer := &Peer{Player: Player{ID: 2, X: 100, Y: 100, Direction: int32(8 + facing)}}
+						w.Peers = map[uint32]*Peer{2: peer}
+						owner = &peer.Player
+					}
+					painter := companionPosePainter{actions: map[int]bool{26: true, 27: true}}
+					for action := 46; action <= 53; action++ {
+						painter.actions[action] = true
+					}
+					w.SetCompanion(owner.ID, 123, nil, painter)
+					c := w.Companions[owner.ID]
+					// Even MoveKind 0 must retain exact frames when they are available.
+					delta := [8]image.Point{{0, -20}, {-20, -20}, {-20, 0}, {-20, 20}, {0, 20}, {20, 20}, {20, 0}, {20, -20}}[facing]
+					c.walker.Start(&c.position, []image.Point{image.Pt(100, 100).Add(delta)}, now)
+					for _, action := range []int32{46, 47, 48, 49, 50, 51, 52, 53, 26, 27} {
+						owner.Direction = action
+						w.Step(now.Add(time.Second))
+						x, y, got, _ := w.companionPosition(owner.ID)
+						want := 46 + facing
+						if action < 46 {
+							want = 26
+							if facing >= 4 {
+								want = 27
+							}
+						}
+						if got != want || x != 100 || y != 100 || c.walker.Walking() {
+							t.Fatalf("pose %d: companion at %d,%d action %d walking %v", action, x, y, got, c.walker.Walking())
+						}
+					}
+					// A new eight-facing pose recovers the original facing after lying.
+					owner.Direction = 53
+					w.Step(now.Add(2 * time.Second))
+					if _, _, action, _ := w.companionPosition(owner.ID); action != 46+facing {
+						t.Fatalf("lying lost pet facing %d: %d", facing, action)
+					}
+					// The sprite has no wave frames: restore a visible standing pose.
+					owner.Direction = 36
+					w.Step(now.Add(2 * time.Second))
+					if _, _, action, _ := w.companionPosition(owner.ID); action != 8+facing || c.posed {
+						t.Fatalf("unsupported pose hid the pet: %d", action)
+					}
+					owner.Direction = 10
+					owner.X = 160
+					w.Step(now.Add(3 * time.Second))
+					owner.X = 180
+					w.Step(now.Add(4 * time.Second))
+					owner.X = 200
+					w.Step(now.Add(5 * time.Second))
+					w.Step(now.Add(6 * time.Second))
+					if x, _, _, _ := w.companionPosition(owner.ID); x == 100 {
+						t.Fatal("pet did not resume following after the pose")
+					}
+				})
 			}
 		})
 	}
 }
 
 func TestCompanionNativeSittingFacings(t *testing.T) {
-	w := &World{Player: Player{ID: 1, Direction: 8}}
-	w.SetCompanion(1, 123, nil, companionPosePainter{actions: map[int]bool{47: true, 49: true, 51: true, 53: true}})
 	for i, want := range []int{47, 47, 49, 49, 51, 51, 51, 53} {
-		w.Player.Direction = int32(46 + i)
+		w := &World{Player: Player{ID: 1, Direction: int32(8 + i)}}
+		w.SetCompanion(1, 123, nil, companionPosePainter{actions: map[int]bool{47: true, 49: true, 51: true, 53: true}})
+		w.Player.Direction = 46
 		w.Step(time.Unix(100, 0))
 		if _, _, action, _ := w.companionPosition(1); action != want {
-			t.Fatalf("owner pose %d pet pose %d want %d", 46+i, action, want)
+			t.Fatalf("pet facing %d: pose %d want %d", i, action, want)
+		}
+		w.Player.Direction = 53
+		w.Step(time.Unix(101, 0))
+		if _, _, action, _ := w.companionPosition(1); action != want {
+			t.Fatalf("owner turn changed pet facing %d: %d", i, action)
+		}
+		w.Player.Direction = 8
+		w.Step(time.Unix(102, 0))
+		if _, _, action, _ := w.companionPosition(1); action != 8+i {
+			t.Fatalf("sitting fallback lost pet facing %d: %d", i, action)
+		}
+	}
+}
+
+func TestCompanionCreatedWhileOwnerPoses(t *testing.T) {
+	for facing := 0; facing < 8; facing++ {
+		w := &World{Player: Player{ID: 1, Direction: int32(46 + facing)}}
+		w.SetCompanion(1, 123, nil, companionPosePainter{actions: map[int]bool{46 + facing: true}})
+		w.Step(time.Unix(100, 0))
+		if _, _, action, _ := w.companionPosition(1); action != 46+facing {
+			t.Fatalf("owner pose %d initialized pet pose %d", 46+facing, action)
 		}
 	}
 }

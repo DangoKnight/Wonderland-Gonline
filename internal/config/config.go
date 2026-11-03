@@ -20,6 +20,7 @@ const (
 )
 
 type Config struct {
+	CombatRoundChain          bool                  `json:"combat_round_chain"`
 	ComboDamagePerParticipant bool                  `json:"combo_damage_per_participant"`
 	CharacterSaveSeconds      int                   `json:"character_save_seconds"`
 	PetGrowthFormula          game.PetGrowthFormula `json:"pet_growth_formula"`

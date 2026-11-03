@@ -1125,6 +1125,25 @@ do not relax server validation or add client-specific exceptions to accommodate
 an incomplete client implementation. Preserve independent raw-byte fixtures
 and verify the client against the existing server handshake and interaction gates.
 
+Explicitly negotiated transport optimizations may run when both peers opt in,
+while preserving native fallback and the same gameplay rules and gates. Combat
+round chains and batched choices use the versioned capability exchange in
+[COMBAT_TRANSPORT.md](COMBAT_TRANSPORT.md); client brand or server display names
+must never select the alternate path.
+Offer this optimization only when the startup configuration's
+`combat_round_chain` switch is true (default false). Capture the switch in `New`;
+keep native delivery for unnegotiated clients even when it is enabled.
+
+Explicit escape results must remain separate from overkill and disconnect.
+Either owner or pet escaping removes that owner/pet pair; only a successful
+team-leader escape ends the remaining team's battle. Capture current leadership
+under `worldMu` before round calculation. Use the strongest living opponent for
+the reference level-based escape check. Keep withdrawal/timing state in memory,
+but commit departing vitals and pet results before native success packets or a
+round envelope. Truncate only that owner's chain; remaining participants keep
+the rest of the round. Failure uses native motion 60042 without damage, SP cost,
+defense or proficiency; retain 60041 as the repeatable request.
+
 Use `make build-client` to validate/recompile editable assets before building Go.
 `client/asset-contract.json` holds PNG dimension compatibility constraints;
 `cmd/client-bundle` produces incremental core/world/sprite/audio packs with binary map and sprite

@@ -98,6 +98,11 @@ Default endpoints are TCP 6414 (login/game), 6415 (world), 6416 (native launcher
 status), and HTTP `http://127.0.0.1:8080` (admin, registration and `/healthz`).
 They bind to loopback. Stop the foreground server with Ctrl+C.
 
+Combat uses native delivery by default. To enable full-round action chains for
+compatible Gonline clients, set `"combat_round_chain": true` in the server's
+`config.local.json` and restart. Legacy clients continue using native packets.
+See [combat transport](docs/COMBAT_TRANSPORT.md).
+
 Gameplay storage is `var/wonderland.db`; static catalogs are loaded read-only
 from `var/assets.db`; compiled clients discover split asset packs, while
 `-assets data` selects loose editable exports. Paths resolve from the working

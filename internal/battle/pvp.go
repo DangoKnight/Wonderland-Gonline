@@ -1,7 +1,6 @@
 package battle
 
 const (
-	friendlyPetMarker     = 5
 	mirroredGridColumnSum = 5
 )
 

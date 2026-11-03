@@ -73,6 +73,20 @@ func TestCompiledBundleLoginAndSharedWorld(t *testing.T) {
 	if next.World == nil || next.World.Scene == c.World.Scene || next.World.Scene.Layers[0].Image != c.World.Scene.Layers[0].Image {
 		t.Fatal("scene descriptors not isolated or map pixels duplicated")
 	}
+	c.mapReady = true
+	c.dispatch([]byte{104, 1, 1, 0, 1, 216, 132, 3})
+	c.dispatch([]byte{104, 1, 2, 1, 1})
+	c.LuckyDraw.Show()
+	c.LuckyDraw.Preview.Open()
+	c.Frame()
+	if c.LuckyDraw.Image < 0 || c.LuckyDraw.Spin.Image < 0 || c.LuckyDraw.Preview.Image < 0 || c.LuckyDraw.State.Slot != 1 {
+		t.Fatal("compiled Lucky Draw artwork or result unavailable")
+	}
+	if next.LuckyDraw.State.Ready || next.LuckyDraw.Visible || next.LuckyDraw.Preview.Visible {
+		t.Fatal("shared resources leaked Lucky Draw state across sessions")
+	}
+	c.LuckyDraw.Hide()
+	c.Frame()
 	if path := os.Getenv("BUNDLE_SNAPSHOT"); path != "" {
 		savePNG(t, path, c)
 	}

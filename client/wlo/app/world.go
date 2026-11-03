@@ -70,6 +70,9 @@ func (c *Client) warp(p []byte) {
 	// map is not ready until 5/4.
 	c.areas.last = 0
 	c.mapReady = false
+	if c.LuckyDraw != nil {
+		c.LuckyDraw.Hide()
+	}
 	if c.Settings != nil {
 		c.Settings.Hide()
 	}

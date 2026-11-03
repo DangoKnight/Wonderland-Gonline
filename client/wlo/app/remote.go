@@ -201,6 +201,9 @@ func (c *Client) remoteTick() {
 		return
 	}
 	r.nextTick = now.Add(remoteTickInterval)
+	if c.battle.closing {
+		return
+	}
 	if r.battle.active {
 		if r.options.AutoFight && r.battle.ready {
 			c.remoteAttack()
@@ -351,7 +354,7 @@ func (c *Client) remoteAttack() {
 		}
 		p := []byte{protocol.CommandBattleAction, remoteBattleAttack, f.x, f.y, target.x, target.y}
 		p = binary.LittleEndian.AppendUint16(p, remoteBasicAttack)
-		if err := c.Net.Send(p); err != nil {
+		if err := c.sendCombatChoice(p); err != nil {
 			c.stopRemote()
 			c.Chat.Notice(err.Error())
 			return

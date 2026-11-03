@@ -1,6 +1,7 @@
 package battle
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,9 @@ const (
 	nativeBattleSceneLayersOffset  = 82 // TFSceneData +0x58, after four-byte prefix and two-byte index.
 	nativeBattleSceneHeightsOffset = 88
 	nativeMotionLastFrameTrigger   = 100
+	LastFrameTrigger               = nativeMotionLastFrameTrigger
+	MotionTravelLeap               = 1 // Native approach/return mode for leap travel.
+	MotionTravelWalk               = 0 // Ground travel, preserving the template's walking/running style.
 	nativeMotionWalkRight          = 2
 	nativeMotionWalkLeft           = 6
 	nativeMotionStandRight         = 10
@@ -56,6 +60,7 @@ type MotionFrame struct {
 	Offset        image.Point
 }
 type Motion struct {
+	departure        bool // FUN_00385e58 completes departure before the return leg.
 	Approach, Return byte
 	// Reaction is the motion its targets play when hit (record +0x2c,
 	// FUN_003790d4 keeps it at the action's +0xc/+0xe): 60011 for the basic
@@ -70,7 +75,50 @@ type Motion struct {
 	DamageMode                 byte
 	Events                     []MotionEvent
 	Sounds                     []SoundCue
+	CameraMode                 byte
+	Camera                     []CameraPoint
+	WeaponSounds               [WeaponSoundGroups][ActorSoundChannels]uint16
+	WeaponSoundTriggers        [ActorSoundChannels]uint32
+	BodySounds                 [BodySoundGroups][ActorSoundChannels]uint16
+	BodySoundTriggers          [ActorSoundChannels]uint32
 	spans                      []time.Duration
+}
+
+const (
+	WeaponSoundGroups                     = 6
+	BodySoundGroups                       = 5
+	ActorSoundChannels                    = 6 // Native channel zero is reserved; channels 1..5 play.
+	nativeMotionFixedTailBytes            = 198
+	nativeMotionWeaponTriggerOffset       = 72
+	nativeMotionBodySoundOffset           = 108
+	nativeMotionBodyTriggerOffset         = 168
+	nativeMotionCompatibilityPaddingBytes = 8 // Historical prefix-only fixtures.
+)
+
+// CameraPoint is FUN_00377060's CH_TBattleGround track: coordinates, speed
+// in pixels/ms, a keyframe/millisecond trigger, and a focus anchor.
+type CameraPoint struct {
+	At      image.Point
+	Speed   float64
+	Trigger uint32
+	Anchor  byte // 0 field, 1 actor, 2 target, otherwise an effect index.
+}
+
+// Departure keeps the authored outward path and ends there. The native
+// departure callback (FUN_00385e58 -> FUN_0039b81c) replaces the return leg.
+func (m Motion) Departure() Motion {
+	m.departure = true
+	return m
+}
+
+// ReturnStart is the end of the authored frames, where travel back to the
+// formation starts. Entry controllers can play that leg independently.
+func (m Motion) ReturnStart() time.Duration {
+	var at time.Duration
+	for _, span := range m.frameSpans() {
+		at += span
+	}
+	return at
 }
 
 // MotionEffect is one visual effect of a motion record (FUN_00377060's
@@ -196,6 +244,66 @@ func ParseMotion(b []byte) (Motion, error) {
 	}
 	for i := 0; i < sounds; i++ {
 		m.Sounds = append(m.Sounds, SoundCue{r.U16(), r.U32(), r.U8()})
+	}
+	// Older hand-authored fixtures may end after the general sound track.
+	// Complete native records retain the following camera/effect sections and
+	// fixed actor/weapon audio tables. Never interpret a truncated tail as audio.
+	if r.Remaining() <= nativeMotionCompatibilityPaddingBytes && bytes.Equal(b[len(b)-r.Remaining():], make([]byte, r.Remaining())) {
+		r.Rest()
+	}
+	if r.Remaining() > 0 {
+		m.CameraMode = r.U8()
+		count := int(r.U8())
+		if count > nativeMotionMaximumFrames {
+			return m, fmt.Errorf("too many camera points")
+		}
+		for i := 0; i < count; i++ {
+			p := CameraPoint{At: image.Pt(int(int32(r.U32())), int(int32(r.U32()))), Speed: r.F64(), Trigger: r.U32(), Anchor: r.U8()}
+			if math.IsNaN(p.Speed) || math.IsInf(p.Speed, 0) || p.Speed < 0 {
+				return m, fmt.Errorf("invalid camera speed")
+			}
+			m.Camera = append(m.Camera, p)
+		}
+		// Additional authored movement, flags and effect transitions precede
+		// the fixed audio tables; retain their original layout and skip them.
+		r.U8()
+		count = int(r.U8())
+		if count > nativeMotionMaximumFrames {
+			return m, fmt.Errorf("too many secondary motion points")
+		}
+		r.Bytes(count * 8)
+		count = int(r.U8())
+		if count > nativeMotionMaximumFrames {
+			return m, fmt.Errorf("too many motion flags")
+		}
+		r.Bytes(count * 2)
+		count = int(r.U8())
+		if count > nativeMotionMaximumFrames {
+			return m, fmt.Errorf("too many effect transitions")
+		}
+		r.Bytes(count * 9)
+		tail := protocol.NewReader(r.Bytes(nativeMotionFixedTailBytes))
+		for group := range m.WeaponSounds {
+			for channel := range m.WeaponSounds[group] {
+				m.WeaponSounds[group][channel] = tail.U16()
+			}
+		}
+		for channel := range m.WeaponSoundTriggers {
+			m.WeaponSoundTriggers[channel] = tail.U32()
+		}
+		tail.Bytes(nativeMotionBodySoundOffset - nativeMotionWeaponTriggerOffset - ActorSoundChannels*4)
+		for group := range m.BodySounds {
+			for channel := range m.BodySounds[group] {
+				m.BodySounds[group][channel] = tail.U16()
+			}
+		}
+		for channel := range m.BodySoundTriggers {
+			m.BodySoundTriggers[channel] = tail.U32()
+		}
+		tail.Bytes(nativeMotionFixedTailBytes - nativeMotionBodyTriggerOffset - ActorSoundChannels*4)
+		if tail.Err() != nil || r.Remaining() != 0 {
+			return m, fmt.Errorf("invalid motion audio tail")
+		}
 	}
 	if r.Err() != nil {
 		return m, r.Err()
@@ -360,11 +468,14 @@ func (m Motion) PositionAt(cell, target Cell, elapsed time.Duration) image.Point
 		elapsed -= spans[i]
 		previous = frame.Offset
 	}
+	if m.departure {
+		return motionPoint(cell, target, previous)
+	}
 	return motionPoint(cell, target, interpolateMotion(previous, image.Point{}, elapsed, m.returnTravel()))
 }
 
 func (m Motion) returnTravel() time.Duration {
-	if len(m.Frames) == 0 {
+	if m.departure || len(m.Frames) == 0 {
 		return 0
 	}
 	p := m.Frames[len(m.Frames)-1].Offset
@@ -405,7 +516,7 @@ func (m Motion) PoseAt(cell, target Cell, elapsed time.Duration, moveKind byte) 
 	for _, span := range spans {
 		total += span
 	}
-	if elapsed >= total {
+	if elapsed >= total && !m.departure {
 		last := m.Frames[len(m.Frames)-1].Offset
 		if last == (image.Point{}) {
 			return m.ActionAt(cell, elapsed)

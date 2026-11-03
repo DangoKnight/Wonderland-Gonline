@@ -30,13 +30,16 @@ type Sounds struct {
 	voice      *audio.Player
 }
 
-// SoundCache owns the workspace's one audio context and decoded effects.
+// SoundCache owns a workspace's decoded effects. Ebitengine permits only one
+// audio context per process, shared by all workspaces and standalone Sounds.
 type SoundCache struct {
 	once  sync.Once
 	ctx   *audio.Context
 	mu    sync.Mutex
 	cache map[string][]byte
 }
+
+var audioContextMu sync.Mutex
 
 func (s *Sounds) Context() *audio.Context {
 	s.mu.Lock()
@@ -45,7 +48,15 @@ func (s *Sounds) Context() *audio.Context {
 	}
 	shared := s.Shared
 	s.mu.Unlock()
-	shared.once.Do(func() { shared.ctx = audio.NewContext(sampleRate); shared.cache = map[string][]byte{} })
+	shared.once.Do(func() {
+		audioContextMu.Lock()
+		defer audioContextMu.Unlock()
+		shared.ctx = audio.CurrentContext()
+		if shared.ctx == nil {
+			shared.ctx = audio.NewContext(sampleRate)
+		}
+		shared.cache = map[string][]byte{}
+	})
 	return shared.ctx
 }
 
