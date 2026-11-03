@@ -42,7 +42,7 @@ func (c Character) CompanionRebirthState() byte {
 
 // RebirthAtAltar preserves learned skills and allocated points. Unlike AC69,
 // the native AC44 operation requires bare equipment and grants no point bonus.
-func (p *Pet) RebirthAtAltar(items map[uint16]ItemDefinition) bool {
+func (p *Pet) RebirthAtAltar(items map[uint16]ItemDefinition, templates ...PetTemplate) bool {
 	if p.ID == 0 || p.Reborn || p.Level < PetRebirthRequiredLevel || p.Amity < CompanionRebirthRequiredAmity {
 		return false
 	}
@@ -52,14 +52,14 @@ func (p *Pet) RebirthAtAltar(items map[uint16]ItemDefinition) bool {
 		}
 	}
 	p.Reborn, p.Level, p.Exp = true, PetRebirthStartingLevel, 0
-	p.Normalize(items, true)
+	p.Normalize(items, true, templates...)
 	return true
 }
 
 // Rebirth follows AC69's ascension policy. Keep learned skills, base attributes,
 // equipment, job and battle selection; refill derived vitals at the new level.
 // Reject bonus overflow rather than wrapping away existing stat points.
-func (p *Pet) Rebirth(items map[uint16]ItemDefinition) bool {
+func (p *Pet) Rebirth(items map[uint16]ItemDefinition, templates ...PetTemplate) bool {
 	if p.ID == 0 || p.Reborn || p.Level < PetRebirthRequiredLevel || p.Amity < PetRebirthRequiredAmity || p.StatPoints > math.MaxUint16-PetRebirthBonusStatPoints {
 		return false
 	}
@@ -68,6 +68,6 @@ func (p *Pet) Rebirth(items map[uint16]ItemDefinition) bool {
 	p.Exp = 0
 	p.StatPoints += PetRebirthBonusStatPoints
 	p.Amity = PetRebirthRequiredAmity
-	p.Normalize(items, true)
+	p.Normalize(items, true, templates...)
 	return true
 }

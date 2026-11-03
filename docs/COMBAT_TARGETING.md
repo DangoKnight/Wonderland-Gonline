@@ -4,6 +4,10 @@ Skills can define explicit grade ranges and formation targets in `assets.db`.
 The executor supports area damage, healing, revival, buffs and debuffs for
 players, pets and monsters, including both PvP sides.
 
+All three use the same elemental innate stat formulas; NPC definitions supply
+pet/enemy elements and enemy base attributes. See [combat stats](COMBAT_STATS.md)
+for coefficients, explicit encounter overrides and the Private Server comparison.
+
 ## Monster capture
 
 Capture follows the saved `var/reference-web/モンスター - Wonderland ONLINE Wiki_.htm`

@@ -43,7 +43,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 		full := c.character.Combat(s.Assets.Items)
 		needs := int64(c.character.HP) < int64(full.MaxHP) || int64(c.character.SP) < int64(full.MaxSP)
 		for _, pet := range c.character.Pets {
-			full := pet.Combat(s.Assets.Items)
+			full := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
 			needs = needs || pet.HP < full.MaxHP || pet.SP < full.MaxSP
 		}
 		offer := uint32(0xffffffff)
@@ -64,7 +64,7 @@ func (s *Server) confirmRest(ctx context.Context, c *Session) error {
 	next := c.character.Clone()
 	next.Refill(s.Assets.Items)
 	for i := range next.Pets {
-		next.Pets[i].Normalize(s.Assets.Items, true)
+		next.Pets[i].Normalize(s.Assets.Items, true, s.petTemplate(next.Pets[i].ID))
 	}
 	if e := s.commit(ctx, c, next); e != nil {
 		return e
@@ -72,7 +72,7 @@ func (s *Server) confirmRest(ctx context.Context, c *Session) error {
 	c.restMap = 0
 	packets := next.StatPackets(s.Assets.Items)
 	for _, pet := range next.Pets {
-		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 	}
 	return s.sendAll(c, append(packets, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRestEffect}.U32(next.ID), []byte{protocol.CommandNPCService, protocol.ClinicRestConfirm, 0}))
 }
@@ -878,7 +878,7 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 		packets = append(packets, roster)
 	}
 	for _, pet := range incoming {
-		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 	}
 	packets = append(packets, s.hotelPackets(c.character)...)
 	packets = append(packets, []byte{protocol.CommandNPCService, protocol.PetHotelStorageUnlock}, []byte{protocol.CommandNPCService, protocol.PetHotelModalUnlock})

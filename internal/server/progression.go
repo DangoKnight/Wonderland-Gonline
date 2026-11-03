@@ -108,7 +108,7 @@ func (s *Server) potentialPillWithRoll(ctx context.Context, c *Session, p []byte
 		oldPotential := *potential
 		*potential = level
 		if petIndex >= 0 {
-			next.Pets[petIndex].Normalize(s.Assets.Items, false)
+			next.Pets[petIndex].Normalize(s.Assets.Items, false, s.petTemplate(next.Pets[petIndex].ID))
 		} else {
 			next.RecalculateVitals(s.Assets.Items)
 			if level < oldPotential && next.ForgetUnqualifiedSkills() {
@@ -145,7 +145,7 @@ func (s *Server) potentialPillWithRoll(ctx context.Context, c *Session, p []byte
 		packets = append(packets, c.character.StatPackets(s.Assets.Items)...)
 	} else {
 		i := slices.IndexFunc(c.character.Pets, func(p game.Pet) bool { return p.ID == petID })
-		packets = append(packets, c.character.Pets[i].ProgressionPackets(target, s.Assets.Items)...)
+		packets = append(packets, c.character.Pets[i].ProgressionPackets(target, s.Assets.Items, s.petTemplate(c.character.Pets[i].ID))...)
 	}
 	return s.sendAll(c, packets)
 }

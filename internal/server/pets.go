@@ -87,7 +87,7 @@ func (s *Server) petListPacket(char *game.Character, roster *petRoster) []byte {
 		if slot == 0 {
 			continue
 		}
-		pet.Normalize(s.Assets.Items, false)
+		pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
 		p = pet.ListRecord(p, slot, s.companionName(pet.ID, pet.Name), s.petTemplate(pet.ID))
 		n++
 	}
@@ -136,8 +136,8 @@ func (s *Server) rosterPackets(char *game.Character, roster *petRoster) [][]byte
 		if slot == 0 {
 			continue
 		}
-		pet.Normalize(s.Assets.Items, false)
-		out = append(out, pet.ProgressionPackets(slot, s.Assets.Items)...)
+		pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+		out = append(out, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 		out = append(out, serverwire.PetNamePacket(char.ID, slot, s.companionName(pet.ID, pet.Name)))
 		if battle := char.BattlePet(); battle != nil && game.SamePet(battle.ID, pet.ID) {
 			id := game.BroadcastID(pet.ID)
@@ -197,7 +197,7 @@ func (s *Server) petCommand(ctx context.Context, c *Session, p []byte) error {
 		s.broadcastWorld(c, serverwire.PetMapPacket(next.ID, next.ActivePet, name))
 		slot := c.pets.slot(pet.ID)
 		packets := [][]byte{protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(next.ActivePet), serverwire.PetNamePacket(next.ID, slot, name)}
-		packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+		packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 		return s.sendAll(c, append(packets, serverwire.SystemLine(name+" is now in Battle Mode!")))
 	case protocol.BattlePetRest, protocol.BattlePetRestAlternate:
 		next := c.character.Clone()
@@ -305,7 +305,7 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 			}
 		}
 		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 	}
 	next.Pets = append(next.Pets, pet)
 	if e := s.commit(ctx, c, next); e != nil {
@@ -324,7 +324,7 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 		packets = append(packets, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
 	}
 	cs := c.pets.slot(pet.ID)
-	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, s.companionName(pet.ID, pet.Name)))
 	// AC15:1 has no equipment; AC15:8 restores a returning or equipped companion.
 	if !first || pet.Equipment[2].ID != 0 || pet.Equipment[5].ID != 0 {
@@ -519,7 +519,7 @@ func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from,
 	}
 	next := c.character.Clone()
 	pet := &next.Pets[i]
-	before := pet.Combat(s.Assets.Items)
+	before := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
 	transfer := game.Character{Bag: next.Bag, Equipment: pet.Equipment}
 	var err error
 	packet := []byte{protocol.CommandInventory, protocol.InventoryWireCode23, slot, from}
@@ -546,12 +546,12 @@ func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from,
 		return nil
 	}
 	next.Bag, pet.Equipment = transfer.Bag, transfer.Equipment
-	pet.Normalize(s.Assets.Items, false)
-	after := pet.Combat(s.Assets.Items)
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+	after := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
 	if err := s.commit(ctx, c, next); err != nil {
 		return err
 	}
-	packets := append([][]byte{packet}, pet.ProgressionPackets(slot, s.Assets.Items)...)
+	packets := append([][]byte{packet}, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 	if text := game.ChangeBanner(pet.Name+" equipment: ", before, after); text != "" {
 		packets = append(packets, serverwire.HeadBanner(text))
 	}
@@ -651,11 +651,11 @@ func (s *Server) petTrainingCommand(ctx context.Context, c *Session, p []byte) e
 	if !pet.AllocatePoint(stat) {
 		return c.send(reply)
 	}
-	pet.Normalize(s.Assets.Items, false)
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
 	if err := s.commit(ctx, c, next); err != nil {
 		return err
 	}
-	packets := pet.ProgressionPackets(slot, s.Assets.Items)
+	packets := pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))
 	reply[4] = protocol.PetTrainingSucceeded
 	return s.sendAll(c, append(packets, reply))
 }
@@ -683,7 +683,7 @@ func (s *Server) petRebirthCommand(ctx context.Context, c *Session, p []byte) er
 	}
 	next := c.character.Clone()
 	pet := &next.Pets[i]
-	if !pet.Rebirth(s.Assets.Items) {
+	if !pet.Rebirth(s.Assets.Items, s.petTemplate(pet.ID)) {
 		message := fmt.Sprintf("[Rebirth] %s requires level %d and amity %d.", pet.Name, game.PetRebirthRequiredLevel, game.PetRebirthRequiredAmity)
 		if pet.Reborn {
 			message = fmt.Sprintf("[Rebirth] %s has already undergone Rebirth ascension.", pet.Name)
@@ -698,7 +698,7 @@ func (s *Server) petRebirthCommand(ctx context.Context, c *Session, p []byte) er
 	}
 	reply[3] = protocol.PetRebirthSucceeded
 	packets := [][]byte{reply, s.petListPacket(c.character, c.pets)}
-	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.SystemLine(fmt.Sprintf("[Rebirth] %s has attained Rebirth Ascension!", pet.Name)))
 	return s.sendAll(c, packets)
 }
@@ -736,7 +736,7 @@ func (s *Server) companionRebirthCommand(ctx context.Context, c *Session, slot b
 			return reply(protocol.CompanionRebirthEquipment)
 		}
 	}
-	if !p.RebirthAtAltar(s.Assets.Items) {
+	if !p.RebirthAtAltar(s.Assets.Items, s.petTemplate(p.ID)) {
 		return reply(protocol.CompanionRebirthUnavailable)
 	}
 	id := p.ID
@@ -767,7 +767,7 @@ func (s *Server) companionRebirthCommand(ctx context.Context, c *Session, slot b
 				return denied
 			}
 		}
-		if !pet.RebirthAtAltar(s.Assets.Items) {
+		if !pet.RebirthAtAltar(s.Assets.Items, s.petTemplate(pet.ID)) {
 			return denied
 		}
 		i = index
@@ -783,7 +783,7 @@ func (s *Server) companionRebirthCommand(ctx context.Context, c *Session, slot b
 	p = &next.Pets[i]
 	c.view.CompanionRebirthOpen = false
 	packets := [][]byte{{protocol.CommandCompanionRebirth, protocol.CompanionRebirthRequest, protocol.CompanionRebirthSuccess}, s.petListPacket(c.character, c.pets)}
-	packets = append(packets, p.ProgressionPackets(slot, s.Assets.Items)...)
+	packets = append(packets, p.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(p.ID))...)
 	return s.sendAll(c, packets)
 }
 

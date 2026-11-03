@@ -395,7 +395,7 @@ func (s *Server) finishRecruitment(ctx context.Context, c *Session, es *eventSes
 			stored.ReservePets = slices.Delete(stored.ReservePets, i, i+1)
 		}
 		pet.EnsureSkills(template, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		stored.Pets = append(stored.Pets, pet)
 		if err := applyStoryMarks(stored, policy.Marks, time.Now().UTC()); err != nil {
 			return err
@@ -422,7 +422,7 @@ func (s *Server) finishRecruitment(ctx context.Context, c *Session, es *eventSes
 		packets = append(packets, pet.RecruitPacket(next.ID, template))
 	}
 	slot := c.pets.slot(pet.ID)
-	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, slot, s.companionName(pet.ID, pet.Name)))
 	if list := s.petListPacket(c.character, c.pets); list != nil {
 		packets = append(packets, list)

@@ -122,21 +122,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 			ui.MouseMove(mouse, x, y, held)
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			now := g.C.Now()
-			// A second press within the interval is WM_LBUTTONDBLCLK: VCL
-			// raises OnDblClick, then OnMouseDown with ssDouble.
-			if now.Sub(g.lastDown) < doubleClickInterval && g.lastPt == [2]int{x, y} {
-				ui.DblClick()
-				ui.MouseDown(seui.ButtonLeft, mouse|shiftDouble, x, y)
-				g.lastDown = time.Time{}
-			} else {
-				// A press on a speaker's icon in the chat log whispers to them
-				// before the interface sees it (FUN_00496ca4).
-				if !g.C.SpeakerPress() && !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
-					g.C.GroundClick(x, y)
-				}
-				g.lastDown, g.lastPt = now, [2]int{x, y}
-			}
+			g.leftPress(mouse, x, y)
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
 			if !ui.MouseDown(seui.ButtonRight, mouse, x, y) {
@@ -203,6 +189,29 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 	}
 	return nil
+}
+
+func (g *Game) leftPress(mouse byte, x, y int) {
+	now := g.C.Now()
+	ui := g.C.UI
+	// A second press within the interval is WM_LBUTTONDBLCLK: VCL
+	// raises OnDblClick, then OnMouseDown with ssDouble.
+	if now.Sub(g.lastDown) < doubleClickInterval && g.lastPt == [2]int{x, y} {
+		ui.DblClick()
+		if !ui.MouseDown(seui.ButtonLeft, mouse|shiftDouble, x, y) && g.C.battle.state.Active {
+			// Each battle-field press chooses a target, including a quick
+			// second press for the next controllable fighter.
+			g.C.GroundClick(x, y)
+		}
+		g.lastDown = time.Time{}
+	} else {
+		// A press on a speaker's icon in the chat log whispers to them
+		// before the interface sees it (FUN_00496ca4).
+		if !g.C.SpeakerPress() && !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
+			g.C.GroundClick(x, y)
+		}
+		g.lastDown, g.lastPt = now, [2]int{x, y}
+	}
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {

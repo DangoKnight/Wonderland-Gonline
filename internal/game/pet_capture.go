@@ -13,7 +13,7 @@ func NewCapturedPet(id uint32, name string, slot byte, t PetTemplate, items map[
 	for bonus := 0; bonus < odd/2; bonus++ {
 		p.grow(t, true, roll, options...)
 	}
-	p.Normalize(items, true)
+	p.Normalize(items, true, t)
 	return p
 }
 

@@ -62,9 +62,10 @@ type Pet struct {
 
 // PetTemplate is the Npc.dat data a pet derives from.
 type PetTemplate struct {
-	Type   byte
-	Stats  Attributes
-	Skills [3]uint16
+	Type    byte
+	Element byte
+	Stats   Attributes
+	Skills  [3]uint16
 }
 
 // BroadcastID is GetCompanionBroadcastId: Robinson is 12032 as an NPC and 12178 as a pet.
@@ -105,60 +106,42 @@ func StoryCompanion(id uint32, t PetTemplate, known bool) bool {
 	return false
 }
 
-// Element is the pet's element: only Robinson is earth.
-func (p Pet) Element() byte {
+// Element comes from the shared NPC definition. Missing definitions use neutral
+// baseline growth; Robinson retains its historical earth compatibility fallback.
+func (p Pet) Element(templates ...PetTemplate) byte {
+	if len(templates) > 0 && templates[0].Element != 0 {
+		return templates[0].Element
+	}
 	if p.ID == 12032 || p.ID == 12178 {
 		return Earth
 	}
 	return 0
 }
 
-func roundStat(v float64) int32 { return int32(math.RoundToEven(v)) }
-
-// Calculated stats (PlayerPetData.Calculated*).
-func (p Pet) CalculatedMaxHP() int32 {
-	l, con := float64(p.Level), float64(p.Attributes().Constitution)
-	return max(1, roundStat(math.Pow(l, .35)*con*2+l+con*2+180))
+// Calculated vitals use the same elemental growth as player characters.
+func (p Pet) CalculatedMaxHP(templates ...PetTemplate) int32 {
+	return max(1, InnateCombat(p.Level, p.Element(templates...), p.Attributes()).MaxHP)
 }
-func (p Pet) CalculatedMaxSP() int32 {
-	l, wis := float64(p.Level), float64(p.Attributes().Wisdom)
-	return max(0, roundStat(math.Pow(l, .3)*wis*3.2+l+wis*2+94))
+func (p Pet) CalculatedMaxSP(templates ...PetTemplate) int32 {
+	return max(0, InnateCombat(p.Level, p.Element(templates...), p.Attributes()).MaxSP)
 }
 
 // Combat is the pet's derived battle stats with its equipment.
-func (p Pet) Combat(items map[uint16]ItemDefinition) Combat {
-	a := p.Attributes()
-	l := float64(p.Level)
-	e := p.Element()
-	pick := func(water, other float64) float64 {
-		if e == 2 {
-			return water
-		}
-		return other
-	}
-	defLevel := 2.0
-	if e == 0 {
-		defLevel = 8
-	}
-	spdLevel := 1.6
-	if e == 3 {
-		spdLevel = 2.1
-	}
+func (p Pet) Combat(items map[uint16]ItemDefinition, templates ...PetTemplate) Combat {
+	c := InnateCombat(p.Level, p.Element(templates...), p.Attributes())
 	b := p.Equipment.Bonuses(items)
 	return Combat{
-		MaxHP: max(1, p.CalculatedMaxHP()+b.HP), MaxSP: max(0, p.CalculatedMaxSP()+b.SP),
-		ATK: max(0, roundStat(l*pick(2, 1.4)+float64(a.Strength)*2)+int32(int16(b.ATK))),
-		DEF: max(0, roundStat(l*defLevel+float64(a.Constitution)*1.75)+int32(int16(b.DEF))),
-		MAT: max(0, roundStat(l*pick(1.6, 1.4)+float64(a.Intelligence)*2)+int32(int16(b.MAT))),
-		MDF: max(0, roundStat(l*pick(2.2, 2)+float64(a.Wisdom)*2.2)+int32(int16(b.MDF))),
-		SPD: max(0, roundStat(l*spdLevel+float64(a.Agility)*2.2)+int32(int16(b.SPD))),
+		MaxHP: max(1, c.MaxHP+b.HP), MaxSP: max(0, c.MaxSP+b.SP),
+		ATK: max(0, c.ATK+int32(int16(b.ATK))), DEF: max(0, c.DEF+int32(int16(b.DEF))),
+		MAT: max(0, c.MAT+int32(int16(b.MAT))), MDF: max(0, c.MDF+int32(int16(b.MDF))),
+		SPD: max(0, c.SPD+int32(int16(b.SPD))),
 	}
 }
 
 // Normalize is NormalizeClientStats: maxima follow stats and equipment; current
 // vitals are clamped or refilled.
-func (p *Pet) Normalize(items map[uint16]ItemDefinition, refill bool) {
-	c := p.Combat(items)
+func (p *Pet) Normalize(items map[uint16]ItemDefinition, refill bool, templates ...PetTemplate) {
+	c := p.Combat(items, templates...)
 	p.MaxHP, p.MaxSP = c.MaxHP, c.MaxSP
 	if refill {
 		p.HP, p.SP = p.MaxHP, p.MaxSP
@@ -241,7 +224,7 @@ func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) i
 // NewPet is a freshly recruited companion at level 1 with full vitals.
 func NewPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition) Pet {
 	p := Pet{Slot: slot, ID: id, Name: name, Level: 1, Amity: 60, Base: t.Stats}
-	p.Normalize(items, true)
+	p.Normalize(items, true, t)
 	return p
 }
 
@@ -373,10 +356,10 @@ func PetStat(clientSlot, stat byte, value int64) []byte {
 }
 
 // ProgressionPackets are SendPetProgression plus SendPetEquipmentStats.
-func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition) [][]byte {
+func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition, templates ...PetTemplate) [][]byte {
 	a := p.Attributes()
 	b := p.Equipment.Bonuses(items)
-	c := p.Combat(items)
+	c := p.Combat(items, templates...)
 	out := [][]byte{
 		PetStat(clientSlot, 35, int64(p.Level)),
 		PetStat(clientSlot, 38, int64(p.StatPoints)), PetStat(clientSlot, 36, int64(p.ClientTotalExp())),

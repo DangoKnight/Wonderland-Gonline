@@ -63,13 +63,13 @@ func (s *Server) legacyBattleRewards(next *game.Character, run *battleRun, roste
 						}
 					}
 					pet.EnsureSkills(t, s.hasSkill)
-					pet.Normalize(s.Assets.Items, true)
+					pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 				}
 				next.Pets = append(next.Pets, pet)
 				if roster.register(pet.ID) {
 					packets = append(packets, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
 				}
-				packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
+				packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 			}
 		}
 		q.ID = definition.Quest

@@ -42,7 +42,7 @@ func TestOverkillRoundResetAndHealing(t *testing.T) {
 	b.Defenders[0].RoundDamage = 1000
 	b.Submit(lowest, self.ID, 1, []byte{4, 2, 2, 2})
 	b.Round(lowest)
-	if self.RoundDamage != 5 || b.Defenders[0].RoundDamage != 16 || self.Overkilled || b.Defenders[0].Overkilled {
+	if self.RoundDamage != 5 || b.Defenders[0].RoundDamage != 15 || self.Overkilled || b.Defenders[0].Overkilled {
 		t.Fatal("damage carried between rounds")
 	}
 	f := &Fighter{HP: 100, MaxHP: 100}
@@ -55,12 +55,12 @@ func TestOverkillRoundResetAndHealing(t *testing.T) {
 }
 
 func TestOverkillComboAndPacket(t *testing.T) {
-	for _, maximum := range []int{39, 40} {
+	for _, maximum := range []int{37, 38} {
 		b, r, actions := comboFixture(150, 60, 30)
 		f := b.Defenders[0]
 		f.MaxHP, f.HP = maximum, maximum
 		steps, _ := r.attack(b, b.order(r, actions)[0], map[int]bool{})
-		if maximum == 40 {
+		if maximum == 38 {
 			if f.Overkilled || len(steps) != 1 {
 				t.Fatal("exact threshold vanished")
 			}

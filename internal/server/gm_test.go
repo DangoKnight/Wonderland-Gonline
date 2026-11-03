@@ -516,8 +516,8 @@ func TestGMCombatVictoryAwardsOnce(t *testing.T) {
 	}
 	say(t, s, c, "/battle 42")
 	run := c.battle
-	if run == nil || run.b.Defenders[0].MaxHP != 200 {
-		t.Fatal("battle did not use template")
+	if run == nil || run.b.Defenders[0].MaxHP != 184 || run.b.Defenders[0].Element != game.Earth {
+		t.Fatal("battle did not use template element and common HP formula")
 	}
 	say(t, s, c, "/killmonsters")
 	s.worldMu.Lock()

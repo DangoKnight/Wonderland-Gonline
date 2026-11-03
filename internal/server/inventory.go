@@ -323,11 +323,11 @@ func (s *Server) allocateStats(ctx context.Context, c *Session, p []byte) error 
 		if !next.Pets[i].Allocate(requests) {
 			return nil
 		}
-		next.Pets[i].Normalize(s.Assets.Items, false)
+		next.Pets[i].Normalize(s.Assets.Items, false, s.petTemplate(next.Pets[i].ID))
 		if err := s.commit(ctx, c, next); err != nil {
 			return err
 		}
-		return s.sendAll(c, next.Pets[i].ProgressionPackets(target, s.Assets.Items))
+		return s.sendAll(c, next.Pets[i].ProgressionPackets(target, s.Assets.Items, s.petTemplate(next.Pets[i].ID)))
 	}
 	next := c.character.Clone()
 	if !next.Allocate(requests) {
@@ -584,7 +584,7 @@ func (s *Server) recoverPet(ctx context.Context, c *Session, slot, count, target
 	}
 	next := c.character.Clone()
 	pet := &next.Pets[i]
-	pet.Normalize(s.Assets.Items, false)
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
 	hp, sp := int64(pet.HP), int64(pet.SP)
 	if (hpGain <= 0 && spGain <= 0) || ((hpGain <= 0 || hp >= int64(pet.MaxHP)) && (spGain <= 0 || sp >= int64(pet.MaxSP))) {
 		return false, nil
@@ -598,7 +598,7 @@ func (s *Server) recoverPet(ctx context.Context, c *Session, slot, count, target
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
-	packets := append([][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, used}}, pet.ProgressionPackets(target, s.Assets.Items)...)
+	packets := append([][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, used}}, pet.ProgressionPackets(target, s.Assets.Items, s.petTemplate(pet.ID))...)
 	return true, s.sendAll(c, append(packets, []byte{protocol.CommandInventory, protocol.InventoryItemUse}))
 }
 
@@ -701,7 +701,7 @@ func (s *Server) redeemVoucher(ctx context.Context, c *Session, slot, count byte
 	c.pets = roster
 	cs := roster.slot(pet.ID)
 	packets := [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, pet.RecruitPacket(next.ID, t)}
-	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, pet.Name), []byte{protocol.CommandInventory, protocol.InventoryItemUse}, serverwire.HeadBanner(pet.Name+" joined your party."))
 	return true, s.sendAll(c, packets)
 }

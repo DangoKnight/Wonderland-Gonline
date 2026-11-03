@@ -872,7 +872,7 @@ func (s *Server) buyBazaar(ctx context.Context, c *Session, id uint32, orders []
 		}
 		c.pets.register(pet.ID)
 		s.sendOrClose(c, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
-		s.sendOrClose(c, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+		s.sendOrClose(c, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 		s.sendOrClose(c, serverwire.PetNamePacket(next.ID, c.pets.slot(pet.ID), s.companionName(pet.ID, pet.Name)))
 	}
 	s.sendOrClose(c, s.bazaarBrowsePacket(b))

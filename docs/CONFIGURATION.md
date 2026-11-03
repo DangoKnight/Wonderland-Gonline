@@ -191,7 +191,7 @@ Set the formula in `config.local.json` before starting the server:
 | Formula | Weights for STR / CON / INT / WIS / AGI |
 | --- | --- |
 | `base_stats` (default) | All five NPC template attributes; current pet base attributes if no template is available |
-| `combat_stats` | Calculated ATK / DEF / MAT / MDF / SPD from the current pet, including level, permanent attributes, equipment/forging and existing pet elemental rules |
+| `combat_stats` | Calculated ATK / DEF / MAT / MDF / SPD from the current pet, including level, permanent attributes, equipment/forging and the shared player elemental formulas |
 
 Each gained level allocates one point. For each point, the probability of an
 attribute is `max(1, weight) / sum(max(1, eligible_weight))`. Attributes already

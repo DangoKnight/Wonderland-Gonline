@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"sort"
 	"time"
@@ -127,7 +128,7 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		return false, nil
 	}
 	level := max(5, int(op.D3))
-	hp := level*35 + 200
+	hp := 0 // Only an explicit event HP value overrides the common formula.
 	if op.DW1 > 0 {
 		hp = int(op.DW1)
 	}
@@ -138,9 +139,9 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 	var enemies []battle.Enemy
 	for _, t := range templates {
 		e := battle.Enemy{Template: t, Name: s.npcName(t), Level: level, HP: hp, ClickID: es.click}
-		// A formation enemy uses its own Npc.dat level, HP and element.
+		// A formation enemy uses its own Npc.dat level and element.
 		if npc, ok := s.Assets.NPCs[uint16(t)]; ok && len(formation) > 0 && t <= 0xffff {
-			e.Level, e.HP, e.Element = max(1, int(npc.Level)), max(1, int(npc.HP)), npc.Element
+			e.Level, e.Element = max(1, int(npc.Level)), npc.Element
 		}
 		enemies = append(enemies, e)
 	}
@@ -186,6 +187,15 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	for i := range enemies {
+		e := &enemies[i]
+		if e.Template <= math.MaxUint16 {
+			if npc, ok := s.Assets.NPCs[uint16(e.Template)]; ok {
+				e.Base = game.Attributes{Strength: npc.Stats[0], Constitution: npc.Stats[1], Intelligence: npc.Stats[2], Wisdom: npc.Stats[3], Agility: npc.Stats[4]}
+				e.Element = npc.Element
+			}
+		}
+	}
 	var fighters []*battle.Fighter
 	for i, m := range s.battleTeam(c) {
 		s.cancelTrade(m)
@@ -194,9 +204,9 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		if pet := m.character.BattlePet(); pet != nil {
 			copy := *pet
 			copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
-			copy.Normalize(s.Assets.Items, false)
+			copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 			copy.Name = s.companionName(copy.ID, copy.Name)
-			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i)
+			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
 			fighters = append(fighters, member.pet)
 		}
 		run.members = append(run.members, member)
@@ -245,7 +255,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16) error {
 	if i := battlePetIndex(*m.c.character, m); i >= 0 {
 		pet := m.c.character.Pets[i]
-		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items)); err != nil {
+		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))); err != nil {
 			return err
 		}
 	}
@@ -605,7 +615,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 					petEXP = 0
 				}
 				grown := s.gainPetExp(pet, uint32(min(petEXP, 1<<31-1)), petGrowth)
-				pet.Normalize(s.Assets.Items, grown > 0)
+				pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 			}
 			if s.battleEXPFormula == game.BattleEXPParticipation {
 				for i := range next.Pets {
@@ -615,9 +625,9 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 						continue
 					}
 					grown := s.gainPetExp(pet, uint32(ScaleExperience(share, s.expRateMultiplier)), petGrowth)
-					pet.Normalize(s.Assets.Items, grown > 0)
+					pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 					if slot := c.pets.slot(pet.ID); slot != 0 && (m.pet == nil || !game.SamePet(m.pet.ID, pet.ID)) {
-						first = append(first, pet.ProgressionPackets(slot, s.Assets.Items)...)
+						first = append(first, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 					}
 				}
 			}
@@ -830,12 +840,12 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 		t := s.petTemplate(catch.Template)
 		pet := game.NewCapturedPet(catch.Template, catch.Name, slot, t, s.Assets.Items, petGrowth, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
 		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		next.Pets = append(next.Pets, pet)
 		if roster.register(pet.ID) {
 			packets = append(packets, pet.RecruitPacket(next.ID, t))
 		}
-		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
+		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
 	}
 	return packets, peerPackets
@@ -884,8 +894,8 @@ func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Ch
 				peerPackets = append(peerPackets, removed)
 			}
 		} else if slot != 0 {
-			pet.Normalize(s.Assets.Items, false)
-			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+			pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 		}
 	}
 	return packets, peerPackets
@@ -942,9 +952,9 @@ func (s *Server) startPvP(attacker, defender *Session) error {
 			if pet := c.character.BattlePet(); pet != nil {
 				copy := *pet
 				copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
-				copy.Normalize(s.Assets.Items, false)
+				copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 				copy.Name = s.companionName(copy.ID, copy.Name)
-				m.pet = battle.PetFighter(copy, c.character.ID, s.Assets.Items, i)
+				m.pet = battle.PetFighter(copy, c.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
 				battle.Place(m.pet, battle.Side(side+1), i)
 				fighters[side] = append(fighters[side], m.pet)
 			}

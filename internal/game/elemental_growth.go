@@ -105,6 +105,21 @@ func characterGrowth(element byte, configured []ElementalGrowth) ElementGrowth {
 	return g.ForElement(element)
 }
 
+// InnateCombat is shared by players, pets and enemies before equipment and
+// reborn class bonuses. Attributes already include permanent potential bonuses.
+func InnateCombat(level byte, element byte, attributes Attributes, growth ...ElementalGrowth) Combat {
+	g := characterGrowth(element, growth)
+	l := float64(level)
+	round := func(v float64) int32 { return int32(uint16(math.RoundToEven(v))) }
+	return Combat{
+		MaxHP: int32(uint32(math.RoundToEven(g.HP.value(l, attributes)))),
+		MaxSP: round(g.SP.value(l, attributes)),
+		ATK:   round(g.ATK.value(l, attributes)), DEF: round(g.DEF.value(l, attributes)),
+		MAT: round(g.MAT.value(l, attributes)), MDF: round(g.MDF.value(l, attributes)),
+		SPD: round(g.SPD.value(l, attributes)),
+	}
+}
+
 // Validate rejects nonfinite, negative and overflowing formulas in compiled tuning definitions.
 func (g ElementalGrowth) Validate() error {
 	const maxGrowthCoefficient = 1000

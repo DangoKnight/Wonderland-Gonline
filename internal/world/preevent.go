@@ -500,7 +500,7 @@ func (w *World) Template(id uint32) (game.PetTemplate, bool) {
 		return game.PetTemplate{}, false
 	}
 	n, ok := w.catalog.NPCs[uint16(id)]
-	return game.PetTemplate{Type: n.Type, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}, ok
+	return game.PetTemplate{Type: n.Type, Element: n.Element, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}, ok
 }
 
 // InParty is HasStoryCompanionInParty: a story companion template now in the party.

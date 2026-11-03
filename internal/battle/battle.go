@@ -216,17 +216,12 @@ type Enemy struct {
 	Template uint32
 	Name     string
 	Level    int
-	HP       int
+	HP       int // Explicit scripted override; zero uses elemental growth.
 	Element  byte
+	Base     game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
 	ClickID  uint16
 	Skills   [3]uint16
 	Attack   int // Optional authored boss attack override.
-}
-
-// MonsterStats are the derived monster attributes of StartPvEBattle/ApplyQuestTemplate.
-func MonsterStats(level int) (sp, atk, def, spd int) {
-	r := func(v float64) int { return int(math.RoundToEven(v)) }
-	return level*20 + 50, r(float64(level)*1.5 + 5), r(float64(level)*1.2 + 3), r(float64(level)*1.3 + 4)
 }
 
 // PlayerFighter is BuildFighters for a character (no pets).
@@ -243,9 +238,10 @@ func PlayerFighter(c *game.Character, items map[uint16]game.ItemDefinition, slot
 }
 
 // PetFighter is BuildFighters for an owner's battle pet.
-func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, slot int) *Fighter {
-	full := p.Combat(items)
-	f := &Fighter{Side: Attacker, Kind: Pet, ID: game.BroadcastID(p.ID), Owner: owner, Name: p.Name, Level: p.Level, Element: p.Element(),
+func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, slot int, templates ...game.PetTemplate) *Fighter {
+	p.Normalize(items, false, templates...)
+	full := p.Combat(items, templates...)
+	f := &Fighter{Side: Attacker, Kind: Pet, ID: game.BroadcastID(p.ID), Owner: owner, Name: p.Name, Level: p.Level, Element: p.Element(templates...),
 		MaxHP: max(1, int(p.MaxHP)), HP: max(1, int(p.HP)), MaxSP: max(0, int(p.MaxSP)), SP: max(0, int(p.SP)),
 		Atk: int(full.ATK), Def: int(full.DEF), Matk: int(full.MAT), Mdef: int(full.MDF), Spd: int(full.SPD),
 		X: petSlots[slot][0], Y: petSlots[slot][1], Pet: &p}
@@ -275,17 +271,23 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 }
 
 func enemyFighter(e Enemy, i int) *Fighter {
-	sp, atk, def, spd := MonsterStats(e.Level)
+	level := byte(min(math.MaxUint8, max(1, e.Level)))
+	full := game.InnateCombat(level, e.Element, e.Base)
+	atk, matk := int(full.ATK), int(full.MAT)
 	if e.Attack > 0 {
-		atk = e.Attack
+		atk, matk = e.Attack, e.Attack
+	}
+	hp := int(full.MaxHP)
+	if e.HP > 0 {
+		hp = e.HP // Explicit scripted/trial override, not ordinary NPC HP.
 	}
 	click := e.ClickID
 	if click == 0 {
 		click = uint16(2000 + i)
 	}
 	return &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
-		Skills: e.Skills, Level: byte(min(255, e.Level)), Element: e.Element, MaxHP: max(1, e.HP), HP: max(1, e.HP), MaxSP: sp, SP: sp,
-		Atk: atk, Def: def, Matk: atk, Mdef: def, Spd: spd, X: enemySlots[i][0], Y: enemySlots[i][1]}
+		Skills: e.Skills, Level: level, Element: e.Element, MaxHP: max(1, hp), HP: max(1, hp), MaxSP: int(full.MaxSP), SP: int(full.MaxSP),
+		Atk: atk, Def: int(full.DEF), Matk: matk, Mdef: int(full.MDF), Spd: int(full.SPD), X: enemySlots[i][0], Y: enemySlots[i][1]}
 }
 
 func record(p protocol.Builder, side byte, f *Fighter, kind byte, click uint16, owner uint32) protocol.Builder {

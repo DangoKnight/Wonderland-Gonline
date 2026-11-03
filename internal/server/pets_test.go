@@ -508,7 +508,7 @@ func TestPetGrowthStartupFormulaReachesEXPGrants(t *testing.T) {
 	for _, tc := range []struct {
 		formula game.PetGrowthFormula
 		total   int
-	}{{game.PetGrowthBaseStats, 25}, {game.PetGrowthCombatStats, 120}} {
+	}{{game.PetGrowthBaseStats, 25}, {game.PetGrowthCombatStats, 108}} {
 		cfg := config.Default()
 		cfg.PetGrowthFormula = tc.formula
 		selected := New(cfg, s.Store, s.Assets, s.Log)

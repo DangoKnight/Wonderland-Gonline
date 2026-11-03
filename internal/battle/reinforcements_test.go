@@ -34,7 +34,7 @@ func TestReinforcementWavesRetainRewardsAndSpawnAtRoundEnd(t *testing.T) {
 			break
 		}
 	}
-	want := []byte{11, 5, 2, 7, 0x18, 0x27, 0, 0, 0xd0, 7, 0, 0, 0, 0, 2, 2, 200, 0, 0, 0, 90, 0, 200, 0, 0, 0, 90, 0, 2, 1, 0, 0, 0, 0}
+	want := []byte{11, 5, 2, 7, 0x18, 0x27, 0, 0, 0xd0, 7, 0, 0, 0, 0, 2, 2, 200, 0, 0, 0, 96, 0, 200, 0, 0, 0, 96, 0, 2, 1, 0, 0, 0, 0}
 	if !bytes.Equal(spawn, want) {
 		t.Fatal("reinforcement spawn wire", spawn)
 	}

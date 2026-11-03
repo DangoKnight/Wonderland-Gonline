@@ -40,7 +40,7 @@ func TestShrinkIsNonDamagingDebuff(t *testing.T) {
 	if [4]int{m.Atk, m.Matk, m.Def, m.Mdef} != original {
 		t.Fatal("base battle snapshot was mutated")
 	}
-	if m.attack() != 6 || m.magicAttack() != 6 || m.defense() != 4 || m.magicDefense() != 4 {
+	if m.attack() != 3 || m.magicAttack() != 3 || m.defense() != 5 || m.magicDefense() != 5 {
 		t.Fatal("combat reductions incorrect")
 	}
 	want := []byte{50, 1, 17, 0, 4, 2, 84, 59, 0, 1, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1}
@@ -98,12 +98,12 @@ func TestHotFireTargetsAllyAndDoesNotStackWithFiery(t *testing.T) {
 	if !f.HasEffect(15189) || f.SP != 218 || b.Defenders[0].HP != 1000 || len(steps[0].SkillUses) != 1 {
 		t.Fatal("Hot Fire failed to buff ally")
 	}
-	// The base physical damage is 16; Goddess multiplier is three even when
+	// The base physical damage is 15; Goddess multiplier is three even when
 	// the weaker generic Fiery status is present.
 	f.ApplyEffect(11072, 0, assets.SkillEffect{Target: assets.EffectAlly, Rounds: 3, StackGroup: "attack_damage_buff", Modifiers: []assets.StatModifier{{Stat: assets.EffectDamageDealt, Percent: 100}}})
 	b.Submit(r, 7, 1, []byte{4, 2, 2, 2})
 	b.Round(r)
-	if b.Defenders[0].HP != 952 {
+	if b.Defenders[0].HP != 955 {
 		t.Fatal("Hot Fire damage or buff precedence", b.Defenders[0].HP)
 	}
 	b.Timeout()
@@ -198,8 +198,8 @@ func TestHotFireBuffsPetAttacks(t *testing.T) {
 	b.Submit(r, 7, 4, []byte{4, 2, 0, 0})
 	b.Submit(r, 7, 1, []byte{3, 2, 2, 2})
 	b.Round(r)
-	// Pet's basic attack: (100*2 - 9 + 1) * 3 = 576.
-	if b.Defenders[0].HP != 424 {
+	// Pet's basic attack: (100*2 - 10 + 1) * 3 = 573.
+	if b.Defenders[0].HP != 427 {
 		t.Fatal("pet damage ignored Hot Fire", b.Defenders[0].HP)
 	}
 }

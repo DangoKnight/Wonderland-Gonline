@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 )
 
 // Equipment holds worn items by native slot (index slot-1), keeping damage and forge.
@@ -124,14 +123,12 @@ type Combat struct{ MaxHP, MaxSP, ATK, DEF, MAT, MDF, SPD int32 }
 
 func (c Character) Combat(items map[uint16]ItemDefinition, growth ...ElementalGrowth) Combat {
 	a := c.Attributes()
-	level := float64(c.Level)
-	g := characterGrowth(c.Element, growth)
-	round := func(v float64) int32 { return int32(uint16(math.RoundToEven(v))) }
+	innate := InnateCombat(c.Level, c.Element, a, growth...)
 	b := c.Equipment.Bonuses(items)
-	atk, def, mat, mdf, spd := c.classStats(round(g.ATK.value(level, a)), round(g.DEF.value(level, a)), round(g.MAT.value(level, a)), round(g.MDF.value(level, a)), round(g.SPD.value(level, a)))
+	atk, def, mat, mdf, spd := c.classStats(innate.ATK, innate.DEF, innate.MAT, innate.MDF, innate.SPD)
 	return Combat{
-		MaxHP: int32(uint32(math.RoundToEven(g.HP.value(level, a)))) + b.HP,
-		MaxSP: round(g.SP.value(level, a)) + b.SP,
+		MaxHP: innate.MaxHP + b.HP,
+		MaxSP: innate.MaxSP + b.SP,
 		ATK:   atk + int32(b.ATK),
 		DEF:   def + int32(b.DEF),
 		MAT:   mat + int32(b.MAT),

@@ -191,14 +191,11 @@ func (e *encounterState) restingAt(now time.Time) bool {
 	return (!e.battleEnd.IsZero() && now.Sub(e.battleEnd) < e.cooldown) || now.Sub(e.mapEnter) < mapGrace
 }
 
-// npcStats are the level, HP and element C# resolves for a map actor (Npc.dat here).
-func (s *Server) npcStats(template uint32) (level, hp int, element byte, name string) {
-	level, hp, name = 1, 100, "Monster"
+// npcStats resolves encounter metadata. Derived combat stats use the common formulas.
+func (s *Server) npcStats(template uint32) (level int, element byte, name string) {
+	level, name = 1, "Monster"
 	if npc, ok := s.Assets.NPCs[uint16(template)]; ok && template <= 0xffff {
 		level, element = max(1, int(npc.Level)), npc.Element
-		if npc.HP > 0 {
-			hp = int(npc.HP)
-		}
 		if npc.Name != "" {
 			name = npc.Name
 		}
@@ -250,7 +247,7 @@ func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
 		_, e := s.runNPCEvent(context.Background(), c, n.ClickID)
 		return e
 	}
-	level, hp, element, name := s.npcStats(n.Template)
+	level, element, name := s.npcStats(n.Template)
 	template := n.Template
 	if template == 0 {
 		template = 17003
@@ -258,8 +255,7 @@ func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
 	var enemies []battle.Enemy
 	for i := range 1 + rand.IntN(4) {
 		lv := max(1, level+rand.IntN(3)-1)
-		enemies = append(enemies, battle.Enemy{Template: template, Name: name, Level: lv, Element: element,
-			HP: int(float64(hp) * (0.9 + float64(rand.IntN(20))/100)), ClickID: uint16(2000 + i)})
+		enemies = append(enemies, battle.Enemy{Template: template, Name: name, Level: lv, Element: element, ClickID: uint16(2000 + i)})
 	}
 	return s.startBattle(c, &battleRun{encounter: n.ClickID, wild: true}, enemies)
 }
@@ -278,12 +274,12 @@ func (s *Server) randomEncounter(c *Session, m *world.Map) error {
 	var enemies []battle.Enemy
 	for i := range 1 + rand.IntN(4) {
 		n := pool[rand.IntN(len(pool))]
-		level, hp, element, name := s.npcStats(n.Template)
+		level, element, name := s.npcStats(n.Template)
 		template := n.Template
 		if template == 0 {
 			template = 17003
 		}
-		enemies = append(enemies, battle.Enemy{Template: template, Name: name, Level: level, HP: hp, Element: element, ClickID: uint16(2000 + i)})
+		enemies = append(enemies, battle.Enemy{Template: template, Name: name, Level: level, Element: element, ClickID: uint16(2000 + i)})
 	}
 	return s.startBattle(c, &battleRun{}, enemies)
 }
@@ -304,8 +300,8 @@ func (s *Server) wildClick(c *Session, n world.NPC) (bool, error) {
 	if e := c.send([]byte{protocol.CommandEvent, protocol.EventResume}); e != nil {
 		return true, e
 	}
-	level, hp, _, name := s.npcStats(n.Template)
-	enemy := battle.Enemy{Template: n.Template, Name: name, Level: level, HP: max(50, hp), ClickID: n.ClickID}
+	level, element, name := s.npcStats(n.Template)
+	enemy := battle.Enemy{Template: n.Template, Name: name, Level: level, Element: element, ClickID: n.ClickID}
 	return true, s.startBattle(c, &battleRun{encounter: n.ClickID, wild: true}, []battle.Enemy{enemy})
 }
 
@@ -418,7 +414,7 @@ func (s *Server) rest(c *Session, now time.Time) {
 		packets = append(packets, serverwire.VitalPacket(game.StatCurrentSP, sp))
 	}
 	if pet := c.character.BattlePet(); pet != nil {
-		full := pet.Combat(s.Assets.Items)
+		full := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
 		hp := int32(gain(uint32(max(pet.HP, 0)), uint32(max(full.MaxHP, 1))))
 		sp := int32(gain(uint32(max(pet.SP, 0)), uint32(max(full.MaxSP, 0))))
 		var slot byte

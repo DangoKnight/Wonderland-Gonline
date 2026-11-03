@@ -26,6 +26,12 @@ func (c *Client) canOpenModule() bool {
 
 func (c *Client) initInventory() {
 	c.InventoryState = &inventory.State{Items: c.items}
+	c.InventoryState.PetElement = func(id uint16) byte {
+		if c.npcTemplates == nil {
+			c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+		}
+		return c.npcTemplates[uint32(id)].Element
+	}
 	c.Inventory = inventory.NewForm(c.Env, c.InventoryState, c.Stats)
 	c.Inventory.Send = func(p []byte) {
 		if err := c.Net.Send(p); err != nil {

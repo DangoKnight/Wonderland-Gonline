@@ -21,7 +21,7 @@ type PetGrowthOptions struct {
 
 func (p Pet) growthWeights(t PetTemplate, known bool, options []PetGrowthOptions) []int {
 	if len(options) > 0 && options[0].Formula == PetGrowthCombatStats {
-		full := p.Combat(options[0].Items)
+		full := p.Combat(options[0].Items, t)
 		return []int{int(full.ATK), int(full.DEF), int(full.MAT), int(full.MDF), int(full.SPD)}
 	}
 	stats := p.Base

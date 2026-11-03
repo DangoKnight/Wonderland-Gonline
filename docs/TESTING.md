@@ -1,5 +1,24 @@
 # Testing and validation
 
+## Shared player, pet and enemy stat formulas — 2026-11-03
+
+Affected checks passed for `internal/game`, `internal/battle` and
+`internal/world`, plus focused server combat, encounter, capture, pet,
+progression, reward, GM and round-chain tests. Independent golden values cover
+all four elements and Floating's level-four `194/105` HP/SP and `10/12/8/10/12`
+combat stats. Battle construction checks identical attributes across players,
+pets and enemies, catalog-supplied pet elements/enemy attributes, explicit
+scripted HP/attack overrides and reinforcement SP packets. Existing native
+golden packet expectations remain independent raw bytes.
+
+Client inventory tests and the affected `TestBattle*`, `TestGonlineCombat*`,
+pet and inventory selection tests passed. The inventory regression checks the
+catalog Wind element and Floating's shared stats. Vet passed for
+`./internal/game ./internal/battle ./internal/server ./internal/world` and, from
+`client/`, `./wlo/inventory ./wlo/app`. Both `bin/wonderland-next.exe` and
+`bin/wonderland-client-next.exe` built successfully. No database migration or
+running-process restart was performed. See [combat stats](COMBAT_STATS.md).
+
 ## Participation base EXP rate — 2026-11-03
 
 Participation mode now uses eight EXP per monster level, including eight for a

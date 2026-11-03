@@ -21,10 +21,11 @@ const (
 // request never changes it. FUN_003dc9d0 adds 31-byte records; FUN_003da044
 // removes counts; FUN_003dce4c moves stacks; FUN_003fc308 restores worn items.
 type State struct {
-	Bag       game.Inventory
-	Equipment game.Equipment
-	Items     map[uint16]assets.NativeItem
-	Pets      [game.MaxPets]UsePet
+	Bag        game.Inventory
+	Equipment  game.Equipment
+	Items      map[uint16]assets.NativeItem
+	Pets       [game.MaxPets]UsePet
+	PetElement func(uint16) byte // NPC asset lookup; definitions are not owned pet state.
 }
 
 func (s *State) Reset(worn []uint16) {

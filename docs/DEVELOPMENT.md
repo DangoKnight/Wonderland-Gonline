@@ -38,6 +38,9 @@ are outside this server persistence policy.
 
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
+Players, pets and enemies share `game.InnateCombat`; resolve NPC element and base
+attributes from the asset catalog rather than copying definitions into pet state.
+See [combat stats](COMBAT_STATS.md) for encounter overrides and fallbacks.
 Game content definitions belong in `assets.db`. Preserve the startup-only
 `pet_growth_formula` and `battle_exp_formula` selectors, `battle_gold_enabled`
 switch and `combo_damage_per_participant` switch as server
