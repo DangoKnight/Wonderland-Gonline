@@ -46,7 +46,7 @@ successful chain participants count, including pets, and singles receive no bonu
 Gameplay schema v18 stores character state in typed tables and owned child rows.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v16 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v17 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure

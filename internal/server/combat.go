@@ -83,6 +83,7 @@ func (run *battleRun) active() []*battleMember {
 
 func (s *Server) rules() battle.Rules {
 	return battle.Rules{ComboDamagePerParticipant: s.comboDamagePerParticipant, Skills: s.Assets.Skills, Timing: s.Assets.AnimationTiming, Critical: s.Assets.Critical,
+		NPCs: s.Assets.NPCs,
 		Next: func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
 }
 
@@ -827,8 +828,7 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 			continue
 		}
 		t := s.petTemplate(catch.Template)
-		pet := game.NewPet(catch.Template, catch.Name, slot, t, s.Assets.Items)
-		pet.Level = byte(max(1, min(catch.Level, game.MaxLevel)))
+		pet := game.NewCapturedPet(catch.Template, catch.Name, slot, t, s.Assets.Items, petGrowth, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
 		pet.EnsureSkills(t, s.hasSkill)
 		pet.Normalize(s.Assets.Items, true)
 		next.Pets = append(next.Pets, pet)

@@ -146,6 +146,7 @@ type Client struct {
 	lib            *role.Library
 	items          map[uint16]assets.NativeItem
 	Skills         *skills.Form
+	BattleSkills   *skills.BattleForm
 	SkillState     *skills.State
 	hotbar         hotbarRuntime
 	waterTravel    waterTravelState
@@ -517,6 +518,7 @@ func (c *Client) dispatchNative(p []byte) {
 		}
 		c.Stats.ParseBaseStats(s)
 		c.Skills.Refresh()
+		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
 	case p[0] == protocol.CommandPetControl && (sub == protocol.PetControlVehicleMount || sub == protocol.PetControlWireCode11 || sub == protocol.PetControlRemoveVehicle || sub == protocol.PetControlVehiclePosition):
@@ -528,6 +530,7 @@ func (c *Client) dispatchNative(p []byte) {
 				c.announceNewPets(before)
 				c.assignPetSkills()
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			} else if c.Unhandled != nil {
 				c.Unhandled(p)
 			}
@@ -536,6 +539,7 @@ func (c *Client) dispatchNative(p []byte) {
 		if c.World != nil && len(p) == 7 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID && p[6] >= 1 && p[6] <= game.MaxPets {
 			c.InventoryState.Pets[p[6]-1] = inventory.UsePet{}
 			c.Skills.Refresh()
+			c.BattleSkills.Refresh()
 		}
 	case p[0] == protocol.CommandInventory:
 		c.inventoryPacket(p)
@@ -543,6 +547,7 @@ func (c *Client) dispatchNative(p []byte) {
 		if c.World != nil {
 			if c.InventoryState.ApplyPetStat(p) {
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			} else if c.Unhandled != nil {
 				c.Unhandled(p)
 			}

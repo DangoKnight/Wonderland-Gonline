@@ -158,10 +158,13 @@ type Rules struct {
 	// Zero retains the default multiplier for existing rule constructors.
 	DropRateMultiplier float64
 	Skills             map[uint16]assets.Skill
-	Timing             map[uint16]int
-	Critical           game.CriticalHits
-	Next               func(lo, hi int) int
-	Float              func() float64
+	NPCs               map[uint16]assets.NPC
+	// PrepareCapture commits any equipped net use before rolling or publishing.
+	PrepareCapture func(Action) (levelAllowance int, committed bool)
+	Timing         map[uint16]int
+	Critical       game.CriticalHits
+	Next           func(lo, hi int) int
+	Float          func() float64
 }
 
 // Battle owns both sides of a PvE or PvP encounter.
@@ -895,6 +898,15 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 	}
 	full := len(roster) >= game.MaxPets
 	reason := ""
+	allowance := game.OrdinaryCaptureLevelAllowance
+	if r.PrepareCapture != nil {
+		var committed bool
+		allowance, committed = r.PrepareCapture(a)
+		if !committed {
+			return []Step{{Packets: [][]byte{systemLine("Capture could not be saved. Please try again.")}}}, true
+		}
+	}
+	definition, known := r.NPCs[uint16(target.Template)]
 	switch {
 	case full && duplicate:
 		reason = "Your pet team is full (4/4), and you already have this monster."
@@ -902,6 +914,14 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 		reason = "Your pet team is full (4/4). Make room before capturing."
 	case duplicate:
 		reason = "You already have this monster in your pet team."
+	case monster > level+allowance:
+		reason = "The monster's level is too high to capture."
+	case target.HP >= target.MaxHP:
+		reason = "Weaken the monster before capturing it."
+	case !target.CanAct():
+		reason = "A sealed monster cannot be captured."
+	case r.NPCs != nil && (target.Template > math.MaxUint16 || !known || !definition.CanCapture()):
+		reason = "This monster cannot be captured."
 	}
 	roll := r.Float() * 100
 	success := reason == "" && roll < chance
@@ -1099,7 +1119,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 			return steps
 		}
 	}
-	t := targets[r.Next(0, len(targets))]
+	t := r.monsterTarget(m, targets)
 	if r.attackMisses(m, t, basicAttackSkill) {
 		return []Step{{Packets: [][]byte{turnPacket(m), missRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill)}, Delay: r.Delay(basicAttackSkill, "attack")}}
 	}

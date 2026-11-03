@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"math/bits"
 	"time"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/internal/clientfs"
@@ -23,6 +24,7 @@ const (
 	nativeBattleSceneLayersOffset  = 82 // TFSceneData +0x58, after four-byte prefix and two-byte index.
 	nativeBattleSceneHeightsOffset = 88
 	nativeMotionLastFrameTrigger   = 100
+	nativeDamageSingle             = 0
 	LastFrameTrigger               = nativeMotionLastFrameTrigger
 	MotionTravelLeap               = 1 // Native approach/return mode for leap travel.
 	MotionTravelWalk               = 0 // Ground travel, preserving the template's walking/running style.
@@ -649,28 +651,51 @@ func (m Motion) EventAt(e MotionEvent) time.Duration {
 	return at
 }
 
-// DamageParts follows FUN_0039fdd8: round each authored percentage, then
-// reconcile the final cues so displayed parts sum to the server's amount.
-func (m Motion) DamageParts(amount uint32) []uint32 {
-	if m.DamageMode == 0 || len(m.Events) == 0 {
-		return []uint32{amount}
+func (m Motion) HitCount() int {
+	if m.DamageMode == nativeDamageSingle || len(m.Events) == 0 {
+		return 1
+	}
+	return len(m.Events)
+}
+
+// DamageParts64 splits a whole cast/combo total across its authored contacts.
+// Native percentages keep FUN_0039fdd8's rounding and final-hit remainder. Repeated
+// full weights are normalized, and absent weights split evenly, so later hits
+// still receive their share. Integer arithmetic also handles wide combo totals.
+func (m Motion) DamageParts64(amount uint64) []uint64 {
+	if m.HitCount() == 1 {
+		return []uint64{amount}
+	}
+	const percentageScale = 100
+	var weight uint64
+	for _, event := range m.Events {
+		weight += uint64(event.Percent)
+	}
+	denominator := max(uint64(percentageScale), weight)
+	if weight == 0 {
+		denominator = uint64(len(m.Events))
 	}
 	parts := make([]uint64, len(m.Events))
-	var total uint64
+	remaining := amount
 	for i, e := range m.Events {
-		parts[i] = uint64(math.RoundToEven(float64(amount) * float64(e.Percent) / 100))
-		total += parts[i]
-	}
-	if total < uint64(amount) {
-		parts[len(parts)-1] += uint64(amount) - total
-	} else {
-		excess := total - uint64(amount)
-		for i := len(parts) - 1; i >= 0 && excess > 0; i-- {
-			take := min(parts[i], excess)
-			parts[i] -= take
-			excess -= take
+		numerator := uint64(e.Percent)
+		if weight == 0 {
+			numerator = 1
 		}
+		hi, lo := bits.Mul64(amount, numerator)
+		part, remainder := bits.Div64(hi, lo, denominator)
+		if remainder*2 > denominator || remainder*2 == denominator && part%2 != 0 {
+			part++
+		}
+		parts[i] = min(part, remaining)
+		remaining -= parts[i]
 	}
+	parts[len(parts)-1] += remaining
+	return parts
+}
+
+func (m Motion) DamageParts(amount uint32) []uint32 {
+	parts := m.DamageParts64(uint64(amount))
 	out := make([]uint32, len(parts))
 	for i, v := range parts {
 		out[i] = uint32(v)

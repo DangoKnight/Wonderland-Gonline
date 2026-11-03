@@ -103,6 +103,7 @@ func (c *Client) resetInventory(p world.Player) {
 	if c.Skills != nil {
 		c.SkillState.Reset()
 		c.Skills.Reset()
+		c.BattleSkills.Reset()
 	}
 	*c.Stats = world.Stats{Formula: c.Stats.Formula}
 	c.Inventory.PlayerName = append([]byte(nil), p.Name...)

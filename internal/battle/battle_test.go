@@ -160,6 +160,7 @@ func TestPetFighterAndCapture(t *testing.T) {
 		t.Fatal("pet record", intro[4])
 	}
 	// The pet's command comes from its owner; the round waits for both.
+	b.Defenders[0].HP--                                    // Capture requires a weakened target.
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2, 0x18, 0x27}) // Capture (10008) by the player.
 	if b.Ready() {
 		t.Fatal("round ran without the pet's command")

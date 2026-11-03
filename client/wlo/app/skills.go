@@ -27,6 +27,9 @@ func (c *Client) initSkills() {
 	c.Skills.LoadPictures = c.loadPictures
 	c.Skills.Notice = func(text string) { c.Notices.Show([]byte(text), inventoryWarningDuration, c.Now()) }
 	c.UI.Add(c.Skills)
+	c.BattleSkills = skills.NewBattleForm(c.Env, c.Skills)
+	c.BattleSkills.Use = func(id uint16, target byte) { c.useBinding(c.skillBinding(id, target)) }
+	c.UI.Add(c.BattleSkills)
 	c.MainButtons.Buttons[mainSkillsButton].OnClick = c.toggleSkills
 	c.initHotbar()
 }
@@ -40,6 +43,10 @@ func (c *Client) toggleSkills() {
 func (c *Client) SkillsKey(key uint16, shift byte) bool {
 	if c.Skills == nil {
 		return false
+	}
+	if key == escapeKey && c.BattleSkills != nil && c.BattleSkills.Visible {
+		c.BattleSkills.Hide()
+		return true
 	}
 	if key == 'S' && shift&shiftCtrl != 0 {
 		c.toggleSkills()
@@ -103,6 +110,7 @@ func (c *Client) skillPacket(p []byte) bool {
 	}
 	if c.SkillState.Apply(p) {
 		c.Skills.Refresh()
+		c.BattleSkills.Refresh()
 	} else if c.Unhandled != nil {
 		c.Unhandled(p)
 	}

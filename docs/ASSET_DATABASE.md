@@ -8,6 +8,11 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Asset v17 adds the typed NPC capture-restriction column from retained imported
+Npc.dat byte 34. It preserves all existing NPC edits and does not replay seeds
+on subsequent migrations. Runtime uses this column, never raw imported records.
+Upgrade before starting the new server; existing owned pets are unchanged.
+
 Stop the server and database editors first, and keep them stopped until the
 command finishes. The migration preserves accounts, credentials, character state
 and existing asset edits.
@@ -47,7 +52,7 @@ snapshots. Keep the backups until acceptance testing finishes.
 Gameplay schema v18 automatically converts older character rows transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 16 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 17 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -196,7 +201,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v16. The upgrade procedure upgrades existing older installations
+Asset schema is now v17. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -240,7 +245,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v16. See
+before running the new server; runtime requires v17. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -278,7 +283,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v16 and reads only SQL definitions. The `Story` administration
+Runtime requires v17 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

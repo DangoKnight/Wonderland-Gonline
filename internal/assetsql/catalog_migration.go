@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 16
+const catalogSchemaVersion = 17
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -382,6 +382,11 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 16 {
 			if err := migrateRebornStoryCheckpoints(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 17 {
+			if err := migrateCaptureRestrictions(tx); err != nil {
 				return err
 			}
 		}

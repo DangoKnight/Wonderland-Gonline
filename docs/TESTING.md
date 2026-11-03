@@ -1,5 +1,51 @@
 # Testing and validation
 
+## Wiki capture rules — 2026-11-03
+
+Battle and game suites pass, including capture level boundaries, net allowance,
+weakening, seals, native restriction flags, stat budgets and story-pet isolation.
+The full assetsql suite passes, including preserving v16-to-v17 migration and
+repeat-upgrade edits. Server capture/settlement/native/chain integrations pass;
+capture-net checks cover success, failure, final use and SQL rollback. Asset
+checks pass except `TestMaintainedItemJSONCensus`, whose 7,312-item expectation
+predates the recent asset rebuild; this unrelated expectation is unchanged.
+Changed-package vet and the server build pass. The running server and databases
+were not restarted or migrated; use the documented offline migration before
+deploying `bin/wonderland-next.exe`.
+
+## Multi-hit damage number flight — 2026-11-03
+
+Focused client damage/combo tests pass in native and round-chain modes. Tests
+verify alternating, widening, side-mirrored multi-hit lanes, contact-aged arcs,
+unchanged single-hit motion, damage totals and stale-target rejection. Rendered
+and checked `var/battle-damage-fan.png`. Client app vet and the build of
+`bin/wonderland-client-next.exe` pass. The arc approximates the legacy curve;
+no server calculation or protocol changes were made.
+
+## Battle skill selector and captured pet level — 2026-11-03
+
+Passed the complete client `wlo/skills` suite and focused app checks for radial
+skill selection, recent skills, one-click targeting, general Skills browsing,
+pet commands, timer handling and battle exit. The native battle selector was
+rendered and visually checked at `var/battle-skills-window.png`. Its standalone
+checks cover learned-skill filtering, scrolling, recent-skill capacity and
+ordering, actor isolation and login reset. Focused server checks verify captured
+monsters recruit and persist at level one with fresh HP/SP and matching client
+progression packets, plus save-failure atomicity and battle completion. Vet
+passed for client app/skills and server. Built `bin/wonderland-client-next.exe`
+and `bin/wonderland-next.exe`; running processes were not restarted.
+
+## Monster elemental targeting — 2026-11-03
+
+Passed `go test ./internal/battle -count=1`, `go vet ./internal/battle`, and
+focused server integrations for `TestGonlineCombat*`, wild-monster victory,
+world-entry victory persistence and native/chain SP restoration. Deterministic
+ticket enumeration verifies all four elemental relationships, exact 4:2:1
+selection weights, equal player/pet chances with reversed roster order,
+basic/skill/debuff selection, and exclusion of unavailable replacement pets.
+Existing support AI and independent packet goldens remain passing. No protocol,
+database or client asset changes are needed for this targeting policy.
+
 ## Combat support and automatic targeting — 2026-11-03
 
 Passed the complete `internal/battle` suite under `-race`, focused asset support
@@ -2478,3 +2524,82 @@ and privileged Windows symlink checks remain unexecuted. Automated results do
 not establish live Legacy-client acceptance. Detailed logs, the complete test
 inventory, retry selections, final aggregate summary and rendered samples remain
 ignored under `var/validation/2026-11-03-prepush/`.
+
+### Updated client asset rebuild - 2026-11-03
+
+Rebuilt and installed the supplied updated WLRI assets: 7,325 items, 6,280 sprites
+and 820,994 frames, 16,195 pictures, 19,717 OGG tracks and 3,796 media sources.
+All 40 native data sources reconstruct byte-for-byte against the updated
+installation, including the previously mismatched `Item.dat`. Sprite preservation
+checks passed for all 222 sources; every editable frame passed pixel and placement
+comparison with its decoded original. Media checks validated 3,246 outputs and
+917 complete reconstructions. Exported asset checksums passed.
+
+Four source weapon JXAs have fewer records than their corresponding JMAs:
+`002w3`, `003w3`, `004w3` and `005w3` lack 6, 6, 6 and 2 action records respectively.
+The exporter now preserves the actual JXA header/records and all sprite frames,
+records `missing_action_records`, and leaves unavailable animations undefined.
+Malformed/truncated tables and excess records remain errors. Regression coverage
+checks independent raw-byte reconstruction, rejection boundaries, and nonempty
+frame preservation through editable export and atlas optimization.
+
+Passed `go test ./cmd/sprite-export ./internal/spritepack -count=1 -timeout=5m`,
+focused native sprite tests, exporter vet, and the Python exporter/media suite
+(24 passed, one Windows symlink-privilege skip). The independent sprite verifier
+also checks the missing-action inventory. Existing 121 unresolved custom media
+resources and 18 absent companion-archive records remain recorded.
+
+The rebuilt bundle contains 72,854 files, reusing 66,441 entries (6,037.9 MiB
+source). Its new image dimension baseline accompanies this verified asset revision;
+the previous baseline and core bundle are backed up. The runtime compiler cache
+was relocated to the installed `data/` path for subsequent incremental builds.
+Client smoke checks passed for direct/compiled login, compiled-versus-editable
+worlds and sprites, pet portraits and battle item motions. A separate installed
+bundle check compared every compiled frame of all 20 sprites without source
+action records and verified the updated item count.
+
+The previous 26,034 extracted files (5,752,495,913 bytes), checksum inventory,
+core bundle and local client catalogs remain under
+`var/backups/client-assets-20261103T065213Z/`; the old data tree is its `data/`
+directory. Tracked server definitions were checked byte-for-byte across cutover.
+Server asset/gameplay databases and the original client installation were not
+modified. Job records and verification logs are ignored under
+`var/asset-rebuild-20261103T065213Z/` and `var/current-asset-rebuild.json`.
+
+### Multi-hit and combo damage display - 2026-11-03
+
+Native AC50:1 records retain a local packet batch identity through animation
+queuing, including embedded native packets in round chains. Single-hit damage
+combines into one popup; one multi-hit skill pools the combo total into its
+contact pattern. Identical multi-hit skill IDs combine, while different multi-hit
+skills retain separate groups and leave singles in their own combined group.
+Target cells, roster generations, HP/SP resources and separate packets remain
+independent. Mixed damage/recovery preserves original stat order and clamping.
+
+Completed regressions cover every requested combination, different skills with
+equal timing, missed members, critical styling, small and wide totals, maximum
+uint64 splitting, raw native batch bytes and invalid-packet atomicity. Native and
+round-chain integration tests verify grouped HP changes at each contact, duplicate
+frame suppression and actual bitmap digit spacing. Real Water Hit and Combo x3
+metadata exercise four- and three-contact patterns. Late-frame catch-up and
+replacement-target checks passed. Existing authored percentages and raw wire
+goldens remain intact; repeated full weights normalize across contacts and missing
+weights split evenly.
+
+Affected battle/item/pet/departure/overkill/round-chain integration tests passed,
+along with the complete client battle and minigame packages. Focused packet,
+splitter, grouping and recovery-order checks passed under `-race`. Vet passed
+for `./wlo/battle ./wlo/app ./wlo/minigame`; built
+`bin/wonderland-client-next.exe`. The rendered
+`var/battle-damage-combo.png` was inspected for readable, nonoverlapping numbers.
+The client port inventory was regenerated. Server calculations, protocol layouts,
+databases and asset tables were unchanged by this correction.
+
+From `client/`, repeat the focused checks with:
+
+```powershell
+go test ./wlo/app -run '^Test(Battle(Damage|MultiHit|Vitals|Capture|HitReaction|Departure|Overkill|Pet|NewTurn|Actions|Item)|GonlineCombat(Sequential|Legacy|Native|Deferred))' -count=1 -timeout=6m
+go test ./wlo/battle ./wlo/minigame -count=1 -timeout=3m
+go test -race ./wlo/battle ./wlo/app -run '^Test(DamagePartsConserveWideTotals|ActionPacketsHaveIndependentLocalBatches|BattleDamageComboGrouping|BattleDamageGroupingBoundaries|BattleDamagePopupStackAndIdentity|BattleDamagePreservesInterleavedRecovery)$' -count=1 -timeout=3m
+go vet ./wlo/battle ./wlo/app ./wlo/minigame
+```

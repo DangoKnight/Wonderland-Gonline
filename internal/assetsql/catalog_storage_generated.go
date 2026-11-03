@@ -8653,28 +8653,29 @@ func readAnimationTiming(tx *gorm.DB) (map[uint16]int, error) {
 }
 
 type NPCsRow struct {
-	NPCsKey        uint16 `gorm:"column:n_p_cs_key;primaryKey;autoIncrement:false"`
-	ValueID        uint16
-	ValueName      string
-	ValueType      uint8
-	ValueLevel     uint8
-	ValueHP        uint32
-	ValueSP        uint32
-	ValueElement   uint8
-	ValueStats0    uint16
-	ValueStats1    uint16
-	ValueStats2    uint16
-	ValueStats3    uint16
-	ValueStats4    uint16
-	ValueSkills0   uint16
-	ValueSkills1   uint16
-	ValueSkills2   uint16
-	ValueBookIndex uint16
-	ValueDrops0    uint16
-	ValueDrops1    uint16
-	ValueDrops2    uint16
-	ValueDrops3    uint16
-	ValueDrops4    uint16
+	NPCsKey                 uint16 `gorm:"column:n_p_cs_key;primaryKey;autoIncrement:false"`
+	ValueCaptureRestriction uint8
+	ValueID                 uint16
+	ValueName               string
+	ValueType               uint8
+	ValueLevel              uint8
+	ValueHP                 uint32
+	ValueSP                 uint32
+	ValueElement            uint8
+	ValueStats0             uint16
+	ValueStats1             uint16
+	ValueStats2             uint16
+	ValueStats3             uint16
+	ValueStats4             uint16
+	ValueSkills0            uint16
+	ValueSkills1            uint16
+	ValueSkills2            uint16
+	ValueBookIndex          uint16
+	ValueDrops0             uint16
+	ValueDrops1             uint16
+	ValueDrops2             uint16
+	ValueDrops3             uint16
+	ValueDrops4             uint16
 }
 
 func (NPCsRow) TableName() string { return "catalog_n_p_cs" }
@@ -8682,6 +8683,7 @@ func writeNPCs(tx *gorm.DB, values map[uint16]assets.NPC) error {
 	var rows []NPCsRow
 	for key, value := range values {
 		row := NPCsRow{NPCsKey: key}
+		row.ValueCaptureRestriction = value.CaptureRestriction
 		row.ValueID = value.ID
 		row.ValueName = value.Name
 		row.ValueType = value.Type
@@ -8721,6 +8723,7 @@ func readNPCs(tx *gorm.DB) (map[uint16]assets.NPC, error) {
 	}
 	for _, row := range rows {
 		var value assets.NPC
+		value.CaptureRestriction = row.ValueCaptureRestriction
 		value.ID = row.ValueID
 		value.Name = row.ValueName
 		value.Type = row.ValueType

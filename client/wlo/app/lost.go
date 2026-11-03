@@ -116,6 +116,7 @@ func (c *Client) disconnected() {
 	}
 	if c.Skills != nil {
 		c.Skills.Hide()
+		c.BattleSkills.Hide()
 	}
 	if c.Settings != nil {
 		c.Settings.Hide()

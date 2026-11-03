@@ -14,6 +14,40 @@ func (s *Server) combatRules(run *battleRun) battle.Rules {
 	}
 	r := s.rules()
 	r.Items = run.items
+	r.PrepareCapture = func(a battle.Action) (int, bool) {
+		for _, member := range run.active() {
+			if member.self.ID != a.Player {
+				continue
+			}
+			c := member.c
+			expected, ok := c.character.CaptureNet()
+			if !ok {
+				return game.OrdinaryCaptureLevelAllowance, true
+			}
+			var saved game.Character
+			ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
+			err := s.Store.UpdateCharacter(ctx, c.account.ID, c.character.ID, func(stored *game.Character) error {
+				net, valid := stored.CaptureNet()
+				if !valid || net != expected {
+					return game.ErrInvalidItem
+				}
+				stored.Equipment[game.CaptureNetEquipmentSlot-1].Damage = min(game.CaptureNetExhaustedDamage, net.Damage+game.CaptureNetDamagePerUse)
+				if err := game.PreserveItemLocks(*c.character, stored); err != nil {
+					return err
+				}
+				saved = stored.Clone()
+				return nil
+			})
+			cancel()
+			if err != nil {
+				return 0, false
+			}
+			s.adoptSavedCharacter(c, saved)
+			_ = c.send(c.character.EquipmentPacket())
+			return game.CaptureNetLevelAllowance, true
+		}
+		return 0, false
+	}
 	r.CommitItem = func(a battle.Action, t *battle.Fighter, hp, sp int) bool {
 		return s.commitBattleItem(run, a, t, hp, sp)
 	}

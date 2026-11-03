@@ -1,7 +1,7 @@
 # Exported Wonderland data
 
 `item_data.json` contains every item record from
-`../Wonderland-Client/data/Item.dat`.
+the supplied WLRI installation's `data/Item.dat`.
 
 The export includes:
 
@@ -11,16 +11,17 @@ The export includes:
 - The plaintext header as `header_hex`, original record indexes and file offsets.
 - Format/schema versions, source size and source SHA-256 for provenance.
 
-The maintained export contains 7,312 item records. Source SHA-256:
-`f85cbee375e3918e337e6579b6731ba1396e16063b86a85cda9a86ffc5e826b0`.
-Re-encrypting the decoded records reproduces the complete 3,298,163-byte input
+The 2026-11-03 export contains 7,325 item records. Source SHA-256:
+`302b13d11c66602779ddfa5f19f103a836f38d71823f47c56a5bab1a166ac00e`.
+Re-encrypting the decoded records reproduces the complete 3,304,026-byte input
 file exactly. Client content patches are separate from decoding.
 
 Regenerate from the repository root:
 
 ```sh
+wlo_client_source="/absolute/path/to/WLRI-client"
 go run ./cmd/item-export \
-  -input ../Wonderland-Client/data/Item.dat \
+  -input "$wlo_client_source/data/Item.dat" \
   -output data/item_data.json
 ```
 
@@ -64,7 +65,7 @@ reassembly reproduces every selected source file byte for byte.
 
 | Resources | Export | Retained content |
 | --- | --- | --- |
-| Item | `item_data.json` | 7,312 full decoded records and readable definitions |
+| Item | `item_data.json` | 7,325 full decoded records and readable definitions |
 | NPC | `npc_data.json` | 4,930 decoded records, names, stats, skills and drops |
 | Skill | `skill_data.json` | 953 decoded records, names, descriptions and coefficients |
 | Dialogue | `talk_data.json` | 17,493 decoded records and texts |
@@ -202,6 +203,9 @@ Three sprite indexes have 18 records whose companion archives are missing from
 the supplied sibling client; their pixels cannot be recovered. Ten picture
 resources reference missing palette colors and document a black fallback.
 Windows `Thumbs.db` is excluded as a thumbnail cache, not game artwork.
+Four updated weapon archives contain 20 sprites without companion JXA action
+records. Their frames are preserved, with missing animation metadata recorded
+explicitly; see [sprite coverage](sprites/README.md).
 
 ## Remaining client media
 
