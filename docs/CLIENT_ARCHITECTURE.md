@@ -1,5 +1,11 @@
 # Client assets and multiple sessions
 
+Battle communication supports native timed packets and an explicitly negotiated
+Gonline round envelope, with one character/pet choice batch per round. Playback,
+assembly, deferred packets and capabilities belong to the session, alongside its
+connection. See [combat transport](COMBAT_TRANSPORT.md) for compatibility and
+ownership boundaries.
+
 ## Build and edit
 
 The canonical client build runs the asset compiler before the Go compiler:
@@ -278,7 +284,7 @@ remain separate files until explicitly removed.
 - sprite archives, palette data and the sprite manager's bounded page cache;
 - item/skill/formula definitions and scene/NPC/talk metadata;
 - immutable terrain, map image descriptors and byte-bounded decoded image pages;
-- one audio context and a common decoded sound-effect cache;
+- a common decoded sound-effect cache and the process-wide audio context;
 - one GPU rendering device, shader and bounded asset texture cache.
 
 A world receives a separate scene descriptor and actor lists; large immutable
@@ -287,6 +293,11 @@ worlds keep their referenced images independently of eviction. The sprite CPU
 page cache retains its existing 256 MiB bound. GPU sessions share index textures and palette textures; recoloring runs in the
 shader. Each session owns its render target and optional blend scratch image. Audio music players, inventories, UI widgets,
 input state and network queues never belong in a shared asset cache.
+
+Ebitengine allows one audio context per process. Initialization is serialized
+across independent workspaces and standalone sound decoders; their decoded
+caches stay separate. Each real GPU test runs in a fresh subprocess because
+Ebitengine also ends its process-wide graphics lifecycle when `RunGame` returns.
 
 All workspace/UI/state mutation runs sequentially on the Ebitengine game thread.
 Socket workers post events to their owning client; the sprite manager protects
@@ -442,6 +453,17 @@ turning. Only changed facings send AC32:2; expressions keep their own animation.
 Window controls consume right-clicks first. Loading, walking, mounted vehicles,
 battles, movies, minigames, held interactions and modal/dialogue windows suppress
 scene turning. See [verification](TESTING.md#client-right-click-pose-facing--2026-11-02).
+
+Following pets mirror the owner's pose family while keeping their own facing,
+including when the owner turns through AC32:2. The pet retains its full facing
+through two-facing and four-facing poses, then resumes following when the owner
+stands or walks. Available sprite frames determine pose support: all eight
+sitting directions are used when present, and missing sitting directions use
+the native four-frame fallback. `FUN_00430680`'s MoveKind restriction applies
+to a rider's pose and does not limit a following pet's available frames.
+The installed Roca sprite (`001/1221.jmp`) provides sitting actions 47, 49, 51
+and 53; its other sitting slots are empty in both the native action directory
+and editable export. Other sprites or edited assets can provide all eight.
 
 AC15:15 plays the vehicle destruction strip (`FUN_00449f80`): Robinson's raft
 uses `images/48010_B`, three vertical frames at 70 ms per frame, centered at the

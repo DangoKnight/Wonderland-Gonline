@@ -58,6 +58,7 @@ type MainStatus struct {
 	Element *seui.ElementIcon // +0x178
 	Recover *seui.FixedButton // +0x318 Btn_Allrecovery_1
 	Discuss *seui.FixedButton // +0x314 Btn_Discussion_1, hidden outside its mode
+	Pet     *PetStatus        // +0x2f4 compact active-pet portrait and stats
 
 	background, hpGauge, spGauge int
 	element                      byte
@@ -93,6 +94,7 @@ func NewMainStatus(env *seui.Env, f *login.Formula, stats *world.Stats) *MainSta
 	m.Recover = seui.NewFixedButton(env, m)
 	m.Recover.Init("Btn_Allrecovery_1", recoverLeft, statusButtonSize, statusButtonSize, 0, 0, true, statusButtonSize, statusButtonSize, statusButtonTop)
 	m.Recover.SetHint([]byte(recoverHint))
+	m.Pet = newPetStatus(env, m)
 	return m
 }
 
@@ -125,6 +127,7 @@ func (m *MainStatus) blinking() bool {
 // Paint is FUN_00260fac. The element icon and buttons are children and
 // draw after it.
 func (m *MainStatus) Paint() {
+	m.Pet.Refresh()
 	s, scr, pics := m.Stats, m.Env.Screen, m.Env.Pics
 	at := func(p image.Point) image.Point { return statusCorner.Add(p) }
 	c := at(image.Point{})

@@ -225,19 +225,33 @@ func (n *NPC) rasterScale() int {
 // copied to +0xb2 by FUN_004265a4. It is 007-family artwork, separate from
 // the 008-family dialogue portrait. (x,y) is the icon's top-left corner.
 func (n *NPC) DrawIcon(dst *surface.Surface, x, y int, icon uint16) {
+	s, frame := n.iconFrame(icon)
+	if frame != nil {
+		s.drawColored(dst, frame, x-frame.OffsetX, y-frame.OffsetY, int(icon), &n.colors)
+	}
+}
+
+// DrawIconAtAnchor preserves the small portrait's native canvas and anchor.
+// The compact HUD places this drawing point through FUN_0029dbf0.
+func (n *NPC) DrawIconAtAnchor(dst *surface.Surface, x, y int, icon uint16) {
+	s, frame := n.iconFrame(icon)
+	if frame != nil {
+		s.drawColored(dst, frame, x, y, int(icon), &n.colors)
+	}
+}
+
+func (n *NPC) iconFrame(icon uint16) (*sprite, *sprites.Frame) {
 	if icon == 0 {
-		return
+		return nil, nil
 	}
 	const smallPortraitFamily = "007"
 	arc, key := n.Lib.lookup(smallPortraitFamily, int(icon))
 	if arc == nil {
-		return
+		return nil, nil
 	}
 	s := arc.sprite(key)
 	if s == nil || s.frameCount(0) == 0 {
-		return
+		return nil, nil
 	}
-	if frame := s.frame(0, 0); frame != nil {
-		s.drawColored(dst, frame, x-frame.OffsetX, y-frame.OffsetY, int(icon), &n.colors)
-	}
+	return s, s.frame(0, 0)
 }

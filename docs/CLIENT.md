@@ -593,11 +593,19 @@ The top-left panel is `TSe_MainStatus` (constructor `FUN_0025ff84`, painter `FUN
 
 On Ship Deck with the capture's values (level 1, 181/181, 100/100) the panel matches the capture apart from the character's own face and element.
 
-**Not yet**: the panel's slide-in (`FUN_00260b90`), the restore button's action, the discussion button's mode, the pet panel, VIP numbers and the save-lock icon.
+The active pet's compact HUD uses the native `007` portrait, white level digits,
+HP/SP bars and experience bar/percentage beside the player portrait
+(`FUN_0029d3a4`, `FUN_0029dbf0`). It reads the current party roster and active-pet
+selection, independently of Inventory's local selection. Native pet stat packets
+update it immediately; switching the pet to Rest or removing it hides the panel. Hovering the bars
+shows the corresponding numeric values. Portrait anchors, template colors and
+the original `Word_*`/`Pet_*` skin artwork are preserved.
+
+**Not yet**: the panel's slide-in (`FUN_00260b90`), the restore button's action, the discussion button's mode, VIP numbers and the save-lock icon.
 
 ### Button bars (ported: `client/wlo/hud/buttons.go`)
 
-- **Toolbar** (`TRE_FuncBtnForm`, constructor `FUN_00295fb8`, paint `FUN_00296744`): `Btn_BackGround_1` at (0x1b0, 0), then World PK (`Btn_PlayerBattle`), PK, Jump In, Spectate, Join Team, Make Friends, Trade (`Btn_1`–`Btn_6`) every 0x25 pixels from 0x1ae; Guild Invite (`Btn_7`) is hidden and Events and Lucky Draw (`Btn_8`, `Btn_9`) take the slots from it, with a 300 ms animation of their rows 2–3 that runs while an event or the lottery is open (not ported); Item Mall (`Btn_711`) at 0x2fb. The paint also rewrites a hint with the gold and starts or stops the lottery animation; neither is ported.
+- **Toolbar** (`TRE_FuncBtnForm`, constructor `FUN_00295fb8`, paint `FUN_00296744`): `Btn_BackGround_1` at (0x1b0, 0), then World PK (`Btn_PlayerBattle`), PK, Jump In, Spectate, Join Team, Make Friends, Trade (`Btn_1`–`Btn_6`) every 0x25 pixels from 0x1ae; Guild Invite (`Btn_7`) is hidden and Events and Lucky Draw (`Btn_8`, `Btn_9`) take the slots from it; Item Mall (`Btn_711`) sits at 0x2fb. Lucky Draw opens its native window, and its rows 2–3 animate every 300 ms while the server reports available rewards and remaining draws. Events and the gold-dependent hint remain unported.
 - **Menu** (`TRE_MainBtnForm`, constructor `FUN_002950b8`, paint `FUN_002956ac`): `Btn_BackGround_2` at (0x213, 0x233), then Inventory, Skills, Alchemy, Team, Social, Options (`Btn_11`–`Btn_16`) at their own corners; Pickup Furn (`Btn_BringUpFur_1`, 0x2fb, 0x1fb) stays hidden.
 
 Each button is its picture's width by a third of its height (three state rows). The bars match `Ship_Deck.png`; the buttons have no actions yet.
@@ -883,7 +891,7 @@ Only the notice use is ported. The layout was measured from `Login_Forced_Error_
 
 - **Login**: FormCreate's timer (`CheckStartMusic`, `FUN_004a3c98`) plays `Sound\BGM0013.wav` through a media player and rewinds it at the end; the port loops it from startup, and again after a disconnect returns to the login screens.
 - **Maps**: entering a map (0x3bce95) plays `Sound\<track>.wav`, where the track is the scene record's second name at +0x1f (`SceneData.dat`; Ship Deck plays `BGM0007`). `FUN_004048b8` keeps a track that is already playing, so walking between maps of one scene doesn't restart it. All tracks the scenes name exist in `data/media/sound` (`TestSceneMusic`).
-- One audio context serves sound effects and music. System settings apply music on/off and volume without restarting the track. Event kind 15 overrides/restores map music, and battle scenes select their own track before restoring the map/event track on exit.
+- One process-wide audio context serves sound effects and music across workspaces; initialization is synchronized while decoded caches remain workspace-owned. System settings apply music on/off and volume without restarting the track. Event kind 15 overrides/restores map music, and battle scenes select their own track before restoring the map/event track on exit.
 - Not ported: each map's saved position (+0x5706, +0x5710), the `BGM0028` override on some maps (+0x5768, `FUN_004533c0`) and the music player form.
 
 ### Cursor (ported: `client/wlo/cursor`)
@@ -978,6 +986,34 @@ removed. Delphi string-copy positions below are one-based.
   so that client ignores incoming AC56. The Go server uses `CommandStall` for
   its additional stall messages. Native stalls use separate AC23 messages and
   AC20 request adapters.
+
+## Daily Lucky Draw (ported: `client/wlo/lottery`, `client/wlo/app/lucky_draw.go`)
+
+The top toolbar's Lucky Draw chest opens the native `Form_LotteryOL` window
+(`FUN_0015aaec`), with its draw and close buttons, reward icon and remaining
+allowance. The window initially opens below the top-right toolbar and can be
+dragged; closing and reopening retains its position for the session.
+Clicking the icon opens the `Article` reward preview
+(`FUN_0015a3c0`, `FUN_0015aa00`): up to twenty server-ordered rewards in two
+columns of ten, with item icons, names and quantities. Escape closes the preview
+first, then the draw window.
+
+AC104:1:1 (`FUN_0015b398`) supplies cumulative usage and the ordered reward
+catalog. The client shows three minus usage and never loads rewards or odds
+from local seed files. A draw cycles preview icons, slows after 1600 ms and
+sends exactly `[104,1]` at 2800 ms (`FUN_0015af1c`, `FUN_0015b2c0`).
+AC104:1:2 (`FUN_0015b484`) selects the one-based winning slot and updates usage;
+the ordinary AC23:5 inventory receipt delivers the item. The animation itself
+does not grant items or consume allowance.
+
+Duplicate clicks remain blocked through the server reply, including after
+closing and reopening the window. Closing before the request cancels the
+animation. Existing server failure banners release a refused draw without
+changing usage; a missing reply times out without an automatic retry. Loading,
+trades, battles, scripted interactions, movies, minigames and modal dialogs
+block new draws. Character entry and disconnect reset presentation state;
+server catalog refreshes supply the current allowance, including at UTC midnight.
+This daily feature is separate from the Lucky sport and other lottery games.
 
 ## Verification and limitations
 
@@ -1216,8 +1252,10 @@ Equipment bonus/socket/forge and metadata-dependent tradeability lines still
 need the remaining native item-info rules.
 
 The attribute arrows preview STR/CON/INT/WIS/AGI allocation using the available
-point budget (`FUN_00353ed4`). Confirm sends the native counted AC8:1 stat/word
-request (`FUN_003540c4`); Cancel or closing the form discards the draft. Player
+point budget (`FUN_00353ed4`). Confirm sends a counted AC8:1 request with a
+stat byte and four-byte amount per entry (`FUN_003540c4`'s allocation workflow).
+Four-byte amounts prevent the server's compatibility decoder from consuming the
+next stat ID as part of the preceding amount. Cancel or closing the form discards the draft. Player
 stats change only when the server replies. Pet-targeted stat replies no longer
 overwrite player values. Submission is disabled while awaiting confirmation;
 after five seconds without a reply it permits a manual retry with a notice.
@@ -1225,6 +1263,8 @@ Derived combat stats stay authoritative during the preview. Native rebirth/class
 allocation caps and pet allocation dialogs remain pending; the server validates
 the actual allocation. `TestInventoryPointDraftAndNativeRequest` and
 `TestNativePresentationAndAllocation` cover budget, packets, replies and resets.
+`TestInventoryPointBatchesReachServerParser` verifies all 31 nonempty attribute
+subsets against the actual server decoder and allocation rules.
 
 The item-use selector has a compact presentation with native controls. The full
 animated native PotentialForm presentation remains pending.
@@ -1268,7 +1308,8 @@ outside the generated assets. They apply to this client installation; server
 permissions are stored per character in `wonderland.db` and never loaded from
 that local file. `app.Options.SettingsPath` supplies a separate profile/test path.
 
-Pending: Zoom Mode rendering, title entitlement synchronization/selection,
+Zoom Mode now toggles the battle's distance-based zoom without scaling the HUD.
+Pending: title entitlement synchronization/selection,
 Security Lock, Change Login, Change Password, Official Site integration, Balance
 Inquiry, redemption, VIP and point-purchase dialogs. Their controls show an
 unavailable notice; the title list remains empty until authoritative entitlements

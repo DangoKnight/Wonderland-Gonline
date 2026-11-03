@@ -19,6 +19,33 @@ Furniture retains item identity, count, damage and all 26 metadata bytes. Typed
 character state stores each visitor's overworld return map and coordinates.
 Deletion cascades through owned home/furniture records.
 
+## Using items in battle
+
+Open Items or Inventory, double-click a usable supply, then click its target on
+the battlefield. Item shortcuts also enter target selection; Escape cancels.
+The currently selected player or pet spends its action. HP/SP supplies restore
+living allies, including teammates and their pets; native revival items can
+restore defeated allies. Effects appear at the animation's contact cue.
+Target selection uses the native magic cursor. Full HP/SP does not prevent
+selecting a teammate: recovery uses the target's vitals when the action executes.
+The native client click path (`FUN_0038972c`, including `FUN_0018ccfc`,
+`FUN_0018ce54` and `FUN_0018cef8`) contains no full-vitals rejection.
+Damaging supplies include Bomb (33012), Darts (33013), Strong Bomb (33014),
+4-Way Shuriken (33015) and 8-Way Shuriken (33016); their native linked skills
+select enemy targets. This evidence comes from the decompilation and item data,
+not a live legacy-server capture.
+
+Selection does not consume inventory. The server validates the selected bag
+slot at execution, then commits consumption and player/pet target vitals together
+before publishing the effect. Special items use their native linked skill where
+an executable effect rule exists; unresolved specials remain unsupported and
+are not consumed. See [battle item behavior](BATTLE_CLIENT_PARITY.md) and
+[native/complete-round transport](COMBAT_TRANSPORT.md).
+
+The native client appends a 40-byte compatibility trailer to the 12-byte item
+request; the server accepts both verified forms without trusting the trailer.
+See [live capture and regression evidence](BATTLE_ITEM_CAPTURE.md).
+
 ## Using a tent
 
 Use Tent item 36002 with native AC23:96, or AC23:15 with count one and target zero.

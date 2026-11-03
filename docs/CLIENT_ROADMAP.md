@@ -23,7 +23,7 @@ functions:
 | Not started | ~330 | Housing, shops and IM mall, GM tools |
 
 The original handles 91 server commands; the Go client has receive branches for
-29. Individual subcommands and their interfaces can still be incomplete. The server
+31. Individual subcommands and their interfaces can still be incomplete. The server
 side of most systems is already ported, so each phase below can be tested
 end to end.
 
@@ -63,7 +63,8 @@ Finish everything a new character meets before the first battle.
   speech bubbles: `FUN_00428ed0` skips its body). Click-through, scrolling, lock, modes, resizing, whispers and
   the native emoticon picker, log renderer and editor preview with atomic code editing are implemented.
 - HUD actions: wire the button bars and hot keys to their forms as those forms
-  arrive; the status info form.
+  arrive; the status info form. Daily Lucky Draw (AC104:1) now has its toolbar
+  window, reward preview, spin and server-confirmed usage/results.
 - Minimap and world map (`CH_TMiniMapForm`, `Tse_MapFrame`). The scene
   minimap (`<map>_Mini_Form`, signs, the player's face, minimize and
   reload) is ported; the tiled-map minimap, the map frame and the world
@@ -96,15 +97,24 @@ form with learned-tier selection are implemented; see [compounding](COMPOUNDING.
 
 ### Phase 3: Battle
 
+Native round communication remains available. An optional negotiated Gonline
+transport now sends complete round chains and batches the character/pet choices
+into one request; mixed-client battles use each recipient's selected transport.
+See [combat transport](COMBAT_TRANSPORT.md).
+
 The standalone Skills window is implemented: five native tabs, player/pet
 selection, progress updates and the elemental prerequisite tree. Learned skills
 can be dragged onto a saved per-character hotbar and activated with F1–F8 or a
 click. Manual battle actions now target fighters directly in a dedicated battle scene.
 Native formation/backgrounds, radial command icons (including each actor's
 previous action), mirrored sprite movement,
-HP/SP digit artwork, damage cues and sound tracks are implemented. Precise movement
-phase/camera synchronization, spell visuals,
-the dedicated battle skill menu, item execution, spectator/results presentation
+HP/SP digit artwork, damage cues, general/weapon/body sound tracks, recorded
+battle voices, round-damage overkill removal/spawn returns, the battle reveal,
+camera tracks and distance-based zoom are
+implemented. Confirmed post-combat EXP, level, pet amity, gold, materials and
+companion gains appear after the return fade in a timed, scrollable summary.
+Precise movement/camera phase synchronization, remaining spell paths,
+the dedicated battle skill menu, item execution, spectator/outcome artwork
 and overworld casting remain pending. See [battle parity](BATTLE_CLIENT_PARITY.md).
 
 The largest single gameplay system (about 360 functions). Existing server
@@ -162,7 +172,7 @@ presentation from server compatibility formulas and remaining mechanics.
 
 System, Channels, Info Visibility, Titles and Blacklist windows now use native
 skins and layouts. Server permissions, audio, chat colors, blacklist filtering and
-return/logout actions are wired. Remaining settings services, Zoom rendering and
+return/logout actions and the battle Zoom Mode toggle are wired. Remaining settings services and
 title entitlement handling are listed in [CLIENT.md](CLIENT.md#settings-ui).
 
 - The rest of FormCreate (`Transition`), skins from `Skins.Flst`, the jukebox and

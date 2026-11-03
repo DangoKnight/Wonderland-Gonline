@@ -1,5 +1,8 @@
 package game
 
+// PetStatAmity is the AC8:2 companion loyalty update.
+const PetStatAmity byte = 64
+
 // Character stat identifiers carried by AC8:1 (Equip.Send8_1/SendExp).
 const (
 	StatCurrentHP         byte = 25

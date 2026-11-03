@@ -5,9 +5,48 @@ simulation. This is a working core, **not complete native battle parity**.
 
 ## Implemented
 
+- Post-combat results follow the native entry snapshot (`FUN_00394f68`) and
+  exit comparison (`FUN_00394fe8`): confirmed player/pet EXP gains or losses,
+  level-ups and pet amity changes. The summary also lists actual gold changes,
+  received items/materials grouped by item ID, and newly joined companions.
+  It waits for battle playback and the return fade/map acknowledgment, including
+  deferred Gonline settlement. Absolute synchronization cannot double-count EXP;
+  malformed inventory packets and ungranted drops contribute nothing. A reused
+  pet slot cannot assign its replacement's EXP to the departed pet.
+  The native six-second message interval is retained. The compact notice sits
+  below the top command icons, sizes to its English text and centers each yellow
+  line without a title or close button, matching the legacy reference. Long lists
+  show five rows with scrolling. Hover does not extend the six-second deadline;
+  clicking the panel or result text dismisses it, while the scrollbar remains
+  usable. `FUN_00394fe8` supplies 6000 milliseconds to the native notice board's
+  slot +0x9c (`FUN_0034e70c`). The pane uses the
+  existing notice artwork; its bounded list is a presentation extension to the
+  native message board. It grants nothing and sends no acknowledgment.
+- Native AC11:12 victory voice selection (`FUN_00395f84`) chooses one voiced,
+  living fighter from the winning side, provided the local player is also a
+  living winner. `_bta3`, `_bta2`, `_bta1` have 10%, 20%, 30% probabilities;
+  the remaining 40% is silent. Lines wait for the final action/removal and play
+  once before departure, including queued Gonline endings. The finish operand
+  names the winning side (1 attacker / 2 defender), including PvP. The traced
+  defeat path has no separate battle-loss line; `_bt01` in `FUN_00382b08` is a
+  knockout reaction, not a victory or end-of-battle defeat recording.
+- A single click in the Skills list selects a skill for battle targeting.
+  Releasing a dragged skill onto the hotbar still assigns it; ordinary
+  out-of-battle clicks browse details and retain their double-click action.
+- Both peers retain native combat communication. With the server startup setting
+  `combat_round_chain: true` (default false) and explicit client negotiation,
+  Gonline sends a complete round chain and batches character/pet choices;
+  mixed battles preserve each recipient's transport. See
+  [combat transport](COMBAT_TRANSPORT.md) for the extension and native fallback.
+- Escape succeeds automatically at equal/higher level than the strongest living
+  enemy; otherwise it uses the reference level-based chance. Either owner or pet
+  succeeding removes both. Nonleaders leave the remaining participants in combat;
+  successful team-leader escape ends the battle. Overkill and logout remain
+  separate. Failed escapes play native MBTM 60042's run/trip/recovery track, with
+  no stat damage, SP cost or defense bonus, and repeat still submits Flee.
 - AC11 formation, participant, finish and departure records; AC50 variable actor,
   target and stat batches; AC51 batched absolute HP/SP; AC52 round readiness;
-  AC53 defeat and action-submission acknowledgements. Decode batches before
+  AC53 overkill removals and action-submission acknowledgements. Decode batches before
   mutating state. Duplicate ready packets do not reset submitted actions.
 - Battle entry and exit transitions (`client/wlo/app/transition.go`), the
   screen transition `FUN_0049a2e8` run each game frame by `FUN_0049a484`
@@ -15,14 +54,23 @@ simulation. This is a working core, **not complete native battle parity**.
   constructor (func 0x38bcdc) starts the battle music, then the map keeps
   running and darkens with black at alpha 12 × step for steps 1..15; after
   step 15 the callback 0x38c8f0 runs and the frame loop draws the battle
-  field (+0x565) at full brightness. Leaving (mode 2): when the player's battle
+  field (+0x565). The port continues with a 15-step reveal of the field, using
+  the same alpha/clock; this requested presentation continuation avoids a cut
+  to full brightness and is not claimed as an additional native transition.
+  Actions and their sounds wait for the reveal to finish. Leaving (mode 2): when the player's battle
   state clears, the frame loop (0x4a2b12) shows the map again under black
   for steps 15 down to 1 and frees the battle (`FUN_0038fefc`) at the end;
   `FUN_0039b81c` and `FUN_0038cb8c` start the same mode for a fled or departed
-  player. Neither darkens map 11009 (0x2af1). One step per 30 ms game frame;
-  battle packets received meanwhile queue and play once the field shows.
+  player. AC11:1 departures now finish the authored 60041 outward motion
+  before this fade (`FUN_00392bb4`, `FUN_0037896c`, `FUN_00385e58`);
+  its completion callback replaces the return leg. Defeated units do not run.
+  An early AC11:0 closes command input while queued attacks, reactions and
+  departures finish, including in background sessions. A new formation or
+  session reset discards the old presentation. Neither transition darkens
+  map 11009 (0x2af1). One step per 30 ms game frame;
+  battle packets received meanwhile queue and play once the field is revealed.
   `TestBattleTransitions` checks the brightness of each step against the lit
-  map. No capture shows a transition frame. The other modes (3–14: wipes and
+  map and field. No capture shows a transition frame. The other native modes (3–14: wipes and
   40 × 40 tile effects) are reached only from the debug form's buttons, and
   map entry's mode 0xff only waits four frames without drawing.
 - Native 4 by 4 formation, player equipment and NPC/pet sprites, battle stances,
@@ -46,12 +94,64 @@ simulation. This is a working core, **not complete native battle parity**.
   History is separate for player/pet actors and cleared on battle exit.
 - MBTM fighter action/frame records, actor-relative mirrored movement, return
   movement, directional action mirroring, damage cues and
-  percentage distribution, native HP/SP digit sheets, compatibility recovery
-  text and authored sound cues. Late cues remain alive beyond the last frame.
-  The variable visual-effect section is traversed to decode sound records; it
-  is not yet rendered. Missing motions use a named compatibility duration.
-- Successful native capture animations remove the captured fighter. Native
-  departure records remove participants. Expired damage clears in background
+  percentage distribution, native HP/SP digit sheets, outlined item recovery
+  numbers and authored sound cues. Late cues remain alive beyond the last frame.
+  Variable visual effects, camera records and the fixed weapon/body audio
+  tables are decoded. Missing motions use a named compatibility duration.
+- Battle effects play each general, weapon and body sound at its authored cue,
+  once per action (`FUN_003800a4`, `FUN_003736ec`, `FUN_00373524`). Weapon
+  impacts on a reacting target retain the attacking player's sound source.
+  Recorded player/companion lines use the native body/head/NPC voice families,
+  `_bt` variants and roulette, preferring `odd` over `odd_d01`; a line replaces
+  the body fallback sound track. Skill.dat +0x7a can select the native
+  `Voice/<km|kw|am|aw>_<three-digit ID>.WAV` fallback. Existing Sound On/volume
+  and background-session muting apply. Compatibility: weapon sound groups
+  use item types 1–5, with group zero for unsupported types; the full weapon
+  resolver is absent from the decompile and remains to be independently traced.
+- Camera mode 1 focuses the actor/target/field or an effect anchor; mode 2
+  follows the authored points, speeds and frame/millisecond waits
+  (`FUN_0037b730`, `FUN_00385c04`, `FUN_003701a4`, `FUN_003702a4`). Positions
+  mirror by side and clamp to the 1664 × 832 field (`FUN_0036fe90`). Fighter,
+  shadow, bar, damage and effect positions use the same camera offset.
+- Close-range zoom follows `FUN_00386880`/`FUN_00386a0c`: attack category 1
+  crops up to 100 × 75 pixels per side according to horizontal progress toward
+  the target, then restores the full view as the attacker returns. The battle
+  scene scales through compatible renderer surfaces; HUD/forms stay unscaled.
+  Zoom Mode now toggles and persists this effect. Action completion, battle
+  exit and session disposal reset the view and release its temporary target.
+- Displayed HP/SP change at those authored damage cues, alongside the floating
+  numbers and hit reaction. Multiple hits apply their percentage shares at
+  each cue; healing, critical modes and capture use the same timing. Fighter
+  bars, defeated poses and player/pet HUD vitals read the displayed roster.
+  The decoded roster still updates immediately for command validation;
+  following absolute-stat packets reconcile after pending actions finish,
+  without pulling displayed damage ahead of contact.
+- Overkill uses the native AC53:3 removal (`FUN_00393c58` ->
+  `FUN_00392484` state 7 -> `FUN_0039b58c`), rather than interpreting every
+  knockout as removal. The sprite rises 300 pixels at one pixel/ms and then
+  disappears. It waits for its damage cues, not unrelated actions, so units
+  can vanish before the round finishes. Ordinary HP-zero fighters retain
+  their defeated pose and can still be revived. Vanished units cannot be
+  revived or intercept clicks. Local roster generations prevent an old hit
+  or removal from affecting a reinforcement reusing the same cell/template.
+- The server tracks received HP damage before remaining-HP clamping during
+  each round. Overkill requires **strictly more than 150% of maximum HP**;
+  exactly 150% is an ordinary knockout. Combo hits contribute their complete
+  sum, even when aggregate HP arithmetic is capped. Misses add nothing;
+  healing does not erase received damage; the counter resets each round.
+  Area overkills share one flight step. AC53:3 is emitted only for these
+  removals, fixing the previous native-client behavior where all deaths flew away.
+- After an overkilled player's flight, the server removes only that member
+  and withdraws its pet, while teammates continue the round. Vitals, pet
+  results and the record-point destination (Starter Beach when unset/invalid)
+  commit together before map packets. Existing defeat HP recovery is retained.
+  The old map receives the departure, the new map acknowledgment restores
+  controls, and the removed member receives no later battle actions/rewards.
+  A disconnect during the flight still saves the return destination.
+  See `internal/battle/overkill.go` and `internal/server/combat_overkill.go`.
+- Successful native capture animations remove the captured fighter at their
+  cue; departure records animate living
+  participants before removal. Expired damage clears in background
   sessions. Battle menus and HUD references are
   released on exit, character reset and session closure.
 
@@ -78,6 +178,12 @@ simulation. This is a working core, **not complete native battle parity**.
   round opens with one of our fighters to command (AC11:10 now records the
   kind). `wav0145` sounds each second below 10; at −1 the menus close
   (`FUN_00398120`); an action batch stops it (`FUN_003920a0`).
+- Slow-choice turtles (`FUN_00398524`, `FUN_00391f18`, `FUN_0039800c`): the
+  native `E119` sheet has four frames advancing every 250 ms. At ten seconds
+  remaining, indicators appear above living, available player/pet fighters still
+  awaiting AC53:5 submission receipts. They stop on submission, timeout or round
+  playback. Submitting our own choices does not hide an unsubmitted teammate's
+  turtle; the next round restarts the secondary countdown.
 - The radial now has all native buttons (constructor `0x002974a0`, decoded from
   its jump table): 4, the item bag at (90, 126), opens the item form
   (`FUN_00351700`); 5, `auto` at (42, 126), attacks each round with every
@@ -86,6 +192,28 @@ simulation. This is a working core, **not complete native battle parity**.
   `FUN_0039a5b8`). While auto runs, the cancel button `Btn_Battle_5_1` (button 3
   of +0x51c, at (762, 526)) stops it (`FUN_00298f7c`). The auto-play form's
   configured skills are not ported; the native fallback attack is used.
+
+- Battle supplies: double-click a usable bag item from the Items command or
+  Inventory, then click a fighter; item shortcuts enter the same targeting mode.
+  Escape cancels. Native AC50:2 includes the item ID and bag slot, distinct from
+  skill requests. Player and pet commands can use HP/SP supplies on living allies,
+  including teammates and their pets. Recovery uses existing catalog values above
+  the 100 base, capped to maxima. Native `FUN_0039be38` selects the magic cursor
+  (state 7). `FUN_0038972c` and its item eligibility helpers allow selecting allies
+  at full HP/SP; recovery evaluates their vitals at execution. All four allied
+  formation slots and their pets can be clicked, independently of command ownership.
+  Ordinary food cannot revive; the linked native
+  Secular Feather skill (15138) enables revival items. Type-24 items use their
+  linked skill at decoded Item.dat offset 134; supported signed vital effects and
+  authored skill effects share the same execution path. Unknown/no-effect specials
+  are rejected without consumption. Recovery uses motions 10024/10025 for
+  human/creature targets; special items use their linked motion. HP/SP presentation
+  follows the motion's contact cue. Items spend no SP or skill EXP. Each fighter
+  submits once, and two actors cannot reserve more items than the stack contains.
+  At execution SQL revalidates the bag and commits consumption with target vitals
+  atomically before publishing success. Failed saves, stale stacks, defeated actors,
+  departed targets and unavailable replacement pets cannot grant free effects.
+  The same native actions work in optional complete-round delivery.
 
 - Attack movement: approach and return travel play the native poses
   (`FUN_003747f4`, `FUN_003753ac`): approach mode 0 runs with the sprite
@@ -145,13 +273,52 @@ announces (kind 1, 20 s) plus a named 2-second grace, instead of 30 s: the
 client accepts commands until its counter passes 0 (`internal/battle.TurnLimit`,
 `internal/server/combat.go`).
 
+Social, Team, Inventory, Skills, Compound and Settings can open under the battle's
+movement/event locks. Browsing does not enable world-only inventory, party,
+dismissal or riding actions. The Team handler follows `FUN_00277728`: a Rest or
+Battle request is accepted only while the living player still has a command to
+choose; it closes selection without sending Defend. The server consumes both
+owner/pet commands, saves outgoing HP/SP/amity before announcing the mode, then
+sends the old pet's exit before adding the new pet at the same formation cell.
+Incoming pets keep their saved vitals and remain unavailable for actions and
+all targeting, including area attacks, in the switch round.
+The behavior uses native AC19, AC11:1/5 and AC53:5 for both client transports.
+
+Live legacy-server and Gonline traces on 2026-11-02 established the native switch
+order: owner AC53:5, four-byte old-pet AC11:1, owner-only AC19 selection receipt,
+then AC11:5 with entry mode **5** and the owned pet slot. Mode 5 is not allegiance:
+`FUN_0039108c` sets the participant's unavailable flag at +0x21d1, drawing
+(`FUN_0038ca44`) and targeting skip it, and `FUN_0039783c` clears it on AC52:1.
+The server protects the joining pet from both direct and area targeting.
+Its grid determines its side; both transports use the same rules. The successful trace's
+first attack followed the switch batch by 342 ms; the server uses a documented
+350 ms compatibility floor, without claiming a universal native animation time.
+
+Gonline deliberately presents the new pet walking in while the old pet walks
+out. The outgoing fighter/body survives as a detached visual copy, leaving the
+new fighter's authoritative identity, HP and Waiting flag independent. The
+240-pixel ground entry uses native walking/running poses; it is a requested
+cosmetic change from the native hidden waiting controller. Both native bursts
+and round chains allow the replacement through the departure barrier, then hold
+attacks, readiness and settlement until both movement tracks finish. The pet
+stays visible after entry while direct commands/selection remain blocked until
+AC52:1. Readiness does not replay its entrance. New battle/disconnect clears the
+copies and queues; normal close delivers queued rewards and map packets once.
+
+Countdown expiry (`FUN_0039800c` / `FUN_00398120`) closes selection and leaves
+missing commands idle: no action, SP cost, defense bonus or Defend animation.
+Already selected commands and explicit Defend remain intact. A partially selected
+Gonline batch flushes only its original native request, preserving the existing
+complete-batch protocol. See [combat transport](COMBAT_TRANSPORT.md).
+
 Server healing and revival now send recovery mode 3, and the amount actually
 restored. The old mode 1 told native clients to subtract HP. Revival is capped
 to maximum HP even for fighters with a maximum below the compatibility minimum.
 Existing server damage formulas and authored skill/effect tables are retained.
-The server accepts opaque native attack trailers without trusting them. Unsupported
-battle subcommands, including AC50:2 items, are rejected without consuming a turn;
-an item ID cannot be interpreted as a skill ID and bypass item consumption.
+The server accepts opaque native attack/item trailers without trusting them.
+Unsupported battle subcommands are rejected without consuming a turn. AC50:2
+has its own item validation and transactional execution; an item ID cannot be
+interpreted as a learned skill or bypass item consumption.
 
 ## Native evidence
 
@@ -165,6 +332,7 @@ The reference is `var/decompiled/aLogin_ca19ee087b60_full.c` and its matching
 | `FUN_003920a0`, `FUN_00398dac` | Variable-length action and target/stat records |
 | `FUN_00392d3c` | Seven-byte absolute stat records, including multiple records per packet |
 | `FUN_003970e4`, `FUN_0039783c` | Actor notifications and round readiness |
+| `FUN_00277728` | Team pet Rest/Battle requests during the player's command phase, consuming selection without Defend |
 | `FUN_00398700`, `FUN_0038512c` | Idle and defeated actions |
 | `FUN_00377060` | MBTM frames, coordinates, damage cues, effect section and seven-byte sounds |
 | `FUN_003a1a9c`, `FUN_003741f0` | Actor-relative mirrored coordinates, directional actions and proportional axis movement |
@@ -182,6 +350,7 @@ The reference is `var/decompiled/aLogin_ca19ee087b60_full.c` and its matching
 | `0x4147f8`, `FUN_0038ace4`, `FUN_004265a4` | Battle name colours, lifts and the +0x20b2 height |
 | `FUN_0038ad1c`, `FUN_0038f460` | Hovered fighter details and their column-dependent side |
 | `FUN_003977a8`, `FUN_0039783c`, `FUN_0039800c`, `FUN_00398120`, `FUN_00395efc` | Turn countdown, warning sound, timeout and per-kind limit |
+| `FUN_00398524`, `FUN_00391f18`, initializer `0x0038c182` | Slow-choice turtle eligibility, four-frame animation and native `E119` picture |
 | Constructor `0x002974a0` (jump table at `0x297657`), `FUN_00297f84` cases 4–5, `FUN_0039c238`, `FUN_0039a5b8`, `FUN_00298f7c` | Item and auto buttons, automatic attack target, cancel buttons |
 
 Constructor `0x002974a0` is absent from the C output; inspect the matching binary
@@ -193,33 +362,32 @@ scheduling margin; precise camera/movement synchronization remains pending.
 ## Remaining work
 
 - Exact native movement phase/tick synchronization, approach/return poses,
-  ground-height handling and camera tracking. Actor-relative interpolation is
+  ground-height handling and far-layer parallax. Actor-relative interpolation is
   implemented, with the explicitly documented compatibility scheduling margin.
-- Visual spell/projectile/effect tracks, status icons and effect transitions,
-  actor/weapon voices, recovery/critical digit effects and results. Battle scene
+- Remaining spell/projectile paths, status icons and effect transitions,
+  critical digit effects and remaining outcome artwork. Battle scene
   music and entry/exit fades are implemented as described above.
 - The dedicated native battle skill form; the existing standalone Skills form
   currently supplies learned skills and direct scene targeting.
-- Native battle item actions and their transactional server execution, manual
+- Remaining special battle-item effects without authored rules, manual
   auto-action configuration, viewer/spectator mode and remaining radial commands.
-- Camera tracking during actions (`Battle/Screenshot_20261008_091706.png`,
-  `_091708`, `_091727`): the camera follows per-skill camera records in the
-  MBTM motions (`FUN_00385c04`: mode 1 moves to a point, `FUN_003702a4`; mode 2
-  follows a list of camera points, `FUN_003701a4`/`FUN_0036f34c`/`FUN_0036fac4`)
-  and actor movement (`FUN_00372a94`, `FUN_00370340`), clamped to the 1664 × 832
-  battle field (`FUN_0036fe90`), with the far layers offset separately. The
-  MBTM decoder does not read those camera fields yet.
+- Exact camera/actor phase synchronization (`FUN_00372a94`, `FUN_00370340`),
+  independently moving far layers, moving effect-index camera anchors and the
+  zoom crop's ground-height adjustment. Effect camera anchors currently use
+  their first authored point. The existing one-tick motion scheduling margin
+  remains explicit; camera/zoom parity is not claimed from the decompile alone.
 - The top toolbar is not shown in the original's battles, but no battle code
   that hides it was found (battle start `FUN_0038e4f4` and the forms it hides,
   `FUN_002a9ccc`, `FUN_002ac9cc`, `FUN_002afaa4`, are PvP forms); the port
   leaves the HUD unchanged rather than guess.
 - The native battle skill form (`Battle/Screenshot_20261008_091659.png`), the
-  results banner and level-up word (`_091817`), the capture message (`_091814`)
+  animated level-up word (`_091817`), the capture message (`_091814`)
   and orange/critical digit styles (`_091744`).
-- Battle items: `FUN_0038972c` emits AC50:2 and selects motion 10024 for human
-  targets, 10025 for NPC targets; item type 24 references its own skill instead.
-  The native item-ID/slot request payload and transaction/replay boundary need
-  tracing before enabling consumption.
+- Live battle-item packet comparisons remain pending server availability.
+  The request layout was verified in the matching executable's
+  `FUN_002c2394` branch `0x002d4247`–`0x002d44ed`; `FUN_0039be38` selects
+  the item/slot and `FUN_0038972c` validates its target. Native client code proves
+  layouts and presentation, not server-only special-item formulas.
 - Live original-client packet comparisons and multiplayer/load acceptance.
   Client decompilation cannot independently prove server-only damage, hit, AI,
   capture, reward or RNG formulas. Their existing compatibility rules must stay

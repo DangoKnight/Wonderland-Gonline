@@ -7,6 +7,11 @@ implementation files and 39 integration-test files, down from 238 Go files.
 
 Independent components have their own Go packages:
 
+Full-round combat delivery is opt-in through `combat_round_chain` in the startup
+configuration (default false) and requires client negotiation. Delivery and batched owner choices are coordinated
+in [combat_round.go](combat_round.go); native playback remains in
+[combat.go](combat.go). See [the transport contract](../../docs/COMBAT_TRANSPORT.md).
+
 | Package | Responsibility |
 | --- | --- |
 | [logging](logging/buffer.go) | Bounded administrative log capture, runtime levels, snapshot isolation, redaction and bounded packet traces. Owns its synchronization. |
@@ -26,7 +31,7 @@ fixture tools. `LogEntry` aliases the logging component's record type.
 | Characters, skills, potential and rebirth | [characters.go](characters.go), [progression.go](progression.go) |
 | Map entry, movement, encounters and recovery | [world.go](world.go), [simulation.go](simulation.go), [travel.go](travel.go) |
 | EVE execution and SQL story policies | [events.go](events.go), [story.go](story.go), [props.go](props.go) |
-| Battles, rewards and companion controls | [combat.go](combat.go), [combat_rewards.go](combat_rewards.go), [pets.go](pets.go) |
+| Battles, overkill returns, rewards and companion controls | [combat.go](combat.go), [combat_overkill.go](combat_overkill.go), [combat_rewards.go](combat_rewards.go), [pets.go](pets.go) |
 | Inventory, crafting, fishing and manufacturing | [inventory.go](inventory.go), [crafting.go](crafting.go), [fishing.go](fishing.go), [manufacturing.go](manufacturing.go) |
 | Trading, stalls, bazaars, NPC shops and paid games | [trade.go](trade.go), [shops.go](shops.go), [mall.go](mall.go), [minigames.go](minigames.go) |
 | Chat, friends, guilds, mail, teams and housing | [chat.go](chat.go), [social.go](social.go), [teams.go](teams.go), [tents.go](tents.go) |

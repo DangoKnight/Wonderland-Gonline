@@ -45,7 +45,7 @@ func (c *Client) newSocial(formula *login.Formula) {
 	c.newMailSend()
 	c.newMailbox()
 	c.MainButtons.Buttons[mainSocialButton].OnClick = func() {
-		if s.Visible || (c.Inventory.CanAct() && c.UI.Modal == nil) {
+		if s.Visible || (c.canOpenModule() && c.UI.Modal == nil) {
 			s.Toggle()
 		}
 	}

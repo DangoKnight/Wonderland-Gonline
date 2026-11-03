@@ -155,13 +155,11 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 			return Step{}
 		}
 		if e.Target != assets.EffectSelf {
-			if shape, ok := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); ok {
-				side := allies
-				if e.Target == assets.EffectEnemy {
-					side = enemies
-				}
-				targets[i] = formationTargets(side, targets[i][0], shape, false)
+			side := allies
+			if e.Target == assets.EffectEnemy {
+				side = enemies
 			}
+			targets[i] = skillTargets(side, targets[i][0], r.Skills[a.Skill], skillGrade(a.Actor, a.Skill), false)
 		}
 	}
 	packets := [][]byte{r.spend(a.Actor, a.Skill), turnPacket(a.Actor)}
@@ -190,7 +188,8 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 			results = append(results, targetResult{target: target, result: outcome, mode: effectNormalHitMode})
 		}
 	}
-	if _, explicit := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); explicit {
+	_, explicit := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill))
+	if explicit || r.Skills[a.Skill].IsAreaAttack(skillGrade(a.Actor, a.Skill)) {
 		packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	} else {
 		// Preserve existing single-recipient animations for unconfigured skills.

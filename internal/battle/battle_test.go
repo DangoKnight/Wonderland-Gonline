@@ -113,20 +113,21 @@ func TestRoundDamageAndOutcomes(t *testing.T) {
 	if _, outcome := lost.Round(lowest); outcome != Defeat {
 		t.Fatal("defeat", outcome)
 	}
-	run, _ := setup(1000)
+	run, runner := setup(1000)
+	runner.Level = run.Defenders[0].Level // Successful escape fixture; lower-level attempts can fail.
 	run.Submit(lowest, 7, 5, []byte{4, 2, 0, 0})
 	if _, outcome := run.Round(lowest); outcome != Fled {
 		t.Fatal("flee", outcome)
 	}
 }
 
-func TestTimeoutDefends(t *testing.T) {
+func TestTimeoutIdles(t *testing.T) {
 	b, _ := setup(100)
 	if b.Ready() {
 		t.Fatal("ready without commands")
 	}
 	b.Timeout()
-	if !b.Ready() || b.Pending[4<<8|2].Kind != "defend" {
+	if !b.Ready() || b.Pending[4<<8|2].Kind != ActionIdle {
 		t.Fatal(b.Pending)
 	}
 }

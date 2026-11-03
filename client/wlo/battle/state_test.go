@@ -12,6 +12,31 @@ import (
 var playerWire = []byte{1, 2, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 100, 0, 0, 0, 20, 0, 100, 0, 0, 0, 20, 0, 1, 1, 0, 0, 0, 0}
 var monsterWire = []byte{2, 7, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 100, 0, 0, 0, 20, 0, 100, 0, 0, 0, 20, 0, 1, 1, 0, 0, 0, 0}
 
+func TestLegacyPetSwitchWaitNextTurn(t *testing.T) {
+	s := &State{Self: 117671}
+	// Captured reference-server formation and replacement; no shared builders.
+	formation := []byte{11, 250, 82, 25, 1, 2, 167, 203, 1, 0, 0, 0, 0, 0, 0, 0, 4, 2, 185, 9, 0, 0, 16, 7, 185, 9, 0, 0, 165, 2, 176, 2, 0, 0, 0, 0}
+	replacement := []byte{11, 5, 5, 4, 82, 55, 0, 0, 2, 0, 167, 203, 1, 0, 3, 2, 247, 0, 0, 0, 129, 0, 247, 0, 0, 0, 129, 0, 16, 3, 0, 0, 0, 0}
+	for _, p := range [][]byte{formation, {50, 6, 4, 2, 0}, {52, 1}, replacement} {
+		if handled, valid := s.Apply(p); !handled || !valid {
+			t.Fatal("rejected legacy packet", p)
+		}
+	}
+	cell := Cell{3, 2}
+	f := s.At(cell)
+	if f == nil || !f.Waiting || f.Side != Attacker || f.Click != 2 || f.ID != 14162 || s.CanChoose(cell) {
+		t.Fatal("entry mode 5 did not defer participation", f)
+	}
+	if _, valid := s.Apply([]byte{52, 1, 0}); valid || !f.Waiting {
+		t.Fatal("malformed readiness cleared waiting")
+	}
+	// The native reset is unconditional, even without this owner's prompt.
+	s.Apply([]byte{52, 1})
+	if f.Waiting || !s.CanChoose(cell) {
+		t.Fatal("next round did not release replacement", f)
+	}
+}
+
 func fixture(t *testing.T) *State {
 	t.Helper()
 	s := &State{Self: 17}
@@ -46,6 +71,35 @@ func TestRound(t *testing.T) {
 		t.Fatal("formation geometry")
 	}
 }
+func TestNativePetOnlyRoundPrompt(t *testing.T) {
+	s := fixture(t)
+	s.Ready, s.Prompt = false, false
+	turn := s.Turn
+	for _, p := range [][]byte{
+		{51, 1, 4, 2, 25, 0, 0, 0, 0},
+		{11, 5, 5, 4, 102, 0, 0, 0, 2, 0, 17, 0, 0, 0, 3, 2, 100, 0, 0, 0, 20, 0, 100, 0, 0, 0, 20, 0, 1, 1, 0, 0, 0, 0},
+		{50, 6, 3, 2, 0}, {52, 1},
+	} {
+		if handled, valid := s.Apply(p); !handled || !valid {
+			t.Fatal("native pet prompt packet rejected", p)
+		}
+	}
+	if !s.Ready || s.Turn != turn+1 || !s.CanChoose(Cell{3, 2}) || s.CanChoose(Cell{4, 2}) {
+		t.Fatal("knocked-out owner cannot command its pet through native transport")
+	}
+	s.Apply([]byte{52, 1})
+	if s.Turn != turn+1 {
+		t.Fatal("duplicate native readiness opened another turn")
+	}
+	s.Ready = false
+	s.At(Cell{3, 2}).Owner = 999
+	s.Apply([]byte{50, 6, 3, 2, 0})
+	s.Apply([]byte{52, 1})
+	if s.Ready || s.Turn != turn+1 {
+		t.Fatal("foreign pet prompt enabled local commands")
+	}
+}
+
 func TestActionsAtomic(t *testing.T) {
 	s := fixture(t)
 	p := []byte{50, 1, 17, 0, 4, 2, 0x11, 0x27, 0, 1, 2, 2, 1, 0, 1, 0x19, 25, 0, 0, 0, 1}
@@ -127,6 +181,32 @@ func TestNativeLateMotionCues(t *testing.T) {
 	}
 }
 
+func TestNativeDepartureEndsOutward(t *testing.T) {
+	a, err := Load(login.NewAssets("../../../data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	original := a.Motions[60041]
+	m := original.Departure()
+	if m.Duration() >= original.Duration() {
+		t.Fatal("departure retained the return leg")
+	}
+	for _, test := range []struct {
+		cell Cell
+		want image.Point
+	}{
+		{Cell{4, 2}, image.Pt(959, 392)},
+		{Cell{2, 2}, image.Pt(-69, 392)},
+	} {
+		if got := m.PositionAt(test.cell, Cell{}, m.Duration()); got != test.want {
+			t.Fatalf("departure ends at %v, want %v", got, test.want)
+		}
+		if got := original.PositionAt(test.cell, Cell{}, original.Duration()); got != test.cell.Position() {
+			t.Fatal("departure changed the source motion")
+		}
+	}
+}
+
 func TestNativeRecoveryModesAndCapture(t *testing.T) {
 	s := fixture(t)
 	s.At(Cell{4, 2}).HP = 90
@@ -137,6 +217,21 @@ func TestNativeRecoveryModesAndCapture(t *testing.T) {
 	p = []byte{50, 1, 17, 0, 4, 2, 0x18, 0x27, 0, 1, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1}
 	if _, v := s.Apply(p); !v || !s.At(Cell{2, 2}).Removed {
 		t.Fatal("captured target remained")
+	}
+}
+
+func TestCapturedLegacyGrapeSyrupRecoveryMode(t *testing.T) {
+	s := fixture(t)
+	f := s.At(Cell{4, 2})
+	f.SP, f.MaxSP = 779, 1808
+	// Unmodified AC50:1 from the 2026-11-03 legacy-server capture:
+	// player uses item motion 10024 on self, SP +400, result mode 0.
+	p := []byte{50, 1, 17, 0, 4, 2, 40, 39, 0, 1, 4, 2, 1, 0, 1, 26, 144, 1, 0, 0, 0}
+	if _, valid := s.Apply(p); !valid || f.SP != 1179 {
+		t.Fatal("captured item recovery ignored", f.SP, valid)
+	}
+	if got := ApplyStatResult(99, 100, StatResult{Amount: 400, Mode: 0}); got != 100 {
+		t.Fatal("item recovery did not cap to maximum", got)
 	}
 }
 
@@ -163,6 +258,23 @@ func TestNativeDamageCues(t *testing.T) {
 	flame := a.Motions[11011]
 	if len(flame.Sounds) != 5 || flame.Sounds[0] != (SoundCue{ID: 10040, Trigger: 8, CompatibilityFlag: 5}) {
 		t.Fatalf("native sounds %+v", flame.Sounds)
+	}
+}
+
+func TestNativeCameraAndActorSoundTables(t *testing.T) {
+	a, err := Load(login.NewAssets("../../../data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	basic := a.Motions[10001]
+	if basic.CameraMode != 2 || len(basic.Camera) != 2 || basic.Camera[0] != (CameraPoint{At: image.Pt(685, 192), Speed: .5, Trigger: 500}) {
+		t.Fatalf("native basic camera %+v", basic.Camera)
+	}
+	if basic.BodySounds[1][1] != 10164 || basic.BodySoundTriggers[1] != 1 {
+		t.Fatal("native body track lost")
+	}
+	if a.Motions[60011].WeaponSounds[1][1] != 10018 {
+		t.Fatal("native reaction weapon sound lost")
 	}
 }
 

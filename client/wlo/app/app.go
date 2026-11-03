@@ -15,6 +15,7 @@ import (
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/lottery"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/settings"
@@ -91,10 +92,13 @@ type Client struct {
 	tradeTarget        bool // Trade Items' target mode 9 (trade.go)
 	tradeAllowed       bool // the player's +0x5791, set by 25/44 2
 	Business           *hud.Business
+	LuckyDraw          *lottery.Form
 	Trade              *inventory.TradeForm
 	friendAsk          *friendAsk // the open friend question
 	remote             remoteRuntime
 	battle             battleView
+	battleResults      battleResultsRuntime
+	combat             combatRuntime // Per-connection opt-in; never shared between sessions.
 	InventoryState     *inventory.State
 	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
 	MainStatus         *hud.MainStatus  // the status panel over the world
@@ -225,7 +229,7 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.Lost)
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
-	c.Servers.OnConnecting = func() { c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
+	c.Servers.OnConnecting = func() { c.combat = combatRuntime{}; c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
 	c.Login.Account.Clipboard = loginClipboardText
@@ -308,7 +312,9 @@ func New(o Options) (*Client, error) {
 	c.initCompound()
 	c.initSkills()
 	c.initTeam()
+	c.initPetStatus()
 	c.initTrade()
+	c.initLuckyDraw()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -332,6 +338,7 @@ func (c *Client) frame(draw bool) {
 	c.Input.Hovered = nil // FUN_0040f97c
 	c.sceneFadeTick(c.Now())
 	c.friendAskTick(c.Now())
+	c.luckyDrawTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
@@ -365,6 +372,7 @@ func (c *Client) frame(draw bool) {
 		c.drawBackground()
 	}
 	now := c.Now()
+	c.battleResultsTick(now)
 	if draw {
 		c.drawSceneFade()
 	}
@@ -449,7 +457,11 @@ func (c *Client) handleNet() {
 
 // dispatch is the part of the packet dispatcher (FUN_002dde1c) the login
 // phase reaches.
-func (c *Client) dispatch(p []byte) {
+func (c *Client) dispatchNative(p []byte) {
+	if c.deferBattleTransitionPacket(p) {
+		return
+	}
+	defer c.recordBattleResultsPacket(p)
 	if len(p) == 0 {
 		return
 	}
@@ -477,6 +489,8 @@ func (c *Client) dispatch(p []byte) {
 		sub = s[0]
 	}
 	switch {
+	case p[0] == protocol.CommandLuckyDraw:
+		c.luckyDrawPacket(p)
 	case p[0] == protocol.CommandDiscovery:
 		c.disconnectText = login.DisconnectReason(sub, 0)
 	case p[0] == protocol.CommandHandshake && sub == protocol.HandshakeServerDescription:
@@ -547,6 +561,7 @@ func (c *Client) dispatch(p []byte) {
 		// 2/16 (0x2dfd44): an ID, then text for the notice board.
 		if len(s) > chatIDEnd {
 			c.Notices.Show(s[chatIDEnd:], chatNoticeFor, c.Now())
+			c.luckyDrawNotice(s[chatIDEnd:])
 		}
 	case p[0] == protocol.CommandPresence:
 		c.receivePresence(s)

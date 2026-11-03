@@ -57,6 +57,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandLuckyDraw:           {handler: (*Server).luckyDrawCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandDiscovery:           {handler: (*Server).discoveryCommand, policy: protocol.CommandPolicy{}},
 	protocol.CommandHandshake:           {handler: (*Server).handshakeCommand, policy: protocol.CommandPolicy{}},
+	protocol.CommandGonlineCombat:       {handler: withoutContext((*Server).combatChoicesCommand), policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, RequiresBattle: true}},
 	protocol.CommandLogin:               {handler: (*Server).login, policy: protocol.CommandPolicy{}},
 	protocol.CommandTeam:                {handler: (*Server).partyCommand, policy: protocol.CommandPolicy{}},
 	protocol.CommandInstance:            {handler: (*Server).instanceCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
@@ -73,7 +74,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandFriends:             {handler: (*Server).friendCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandPetControl:          {handler: (*Server).petControlCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandDirectSettings:      {handler: (*Server).settingsCommand, policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},
-	protocol.CommandBattlePet:           {handler: (*Server).petCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandBattlePet:           {handler: (*Server).petCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true, AllowedDuringBattle: true}},
 	protocol.CommandEvent:               {handler: (*Server).eventCommand, policy: protocol.CommandPolicy{World: true, AllowedDuringMinigame: true, BlockedDuringTrade: true}},
 	protocol.CommandInventory:           {handler: (*Server).itemCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.InventoryStallListRequest, protocol.InventoryMallCatalog, protocol.InventoryMallBalance)},
 	protocol.CommandTrade:               {handler: (*Server).tradeCommand, policy: protocol.CommandPolicy{World: true}},
@@ -117,10 +118,22 @@ func (s *Server) discoveryCommand(_ context.Context, c *Session, _ []byte) error
 	if e := c.send(append([]byte{protocol.CommandHandshake, protocol.HandshakeServerDescription, 101, 0, 1}, []byte(s.Name())...)); e != nil {
 		return e
 	}
-	return c.send([]byte{protocol.CommandDiscoveryChannels, protocol.DiscoveryChannelsWireCode201, 0, 1, 101, 0, 3, 103, 0, 2, 104, 0, 3, 102, 0, 3})
+	if err := c.send([]byte{protocol.CommandDiscoveryChannels, protocol.DiscoveryChannelsWireCode201, 0, 1, 101, 0, 3, 103, 0, 2, 104, 0, 3, 102, 0, 3}); err != nil {
+		return err
+	}
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	if !s.combatRoundChain {
+		return nil
+	}
+	c.combatOffered = true
+	return c.send(protocol.CombatCapabilities(protocol.HandshakeCombatOffer, protocol.CombatCapabilityRoundChain))
 }
 
 func (s *Server) handshakeCommand(_ context.Context, c *Session, p []byte) error {
+	if len(p) > 2 && p[1] == protocol.HandshakeCombatAccept {
+		return s.acceptCombatProtocol(c, p)
+	}
 	sub := byte(1)
 	if len(p) > 1 {
 		sub = p[1]

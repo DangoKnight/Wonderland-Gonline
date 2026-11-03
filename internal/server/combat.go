@@ -46,13 +46,19 @@ type battleRun struct {
 	encounterMap uint16
 	wild         bool
 	trial        *assets.CombatTrial
+	petChanges   []battle.Step                // Native exit/join steps before the next round's actions.
+	items        map[uint16]assets.BattleItem // Immutable definition snapshot for this encounter.
+	withdrawals  [][]byte                     // Forced removals published after the already-calculated round's playback.
 }
 
 // battleMember is one participant: its character fighter and battle pet, if any.
 type battleMember struct {
-	c    *Session
-	self *battle.Fighter
-	pet  *battle.Fighter
+	c            *Session
+	self         *battle.Fighter
+	pet          *battle.Fighter
+	choiceToken  uint32
+	roundBundled bool // This recipient already has this round's native steps.
+	resultSaved  bool // Final vitals/pet consequences committed; do not settle twice on disconnect.
 }
 
 func (run *battleRun) member(c *Session) *battleMember {
@@ -208,6 +214,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 		m.c.battle = run
 	}
+	s.captureEscapeLeaders(run)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			if m.c == c {
@@ -243,6 +250,13 @@ func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16)
 		s.partyUpdate(m.c.party)
 	}
 	intro := run.b.Intro(m.self, background)
+	if m.c.combatCapabilities&protocol.CombatCapabilityRoundChain != 0 {
+		prompt, err := s.combatPrompt(m, intro[len(intro)-2:])
+		if err != nil {
+			return err
+		}
+		intro = append(intro[:len(intro)-2], prompt...)
+	}
 	if e := s.sendAll(m.c, intro[:2]); e != nil {
 		return e
 	}
@@ -276,7 +290,7 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		if len(p) < 2 {
 			return protocol.ErrMalformed
 		}
-		ack := run.b.Submit(s.rules(), c.character.ID, p[1], p[2:])
+		ack := run.b.Submit(s.combatRules(run), c.character.ID, p[1], p[2:])
 		if ack == nil {
 			return nil
 		}
@@ -285,9 +299,19 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		}
 		s.tryRound(run)
 	case protocol.CommandBattleState:
-		if len(p) >= 3 && p[1] == protocol.BattleStateExit && p[2] == 3 {
-			// Any member's escape ends the battle for the whole team.
-			s.endBattle(run, battle.Fled)
+		if len(p) == 3 && p[1] == protocol.BattleStateExit && p[2] == protocol.BattleExitRequest {
+			m := run.member(c)
+			if m == nil {
+				return nil
+			}
+			actor := m.self
+			if actor.Dead() {
+				actor = m.pet
+			}
+			if actor == nil {
+				return nil
+			}
+			return s.battleCommand(c, []byte{protocol.CommandBattleAction, protocol.BattleActionFleeRequest, actor.X, actor.Y, actor.X, actor.Y})
 		}
 	}
 	return nil
@@ -304,14 +328,25 @@ func (s *Server) tryRound(run *battleRun) {
 		run.timer.Stop()
 	}
 	run.turn++
-	steps, outcome := run.b.Round(s.rules())
+	s.captureEscapeLeaders(run)
+	steps, outcome := run.b.Round(s.combatRules(run))
+	steps = append(run.petChanges, steps...)
+	run.petChanges = nil
 	go s.playRound(run, steps, outcome)
 }
 
 // play sends each step to every member and waits for its animation without
 // holding worldMu. It stops when no member remains.
 func (s *Server) play(run *battleRun, steps []battle.Step) bool {
-	for _, step := range steps {
+	s.worldMu.Lock()
+	if run.b.Finished {
+		s.worldMu.Unlock()
+		return false
+	}
+	escapes := s.prepareEscapingMembers(run, steps)
+	prepared := s.prepareCombatRounds(run, steps)
+	s.worldMu.Unlock()
+	for index, step := range steps {
 		s.worldMu.Lock()
 		if run.b.Finished {
 			s.worldMu.Unlock()
@@ -319,14 +354,25 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 		}
 		members := run.active()
 		for _, m := range members {
-			progress, err := s.commitSkillUses(m.c, run, step.SkillUses)
+			if m.roundBundled {
+				continue
+			}
+			var progress [][]byte
+			var err error
+			if saved, ok := prepared[m.c]; ok {
+				if index < len(saved) {
+					progress = saved[index]
+				}
+			} else {
+				progress, err = s.commitSkillUses(m.c, run, step.SkillUses)
+			}
 			if err != nil {
 				s.Log.Warn("battle skill progress not committed", "character", m.c.character.ID, "error", err)
 				s.abandonBattle(m.c)
 				m.c.conn.Close()
 				continue
 			}
-			if s.sendAll(m.c, append(progress, step.Packets...)) != nil {
+			if s.sendAll(m.c, append(progress, step.PacketsFor(m.c.character.ID)...)) != nil {
 				m.c.conn.Close()
 			}
 		}
@@ -337,6 +383,56 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 		}
 		if step.Delay > 0 {
 			battleSleep(step.Delay)
+		}
+		if len(step.Escapes) > 0 {
+			s.worldMu.Lock()
+			for _, owner := range step.Escapes {
+				if result, ok := escapes[owner]; ok {
+					s.completeMemberEscape(run, result)
+				}
+			}
+			if s.finishEmptyEscapeBattle(run) {
+				s.worldMu.Unlock()
+				return false
+			}
+			s.worldMu.Unlock()
+		}
+		if len(step.Overkills) > 0 {
+			s.worldMu.Lock()
+			if run.b.Finished {
+				s.worldMu.Unlock()
+				return false
+			}
+			for _, f := range step.Overkills {
+				if f.Kind != battle.Player {
+					continue
+				}
+				for _, m := range run.active() {
+					if m.self != f {
+						continue
+					}
+					if err := s.returnOverkilledPlayer(run, m, true); err != nil {
+						s.Log.Warn("overkill return failed", "character", m.c.character.ID, "error", err)
+						m.c.battle = nil
+						run.b.Leave(m.c.character.ID)
+						m.c.conn.Close()
+					}
+				}
+			}
+			alive := len(run.active()) > 0
+			if !alive {
+				run.b.Finished = true
+				if run.timer != nil {
+					run.timer.Stop()
+				}
+				if run.encounter != 0 {
+					s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
+				}
+			}
+			s.worldMu.Unlock()
+			if !alive {
+				return false
+			}
 		}
 	}
 	return true
@@ -399,8 +495,12 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	s.flushBattleDisconnects(run)
 	if len(run.active()) == 0 || run.b.Finished {
 		return
+	}
+	if outcome == battle.Continue {
+		outcome = run.b.Forfeit()
 	}
 	if outcome != battle.Continue {
 		s.endBattle(run, outcome)
@@ -408,7 +508,8 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 	}
 	run.b.Processing = false
 	for _, m := range run.active() {
-		if s.sendAll(m.c, run.b.NextRound(m.c.character.ID)) != nil {
+		prompt, err := s.combatPrompt(m, run.b.NextRound(m.c.character.ID))
+		if err != nil || s.sendAll(m.c, prompt) != nil {
 			m.c.conn.Close()
 		}
 	}
@@ -429,6 +530,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	if run.b.Finished {
 		return
 	}
+	s.flushBattleDisconnects(run)
 	run.b.Finished = true
 	if run.timer != nil {
 		run.timer.Stop()
@@ -526,6 +628,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			c.conn.Close()
 			continue
 		}
+		m.resultSaved = true
 		var completed []uint32
 		for id, q := range next.Quests {
 			if before, exists := previousQuests[id]; !exists || before.State != q.State || before.Step != q.Step || before.Kills != q.Kills {
@@ -647,15 +750,36 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 	_ = s.startEvent(context.Background(), c, es.click, es.ev, next, true)
 }
 
-// abandonBattle is OnPlayerDisconnect: the member leaves; its fighters stay and
-// defend. The battle ends when no member remains. Caller holds worldMu.
+// abandonBattle saves the resolved state and withdraws this owner and pet.
+// The battle ends when no member remains. Caller holds worldMu.
 func (s *Server) abandonBattle(c *Session) {
 	run := c.battle
 	if run == nil {
 		return
 	}
+	m := run.member(c)
+	if m != nil && m.self.Overkilled {
+		// A disconnect during the flight must not bypass the saved return.
+		// The round has already resolved; omit writes to the closing owner.
+		if err := s.returnOverkilledPlayer(run, m, false); err != nil {
+			s.Log.Warn("disconnected overkill return failed", "character", c.character.ID, "error", err)
+		}
+	} else if m != nil && !m.resultSaved {
+		s.stageBattleDisconnect(run, m)
+		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
+		if err := s.saveBattleDisconnect(ctx, c); err != nil {
+			s.Log.Error("battle disconnect state not committed", "character", c.character.ID, "error", err)
+		}
+		cancel()
+	}
+	// The overkill path already publishes removal after committing its return.
+	removed := c.battle != run
 	c.battle = nil
 	run.b.Leave(c.character.ID)
+	c.encounter.battleOver()
+	if m != nil && !removed {
+		s.publishBattleDisconnect(run, m)
+	}
 	if len(run.active()) == 0 {
 		if run.encounter != 0 {
 			s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
@@ -667,6 +791,11 @@ func (s *Server) abandonBattle(c *Session) {
 		return
 	}
 	if !run.b.Finished {
+		// A submitted round is immutable. In particular, an escaping teammate
+		// must complete its departure before withdrawal-based endings are tested.
+		if run.b.Processing {
+			return
+		}
 		if outcome := run.b.Forfeit(); outcome != battle.Continue {
 			s.endBattle(run, outcome)
 			return
@@ -688,6 +817,32 @@ func battlePetIndex(char game.Character, m *battleMember) int {
 // the owner's packets and deferred peer broadcasts. Only the staged roster is
 // changed here; the caller adopts it and publishes packets after a durable save.
 func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
+	packets, peerPackets := s.activePetResults(run, m, next, outcome, roster)
+	for _, catch := range run.b.Captures {
+		if catch.Owner != next.ID {
+			continue
+		}
+		slot := next.FreePetSlot()
+		if slot == 0 {
+			continue
+		}
+		t := s.petTemplate(catch.Template)
+		pet := game.NewPet(catch.Template, catch.Name, slot, t, s.Assets.Items)
+		pet.Level = byte(max(1, min(catch.Level, game.MaxLevel)))
+		pet.EnsureSkills(t, s.hasSkill)
+		pet.Normalize(s.Assets.Items, true)
+		next.Pets = append(next.Pets, pet)
+		if roster.register(pet.ID) {
+			packets = append(packets, pet.RecruitPacket(next.ID, t))
+		}
+		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
+		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
+	}
+	return packets, peerPackets
+}
+
+// activePetResults checkpoints only the outgoing pet; captures settle once at battle end.
+func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
 	var packets, peerPackets [][]byte
 	if i := battlePetIndex(*next, m); i >= 0 {
 		pet := &next.Pets[i]
@@ -702,9 +857,9 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 		}
 		pet.Amity = byte(max(0, int(pet.Amity)-deaths))
 		if deaths > 0 && slot != 0 {
-			packets = append(packets, game.PetStat(slot, 64, int64(pet.Amity)))
+			packets = append(packets, game.PetStat(slot, game.PetStatAmity, int64(pet.Amity)))
 		}
-		if pet.Amity < 20 && deaths > 0 {
+		if pet.Amity < game.PetDesertMinimumAmity && deaths > 0 {
 			// The pet deserts the party.
 			id := pet.ID
 			if next.ActiveMount != 0 && game.SamePet(next.ActiveMount, id) {
@@ -732,26 +887,6 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 			pet.Normalize(s.Assets.Items, false)
 			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
 		}
-	}
-	for _, catch := range run.b.Captures {
-		if catch.Owner != next.ID {
-			continue
-		}
-		slot := next.FreePetSlot()
-		if slot == 0 {
-			continue
-		}
-		t := s.petTemplate(catch.Template)
-		pet := game.NewPet(catch.Template, catch.Name, slot, t, s.Assets.Items)
-		pet.Level = byte(max(1, min(catch.Level, game.MaxLevel)))
-		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
-		next.Pets = append(next.Pets, pet)
-		if roster.register(pet.ID) {
-			packets = append(packets, pet.RecruitPacket(next.ID, t))
-		}
-		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
-		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
 	}
 	return packets, peerPackets
 }

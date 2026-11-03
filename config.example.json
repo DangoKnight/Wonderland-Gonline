@@ -16,5 +16,6 @@
   "character_save_seconds": 30,
   "assets_database": "var/assets.db",
   "combo_damage_per_participant": false,
+  "combat_round_chain": false,
   "pet_growth_formula": "base_stats"
 }

@@ -156,6 +156,9 @@ func (s *Server) petCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
 	}
+	if c.battle != nil {
+		return s.battlePetCommand(ctx, c, p)
+	}
 	switch p[1] {
 	case protocol.BattlePetSelect, protocol.BattlePetSelectAlternate:
 		data := p[2:]

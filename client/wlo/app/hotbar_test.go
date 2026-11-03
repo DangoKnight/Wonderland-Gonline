@@ -93,7 +93,7 @@ func TestHotbarNativeListsAtomicAndCharacterIsolation(t *testing.T) {
 	}
 }
 func TestHotbarBattleActionsGoldenAndStaleGuards(t *testing.T) {
-	c, _, _ := enteredClient(t)
+	c, now, _ := enteredClient(t)
 	c.mapReady = true
 	sent := wire(t, c)
 	c.HotKeys.Bindings[1][1] = hud.Binding{Kind: 2, ID: 10001}
@@ -104,6 +104,7 @@ func TestHotbarBattleActionsGoldenAndStaleGuards(t *testing.T) {
 	for _, p := range [][]byte{player, enemy, {50, 6, 4, 2, 0}, {52, 1}} {
 		c.dispatch(p)
 	}
+	finishSceneFade(c, now)
 	if !c.HotbarKey(0x70, 0) || c.battle.binding == nil || len(sent()) != 0 {
 		t.Fatal("F1 did not wait for target")
 	}
@@ -187,7 +188,7 @@ func TestLogoutScreenshotConfirmationAndCancel(t *testing.T) {
 }
 
 func TestHotbarOwnedPetAndReleasedTarget(t *testing.T) {
-	c, _, _ := enteredClient(t)
+	c, now, _ := enteredClient(t)
 	c.mapReady = true
 	sent := wire(t, c)
 	c.InventoryState.Pets[2] = inventory.UsePet{ID: 14156}
@@ -196,6 +197,7 @@ func TestHotbarOwnedPetAndReleasedTarget(t *testing.T) {
 	for _, p := range [][]byte{remoteRecord(250, 2, 4, 2, 10001, 0), remoteRecord(5, 4, 3, 2, 14156, 10001), enemy, {50, 6, 4, 2, 0}, {52, 1}} {
 		c.dispatch(p)
 	}
+	finishSceneFade(c, now)
 	b := c.skillBinding(10001, 3)
 	c.useBinding(b)
 	if c.battle.binding == nil {

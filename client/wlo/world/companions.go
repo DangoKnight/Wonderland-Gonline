@@ -12,14 +12,13 @@ const (
 	companionTrailSamples = 5
 	companionTrailSpacing = 20
 	// FUN_00424a0c targets +0x220c/+0x2210, the third trail entry.
-	companionTrailTarget        = 2
-	companionTeleportDistance   = walkReach * cellSize
-	companionFourFacingMoveKind = 0 // Npc.dat +0x57, FUN_00430680.
+	companionTrailTarget      = 2
+	companionTeleportDistance = walkReach * cellSize
 )
 
-// FUN_00430680 folds the eight sitting directions to these four frames for
-// MoveKind 0 companions. Preserve its asymmetric direction-6 fallback.
-var companionSittingFacings = [...]int{47, 47, 49, 49, 51, 51, 51, 53}
+// Use FUN_00430680's sitting fallbacks only when the sprite lacks the exact
+// facing. Its MoveKind check concerns a rider's pose, not a following pet.
+var companionSittingFallbacks = [...]int{47, 47, 49, 49, 51, 51, 51, 53}
 
 type Companion struct {
 	ID            uint32
@@ -32,6 +31,7 @@ type Companion struct {
 	ownerPosition image.Point
 	initialized   bool
 	posed         bool
+	facing        int // Preserve the pet's facing across reduced-direction poses.
 }
 
 // SetCompanion is owner-based AC15:4/AC19:1 presentation, separate from map NPCs.
@@ -61,7 +61,9 @@ func (w *World) companionOwner(owner uint32) *Player {
 }
 
 func (c *Companion) reset(owner *Player) {
-	c.position = Player{X: owner.X, Y: owner.Y, Direction: standingAction + owner.Direction%directionsCount}
+	action := PoseAction(standingAction, int(owner.Direction))
+	c.position = Player{X: owner.X, Y: owner.Y, Direction: int32(action)}
+	c.facing = action - standingAction
 	c.walker = Walker{}
 	c.posed = false
 	c.ownerPosition = image.Pt(owner.X, owner.Y)
@@ -80,21 +82,27 @@ func (c *Companion) step(owner *Player, now time.Time) {
 		c.reset(owner)
 	}
 	c.ownerPosition = at
-	// Held poses arrive through the owner's normal AC32:2 state. Use the
-	// pet's actual sprite frames as its capability check, so creatures without
-	// a human emote keep following/standing rather than disappearing.
-	action := int(owner.Direction)
-	if c.Info.MoveKind == companionFourFacingMoveKind && action >= protocol.PoseSitFirst && action <= protocol.PoseSitLast {
-		action = companionSittingFacings[action-protocol.PoseSitFirst]
+	// Mirror the owner's pose family through normal AC32:2 state, retaining
+	// the pet's own facing. Owner-only turns must not rotate the pet.
+	if !c.posed {
+		c.facing = PoseAction(standingAction, int(c.position.Direction)) - standingAction
 	}
-	if ActionBase(action) > standingAction && c.supportsPose(action) {
-		c.walker.Stop(&c.position)
-		c.position.Direction = int32(action)
-		c.posed = true
-		return
+	if pose := ActionBase(int(owner.Direction)); pose > standingAction {
+		action := PoseAction(pose, standingAction+c.facing)
+		supported := c.supportsPose(action)
+		if !supported && action >= protocol.PoseSitFirst && action <= protocol.PoseSitLast {
+			action = companionSittingFallbacks[action-protocol.PoseSitFirst]
+			supported = c.supportsPose(action)
+		}
+		if supported {
+			c.walker.Stop(&c.position)
+			c.position.Direction = int32(action)
+			c.posed = true
+			return
+		}
 	}
 	if c.posed {
-		c.position.Direction = int32(PoseAction(standingAction, int(c.position.Direction)))
+		c.position.Direction = int32(standingAction + c.facing)
 		c.posed = false
 	}
 	c.walker.Step(&c.position, now)

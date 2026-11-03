@@ -1,5 +1,32 @@
 # Testing and validation
 
+## Combat support and automatic targeting — 2026-11-03
+
+Passed the complete `internal/battle` suite under `-race`, focused asset support
+and targeting tests, and server combat integration tests under `-race`.
+Coverage includes native grade fallback, every automatic pattern and ordering,
+sparse formations, authored overrides, PvP allegiance, pets, defeated and joining
+recipients, capped SP restoration, selective/general cleansing, monster support
+AI, one SP cost/proficiency use per cast, independent native result bytes, native
+and chain transport, and restored SP persistence after disconnect.
+Affected client battle/skill/targeting/playback checks, server-package vet,
+formatting and whitespace checks also passed. Built `bin/wonderland-next.exe`
+from `./cmd/wonderland`; the running server was not restarted.
+
+```powershell
+go test -race ./internal/battle -count=1 -timeout=4m
+go test ./internal/assets -run '^Test(Skill|NativeSupport|Native.*Effect)' -count=1 -timeout=2m
+go test -race ./internal/server -run '^Test(CombatMana|BattleItem|GonlineCombat|BattlePet|TeamBattle|NativePvP|PvPDisconnect|BattleDisconnect)' -count=1 -timeout=5m
+go vet ./internal/assets ./internal/battle ./internal/server
+Push-Location client
+go test ./wlo/battle ./wlo/skills ./wlo/app -run 'Test.*(Target|Mana|Skill|Round|Combat|Result)' -count=1 -timeout=4m
+Pop-Location
+```
+
+Automatic shapes and support rules follow Private Server `0cb6915`; a live
+official-client animation comparison remains pending. No new SQL schema or
+asset rebuild is required.
+
 This is the maintained guide for automated checks, test data, graphics/snapshots,
 benchmarks, native-client acceptance and recorded testing findings. Commands run
 from the repository root unless they explicitly enter `client/`. Feature guides
@@ -1728,3 +1755,673 @@ absent. Existing captures still use the same pixel assertions, and other read/
 decode errors remain failures. No replacement reference images were generated.
 An old ignored temporary Go source snapshot was renamed to a non-Go suffix to
 keep it out of normal package discovery.
+
+### Independent companion pose facing - 2026-11-02
+
+Following pets mirror the owner's pose family using their own facing, retained
+across lying and sitting variants. Owner turns leave that facing unchanged for
+local and peer companions. Exact sprite frames take precedence over the native
+four-frame sitting fallback, regardless of the NPC MoveKind flag. The installed
+Roca sprite has only sitting actions 47, 49, 51 and 53; this is confirmed by both
+the native action directory and the editable frame table.
+
+The focused selection below passes, including all eight pet facings, missing
+pose fallback, spawning during a pose, movement resumption and the rendered Roca
+integration with independent raw AC32 requests. Affected-package vet also passes.
+The client port catalog was regenerated with no resulting changes. No server
+behavior, database state or sprite artwork was changed.
+
+From `client/`, on Windows:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/world ./wlo/app -run '^Test(Companion.*|RightClickPose.*|NativePoseBatchAndMalformed|AltOneKneelsAndSendsNativePose|TeamPet.*)$' -count=1 -timeout=4m
+go vet ./wlo/world ./wlo/app
+```
+
+### Daily Lucky Draw client - 2026-11-02
+
+The client implements the existing AC104:1 catalog, spin and result contract
+with native form artwork, a reward preview and the 2800 ms presentation spin.
+Independent raw packets cover ordered rewards, cumulative usage, the winning
+slot and ordinary AC23:5 inventory delivery. Malformed catalogs/results leave
+state unchanged. Tests cover all twenty slots, empty catalogs, duplicate clicks,
+closing/reopening while pending, cancellation before send, full-inventory
+refusal, unrelated banners, missing/late replies, send failures, server midnight
+refreshes, interaction gates, character changes and disconnects. No server or
+database changes are required.
+
+Focused tests and affected-package vet pass. GPU/CPU parity now includes the
+draw result and twenty-reward preview (23 stages), passing with loose exports
+and compiled packs. The compiled-bundle smoke test also verifies the native
+artwork and independent Lucky Draw state between sessions sharing resources.
+Result/preview captures under ignored `var/lucky-draw/` were visually inspected;
+these are implementation captures, not original-client reference baselines.
+The regenerated port catalog records AC104 receive coverage.
+
+From `client/`, on Windows:
+
+```powershell
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/lottery ./wlo/app -run '^Test(LuckyDraw.*|GPUClientParity|Companion.*|RightClickPose.*|NativePoseBatchAndMalformed|Lost.*)$' -count=1 -timeout=5m
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/lottery ./wlo/app -run '^Test(LuckyDraw.*|CompiledBundleLoginAndSharedWorld|GPUClientParity)$' -count=1 -timeout=5m
+go vet ./wlo/lottery ./wlo/app
+```
+
+### Battle contact timing and departures - 2026-11-02
+
+The displayed battle roster applies HP/SP changes at authored MBTM contact cues,
+including multiple hits, healing, critical damage, misses and capture. Independent
+wire fixtures verify that subsequent AC51 absolute stats and AC53 defeat packets
+cannot move the displayed result ahead of the hit. Player and pet HUD vitals use
+the same presentation; command validation retains the immediate decoded roster.
+
+Victory and flee fixtures cover AC11:1 departures followed by an early AC11:0,
+with the last attack finishing before motion 60041 and the map fade. New formations
+cancel old departure state. Native asset checks verify outward positions on both
+halves and that departure omits the return leg without modifying the source
+motion. Existing battle, Remote and pet HUD checks pass. CPU/GPU parity adds
+seven battle/contact/departure/fade stages (33 total). Focused checks pass with
+loose exports and compiled packs; affected-package vet passes. Departure captures
+in ignored `var/battle-presentation/` were visually inspected; the turn countdown
+is cleared during departure. No server packets or authored motion data changed.
+
+From `client/`, on Windows:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/battle
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^Test(Battle.*|PetStatus.*|Remote.*|GPUClientParity)$' -count=1 -timeout=5m
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(BattleVitalsAtContact|BattleMultiHitDefeatAtFinalContact|BattleCaptureAndMissAtContact|BattleDepartureWaitsForFinalAttack|BattleNewFormationCancelsDeparture|BattleTransitions|GPUClientParity|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/battle ./wlo/app
+```
+
+### Active-pet HUD - 2026-11-02
+
+The player status panel now includes the compact native pet portrait, level,
+HP/SP bars and experience bar/percentage. Layout and portrait anchors were
+traced through `FUN_0029d3a4` and `FUN_0029dbf0` and checked against the supplied
+legacy screenshot. The existing 007-family icon path retains template colors;
+Teams' top-left icon placement is unchanged. The view reads the active pet's
+current roster entry rather than Inventory's local selection.
+
+Focused tests pass for independent layout pixels, live HP/SP, overfull-bar
+clamping, active-pet changes, Rest, companion snapshots and removed roster entries.
+Existing Teams portrait/action and companion-emote checks pass. CPU/GPU parity
+now covers pet HUD display, updated stats with a numeric tooltip, and Rest
+(26 total stages), including compiled packs. Affected-package vet passes.
+An implementation capture at ignored `var/pet-status.png` was visually inspected;
+no original-client reference baseline was replaced. The client catalog was
+regenerated. No server packets, persistent data or artwork changed.
+
+From `client/`, on Windows:
+
+```powershell
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/hud ./wlo/role ./wlo/app -run '^Test(PetStatus.*|GPUClientParity|TeamPetActionsAndAuthoritativeReplies|Team.*Portrait.*|CompanionEmoteAndRecoveryIntegration|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/hud ./wlo/role ./wlo/app
+```
+
+### Battle reveal, audio and zoom - 2026-11-02
+
+The existing map darken now continues into a 15-step battle-field reveal.
+Brightness checks cover both halves of entry and the existing exit fade;
+queued actions, their sounds, command menus and turn timers wait for reveal.
+The reveal continuation is a requested presentation change, separately identified
+from the native transition evidence.
+
+Native MBTM camera points and fixed sound tables are checked against independent
+expected values. Tests verify general/weapon/body cue ordering, once-only playback,
+attacking-weapon ownership of reaction sounds, native voice roulette, player versus
+companion voice groups, and actual WAV/OGG decoding from loose and compiled packs.
+Camera checks cover authored paths, holds and field bounds. Zoom follows horizontal
+attack progress, respects the persisted Zoom Mode setting, restores the full view
+after the action and releases its renderer target on exit. No source audio, motion
+tables, protocol bytes, server logic or database state changed.
+
+Focused battle/settings/Remote/pet/dialogue regressions and affected-package vet
+pass. CPU/GPU parity now checks 37 stages, including the camera/zoom at contact
+and multiple reveal frames, with loose exports and compiled packs. The zoom
+capture in ignored `var/battle-media/zoom.png` was visually inspected: the scene
+enlarges while the HUD keeps its normal size. This is an implementation capture,
+not a replacement native reference. Remaining native phase, parallax and weapon
+resolver limits are recorded in [battle parity](BATTLE_CLIENT_PARITY.md).
+
+From `client/`, on Windows:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/battle ./wlo/skills ./wlo/settings
+go test ./wlo/world -run '^Test(NPCTemplates|PropSound|Companion.*)$' -count=1 -timeout=3m
+$env:WONDERLAND_TEST_GPU = '1'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(Battle.*|Settings.*|PetStatus.*|Remote.*|DialogueVoicesAndOGG|GPUClientParity|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/battle ./wlo/skills ./wlo/settings ./wlo/world ./wlo/app
+```
+
+### Round damage, overkill removal and spawn return - 2026-11-02
+
+Native AC53:3 selects the upward removal state, not an ordinary knockout.
+The old server emitted it for every death. Tests now distinguish ordinary
+lethal damage, low remaining HP, exactly 150%, strictly above 150%, odd maximum
+HP, cumulative hits, healing, round resets and overflow-safe combo totals.
+Independent raw packets verify only overkills send AC53:3, and simultaneous
+area removals share one 300 ms flight. Existing combo damage goldens remain;
+the ordinary-knockout fixture now explicitly forbids the removal packet.
+
+Server tests cover Starter Beach and saved record-point returns, invalid point
+fallback, atomic saved vitals/pet results/location, checkpoint adoption, save
+failure, map-load control restoration and one member leaving mid-round while
+teammates receive later actions. Old-map peers receive the committed departure.
+Disconnecting during the flight also commits the return destination, without
+attempting to send a warp to the closing connection.
+The focused removal and disconnect checks pass under the race detector.
+No schema migration or development database rebuild is needed.
+
+Client tests cover retained ordinary corpses, contact-before-flight timing,
+removal during another unit's action, duplicates, early scene close, revival
+exclusion, cleared hit boxes and reinforcement identity reuse. Remote counts
+ordinary knockouts from authoritative HP changes instead of depending on the
+overkill marker. Hotbar fixtures wait for the battle entry fade before exercising
+their unchanged raw request goldens. CPU/GPU parity includes the native overkill
+flight and disappearance (42 stages). The implementation capture at ignored
+`var/overkill/flight.png` was visually inspected. Affected-package vet passes.
+
+From the repository root, on Windows:
+
+```powershell
+go test ./internal/battle ./internal/protocol
+go test ./internal/server -run '^Test(Overkill.*|QuestBattle.*|TeamBattle.*|.*Battle.*Reinforcement.*|.*Battle.*Capture.*|.*Battle.*Disconnect.*|.*Battle.*Skill.*)$' -count=1 -timeout=5m
+$env:CGO_ENABLED = '1'
+go test -race ./internal/battle ./internal/server -run '^Test(Overkill.*|TeamBattleFleeAndDisconnect)$' -count=1 -timeout=5m
+go vet ./internal/battle ./internal/protocol ./internal/server
+```
+
+From `client/`:
+
+```powershell
+$env:CGO_ENABLED = '0'
+go test ./wlo/battle
+go test ./wlo/app -run '^Test(BattleOverkill.*|BattleOrdinaryKnockoutRemainsOnField|Hotbar.*|RemoteBattle.*)$' -count=1 -timeout=4m
+$env:WONDERLAND_TEST_GPU = '1'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(Battle.*|RemoteBattle.*|GPUClientParity|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/battle ./wlo/app
+```
+
+### Negotiated combat round transport - 2026-11-02
+
+Independent raw fixtures cover capability negotiation, choice batches, complete
+round envelopes and framing. Bounds/truncation checks cover incomplete bodies,
+out-of-order/overlapping chunks, oversized declarations and nested extensions.
+Server tests verify unchanged native handshake replies, registry gates, mixed
+legacy/Gonline delivery, the complete chain before the first wait, one atomic
+owned choice batch, rejected foreign/duplicate actors, stale tokens, actual
+round execution and renewed prompts. Skill progress survives native fallback
+without double grants; failed saves publish no chain. Owner overkill truncates
+its chain and saves its spawn while teammates continue. Focused negotiation,
+playback, overkill and disconnect checks pass under the race detector.
+
+Client checks cover opt-in/version fallback, connection reset, one request for
+character plus pet, partial timeout choices, sequential contact damage, combo
+playback, overkill/reinforcement ordering, stale chains, deferred readiness and
+map changes, and validation before any damage is applied. Legacy battle/hotbar/
+Remote regressions pass. With compiled packs, CPU/GPU parity checks 46 stages,
+including queued full-round contact and release of the next prompt. Affected
+server and client package vet passes. No schema/asset rebuild is required.
+These are automated compatibility checks, not live original-client acceptance
+or load/throughput measurements.
+
+From the repository root:
+
+```powershell
+go test ./internal/protocol ./internal/server -run '^Test(CombatRound.*|GonlineCombat.*|CommandRegistry.*|LoginWireFlow|MigrationGenericAcknowledgements|.*BattleSkill.*|.*BattlePetSkill.*)$' -count=1 -timeout=5m
+$env:CGO_ENABLED = '1'
+go test -race ./internal/protocol ./internal/server -run '^Test(CombatRound.*|GonlineCombat.*|Overkill.*|TeamBattleFleeAndDisconnect|LoginWireFlow|MigrationGenericAcknowledgements)$' -count=1 -timeout=5m
+go vet ./internal/protocol ./internal/battle ./internal/server
+```
+
+From `client/`:
+
+```powershell
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_GPU = '1'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(GonlineCombat.*|Battle.*|Hotbar.*|RemoteBattle.*|RemoteAuto.*|GPUClientParity|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/battle ./wlo/app
+```
+
+### Battle victory voices and single-click skills - 2026-11-02
+
+Victory audio follows native `FUN_00395f84`: winning-side candidates, living
+local-owner gate, one selected speaker, 10/20/30% `_bta3/2/1` variants and 40%
+silence. Tests decode the actual Ogg recordings, check roulette boundaries,
+final-action timing, duplicates, early scene close, pet speakers, losing/fallen
+owners and deferred Gonline endings. The server's AC11:12 operand now names the
+actual winning side; independent raw packets cover attacker/defender wins and
+native PvP/quest settlement. The ordinary PvP fixture explicitly avoids an
+overkill so its loser remains present for settlement.
+
+Real UI press/release tests cover single-click targeting plus the unchanged raw
+AC50 request, dragging onto the hotbar plus its unchanged AC40 request, and
+out-of-battle browsing/double-click behavior. Focused battle, sound, skill,
+hotbar and negotiated-playback checks pass with exported and compiled assets;
+affected-package vet passes. No asset/database rebuild is needed. Native knockout
+recordings were identified separately; a dedicated whole-battle defeat line was
+not found in the traced finish/departure handlers.
+
+```powershell
+# Repository root
+go test ./internal/battle ./internal/server -run '^Test(Departure.*|NativePvP.*|QuestBattle(Victory|Defeat)|GonlineCombat.*)$' -count=1 -timeout=4m
+go vet ./internal/battle ./internal/server
+# client/
+$env:CGO_ENABLED = '0'
+go test ./wlo/skills ./wlo/app -run '^Test(Battle.*|GonlineCombat.*|Hotbar.*|SkillsOutsideBattle.*)$' -count=1 -timeout=5m
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(BattleVictory.*|BattleSkill.*|BattleVoice.*|BattleAdditionalSound.*|GonlineCombatVictory.*|SkillsOutsideBattle.*|HotbarDrag.*)$' -count=1 -timeout=4m
+go vet ./wlo/skills ./wlo/app
+```
+
+### Combat disconnect settlement - 2026-11-02
+
+Race-enabled regressions cover withdrawal of owner/pet and pending choices,
+exclusion from subsequent targeting/damage, and continued combat for an online
+teammate after its leader disconnects. Native and chain cases calculate a real
+damage/SP-spending round, pause playback, disconnect the owner, and verify SQL
+already holds the final round vitals plus pet HP/SP and one amity penalty.
+Removal records follow committed playback and precede the next prompt.
+
+Concurrent last-player disconnects save each owner and stop playback. A failed
+SQL save retains an immutable snapshot and baseline; retry commits once without
+publishing a failed pet change. A disconnect during a committed defeat departure
+does not overwrite defeat recovery or repeat the pet penalty. A knocked-out
+remaining teammate receives a defeat rather than an impossible command phase.
+Existing escape, overkill/spawn, PvP forfeit, item, encounter-reservation and
+logout/autosave regressions are included. No asset or database rebuild is needed.
+
+```powershell
+go test -race ./internal/battle ./internal/protocol -count=1 -timeout=4m
+go test -race ./internal/server -run '^Test(BattleDisconnect|Disconnect|.*Disconnect.*|PvP.*|NativePvP.*|.*Overkill.*|.*Escape.*|GonlineCombat.*|BattleItem.*|BattlePet.*|TeamBattle.*|Wild.*|WorldSimulation.*|BufferedMovementPurchaseAndDisconnect|FailedBattleResult.*)' -count=1 -timeout=6m
+go vet ./internal/battle ./internal/server
+```
+
+### Battle item use - 2026-11-02
+
+Slow-choice and dual-item regressions: the native `E119` turtle sheet is rendered
+with four 250 ms frames starting at ten seconds remaining. Tests cover both turn
+limits, own/peer submission receipts, pet indicators, hidden/dead/waiting fighters,
+playback, expiry and next-round reset. The actual exported sheet is rendered and
+checked; `BATTLE_SLOW_SNAPSHOT` optionally saves a battle screenshot.
+The reported Spicy Hot Pot (32176) scenario has player and pet target the pet from
+the same stack of 50. Client tests include native receipts between selections;
+server race tests verify the round executes and durably consumes exactly two
+items, for full and injured pets in native and complete-round transports. This
+depends on the full-vitals selection fix above; binaries built before that fix
+must be rebuilt and restarted. Tests did not restart the running development server.
+
+```powershell
+# root
+go test -race ./internal/server -run '^TestBattleItem' -count=1 -timeout=3m
+# client/
+go test ./wlo/app -run '^Test(BattleSlow|BattleItem|BattleTimer)' -count=1 -timeout=3m
+```
+
+Item-target corrections also pass focused tests for the native magic cursor,
+clicking all eight allied player/pet formation cells at full vitals, recovery
+after damage received between selection and execution, and Bomb enemy selection
+with ally rejection. Independent native item projections cover Bomb, Strong Bomb,
+Darts and both shuriken variants. Full-vitals selection follows the decompiled
+`FUN_0038972c` and its eligibility helpers; no live legacy-server capture was made.
+
+Verified the native AC50:2 builder directly in the matching aLogin executable
+(`FUN_002c2394`, branch `0x002d4247`–`0x002d44ed`), including item ID,
+opaque trailer, bag slot and compatibility flag. Subsequent live legacy-server
+and legacy-client-to-Gonline captures on 2026-11-03 established the additional
+40-byte send-path trailer and mode-zero recovery. See
+[the capture findings](BATTLE_ITEM_CAPTURE.md). Raw captured 52-byte requests
+are replayed through the engine and server, including player/pet item use from
+one stack and durable count reduction. Client regressions verify the captured
+mode-zero SP recovery at contact; existing 12-byte goldens remain unchanged.
+The Grape Syrup/Nian Noodle screenshot references also verify the outlined
+cyan SP and orange HP sheets. Item contact tests cover both sheets, including
+mode-zero HP recovery on a pet recipient; HP recovery no longer uses plain text.
+
+Focused tests pass for native request/result goldens, simultaneous HP/SP recovery
+at contact, revival, creature motions, pet commands, speed ordering, unclamped
+overkill damage, invalid/stale/locked selections, last-stack reservations, SQL
+failure and cross-owner pet rollback. Native and negotiated round delivery each
+emit one private consumption receipt; completed choice-token replay has no effect.
+Actual UI double-click, item shortcuts, Escape cancellation, turn reset and
+compiled motions 10024/10025/15138 pass. Existing eight-byte choice goldens remain
+unchanged; mixed eight/twelve-byte batches have separate independent goldens.
+
+Affected battle/protocol suites and server combat integrations pass under the
+race detector. Client battle, hotbar, inventory and Gonline combat regressions
+pass with the compiled asset bundle. Affected-package vet passes. No database
+migration, asset rebuild or live server restart was performed.
+
+```powershell
+# Repository root
+go test ./internal/assets -run '^TestNativeBattleItem' -count=1
+go test -race ./internal/battle ./internal/protocol -count=1 -timeout=4m
+go test -race ./internal/server -run '^Test(BattleItem|GonlineCombat|BattlePet|CombatPet|.*Escape.*|.*Overkill.*)' -count=1 -timeout=5m
+go vet ./internal/assets ./internal/battle ./internal/protocol ./internal/server
+# client/
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app ./wlo/battle ./wlo/inventory -run '^Test(Battle.*|GonlineCombat.*|Hotbar.*|Inventory.*)$' -count=1 -timeout=5m
+go vet ./wlo/app ./wlo/inventory ./wlo/battle
+```
+
+### Multi-attribute allocation encoding - 2026-11-03
+
+The client formerly packed two-byte amounts in counted AC8:1 entries. The
+reference-compatible server decoder consumes four bytes whenever available,
+which swallowed the following stat ID and made multi-attribute allocations
+unaffordable or incomplete. The client now writes four-byte amounts for each
+entry. Server parsing behavior and independent migration goldens are unchanged.
+
+Focused tests cover all 31 nonempty attribute subsets with different amounts,
+passing generated client requests through the actual server decoder and game
+allocation rules. A server integration test verifies STR/WIS increases and point
+deduction in SQL, unchanged current HP/SP, and the authoritative points reply.
+Existing client budget, duplicate-submission, confirmation, timeout and reset
+checks also pass.
+
+```powershell
+# root
+go test -race ./internal/game ./internal/server -run '^Test(StatAllocation.*|MigrationAllocationWidthsAndBatches|AllocationUnlockCommitsWithStats|FailedAllocation.*)$' -count=1 -timeout=3m
+# client/
+go test ./wlo/inventory ./wlo/app -run '^Test(InventoryPoint.*|NativePresentationAndAllocation)$' -count=1 -timeout=3m
+```
+
+### Post-combat results message - 2026-11-02
+
+The client snapshots player/pet progression at formation and accumulates only
+confirmed native updates through the battle close and final map/stat refresh.
+Tests cover EXP/level/amity/gold changes, repeated absolute EXP receipts,
+aggregated material receipts, consumed stock, malformed inventory packets,
+losses, no empty popup, departed/replaced pets, long-list scrolling, expiry at
+six seconds even while hovered, panel/text clicks retaining the timed notice
+without world click-through, scrollbar navigation, disconnect/character
+isolation, and queued Gonline settlement.
+The summary makes no resource changes or requests; wire assertions preserve the
+existing additive item packets. No server rule, protocol, database or asset
+format changes are required.
+
+Focused results and affected battle/Remote/compiled-bundle checks pass with
+compiled packs. CPU/GPU parity now checks 50 stages, including post-fade results,
+long reward lists and the final scrolled entries. The actual implementation
+capture at ignored `var/battle-results/summary.png` was visually inspected: all
+player, pet, gold and material rows fit and are readable. This extends the native
+six-second message with a bounded, scrollable list; it does not claim the remaining
+animated level-up/capture artwork. Affected-package vet passes.
+
+From `client/`:
+
+```powershell
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app -run '^Test(BattleResults.*|GonlineCombatResults.*)$' -count=1 -timeout=4m
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^Test(Battle.*|GonlineCombat.*|RemoteBattle.*|GPUClientParity|CompiledBundleLoginAndSharedWorld)$' -count=1 -timeout=5m
+go vet ./wlo/app ./wlo/inventory
+```
+
+The results notice now matches the supplied legacy example: immediately below
+the top command icons (Y=34), sized to its centered yellow English lines, without
+a title or close button. Five visible rows retain wheel/rail scrolling for longer
+reward lists, and stale loot notices are replaced so they cannot cover the result.
+Focused `BattleResults.*`, `GonlineCombatResults.*` and `GPUClientParity` checks
+pass with compiled assets; the three-line English reference capture at
+`var/battle-results-reference.png` and the longer summary at
+`var/battle-results-summary.png` were visually inspected. Affected-package vet passes.
+
+### Battle modules, pet switches and idle timeouts - 2026-11-02
+
+Native Team evidence (`FUN_00277728`) gates Rest/Battle requests on the player's
+unconsumed command and closes selection without an AC50 Defend. Tests open
+Social, Team, Inventory, Skills, Compound and Settings under real AC20:12 and
+AC6:2 battle locks while retaining gameplay restrictions. Raw requests verify
+pet changes send only AC19; Ride/dismiss and repeated/late commands stay blocked.
+Empty timeouts send nothing, partial Gonline selections flush only their original
+native AC50 request, and explicit Defend remains distinct from idle damage.
+
+Engine/server checks cover both formation sides, independent native participant
+goldens, outgoing HP/SP/amity persistence, switching back without refilling,
+capture settlement isolation, transactional save failure, ineligible pets,
+already-submitted/dead players, ordered exit/join playback in both transports,
+next-turn readiness, and selection racing the turn timeout. The battle engine
+suite and focused server race checks pass. Affected client battle/transport,
+hotbar/Remote and Team checks pass with compiled assets; 53-stage CPU/GPU parity
+includes the three newly open battle modules. The actual Team-over-battle capture
+at ignored `var/battle-team.png` was visually inspected. Affected-package vet
+passes. No schema, assets or capability-version changes are needed.
+
+```powershell
+# Repository root
+go test ./internal/battle -count=1 -timeout=2m
+$env:CGO_ENABLED = '1'
+go test -race ./internal/server -run '^Test(BattlePet.*|GonlineCombat.*|CommandRegistryCompatibility|NativePvPEntryActionsSettlementAndPersistence|QuestBattle(Victory|Defeat))$' -count=1 -timeout=4m
+go vet ./internal/battle ./internal/game ./internal/server
+# client/
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^Test(BattleModules.*|BattleTeam.*|BattleTimeout.*|GonlineCombatTimeout.*|GPUClientParity)$' -count=1 -timeout=3m
+go test ./wlo/app -run '^Test(BattleTimeout.*|GonlineCombat.*)$' -count=1 -timeout=3m
+go vet ./wlo/app ./wlo/team
+```
+
+### Pet-switch animation sequencing - 2026-11-02
+
+Regression fixtures reproduce exit, replacement and attack packets arriving in
+one native TCP burst or a zero-delay round chain. Both paths preserve the old
+pet until departure completes, animate the new pet entering its mirrored cell,
+and hold attacks/contact damage, readiness and settlement until entry finishes.
+Tests retain queued gold/items across scene close, avoid duplicate rewards,
+reset transitions on a new formation, and advance background sessions without
+drawing. Initial-roster fixtures now put their pets before the first command
+prompt rather than introducing them as mid-battle arrivals.
+
+The entry controller is traced through `FUN_0039108c` / `FUN_00378d80`; its
+80-pixel horizontal projection is a documented compatibility approximation.
+Focused battle/transport/input checks and motion tests pass; affected-package
+vet passes. CPU/GPU parity covers 60 stages, including departure, entry and
+the first subsequent attack contact. Actual sprite captures under ignored
+`var/battle-pet-switch/` were visually inspected. No server/protocol change or
+asset rebuild is required.
+
+```powershell
+# client/
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/battle -count=1 -timeout=2m
+go test ./wlo/app -run '^Test(BattlePet.*|GonlineCombat.*|GPUClientParity)$' -count=1 -timeout=3m
+go vet ./wlo/battle ./wlo/app
+```
+
+### Native pet-switch capture correction - 2026-11-02
+
+The preceding client animation fix did not correct the server's native switch
+packets. A completed round on the legacy server and a completed round from aLogin
+through a transparent Gonline relay exposed these differences:
+
+| Packet/state | Successful legacy server | Gonline before correction |
+| --- | --- | --- |
+| Owner AC53:5 | Before exit/selection | After selection |
+| Outgoing AC11:1 | Four bytes | Five bytes |
+| Owner AC19 receipt | Between exit and participant | Before exit |
+| Incoming AC11:5 entry mode / owned slot | 5 / 2 | 1 / 0 |
+| Immediate incoming HP/SP and AC53:5 | Absent; vitals are in participant | Sent |
+| First attack after participant | About 342 ms | Under 1 ms |
+| Incoming pet targeted during switch round | Unavailable | Targeted by second enemy |
+
+`FUN_0039108c` assigns the mode-5 unavailable flag, `FUN_0038ca44` excludes it
+from drawing, targeting also rejects it, and `FUN_0039783c` resets it on AC52:1.
+The server now preserves this native order and owned slot, keeps selection
+receipts private in both transports, and excludes joining pets from action/direct
+target/area target/AI selection for that round. Joining pets still count as living
+for the battle outcome if their owner is knocked out. A documented 350 ms floor
+separates the switch batch from actions; this single observed interval does not
+establish every native animation's duration.
+
+Independent raw goldens reproduce the actual reference participant bytes.
+Regressions cover both formation sides, next-round targeting, owner knockout,
+transaction failure, mixed-client receipt isolation and the selection/timeout
+race. Focused battle/server checks pass under `-race`. Client fixtures exercise
+both transports through departure, the hidden waiting state, current-round
+attacks and readiness-triggered entry. Compiled-asset snapshots of waiting and
+next-turn entry were visually inspected. CPU/GPU parity passes all **67** stages;
+affected server/client vet and separate executable builds pass. The running
+server was not restarted, so a manual legacy-client retest of the rebuilt server
+remains acceptance work.
+
+The combat-only diagnostic traces and snapshots remain ignored under
+`var/pet-switch-capture/`. The relay is stopped, temporary PktMon filters are
+removed, and the legacy client's original server list is restored.
+
+```powershell
+# repository root
+go test -race ./internal/battle ./internal/server -run 'Test(BattlePet|Timeout|GonlineCombat|NativePvP|Overkill|Formation|Target|Monster|Reinforcement)' -count=1 -timeout=3m
+
+# client/; compiled assets available as documented above
+go test ./wlo/battle ./wlo/app -run '^Test(Battle.*|LegacyPetSwitch.*|Round$|GonlineCombat.*|Hotbar.*|RemoteBattle.*|GPUClientParity)$' -count=1 -timeout=3m
+```
+
+### Concurrent pet presentation and opt-in round transport - 2026-11-02
+
+This supersedes the preceding hidden incoming-pet presentation while retaining
+switching-round protection. Gonline retains the departing pet's fighter and body as a separate
+visual copy while the incoming pet walks onto the field. Ground entry and exit
+run concurrently in native bursts and round chains; attacks and settlement wait
+for both tracks. The incoming pet stays visible while its native Waiting flag
+blocks choices and targeting until next-round readiness. Readiness does
+not replay entry. Area coverage excludes the joining pet, for both whole-side
+and authored offset patterns, matching direct/AI primary-target protection.
+
+`TestBattlePetSwitchConcurrentDepartureAndArrival` verifies independent bodies,
+overlapping movement, ground travel, delayed damage and no extra requests.
+`TestBattlePetLegacyWaitingModeAcrossTransports` plays an attack against the
+owner while the visible incoming pet stays protected, then enables choices without repeating
+entry. Area-attack tests verify that damage excludes the joining pet and can hit
+it after the switching protection ends. New-formation and queued-settlement regressions remain covered. Compiled
+sprite snapshots under ignored `var/pet-switch-concurrent/` were visually
+inspected; CPU/GPU parity passes all 67 stages with simultaneous actor checks.
+
+`combat_round_chain` is a startup-file boolean, default false when omitted.
+Configuration tests cover omitted/false/true. Server regressions check captured
+startup policy, suppressed offers while disabled, rejected unsolicited or stale
+acceptance, explicit negotiation when enabled, and native playback for clients
+that do not negotiate even with the switch enabled. Focused battle/server race
+checks include area attacks, pet switching, negotiation and native login.
+Native pet-only prompts also open the owner's next turn after a player knockout;
+foreign-pet prompts and duplicate readiness cannot open additional turns.
+
+```powershell
+# repository root
+go test ./internal/config -count=1
+go test -race ./internal/battle ./internal/server -run 'Test(BattlePet|Area|GonlineCombat|LoginWireFlow)' -count=1 -timeout=3m
+
+# client/; compiled assets / graphics environment as above
+go test ./wlo/app -run '^Test(BattlePet.*|GPUClientParity)$' -count=1 -timeout=3m
+```
+
+### Owner/pet escape scope and native failure - 2026-11-02
+
+An explicit player or pet escape now withdraws its owner/pet pair and discards
+their remaining commands. Only a successful team-leader escape ends the whole
+battle; member escapes let other participants finish the round and choose their
+next turn. The round captures current party leadership under `worldMu`.
+Overkill and disconnect remain separate removal paths. A knocked-out teammate
+still receives ordinary defeat settlement if the last living member escapes.
+The legacy AC11:1:3 request enters the normal validated escape/command path.
+
+The selected reference rule uses the strongest living opponent: equal/higher
+actor level guarantees success; lower levels use `75 - floor(enemy level / 6)`
+percent. Boundary tests retain the reference high-roll success convention and
+exclude dead opponents from the maximum. Raw native failure bytes select motion
+60042 with zero stat results. Extracted MBTM records confirm its run, pose-64
+trip and recovery. Failure grants no defense or proficiency, consumes no SP,
+and keeps Flee 60041 as the repeat request.
+
+Successful member departures commit character vitals, pet vitals/amity/captures
+and roster adoption before success packets or a round envelope. Escaping owners'
+chains end at their departure; other clients receive a participant close and
+continue. Owner and pet departures animate together. Failed saves publish no
+owner success, and observers clean up the disconnected identities. Empty battles
+release their timer/encounter even if the last teammate disconnects during flight.
+
+Focused engine/server checks pass under `-race`: chance boundaries, either actor,
+leader/member scope, native/full-round mixtures, save failure, overkill, logout,
+disconnect/departure races and pet switches. Client regressions cover own/peer
+departure with both transports, failure without damage/removal and repeat-command
+normalization. Compiled player and Roca falling sprites under ignored
+`var/battle-escape/` were visually inspected. CPU/GPU parity now covers **69**
+stages, including the native failed-escape fall. These are automated compatibility
+checks; no new manual legacy-client capture was performed for this change.
+
+```powershell
+# repository root
+go test -race ./internal/battle ./internal/server -run 'Test.*(Escape|Flee|RoundDamageAndOutcomes|GonlineCombat|Overkill|BattlePet)' -count=1 -timeout=3m
+go vet ./internal/battle ./internal/server
+
+# client/; compiled asset and graphics environment as above
+go test ./wlo/app -run '^Test(BattleEscape.*|BattlePet.*|GPUClientParity)$' -count=1 -timeout=3m
+go vet ./wlo/battle ./wlo/app
+```
+
+### Full pre-push validation - 2026-11-02
+
+Clean Windows runs passed the full root module with `-race -count=1 -timeout=60m`
+and the full client module with `-count=1 -timeout=60m`, compiled bundles,
+exported data and real GPU checks enabled. The root run passed 1,878 tests/subtests
+across 28 tested packages; the client passed 576 across 24 tested packages.
+Packages without tests are counted separately. Both modules passed `go vet`.
+
+Validation exposed and corrected three integration problems: Ebitengine's audio
+context must be shared process-wide even across independent workspace caches;
+all four GPU fixtures need isolated `RunGame` lifecycles; and companion emote
+integration must load Roca's real metadata instead of the simplified world
+fixture. Concurrent first-time audio initialization and the affected voice/emote
+checks passed under `-race`. GPU parity retains all 69 stages, with separate
+portrait, hover and movie-illustration checks.
+
+The sprite exporter now recognizes the exact `ca19ee...` and `190dae...` executable
+layouts at their verified key-literal addresses, preserving the earlier layout
+fallback. Installed archive nonces and tags authenticated both layouts; key
+bytes were not logged or added to source. Independent crypto vectors remain
+unchanged. The translated item census/hash golden uses its matching 7,312-item
+reference, rather than the newer 7,325-item input. NPC, skill, mark, EVE and MBTM
+inputs are identical between these installed revisions. Complete native asset
+and sprite packages passed separately with their correct original inputs.
+
+Additional checks passed: all original artwork archives, every exported font
+glyph against its original font, the remaining available game/UI snapshots,
+editable-asset manifest verification, Go formatting, Prettier, HTMLHint and the
+Python exporter/media suite (24 passed, one Windows symlink-privilege skip).
+Ten-second fuzz runs completed 1,061,019 protocol inputs and 606,139 EVE inputs
+without failures. Optional `golangci-lint` was not installed.
+Server and client executable builds passed. The incremental bundle build
+validated all 72,829 files (6,020.3 MiB of source) and reused every entry.
+
+Full-run skips include opt-in native/snapshot checks subsequently run separately,
+unavailable original screenshot/legacy editable-sprite fixtures, live-account
+checks without credentials and Windows symlink checks without the required
+privilege. They are not claimed as executed live/native-client acceptance.
+Detailed logs and rendered samples remain ignored under
+`var/validation/2026-11-02-prepush/`.
+
+Use the full commands above with absolute `WONDERLAND_TEST_ASSETS_DB`,
+`WONDERLAND_TEST_CLIENT_DATA`, `WONDERLAND_SPRITE_CLIENT`,
+`WONDERLAND_TEST_CLIENT_BUNDLE` and `WONDERLAND_TEST_DATA_ROOT` paths. Set
+`WONDERLAND_TEST_GPU=1` for the client run. Native item goldens require the
+matching reference revision; other installation variants should be tested
+separately without changing those independent expected bytes/hashes.

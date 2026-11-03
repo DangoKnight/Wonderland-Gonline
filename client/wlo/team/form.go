@@ -47,6 +47,8 @@ type Form struct {
 	State              *State
 	Inventory          *inventory.Form
 	CanAct             func() bool
+	InBattle           func() bool
+	CanChangePet       func() bool
 	Send               func([]byte) error
 	Notice             func(string)
 	NameOf             func(uint32) []byte
@@ -219,9 +221,15 @@ func (f *Form) finishName() {
 	e.Caret, e.CaretCol = 0, 0
 }
 
-// FUN_0027758c/FUN_00277fc8: mode changes are requests, not optimistic roster edits.
+// FUN_00277728: battle-mode requests consume the player's command. Riding is
+// unavailable during combat. Roster changes wait for the server's reply.
 func (f *Form) SetMode(slot byte, mode int) {
-	if !f.allowed() || slot < 1 || slot > game.MaxPets {
+	inBattle := f.InBattle != nil && f.InBattle()
+	allowed := f.allowed()
+	if inBattle {
+		allowed = f.Visible && !f.Blocked() && f.CanChangePet != nil && f.CanChangePet() && mode != modeRide
+	}
+	if !allowed || slot < 1 || slot > game.MaxPets {
 		return
 	}
 	pet := f.Inventory.State.Pets[slot-1]
@@ -235,10 +243,19 @@ func (f *Form) SetMode(slot byte, mode int) {
 		}
 		return
 	}
-	if mode == modeBattle && pet.Amity < 40 {
+	if mode == modeBattle && pet.Amity < game.BattlePetMinimumAmity {
 		if f.Notice != nil {
 			f.Notice("Can't use, Amity below 40")
 		}
+		return
+	}
+	if inBattle {
+		if mode == modeRest && f.State.BattlePet == pet.ID {
+			f.send([]byte{protocol.CommandBattlePet, protocol.BattlePetRest})
+		} else if mode == modeBattle && f.State.BattlePet != pet.ID && f.State.MountPet != pet.ID {
+			f.send(protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(uint32(pet.ID)))
+		}
+		f.Refresh()
 		return
 	}
 	if f.State.MountPet == pet.ID && mode != modeRide {
@@ -301,6 +318,10 @@ func (f *Form) memberAction(row int, leader bool) {
 }
 func (f *Form) Refresh() {
 	can := f.allowed()
+	changePet := can
+	if f.InBattle != nil && f.InBattle() {
+		changePet = f.Visible && !f.Blocked() && f.CanChangePet != nil && f.CanChangePet()
+	}
 	// FUN_0026dfc4 keeps the active tab pressed, like the Skills tabs.
 	for i, b := range f.Tabs {
 		b.Sticky = (i == 1) == f.Instances.Visible
@@ -324,7 +345,7 @@ func (f *Form) Refresh() {
 			e.Caret, e.CaretCol = 0, 0
 		}
 		f.Modes[i].Visible = have
-		f.Modes[i].Enabled = can
+		f.Modes[i].Enabled = changePet
 		f.Dismiss[i].Visible = have
 		f.Dismiss[i].Enabled = can
 		art := "Btn_AssignRest_1"
@@ -341,7 +362,7 @@ func (f *Form) Refresh() {
 	}
 	for i, b := range f.Options {
 		b.Visible = f.menuSlot != 0 && !f.Instances.Visible
-		b.Enabled = can
+		b.Enabled = changePet && (i != modeRide || f.InBattle == nil || !f.InBattle())
 		b.Top = petRowTop + (int(f.menuSlot)-1)*petRowStep - 63 + i*20
 	}
 

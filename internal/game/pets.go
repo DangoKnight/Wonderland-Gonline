@@ -11,6 +11,12 @@ import (
 // MaxPets is the party size limit.
 const MaxPets = 4
 
+// BattlePetMinimumAmity is the native Team form's battle-mode requirement.
+const BattlePetMinimumAmity = 40
+
+// PetDesertMinimumAmity is the minimum retained amity after a combat knockout.
+const PetDesertMinimumAmity = 20
+
 // MaxHotelPets is the native pet hotel capacity (AC31).
 const MaxHotelPets = 10
 

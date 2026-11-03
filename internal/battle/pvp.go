@@ -1,7 +1,6 @@
 package battle
 
 const (
-	friendlyPetMarker     = 5
 	mirroredGridColumnSum = 5
 )
 
@@ -30,9 +29,13 @@ func NewPvP(attackers, defenders []*Fighter) *Battle {
 	return &Battle{Attackers: attackers, Defenders: defenders, PvP: true, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
 }
 
-// Forfeit returns an ending only when an entire PvP side has disconnected.
+// Forfeit ends a PvP side's withdrawal, or a PvE fight left with no living
+// allied fighters. A remaining knocked-out owner cannot submit another round.
 func (b *Battle) Forfeit() Outcome {
 	if !b.PvP {
+		if allDead(b.Attackers) {
+			return Defeat
+		}
 		return Continue
 	}
 	for _, side := range []Side{Attacker, Defender} {

@@ -54,15 +54,32 @@ type Fighter struct {
 	Template             uint32    // Monster template.
 	Skills               [3]uint16 // Native NPC skill slots; immutable for this encounter.
 	Deaths               int       // Times knocked out, for pet amity.
-	// Absent marks a disconnected player's fighters. They stay on the field
-	// and defend; the turn no longer waits for their commands.
+	RoundDamage          uint64    // Received HP damage before remaining-HP clamping; reset each round.
+	Overkilled           bool
+	Withdrawn            bool // Removed by overkill or explicit owner escape; retain vitals for settlement.
+	Joining              bool // Replacement pet cannot act or be targeted, including by area coverage, until next command phase.
+	overkillAnnounced    bool
+	// Absent marks disconnected owners; Withdrawn also excludes their fighters
+	// from targeting, actions and subsequent rounds without changing their vitals.
 	Absent bool
 }
 
 // hurt lowers HP and counts a knock-out.
 func (f *Fighter) hurt(damage int) {
+	f.hurtWithRoundDamage(damage, uint64(max(0, damage)))
+}
+
+func (f *Fighter) hurtWithRoundDamage(damage int, received uint64) {
+	if f.Withdrawn || f.Overkilled || damage <= 0 {
+		return
+	}
 	alive := !f.Dead()
+	f.RoundDamage += min(received, ^uint64(0)-f.RoundDamage)
 	f.HP = max(0, f.HP-damage)
+	if f.MaxHP > 0 && f.RoundDamage > uint64(f.MaxHP)+uint64(f.MaxHP)/2 {
+		f.Overkilled = true
+		f.HP = 0
+	}
 	if damage > 0 {
 		f.breakDamageEffects()
 	}
@@ -71,10 +88,13 @@ func (f *Fighter) hurt(damage int) {
 	}
 }
 
-func (f *Fighter) Dead() bool { return f.HP <= 0 }
+func (f *Fighter) Dead() bool { return f.HP <= 0 || f.Withdrawn || f.Overkilled }
 
 // CanAct reads capability restrictions supplied by active effects.
 func (f *Fighter) CanAct() bool {
+	if f.Joining {
+		return false
+	}
 	for _, e := range f.Effects {
 		if e.Turns > 0 && e.Definition.BlockActions {
 			return false
@@ -89,20 +109,34 @@ func (f *Fighter) key() int { return int(f.X)<<8 | int(f.Y) }
 type Action struct {
 	Actor         *Fighter
 	Player        uint32
-	Kind          string // attack, defend, catch, flee, heal, effect, monster
+	Kind          string // attack, defend, idle, catch, flee, heal, effect, monster
 	Redirected    bool   // Target selected by an active redirection effect.
 	Skill         uint16
-	SkillEXP      uint32 // Award computed from the resolved primary target, once per cast.
+	ItemSlot      byte
+	Item          game.Item // Selected identity/metadata; revalidated before consumption.
+	SkillEXP      uint32    // Award computed from the resolved primary target, once per cast.
 	TX, TY        byte
 	comboSpeed    int
 	speedRecorded bool
 }
 
-// Step is a batch of packets for every participant, followed by an animation delay.
+// Step sends public packets and optional private receipts, then waits its delay.
 type Step struct {
-	Packets   [][]byte
-	Delay     time.Duration
-	SkillUses []Action // Successfully executed actions, for durable proficiency awards.
+	Packets      [][]byte
+	OwnerPackets map[uint32][][]byte // Private receipts, sent after the public packets.
+	Delay        time.Duration
+	SkillUses    []Action   // Successfully executed actions, for durable proficiency awards.
+	Overkills    []*Fighter // Removal happens after this step's flight, before later actions.
+	Escapes      []uint32   // Owners leaving with their pets after this step; distinct from overkill/disconnect.
+}
+
+// PacketsFor preserves native ordering without exposing another owner's Team receipts.
+func (s Step) PacketsFor(owner uint32) [][]byte {
+	private := s.OwnerPackets[owner]
+	if len(private) == 0 {
+		return s.Packets
+	}
+	return append(append([][]byte(nil), s.Packets...), private...)
 }
 
 type Outcome byte
@@ -116,6 +150,9 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
+	Items map[uint16]assets.BattleItem
+	// Called synchronously during Round, before an item effect or success packet.
+	CommitItem func(Action, *Fighter, int, int) bool
 	// Selects 10 percent per actual combo participant instead of the fixed bonus.
 	ComboDamagePerParticipant bool
 	// Zero retains the default multiplier for existing rule constructors.
@@ -137,9 +174,10 @@ type Battle struct {
 	Processing, Finished bool
 	// Roster lists each player's pet templates, for capture limits; Captures records
 	// the monsters caught, to be added after the battle.
-	Roster   map[uint32][]uint32
-	Captures []Capture
-	PvP      bool
+	Roster        map[uint32][]uint32
+	Captures      []Capture
+	PvP           bool
+	EscapeLeaders map[uint32]bool // Successful explicit escape by a team leader ends this battle.
 }
 
 // Capture is a caught monster for its owner's party.
@@ -264,19 +302,25 @@ func (b *Battle) Intro(self *Fighter, background uint16) [][]byte {
 	out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateFormation}.U16(background), byte(self.Side), self, 2, 0, 0), []byte{protocol.CommandBattleState, protocol.BattleStateInitialize, KindStandard})
 	allies, enemies := b.Teams(self.Side)
 	for _, f := range allies {
-		if f != self && f.Kind == Player {
+		if f != self && f.Kind == Player && !f.Withdrawn && !f.Overkilled {
 			out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateParticipant}, byte(f.Side), f, byte(Player), 0, 0))
 		}
 	}
 	for _, f := range allies {
-		if f.Kind == Pet {
-			out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateParticipant}, friendlyPetMarker, f, byte(Pet), 0, f.Owner))
+		if f.Kind == Pet && !f.Withdrawn && !f.Overkilled {
+			out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateParticipant}, protocol.BattleParticipantWaitNextTurn, f, byte(Pet), f.ClickID, f.Owner))
 		}
 	}
 	for _, f := range enemies {
+		if f.Withdrawn || f.Overkilled {
+			continue
+		}
 		out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateParticipant}, byte(f.Side), f, byte(f.Kind), f.ClickID, f.Owner))
 	}
 	for _, f := range b.all() {
+		if f.Withdrawn || f.Overkilled {
+			continue
+		}
 		out = append(out, StatSync(f.X, f.Y, 0x19, uint32(f.HP)), StatSync(f.X, f.Y, 0x1a, uint32(f.SP)))
 	}
 	return append(out, []byte{protocol.CommandBattleAction, protocol.BattleActionTurn, self.X, self.Y, 0}, []byte{protocol.CommandBattleReady, protocol.BattleReadyReady})
@@ -297,11 +341,13 @@ func (b *Battle) Expected() int {
 	return max(1, n)
 }
 
-// Leave marks a player's fighters absent, dropping their unplayed commands.
+// Leave removes a player's fighters, dropping unexecuted commands. Retain HP/SP
+// and death counters for durable settlement; disconnect is not a flee action.
 func (b *Battle) Leave(player uint32) {
 	for _, f := range b.all() {
 		if (f.Kind == Player && f.ID == player) || (f.Kind == Pet && f.Owner == player) {
 			f.Absent = true
+			f.Withdrawn = true
 			delete(b.Pending, f.key())
 		}
 	}
@@ -342,8 +388,12 @@ func has(name string, words ...string) bool {
 	return false
 }
 
-func isHeal(s assets.Skill) bool   { return has(s.Name, "Heal", "Recover", "Blessing", "Cure", "Rest") }
-func isRevive(s assets.Skill) bool { return has(s.Name, "Reviv", "Restoration") }
+func isHeal(s assets.Skill) bool {
+	return !s.RestoresSP() && !s.CleansesStatus() && (s.EffectLayer == assets.SkillLayerHealing || has(s.Name, "Heal", "Recover", "Blessing", "Cure", "Rest"))
+}
+func isRevive(s assets.Skill) bool {
+	return s.EffectLayer == assets.SkillLayerRevival || has(s.Name, "Reviv", "Restoration")
+}
 
 // learned returns a character's grade of a skill, accepting the stunt alias.
 func learned(c *game.Character, skill uint16) (game.LearnedSkill, bool) {
@@ -398,9 +448,9 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 	if b.Finished || b.Processing {
 		return nil
 	}
-	// Item requests have a different payload and resource boundary. Never
-	// interpret their item ID as a skill ID (or consume an actor's turn) while
-	// transactional battle-item execution is unavailable.
+	if sub == protocol.BattleActionItemRequest {
+		return b.submitItem(r, player, data)
+	}
 	switch sub {
 	case protocol.BattleActionAttackRequest, protocol.BattleActionDefendRequest, protocol.BattleActionFleeRequest:
 	default:
@@ -445,6 +495,8 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 		kind, skill = "defend", defendSkill
 	case skill == catchSkill:
 		kind = "catch"
+	case known && (s.RestoresSP() || s.CleansesStatus()):
+		kind = "heal"
 	case known && hasCastEffects(s.Effects):
 		kind = "effect"
 	case known && (isHeal(s) || isRevive(s)):
@@ -463,17 +515,29 @@ func (b *Battle) Ready() bool {
 	return !b.Finished && !b.Processing && len(b.Pending) >= b.Expected()
 }
 
-// Timeout is OnTurnTimeout: missing commands become Defend.
+// ActionIdle consumes a command without an animation, SP cost or defense bonus.
+// It is internal state, not a new native AC50 subcommand.
+const ActionIdle = "idle"
+
+// Idle consumes an unsubmitted owned fighter's command.
+func (b *Battle) Idle(f *Fighter) {
+	if f == nil || f.Dead() {
+		return
+	}
+	if _, exists := b.Pending[f.key()]; !exists {
+		owner := f.ID
+		if f.Kind == Pet {
+			owner = f.Owner
+		}
+		b.Pending[f.key()] = Action{Actor: f, Player: owner, Kind: ActionIdle}
+	}
+}
+
+// Timeout preserves submitted commands; missing commands receive no defense.
 func (b *Battle) Timeout() {
 	for _, f := range b.all() {
 		if !f.Dead() && (f.Kind == Player || f.Kind == Pet) {
-			if _, ok := b.Pending[f.key()]; !ok {
-				player := f.ID
-				if f.Kind == Pet {
-					player = f.Owner
-				}
-				b.Pending[f.key()] = Action{Actor: f, Player: player, Kind: "defend", Skill: defendSkill}
-			}
+			b.Idle(f)
 		}
 	}
 }
@@ -568,7 +632,7 @@ func (b *Battle) order(r Rules, actions []Action) [][]Action {
 	var ordered []Action
 	for _, a := range actions {
 		switch a.Kind {
-		case "attack", "status", "catch", "heal", "buff", "effect":
+		case "attack", "status", "catch", "heal", "buff", "effect", "item":
 			ordered = append(ordered, a)
 		}
 	}
@@ -598,18 +662,25 @@ func (b *Battle) order(r Rules, actions []Action) [][]Action {
 func living(fs []*Fighter) []*Fighter {
 	var out []*Fighter
 	for _, f := range fs {
-		if !f.Dead() {
+		if !f.Dead() && !f.Joining {
 			out = append(out, f)
 		}
 	}
 	return out
 }
 
-func allDead(fs []*Fighter) bool { return len(living(fs)) == 0 }
+func allDead(fs []*Fighter) bool {
+	for _, f := range fs {
+		if !f.Dead() {
+			return false
+		}
+	}
+	return true
+}
 
 func at(fs []*Fighter, x, y byte, alive bool) *Fighter {
 	for _, f := range fs {
-		if f.X == x && f.Y == y && (!alive || !f.Dead()) {
+		if f.X == x && f.Y == y && !f.Joining && !f.Withdrawn && !f.Overkilled && (!alive || !f.Dead()) {
 			return f
 		}
 	}
@@ -628,18 +699,15 @@ func (r Rules) spend(f *Fighter, skill uint16) []byte {
 // Round is ExecuteTurn: it applies one round and returns its steps. A non-Continue
 // outcome ends the battle; the caller then runs the matching ending.
 func (b *Battle) Round(r Rules) ([]Step, Outcome) {
-	b.Turn++
-	for _, f := range b.all() {
-		if f.Absent && !f.Dead() {
-			if _, ok := b.Pending[f.key()]; !ok {
-				player := f.ID
-				if f.Kind == Pet {
-					player = f.Owner
-				}
-				b.Pending[f.key()] = Action{Actor: f, Player: player, Kind: "defend", Skill: defendSkill}
-			}
+	defer func() {
+		for _, f := range b.all() {
+			f.Joining = false
 		}
+	}()
+	for _, f := range b.all() {
+		f.RoundDamage = 0
 	}
+	b.Turn++
 	actions := make([]Action, 0, len(b.Pending))
 	keys := make([]int, 0, len(b.Pending))
 	for k := range b.Pending {
@@ -659,16 +727,14 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 		if damage := f.periodicDamage(); !f.Dead() && damage > 0 {
 			f.hurt(damage)
 			packets := [][]byte{StatSync(f.X, f.Y, 0x19, uint32(f.HP))}
-			if f.Dead() {
-				packets = append(packets, []byte{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, f.X, f.Y})
-			}
 			emit(0, packets...)
+			steps = b.appendOverkill(steps, f)
 		}
 	}
-	for _, a := range actions {
-		if a.Kind == "flee" && a.Actor != nil && !a.Actor.Dead() {
-			return steps, Fled
-		}
+	var fled bool
+	steps, fled = b.resolveEscapes(r, actions, steps)
+	if fled {
+		return steps, Fled
 	}
 	defending := map[int]bool{}
 	for _, a := range actions {
@@ -678,6 +744,10 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 	}
 	for _, step := range b.order(r, actions) {
 		for _, a := range step {
+			if a.Kind == "item" {
+				steps = append(steps, b.useItem(r, a)...)
+				continue
+			}
 			if a.Kind == "effect" {
 				steps = append(steps, r.abilityEffect(b, a))
 				continue
@@ -746,10 +816,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 			target = actor
 		}
 	}
-	targets := []*Fighter{target}
-	if shape, ok := s.TargetingAt(skillGrade(actor, a.Skill)); ok {
-		targets = formationTargets(allies, target, shape, isRevive(s))
-	}
+	targets := skillTargets(allies, target, s, skillGrade(actor, a.Skill), isRevive(s))
 	// Ordinary healing cannot revive a defeated fighter.
 	if !isRevive(s) {
 		targets = living(targets)
@@ -763,6 +830,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 		hpBefore := target.HP
 		stat, amount := byte(0), 0
 		switch {
+		case s.RestoresSP():
+			amount = min(max(0, target.MaxSP-target.SP), max(manaMinimumRestoration, int(float64(max(actor.attack(), actor.magicAttack()))*manaStatMultiplier)+int(actor.Level)*manaLevelRestoration))
+			target.SP, stat = target.SP+amount, game.StatCurrentSP
+		case s.CleansesStatus():
+			r.cleanse(target, s)
 		case isRevive(s) && target.Dead():
 			amount = min(target.MaxHP, max(50, target.MaxHP/3))
 			target.HP, stat = amount, game.StatCurrentHP
@@ -772,7 +844,9 @@ func (r Rules) support(b *Battle, a Action) Step {
 		}
 		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
 		if a.SkillEXP == 0 {
-			if isRevive(s) {
+			if s.RestoresSP() || s.CleansesStatus() {
+				a.SkillEXP = game.SupportSkillEXPPerUse + game.BuffSkillEXPBonus
+			} else if isRevive(s) {
 				a.SkillEXP = game.SupportSkillEXPPerUse + game.ReviveSkillEXPBonus
 			} else {
 				a.SkillEXP = game.HealingSkillEXP(amount, hpBefore, target.MaxHP)
@@ -781,7 +855,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, a.Skill, results))
 	for _, target := range targets {
-		packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentHP, uint32(target.HP)))
+		if s.RestoresSP() {
+			packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentSP, uint32(target.SP)))
+		} else if !s.CleansesStatus() {
+			packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentHP, uint32(target.HP)))
+		}
 	}
 
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
@@ -853,8 +931,8 @@ func systemLine(text string) []byte {
 
 func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step, bool) {
 	if len(group) == 1 && !Basic(group[0].Skill) {
-		if shape, ok := r.Skills[group[0].Skill].TargetingAt(skillGrade(group[0].Actor, group[0].Skill)); ok && (shape.All || len(shape.Offsets) > 1) {
-			return r.areaAttack(b, group[0], shape, defending), false
+		if r.Skills[group[0].Skill].IsAreaAttack(skillGrade(group[0].Actor, group[0].Skill)) {
+			return r.areaAttack(b, group[0], defending), false
 		}
 	}
 	var steps []Step
@@ -936,6 +1014,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 			}
 			anim := protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}
 			total := 0
+			var received uint64
 			var delay time.Duration
 			var landed []Action
 			for i := range combo {
@@ -959,6 +1038,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
 				combo[i].SkillEXP = game.CombatSkillEXP(dmg, max(0, target.HP-total), target.MaxHP)
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
+				received += uint64(dmg)
 				skill := a.Skill
 				if skill == 0 {
 					skill = basicAttackSkill
@@ -966,14 +1046,12 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				anim = hitRecord(anim, actor, target, skill, guarded, 0x19, dmg, mode)
 			}
 			packets = append(packets, anim)
-			target.hurt(total)
+			target.hurtWithRoundDamage(total, received)
 			for _, a := range landed {
 				r.applyHitEffects(a.Actor, target, a.Skill)
 			}
 			steps = append(steps, Step{Packets: packets, Delay: delay, SkillUses: combo})
-			if target.Dead() {
-				steps = append(steps, Step{Packets: [][]byte{{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, target.X, target.Y}}})
-			}
+			steps = b.appendOverkill(steps, target)
 		}
 	}
 	return steps, false
@@ -1017,9 +1095,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 			anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, defending[t.key()], 0x19, dmg, 1)
 			t.hurt(dmg)
 			steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}
-			if t.Dead() {
-				steps = append(steps, Step{Packets: [][]byte{{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, t.X, t.Y}}})
-			}
+			steps = b.appendOverkill(steps, t)
 			return steps
 		}
 	}
@@ -1038,9 +1114,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 	t.hurt(dmg)
 
 	steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}
-	if t.Dead() {
-		steps = append(steps, Step{Packets: [][]byte{{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, t.X, t.Y}}})
-	}
+	steps = b.appendOverkill(steps, t)
 	return steps
 }
 
@@ -1062,21 +1136,28 @@ func (b *Battle) NextRound(player uint32) [][]byte {
 
 // Departure is the leave animation shared by victory and defeat (AC11:12, AC11:1).
 func (b *Battle) Departure(victory bool) [][]byte {
-	out := [][]byte{{protocol.CommandBattleState, protocol.BattleStateFinish, 1}}
+	winner := Attacker
+	if !victory {
+		winner = Defender
+	}
+	out := [][]byte{{protocol.CommandBattleState, protocol.BattleStateFinish, byte(winner)}}
 	if victory && !b.PvP {
 		for _, f := range b.Attackers {
-			if f.Kind == Pet {
+			if f.Kind == Pet && !f.Withdrawn && !f.Overkilled {
 				out = append(out, []byte{protocol.CommandBattleState, protocol.BattleStateExit, f.X, f.Y})
 			}
 		}
 		for _, f := range b.Attackers {
-			if f.Kind == Player {
+			if f.Kind == Player && !f.Withdrawn && !f.Overkilled {
 				out = append(out, []byte{protocol.CommandBattleState, protocol.BattleStateExit, f.X, f.Y, 0})
 			}
 		}
 		return out
 	}
 	for _, f := range b.all() {
+		if f.Withdrawn || f.Overkilled {
+			continue
+		}
 		out = append(out, []byte{protocol.CommandBattleState, protocol.BattleStateExit, f.X, f.Y, 0})
 	}
 	return out

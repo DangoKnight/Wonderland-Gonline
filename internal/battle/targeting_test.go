@@ -15,6 +15,33 @@ func targetingRules() Rules {
 	r.Skills = map[uint16]assets.Skill{11001: s}
 	return r
 }
+
+func TestAreaAttackProtectsJoiningPetUntilNextRound(t *testing.T) {
+	for _, all := range []bool{false, true} {
+		r := targetingRules()
+		b, attacker := setup(10000)
+		owner := b.Defenders[0]
+		owner.Kind, owner.ID = Player, 999
+		next := &Fighter{Kind: Pet, ID: 102, Owner: owner.ID, HP: 1000, MaxHP: 1000}
+		b.ReplacePet(owner, nil, next)
+		shape := assets.SkillTargeting{MinGrade: 1, MaxGrade: 10, All: all, Offsets: []assets.FormationOffset{{}, {X: 1}}}
+		s := r.Skills[11001]
+		s.Targeting = []assets.SkillTargeting{shape}
+		r.Skills[11001] = s
+		if at(b.Defenders, next.X, next.Y, true) != nil || next.CanAct() {
+			t.Fatal("joining pet became a direct target or actor")
+		}
+		steps, _ := r.attack(b, []Action{{Actor: attacker, Kind: "attack", Skill: 11001, TX: owner.X, TY: owner.Y}}, nil)
+		if len(steps) == 0 || next.HP != 1000 || !next.Joining {
+			t.Fatal("area coverage hit joining pet or unlocked it", all, next, steps)
+		}
+		next.Joining = false
+		r.attack(b, []Action{{Actor: attacker, Kind: "attack", Skill: 11001, TX: owner.X, TY: owner.Y}}, nil)
+		if next.HP >= 1000 {
+			t.Fatal("area coverage failed to hit pet after switching protection ended", all, next)
+		}
+	}
+}
 func TestAreaAttackCostProtectionEffectsAndNativeRecord(t *testing.T) {
 	r := targetingRules()
 	b, actor := setup(1000)

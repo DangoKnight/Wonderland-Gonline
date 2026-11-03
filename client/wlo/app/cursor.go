@@ -65,6 +65,9 @@ const (
 // FUN_0039b218: defend/flee restore the arrow, capture selects the hand,
 // type-zero actions select the sword, and the other skill types select magic.
 func (c *Client) battleCursor() cursor.Shape {
+	if c.battle.state.Active && c.battle.state.Ready && c.battle.item != nil && !c.battleAnimating() {
+		return cursor.ShapeMagic // FUN_0039be38 selects native cursor state 7 for items.
+	}
 	if !c.battle.state.Active || !c.battle.state.Ready || c.battle.binding == nil || c.battleAnimating() {
 		return 0
 	}

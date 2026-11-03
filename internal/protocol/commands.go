@@ -63,6 +63,7 @@ const (
 	CommandPackContents       = 91
 	CommandLuckyDraw          = 104
 	CommandMovie              = 186
+	CommandGonlineCombat      = 254 // Negotiated Gonline transport; never sent without opt-in.
 )
 
 // Discovery subcommands (AC0).
@@ -85,6 +86,9 @@ const (
 	HandshakeWireCode6         = 6
 	HandshakeServerDescription = 9
 	HandshakeWorldReady        = 11
+	HandshakeCombatOffer       = 240
+	HandshakeCombatAccept      = 241
+	HandshakeCombatEnabled     = 242
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -182,7 +186,12 @@ const (
 	BattleStateInitialize    = 10
 	BattleStateFinish        = 12
 	BattleStateFormation     = 250
+	BattleExitRequest        = 3 // Inbound AC11:1:3, an escape command rather than an escape result.
 )
+
+// AC11:5 entry mode, FUN_0039108c: native clients hide the participant and reject direct selection
+// until AC52:1 clears its unavailable flag (FUN_0039783c). Side comes from grid.
+const BattleParticipantWaitNextTurn = 5
 
 // Team subcommands (AC13).
 const (
@@ -534,7 +543,7 @@ const (
 	BattleActionAnimation     = 1
 	BattleActionTurn          = 6
 	BattleActionAttackRequest = 1
-	BattleActionItemRequest   = 2 // Native FUN_002c2394; execution requires transactional item consumption.
+	BattleActionItemRequest   = 2 // Native FUN_002c2394: cells, item ID, random trailer, bag slot, flag.
 	BattleActionDefendRequest = 4
 	BattleActionFleeRequest   = 5
 )
@@ -549,7 +558,9 @@ const (
 
 // BattleEffect subcommands (AC53).
 const (
-	BattleEffectDefeated  = 3
+	BattleEffectOverkill = 3 // FUN_00393c58: remove through the upward flight state.
+	// Compatibility alias. Ordinary knockouts do not send AC53:3.
+	BattleEffectDefeated  = BattleEffectOverkill
 	BattleEffectSubmitted = 5
 	// Compatibility alias for the former, misleading name. AC53:5 is an action ACK.
 	BattleEffectEscape = BattleEffectSubmitted
@@ -859,7 +870,8 @@ const (
 const (
 	BattleHitLanded = 1
 	BattleHitMiss   = 0
-	// FUN_0039b558 subtracts modes 1/2 and adds modes 3/4.
+	// FUN_0039b558 subtracts modes 1/2; native item recovery also uses 0.
+	BattleStatItemRecovery     = 0 // Live legacy Grape Syrup result (2026-11-03).
 	BattleStatDamage           = 1
 	BattleStatCriticalDamage   = 2
 	BattleStatRecovery         = 3

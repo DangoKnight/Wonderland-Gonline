@@ -120,6 +120,9 @@ func TestNativePvPEntryActionsSettlementAndPersistence(t *testing.T) {
 	}
 	// Defending player kills the challenger; there must be no automatic NPC turn.
 	run.members[0].self.HP = 1
+	// Exercise ordinary PvP settlement; forced overkill returns have their own
+	// fixtures and remove the loser before the remaining side's finish packet.
+	run.members[0].self.MaxHP = 10000
 	run.members[1].self.Atk = 1000
 	run.members[1].self.Spd = 1000
 	if err := s.worldCommand(context.Background(), a, []byte{50, 4, 4, 2, 1, 2}); err != nil {
@@ -142,7 +145,7 @@ func TestNativePvPEntryActionsSettlementAndPersistence(t *testing.T) {
 		if err != nil || stored[0].HP != c.character.HP || stored[0].SP != c.character.SP {
 			t.Fatal("PvP vitals not saved", err)
 		}
-		if !contains(wires[i].packets(t), []byte{11, 12, 1}) {
+		if !contains(wires[i].packets(t), []byte{11, 12, 2}) {
 			t.Fatal("missing PvP departure")
 		}
 	}
@@ -524,6 +527,9 @@ func TestQuestBattleDefeat(t *testing.T) {
 	}
 	settle(t, s, c)
 	got := wire.packets(t)
+	if !contains(got, []byte{11, 12, 2}) {
+		t.Fatal("defender victory side missing", got)
+	}
 	if !bytes.Equal(got[len(got)-1], serverwire.EventFrame(1, 3, 5, 1, 0, 10003, 1, 3)) || c.character.HP < 10 {
 		t.Fatal("defeat branch", got[len(got)-1], c.character.HP)
 	}

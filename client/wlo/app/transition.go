@@ -11,7 +11,9 @@ import (
 // Entering (mode 1): the battle constructor (func 0x38bcdc) starts the
 // battle music, then darkens the still-running map with black at alpha
 // 12 × step for steps 1..15; after step 15 it calls 0x38c8f0 and the frame
-// loop draws the battle field instead of the map (+0x565).
+// loop draws the battle field instead of the map (+0x565). A presentation
+// continuation reveals that field over the same 15 steps, avoiding an abrupt
+// switch to a fully bright background. Queued actions wait for the reveal.
 //
 // Leaving (mode 2): when the player's battle state clears (+0x1f16), the
 // frame loop (0x4a2b12) starts mode 2 with FUN_0038fefc as its callback:
@@ -28,9 +30,10 @@ const (
 )
 
 const (
-	sceneFadeNone = iota
-	sceneFadeEnterBattle
-	sceneFadeLeaveBattle
+	sceneFadeNone         = 0
+	sceneFadeEnterBattle  = 1
+	sceneFadeLeaveBattle  = 2
+	sceneFadeRevealBattle = 3 // Presentation continuation: reveal the newly loaded field.
 )
 
 type sceneFade struct {
@@ -41,7 +44,7 @@ type sceneFade struct {
 
 func (c *Client) startSceneFade(mode int) {
 	step := 1
-	if mode == sceneFadeLeaveBattle {
+	if mode == sceneFadeLeaveBattle || mode == sceneFadeRevealBattle {
 		step = sceneFadeSteps
 	}
 	c.sceneFade = sceneFade{mode: mode, step: step, at: c.Now()}
@@ -63,7 +66,9 @@ func (c *Client) sceneFadeTick(now time.Time) {
 		switch {
 		case f.mode == sceneFadeEnterBattle && f.step < sceneFadeSteps:
 			f.step++
-		case f.mode == sceneFadeLeaveBattle && f.step > 1:
+		case f.mode == sceneFadeEnterBattle:
+			f.mode, f.step = sceneFadeRevealBattle, sceneFadeSteps
+		case (f.mode == sceneFadeLeaveBattle || f.mode == sceneFadeRevealBattle) && f.step > 1:
 			f.step--
 		default:
 			*f = sceneFade{}

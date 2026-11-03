@@ -21,6 +21,13 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 		a := Action{Actor: actor, Kind: "attack", Skill: id}
 		var targets []*Fighter
 		switch {
+		case s.RestoresSP() || s.CleansesStatus():
+			a.Kind = "heal"
+			for _, f := range living(allies) {
+				if s.RestoresSP() && f.SP < f.MaxSP || s.CleansesStatus() && r.needsCleanse(f, s) {
+					targets = append(targets, f)
+				}
+			}
 		case hasCastEffects(s.Effects):
 			a.Kind = "effect"
 			// Validate all effect targets together; mixed self/enemy casts are valid.
@@ -71,7 +78,11 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 		target := targets[0]
 		if a.Kind == "heal" {
 			for _, f := range targets[1:] {
-				if int64(f.HP)*int64(target.MaxHP) < int64(target.HP)*int64(f.MaxHP) {
+				lower := int64(f.HP)*int64(target.MaxHP) < int64(target.HP)*int64(f.MaxHP)
+				if s.RestoresSP() {
+					lower = int64(f.SP)*int64(target.MaxSP) < int64(target.SP)*int64(f.MaxSP)
+				}
+				if lower {
 					target = f
 				}
 			}

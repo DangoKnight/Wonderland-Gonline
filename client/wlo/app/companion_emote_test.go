@@ -25,6 +25,10 @@ func (p *companionPoseCapture) Draw(dst *surface.Surface, x, y, action int) {
 
 func TestCompanionEmoteAndRecoveryIntegration(t *testing.T) {
 	c, now, _ := enteredClient(t)
+	if bundle := os.Getenv("WONDERLAND_TEST_CLIENT_BUNDLE"); bundle != "" {
+		useCompiledPetAssets(t, c, bundle)
+	}
+	c.npcTemplates, _ = world.NPCTemplates(c.Assets)
 	sent := wire(t, c)
 	c.showCompanion(c.World.Player.ID, 14162, []byte("Roca"))
 	pet := c.World.Companions[c.World.Player.ID]
@@ -44,7 +48,9 @@ func TestCompanionEmoteAndRecoveryIntegration(t *testing.T) {
 	}
 	*now = now.Add(time.Second)
 	c.World.Step(*now)
-	for _, tc := range []struct{ cell, action, petAction int }{{13, 48, 49}, {4, 26, 26}} {
+	// The owner faces left; Roca has just followed toward the right and keeps
+	// her own right-facing sitting/lying poses independently of owner turns.
+	for _, tc := range []struct{ cell, action, petAction int }{{13, 48, 51}, {4, 26, 27}} {
 		if w, h := painter.FrameSize(tc.petAction); w == 0 || h == 0 {
 			var available []int
 			for a := 0; a <= 73; a++ {
@@ -67,9 +73,19 @@ func TestCompanionEmoteAndRecoveryIntegration(t *testing.T) {
 		if dir := os.Getenv("SNAPSHOT_DIR"); dir != "" {
 			save(t, c, filepath.Join(dir, map[int]string{48: "companion_sitting.png", 26: "companion_lying.png"}[tc.action]))
 		}
+		if tc.action == 48 {
+			c.mapReady = true
+			cx, cy := c.World.Camera()
+			c.GroundRightClick(c.World.Player.X-cx, c.World.Player.Y-cy-80)
+			*now = now.Add(time.Second / 60)
+			c.Frame()
+			if c.World.Player.Direction != 46 || painter.action != 51 {
+				t.Fatalf("owner-only turn: player action %d pet action %d", c.World.Player.Direction, painter.action)
+			}
+		}
 	}
 	packets := sent()
-	if len(packets) != 2 || !bytes.Equal(packets[0], []byte{32, 2, 48}) || !bytes.Equal(packets[1], []byte{32, 2, 26}) {
+	if len(packets) != 3 || !bytes.Equal(packets[0], []byte{32, 2, 48}) || !bytes.Equal(packets[1], []byte{32, 2, 46}) || !bytes.Equal(packets[2], []byte{32, 2, 26}) {
 		t.Fatal("poses must use the ordinary owner AC32 requests", packets)
 	}
 	c.InventoryState.Pets[1] = inventory.UsePet{ID: 14162, Stats: world.Stats{HP: 1, MaxHP: 181, MaxSP: 95}}

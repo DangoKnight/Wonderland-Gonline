@@ -18,6 +18,12 @@ const (
 	inventoryWarningDuration = 2 * time.Second
 )
 
+// Battle movement/event locks restrict gameplay, but do not close browsing UI.
+func (c *Client) canOpenModule() bool {
+	return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.sceneFrozen() &&
+		(c.battle.state.Active || !c.held && !c.event.active)
+}
+
 func (c *Client) initInventory() {
 	c.InventoryState = &inventory.State{Items: c.items}
 	c.Inventory = inventory.NewForm(c.Env, c.InventoryState, c.Stats)
@@ -48,8 +54,9 @@ func (c *Client) initInventory() {
 		sprite.Draw(c.Screen, x, y, action)
 	}
 	c.Inventory.CanAct = func() bool {
-		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.sceneFrozen()
+		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.battle.state.Active && !c.sceneFrozen()
 	}
+	c.Inventory.BattleUse = c.selectBattleItem
 	c.Inventory.Now = func() time.Time { return c.Now() }
 	c.Inventory.Notice = c.Chat.Notice
 	c.Inventory.StartRemote = c.startRemote
@@ -61,13 +68,19 @@ func (c *Client) initInventory() {
 	c.MainButtons.Buttons[mainInventoryButton].OnClick = func() {
 		if c.Inventory.Visible {
 			c.Inventory.Hide()
-		} else if c.Inventory.CanAct() {
+		} else if c.canOpenModule() {
 			c.Inventory.Show()
 		}
 	}
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	if c.battleResults.owner != p.ID {
+		c.resetBattleResults()
+	}
+	if c.LuckyDraw != nil {
+		c.LuckyDraw.Reset()
+	}
 	if c.Settings != nil {
 		c.Settings.Hide()
 		c.SettingsState.Reset()
@@ -130,12 +143,16 @@ func (c *Client) inventoryPacket(p []byte) {
 		return
 	}
 	before := c.InventoryState.Equipment
+	bagBefore := c.InventoryState.Bag
 	if handled, valid := c.InventoryState.Apply(p); handled {
 		if !valid {
 			if c.Unhandled != nil {
 				c.Unhandled(p)
 			}
 			return
+		}
+		if p[1] == protocol.InventoryItems {
+			c.recordBattleResultItems(bagBefore)
 		}
 		if p[1] == protocol.InventoryCompoundResult {
 			c.Compound.QueueResult(p[2])

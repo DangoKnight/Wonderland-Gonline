@@ -2516,9 +2516,16 @@
 				"internal/battle/targeting.go",
 				"internal/config/config.go",
 				"internal/server/world_test.go",
-				"internal/server/admin_assets_test.go"
+				"internal/server/admin_assets_test.go",
+				"internal/assets/skill_support.go",
+				"internal/assets/skill_support_test.go",
+				"internal/battle/native_targeting.go",
+				"internal/battle/native_targeting_test.go",
+				"internal/battle/support.go",
+				"internal/battle/support_test.go",
+				"internal/server/combat_support_test.go"
 			],
-			"notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Battle submit ACK now broadcasts to participants; battle entry refreshes party HUD and owner pet progression. Registered quest kill objectives now increment in victory settlement, with ordered-step/source ID/name matching, captured-monster and PvP exclusions, duplicate prevention and save-before-receipt. The owner explicitly confirmed reward-free PvP, retaining intentional suppression of source 150 EXP/100 gold. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule. Owner pet entry progression and party refresh plus battle-scoped AC53:5 submit ACK broadcast implemented. Owner explicitly retains reward-free PvP rather than source 150 EXP/100 gold; native animation acceptance remains pending.",
+			"notes": "Read all 2722 source lines and Go battle engine, server settlement and quest fallback bodies. Concrete PvE/PvP formation, owned-actor validation, timeouts, capture probability and duplicate limits, elemental scaling, critical hits, animation delays, EXP/gold/loot, pet amity, disconnect handling and authored outcome continuations exist. Full-party speed chains, rebirth combo levels, generic effects and typed shields implement requested changes. Battle submit ACK now broadcasts to participants; battle entry refreshes party HUD and owner pet progression. Registered quest kill objectives now increment in victory settlement, with ordered-step/source ID/name matching, captured-monster and PvP exclusions, duplicate prevention and save-before-receipt. The owner explicitly confirmed reward-free PvP, retaining intentional suppression of source 150 EXP/100 gold. Unsafe partial loot grants and broken defender targeting are improved. Optional startup combo_damage_per_participant replaces fixed damage with 10% per actual successful-chain attacker, counting players and pets; defaults retain fixed 30%. Single/failed chains have no bonus. This is an intentional configurable Go rule. Owner pet entry progression and party refresh plus battle-scoped AC53:5 submit ACK broadcast implemented. Owner explicitly retains reward-free PvP rather than source 150 EXP/100 gold; native animation acceptance remains pending. Follow-up 2026-11-03 against 0cb6915: native layer/code support classification, capped SP restoration using max(ATK, MATK), selective/general status cleansing, support AI and automatic area targeting implemented. Native/chain results, one cost/proficiency use per cast and disconnect SP persistence have regression coverage; official-client animation acceptance remains pending.",
 			"audit_verdict": "partial"
 		},
 		{
@@ -3334,9 +3341,16 @@
 				"client/wlo/skills/form.go",
 				"client/wlo/app/skills.go",
 				"internal/assets/catalog.go",
-				"internal/server/combat.go"
+				"internal/server/combat.go",
+				"internal/assets/skill_support.go",
+				"internal/assets/skill_support_test.go",
+				"internal/battle/native_targeting.go",
+				"internal/battle/native_targeting_test.go",
+				"internal/battle/support.go",
+				"internal/battle/support_test.go",
+				"internal/server/combat_support_test.go"
 			],
-			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate. Go client now consumes authoritative learned-skill snapshots and player/pet progress updates in its native five-tab Skills window, including avatar stunt aliases, elemental requirements, SP costs, proficiency and weapon metadata. Go client hotbar skill dragging, local per-character shortcut persistence, target selection and native battle actions are now implemented. Native battle-scene rendering and direct fighter targeting are implemented; the dedicated battle skill form and overworld casting remain pending.",
+			"notes": "Body/head stunt aliases, elemental starter skills, every source stat prerequisite and grade-ten evolution transcribed. Character and pet proficiency/grade packets match distinct thresholds and overflow policies; SQL persistence replaces direct character_skills queries. Explicit unlock sends tree node, grade and proficiency. Name-based skill classifiers replaced by user-requested database effect model. Native decoder also retains effect/target fields that this source loader fails to populate. Go client now consumes authoritative learned-skill snapshots and player/pet progress updates in its native five-tab Skills window, including avatar stunt aliases, elemental requirements, SP costs, proficiency and weapon metadata. Go client hotbar skill dragging, local per-character shortcut persistence, target selection and native battle actions are now implemented. Native battle-scene rendering and direct fighter targeting are implemented; the dedicated battle skill form and overworld casting remain pending. Follow-up 2026-11-03 against 0cb6915: native layer/code support classification, capped SP restoration using max(ATK, MATK), selective/general status cleansing, support AI and automatic area targeting implemented. Native/chain results, one cost/proficiency use per cast and disconnect SP persistence have regression coverage; official-client animation acceptance remains pending.",
 			"audit_verdict": "replaced"
 		},
 		{

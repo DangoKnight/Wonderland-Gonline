@@ -17,7 +17,7 @@ const (
 	Player             = 2
 	Pet                = 4
 	Monster            = 7
-	FriendlyPet        = 5
+	FriendlyPet        = protocol.BattleParticipantWaitNextTurn // Compatibility name for entry mode 5.
 	Attacker           = 1
 	Defender           = 2
 	actorHeaderBytes   = 6
@@ -58,6 +58,9 @@ type Fighter struct {
 	MaxSP, SP          uint16
 	Level, Element     byte
 	Submitted, Removed bool
+	Overkilled         bool
+	Waiting            bool   // Native participant unavailable flag, cleared by AC52:1.
+	Generation         uint64 // Local roster identity; participant replacement can reuse a cell/ID.
 }
 type StatResult struct {
 	Stat   byte
@@ -68,12 +71,14 @@ type Target struct {
 	Cell
 	Result, Guard byte
 	Stats         []StatResult
+	Generation    uint64
 }
 type Action struct {
-	Actor   Cell
-	Skill   uint16
-	Flags   byte
-	Targets []Target
+	Actor           Cell
+	Skill           uint16
+	Flags           byte
+	Targets         []Target
+	ActorGeneration uint64
 }
 type State struct {
 	Active, Ready, Finished bool
@@ -86,7 +91,8 @@ type State struct {
 	Prompt                  bool
 	// Kind is AC11:10's battle kind (FUN_00395efc, +4), which sets the
 	// turn limit.
-	Kind byte
+	Kind             byte
+	rosterGeneration uint64
 }
 
 // Native turn limits, FUN_00395efc: 30 seconds for kinds 2, 4 and 7-9,
@@ -118,7 +124,7 @@ func (s *State) Owned(f *Fighter) bool {
 }
 func (s *State) CanChoose(cell Cell) bool {
 	f := s.At(cell)
-	return s.Active && s.Ready && !s.Finished && s.Owned(f) && f.HP > 0 && !f.Submitted && !f.Removed
+	return s.Active && s.Ready && !s.Finished && s.Owned(f) && f.HP > 0 && !f.Submitted && !f.Removed && !f.Waiting
 }
 func parseFighters(p []byte) ([]Fighter, error) {
 	if len(p) == 0 || len(p)%FighterRecordBytes != 0 || len(p)/FighterRecordBytes > MaximumFighters {
@@ -130,7 +136,8 @@ func parseFighters(p []byte) ([]Fighter, error) {
 		v := p[:FighterRecordBytes]
 		p = p[FighterRecordBytes:]
 		f := Fighter{Cell: Cell{v[12], v[13]}, Side: v[0], Kind: v[1], ID: binary.LittleEndian.Uint32(v[2:]), Click: binary.LittleEndian.Uint16(v[6:]), Owner: binary.LittleEndian.Uint32(v[8:]), MaxHP: binary.LittleEndian.Uint32(v[14:]), MaxSP: binary.LittleEndian.Uint16(v[18:]), HP: binary.LittleEndian.Uint32(v[20:]), SP: binary.LittleEndian.Uint16(v[24:]), Level: v[26], Element: v[27]}
-		if f.Side == FriendlyPet && f.Kind == Pet {
+		if f.Side == protocol.BattleParticipantWaitNextTurn {
+			f.Waiting = true
 			if f.X <= 2 {
 				f.Side = Defender
 			} else {
@@ -234,6 +241,8 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 				return true, false
 			}
 			for _, f := range roster {
+				next.rosterGeneration++
+				f.Generation = next.rosterGeneration
 				if old := next.At(f.Cell); old != nil {
 					*old = f
 				} else {
@@ -319,6 +328,12 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 					}
 				}
 			}
+			for i := range actions {
+				actions[i].ActorGeneration = s.At(actions[i].Actor).Generation
+				for j := range actions[i].Targets {
+					actions[i].Targets[j].Generation = s.At(actions[i].Targets[j].Cell).Generation
+				}
+			}
 			for _, a := range actions {
 				for _, t := range a.Targets {
 					f := s.At(t.Cell)
@@ -332,9 +347,9 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 					for _, result := range t.Stats {
 						switch result.Stat {
 						case game.StatCurrentHP:
-							f.HP = applyResult(f.HP, f.MaxHP, result)
+							f.HP = ApplyStatResult(f.HP, f.MaxHP, result)
 						case game.StatCurrentSP:
-							f.SP = uint16(applyResult(uint32(f.SP), uint32(f.MaxSP), result))
+							f.SP = uint16(ApplyStatResult(uint32(f.SP), uint32(f.MaxSP), result))
 						}
 					}
 				}
@@ -346,7 +361,7 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 			if len(p) != 5 || !(Cell{p[2], p[3]}).Valid() {
 				return true, false
 			}
-			if f := s.At(Cell{p[2], p[3]}); s.Owned(f) && f.Kind == Player {
+			if f := s.At(Cell{p[2], p[3]}); s.Owned(f) {
 				s.Prompt = true
 			}
 			return true, true
@@ -357,6 +372,9 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 		}
 		if len(p) != 2 || !s.Active {
 			return true, false
+		}
+		for i := range s.Fighters {
+			s.Fighters[i].Waiting = false
 		}
 		if s.Prompt && !s.Finished {
 			s.Ready = true
@@ -372,13 +390,14 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 			return true, false
 		}
 		switch p[1] {
-		case protocol.BattleEffectDefeated, protocol.BattleEffectSubmitted:
+		case protocol.BattleEffectOverkill, protocol.BattleEffectSubmitted:
 			if len(p) != 4 || !(Cell{p[2], p[3]}).Valid() {
 				return true, false
 			}
 			if f := s.At(Cell{p[2], p[3]}); f != nil {
-				if p[1] == protocol.BattleEffectDefeated {
+				if p[1] == protocol.BattleEffectOverkill {
 					f.HP = 0
+					f.Overkilled, f.Removed = true, true
 				} else {
 					f.Submitted = true
 				}
@@ -390,11 +409,13 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 }
 
 // Native digit mode carries the direction independently of skill metadata.
-func applyResult(current, maximum uint32, r StatResult) uint32 {
+// ApplyStatResult applies a native damage/recovery amount, saturating at the
+// fighter's bounds. Presentation uses the same rule for each authored hit cue.
+func ApplyStatResult(current, maximum uint32, r StatResult) uint32 {
 	switch r.Mode {
 	case protocol.BattleStatDamage, protocol.BattleStatCriticalDamage:
 		return current - min(current, r.Amount)
-	case protocol.BattleStatRecovery, protocol.BattleStatCriticalRecovery:
+	case protocol.BattleStatItemRecovery, protocol.BattleStatRecovery, protocol.BattleStatCriticalRecovery:
 		return uint32(min(uint64(maximum), uint64(current)+uint64(r.Amount)))
 	}
 	return current

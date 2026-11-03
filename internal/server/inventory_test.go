@@ -383,6 +383,41 @@ func TestStatAllocation(t *testing.T) {
 	}
 }
 
+func TestStatAllocationClientBatchPersistsBothAttributes(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	if err := s.worldCommand(ctx, c, []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	next := c.character.Clone()
+	next.StatPoints = 3
+	if err := s.commit(ctx, c, next); err != nil {
+		t.Fatal(err)
+	}
+	before := c.character.Clone()
+	wires[0].Reset()
+	// Independent wire fixture: character, two entries, STR +1 and WIS +2.
+	p := []byte{8, 1, 0, 2, 28, 1, 0, 0, 0, 33, 2, 0, 0, 0}
+	if err := s.worldCommand(ctx, c, p); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || len(stored) == 0 {
+		t.Fatal(stored, err)
+	}
+	got := stored[0]
+	if got.Base.Strength != before.Base.Strength+1 || got.Base.Wisdom != before.Base.Wisdom+2 || got.StatPoints != 0 {
+		t.Fatal("batch allocation not saved", got.Base, got.StatPoints)
+	}
+	if got.HP != before.HP || got.SP != before.SP {
+		t.Fatal("allocation changed current vitals")
+	}
+	if !contains(wires[0].packets(t), []byte{8, 1, 38, 1, 0, 0, 0, 0, 0, 0, 0, 0}) {
+		t.Fatal("missing authoritative allocation acknowledgment")
+	}
+}
+
 func TestUseAndDestroyItems(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	ctx := context.Background()
