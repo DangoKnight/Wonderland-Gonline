@@ -151,8 +151,10 @@ func TestMultiSlotGroundPickupPreservesSourceAndSQL(t *testing.T) {
 		t.Fatal(err)
 	}
 	packets := wires[0].packets(t)
-	want := protocol.Builder{23, 5, 1}.U16(48016).U8(1).U8(0).Bytes(make([]byte, 26))
-	if len(packets) != 2 || !bytes.Equal(packets[0], want) {
+	// Native pickup confirms removal from the floor before its slotless gain.
+	wantRemove := []byte{23, 2, 5, 0, 1}
+	wantAcquire := []byte{23, 6, 144, 187, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	if len(packets) != 2 || !bytes.Equal(packets[0], wantRemove) || !bytes.Equal(packets[1], wantAcquire) {
 		t.Fatal("raft anchor reply", packets)
 	}
 	if _, ok := s.World.GroundAt(c.character.Map, 5); ok {

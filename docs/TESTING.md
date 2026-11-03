@@ -1,5 +1,40 @@
 # Testing and validation
 
+## Full pre-push validation — 2026-11-03
+
+For `0aa6f0f` (shared combat formulas and rapid player/pet targeting), both full
+module suites ran to completion with cache bypassed. The server command was
+`go test -race -count=1 -timeout=60m -json ./...`, with
+`WONDERLAND_TEST_ASSETS_DB` pointing to the installed `var/assets.db`. It recorded
+1,972 passing test/subtest entries, two failing expectations and 15 opt-in skips.
+The client command was `go test -count=1 -timeout=60m -json ./...`; it recorded
+627 passing entries, one failing expectation and 47 opt-in skips. No race warning,
+panic or build failure was reported. Logs are retained locally under ignored
+`var/validation/prepush-0aa6f0f/`.
+
+The three outdated expectations were corrected and verified separately; no
+production code changed during validation:
+
+- The maintained item export contains 7,325 records. Its source SHA-256 matches
+  the updated translated client's `Item.dat`; the previous assertion pinned
+  7,312. The full `internal/assets` package passed again under `-race`.
+- The multi-slot pickup golden still expected the old slot-based grant. It now
+  independently asserts raw native floor-removal bytes followed by the slotless
+  acquisition bytes. All `TestMultiSlot*` server tests passed under `-race`.
+- The real Roca sprite in the rebuilt assets lacks sitting action 51. The
+  companion integration now also verifies the existing standing fallback when
+  sitting is unsupported, independent pet facing during owner turns, available
+  lying animation and recovery packets. Its focused rerun passed. Eight-direction
+  pose behavior remains covered by the world tests in the completed client suite.
+
+Full root/client vet, tracked-source gofmt, Prettier and HTMLHint passed.
+Ten-second protocol and EVE fuzz runs passed (about 6.8 million and 3.3 million
+executions). Both executable candidates built. The asset compiler validated
+72,854 files, all reused, and the real compiled-bundle login/shared-world smoke
+test passed separately. GPU, live-account, original-reference and snapshot-only
+checks remain opt-in; their skips are not gameplay acceptance evidence. No
+running server/client process was restarted or database rebuilt.
+
 ## Shared player, pet and enemy stat formulas — 2026-11-03
 
 Affected checks passed for `internal/game`, `internal/battle` and

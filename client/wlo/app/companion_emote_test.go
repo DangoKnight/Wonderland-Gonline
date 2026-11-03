@@ -50,7 +50,14 @@ func TestCompanionEmoteAndRecoveryIntegration(t *testing.T) {
 	c.World.Step(*now)
 	// The owner faces left; Roca has just followed toward the right and keeps
 	// her own right-facing sitting/lying poses independently of owner turns.
-	for _, tc := range []struct{ cell, action, petAction int }{{13, 48, 51}, {4, 26, 27}} {
+	sittingAction := 51
+	if w, h := painter.FrameSize(sittingAction); w == 0 || h == 0 {
+		// Updated client archives omit Roca's sitting records. An incapable
+		// pet must remain standing, facing right, while its owner sits/turns.
+		sittingAction = 13
+		t.Log("Roca has no right-facing sitting animation; checking standing fallback")
+	}
+	for _, tc := range []struct{ cell, action, petAction int }{{13, 48, sittingAction}, {4, 26, 27}} {
 		if w, h := painter.FrameSize(tc.petAction); w == 0 || h == 0 {
 			var available []int
 			for a := 0; a <= 73; a++ {
@@ -79,7 +86,7 @@ func TestCompanionEmoteAndRecoveryIntegration(t *testing.T) {
 			c.GroundRightClick(c.World.Player.X-cx, c.World.Player.Y-cy-80)
 			*now = now.Add(time.Second / 60)
 			c.Frame()
-			if c.World.Player.Direction != 46 || painter.action != 51 {
+			if c.World.Player.Direction != 46 || painter.action != sittingAction {
 				t.Fatalf("owner-only turn: player action %d pet action %d", c.World.Player.Direction, painter.action)
 			}
 		}
