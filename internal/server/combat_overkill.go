@@ -40,13 +40,17 @@ func (s *Server) returnOverkilledPlayer(run *battleRun, m *battleMember, notifyO
 	for id, slot := range c.pets.slots {
 		roster.slots[id] = slot
 	}
-	petPackets, peerPackets := s.petResults(run, m, &next, battle.Defeat, roster)
+	var petPackets, peerPackets [][]byte
+	if !m.resultSaved {
+		petPackets, peerPackets = s.petResults(run, m, &next, battle.Defeat, roster)
+	}
 	oldPeers := s.peers(c)
 	wasPublished := s.world[c.info.ID] == c
 	if err := s.commit(context.Background(), c, next); err != nil {
 		return err
 	}
 	c.pets = roster
+	m.resultSaved = true
 	c.battle = nil
 	run.b.Leave(next.ID)
 	c.encounter.battleOver()

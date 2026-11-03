@@ -220,6 +220,21 @@ func TestNativeRecoveryModesAndCapture(t *testing.T) {
 	}
 }
 
+func TestCapturedLegacyGrapeSyrupRecoveryMode(t *testing.T) {
+	s := fixture(t)
+	f := s.At(Cell{4, 2})
+	f.SP, f.MaxSP = 779, 1808
+	// Unmodified AC50:1 from the 2026-11-03 legacy-server capture:
+	// player uses item motion 10024 on self, SP +400, result mode 0.
+	p := []byte{50, 1, 17, 0, 4, 2, 40, 39, 0, 1, 4, 2, 1, 0, 1, 26, 144, 1, 0, 0, 0}
+	if _, valid := s.Apply(p); !valid || f.SP != 1179 {
+		t.Fatal("captured item recovery ignored", f.SP, valid)
+	}
+	if got := ApplyStatResult(99, 100, StatResult{Amount: 400, Mode: 0}); got != 100 {
+		t.Fatal("item recovery did not cap to maximum", got)
+	}
+}
+
 func TestNativeDamageCues(t *testing.T) {
 	m := Motion{DamageMode: 2, Events: []MotionEvent{{Percent: 33}, {Percent: 33}, {Percent: 34}}}
 	if p := m.DamageParts(101); !reflect.DeepEqual(p, []uint32{33, 33, 35}) {

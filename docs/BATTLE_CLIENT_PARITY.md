@@ -16,7 +16,10 @@ simulation. This is a working core, **not complete native battle parity**.
   The native six-second message interval is retained. The compact notice sits
   below the top command icons, sizes to its English text and centers each yellow
   line without a title or close button, matching the legacy reference. Long lists
-  show five rows with scrolling and hover to keep them readable. The pane uses the
+  show five rows with scrolling. Hover does not extend the six-second deadline;
+  clicking the panel or result text dismisses it, while the scrollbar remains
+  usable. `FUN_00394fe8` supplies 6000 milliseconds to the native notice board's
+  slot +0x9c (`FUN_0034e70c`). The pane uses the
   existing notice artwork; its bounded list is a presentation extension to the
   native message board. It grants nothing and sends no acknowledgment.
 - Native AC11:12 victory voice selection (`FUN_00395f84`) chooses one voiced,
@@ -91,8 +94,8 @@ simulation. This is a working core, **not complete native battle parity**.
   History is separate for player/pet actors and cleared on battle exit.
 - MBTM fighter action/frame records, actor-relative mirrored movement, return
   movement, directional action mirroring, damage cues and
-  percentage distribution, native HP/SP digit sheets, compatibility recovery
-  text and authored sound cues. Late cues remain alive beyond the last frame.
+  percentage distribution, native HP/SP digit sheets, outlined item recovery
+  numbers and authored sound cues. Late cues remain alive beyond the last frame.
   Variable visual effects, camera records and the fixed weapon/body audio
   tables are decoded. Missing motions use a named compatibility duration.
 - Battle effects play each general, weapon and body sound at its authored cue,
@@ -175,6 +178,12 @@ simulation. This is a working core, **not complete native battle parity**.
   round opens with one of our fighters to command (AC11:10 now records the
   kind). `wav0145` sounds each second below 10; at −1 the menus close
   (`FUN_00398120`); an action batch stops it (`FUN_003920a0`).
+- Slow-choice turtles (`FUN_00398524`, `FUN_00391f18`, `FUN_0039800c`): the
+  native `E119` sheet has four frames advancing every 250 ms. At ten seconds
+  remaining, indicators appear above living, available player/pet fighters still
+  awaiting AC53:5 submission receipts. They stop on submission, timeout or round
+  playback. Submitting our own choices does not hide an unsubmitted teammate's
+  turtle; the next round restarts the secondary countdown.
 - The radial now has all native buttons (constructor `0x002974a0`, decoded from
   its jump table): 4, the item bag at (90, 126), opens the item form
   (`FUN_00351700`); 5, `auto` at (42, 126), attacks each round with every
@@ -183,6 +192,28 @@ simulation. This is a working core, **not complete native battle parity**.
   `FUN_0039a5b8`). While auto runs, the cancel button `Btn_Battle_5_1` (button 3
   of +0x51c, at (762, 526)) stops it (`FUN_00298f7c`). The auto-play form's
   configured skills are not ported; the native fallback attack is used.
+
+- Battle supplies: double-click a usable bag item from the Items command or
+  Inventory, then click a fighter; item shortcuts enter the same targeting mode.
+  Escape cancels. Native AC50:2 includes the item ID and bag slot, distinct from
+  skill requests. Player and pet commands can use HP/SP supplies on living allies,
+  including teammates and their pets. Recovery uses existing catalog values above
+  the 100 base, capped to maxima. Native `FUN_0039be38` selects the magic cursor
+  (state 7). `FUN_0038972c` and its item eligibility helpers allow selecting allies
+  at full HP/SP; recovery evaluates their vitals at execution. All four allied
+  formation slots and their pets can be clicked, independently of command ownership.
+  Ordinary food cannot revive; the linked native
+  Secular Feather skill (15138) enables revival items. Type-24 items use their
+  linked skill at decoded Item.dat offset 134; supported signed vital effects and
+  authored skill effects share the same execution path. Unknown/no-effect specials
+  are rejected without consumption. Recovery uses motions 10024/10025 for
+  human/creature targets; special items use their linked motion. HP/SP presentation
+  follows the motion's contact cue. Items spend no SP or skill EXP. Each fighter
+  submits once, and two actors cannot reserve more items than the stack contains.
+  At execution SQL revalidates the bag and commits consumption with target vitals
+  atomically before publishing success. Failed saves, stale stacks, defeated actors,
+  departed targets and unavailable replacement pets cannot grant free effects.
+  The same native actions work in optional complete-round delivery.
 
 - Attack movement: approach and return travel play the native poses
   (`FUN_003747f4`, `FUN_003753ac`): approach mode 0 runs with the sprite
@@ -284,9 +315,10 @@ Server healing and revival now send recovery mode 3, and the amount actually
 restored. The old mode 1 told native clients to subtract HP. Revival is capped
 to maximum HP even for fighters with a maximum below the compatibility minimum.
 Existing server damage formulas and authored skill/effect tables are retained.
-The server accepts opaque native attack trailers without trusting them. Unsupported
-battle subcommands, including AC50:2 items, are rejected without consuming a turn;
-an item ID cannot be interpreted as a skill ID and bypass item consumption.
+The server accepts opaque native attack/item trailers without trusting them.
+Unsupported battle subcommands are rejected without consuming a turn. AC50:2
+has its own item validation and transactional execution; an item ID cannot be
+interpreted as a learned skill or bypass item consumption.
 
 ## Native evidence
 
@@ -318,6 +350,7 @@ The reference is `var/decompiled/aLogin_ca19ee087b60_full.c` and its matching
 | `0x4147f8`, `FUN_0038ace4`, `FUN_004265a4` | Battle name colours, lifts and the +0x20b2 height |
 | `FUN_0038ad1c`, `FUN_0038f460` | Hovered fighter details and their column-dependent side |
 | `FUN_003977a8`, `FUN_0039783c`, `FUN_0039800c`, `FUN_00398120`, `FUN_00395efc` | Turn countdown, warning sound, timeout and per-kind limit |
+| `FUN_00398524`, `FUN_00391f18`, initializer `0x0038c182` | Slow-choice turtle eligibility, four-frame animation and native `E119` picture |
 | Constructor `0x002974a0` (jump table at `0x297657`), `FUN_00297f84` cases 4–5, `FUN_0039c238`, `FUN_0039a5b8`, `FUN_00298f7c` | Item and auto buttons, automatic attack target, cancel buttons |
 
 Constructor `0x002974a0` is absent from the C output; inspect the matching binary
@@ -332,11 +365,11 @@ scheduling margin; precise camera/movement synchronization remains pending.
   ground-height handling and far-layer parallax. Actor-relative interpolation is
   implemented, with the explicitly documented compatibility scheduling margin.
 - Remaining spell/projectile paths, status icons and effect transitions,
-  recovery/critical digit effects and remaining outcome artwork. Battle scene
+  critical digit effects and remaining outcome artwork. Battle scene
   music and entry/exit fades are implemented as described above.
 - The dedicated native battle skill form; the existing standalone Skills form
   currently supplies learned skills and direct scene targeting.
-- Native battle item actions and their transactional server execution, manual
+- Remaining special battle-item effects without authored rules, manual
   auto-action configuration, viewer/spectator mode and remaining radial commands.
 - Exact camera/actor phase synchronization (`FUN_00372a94`, `FUN_00370340`),
   independently moving far layers, moving effect-index camera anchors and the
@@ -350,10 +383,11 @@ scheduling margin; precise camera/movement synchronization remains pending.
 - The native battle skill form (`Battle/Screenshot_20261008_091659.png`), the
   animated level-up word (`_091817`), the capture message (`_091814`)
   and orange/critical digit styles (`_091744`).
-- Battle items: `FUN_0038972c` emits AC50:2 and selects motion 10024 for human
-  targets, 10025 for NPC targets; item type 24 references its own skill instead.
-  The native item-ID/slot request payload and transaction/replay boundary need
-  tracing before enabling consumption.
+- Live battle-item packet comparisons remain pending server availability.
+  The request layout was verified in the matching executable's
+  `FUN_002c2394` branch `0x002d4247`–`0x002d44ed`; `FUN_0039be38` selects
+  the item/slot and `FUN_0038972c` validates its target. Native client code proves
+  layouts and presentation, not server-only special-item formulas.
 - Live original-client packet comparisons and multiplayer/load acceptance.
   Client decompilation cannot independently prove server-only damage, hit, AI,
   capture, reward or RNG formulas. Their existing compatibility rules must stay

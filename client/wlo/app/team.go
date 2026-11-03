@@ -33,6 +33,7 @@ func (c *Client) initTeam() {
 			c.combat.choices, c.combat.choiceToken = nil, 0
 			c.battle.state.Ready, c.remote.battle.ready, c.battle.timerOn = false, false, false
 			c.battle.binding = nil
+			c.battle.item = nil
 			c.closeHotbarTarget()
 			c.Team.Hide()
 		}

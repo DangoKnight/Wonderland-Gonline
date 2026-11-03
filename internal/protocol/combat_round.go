@@ -16,7 +16,7 @@ const (
 	CombatCapabilityPacketBytes        = 12
 	CombatChunkHeaderBytes             = 14
 	CombatPromptBytes                  = 8
-	CombatChoiceBytes                  = 8 // Original AC50 command, subcommand, two cells and skill.
+	CombatChoiceBytes                  = 8 // Attack/defend/flee; AC50:2 has BattleItemRequestBytes.
 	CombatChoicesHeaderBytes           = 7
 	CombatMaxRoundBytes                = 1 << 20
 	CombatMaxRoundSteps                = 512
@@ -160,7 +160,7 @@ func EncodeCombatChoices(token uint32, choices [][]byte) ([]byte, error) {
 	}
 	p := Builder{CommandGonlineCombat, CombatRoundChoices}.U32(token).U8(byte(len(choices)))
 	for _, choice := range choices {
-		if !validCombatChoice(choice) {
+		if !ValidCombatChoice(choice) {
 			return nil, ErrMalformed
 		}
 		p = p.Bytes(choice)
@@ -168,8 +168,16 @@ func EncodeCombatChoices(token uint32, choices [][]byte) ([]byte, error) {
 	return p, nil
 }
 
-func validCombatChoice(p []byte) bool {
-	return len(p) == CombatChoiceBytes && p[0] == CommandBattleAction && (p[1] == BattleActionAttackRequest || p[1] == BattleActionDefendRequest || p[1] == BattleActionFleeRequest)
+// ValidCombatChoice keeps native item requests distinct from skill choices.
+// Their subcommands delimit mixed batches without changing existing goldens.
+func ValidCombatChoice(p []byte) bool {
+	if len(p) < 2 || p[0] != CommandBattleAction {
+		return false
+	}
+	if p[1] == BattleActionItemRequest {
+		return len(p) == BattleItemRequestBytes
+	}
+	return len(p) == CombatChoiceBytes && (p[1] == BattleActionAttackRequest || p[1] == BattleActionDefendRequest || p[1] == BattleActionFleeRequest)
 }
 
 func DecodeCombatChoices(p []byte) (uint32, [][]byte, error) {
@@ -178,16 +186,27 @@ func DecodeCombatChoices(p []byte) (uint32, [][]byte, error) {
 	}
 	r := NewReader(p[2:])
 	token, n := r.U32(), int(r.U8())
-	if token == 0 || n == 0 || n > CombatMaxChoices || r.Remaining() != n*CombatChoiceBytes {
+	if token == 0 || n == 0 || n > CombatMaxChoices || r.Remaining() < n*CombatChoiceBytes {
 		return 0, nil, ErrMalformed
 	}
 	var choices [][]byte
 	for i := 0; i < n; i++ {
-		choice := r.Bytes(CombatChoiceBytes)
-		if !validCombatChoice(choice) {
+		header := r.Bytes(2)
+		if len(header) != 2 {
+			return 0, nil, ErrMalformed
+		}
+		size := CombatChoiceBytes
+		if header[1] == BattleActionItemRequest {
+			size = BattleItemRequestBytes
+		}
+		choice := append(append([]byte(nil), header...), r.Bytes(size-2)...)
+		if !ValidCombatChoice(choice) {
 			return 0, nil, ErrMalformed
 		}
 		choices = append(choices, choice)
+	}
+	if r.Err() != nil || r.Remaining() != 0 {
+		return 0, nil, ErrMalformed
 	}
 	return token, choices, nil
 }

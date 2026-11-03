@@ -79,7 +79,7 @@ func areaRecord(p protocol.Builder, actor *Fighter, skill uint16, results []targ
 	}
 	return p
 }
-func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defending map[int]bool) []Step {
+func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 	if a.Actor == nil || a.Actor.Absent || !r.CanUse(a.Actor, a.Skill) {
 		return nil
 	}
@@ -97,7 +97,7 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 	if selected == nil {
 		return nil
 	}
-	targets := formationTargets(enemies, selected, shape, false)
+	targets := skillTargets(enemies, selected, r.Skills[a.Skill], skillGrade(a.Actor, a.Skill), false)
 	packets := [][]byte{turnPacket(a.Actor), r.spend(a.Actor, a.Skill)}
 	var results []targetResult
 	var overkills []*Fighter

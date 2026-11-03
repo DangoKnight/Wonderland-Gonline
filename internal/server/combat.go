@@ -46,7 +46,9 @@ type battleRun struct {
 	encounterMap uint16
 	wild         bool
 	trial        *assets.CombatTrial
-	petChanges   []battle.Step // Native exit/join steps before the next round's actions.
+	petChanges   []battle.Step                // Native exit/join steps before the next round's actions.
+	items        map[uint16]assets.BattleItem // Immutable definition snapshot for this encounter.
+	withdrawals  [][]byte                     // Forced removals published after the already-calculated round's playback.
 }
 
 // battleMember is one participant: its character fighter and battle pet, if any.
@@ -56,6 +58,7 @@ type battleMember struct {
 	pet          *battle.Fighter
 	choiceToken  uint32
 	roundBundled bool // This recipient already has this round's native steps.
+	resultSaved  bool // Final vitals/pet consequences committed; do not settle twice on disconnect.
 }
 
 func (run *battleRun) member(c *Session) *battleMember {
@@ -287,7 +290,7 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		if len(p) < 2 {
 			return protocol.ErrMalformed
 		}
-		ack := run.b.Submit(s.rules(), c.character.ID, p[1], p[2:])
+		ack := run.b.Submit(s.combatRules(run), c.character.ID, p[1], p[2:])
 		if ack == nil {
 			return nil
 		}
@@ -326,7 +329,7 @@ func (s *Server) tryRound(run *battleRun) {
 	}
 	run.turn++
 	s.captureEscapeLeaders(run)
-	steps, outcome := run.b.Round(s.rules())
+	steps, outcome := run.b.Round(s.combatRules(run))
 	steps = append(run.petChanges, steps...)
 	run.petChanges = nil
 	go s.playRound(run, steps, outcome)
@@ -492,8 +495,12 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	s.flushBattleDisconnects(run)
 	if len(run.active()) == 0 || run.b.Finished {
 		return
+	}
+	if outcome == battle.Continue {
+		outcome = run.b.Forfeit()
 	}
 	if outcome != battle.Continue {
 		s.endBattle(run, outcome)
@@ -523,6 +530,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	if run.b.Finished {
 		return
 	}
+	s.flushBattleDisconnects(run)
 	run.b.Finished = true
 	if run.timer != nil {
 		run.timer.Stop()
@@ -620,6 +628,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			c.conn.Close()
 			continue
 		}
+		m.resultSaved = true
 		var completed []uint32
 		for id, q := range next.Quests {
 			if before, exists := previousQuests[id]; !exists || before.State != q.State || before.Step != q.Step || before.Kills != q.Kills {
@@ -741,24 +750,36 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 	_ = s.startEvent(context.Background(), c, es.click, es.ev, next, true)
 }
 
-// abandonBattle is OnPlayerDisconnect: the member leaves; its fighters stay and
-// defend. The battle ends when no member remains. Caller holds worldMu.
+// abandonBattle saves the resolved state and withdraws this owner and pet.
+// The battle ends when no member remains. Caller holds worldMu.
 func (s *Server) abandonBattle(c *Session) {
 	run := c.battle
 	if run == nil {
 		return
 	}
-	overkillExit := false
-	if m := run.member(c); m != nil && m.self.Overkilled {
+	m := run.member(c)
+	if m != nil && m.self.Overkilled {
 		// A disconnect during the flight must not bypass the saved return.
 		// The round has already resolved; omit writes to the closing owner.
-		overkillExit = true
 		if err := s.returnOverkilledPlayer(run, m, false); err != nil {
 			s.Log.Warn("disconnected overkill return failed", "character", c.character.ID, "error", err)
 		}
+	} else if m != nil && !m.resultSaved {
+		s.stageBattleDisconnect(run, m)
+		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
+		if err := s.saveBattleDisconnect(ctx, c); err != nil {
+			s.Log.Error("battle disconnect state not committed", "character", c.character.ID, "error", err)
+		}
+		cancel()
 	}
+	// The overkill path already publishes removal after committing its return.
+	removed := c.battle != run
 	c.battle = nil
 	run.b.Leave(c.character.ID)
+	c.encounter.battleOver()
+	if m != nil && !removed {
+		s.publishBattleDisconnect(run, m)
+	}
 	if len(run.active()) == 0 {
 		if run.encounter != 0 {
 			s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
@@ -770,7 +791,9 @@ func (s *Server) abandonBattle(c *Session) {
 		return
 	}
 	if !run.b.Finished {
-		if overkillExit && run.b.Processing {
+		// A submitted round is immutable. In particular, an escaping teammate
+		// must complete its departure before withdrawal-based endings are tested.
+		if run.b.Processing {
 			return
 		}
 		if outcome := run.b.Forfeit(); outcome != battle.Continue {

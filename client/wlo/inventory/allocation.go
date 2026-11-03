@@ -68,8 +68,10 @@ func (f *Form) CancelPoints() {
 	f.syncAllocationControls()
 }
 
-// SubmitAllocation ports FUN_003540c4: character target 0, counted stat/word
-// entries in STR, CON, INT, WIS, AGI order. AC8:1 replies supply final values.
+// SubmitAllocation ports FUN_003540c4: character target 0 and counted entries
+// in STR, CON, INT, WIS, AGI order. Use DWORD amounts on the wire: the server's
+// legacy decoder reads four bytes whenever available, so packed WORD amounts
+// would consume the following stat ID. AC8:1 replies supply final values.
 func (f *Form) SubmitAllocation() {
 	if !f.allocationAllowed() || f.AllocationWaiting || f.draftTotal() == 0 || f.draftTotal() > uint32(f.Stats.Points) || f.Send == nil {
 		return
@@ -84,7 +86,7 @@ func (f *Form) SubmitAllocation() {
 	for i, n := range f.PendingPoints {
 		if n != 0 {
 			p[3]++
-			p = p.U8(allocationStats[i]).U16(n)
+			p = p.U8(allocationStats[i]).U32(uint32(n))
 		}
 	}
 	f.PendingPoints = [allocationAttributes]uint16{}

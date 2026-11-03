@@ -543,7 +543,7 @@ const (
 	BattleActionAnimation     = 1
 	BattleActionTurn          = 6
 	BattleActionAttackRequest = 1
-	BattleActionItemRequest   = 2 // Native FUN_002c2394; execution requires transactional item consumption.
+	BattleActionItemRequest   = 2 // Native FUN_002c2394: cells, item ID, random trailer, bag slot, flag.
 	BattleActionDefendRequest = 4
 	BattleActionFleeRequest   = 5
 )
@@ -870,7 +870,8 @@ const (
 const (
 	BattleHitLanded = 1
 	BattleHitMiss   = 0
-	// FUN_0039b558 subtracts modes 1/2 and adds modes 3/4.
+	// FUN_0039b558 subtracts modes 1/2; native item recovery also uses 0.
+	BattleStatItemRecovery     = 0 // Live legacy Grape Syrup result (2026-11-03).
 	BattleStatDamage           = 1
 	BattleStatCriticalDamage   = 2
 	BattleStatRecovery         = 3

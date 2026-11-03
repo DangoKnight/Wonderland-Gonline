@@ -415,7 +415,7 @@ func ApplyStatResult(current, maximum uint32, r StatResult) uint32 {
 	switch r.Mode {
 	case protocol.BattleStatDamage, protocol.BattleStatCriticalDamage:
 		return current - min(current, r.Amount)
-	case protocol.BattleStatRecovery, protocol.BattleStatCriticalRecovery:
+	case protocol.BattleStatItemRecovery, protocol.BattleStatRecovery, protocol.BattleStatCriticalRecovery:
 		return uint32(min(uint64(maximum), uint64(current)+uint64(r.Amount)))
 	}
 	return current

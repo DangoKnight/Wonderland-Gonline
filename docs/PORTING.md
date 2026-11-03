@@ -29,6 +29,14 @@ native function; binaries were not fully disassembled and every authored data
 value was not reverified. This was static review, not runtime or aLogin acceptance.
 Historical verification reports are not evidence that current tests passed.
 
+## Combat support and targeting follow-up — 2026-11-03
+
+SP restoration, selective/general status cleansing and automatic native area
+targeting now follow the pinned `0cb6915` battle implementation. Existing SQL
+grade shapes override automatic patterns. See [combat targeting](COMBAT_TARGETING.md)
+for formulas, precedence and remaining official-client verification. Existing HP
+healing formulas and other combat parity gaps are outside this follow-up.
+
 ## Story architecture
 
 Existing native story exceptions now use the typed SQL `Story` dataset (asset

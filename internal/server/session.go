@@ -42,7 +42,8 @@ type Session struct {
 	invisible             bool      // GM ghost mode; guarded by worldMu.
 	pendingName           string
 	character             *game.Character
-	autosaveBaseline      *game.Character // Last checkpoint; guarded by worldMu.
+	autosaveBaseline      *game.Character       // Last checkpoint; guarded by worldMu.
+	battleDisconnect      *battleDisconnectSave // Pending failed final battle checkpoint, guarded by worldMu.
 	ready                 bool
 	restoreUIAfterMapLoad bool // An event warp cut off its final client acknowledgment; guarded by worldMu.
 	// warped marks a portal arrival; peers then receive no AC5:8 login refresh.
@@ -388,6 +389,9 @@ const (
 
 // Caller holds worldMu, which also serializes gameplay commits and disconnects.
 func (s *Server) autosaveSession(ctx context.Context, c *Session) error {
+	if err := s.saveBattleDisconnect(ctx, c); err != nil {
+		return err
+	}
 	if c.character == nil || c.autosaveBaseline == nil {
 		return nil
 	}

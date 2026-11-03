@@ -236,14 +236,6 @@ func (s *Server) leaveWorld(c *Session) {
 			s.Log.Error("tent close on logout failed", "error", err)
 		}
 	}
-	if c.autosaveBaseline != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
-		if err := s.autosaveSession(ctx, c); err != nil {
-			s.Log.Error("disconnect autosave failed", "session", c.info.ID, "error", err)
-		}
-		cancel()
-		c.autosaveBaseline = nil
-	}
 	published := c.friendOnline || s.world[c.info.ID] == c
 	c.friendOnline = false
 	if c.character != nil && s.friendSessions[c.character.ID] == c {
@@ -267,6 +259,17 @@ func (s *Server) leaveWorld(c *Session) {
 	s.closeStall(c)
 	s.endTrade(c, 0, false, protocol.TradeResultDisconnected)
 	s.abandonBattle(c)
+	// Battle vitals must be staged before the final session checkpoint. A failed
+	// SQL write retains its snapshot/baseline, so this pass can retry it.
+	if c.autosaveBaseline != nil || c.battleDisconnect != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
+		if err := s.autosaveSession(ctx, c); err != nil {
+			s.Log.Error("disconnect autosave failed", "session", c.info.ID, "error", err)
+		} else {
+			c.autosaveBaseline = nil
+		}
+		cancel()
+	}
 	s.endEvent(c)
 	// C# keeps a disconnected player in its team; it leaves here.
 	s.partyLeave(c, false)

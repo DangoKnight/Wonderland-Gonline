@@ -15,6 +15,7 @@ import (
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -170,6 +171,8 @@ type battleView struct {
 	menu                *seui.Form
 	selected            clientbattle.Cell
 	binding             *hud.Binding
+	item                *battleItemSelection
+	itemActors          map[clientbattle.Cell]bool
 	previous            *seui.FixedButton
 	lastActions         map[clientbattle.Cell]battlePreviousAction
 	pendingActions      map[clientbattle.Cell]battlePreviousAction
@@ -178,6 +181,7 @@ type battleView struct {
 	timerOn    bool
 	timerTurn  uint64
 	timerStart time.Time
+	waitStart  time.Time // Native secondary countdown also covers teammates after our choices.
 	timerLimit int
 	timerShown int
 	timedOut   bool
@@ -246,6 +250,8 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.hotbar.turn++
 		c.closeHotbarTarget()
 		view.binding = nil
+		view.item = nil
+		view.itemActors = nil
 		view.pendingActions = nil
 	}
 	if view.state.Active && (!wasActive || p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation) {
@@ -339,6 +345,10 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	// replacement. Keep the client stunt alias when it resolves to this skill.
 	if p[0] == protocol.CommandBattleAction && p[1] == protocol.BattleActionAnimation {
 		for _, action := range view.state.Actions[queued:] {
+			if view.itemActors[action.Actor] || action.Skill == assets.BattleItemHumanMotion || action.Skill == assets.BattleItemCreatureMotion {
+				delete(view.lastActions, action.Actor)
+				continue
+			}
 			f := view.state.At(action.Actor)
 			if f == nil || !view.state.Owned(f) {
 				continue
@@ -428,10 +438,13 @@ func (c *Client) closeBattleView() {
 	v.victorySide, v.victoryVoiced = 0, false
 	v.floats = nil
 	v.binding = nil
+	v.item = nil
+	v.itemActors = nil
 	v.previous = nil
 	v.lastActions = nil
 	v.pendingActions = nil
 	v.timerOn = false
+	v.waitStart = time.Time{}
 	v.timedOut = false
 	v.auto = false
 	v.camera = image.Point{}
@@ -772,6 +785,9 @@ func (c *Client) battleFrame(draw bool) bool {
 	}
 	c.drawDepartingPets(now, offset)
 	c.drawBattleEffects(now)
+	for _, f := range fighters {
+		c.drawBattleSlow(f, c.battleBody(f), positions[f.Cell], now)
+	}
 	for _, f := range v.floats {
 		elapsed := now.Sub(f.at)
 		at := f.cell.Position().Add(offset)
@@ -851,12 +867,8 @@ func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion c
 			if result.Mode == protocol.BattleStatCriticalDamage {
 				ink = 0xffe0
 			}
-			if result.Mode == protocol.BattleStatRecovery || result.Mode == protocol.BattleStatCriticalRecovery {
-				ink = 0x07e0
-				// Recovery digit/tint selection remains unresolved. Retain the
-				// clearly identifiable compatibility text until it is traced.
-				font = ""
-			}
+			// FUN_0039e884 uses the outlined orange HP sheet for recovery too;
+			// the Grape Syrup/Nian Noodle references confirm orange HP/cyan SP.
 			if result.Stat == game.StatCurrentSP {
 				ink = 0x001f
 				font = battleSPDigits
@@ -901,7 +913,7 @@ func (c *Client) battleBinding(id uint16, actor remoteFighter) hud.Binding {
 func (c *Client) battleMenu() {
 	v := &c.battle
 	actor, ok := c.battleActor()
-	show := ok && v.binding == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
+	show := ok && v.binding == nil && v.item == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
 	if !show {
 		if v.menu != nil {
 			v.menu.Visible = false
@@ -965,6 +977,7 @@ func (c *Client) chooseBattleCommand(command int) {
 	if !ok {
 		return
 	}
+	c.battle.item = nil
 	switch command {
 	case battleCommandAttack:
 		b := c.battleBinding(skills.BasicAttack, actor)
@@ -981,8 +994,7 @@ func (c *Client) chooseBattleCommand(command int) {
 	case battleCommandFlee:
 		c.submitBattleSpecial(actor, actor, battleFleeSkill, protocol.BattleActionFleeRequest)
 	case battleCommandItems:
-		// FUN_00297f84 case 4 opens the item form (FUN_00351700). Battle
-		// item use (AC50:2) is not executed by the server yet.
+		// FUN_00297f84 case 4 opens the item form (FUN_00351700).
 		if c.Inventory != nil {
 			c.Inventory.Show()
 		}
@@ -1056,6 +1068,10 @@ func (c *Client) battleClick(x, y int) bool {
 		if !image.Pt(x, y).In(image.Rect(at.X-30, at.Y-90, at.X+30, at.Y+8)) {
 			continue
 		}
+		if c.battle.item != nil {
+			c.submitBattleItem(target)
+			return true
+		}
 		if c.battle.state.CanChoose(cell) && c.battle.binding == nil {
 			c.battle.selected = cell
 			return true
@@ -1125,6 +1141,7 @@ func (c *Client) battleTimerTick(now time.Time) {
 	}
 	if v.state.Ready && v.timerTurn != v.state.Turn {
 		v.timerTurn = v.state.Turn
+		v.waitStart = now
 		v.timedOut = false
 		if _, ok := c.battleActor(); ok {
 			v.timerOn = true
@@ -1149,6 +1166,7 @@ func (c *Client) battleTimerTick(now time.Time) {
 		v.timedOut = true
 		v.state.Ready, c.remote.battle.ready = false, false
 		v.binding = nil
+		v.item = nil
 		if c.Skills != nil {
 			c.Skills.Hide()
 		}

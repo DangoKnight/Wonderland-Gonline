@@ -124,6 +124,14 @@ checkpoint baseline and are logged. Gathering remains on the independent
 one-second world tick. Vehicle wear/consumption can commit during movement and
 is deliberately not deferred.
 
+Combat disconnects commit resolved player/pet vitals and active-pet knockout/amity
+consequences before the final session checkpoint. Both delivery modes use the
+whole calculated round, including animations not yet played. Withdrawn fighters
+cannot act, defend or be targeted in later rounds; disconnect is not escape.
+Already committed final results are not settled twice. Failed writes retain an
+immutable pending snapshot for the final-save retry and do not publish roster
+changes or advance the checkpoint. See [combat transport](COMBAT_TRANSPORT.md).
+
 The saver currently serializes checkpoints under `worldMu`, with a bounded
 five-second batch context. This reduces per-packet SQL work but does not remove
 the global world lock or establish load/soak acceptance. Under healthy saves,

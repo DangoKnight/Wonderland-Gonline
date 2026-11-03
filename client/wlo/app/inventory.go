@@ -56,6 +56,7 @@ func (c *Client) initInventory() {
 	c.Inventory.CanAct = func() bool {
 		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.battle.state.Active && !c.sceneFrozen()
 	}
+	c.Inventory.BattleUse = c.selectBattleItem
 	c.Inventory.Now = func() time.Time { return c.Now() }
 	c.Inventory.Notice = c.Chat.Notice
 	c.Inventory.StartRemote = c.startRemote

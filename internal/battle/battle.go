@@ -59,8 +59,8 @@ type Fighter struct {
 	Withdrawn            bool // Removed by overkill or explicit owner escape; retain vitals for settlement.
 	Joining              bool // Replacement pet cannot act or be targeted, including by area coverage, until next command phase.
 	overkillAnnounced    bool
-	// Absent marks a disconnected player's fighters. They stay on the field
-	// and defend; the turn no longer waits for their commands.
+	// Absent marks disconnected owners; Withdrawn also excludes their fighters
+	// from targeting, actions and subsequent rounds without changing their vitals.
 	Absent bool
 }
 
@@ -112,7 +112,9 @@ type Action struct {
 	Kind          string // attack, defend, idle, catch, flee, heal, effect, monster
 	Redirected    bool   // Target selected by an active redirection effect.
 	Skill         uint16
-	SkillEXP      uint32 // Award computed from the resolved primary target, once per cast.
+	ItemSlot      byte
+	Item          game.Item // Selected identity/metadata; revalidated before consumption.
+	SkillEXP      uint32    // Award computed from the resolved primary target, once per cast.
 	TX, TY        byte
 	comboSpeed    int
 	speedRecorded bool
@@ -148,6 +150,9 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
+	Items map[uint16]assets.BattleItem
+	// Called synchronously during Round, before an item effect or success packet.
+	CommitItem func(Action, *Fighter, int, int) bool
 	// Selects 10 percent per actual combo participant instead of the fixed bonus.
 	ComboDamagePerParticipant bool
 	// Zero retains the default multiplier for existing rule constructors.
@@ -336,11 +341,13 @@ func (b *Battle) Expected() int {
 	return max(1, n)
 }
 
-// Leave marks a player's fighters absent, dropping their unplayed commands.
+// Leave removes a player's fighters, dropping unexecuted commands. Retain HP/SP
+// and death counters for durable settlement; disconnect is not a flee action.
 func (b *Battle) Leave(player uint32) {
 	for _, f := range b.all() {
 		if (f.Kind == Player && f.ID == player) || (f.Kind == Pet && f.Owner == player) {
 			f.Absent = true
+			f.Withdrawn = true
 			delete(b.Pending, f.key())
 		}
 	}
@@ -381,8 +388,12 @@ func has(name string, words ...string) bool {
 	return false
 }
 
-func isHeal(s assets.Skill) bool   { return has(s.Name, "Heal", "Recover", "Blessing", "Cure", "Rest") }
-func isRevive(s assets.Skill) bool { return has(s.Name, "Reviv", "Restoration") }
+func isHeal(s assets.Skill) bool {
+	return !s.RestoresSP() && !s.CleansesStatus() && (s.EffectLayer == assets.SkillLayerHealing || has(s.Name, "Heal", "Recover", "Blessing", "Cure", "Rest"))
+}
+func isRevive(s assets.Skill) bool {
+	return s.EffectLayer == assets.SkillLayerRevival || has(s.Name, "Reviv", "Restoration")
+}
 
 // learned returns a character's grade of a skill, accepting the stunt alias.
 func learned(c *game.Character, skill uint16) (game.LearnedSkill, bool) {
@@ -437,9 +448,9 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 	if b.Finished || b.Processing {
 		return nil
 	}
-	// Item requests have a different payload and resource boundary. Never
-	// interpret their item ID as a skill ID (or consume an actor's turn) while
-	// transactional battle-item execution is unavailable.
+	if sub == protocol.BattleActionItemRequest {
+		return b.submitItem(r, player, data)
+	}
 	switch sub {
 	case protocol.BattleActionAttackRequest, protocol.BattleActionDefendRequest, protocol.BattleActionFleeRequest:
 	default:
@@ -484,6 +495,8 @@ func (b *Battle) Submit(r Rules, player uint32, sub byte, data []byte) []byte {
 		kind, skill = "defend", defendSkill
 	case skill == catchSkill:
 		kind = "catch"
+	case known && (s.RestoresSP() || s.CleansesStatus()):
+		kind = "heal"
 	case known && hasCastEffects(s.Effects):
 		kind = "effect"
 	case known && (isHeal(s) || isRevive(s)):
@@ -619,7 +632,7 @@ func (b *Battle) order(r Rules, actions []Action) [][]Action {
 	var ordered []Action
 	for _, a := range actions {
 		switch a.Kind {
-		case "attack", "status", "catch", "heal", "buff", "effect":
+		case "attack", "status", "catch", "heal", "buff", "effect", "item":
 			ordered = append(ordered, a)
 		}
 	}
@@ -695,17 +708,6 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 		f.RoundDamage = 0
 	}
 	b.Turn++
-	for _, f := range b.all() {
-		if f.Absent && !f.Dead() {
-			if _, ok := b.Pending[f.key()]; !ok {
-				player := f.ID
-				if f.Kind == Pet {
-					player = f.Owner
-				}
-				b.Pending[f.key()] = Action{Actor: f, Player: player, Kind: "defend", Skill: defendSkill}
-			}
-		}
-	}
 	actions := make([]Action, 0, len(b.Pending))
 	keys := make([]int, 0, len(b.Pending))
 	for k := range b.Pending {
@@ -742,6 +744,10 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 	}
 	for _, step := range b.order(r, actions) {
 		for _, a := range step {
+			if a.Kind == "item" {
+				steps = append(steps, b.useItem(r, a)...)
+				continue
+			}
 			if a.Kind == "effect" {
 				steps = append(steps, r.abilityEffect(b, a))
 				continue
@@ -810,10 +816,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 			target = actor
 		}
 	}
-	targets := []*Fighter{target}
-	if shape, ok := s.TargetingAt(skillGrade(actor, a.Skill)); ok {
-		targets = formationTargets(allies, target, shape, isRevive(s))
-	}
+	targets := skillTargets(allies, target, s, skillGrade(actor, a.Skill), isRevive(s))
 	// Ordinary healing cannot revive a defeated fighter.
 	if !isRevive(s) {
 		targets = living(targets)
@@ -827,6 +830,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 		hpBefore := target.HP
 		stat, amount := byte(0), 0
 		switch {
+		case s.RestoresSP():
+			amount = min(max(0, target.MaxSP-target.SP), max(manaMinimumRestoration, int(float64(max(actor.attack(), actor.magicAttack()))*manaStatMultiplier)+int(actor.Level)*manaLevelRestoration))
+			target.SP, stat = target.SP+amount, game.StatCurrentSP
+		case s.CleansesStatus():
+			r.cleanse(target, s)
 		case isRevive(s) && target.Dead():
 			amount = min(target.MaxHP, max(50, target.MaxHP/3))
 			target.HP, stat = amount, game.StatCurrentHP
@@ -836,7 +844,9 @@ func (r Rules) support(b *Battle, a Action) Step {
 		}
 		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
 		if a.SkillEXP == 0 {
-			if isRevive(s) {
+			if s.RestoresSP() || s.CleansesStatus() {
+				a.SkillEXP = game.SupportSkillEXPPerUse + game.BuffSkillEXPBonus
+			} else if isRevive(s) {
 				a.SkillEXP = game.SupportSkillEXPPerUse + game.ReviveSkillEXPBonus
 			} else {
 				a.SkillEXP = game.HealingSkillEXP(amount, hpBefore, target.MaxHP)
@@ -845,7 +855,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, actor, a.Skill, results))
 	for _, target := range targets {
-		packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentHP, uint32(target.HP)))
+		if s.RestoresSP() {
+			packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentSP, uint32(target.SP)))
+		} else if !s.CleansesStatus() {
+			packets = append(packets, StatSync(target.X, target.Y, game.StatCurrentHP, uint32(target.HP)))
+		}
 	}
 
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
@@ -917,8 +931,8 @@ func systemLine(text string) []byte {
 
 func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step, bool) {
 	if len(group) == 1 && !Basic(group[0].Skill) {
-		if shape, ok := r.Skills[group[0].Skill].TargetingAt(skillGrade(group[0].Actor, group[0].Skill)); ok && (shape.All || len(shape.Offsets) > 1) {
-			return r.areaAttack(b, group[0], shape, defending), false
+		if r.Skills[group[0].Skill].IsAreaAttack(skillGrade(group[0].Actor, group[0].Skill)) {
+			return r.areaAttack(b, group[0], defending), false
 		}
 	}
 	var steps []Step

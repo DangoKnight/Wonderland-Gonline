@@ -69,6 +69,7 @@ func (s *Server) prepareEscapingMembers(run *battleRun, steps []battle.Step) map
 					continue
 				}
 				c.pets, m.self.Char = roster, c.character
+				m.resultSaved = true
 				if steps[i].OwnerPackets == nil {
 					steps[i].OwnerPackets = map[uint32][][]byte{}
 				}

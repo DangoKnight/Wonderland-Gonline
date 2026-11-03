@@ -1,5 +1,32 @@
 # Testing and validation
 
+## Combat support and automatic targeting — 2026-11-03
+
+Passed the complete `internal/battle` suite under `-race`, focused asset support
+and targeting tests, and server combat integration tests under `-race`.
+Coverage includes native grade fallback, every automatic pattern and ordering,
+sparse formations, authored overrides, PvP allegiance, pets, defeated and joining
+recipients, capped SP restoration, selective/general cleansing, monster support
+AI, one SP cost/proficiency use per cast, independent native result bytes, native
+and chain transport, and restored SP persistence after disconnect.
+Affected client battle/skill/targeting/playback checks, server-package vet,
+formatting and whitespace checks also passed. Built `bin/wonderland-next.exe`
+from `./cmd/wonderland`; the running server was not restarted.
+
+```powershell
+go test -race ./internal/battle -count=1 -timeout=4m
+go test ./internal/assets -run '^Test(Skill|NativeSupport|Native.*Effect)' -count=1 -timeout=2m
+go test -race ./internal/server -run '^Test(CombatMana|BattleItem|GonlineCombat|BattlePet|TeamBattle|NativePvP|PvPDisconnect|BattleDisconnect)' -count=1 -timeout=5m
+go vet ./internal/assets ./internal/battle ./internal/server
+Push-Location client
+go test ./wlo/battle ./wlo/skills ./wlo/app -run 'Test.*(Target|Mana|Skill|Round|Combat|Result)' -count=1 -timeout=4m
+Pop-Location
+```
+
+Automatic shapes and support rules follow Private Server `0cb6915`; a live
+official-client animation comparison remains pending. No new SQL schema or
+asset rebuild is required.
+
 This is the maintained guide for automated checks, test data, graphics/snapshots,
 benchmarks, native-client acceptance and recorded testing findings. Commands run
 from the repository root unless they explicitly enter `client/`. Feature guides
@@ -2001,14 +2028,129 @@ go test ./wlo/app -run '^Test(BattleVictory.*|BattleSkill.*|BattleVoice.*|Battle
 go vet ./wlo/skills ./wlo/app
 ```
 
+### Combat disconnect settlement - 2026-11-02
+
+Race-enabled regressions cover withdrawal of owner/pet and pending choices,
+exclusion from subsequent targeting/damage, and continued combat for an online
+teammate after its leader disconnects. Native and chain cases calculate a real
+damage/SP-spending round, pause playback, disconnect the owner, and verify SQL
+already holds the final round vitals plus pet HP/SP and one amity penalty.
+Removal records follow committed playback and precede the next prompt.
+
+Concurrent last-player disconnects save each owner and stop playback. A failed
+SQL save retains an immutable snapshot and baseline; retry commits once without
+publishing a failed pet change. A disconnect during a committed defeat departure
+does not overwrite defeat recovery or repeat the pet penalty. A knocked-out
+remaining teammate receives a defeat rather than an impossible command phase.
+Existing escape, overkill/spawn, PvP forfeit, item, encounter-reservation and
+logout/autosave regressions are included. No asset or database rebuild is needed.
+
+```powershell
+go test -race ./internal/battle ./internal/protocol -count=1 -timeout=4m
+go test -race ./internal/server -run '^Test(BattleDisconnect|Disconnect|.*Disconnect.*|PvP.*|NativePvP.*|.*Overkill.*|.*Escape.*|GonlineCombat.*|BattleItem.*|BattlePet.*|TeamBattle.*|Wild.*|WorldSimulation.*|BufferedMovementPurchaseAndDisconnect|FailedBattleResult.*)' -count=1 -timeout=6m
+go vet ./internal/battle ./internal/server
+```
+
+### Battle item use - 2026-11-02
+
+Slow-choice and dual-item regressions: the native `E119` turtle sheet is rendered
+with four 250 ms frames starting at ten seconds remaining. Tests cover both turn
+limits, own/peer submission receipts, pet indicators, hidden/dead/waiting fighters,
+playback, expiry and next-round reset. The actual exported sheet is rendered and
+checked; `BATTLE_SLOW_SNAPSHOT` optionally saves a battle screenshot.
+The reported Spicy Hot Pot (32176) scenario has player and pet target the pet from
+the same stack of 50. Client tests include native receipts between selections;
+server race tests verify the round executes and durably consumes exactly two
+items, for full and injured pets in native and complete-round transports. This
+depends on the full-vitals selection fix above; binaries built before that fix
+must be rebuilt and restarted. Tests did not restart the running development server.
+
+```powershell
+# root
+go test -race ./internal/server -run '^TestBattleItem' -count=1 -timeout=3m
+# client/
+go test ./wlo/app -run '^Test(BattleSlow|BattleItem|BattleTimer)' -count=1 -timeout=3m
+```
+
+Item-target corrections also pass focused tests for the native magic cursor,
+clicking all eight allied player/pet formation cells at full vitals, recovery
+after damage received between selection and execution, and Bomb enemy selection
+with ally rejection. Independent native item projections cover Bomb, Strong Bomb,
+Darts and both shuriken variants. Full-vitals selection follows the decompiled
+`FUN_0038972c` and its eligibility helpers; no live legacy-server capture was made.
+
+Verified the native AC50:2 builder directly in the matching aLogin executable
+(`FUN_002c2394`, branch `0x002d4247`–`0x002d44ed`), including item ID,
+opaque trailer, bag slot and compatibility flag. Subsequent live legacy-server
+and legacy-client-to-Gonline captures on 2026-11-03 established the additional
+40-byte send-path trailer and mode-zero recovery. See
+[the capture findings](BATTLE_ITEM_CAPTURE.md). Raw captured 52-byte requests
+are replayed through the engine and server, including player/pet item use from
+one stack and durable count reduction. Client regressions verify the captured
+mode-zero SP recovery at contact; existing 12-byte goldens remain unchanged.
+The Grape Syrup/Nian Noodle screenshot references also verify the outlined
+cyan SP and orange HP sheets. Item contact tests cover both sheets, including
+mode-zero HP recovery on a pet recipient; HP recovery no longer uses plain text.
+
+Focused tests pass for native request/result goldens, simultaneous HP/SP recovery
+at contact, revival, creature motions, pet commands, speed ordering, unclamped
+overkill damage, invalid/stale/locked selections, last-stack reservations, SQL
+failure and cross-owner pet rollback. Native and negotiated round delivery each
+emit one private consumption receipt; completed choice-token replay has no effect.
+Actual UI double-click, item shortcuts, Escape cancellation, turn reset and
+compiled motions 10024/10025/15138 pass. Existing eight-byte choice goldens remain
+unchanged; mixed eight/twelve-byte batches have separate independent goldens.
+
+Affected battle/protocol suites and server combat integrations pass under the
+race detector. Client battle, hotbar, inventory and Gonline combat regressions
+pass with the compiled asset bundle. Affected-package vet passes. No database
+migration, asset rebuild or live server restart was performed.
+
+```powershell
+# Repository root
+go test ./internal/assets -run '^TestNativeBattleItem' -count=1
+go test -race ./internal/battle ./internal/protocol -count=1 -timeout=4m
+go test -race ./internal/server -run '^Test(BattleItem|GonlineCombat|BattlePet|CombatPet|.*Escape.*|.*Overkill.*)' -count=1 -timeout=5m
+go vet ./internal/assets ./internal/battle ./internal/protocol ./internal/server
+# client/
+$env:CGO_ENABLED = '0'
+$env:WONDERLAND_TEST_CLIENT_BUNDLE = (Resolve-Path ../bin/client-assets.zip).Path
+go test ./wlo/app ./wlo/battle ./wlo/inventory -run '^Test(Battle.*|GonlineCombat.*|Hotbar.*|Inventory.*)$' -count=1 -timeout=5m
+go vet ./wlo/app ./wlo/inventory ./wlo/battle
+```
+
+### Multi-attribute allocation encoding - 2026-11-03
+
+The client formerly packed two-byte amounts in counted AC8:1 entries. The
+reference-compatible server decoder consumes four bytes whenever available,
+which swallowed the following stat ID and made multi-attribute allocations
+unaffordable or incomplete. The client now writes four-byte amounts for each
+entry. Server parsing behavior and independent migration goldens are unchanged.
+
+Focused tests cover all 31 nonempty attribute subsets with different amounts,
+passing generated client requests through the actual server decoder and game
+allocation rules. A server integration test verifies STR/WIS increases and point
+deduction in SQL, unchanged current HP/SP, and the authoritative points reply.
+Existing client budget, duplicate-submission, confirmation, timeout and reset
+checks also pass.
+
+```powershell
+# root
+go test -race ./internal/game ./internal/server -run '^Test(StatAllocation.*|MigrationAllocationWidthsAndBatches|AllocationUnlockCommitsWithStats|FailedAllocation.*)$' -count=1 -timeout=3m
+# client/
+go test ./wlo/inventory ./wlo/app -run '^Test(InventoryPoint.*|NativePresentationAndAllocation)$' -count=1 -timeout=3m
+```
+
 ### Post-combat results message - 2026-11-02
 
 The client snapshots player/pet progression at formation and accumulates only
 confirmed native updates through the battle close and final map/stat refresh.
 Tests cover EXP/level/amity/gold changes, repeated absolute EXP receipts,
 aggregated material receipts, consumed stock, malformed inventory packets,
-losses, no empty popup, departed/replaced pets, long-list scrolling, hover and
-background expiry, disconnect/character isolation, and queued Gonline settlement.
+losses, no empty popup, departed/replaced pets, long-list scrolling, expiry at
+six seconds even while hovered, panel/text clicks retaining the timed notice
+without world click-through, scrollbar navigation, disconnect/character
+isolation, and queued Gonline settlement.
 The summary makes no resource changes or requests; wire assertions preserve the
 existing additive item packets. No server rule, protocol, database or asset
 format changes are required.

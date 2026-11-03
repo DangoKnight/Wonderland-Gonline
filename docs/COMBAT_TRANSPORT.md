@@ -36,6 +36,34 @@ acceptance, and rejects renegotiation during battle. A short generic AC1 echo
 cannot negotiate anything. Capability and playback state belong to one
 connection and are cleared on reconnect/disconnect.
 
+## Disconnect settlement
+
+A disconnect withdraws the player and their pet immediately from server command
+and target eligibility. Pending choices are discarded; neither fighter remains
+to defend or take damage in later rounds. Other connected teammates continue,
+including after the leader logs out. This is not a successful escape.
+
+Both transports calculate an entire round before sending its animations. A
+disconnect therefore saves the full calculated player HP/SP and active-pet
+HP/SP/knockout/amity consequences, including effects whose animations have not
+played yet. It does not roll back committed item consumption or skill progress,
+and does not award uncommitted victory rewards or pending captures. An already
+committed ending/escape/overkill return is not applied a second time.
+
+The server commits these consequences before the final logout checkpoint. Failed
+writes retain their snapshot and checkpoint baseline for retry; pet roster changes
+are published only after SQL succeeds. If the database remains unavailable,
+the failed final save is logged rather than reported as successful.
+
+Native player/pet removal records follow the current committed round's playback
+and precede the next prompt in both transports. This avoids removing an actor
+that already appears in that round's immutable animations. Between rounds removal
+is announced immediately. When the last participant leaves, the timer stops,
+playback terminates and the encounter reservation is released. If only knocked-out
+teammates remain, the battle settles as a defeat rather than waiting for commands
+they cannot submit. This disconnect policy is a Gonline server rule; packet
+layouts remain compatible with legacy clients.
+
 ## Choices and replay protection
 
 For a negotiated recipient, AC254:3 replaces the native turn prompt/readiness
@@ -45,12 +73,30 @@ acting Y U8. The token increases across the connection, including new battles.
 The client collects choices locally until all its living, present fighters have
 choices. Manual targeting, skills/hotbar, radial Auto and Remote use the same
 submission path. AC254:2 contains command U8, subcommand U8, token U32, count U8,
-then that many original eight-byte AC50 requests (command, subcommand, actor X/Y,
-target X/Y, skill U16). There are at most two: character and active battle pet.
+then that many native AC50 requests. Attack/defend/flee use eight bytes
+(command, subcommand, actor X/Y, target X/Y, skill U16). Item requests use twelve:
+command/subcommand `50,2`, actor X/Y, target X/Y, item U16, two opaque random
+bytes, bag slot U8, compatibility flag U8. The subcommand determines each
+request's length, allowing mixed item/skill choices without changing existing
+eight-byte request goldens. There are at most two: character and active battle pet.
 If the countdown expires after one choice, the client sends that selected action
 as an ordinary native AC50 request. The server timeout leaves the missing fighter
 idle, without defense. With no choices, the client sends nothing and the server
 idles both fighters. Complete batches and their negotiation remain unchanged.
+
+Item selection reserves a command and available stack count in memory; it
+does not consume inventory. At execution, the server rechecks the actor, target
+and selected item identity. Consumption and a player/pet target's HP/SP commit
+in one SQL transaction, including when the target belongs to a teammate. A failed
+save or stale bag publishes no item effect or removal receipt. The successful
+owner-only AC23:9 receipt travels in the corresponding native step or round chain.
+
+Ordinary native AC50:2 also accepts the observed 52-byte legacy request: the same
+12-byte fields followed by a 40-byte opaque compatibility trailer. This fixes
+legacy-client choices being silently ignored by the shorter length check. The
+versioned batch above retains its existing 12-byte entries. Captured legacy item
+recovery results use digit mode 0, which the client now applies at contact.
+See [live item capture findings](BATTLE_ITEM_CAPTURE.md).
 
 A Team pet change uses native AC19 during the player's command phase. It consumes
 the player's command and replaces/rests the pet without an attack or defense by

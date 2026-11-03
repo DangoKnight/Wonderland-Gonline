@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"image"
 	"sort"
 	"strings"
 	"time"
@@ -235,11 +234,6 @@ func (c *Client) battleResultsTick(now time.Time) {
 		if c.World == nil || c.sceneFrozen() {
 			r.form.Hide()
 			return
-		}
-		// Hover keeps long, scrollable reward lists readable without a modal
-		// acknowledgment or blocking automation.
-		if image.Pt(c.Input.X, c.Input.Y).In(r.form.Rect()) {
-			r.until = now.Add(battleResultsDuration)
 		}
 		if !now.Before(r.until) {
 			r.form.Hide()

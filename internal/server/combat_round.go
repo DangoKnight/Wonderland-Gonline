@@ -76,8 +76,9 @@ func (s *Server) combatChoicesCommand(c *Session, p []byte) error {
 	original := run.b.Pending
 	run.b.Pending = maps.Clone(original)
 	var acknowledgments [][]byte
+	rules := s.combatRules(run)
 	for _, choice := range choices {
-		ack := run.b.Submit(s.rules(), c.character.ID, choice[1], choice[2:])
+		ack := run.b.Submit(rules, c.character.ID, choice[1], choice[2:])
 		if ack == nil {
 			run.b.Pending = original
 			return protocol.ErrMalformed

@@ -162,6 +162,7 @@ func TestEscapeDepartureRacesDisconnect(t *testing.T) {
 		run.timer.Stop()
 		m := run.member(players[1])
 		m.self.Level = 50
+		m.self.HP, m.self.SP = 30, 11
 		run.b.Pending[int(m.self.X)<<8|int(m.self.Y)] = battle.Action{Actor: m.self, Kind: "flee"}
 		run.b.Idle(run.member(players[0]).self)
 		steps, outcome := run.b.Round(s.rules())
@@ -182,9 +183,23 @@ func TestEscapeDepartureRacesDisconnect(t *testing.T) {
 		s.worldMu.Unlock()
 		close(release)
 		<-done
+		// If a round schedules a separate ending, join it before restoring the
+		// animation clock or reading state outside the owning world mutex.
+		s.worldMu.Lock()
+		finished := run.b.Finished
+		s.worldMu.Unlock()
+		if finished {
+			for _, c := range players[:2] {
+				settle(t, s, c)
+			}
+		}
 		battleSleep = oldSleep
 		if players[1].battle != nil || leaderDisconnects && !run.b.Finished || !leaderDisconnects && (players[0].battle != run || run.b.Finished || run.b.Processing) {
 			t.Fatal("disconnect/escape race changed escape scope", leaderDisconnects)
+		}
+		stored, err := s.Store.Characters(context.Background(), players[1].account.ID)
+		if err != nil || stored[0].HP != 30 || stored[0].SP != 11 {
+			t.Fatal("disconnect replaced committed escape with a defeat", stored, err)
 		}
 		if run.timer != nil {
 			run.timer.Stop()

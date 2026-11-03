@@ -181,7 +181,7 @@ func (c *Client) sendCombatChoice(p []byte) error {
 	if !c.combat.enabled {
 		return c.Net.Send(p)
 	}
-	if c.combat.choiceToken == 0 || len(p) != protocol.CombatChoiceBytes {
+	if c.combat.choiceToken == 0 || !protocol.ValidCombatChoice(p) {
 		return protocol.ErrMalformed
 	}
 	cell := clientbattle.Cell{X: p[2], Y: p[3]}

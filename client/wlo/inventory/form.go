@@ -47,6 +47,7 @@ type Form struct {
 	Status                                                          *login.Status
 	Send                                                            func([]byte)
 	CanAct                                                          func() bool
+	BattleUse                                                       func(slot int, worn bool) bool
 	Notice                                                          func(string)
 	Warning                                                         func(string)
 	StartRemote                                                     func(RemoteOptions) bool
@@ -320,6 +321,9 @@ func (f *Form) send(p []byte) {
 	}
 }
 func (f *Form) Use(slot int, worn bool) {
+	if f.Visible && f.BattleUse != nil && f.BattleUse(slot, worn) {
+		return
+	}
 	if !f.allowed() {
 		return
 	}

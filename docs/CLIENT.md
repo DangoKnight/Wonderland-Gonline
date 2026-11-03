@@ -1222,8 +1222,10 @@ Equipment bonus/socket/forge and metadata-dependent tradeability lines still
 need the remaining native item-info rules.
 
 The attribute arrows preview STR/CON/INT/WIS/AGI allocation using the available
-point budget (`FUN_00353ed4`). Confirm sends the native counted AC8:1 stat/word
-request (`FUN_003540c4`); Cancel or closing the form discards the draft. Player
+point budget (`FUN_00353ed4`). Confirm sends a counted AC8:1 request with a
+stat byte and four-byte amount per entry (`FUN_003540c4`'s allocation workflow).
+Four-byte amounts prevent the server's compatibility decoder from consuming the
+next stat ID as part of the preceding amount. Cancel or closing the form discards the draft. Player
 stats change only when the server replies. Pet-targeted stat replies no longer
 overwrite player values. Submission is disabled while awaiting confirmation;
 after five seconds without a reply it permits a manual retry with a notice.
@@ -1231,6 +1233,8 @@ Derived combat stats stay authoritative during the preview. Native rebirth/class
 allocation caps and pet allocation dialogs remain pending; the server validates
 the actual allocation. `TestInventoryPointDraftAndNativeRequest` and
 `TestNativePresentationAndAllocation` cover budget, packets, replies and resets.
+`TestInventoryPointBatchesReachServerParser` verifies all 31 nonempty attribute
+subsets against the actual server decoder and allocation rules.
 
 The item-use selector has a compact presentation with native controls. The full
 animated native PotentialForm presentation remains pending.

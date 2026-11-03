@@ -190,7 +190,7 @@ func TestBattleResultsDesertionAndReusedPetSlot(t *testing.T) {
 	}
 }
 
-func TestBattleResultsLongListScrollHoverAndExpiry(t *testing.T) {
+func TestBattleResultsLongListScrollAndExpiry(t *testing.T) {
 	c, now := resultsClient(t)
 	for i := 0; i < 20; i++ {
 		id := uint16(300 + i)
@@ -215,16 +215,52 @@ func TestBattleResultsLongListScrollHoverAndExpiry(t *testing.T) {
 	}
 	at = f.Abs()
 	c.Input.X, c.Input.Y = at.X+40, at.Y+50
-	*now = now.Add(battleResultsDuration)
+	*now = c.battleResults.until.Add(-time.Millisecond)
 	c.frame(false)
 	if !f.Visible {
-		t.Fatal("hovered results expired")
+		t.Fatal("results expired before the native six-second deadline")
 	}
-	c.Input.X, c.Input.Y = -1, -1
-	*now = now.Add(battleResultsDuration)
+	*now = now.Add(time.Millisecond)
 	c.frame(false)
 	if f.Visible {
-		t.Fatal("background results did not expire")
+		t.Fatal("hover prolonged results beyond the native six-second deadline")
+	}
+}
+
+func TestBattleResultsClicksPreserveNotice(t *testing.T) {
+	for _, target := range []string{"panel", "text", "scrollbar"} {
+		t.Run(target, func(t *testing.T) {
+			c, now := resultsClient(t)
+			for i := 0; i < 8; i++ {
+				c.dispatch(resultItemPacket(byte(i+1), uint16(300+i), 1))
+			}
+			closeResultBattle(c)
+			showResultAfterFade(c, now)
+			f := c.battleResults.form
+			at := f.Abs()
+			x, y := at.X+f.Width/2, at.Y+12
+			switch target {
+			case "text":
+				at = f.list.Abs()
+				x, y = at.X+8, at.Y+8
+			case "scrollbar":
+				at = f.scroll.Abs()
+				x, y = at.X+f.scroll.Width/2, at.Y+f.scroll.Height-2
+			}
+			c.Input.X, c.Input.Y = x, y
+			c.Frame()
+			if !c.UI.MouseDown(seui.ButtonLeft, 0, x, y) {
+				t.Fatal("results click passed through to the world")
+			}
+			c.UI.MouseUp(seui.ButtonLeft, 0, x, y)
+			if !f.Visible {
+				t.Fatal("click dismissed the timed result notice")
+			}
+			c.Frame()
+			if !f.Visible {
+				t.Fatal("result notice disappeared after click")
+			}
+		})
 	}
 }
 

@@ -160,6 +160,10 @@ func (c *Client) drawHotbarDrag() {
 }
 func (c *Client) HotbarKey(key uint16, shift byte) bool {
 	if key == escapeKey {
+		if c.battle.item != nil {
+			c.battle.item = nil
+			return true
+		}
 		if c.battle.binding != nil {
 			c.battle.binding = nil
 			return true
@@ -237,6 +241,10 @@ func (c *Client) useBinding(b hud.Binding) {
 	if b.Kind == protocol.HotbarItem {
 		for slot, item := range c.InventoryState.Bag {
 			if item.ID == b.ID && !item.Empty() && !item.Locked {
+				if c.battle.state.Active {
+					c.selectBattleItem(slot+1, false)
+					return
+				}
 				c.Inventory.UseSelected(byte(slot+1), 1, b.Target, item)
 				return
 			}
@@ -280,6 +288,7 @@ func (c *Client) useBinding(b hud.Binding) {
 		return
 	}
 	if c.battle.state.Active {
+		c.battle.item = nil
 		c.battle.selected = clientbattle.Cell{X: actor.x, Y: actor.y}
 		c.battle.binding = &b
 		c.Skills.Hide()
