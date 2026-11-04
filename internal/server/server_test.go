@@ -55,6 +55,11 @@ func TestLoginWireFlow(t *testing.T) {
 	if p := read(); p[0] != 54 || p[1] != 201 {
 		t.Fatal(p)
 	}
+	// Independent wire golden: collection timing is advertised even when
+	// full-round combat is disabled. Consume it before the login exchange.
+	if p := read(); !bytes.Equal(p, []byte{1, 243, 71, 76, 67, 84, 1, 0}) {
+		t.Fatalf("collection capability %x", p)
+	}
 	login, _ := protocol.Builder{63, 4}.U16(1205).String("tester")
 	login, _ = login.String("password")
 	send(login)
