@@ -1032,6 +1032,9 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 // tryRegion is TryExecuteRegion: a walk-in region containing the player (and, after a
 // move, not containing the previous position) runs its first eligible event.
 func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16, moved bool) (bool, error) {
+	if s.starterBeachQuestRaft(c) {
+		return false, nil
+	}
 	if c.event != nil {
 		return true, nil
 	}
@@ -1086,6 +1089,9 @@ func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, err
 
 // regionRequest is AC20:4 (ExecuteRegionRequest): the client names a region it entered.
 func (s *Server) regionRequest(ctx context.Context, c *Session, data []byte) error {
+	if s.starterBeachQuestRaft(c) {
+		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	}
 	if len(data) != 2 {
 		if c.event == nil {
 			return c.send([]byte{protocol.CommandEvent, protocol.EventResume})

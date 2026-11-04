@@ -388,9 +388,17 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 		if c.character.ActiveVehicle == id {
 			return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlDismountVehicle, 0}.U16(id))
 		}
-		return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlBoardVehicle, slot}.U16(id))
+		return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlPlaceVehicleManual, slot}.U16(id))
 	case id == starItem:
 		return c.send(serverwire.SystemLine("Stars are special quest tokens used for skill learning, resets, and rebirth quests."))
+	}
+	if _, food := s.Assets.PetFoods[id]; food {
+		var target byte
+		if p := c.character.BattlePet(); p != nil {
+			target = c.pets.slot(p.ID)
+		}
+		_, err := s.usePetStatFood(ctx, c, slot, 1, target)
+		return err
 	}
 	ok, e := s.recover(ctx, c, slot, 1, 0)
 	if e != nil || ok {
@@ -439,6 +447,11 @@ func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, ta
 		return err
 	}
 
+	if target <= game.MaxPets {
+		if handled, err := s.usePetStatFood(ctx, c, slot, count, byte(target)); handled || err != nil {
+			return err
+		}
+	}
 	if handled, err := s.redeemVoucher(ctx, c, slot, count, target); handled || err != nil {
 		return err
 	}
@@ -703,6 +716,9 @@ func (s *Server) redeemVoucher(ctx context.Context, c *Session, slot, count byte
 	packets := [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, pet.RecruitPacket(next.ID, t)}
 	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, pet.Name), []byte{protocol.CommandInventory, protocol.InventoryItemUse}, serverwire.HeadBanner(pet.Name+" joined your party."))
+	if pet.Equipment != (game.Equipment{}) {
+		packets = append(packets, s.petListPacket(c.character, c.pets))
+	}
 	return true, s.sendAll(c, packets)
 }
 

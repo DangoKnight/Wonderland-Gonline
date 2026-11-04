@@ -13,6 +13,8 @@ import (
 
 var le = binary.LittleEndian
 
+const nativeNPCNameBytes = 10
+
 type NPC struct {
 	CaptureRestriction byte      `json:"unknown_u8_offset_34"` // Native Catchable: zero permits capture.
 	ID                 uint16    `json:"id"`
@@ -43,7 +45,7 @@ func ParseNPCs(data []byte) (map[uint16]NPC, error) {
 			continue
 		}
 		var name []byte
-		for i := 10; i >= 1; i-- {
+		for i := nativeNPCNameBytes; i >= 1; i-- {
 			if b[i] >= 32 && b[i] <= 126 {
 				name = append(name, b[i])
 			}
@@ -168,6 +170,9 @@ type Catalog struct {
 	SkillEffects          map[string]EffectDefinition
 	AnimationTiming       map[uint16]int
 	NPCs                  map[uint16]NPC
+	PetInitialStats       map[uint32]game.PetInitialStats
+	PetFoods              map[uint16]PetFood
+	CollectionSpots       map[uint16]CollectionSpot
 	Talks                 Talks
 	Maps                  map[uint16]Map
 	Mall                  []MallItem

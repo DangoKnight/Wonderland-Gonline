@@ -1,0 +1,17 @@
+{
+  "native_records": 4930,
+  "reviewed": 2063,
+  "decisions": {
+    "unresolved": 1809,
+    "already complete": 115,
+    "preserve context-free name": 5,
+    "preserve spelling": 5,
+    "rename": 129
+  },
+  "input_sha256": {
+    "npc_export": "73a318f601e612479e1799f4432d9d0c2c70b0ca18730100738d8ed0eb645bf1",
+    "reference": "61fcaa160fa905a56fa13aff631dfc8583e9855ceb523ef9660332a3d50995fd",
+    "resolutions": "c1e592abb69e24d942c7c5c48a80a3bafdd2a1c39fde762145a278fafc2609cd",
+    "npc_patch": "0e1f77c3d1588415e1577ff1f24e41e70c97975506d9c9fd680fc0a233765736"
+  }
+}

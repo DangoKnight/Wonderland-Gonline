@@ -62,7 +62,7 @@ func TestMapSpawnsFollowNativeLoader(t *testing.T) {
 	if len(m.NPCs) != 3 || m.NPCs[0].ClickID != 1 || m.NPCs[1].ClickID != 3 || m.NPCs[2].ClickID != 4 {
 		t.Fatalf("npcs: %+v", m.NPCs)
 	}
-	if len(m.Items) != 2 || m.Items[0].Slot != 7 || m.Items[0].Respawn.Seconds() != 30 || m.Items[1].Slot != 2 || m.Items[1].Respawn.Seconds() != 120 {
+	if len(m.Items) != 2 || m.Items[0].Slot != 7 || m.Items[0].Depth != 30 || m.Items[0].Respawn.Seconds() != 120 || m.Items[1].Slot != 2 || m.Items[1].Respawn.Seconds() != 120 {
 		t.Fatalf("items: %+v", m.Items)
 	}
 }
@@ -122,7 +122,7 @@ func TestMapInfoGolden(t *testing.T) {
 	want := [][]byte{
 		{23, 138},
 		{22, 4, 1, 0, 0xff, 0xff, 100, 0, 100, 0, 2, 0x18, 0xfc, 0xe7, 0x03, 0, 3, 0, 0, 0, 0x2c, 1, 0x90, 1, 1, 0, 0, 0, 0, 0, 4, 0, 0xff, 0, 50, 0, 60, 0, 1, 0, 0, 0, 0, 0},
-		{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 0, 0, 0, 0, 3, 2, 0, 0x32, 0x75, 0, 0, 11, 0, 21, 0, 0, 0, 0, 0},
+		{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 30, 0, 0, 0, 3, 2, 0, 0x32, 0x75, 0, 0, 11, 0, 21, 0, 0, 0, 0, 0},
 		protocol.Builder{23, 122}.U32(id), protocol.Builder{10, 3}.U32(id).U8(255), protocol.Builder{23, 76}.U32(id),
 		{23, 102}, {20, 8},
 	}

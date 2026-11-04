@@ -592,6 +592,8 @@ func TestLogoutConfirmationStaticNativePose(t *testing.T) {
 	if f.preview == c.Inventory.Preview {
 		t.Fatal("logout preview must have independent animation state")
 	}
+	// Opening changes the panel, not the preview's native fixed pose.
+	*now = now.Add(seui.MessageOpenDuration)
 	paint := func() { c.Screen.Fill(image.Rect(0, 0, 800, 600), 0); f.Update(c.Input) }
 	paint()
 	before := append([]uint16(nil), c.Screen.Pix...)

@@ -270,6 +270,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.World.StopWalk()
 		c.groundHeld = false
 		c.pendingNPC = nil
+		c.floorPendingPickup, c.floorHovered = 0, 0
 		c.joinTeamTarget = false
 		c.friendTarget = false
 		c.tradeTarget = false

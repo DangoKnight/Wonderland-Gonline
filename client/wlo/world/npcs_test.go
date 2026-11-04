@@ -17,6 +17,27 @@ func TestStandFacing(t *testing.T) {
 	}
 }
 
+func TestNPCFullMonsterNames(t *testing.T) {
+	needAssets(t)
+	templates, err := NPCTemplates(assets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if templates[17001].Name != "Pineapple Monster" {
+		t.Fatal(templates[17001].Name)
+	}
+	for id, want := range map[uint32]string{17004: "Fragrance Monster", 17466: "Poisonous Snake", 17834: "Ancient Chameleon", 17034: "Sky Dragonfly", 17826: "Ruka the Bird God", 40121: "Pineapple Monster"} {
+		if got := templates[id].Name; got != want {
+			t.Fatal("reviewed name not loaded", id, got, want)
+		}
+	}
+	for id, want := range map[uint32]string{11004: "Persian Cat", 12073: "Cool Ronin", 17003: "Grape Monster", 17067: "Blue Beetle", 17414: "Hot-blooded Starfish", 14469: "Inspecting Soldier", 17738: "Half Beast Man", 17739: "Half Beast Man", 30310: "Yellow Rock Monster", 30334: "Yellow Rock Monster", 40089: "Tyrannosaur Lord"} {
+		if got := templates[id].Name; got != want {
+			t.Fatal(id, got, want)
+		}
+	}
+}
+
 type paintCount struct{ n *int }
 
 func (p paintCount) Draw(*surface.Surface, int, int, int) { *p.n++ }

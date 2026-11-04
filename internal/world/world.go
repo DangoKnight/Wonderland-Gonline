@@ -25,6 +25,7 @@ type GroundItem struct {
 	ClickID uint16
 	ItemID  uint16
 	X, Y    uint16
+	Depth   int32
 	Respawn time.Duration
 }
 
@@ -50,12 +51,9 @@ func newMap(m assets.Map) *Map {
 		if it.ItemID == 0 || (it.X == 0 && it.Y == 0) {
 			continue
 		}
-		g := GroundItem{Slot: slot, ClickID: it.ClickID, ItemID: uint16(it.ItemID), X: uint16(it.X), Y: uint16(it.Y), Respawn: 120 * time.Second}
+		g := GroundItem{Slot: slot, ClickID: it.ClickID, ItemID: uint16(it.ItemID), X: uint16(it.X), Y: uint16(it.Y), Depth: it.DrawDepth(), Respawn: groundItemRespawnInterval}
 		if it.ClickID > 0 && it.ClickID < 256 {
 			g.Slot = byte(it.ClickID)
-		}
-		if it.Unknown[0] > 0 {
-			g.Respawn = time.Duration(it.Unknown[0]) * time.Second
 		}
 		slot++
 		out.Items = append(out.Items, g)
@@ -163,8 +161,8 @@ func NPCRecord(click, state, x, y uint16, hidden bool) protocol.Builder {
 	return protocol.Builder{}.U16(click).U16(state).U16(x).U16(y).U8(kind).U32(duration).U8(0)
 }
 
-func groundItem(p protocol.Builder, slot byte, item, x, y uint16) protocol.Builder {
-	return p.U8(3).U16(uint16(slot)).U32(uint32(item)).U16(x).U16(y).U32(0)
+func groundItem(p protocol.Builder, slot byte, item, x, y uint16, depth int32) protocol.Builder {
+	return p.U8(3).U16(uint16(slot)).U32(uint32(item)).U16(x).U16(y).U32(uint32(depth))
 }
 
 // MapInfo follows SendMapInfo for a character entering its current map. players lists

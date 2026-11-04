@@ -846,6 +846,9 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 			packets = append(packets, pet.RecruitPacket(next.ID, t))
 		}
 		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
+		if pet.Equipment != (game.Equipment{}) {
+			packets = append(packets, s.petListPacket(next, roster))
+		}
 		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
 	}
 	return packets, peerPackets

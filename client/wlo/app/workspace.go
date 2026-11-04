@@ -164,9 +164,10 @@ func (c *Client) cancelSessionInput() {
 	c.WalkKeys(false, false, false, false)
 }
 func (c *Client) closeSession() {
+	c.UI.HideAll() // Release transient closing images before render resources.
 	c.closeBattleView()
 	if c.sfx != nil {
-		c.sfx.StopVoice()
+		c.sfx.Close()
 	}
 	c.stopRemote()
 	c.stopAmbience()

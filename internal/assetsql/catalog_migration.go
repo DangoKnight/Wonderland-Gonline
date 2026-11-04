@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 17
+const catalogSchemaVersion = 27
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -390,6 +390,56 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 18 {
+			if err := migratePetInitialStats(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 19 {
+			if err := migratePetFoods(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 20 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 21 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 22 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 23 {
+			if err := migrateItemNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 24 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 25 {
+			if err := migrateCollectionSpots(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 26 {
+			if err := migratePetSpecialEquipment(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 27 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -397,6 +447,25 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Story = assets.DefaultStoryDefinitions()
+	c.Story.CompanionEquipment, err = seedPetSpecialEquipment(c.Story.CompanionEquipment, false)
+	if err != nil {
+		return err
+	}
+	c.CollectionSpots, err = defaultCollectionSpots(c)
+	if err != nil {
+		return err
+	}
+	if err := initializeItemNames(c); err != nil {
+		return err
+	}
+	if err := initializeNPCNames(c); err != nil {
+		return err
+	}
+	c.PetFoods = defaultPetFoods(c.NativeItems)
+	c.PetInitialStats, err = defaultPetInitialStats()
+	if err != nil {
+		return err
+	}
 	c.Terrains, err = importedTerrains(tx)
 	if err != nil {
 		return err
@@ -508,6 +577,15 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = validatePetInitialStats(c.PetInitialStats); err != nil {
+		return nil, err
+	}
+	if err = validatePetFoods(c.PetFoods); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps); err != nil {
 		return nil, err
 	}
 	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {

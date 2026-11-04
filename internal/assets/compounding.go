@@ -18,14 +18,18 @@ func (it NativeItem) AlchemyItem() game.AlchemyItem {
 	for i := range d.Bases {
 		d.Bases[i] = le.Uint16(it.Record[nativeAlchemyBasesOffset+i*nativeAlchemyBaseBytes:])
 	}
-	d.Eligible = it.Definition.Type != game.ItemTypeExotic && it.Record[nativeAlchemyRestrictionOffset] == 0 && le.Uint16(it.Record[nativeAlchemyFlagsOffset:])&nativeAlchemyForbiddenFlag == 0 && it.Record[nativeItemCellWidthOffset] == 1 && it.Record[nativeItemCellHeightOffset] == 1 && (d.Bases[0] != 0 || game.AlchemyBookBonus(d.ID) > 0)
+	d.Eligible = it.Definition.Type != game.ItemTypeExotic && it.Definition.Type != game.ItemTypePetStatFood && it.Record[nativeAlchemyRestrictionOffset] == 0 && le.Uint16(it.Record[nativeAlchemyFlagsOffset:])&nativeAlchemyForbiddenFlag == 0 && it.Record[nativeItemCellWidthOffset] == 1 && it.Record[nativeItemCellHeightOffset] == 1 && (d.Bases[0] != 0 || game.AlchemyBookBonus(d.ID) > 0)
 	return d
 }
 func (c *Catalog) CompoundingCatalog() *game.AlchemyCatalog {
 	items := make(map[uint16]game.AlchemyItem, len(c.NativeItems))
 	for id, it := range c.NativeItems {
 		if _, ok := c.Items[id]; ok {
-			items[id] = it.AlchemyItem()
+			item := it.AlchemyItem()
+			if _, food := c.PetFoods[id]; food {
+				item.Eligible = false
+			}
+			items[id] = item
 		}
 	}
 	return game.NewAlchemyCatalog(items)

@@ -16,7 +16,7 @@ func UnmountPackets(owner uint32) [][]byte {
 }
 
 func PetNamePacket(owner uint32, slot byte, name string) []byte {
-	return protocol.Builder{protocol.CommandPetControl, protocol.PetControlBoardVehicleAlternate}.U32(owner).U8(slot).Bytes([]byte(name))
+	return protocol.Builder{protocol.CommandPetControl, protocol.PetControlPetName}.U32(owner).U8(slot).Bytes([]byte(name))
 }
 
 // PetMapPacket is CreatePetMapPacket (AC15:4), the pet another player sees beside its owner.

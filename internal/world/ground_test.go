@@ -30,11 +30,11 @@ func TestGroundPickupRespawn(t *testing.T) {
 	if p := w.GroundPacket(12345); len(p) != 2+15 || p[3] != 2 {
 		t.Fatalf("taken item still listed: %v", p)
 	}
-	if got := w.Respawn(now.Add(29 * time.Second)); len(got) != 0 {
+	if got := w.Respawn(now.Add(119 * time.Second)); len(got) != 0 {
 		t.Fatal("respawned early")
 	}
-	got := w.Respawn(now.Add(30 * time.Second))
-	if len(got[12345]) != 1 || !bytes.Equal(got[12345][0], []byte{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 0, 0, 0, 0}) {
+	got := w.Respawn(now.Add(120 * time.Second))
+	if len(got[12345]) != 1 || !bytes.Equal(got[12345][0], []byte{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 30, 0, 0, 0}) {
 		t.Fatalf("respawn: %v", got)
 	}
 	if _, ok := w.GroundAt(12345, 7); !ok {

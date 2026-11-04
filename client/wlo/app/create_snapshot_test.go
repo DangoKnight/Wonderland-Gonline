@@ -66,6 +66,10 @@ func TestCreateCharacterSnapshot(t *testing.T) {
 	cr.Elements[3].OnClickTag(3)
 	c.Frame()
 	save(t, c, filepath.Join(dir, "create_3_fire.png"))
+	cr.Elements[2].OnClickTag(2)
+	c.Frame()
+	save(t, c, filepath.Join(dir, "create_3_water.png"))
+	cr.Elements[3].OnClickTag(3)
 
 	cr.Buttons[2].Click()
 	c.Frame()

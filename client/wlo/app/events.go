@@ -109,6 +109,7 @@ func abs(v int) int {
 // sendNPCClick is 20/1 with the NPC's click ID.
 func (c *Client) sendNPCClick(id uint16) {
 	c.pendingNPC = nil
+	c.acquisitionActor = id
 	c.event = eventState{active: true}
 	c.Net.Send(binary.LittleEndian.AppendUint16([]byte{protocol.CommandEvent, protocol.EventActorClick}, id))
 }
@@ -130,6 +131,12 @@ func (c *Client) reachNPC() {
 func (c *Client) eventFrame(s []byte) {
 	if len(s) < eventFrameBytes || c.World == nil {
 		return
+	}
+	// Server steps supersede local pet notices. A hidden/replaced notice must
+	// not cause the next NPC line's click to swallow its AC20:6 acknowledgement.
+	if c.petAnnouncement {
+		c.Talk.Hide()
+		c.petAnnouncement = false
 	}
 	c.event.active = true
 	kind, subject := s[eventFrameKind], s[eventFrameSubject]
@@ -235,6 +242,15 @@ func (c *Client) eventTrack(subject byte, value uint32) {
 // say is kind 1: the line talk spoken by an NPC or the player.
 func (c *Client) say(subject byte, actor uint16, talk uint32) {
 	c.loadTalks()
+	// FUN_00304fd0 passes the UInt16 at +0x711c to both the text and voice
+	// lookups. The following event byte can be a flag, not part of the ID.
+	// Retain extended exported references only when no native ID exists.
+	nativeTalk := uint32(uint16(talk))
+	if nativeTalk != 0 {
+		if _, ok := c.talks[nativeTalk]; ok {
+			talk = nativeTalk
+		}
+	}
 	text := clientassets.Big5Text(c.talks[talk])
 	c.Talk.Say(text, c.speaker(subject, actor), c.World.Player.Name)
 	if subject == eventSpeakerSelf {
@@ -424,6 +440,7 @@ func (c *Client) eventResume() {
 	c.event = eventState{}
 	c.held = false
 	c.Talk.Hide()
+	c.petAnnouncement = false
 }
 
 // advanceTalk is a click while a line shows: the step is done.
@@ -438,6 +455,10 @@ func (c *Client) advanceTalk() {
 
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
+	if c.minigameResultAckPending {
+		c.minigameResultAckPending = false
+		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
+	}
 	if !c.event.active && !c.held && c.movie == nil && !c.Talk.Shown() && len(c.petAnnouncements) > 0 {
 		c.World.StopWalk()
 		c.Talk.Say(c.petAnnouncements[0], hud.Speaker{}, c.World.Player.Name)

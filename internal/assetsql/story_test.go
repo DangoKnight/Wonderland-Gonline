@@ -59,7 +59,7 @@ func TestStoryRebornMigrationPreservesEditsAndOptOuts(t *testing.T) {
 	before := storyBeforeRebornCheckpoint()
 	before.Rules[0].Text = "Operator edit"
 	db := storyV15Fixture(t, before)
-	if err := db.Transaction(migrateCatalog); err != nil {
+	if err := db.Transaction(migrateRebornStoryCheckpoints); err != nil {
 		t.Fatal(err)
 	}
 	after, err := readStory(db)
@@ -84,7 +84,7 @@ func TestStoryRebornMigrationPreservesEditsAndOptOuts(t *testing.T) {
 	if err := db.Model(&catalogSchema{}).Where("id = ?", catalogMetadataID).Update("version", 15).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Transaction(migrateCatalog); err != nil {
+	if err := db.Transaction(migrateRebornStoryCheckpoints); err != nil {
 		t.Fatal(err)
 	}
 	again, err := readStory(db)
@@ -94,7 +94,7 @@ func TestStoryRebornMigrationPreservesEditsAndOptOuts(t *testing.T) {
 	for _, defs := range []assets.StoryDefinitions{{}, {Rules: []assets.StoryRule{}}} {
 		t.Run(fmt.Sprint(defs.Rules != nil), func(t *testing.T) {
 			db := storyV15Fixture(t, defs)
-			if err := db.Transaction(migrateCatalog); err != nil {
+			if err := db.Transaction(migrateRebornStoryCheckpoints); err != nil {
 				t.Fatal(err)
 			}
 			got, err := readStory(db)
@@ -117,7 +117,7 @@ func TestStoryRebornMigrationRollback(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Callback().Create().Remove(callback)
-	if err := db.Transaction(migrateCatalog); err == nil {
+	if err := db.Transaction(migrateRebornStoryCheckpoints); err == nil {
 		t.Fatal("failed checkpoint seed committed")
 	}
 	if db.Migrator().HasColumn(&StoryRulesRow{}, "ValueMarksPresent") || db.Migrator().HasTable(&StoryRulesMarksRow{}) {
@@ -154,7 +154,12 @@ func TestStoryMigrationPreservesEditsAndEmptyDefinitions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got.Story, assets.DefaultStoryDefinitions()) || got.Items[10002].Name != "Operator item edit" {
+	wantStory := assets.DefaultStoryDefinitions()
+	wantStory.CompanionEquipment, err = seedPetSpecialEquipment(wantStory.CompanionEquipment, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got.Story, wantStory) || got.Items[10002].Name != "Operator item edit" {
 		t.Fatal("story seed or unrelated definition changed")
 	}
 	defs := assets.StoryDefinitions{Rules: []assets.StoryRule{{ID: "operator_movie", Kind: assets.StoryMovieMode, Scope: assets.StoryScope{Maps: []uint16{10017}}, Value: 1}}}
@@ -275,7 +280,12 @@ func TestStoryInstalledMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got.Story, assets.DefaultStoryDefinitions()) {
+	want := assets.DefaultStoryDefinitions()
+	want.CompanionEquipment, err = seedPetSpecialEquipment(want.CompanionEquipment, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got.Story, want) {
 		t.Fatal("installed story seed mismatch")
 	}
 	if err = MigrateDatabase(path); err != nil {

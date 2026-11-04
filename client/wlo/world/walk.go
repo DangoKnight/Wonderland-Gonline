@@ -395,6 +395,28 @@ func (s *Scene) WaterEdge(x, y int) bool {
 	_, ok := s.ShorePoint(x, y, true)
 	return ok
 }
+
+// DirectWaterEntry excludes the player's current land cell and checks every
+// subsequent cell on the click ray. Land or an obstruction keeps this a walk.
+func (s *Scene) DirectWaterEntry(fromX, fromY, toX, toY int) (image.Point, bool) {
+	start, goal := cellOf(fromX, fromY), cellOf(toX, toY)
+	dx, dy := goal.X-start.X, goal.Y-start.Y
+	n := max(abs(dx), abs(dy))
+	if n == 0 || n >= walkReach {
+		return image.Point{}, false
+	}
+	var entry image.Point
+	for i := 1; i <= n; i++ {
+		at := waypoint(image.Pt(start.X+roundDiv(dx*i, n), start.Y+roundDiv(dy*i, n)))
+		if !s.Water(at.X, at.Y) {
+			return image.Point{}, false
+		}
+		if i == 1 {
+			entry = at
+		}
+	}
+	return entry, true
+}
 func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
 	water := *s
 	water.WaterTravel = true

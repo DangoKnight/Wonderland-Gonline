@@ -294,16 +294,6 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 	} else {
 		t := s.petTemplate(id)
 		pet = game.NewPet(id, s.companionName(id, ""), slot, t, s.Assets.Items)
-		// A new quest companion arrives with its starter equipment.
-		for _, definition := range s.Assets.Story.CompanionEquipment {
-			if definition.Template == id {
-				for _, equipment := range definition.Equipment {
-					if int(equipment.Slot) < len(pet.Equipment) && s.hasItem(equipment.ItemID) {
-						pet.Equipment[equipment.Slot] = game.Item{ID: equipment.ItemID, Count: 1}
-					}
-				}
-			}
-		}
 		pet.EnsureSkills(t, s.hasSkill)
 		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 	}
@@ -327,7 +317,7 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, s.companionName(pet.ID, pet.Name)))
 	// AC15:1 has no equipment; AC15:8 restores a returning or equipped companion.
-	if !first || pet.Equipment[2].ID != 0 || pet.Equipment[5].ID != 0 {
+	if !first || pet.Equipment != (game.Equipment{}) {
 		if p := s.petListPacket(c.character, c.pets); p != nil {
 			packets = append(packets, p)
 		}
@@ -410,7 +400,7 @@ func (s *Server) petControlCommand(ctx context.Context, c *Session, p []byte) er
 		return protocol.ErrMalformed
 	}
 	switch p[1] {
-	case protocol.PetControlBoardVehicle, protocol.PetControlBoardVehicleAlternate, protocol.PetControlDismountVehicle, protocol.PetControlVehicleNoOp, protocol.PetControlPlaceVehicle:
+	case protocol.PetControlBoardVehicle, protocol.PetControlPlaceVehicleManual, protocol.PetControlDismountVehicle, protocol.PetControlVehicleNoOp, protocol.PetControlPlaceVehicle:
 		return s.vehicleCommand(ctx, c, p)
 	case protocol.PetControlPetSlot:
 		return s.releasePet(ctx, c, p)
@@ -594,6 +584,17 @@ func (s *Server) petFeedingCommand(ctx context.Context, c *Session, p []byte) er
 		for index, item := range c.character.Bag {
 			if item.ID != food || item.Empty() {
 				continue
+			}
+			if _, statFood := s.Assets.PetFoods[food]; statFood {
+				before := c.character.Pets[s.clientPet(c, target)].StatFoodUses
+				_, err := s.usePetStatFood(ctx, c, byte(index+1), petFeedingItemsPerRequest, target)
+				if err != nil {
+					return err
+				}
+				if c.character.Pets[s.clientPet(c, target)].StatFoodUses > before {
+					return c.send(reply.U8(protocol.PetFeedingSucceeded))
+				}
+				return c.send(reply.U8(protocol.PetFeedingFailed))
 			}
 			ok, err := s.feedPet(ctx, c, byte(index+1), petFeedingItemsPerRequest, target)
 			if err != nil {
@@ -822,6 +823,9 @@ func (s *Server) mountCommand(ctx context.Context, c *Session, p []byte) error {
 	next := c.character.Clone()
 	var packets [][]byte
 	if p[1] == 11 {
+		if c.character.ActiveVehicle != 0 {
+			return nil
+		}
 		next.ActiveVehicle, next.VehicleSlot = 0, 0
 		next.ActiveMount = game.BroadcastID(pet.ID)
 		if next.ActiveMount == c.character.ActiveMount {

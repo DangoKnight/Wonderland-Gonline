@@ -1,0 +1,85 @@
+{
+  "source": "https://wlohub.com/monsters",
+  "pages": [
+    {
+      "file": "Wonderland Online Monsters Database - 01.htm",
+      "page": 1,
+      "records": 100,
+      "sha256": "1b7d26a79dc7b0f4818b40a42b14fbada90597f8a17cf56447cdf90384453007"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 02.htm",
+      "page": 2,
+      "records": 100,
+      "sha256": "7eb5d3b09b0dd03f177da3fefb6a9b223e7b9981442b7ec055a1dc33d5edff39"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 03.htm",
+      "page": 3,
+      "records": 100,
+      "sha256": "8a865255dd65fc3d01b1f72e914157fb410fd3c72bdfbe86fcfe103f5721d6bb"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 04.htm",
+      "page": 4,
+      "records": 100,
+      "sha256": "96234c447480240fed5d8dfb331f9941d8a56884e729aa638262bfc08c615b84"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 05.htm",
+      "page": 5,
+      "records": 100,
+      "sha256": "99dbb3b4da985be8883b3ea6e1f41a2729d9121d1000fb8fd59cdfdbe5fc87ad"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 06.htm",
+      "page": 6,
+      "records": 100,
+      "sha256": "231f37aacccb9e986383ddbe33c7cfa365c6e87ce7aaa83ccf3b0ee40c674afc"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 07.htm",
+      "page": 7,
+      "records": 100,
+      "sha256": "bfd555c6903e807d1bb9295d4b9f06cca22e25450b7ffdc5805d0004d73ff6ec"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 08.htm",
+      "page": 8,
+      "records": 100,
+      "sha256": "6ab502469a0b54b120670caf363d7b3dd898d84793d49f078a23ec9f8711ab8c"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 09.htm",
+      "page": 9,
+      "records": 100,
+      "sha256": "a8c7a51c23cf4f89bea50643f53ecefbfe79a10380797ac3fe94e21a0d5baf1e"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 10.htm",
+      "page": 10,
+      "records": 100,
+      "sha256": "6dda2fe7c1e19570c6bb6893a92e5fa1d025ba4deab1472a190a3e3ed70ea917"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 11.htm",
+      "page": 11,
+      "records": 100,
+      "sha256": "158781e1de48209577c4ea0d2de173eab4b543cea3160b75ad281f943669171b"
+    },
+    {
+      "file": "Wonderland Online Monsters Database - 12.htm",
+      "page": 12,
+      "records": 90,
+      "sha256": "0d3aef686de263570313e6009674419ada3398a4e626ab371f01fcc74b1a8690"
+    }
+  ],
+  "monsters": 1190,
+  "patched": 898,
+  "review": 0,
+  "accept_single_candidates": true,
+  "strip_quest": true,
+  "name_choices_sha256": "a2a17d1401087559730af5be2b89f87e046379eedfeb1aa0c32f5d600b670376",
+  "reviewed_names_sha256": "c1e592abb69e24d942c7c5c48a80a3bafdd2a1c39fde762145a278fafc2609cd",
+  "npc_export_sha256": "73a318f601e612479e1799f4432d9d0c2c70b0ca18730100738d8ed0eb645bf1"
+}

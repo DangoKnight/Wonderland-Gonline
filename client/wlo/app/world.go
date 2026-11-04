@@ -69,6 +69,9 @@ func (c *Client) warp(p []byte) {
 	// Loading a map forgets the area last entered (FUN_00304898), and the
 	// map is not ready until 5/4.
 	c.areas.last = 0
+	c.floorPendingPickup, c.floorHovered = 0, 0
+	c.worldItemFlights = nil
+	c.acquisitionActor = 0
 	c.mapReady = false
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Hide()
@@ -77,6 +80,7 @@ func (c *Client) warp(p []byte) {
 		c.Settings.Hide()
 	}
 	c.waterTravel = waterTravelState{}
+	c.placedVehicles = nil
 	c.vehicleEffects = vehicleEffectState{}
 	pl := c.World.Player
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
@@ -157,9 +161,13 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
+	if c.boardPlacedVehicle(x, y) {
+		return
+	}
 	if c.pickupFloorItem(x, y) {
 		return
 	}
+	c.floorPendingPickup = 0
 	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}
@@ -213,6 +221,7 @@ func (c *Client) WalkKeys(left, up, right, down bool) {
 	if _, typing := c.Input.Focused.(*seui.Editor); typing {
 		return
 	}
+	c.floorPendingPickup = 0
 	cx, cy := c.World.Camera()
 	x, y := c.World.Player.X-cx, c.World.Player.Y-cy
 	if left {

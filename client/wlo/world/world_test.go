@@ -1,6 +1,7 @@
 package world
 
 import (
+	"image"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,6 +56,21 @@ func TestCameraStaysOnMap(t *testing.T) {
 		w.Player.X, w.Player.Y = c.x, c.y
 		if cx, cy := w.Camera(); cx != c.cx || cy != c.cy {
 			t.Errorf("player (%d, %d): camera (%d, %d), want (%d, %d)", c.x, c.y, cx, cy, c.cx, c.cy)
+		}
+	}
+}
+
+func TestCameraEdgesDoNotOvershootOrReverse(t *testing.T) {
+	for _, size := range []image.Point{{1664, 1280}, {810, 610}, {600, 400}} {
+		w := &World{Scene: &Scene{Width: size.X, Height: size.Y}}
+		previousX, previousY := 0, 0
+		for p := 0; p <= max(size.X, size.Y)+100; p++ {
+			w.Player.X, w.Player.Y = p, p
+			x, y := w.Camera()
+			if x < previousX || y < previousY || x > max(0, size.X-820) || y > max(0, size.Y-600) || x-previousX > 1 || y-previousY > 1 {
+				t.Fatalf("map %v player %d: camera %d,%d after %d,%d", size, p, x, y, previousX, previousY)
+			}
+			previousX, previousY = x, y
 		}
 	}
 }

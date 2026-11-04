@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image"
+	"math"
 	"os"
 	"sync"
 	"wonderland-gonline/internal/clientruntime"
@@ -203,7 +204,7 @@ type NPC struct {
 	Fixed, Wrap bool
 	Frame       int
 	// Depth moves the NPC's place among the depth-sorted figures (record
-	// +0x1180): a coconut up a palm sorts in front of the palm.
+	// +0x1180). Scene picture layers participate in the same sort as every actor.
 	Depth int
 	// Sign is the record's minimap icon (+0x3c, minimap.go).
 	Sign byte
@@ -240,7 +241,23 @@ func (n *NPC) FaceConversation(x, y int) bool {
 	if n.Info.Kind == kindProp || n.Action < 0 || n.Action >= standingAction+facingCount {
 		return false
 	}
-	n.Action = standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
+	action := standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
+	if painter, ok := n.Painter.(interface{ FrameSize(int) (int, int) }); ok {
+		// FUN_002fe570 indexes packed frames by the sum of preceding action
+		// counts. An empty facing therefore uses the next stored artwork.
+		// Resolve within the standing group; preserve the current pose when
+		// the sprite has no following standing artwork.
+		for ; action < standingAction+facingCount; action++ {
+			w, h := painter.FrameSize(action)
+			if w > 0 && h > 0 {
+				break
+			}
+		}
+		if action == standingAction+facingCount {
+			return false
+		}
+	}
+	n.Action = action
 	return true
 }
 
@@ -307,8 +324,15 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 		return nil, err
 	}
 	out := make(map[uint32]NPCTemplate, len(doc.Records))
+	namePatches, err := native.NPCNamePatches()
+	if err != nil {
+		return nil, err
+	}
 	for _, r := range doc.Records {
 		f := r.Fields
+		if f.ID <= math.MaxUint16 {
+			r.Name.Text = namePatches[uint16(f.ID)].Apply(r.Name.Text)
+		}
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
 			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody}
 	}

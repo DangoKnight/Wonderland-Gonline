@@ -47,10 +47,11 @@ switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v18 stores character state in typed tables and owned child rows.
+Gameplay schema v20 stores character state in typed tables and owned child rows.
+v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v17 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v27 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure

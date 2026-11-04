@@ -136,24 +136,25 @@ func (characterDiscoveryRow) TableName() string { return "character_discoveries"
 
 type characterPetRow struct {
 	CharacterOwner
-	Location   string          `gorm:"primaryKey"`
-	Ordinal    int             `gorm:"primaryKey;autoIncrement:false"`
-	Base       game.Attributes `gorm:"embedded;embeddedPrefix:base_"`
-	Slot       byte
-	PetID      uint32
-	Name       string
-	Level      byte
-	Exp        uint32
-	HP         int32
-	MaxHP      int32
-	SP         int32
-	MaxSP      int32
-	StatPoints uint16
-	Amity      byte
-	Battle     bool
-	Reborn     bool
-	Potential  uint16
-	Job        byte
+	Location     string          `gorm:"primaryKey"`
+	Ordinal      int             `gorm:"primaryKey;autoIncrement:false"`
+	Base         game.Attributes `gorm:"embedded;embeddedPrefix:base_"`
+	Slot         byte
+	PetID        uint32
+	Name         string
+	Level        byte
+	Exp          uint32
+	HP           int32
+	MaxHP        int32
+	SP           int32
+	MaxSP        int32
+	StatPoints   uint16
+	Amity        byte
+	Battle       bool
+	Reborn       bool
+	Potential    uint16
+	StatFoodUses uint16 `gorm:"not null;default:0;check:stat_food_uses BETWEEN 0 AND 1200"`
+	Job          byte
 }
 
 func (characterPetRow) TableName() string { return "character_pets" }
@@ -244,7 +245,7 @@ func writeCharacterState(tx *gorm.DB, c game.Character) error {
 		pets     []game.Pet
 	}{{petParty, c.Pets}, {petReserve, c.ReservePets}, {petHotel, c.HotelPets}} {
 		for i, p := range group.pets {
-			pets = append(pets, characterPetRow{CharacterOwner: owner, Location: group.location, Ordinal: i, Base: p.Base, Slot: p.Slot, PetID: p.ID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential})
+			pets = append(pets, characterPetRow{CharacterOwner: owner, Location: group.location, Ordinal: i, Base: p.Base, Slot: p.Slot, PetID: p.ID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential, StatFoodUses: p.StatFoodUses})
 			addItems(group.location, i, p.Equipment[:])
 			for j, s := range p.Skills {
 				petSkills = append(petSkills, characterPetSkillRow{CharacterOwner: owner, Location: group.location, PetOrdinal: i, Ordinal: j, SkillID: s.ID, Grade: s.Grade, EXP: s.Exp})
@@ -337,7 +338,7 @@ func readCharacterState(tx *gorm.DB, row characterRow) (game.Character, error) {
 		if p.Ordinal != len(*group) {
 			return game.Character{}, fmt.Errorf("invalid pet ordinal %d", p.Ordinal)
 		}
-		*group = append(*group, game.Pet{Base: p.Base, Slot: p.Slot, ID: p.PetID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential})
+		*group = append(*group, game.Pet{Base: p.Base, Slot: p.Slot, ID: p.PetID, Name: p.Name, Level: p.Level, Exp: p.Exp, HP: p.HP, MaxHP: p.MaxHP, SP: p.SP, MaxSP: p.MaxSP, StatPoints: p.StatPoints, Amity: p.Amity, Battle: p.Battle, Reborn: p.Reborn, Job: p.Job, Potential: p.Potential, StatFoodUses: p.StatFoodUses})
 	}
 	findPet := func(location string, ordinal int) *game.Pet {
 		var group []game.Pet

@@ -9,6 +9,7 @@ import (
 )
 
 const mainSkillsButton = 2
+const skillGradeUpdatePacketBytes = 5 // AC5:12 compatibility skill ID UInt16 and grade UInt8.
 
 func (c *Client) initSkills() {
 	catalog := c.resources.skillCatalog
@@ -103,7 +104,9 @@ func (c *Client) skillPacket(p []byte) bool {
 	if c.World == nil || c.SkillState == nil || len(p) < 2 {
 		return false
 	}
-	known := p[0] == protocol.CommandCharacterState && (p[1] == protocol.CharacterStateSkillProficiency || p[1] == protocol.CharacterStateWireCode12)
+	// AC5:12 also carries native seven-byte model changes. Only the compact
+	// skill-grade layout belongs here; let model packets reach their handler.
+	known := p[0] == protocol.CommandCharacterState && (p[1] == protocol.CharacterStateSkillProficiency || p[1] == protocol.CharacterStateWireCode12 && len(p) == skillGradeUpdatePacketBytes)
 	known = known || p[0] == protocol.CommandStats && p[1] == protocol.StatsStatUpdate && len(p) > 2 && (p[2] == game.StatSkillGrade || p[2] == game.StatSkillEXP && len(p) == 12 && game.IsAlchemySkill(uint16(binary.LittleEndian.Uint32(p[8:]))))
 	if !known {
 		return false

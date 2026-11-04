@@ -460,6 +460,18 @@ func vehicleDo(t *testing.T, s *Server, c *Session, sub, slot byte, id uint16) {
 
 func TestVehiclePlacementBoardingAndLanding(t *testing.T) {
 	s, c, wires := vehicleFixture(t)
+	before := c.character.Bag
+	vehicleDo(t, s, c, 9, 2, 48016)
+	manual := protocol.Builder{15, 12, 2}.U32(c.character.ID).U16(48016).U32(uint32(c.character.X)).U32(uint32(c.character.Y))
+	for _, wire := range wires[:2] {
+		packets := wire.packets(t)
+		if len(packets) != 1 || !bytes.Equal(packets[0], manual) {
+			t.Fatal("inventory placement did not publish unoccupied raft", packets)
+		}
+	}
+	if c.character.ActiveVehicle != 0 || c.character.Bag != before || wires[2].Len() != 0 {
+		t.Fatal("manual placement boarded, consumed or crossed maps")
+	}
 	vehicleDo(t, s, c, 14, 2, 48016)
 	want := protocol.Builder{15, 18, 2}.U32(c.character.ID).U16(48016).U32(uint32(c.character.X)).U32(uint32(c.character.Y))
 	packets := wires[0].packets(t)
@@ -491,22 +503,22 @@ func TestVehiclePlacementBoardingAndLanding(t *testing.T) {
 	}
 	vehicleDo(t, s, c, 10, 99, 48016) // Landing discriminator is not the inventory slot.
 	p := wires[0].packets(t)
-	if len(p) != 4 || !bytes.Equal(p[0], []byte{23, 9, 2, 1}) || !bytes.Equal(p[1], protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) || !bytes.Equal(p[2], protocol.Builder{15, 11, 2}.U32(c.character.ID)) || !bytes.Equal(p[3], []byte{5, 4}) {
-		t.Fatal("wreck sequence", p)
+	if len(p) != 1 || !bytes.Equal(p[0], protocol.Builder{15, 11, 2}.U32(c.character.ID)) {
+		t.Fatal("landing sequence", p)
 	}
-	if len(wires[1].packets(t)) != 2 || wires[2].Len() != 0 {
-		t.Fatal("wreck map isolation")
+	if len(wires[1].packets(t)) != 1 || wires[2].Len() != 0 {
+		t.Fatal("landing map isolation")
 	}
-	if !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 || c.character.ActiveVehicle != 0 {
-		t.Fatal("wreck consumed wrong raft")
+	if c.character.Bag[1].ID != 48016 || c.character.Bag[2].ID != 48016 || c.character.ActiveVehicle != 0 {
+		t.Fatal("landing consumed a raft")
 	}
 	stored, err = s.Store.Characters(context.Background(), c.account.ID)
-	if err != nil || !stored[0].Bag[1].Empty() || stored[0].ActiveVehicle != 0 {
-		t.Fatal("wreck not saved", err)
+	if err != nil || stored[0].Bag[1].ID != 48016 || stored[0].ActiveVehicle != 0 {
+		t.Fatal("landing not saved", err)
 	}
 	vehicleDo(t, s, c, 10, 99, 48016)
 	if wires[0].Len() != 0 || wires[1].Len() != 0 {
-		t.Fatal("wreck callback replayed")
+		t.Fatal("landing callback replayed")
 	}
 }
 
@@ -577,7 +589,7 @@ func TestVehicleRaftWearAndShore(t *testing.T) {
 				t.Fatal(err)
 			}
 			damage := byte(1)
-			if id == 48001 {
+			if id == 48001 || id == 48016 {
 				damage = 0
 			}
 			if c.character.Bag[slot-1].Damage != damage {
@@ -591,7 +603,7 @@ func TestVehicleRaftWearAndShore(t *testing.T) {
 			if c.character.Bag[slot-1].Damage != damage {
 				t.Fatal("stationary packet wore vehicle")
 			}
-			if id == 48001 {
+			if id == 48001 || id == 48016 {
 				vehicleDo(t, s, c, 10, 99, id)
 				if c.character.ActiveVehicle != 0 || c.character.Bag[slot-1].ID != id {
 					t.Fatal("ordinary landing destroyed vehicle")
@@ -614,6 +626,7 @@ func TestVehicleRaftWearAndShore(t *testing.T) {
 	s, c, _ := vehicleFixture(t)
 	vehicleDo(t, s, c, 7, 2, 48016)
 	c.character.Map = 11016
+	s.Assets.Terrains = map[uint16]assets.Terrain{11016: {Width: 2000, Height: 2000, GridWidth: 100, GridHeight: 100, Cells: make([]byte, 10000)}}
 	if err := s.worldCommand(context.Background(), c, protocol.Builder{6, 1, 0}.U16(280).U16(950)); err != nil {
 		t.Fatal(err)
 	}
@@ -640,6 +653,13 @@ func TestVehiclesAndCompanionMountsExcludeEachOther(t *testing.T) {
 	if err := s.worldCommand(context.Background(), c, protocol.Builder{15, 11, 2}.U32(12032)); err != nil {
 		t.Fatal(err)
 	}
+	if c.character.ActiveVehicle != 48016 || c.character.ActiveMount != 0 || wires[1].Len() != 0 {
+		t.Fatal("pet could be ridden while vehicle active")
+	}
+	vehicleDo(t, s, c, 10, 2, 48016)
+	if err := s.worldCommand(context.Background(), c, protocol.Builder{15, 11, 2}.U32(12032)); err != nil {
+		t.Fatal(err)
+	}
 	if c.character.ActiveVehicle != 0 || c.character.ActiveMount != 12178 || c.character.Bag[1].ID != 48016 {
 		t.Fatal("companion mount kept or destroyed item vehicle")
 	}
@@ -649,11 +669,14 @@ func TestVehiclesAndCompanionMountsExcludeEachOther(t *testing.T) {
 }
 
 func TestVehicleSaveFailuresPublishNothing(t *testing.T) {
-	for _, op := range []string{"board", "wreck", "wear", "remove", "mount"} {
+	for _, op := range []string{"board", "land", "wreck", "wear", "remove", "mount"} {
 		t.Run(op, func(t *testing.T) {
 			s, c, wires := vehicleFixture(t)
-			if op != "board" {
+			if op != "board" && op != "mount" {
 				vehicleDo(t, s, c, 7, 2, 48016)
+			}
+			if op == "wear" {
+				vehicleDo(t, s, c, 7, 5, 48028)
 			}
 			for _, w := range wires {
 				w.Reset()
@@ -664,6 +687,8 @@ func TestVehicleSaveFailuresPublishNothing(t *testing.T) {
 			switch op {
 			case "board":
 				err = s.vehicleCommand(context.Background(), c, vehicleRequest(7, 2, 48016))
+			case "land":
+				err = s.vehicleCommand(context.Background(), c, vehicleRequest(10, 2, 48016))
 			case "wreck":
 				err = s.wreckVehicle(context.Background(), c)
 			case "wear":
@@ -699,7 +724,7 @@ func TestVehicleSnapshotRestoreAndPortalLanding(t *testing.T) {
 	if !contains(wires[0].packets(t), mount) || !contains(wires[1].packets(t), mount) {
 		t.Fatal("map acknowledgment did not restore vehicle")
 	}
-	// A successful regular exit from the authored beach destroys this raft.
+	// Robinson's raft cannot sail out of Starter Beach through a regular exit.
 	s.Assets.Maps[11016] = assets.Map{ID: 11016, Warps: []assets.Warp{{ClickID: 1, MapID: 10017, X: 1042, Y: 1075}}}
 	s.World = world.New(s.Assets)
 	c.character.Map = 11016
@@ -710,11 +735,11 @@ func TestVehicleSnapshotRestoreAndPortalLanding(t *testing.T) {
 	if err := s.enterPortalStep(context.Background(), c, 1, true); err != nil {
 		t.Fatal(err)
 	}
-	if c.character.Map != 10017 || c.character.ActiveVehicle != 0 || !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 {
-		t.Fatal("regular beach portal did not land raft")
+	if c.character.Map != 11016 || c.character.ActiveVehicle != 48016 || c.character.Bag[1].ID != 48016 || c.character.Bag[2].ID != 48016 {
+		t.Fatal("regular beach portal bypassed landing")
 	}
-	if !contains(wires[0].packets(t), protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) {
-		t.Fatal("portal break not reported")
+	if !contains(wires[0].packets(t), []byte{20, 8}) || contains(wires[0].packets(t), protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) {
+		t.Fatal("blocked portal did not resume or broke raft")
 	}
 }
 
@@ -806,7 +831,7 @@ func TestVehicleSwitchAndBattleGate(t *testing.T) {
 	if c.character.ActiveVehicle != 48016 || wires[0].Len() != 0 {
 		t.Fatal("boarded during battle")
 	}
-	vehicleDo(t, s, c, 9, 4, 48001)
+	vehicleDo(t, s, c, 7, 4, 48001)
 	for _, w := range wires[:2] {
 		p := w.packets(t)
 		if len(p) != 2 || !bytes.Equal(p[0], protocol.Builder{15, 11, 2}.U32(c.character.ID)) || !bytes.Equal(p[1], protocol.Builder{15, 10, 4}.U32(c.character.ID).U16(48001)) {
@@ -837,12 +862,46 @@ func TestVehicleLandingStopPersistsLandWithoutExtraWear(t *testing.T) {
 	if err != nil || len(stored) != 1 {
 		t.Fatal("landing state read", err)
 	}
-	if stored[0].X != x || stored[0].Y != y || stored[0].ActiveVehicle != 0 || !stored[0].Bag[1].Empty() || stored[0].Bag[2].ID != 48016 {
-		t.Fatal("landing recovery position or raft consumption incorrect")
+	if stored[0].X != x || stored[0].Y != y || stored[0].ActiveVehicle != 0 || stored[0].Bag[1].ID != 48016 || stored[0].Bag[2].ID != 48016 {
+		t.Fatal("landing recovery position or raft retention incorrect")
 	}
 }
 
-func TestStarterBeachRaftBreakRecoversToLand(t *testing.T) {
+func TestVehicleLegacyLandingThenMovementPreservesRaft(t *testing.T) {
+	s, c, wires := vehicleFixture(t)
+	vehicleDo(t, s, c, 7, 2, 48016)
+	before := c.character.Bag
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	// Raw request from the real-server trace. The native discriminator 12
+	// need not match the authoritative owned inventory slot (2 here).
+	if err := s.dispatch(context.Background(), c, []byte{15, 10, 12, 144, 187}); err != nil {
+		t.Fatal(err)
+	}
+	if packets := wires[0].packets(t); len(packets) != 1 || !bytes.Equal(packets[0], serverwire.VehicleDismountPacket(&game.Character{ID: c.character.ID, VehicleSlot: 2})) {
+		t.Fatal("normal landing emitted removal, wreck or refresh", packets)
+	}
+	// Native sends the shore coordinate as AC6:1 after dismount, not AC6:2.
+	if err := s.dispatch(context.Background(), c, []byte{6, 1, 1, 184, 11, 32, 8, 2, 0, 235, 11, 233, 17, 1, 0}); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.ActiveVehicle != 0 || c.character.X != 3000 || c.character.Y != 2080 || c.character.Bag != before {
+		t.Fatal("native landing lost position or changed inventory")
+	}
+	if err := s.autosaveSession(context.Background(), c); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(stored) != 1 {
+		t.Fatal("landing checkpoint", err)
+	}
+	if stored[0].ActiveVehicle != 0 || stored[0].X != 3000 || stored[0].Y != 2080 || stored[0].Bag != before {
+		t.Fatal("landing checkpoint lost retained raft or land position")
+	}
+}
+
+func TestStarterBeachRaftWaitsForLand(t *testing.T) {
 	s, c, wires := vehicleFixture(t)
 	cells := make([]byte, 100*100)
 	for i := range cells {
@@ -862,16 +921,30 @@ func TestStarterBeachRaftBreakRecoversToLand(t *testing.T) {
 	if err := s.wearVehicle(context.Background(), c); err != nil {
 		t.Fatal(err)
 	}
-	if c.character.X != 419 || c.character.Y != 1001 || c.character.ActiveVehicle != 0 || !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 {
-		t.Fatalf("invalid beach recovery: %+v", c.character)
+	if c.character.ActiveVehicle != 48016 || c.character.Bag[1].ID != 48016 || wires[0].Len() != 0 {
+		t.Fatal("raft broke while on water")
+	}
+	vehicleDo(t, s, c, 10, 2, 48016)
+	if c.character.ActiveVehicle != 48016 || wires[0].Len() != 0 {
+		t.Fatal("early dismount bypassed beach landing")
+	}
+	// Report clear shore through the real movement handler; consumption and
+	// landing coordinates must commit together before the break receipts.
+	s.Assets.Maps[11016] = assets.Map{ID: 11016}
+	s.World = world.New(s.Assets)
+	if err := s.movementCommand(context.Background(), c, protocol.Builder{6, 1, 0}.U16(410).U16(1010).Bytes(make([]byte, 8))); err != nil {
+		t.Fatal(err)
+	}
+	if c.character.X != 410 || c.character.Y != 1010 || c.character.ActiveVehicle != 0 || !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 {
+		t.Fatalf("invalid beach landing: %+v", c.character)
 	}
 	packets := wires[0].packets(t)
-	if len(packets) != 5 || !bytes.Equal(packets[0], c.character.PositionPacket()) || packets[1][0] != 23 || packets[2][1] != 15 {
-		t.Fatal("position must precede break", packets)
+	if len(packets) < 4 || !bytes.Equal(packets[0], []byte{23, 9, 2, 1}) || !bytes.Equal(packets[1], protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) || !bytes.Equal(packets[2], protocol.Builder{15, 11, 2}.U32(c.character.ID)) || contains(packets, []byte{5, 4}) {
+		t.Fatal("incorrect captured break order or extra refresh", packets)
 	}
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)
-	if err != nil || stored[0].X != 419 || stored[0].Y != 1001 || stored[0].ActiveVehicle != 0 || !stored[0].Bag[1].Empty() {
-		t.Fatal("beach recovery not durable", err)
+	if err != nil || stored[0].X != 410 || stored[0].Y != 1010 || stored[0].ActiveVehicle != 0 || !stored[0].Bag[1].Empty() {
+		t.Fatal("beach landing not durable", err)
 	}
 	for _, ack := range [][]byte{{15, 13}, {15, 13, 1, 0, 0, 0}} {
 		if err := s.dispatch(context.Background(), c, ack); err != nil {

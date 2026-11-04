@@ -105,14 +105,9 @@ func (s *Server) gmBazaar(ctx context.Context, c *Session, _ string, args []stri
 }
 
 const (
-	gmPetNameMaxBytes         = 16
-	gmRobinsonTemplateID      = 12032
-	gmRobinsonBroadcastID     = 12178
-	gmRocaTemplateID          = 14161
-	gmRocaAlternateTemplateID = 14162
-	gmRocaMacheteItemID       = 10063
-	gmXaolanTemplateID        = 14156
-	gmXaolanJadeItemID        = 25028
+	gmPetNameMaxBytes     = 16
+	gmRobinsonTemplateID  = 12032
+	gmRobinsonBroadcastID = 12178
 )
 
 func gmSelectedPet(c *game.Character) int {
@@ -246,12 +241,6 @@ func (s *Server) gmRecruitPet(ctx context.Context, c *Session, args []string) er
 			next.ReservePets = slices.Delete(next.ReservePets, i, i+1)
 		} else {
 			fresh = true
-			switch {
-			case (templateID == gmRocaTemplateID || templateID == gmRocaAlternateTemplateID) && s.hasItem(gmRocaMacheteItemID):
-				pet.Equipment[2] = game.Item{ID: gmRocaMacheteItemID, Count: 1}
-			case templateID == gmXaolanTemplateID && s.hasItem(gmXaolanJadeItemID):
-				pet.Equipment[5] = game.Item{ID: gmXaolanJadeItemID, Count: 1}
-			}
 			pet.EnsureSkills(s.petTemplate(templateID), s.hasSkill)
 			pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		}

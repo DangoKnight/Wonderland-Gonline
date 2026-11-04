@@ -3,7 +3,11 @@ package game
 // NewCapturedPet applies the wiki's initial-attribute rule to wild monsters.
 // Story recruitment continues to use NewPet and its authored attributes.
 func NewCapturedPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition, roll func(int) int, options ...PetGrowthOptions) Pet {
+	// Wild capture has its own rounding budget and must not apply recruitment
+	// overrides or halve the template twice.
+	t.InitialStats = nil
 	p := NewPet(id, name, slot, t, items)
+	p.Base = t.Stats
 	values := []*uint16{&p.Base.Strength, &p.Base.Constitution, &p.Base.Intelligence, &p.Base.Wisdom, &p.Base.Agility}
 	odd := 0
 	for _, value := range values {

@@ -11,6 +11,9 @@ import (
 // PickupRange is the C# 180-pixel reach for ground pickups.
 const PickupRange = 180
 
+// Native item depth words are rendering data, not a respawn timer.
+const groundItemRespawnInterval = 120 * time.Second
+
 // Reference: GameMap.onItemPickup, onItemDrop and the respawn loop in GameMap.Process.
 // Dropped items live only in memory, like the C# ItemsDropped dictionary.
 type ground struct {
@@ -47,13 +50,13 @@ func (w *World) GroundPacket(mapID uint16) []byte {
 	if m, ok := w.maps[mapID]; ok {
 		for _, it := range m.Items {
 			if _, taken := w.ground.taken[mapID][it.Slot]; !taken {
-				p = groundItem(p, it.Slot, it.ItemID, it.X, it.Y)
+				p = groundItem(p, it.Slot, it.ItemID, it.X, it.Y, it.Depth)
 			}
 		}
 	}
 	for _, slot := range sortedSlots(w.ground.dropped[mapID]) {
 		d := w.ground.dropped[mapID][slot]
-		p = groundItem(p, slot, d.item.ID, d.x, d.y)
+		p = groundItem(p, slot, d.item.ID, d.x, d.y, 0)
 	}
 	if len(p) == 2 {
 		return nil
@@ -149,7 +152,7 @@ func (w *World) Drop(mapID uint16, slots []byte, item game.Item, x, y uint16) []
 	p := protocol.Builder{protocol.CommandInventory, protocol.InventoryGroundItems}
 	for _, slot := range slots {
 		w.ground.dropped[mapID][slot] = droppedItem{item, x, y}
-		p = groundItem(p, slot, item.ID, x, y)
+		p = groundItem(p, slot, item.ID, x, y, 0)
 	}
 	return p
 }
@@ -165,7 +168,7 @@ func (w *World) Respawn(now time.Time) map[uint16][][]byte {
 		for _, it := range m.Items {
 			if at, ok := taken[it.Slot]; ok && !now.Before(at) {
 				delete(taken, it.Slot)
-				out[mapID] = append(out[mapID], groundItem(protocol.Builder{protocol.CommandInventory, protocol.InventoryGroundItems}, it.Slot, it.ItemID, it.X, it.Y))
+				out[mapID] = append(out[mapID], groundItem(protocol.Builder{protocol.CommandInventory, protocol.InventoryGroundItems}, it.Slot, it.ItemID, it.X, it.Y, it.Depth))
 			}
 		}
 	}

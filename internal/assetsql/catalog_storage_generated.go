@@ -8750,6 +8750,330 @@ func readNPCs(tx *gorm.DB) (map[uint16]assets.NPC, error) {
 	return result, nil
 }
 
+type PetInitialStatsRow struct {
+	PetInitialStatsKey       uint32 `gorm:"column:pet_initial_stats_key;primaryKey;autoIncrement:false"`
+	ValueMinimumStrength     uint16
+	ValueMinimumConstitution uint16
+	ValueMinimumIntelligence uint16
+	ValueMinimumWisdom       uint16
+	ValueMinimumAgility      uint16
+	ValueMaximumStrength     uint16
+	ValueMaximumConstitution uint16
+	ValueMaximumIntelligence uint16
+	ValueMaximumWisdom       uint16
+	ValueMaximumAgility      uint16
+	ValueTotalPoints         uint32
+	ValueSource              string
+}
+
+func (PetInitialStatsRow) TableName() string { return "catalog_pet_initial_stats" }
+func writePetInitialStats(tx *gorm.DB, values map[uint32]game.PetInitialStats) error {
+	var rows []PetInitialStatsRow
+	for key, value := range values {
+		row := PetInitialStatsRow{PetInitialStatsKey: key}
+		row.ValueMinimumStrength = value.Minimum.Strength
+		row.ValueMinimumConstitution = value.Minimum.Constitution
+		row.ValueMinimumIntelligence = value.Minimum.Intelligence
+		row.ValueMinimumWisdom = value.Minimum.Wisdom
+		row.ValueMinimumAgility = value.Minimum.Agility
+		row.ValueMaximumStrength = value.Maximum.Strength
+		row.ValueMaximumConstitution = value.Maximum.Constitution
+		row.ValueMaximumIntelligence = value.Maximum.Intelligence
+		row.ValueMaximumWisdom = value.Maximum.Wisdom
+		row.ValueMaximumAgility = value.Maximum.Agility
+		row.ValueTotalPoints = value.TotalPoints
+		row.ValueSource = value.Source
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readPetInitialStats(tx *gorm.DB) (map[uint32]game.PetInitialStats, error) {
+	result := make(map[uint32]game.PetInitialStats)
+	var rows []PetInitialStatsRow
+	query := tx
+	if err := query.Order("pet_initial_stats_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value game.PetInitialStats
+		value.Minimum.Strength = row.ValueMinimumStrength
+		value.Minimum.Constitution = row.ValueMinimumConstitution
+		value.Minimum.Intelligence = row.ValueMinimumIntelligence
+		value.Minimum.Wisdom = row.ValueMinimumWisdom
+		value.Minimum.Agility = row.ValueMinimumAgility
+		value.Maximum.Strength = row.ValueMaximumStrength
+		value.Maximum.Constitution = row.ValueMaximumConstitution
+		value.Maximum.Intelligence = row.ValueMaximumIntelligence
+		value.Maximum.Wisdom = row.ValueMaximumWisdom
+		value.Maximum.Agility = row.ValueMaximumAgility
+		value.TotalPoints = row.ValueTotalPoints
+		value.Source = row.ValueSource
+		result[row.PetInitialStatsKey] = value
+	}
+	return result, nil
+}
+
+type PetFoodsRow struct {
+	PetFoodsKey         uint16 `gorm:"column:pet_foods_key;primaryKey;autoIncrement:false"`
+	ValueTargetsPresent bool
+}
+
+func (PetFoodsRow) TableName() string { return "catalog_pet_foods" }
+func writePetFoods(tx *gorm.DB, values map[uint16]assets.PetFood) error {
+	var rows []PetFoodsRow
+	for key, value := range values {
+		row := PetFoodsRow{PetFoodsKey: key}
+		row.ValueTargetsPresent = value.Targets != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writePetFoodsTargets(tx, value.Targets, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readPetFoods(tx *gorm.DB) (map[uint16]assets.PetFood, error) {
+	result := make(map[uint16]assets.PetFood)
+	var rows []PetFoodsRow
+	query := tx
+	if err := query.Order("pet_foods_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.PetFood
+		if row.ValueTargetsPresent {
+			var err error
+			value.Targets, err = readPetFoodsTargets(tx, row.PetFoodsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.PetFoodsKey] = value
+	}
+	return result, nil
+}
+
+type PetFoodsTargetsRow struct {
+	PetFoodsKey            uint16       `gorm:"column:pet_foods_key;primaryKey;autoIncrement:false"`
+	PetFoodsTargetsOrdinal int          `gorm:"column:pet_foods_targets_ordinal;primaryKey;autoIncrement:false"`
+	Parent                 *PetFoodsRow `gorm:"belongsTo:Parent;foreignKey:PetFoodsKey;references:PetFoodsKey;constraint:OnDelete:CASCADE"`
+	Value                  uint32
+}
+
+func (PetFoodsTargetsRow) TableName() string { return "catalog_pet_foods_targets" }
+func writePetFoodsTargets(tx *gorm.DB, values []uint32, PetFoodsKey uint16) error {
+	var rows []PetFoodsTargetsRow
+	for key, value := range values {
+		row := PetFoodsTargetsRow{PetFoodsKey: PetFoodsKey, PetFoodsTargetsOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readPetFoodsTargets(tx *gorm.DB, PetFoodsKey uint16) ([]uint32, error) {
+	result := make([]uint32, 0)
+	var rows []PetFoodsTargetsRow
+	query := tx
+	query = query.Where("pet_foods_key = ?", PetFoodsKey)
+	if err := query.Order("pet_foods_targets_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint32
+		value = row.Value
+		if row.PetFoodsTargetsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type CollectionSpotsRow struct {
+	CollectionSpotsKey        uint16 `gorm:"column:collection_spots_key;primaryKey;autoIncrement:false"`
+	ValueLocation             string
+	ValueRegion               string
+	ValueSource               string
+	ValueKind                 string
+	ValueMapID                uint16
+	ValueMapCandidatesPresent bool
+	ValuePositionKnown        bool
+	ValueX                    uint32
+	ValueY                    uint32
+	ValueRewardsPresent       bool
+}
+
+func (CollectionSpotsRow) TableName() string { return "catalog_collection_spots" }
+func writeCollectionSpots(tx *gorm.DB, values map[uint16]assets.CollectionSpot) error {
+	var rows []CollectionSpotsRow
+	for key, value := range values {
+		row := CollectionSpotsRow{CollectionSpotsKey: key}
+		row.ValueLocation = value.Location
+		row.ValueRegion = value.Region
+		row.ValueSource = value.Source
+		row.ValueKind = value.Kind
+		row.ValueMapID = value.MapID
+		row.ValueMapCandidatesPresent = value.MapCandidates != nil
+		row.ValuePositionKnown = value.PositionKnown
+		row.ValueX = value.X
+		row.ValueY = value.Y
+		row.ValueRewardsPresent = value.Rewards != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeCollectionSpotsMapCandidates(tx, value.MapCandidates, key); err != nil {
+			return err
+		}
+		if err := writeCollectionSpotsRewards(tx, value.Rewards, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readCollectionSpots(tx *gorm.DB) (map[uint16]assets.CollectionSpot, error) {
+	result := make(map[uint16]assets.CollectionSpot)
+	var rows []CollectionSpotsRow
+	query := tx
+	if err := query.Order("collection_spots_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.CollectionSpot
+		value.Location = row.ValueLocation
+		value.Region = row.ValueRegion
+		value.Source = row.ValueSource
+		value.Kind = row.ValueKind
+		value.MapID = row.ValueMapID
+		if row.ValueMapCandidatesPresent {
+			var err error
+			value.MapCandidates, err = readCollectionSpotsMapCandidates(tx, row.CollectionSpotsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		value.PositionKnown = row.ValuePositionKnown
+		value.X = row.ValueX
+		value.Y = row.ValueY
+		if row.ValueRewardsPresent {
+			var err error
+			value.Rewards, err = readCollectionSpotsRewards(tx, row.CollectionSpotsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.CollectionSpotsKey] = value
+	}
+	return result, nil
+}
+
+type CollectionSpotsMapCandidatesRow struct {
+	CollectionSpotsKey                  uint16              `gorm:"column:collection_spots_key;primaryKey;autoIncrement:false"`
+	CollectionSpotsMapCandidatesOrdinal int                 `gorm:"column:collection_spots_map_candidates_ordinal;primaryKey;autoIncrement:false"`
+	Parent                              *CollectionSpotsRow `gorm:"belongsTo:Parent;foreignKey:CollectionSpotsKey;references:CollectionSpotsKey;constraint:OnDelete:CASCADE"`
+	Value                               uint16
+}
+
+func (CollectionSpotsMapCandidatesRow) TableName() string {
+	return "catalog_collection_spots_map_candidates"
+}
+func writeCollectionSpotsMapCandidates(tx *gorm.DB, values []uint16, CollectionSpotsKey uint16) error {
+	var rows []CollectionSpotsMapCandidatesRow
+	for key, value := range values {
+		row := CollectionSpotsMapCandidatesRow{CollectionSpotsKey: CollectionSpotsKey, CollectionSpotsMapCandidatesOrdinal: key}
+		row.Value = value
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readCollectionSpotsMapCandidates(tx *gorm.DB, CollectionSpotsKey uint16) ([]uint16, error) {
+	result := make([]uint16, 0)
+	var rows []CollectionSpotsMapCandidatesRow
+	query := tx
+	query = query.Where("collection_spots_key = ?", CollectionSpotsKey)
+	if err := query.Order("collection_spots_map_candidates_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value uint16
+		value = row.Value
+		if row.CollectionSpotsMapCandidatesOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type CollectionSpotsRewardsRow struct {
+	CollectionSpotsKey            uint16              `gorm:"column:collection_spots_key;primaryKey;autoIncrement:false"`
+	CollectionSpotsRewardsOrdinal int                 `gorm:"column:collection_spots_rewards_ordinal;primaryKey;autoIncrement:false"`
+	Parent                        *CollectionSpotsRow `gorm:"belongsTo:Parent;foreignKey:CollectionSpotsKey;references:CollectionSpotsKey;constraint:OnDelete:CASCADE"`
+	ValueItemID                   uint16
+	ValueSourceItemID             uint32
+}
+
+func (CollectionSpotsRewardsRow) TableName() string { return "catalog_collection_spots_rewards" }
+func writeCollectionSpotsRewards(tx *gorm.DB, values []assets.CollectionSpotReward, CollectionSpotsKey uint16) error {
+	var rows []CollectionSpotsRewardsRow
+	for key, value := range values {
+		row := CollectionSpotsRewardsRow{CollectionSpotsKey: CollectionSpotsKey, CollectionSpotsRewardsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueSourceItemID = value.SourceItemID
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readCollectionSpotsRewards(tx *gorm.DB, CollectionSpotsKey uint16) ([]assets.CollectionSpotReward, error) {
+	result := make([]assets.CollectionSpotReward, 0)
+	var rows []CollectionSpotsRewardsRow
+	query := tx
+	query = query.Where("collection_spots_key = ?", CollectionSpotsKey)
+	if err := query.Order("collection_spots_rewards_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.CollectionSpotReward
+		value.ItemID = row.ValueItemID
+		value.SourceItemID = row.ValueSourceItemID
+		if row.CollectionSpotsRewardsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type TalksRow struct {
 	TalksKey             int `gorm:"column:talks_key;primaryKey;autoIncrement:false"`
 	ValueByIDPresent     bool
@@ -11038,6 +11362,9 @@ type catalogPresence struct {
 	SkillEffects          bool
 	AnimationTiming       bool
 	NPCs                  bool
+	PetInitialStats       bool
+	PetFoods              bool
+	CollectionSpots       bool
 	Maps                  bool
 	Mall                  bool
 	Marks                 bool
@@ -11185,6 +11512,12 @@ func catalogTables() []any {
 		&SkillEffectsEffectsModifiersRow{},
 		&AnimationTimingRow{},
 		&NPCsRow{},
+		&PetInitialStatsRow{},
+		&PetFoodsRow{},
+		&PetFoodsTargetsRow{},
+		&CollectionSpotsRow{},
+		&CollectionSpotsMapCandidatesRow{},
+		&CollectionSpotsRewardsRow{},
 		&TalksRow{},
 		&TalksByIDRow{},
 		&TalksByIndexRow{},
@@ -11338,6 +11671,24 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&TalksRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&CollectionSpotsRewardsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&CollectionSpotsMapCandidatesRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&CollectionSpotsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&PetFoodsTargetsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&PetFoodsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&PetInitialStatsRow{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&NPCsRow{}).Error; err != nil {
@@ -11760,6 +12111,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.SkillEffects = c.SkillEffects != nil
 	presence.AnimationTiming = c.AnimationTiming != nil
 	presence.NPCs = c.NPCs != nil
+	presence.PetInitialStats = c.PetInitialStats != nil
+	presence.PetFoods = c.PetFoods != nil
+	presence.CollectionSpots = c.CollectionSpots != nil
 	presence.Maps = c.Maps != nil
 	presence.Mall = c.Mall != nil
 	presence.Marks = c.Marks != nil
@@ -11865,6 +12219,15 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := writeNPCs(tx, c.NPCs); err != nil {
+		return err
+	}
+	if err := writePetInitialStats(tx, c.PetInitialStats); err != nil {
+		return err
+	}
+	if err := writePetFoods(tx, c.PetFoods); err != nil {
+		return err
+	}
+	if err := writeCollectionSpots(tx, c.CollectionSpots); err != nil {
 		return err
 	}
 	if err := writeTalks(tx, c.Talks); err != nil {
@@ -12035,6 +12398,18 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.PetInitialStats, err = readPetInitialStats(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.PetFoods, err = readPetFoods(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.CollectionSpots, err = readCollectionSpots(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Talks, err = readTalks(tx)
 	if err != nil {
 		return nil, err
@@ -12159,6 +12534,15 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	if !presence.NPCs {
 		c.NPCs = nil
+	}
+	if !presence.PetInitialStats {
+		c.PetInitialStats = nil
+	}
+	if !presence.PetFoods {
+		c.PetFoods = nil
+	}
+	if !presence.CollectionSpots {
+		c.CollectionSpots = nil
 	}
 	if !presence.Maps {
 		c.Maps = nil

@@ -7,10 +7,17 @@ import (
 
 const BagSize = 50
 
-// AcquisitionPacket is the slotless native AC23:6 grant. The final byte is
-// reserved; item metadata occupies the same 26 bytes as bag entries.
+// AcquisitionPacket is the slotless native AC23:6 grant. The final byte controls
+// the actor-to-player item flight; item metadata occupies the same 26 bytes as bag entries.
 func AcquisitionPacket(item Item) []byte {
 	return protocol.Builder{protocol.CommandInventory, protocol.InventoryAcquire}.U16(item.ID).U8(item.Count).U8(item.Damage).Bytes(item.Metadata[:]).U8(0)
+}
+
+// ActorAcquisitionPacket also requests Legacy's pickup arc from the clicked NPC.
+func ActorAcquisitionPacket(item Item) []byte {
+	p := AcquisitionPacket(item)
+	p[protocol.InventoryAcquisitionBytes-1] = protocol.InventoryAcquisitionFromActor
+	return p
 }
 
 var ErrInventoryFull = errors.New("inventory full")

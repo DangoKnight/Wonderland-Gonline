@@ -352,6 +352,9 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	if !c.ready {
 		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
 	}
+	if s.starterBeachQuestRaft(c) {
+		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	}
 	// Walk-in regions take precedence over the step itself (AC20.Recv8).
 	if ran, e := s.tryRegion(ctx, c, 0, 0, false); ran || e != nil {
 		return e
@@ -368,6 +371,9 @@ func (s *Server) enterPortal(ctx context.Context, c *Session, portal uint16) err
 // first tries the EVE entry script with that ID. Caller holds worldMu.
 func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16, scripted bool) error {
 	unfreeze := func() error { return c.send([]byte{protocol.CommandEvent, protocol.EventResume}) }
+	if s.starterBeachQuestRaft(c) {
+		return unfreeze()
+	}
 	char := c.character
 	// Do not bounce a player back through the area it arrived in: the client
 	// reports it on landing (its last area is cleared by the map load,
@@ -393,15 +399,8 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 		return unfreeze()
 	}
 	from := char.Map
-	_, consumeVehicle := s.World.StoryFirst(assets.StoryPortalConsumeVehicle, c.character, c.view, world.StoryContext{Map: from})
-	landQuestRaft := scripted && consumeVehicle
 	if e := s.teleport(ctx, c, dst, byte(portal)); e != nil {
 		return e
-	}
-	if landQuestRaft {
-		if err := s.wreckVehicle(ctx, c); err != nil {
-			return err
-		}
 	}
 	return s.partyFollow(ctx, c, from)
 }
@@ -698,6 +697,13 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	}
 	s.Log.Debug("movement destination accepted", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)
 	c.character.X, c.character.Y = x, y
+	// Resolve quest-raft landing before any land region can start an event.
+	// Stop reports may supply the final shore coordinate too.
+	if s.starterBeachQuestRaft(c) {
+		if err := s.wearVehicle(ctx, c); err != nil {
+			return err
+		}
+	}
 	packet := protocol.Builder{protocol.CommandMovement, protocol.MovementMove}.U32(c.character.ID).U8(direction).U16(x).U16(y)
 	s.broadcastWorld(c, packet)
 	if stopped {

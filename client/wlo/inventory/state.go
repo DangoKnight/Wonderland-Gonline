@@ -53,6 +53,28 @@ func (s *State) FirstFree() byte {
 	return 0
 }
 
+// BagAnchor resolves a covered cell without duplicating the server's item record.
+func (s *State) BagAnchor(slot int) int {
+	if slot < 1 || slot > game.BagSize {
+		return 0
+	}
+	if !s.Bag[slot-1].Empty() {
+		return slot
+	}
+	x, y := (slot-1)%BagColumns, (slot-1)/BagColumns
+	for i, item := range s.Bag {
+		if item.Empty() {
+			continue
+		}
+		w, h := s.Items[item.ID].Definition.Footprint()
+		ax, ay := i%BagColumns, i/BagColumns
+		if x >= ax && x < ax+w && y >= ay && y < ay+h {
+			return i + 1
+		}
+	}
+	return 0
+}
+
 // Apply validates the whole packet before publishing any changes. Unsupported
 // commands return handled=false; malformed known layouts return valid=false.
 func (s *State) Apply(p []byte) (handled, valid bool) {

@@ -64,6 +64,7 @@ func (c *Client) initInventory() {
 	}
 	c.Inventory.BattleUse = c.selectBattleItem
 	c.Inventory.Now = func() time.Time { return c.Now() }
+	c.initPotentialPreview()
 	c.Inventory.Notice = c.Chat.Notice
 	c.Inventory.StartRemote = c.startRemote
 	c.Inventory.StopRemote = c.stopRemote
@@ -163,6 +164,9 @@ func (c *Client) inventoryPacket(p []byte) {
 		}
 		if p[1] == protocol.InventoryItems || p[1] == protocol.InventoryAcquire {
 			c.recordBattleResultItems(bagBefore)
+		}
+		if p[1] == protocol.InventoryAcquire {
+			c.presentItemAcquisition(p)
 		}
 		if p[1] == protocol.InventoryCompoundResult {
 			c.Compound.QueueResult(p[2])

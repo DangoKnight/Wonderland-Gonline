@@ -1,5 +1,9 @@
 package game
 
+import "errors"
+
+var ErrPetGrowthRoll = errors.New("invalid pet-growth attribute roll")
+
 // PetGrowthFormula selects the weights for automatic level-up attribute points.
 type PetGrowthFormula string
 
@@ -10,7 +14,7 @@ const (
 
 func (f PetGrowthFormula) Valid() bool { return f == PetGrowthBaseStats || f == PetGrowthCombatStats }
 
-// PetGrowthOptions supplies the current formula and catalog to each EXP grant.
+// PetGrowthOptions supplies the current formula and catalog to EXP and food grants.
 // Combat weights map STR/CON/INT/WIS/AGI to ATK/DEF/MAT/MDF/SPD respectively.
 // Vitals and temporary battle effects are excluded; the existing pet combat
 // calculation includes level, permanent attributes, element and equipment.

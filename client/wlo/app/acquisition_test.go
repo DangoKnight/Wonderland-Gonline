@@ -44,7 +44,21 @@ func TestLegacyFloorDropPickupAndDestroyPrompt(t *testing.T) {
 		t.Fatal("native floor spawn")
 	}
 	point := c.floorItemPoint(c.floorItems[1])
-	if !c.pickupFloorItem(point.X, point.Y-10) {
+	// This thin item's upper centre is transparent; click its actual artwork.
+	item := c.floorItems[1]
+	r := c.groundItemBounds(item)
+	pic, _, _ := c.itemPicture(item.id)
+	found := false
+	for y := r.Min.Y; y < r.Max.Y && !found; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if c.Pics.Pixel(pic, x-r.Min.X, y-r.Min.Y) != 0 {
+				point.X, point.Y = x, y
+				found = true
+				break
+			}
+		}
+	}
+	if !found || !c.pickupFloorItem(point.X, point.Y) {
 		t.Fatal("floor item not clickable")
 	}
 	if packets := sent(); len(packets) != 1 || !bytes.Equal(packets[0], []byte{23, 2, 1, 0}) {

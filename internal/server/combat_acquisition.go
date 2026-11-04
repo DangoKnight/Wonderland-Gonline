@@ -39,7 +39,11 @@ func (s *Server) commitCombatCapture(run *battleRun, catch battle.Capture) (batt
 		}
 		s.adoptSavedCharacter(c, saved)
 		c.pets.register(pet.ID)
-		return battle.Step{OwnerPackets: map[uint32][][]byte{catch.Owner: {pet.RecruitPacket(catch.Owner, t)}}}, true
+		packets := [][]byte{pet.RecruitPacket(catch.Owner, t)}
+		if pet.Equipment != (game.Equipment{}) {
+			packets = append(packets, s.petListPacket(c.character, c.pets))
+		}
+		return battle.Step{OwnerPackets: map[uint32][][]byte{catch.Owner: packets}}, true
 	}
 	return battle.Step{}, false
 }

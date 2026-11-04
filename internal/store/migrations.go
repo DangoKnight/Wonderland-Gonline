@@ -8,7 +8,7 @@ import (
 // Versioned SQLite DDL retains existing checks, collations and foreign keys.
 // Runtime reads and writes use GORM. Feature-owned steps below share this
 // versioned transaction; each owning module retains its DDL and constraints.
-const schemaVersion = 18
+const schemaVersion = 20
 
 func (s *Store) migrate() error {
 	var version int
@@ -260,13 +260,13 @@ func (s *Store) migrate() error {
 		}
 	}
 	for _, migrate := range []func(*sql.Tx) error{
-		migrateTeleportPoints, migrateTentTools, migrateManufacturing, migrateBazaars,
+		migrateTeleportPoints, migrateTentTools, migrateManufacturing, migrateBazaars, migrateCinematics, migratePetFood,
 	} {
 		if e = migrate(tx); e != nil {
 			return e
 		}
 	}
-	if _, e = tx.Exec("PRAGMA user_version=18"); e != nil {
+	if _, e = tx.Exec("PRAGMA user_version=20"); e != nil {
 		return e
 	}
 	return tx.Commit()

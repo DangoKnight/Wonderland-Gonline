@@ -1,0 +1,16 @@
+{
+  "source": "https://wlohub.com/pets",
+  "pages": [
+    {
+      "file": "WLO Pets List_ Stats, Reborn & Death Quests - Wonderland Online.htm",
+      "sha256": "e1983d6832840e09939ae3e603a1e82e410607a9c1eaf792823b66e25f90b2ab"
+    }
+  ],
+  "pets": 23,
+  "starter_definitions": 20,
+  "normal_only": true,
+  "item_export_sha256": "fcfd5b8ed6133d25ba612b754728e35042a110c8e084afb620aa41ecbffc1a6a",
+  "item_reference_sha256": "febe4a4ac97d8d44888c6016722443da8241bf344d168512d00fd441dded8fa1",
+  "templates_sha256": "306ccc2643d279bb318e9033284920e482afdf5f6fee9d227fc79cc3297ecfec",
+  "item_choices_sha256": "5b44955ee3e2a1c016a417fe5cd768360fab85489e4e4f95326d29959efa30d6"
+}

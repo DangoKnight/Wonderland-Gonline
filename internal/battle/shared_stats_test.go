@@ -10,8 +10,9 @@ func TestEnemyAndPetUsePlayerElementalStats(t *testing.T) {
 		base := game.Attributes{Strength: 5, Constitution: 5, Intelligence: 7, Wisdom: 9, Agility: 11}
 		c := game.Character{ID: 10001, Level: 10, Element: element, Base: base}
 		c.Refill(nil)
-		p := game.NewPet(17411, "Floating", 1, game.PetTemplate{Element: element, Stats: base}, nil)
-		p.Level = 10
+		// Formula parity requires identical owned attributes; recruitment now
+		// intentionally applies initial-stat ranges or the half-template rule.
+		p := game.Pet{ID: 17411, Name: "Floating", Slot: 1, Level: 10, Base: base}
 		p.Normalize(nil, true, game.PetTemplate{Element: element})
 		player := PlayerFighter(&c, nil, 0)
 		pet := PetFighter(p, c.ID, nil, 0, game.PetTemplate{Element: element})

@@ -1,0 +1,83 @@
+source_item_id,name,item_id,candidates,method
+5,Common Stone,43001,43001,name/icon/rank
+7,Mercury,42053,42053,name/icon/rank
+10,Bluestone,42074,42074,name/icon/rank
+12,Vine Grass,40012,40012,name/icon/rank
+21,Yellow Clay,44005,44005,name/icon/rank
+27,White Clay,44004,44004,name/icon/rank
+37,Pure Iron Fillet,42023,42023,name/icon/rank
+56,Coconut,41066,41066,name/icon/rank
+64,Shale,43002,43002,name/icon/rank
+89,Nigiri Sushi,32067,32067,name/icon/rank
+95,Gold Ore,42001,42001,name/icon/rank
+154,Oak,45006,45006,name/icon/rank
+156,Multi Bread,32013,32013,name/icon/rank
+231,Bamboo,40016,40016,name/icon/rank
+253,Turpentine,40019,40019,name/icon/rank
+285,Gyrophora,41004,41004,name/icon/rank
+286,Vine,40011,40011,name/icon/rank
+306,Sapphire,42047,42047,name/icon/rank
+309,Ruby,42048,42048,name/icon/rank
+329,Amethyst,42049,42049,name/icon/rank
+379,White Crystal,42050,42050,name/icon/rank
+383,Titanium,42057,42057,name/icon/rank
+386,Cotton,40007,40007,name/icon/rank
+395,Harl Grass,40008,40008,name/icon/rank
+502,Copper Knife,10031,10031,name/icon/rank
+531,Clay,44001,44001,name/icon/rank
+585,Black Clay,44003,44003,name/icon/rank
+592,Grey Clay,44006,44006,name/icon/rank
+602,Dry Clay,44007,44007,name/icon/rank
+657,Water Jade,42061,42061,name/icon/rank
+662,Black Jade,42063,42063,name/icon/rank
+682,Sulfur,42043,42043,name/icon/rank
+699,White Silvery,42055,42055,name/icon/rank
+821,Galena,42028,42028,name/icon/rank
+832,Aluminum Ore,42033,42033,name/icon/rank
+872,Pine,40020,40020,name/icon/rank
+881,Purple Jade,42062,42062,name/icon/rank
+905,Fresh Water,60002,60002,name/icon/rank
+930,Mica Rock,43004,43004,name/icon/rank
+941,Sashimi,32028,32028,name/icon/rank
+949,Red Clay,44002,44002,name/icon/rank
+1213,Coal Ore,42038,42038,name/icon/rank
+1223,Quartz,42058,42058,name/icon/rank
+1243,Brandy,32058,32058,name/icon/rank
+1257,Lyme Liquor,32059,32059,name/icon/rank
+1504,Silvery Ore,42005,42005,name/icon/rank
+1651,Granite,43007,43007,name/icon/rank
+1656,Pure Iron Ore,42020,42020,name/icon/rank
+1694,Ordinary Wood,45001,45001,name/icon/rank
+1743,Paper Grass,40013,40013,name/icon/rank
+1799,Common Grass,40014,40014,name/icon/rank
+1989,Crude Oil,47001,47001,name/icon/rank
+1990,Saltpeter,42064,42064,name/icon/rank
+2010,Sea Water,60001,60001,authored choice
+2311,Emerald,42045,42045,name/icon/rank
+2536,Yaro Safflower,40003,40003,name/icon/rank
+2544,Daphne,40015,40015,name/icon/rank
+2553,Small Daisy,40021,40021,name/icon/rank
+2566,Chrysanthemum,40002,40002,name/icon/rank
+2569,Blue Wild Flower,40022,40022,name/icon/rank
+2852,Straw Mushroom,41005,41005,name/icon/rank
+2923,Fungus,41128,41128,name/icon/rank
+2934,Brazil Mushroom,41129,41129,name/icon/rank
+2945,Su Mushroom,41132,41132,name/icon/rank
+3013,Tilapia,41092,41092,name/icon/rank
+3038,Bay Leaves,41015,41015,name/icon/rank
+3042,Persian Mum,40023,40023,name/icon/rank
+3068,Mushroom,41006,41006,name/icon/rank
+3070,Sun Mushroom,41130,41130,name/icon/rank
+3088,Aligote,41127,41127,name/icon/rank
+3107,White Flower,40024,40024,name/icon/rank
+3147,Fruit Wine,32029,32029,name/icon/rank
+3178,Wood,45005,45005,name/icon/rank
+3189,Lauan,45007,45007,name/icon/rank
+3199,Cypress,45008,45008,name/icon/rank
+3219,Cypress Wood,45004,45004,name/icon/rank
+3231,Pink Crystal,42051,42051,name/icon/rank
+3248,Copper Ore,42008,42008,name/icon/rank
+3254,Iron Ore,42014,42014,name/icon/rank
+3257,Tin Ore,42024,42024,name/icon/rank
+3270,White Jade,42044,42044,name/icon/rank
+3271,Red Jade,42060,42060,name/icon/rank

@@ -136,6 +136,8 @@ type Client struct {
 	sounds             []string // the sound table (soundtable.go)
 	sfx                *Sounds  // the effects player (set by Run)
 	ambient            ambience
+	// Independent of the server's next event step.
+	minigameResultAckPending bool
 	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
 	// the map load is acknowledged. Until then prop sounds and area
 	// triggers stay silent, so the arrival's replay of opened props does
@@ -150,10 +152,14 @@ type Client struct {
 	floorItems         map[uint16]floorItem
 	floorMap           uint16
 	floorPendingPickup uint16
+	floorHovered       uint16
 	itemFlights        []battleItemFlight
+	worldItemFlights   []worldItemFlight
+	acquisitionActor   uint16
 	SkillState         *skills.State
 	hotbar             hotbarRuntime
 	waterTravel        waterTravelState
+	placedVehicles     map[vehicleKey]placedVehicle
 	vehicleEffects     vehicleEffectState
 	logoutPrompt       *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
@@ -231,6 +237,8 @@ func New(o Options) (*Client, error) {
 	c.Servers.INI, c.Servers.FallbackINI = o.ServerINI, o.FallbackINI
 	c.Servers.OnExit = func() { c.Exit = true }
 	c.Lost = newLostForm(c.Env)
+	c.Notices.Now = func() time.Time { return c.Now() }
+	c.Lost.AnimateMessage(func() time.Time { return c.Now() })
 	c.UI.Add(c.Lost)
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
@@ -293,6 +301,11 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.Chat)
 	c.Talk = hud.NewTalk(c.Env)
 	c.Talk.Now = func() time.Time { return c.Now() }
+	c.Talk.OnHide = func() {
+		if c.sfx != nil {
+			c.sfx.StopVoice()
+		}
+	}
 	c.Talk.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
 	c.Talk.Sound = func(path string) {
 		if c.Env.Sound != nil {
@@ -318,6 +331,7 @@ func New(o Options) (*Client, error) {
 	c.initSkills()
 	c.initTeam()
 	c.initPetStatus()
+	c.initVehicleStatus()
 	c.initTrade()
 	c.initLuckyDraw()
 	c.initSettings(o.SettingsPath)
@@ -350,12 +364,14 @@ func (c *Client) frame(draw bool) {
 		c.World.Step(c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
-		if c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
+		c.updateFloorHover()
+		if c.floorHovered != 0 || c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
 		} else {
 			c.World.Hover(c.Input.X, c.Input.Y)
 		}
 		c.reachNPC()
+		c.reachFloorItem()
 		c.syncMiniMap()
 		c.eventTick()
 		c.areaTick()
@@ -368,9 +384,10 @@ func (c *Client) frame(draw bool) {
 		if c.battleFrame(draw) {
 			// Battle owns the scene while the map and networking keep ticking.
 		} else if !c.movieFrame() && draw {
-			c.World.Draw()
-			c.drawFloorItems()
+			c.World.DrawWithSprites(append(c.floorItemSprites(), c.placedVehicleSprites()...))
+			c.drawWorldItemGains(c.Now())
 			c.drawVehicleEffects()
+			c.drawFloorItemName()
 			dialogueOverlay = true
 		}
 		c.sportFrame()
@@ -411,6 +428,9 @@ func (c *Client) frame(draw bool) {
 			}
 		}
 	}
+	if draw && c.movie != nil {
+		c.UI.DrawMessageExits()
+	}
 	if dialogueOverlay {
 		// Dialogue and confirmations cover ordinary forms, including the
 		// window that opened them. Movie dialogue retains its zoomed scene pass.
@@ -425,6 +445,7 @@ func (c *Client) frame(draw bool) {
 		c.battleOverlay()
 		c.remoteInformation()
 		c.Notices.Draw(c.Env, now)
+		c.UI.DrawOverlayMessageExits()
 	}
 	c.uiHovered = c.Input.Hovered != nil
 	c.updateCursor(now)
@@ -526,6 +547,10 @@ func (c *Client) dispatchNative(p []byte) {
 		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehiclePlaced:
+		c.placeVehiclePacket(p)
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehicleProgress:
+		c.vehicleProgress(p)
 	case p[0] == protocol.CommandPetControl && (sub == protocol.PetControlVehicleMount || sub == protocol.PetControlWireCode11 || sub == protocol.PetControlRemoveVehicle || sub == protocol.PetControlVehiclePosition):
 		c.vehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlWireCode8:
@@ -577,6 +602,8 @@ func (c *Client) dispatchNative(p []byte) {
 		c.receivePresence(s)
 	case p[0] == protocol.CommandPose:
 		c.receivePose(s)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateModelTransform:
+		c.receiveModelTransform(p)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateEquipmentSnapshot:
 		if c.World != nil {
 			c.World.ApplyPeerEquipment(s[1:])
@@ -684,8 +711,12 @@ func (c *Client) dispatchNative(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.placedVehicles = nil
 	c.floorItems = nil
 	c.floorPendingPickup = 0
+	c.floorHovered = 0
+	c.worldItemFlights = nil
+	c.acquisitionActor = 0
 	c.vehicleEffects = vehicleEffectState{}
 	c.waterTravel = waterTravelState{}
 	pl, err := world.ParseSelf(p)

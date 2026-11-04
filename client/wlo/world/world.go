@@ -11,6 +11,7 @@ import (
 
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/weather"
 )
 
@@ -190,27 +191,12 @@ func (w *World) Camera() (int, int) {
 	if w.CameraAt != nil {
 		return w.CameraAt.X, w.CameraAt.Y
 	}
-	px, py := w.Player.X, w.Player.Y
-	cx, cy := px-screenW/2, py-screenH/2
 	mapW, mapH := w.Scene.Width, w.Scene.Height
-	switch {
-	case px <= screenW/2:
-		cx = 0
-	case mapW < screenW/2+px:
-		cx = 0
-		if screenW < mapW {
-			cx = mapW - screenW - cameraRightMargin
-		}
-	}
-	switch {
-	case py-screenH/2 < 1:
-		cy = 0
-	case mapH < screenH/2+py:
-		cy = 0
-		if screenH < mapH {
-			cy = mapH - screenH
-		}
-	}
+	// Apply the right-edge margin to the clamp itself, not only after the
+	// player crosses the unpadded map edge. Otherwise the camera travels
+	// twenty pixels past its resting limit before snapping back.
+	cx := max(0, min(w.Player.X-screenW/2, mapW-screenW-cameraRightMargin))
+	cy := max(0, min(w.Player.Y-screenH/2, mapH-screenH))
 	return cx, cy
 }
 
@@ -229,8 +215,20 @@ func NewView(env *seui.Env, a login.Assets, mapID uint16) (*World, error) {
 	return &World{Env: env, Scene: s, Now: time.Now, Cinematic: true, HideNames: true, CameraAt: &image.Point{}}, nil
 }
 
+// SceneSprite is transient world artwork, such as a floor item. Y is its ground
+// anchor; Depth is an optional signed offset from the native item record.
+// It uses the same depth ordering as a player's feet. Draw receives
+// screen coordinates, including the current camera offset.
+type SceneSprite struct {
+	X, Y  int
+	Depth int
+	Draw  func(*surface.Surface, int, int)
+}
+
 // Draw draws the scene, the player and the texts.
-func (w *World) Draw() {
+func (w *World) Draw() { w.DrawWithSprites(nil) }
+
+func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	scr := w.Env.Screen
 	cx, cy := w.Camera()
 	if !w.HideScene {
@@ -258,6 +256,11 @@ func (w *World) Draw() {
 		draw func()
 	}
 	var figures []figure
+	for _, sprite := range sprites {
+		if sprite.Draw != nil {
+			figures = append(figures, figure{sprite.Y + sprite.Depth, func() { sprite.Draw(scr, sprite.X-cx, sprite.Y-cy) }})
+		}
+	}
 	for _, n := range w.NPCs {
 		if n.Shown && n.Painter != nil {
 			figures = append(figures, figure{n.SortY(), func() {

@@ -13,8 +13,8 @@ func TestCapturedPetInitialAttributeBudget(t *testing.T) {
 			t.Fatal("initial captured stats", stats, p)
 		}
 		story := NewPet(14162, "Roca", 1, template, nil)
-		if story.Base != stats {
-			t.Fatal("story attributes were halved")
+		if story.Base != (Attributes{stats.Strength / 2, stats.Constitution / 2, stats.Intelligence / 2, stats.Wisdom / 2, stats.Agility / 2}) {
+			t.Fatal("unspecified recruitment attributes did not use half template")
 		}
 	}
 }

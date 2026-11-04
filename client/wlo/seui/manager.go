@@ -2,14 +2,15 @@ package seui
 
 // Manager is the form manager (PTR_DAT_004ca108, constructor 0x466f00).
 type Manager struct {
-	Env     *Env
-	Forms   []Control // +0x04 draw order; the last is in front
-	Others  []Control // +0x08
-	Modal   Control   // +0x10
-	Active  Control   // +0x14
-	OnlyTop bool      // +0x18 draw only controls marked OnTop
-	Input   *Input    // +0x1c
-	Color   uint16    // +0x26 skin colour applied to every form
+	Env          *Env
+	Forms        []Control // +0x04 draw order; the last is in front
+	Others       []Control // +0x08
+	Modal        Control   // +0x10
+	Active       Control   // +0x14
+	OnlyTop      bool      // +0x18 draw only controls marked OnTop
+	Input        *Input    // +0x1c
+	Color        uint16    // +0x26 skin colour applied to every form
+	messageExits []messageExit
 }
 
 func NewManager(env *Env, in *Input) *Manager {
@@ -101,6 +102,7 @@ func (m *Manager) SetModal(on bool, f Control) {
 
 // Tick is FUN_0046753c: every form's slot +0x14.
 func (m *Manager) Tick() {
+	m.updateMessageExits()
 	for _, f := range m.Forms {
 		f.Tick()
 	}
@@ -108,6 +110,7 @@ func (m *Manager) Tick() {
 
 // HideAll is FUN_004675ec.
 func (m *Manager) HideAll() {
+	m.CancelMessageExit(nil)
 	for _, f := range m.Forms {
 		f.Base().Visible = false
 	}
@@ -120,6 +123,7 @@ type stayOnTop interface{ onTopLayer() bool }
 // panels after the others, then the hovered control's hint. The cursor
 // image selection that follows in the original is not ported.
 func (m *Manager) Draw() {
+	m.DrawMessageExits()
 	in := m.Input
 	for _, f := range m.Forms {
 		if t, ok := f.(stayOnTop); ok && t.onTopLayer() {

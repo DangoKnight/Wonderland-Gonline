@@ -392,15 +392,16 @@ func (c *Client) sportStartClick(sp *sportPlay, tag int) {
 	}
 }
 
-// sendSportResult is FUN_003bdfa4: 57/1 with the result, and the event
-// step is done.
+// sendSportResult is FUN_003bdfa4: 57/1 followed by an event acknowledgement.
 func (c *Client) sendSportResult(win bool) {
 	r := byte(0)
 	if win {
 		r = 1
 	}
 	c.Net.Send([]byte{protocol.CommandMinigame, protocol.MinigameResult, r})
-	c.event.done = true
+	// Server replies can replace eventState before eventTick runs. Keep the
+	// result acknowledgement independent of the next dialogue or event end.
+	c.minigameResultAckPending = true
 }
 
 // endSport is 57/2 (FUN_003bc120).

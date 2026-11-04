@@ -2,6 +2,7 @@ package game
 
 import (
 	"math"
+	"math/rand/v2"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -40,32 +41,44 @@ type PetSkill struct {
 // Pet is one owned companion. Slot is its party (or reserve) slot; the client's own
 // slot numbering is assigned per login and is not stored.
 type Pet struct {
-	Slot       byte       `json:"slot"`
-	ID         uint32     `json:"id"`
-	Name       string     `json:"name"`
-	Level      byte       `json:"level"`
-	Exp        uint32     `json:"exp"` // EXP within the current level.
-	HP         int32      `json:"hp"`
-	MaxHP      int32      `json:"max_hp"`
-	SP         int32      `json:"sp"`
-	MaxSP      int32      `json:"max_sp"`
-	Base       Attributes `json:"base"`
-	StatPoints uint16     `json:"stat_points,omitempty"`
-	Amity      byte       `json:"amity"`
-	Battle     bool       `json:"battle,omitempty"`
-	Reborn     bool       `json:"reborn,omitempty"`
-	Potential  uint16     `json:"potential,omitempty"`
-	Job        byte       `json:"job,omitempty"`
-	Equipment  Equipment  `json:"equipment"`
-	Skills     []PetSkill `json:"skills,omitempty"`
+	Slot         byte       `json:"slot"`
+	ID           uint32     `json:"id"`
+	Name         string     `json:"name"`
+	Level        byte       `json:"level"`
+	Exp          uint32     `json:"exp"` // EXP within the current level.
+	HP           int32      `json:"hp"`
+	MaxHP        int32      `json:"max_hp"`
+	SP           int32      `json:"sp"`
+	MaxSP        int32      `json:"max_sp"`
+	Base         Attributes `json:"base"`
+	StatPoints   uint16     `json:"stat_points,omitempty"`
+	Amity        byte       `json:"amity"`
+	Battle       bool       `json:"battle,omitempty"`
+	Reborn       bool       `json:"reborn,omitempty"`
+	Potential    uint16     `json:"potential,omitempty"`
+	StatFoodUses uint16     `json:"stat_food_uses,omitempty"`
+	Job          byte       `json:"job,omitempty"`
+	Equipment    Equipment  `json:"equipment"`
+	Skills       []PetSkill `json:"skills,omitempty"`
 }
 
 // PetTemplate is the Npc.dat data a pet derives from.
 type PetTemplate struct {
-	Type    byte
-	Element byte
-	Stats   Attributes
-	Skills  [3]uint16
+	Type              byte
+	Element           byte
+	Stats             Attributes
+	Skills            [3]uint16
+	InitialStats      *PetInitialStats // SQL-owned recruitment override; nil uses half template attributes.
+	StartingEquipment Equipment        // SQL-owned equipment for fresh acquisitions only.
+}
+
+// PetInitialStats contains inclusive recruitment ranges and their desired sum.
+// Source records the authored reference; combat and vital formulas stay in code.
+type PetInitialStats struct {
+	Minimum     Attributes
+	Maximum     Attributes
+	TotalPoints uint32
+	Source      string
 }
 
 // BroadcastID is GetCompanionBroadcastId: Robinson is 12032 as an NPC and 12178 as a pet.
@@ -180,6 +193,12 @@ func (p Pet) ClientTotalExp() uint32 {
 // grow adds one point per level using the selected five-attribute weight formula.
 // Zero weights retain a minimum chance of one; capped attributes are excluded.
 func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int, options ...PetGrowthOptions) {
+	_, _ = p.addGrowthStat(t, known, func(n int) (int, error) { return roll(n), nil }, options...)
+}
+
+// addGrowthStat is shared by level-ups and permanent pet food. Errors are
+// returned before mutation so resource-consuming callers can roll back safely.
+func (p *Pet) addGrowthStat(t PetTemplate, known bool, roll func(int) (int, error), options ...PetGrowthOptions) (bool, error) {
 	weights := p.growthWeights(t, known, options)
 	values := []*uint16{&p.Base.Strength, &p.Base.Constitution, &p.Base.Intelligence, &p.Base.Wisdom, &p.Base.Agility}
 	var candidates []int
@@ -189,19 +208,26 @@ func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int, options ...Pet
 		}
 	}
 	if len(candidates) == 0 {
-		return
+		return false, nil
 	}
 	total := 0
 	for _, i := range candidates {
 		total += max(1, weights[i])
 	}
-	r := roll(total)
+	r, err := roll(total)
+	if err != nil {
+		return false, err
+	}
+	if r < 0 || r >= total {
+		return false, ErrPetGrowthRoll
+	}
 	for _, i := range candidates {
 		if r -= max(1, weights[i]); r < 0 {
 			*values[i]++
-			return
+			return true, nil
 		}
 	}
+	return false, nil
 }
 
 // GainExp adds EXP and levels the pet up to MaxLevel, growing one stat per level.
@@ -222,8 +248,39 @@ func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) i
 }
 
 // NewPet is a freshly recruited companion at level 1 with full vitals.
-func NewPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition) Pet {
-	p := Pet{Slot: slot, ID: id, Name: name, Level: 1, Amity: 60, Base: t.Stats}
+func NewPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition, rolls ...func(int) int) Pet {
+	base := Attributes{t.Stats.Strength / 2, t.Stats.Constitution / 2, t.Stats.Intelligence / 2, t.Stats.Wisdom / 2, t.Stats.Agility / 2}
+	if t.InitialStats != nil {
+		roll := rand.IntN
+		if len(rolls) > 0 && rolls[0] != nil {
+			roll = rolls[0]
+		}
+		lo, hi := t.InitialStats.Minimum, t.InitialStats.Maximum
+		base = lo
+		values := []*uint16{&base.Strength, &base.Constitution, &base.Intelligence, &base.Wisdom, &base.Agility}
+		limits := []uint16{hi.Strength, hi.Constitution, hi.Intelligence, hi.Wisdom, hi.Agility}
+		total := uint32(lo.Strength) + uint32(lo.Constitution) + uint32(lo.Intelligence) + uint32(lo.Wisdom) + uint32(lo.Agility)
+		for total < t.InitialStats.TotalPoints {
+			var candidates []int
+			for i, value := range values {
+				if *value < limits[i] {
+					candidates = append(candidates, i)
+				}
+			}
+			if len(candidates) == 0 {
+				break
+			} // Catalog validation rejects impossible budgets.
+			i := candidates[roll(len(candidates))]
+			(*values[i])++
+			total++
+		}
+	}
+	p := Pet{Slot: slot, ID: id, Name: name, Level: 1, Amity: 60, Base: base}
+	for index, item := range t.StartingEquipment {
+		if definition, known := items[item.ID]; known && item.ID != 0 && int(definition.EquipSlot) == index+1 {
+			p.Equipment[index] = Item{ID: item.ID, Count: 1}
+		}
+	}
 	p.Normalize(items, true, t)
 	return p
 }
