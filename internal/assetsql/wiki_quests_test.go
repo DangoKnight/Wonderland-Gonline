@@ -12,7 +12,7 @@ import (
 )
 
 func TestQuestBranchMigrationFromTranslationAndDevelopmentSchemas(t *testing.T) {
-	for _, version := range []int{28, 37} {
+	for _, version := range []int{28, 30, 37, 38} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
 			path := runtimeDatabaseFixture(t)
 			if err := MigrateDatabase(path); err != nil {
@@ -27,7 +27,7 @@ func TestQuestBranchMigrationFromTranslationAndDevelopmentSchemas(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			if version == 28 {
+			if version == 28 || version == 30 {
 				story.Rules = assets.DefaultStoryDefinitions().Rules
 			} else {
 				story.Rules = slices.DeleteFunc(story.Rules, func(r assets.StoryRule) bool { return r.ID == "wiki_auntie_soup_completion" })
@@ -53,10 +53,10 @@ func TestQuestBranchMigrationFromTranslationAndDevelopmentSchemas(t *testing.T) 
 				t.Fatal(err)
 			}
 			found := slices.ContainsFunc(got.Rules, func(r assets.StoryRule) bool { return r.ID == "wiki_auntie_soup_completion" })
-			if found != (version == 28) {
+			if found != (version == 28 || version == 30) {
 				t.Fatal("translation bridge omitted initial quest or restored development deletion")
 			}
-			if version == 37 && !reflect.DeepEqual(got.Rules, story.Rules) {
+			if version >= 37 && !reflect.DeepEqual(got.Rules, story.Rules) {
 				t.Fatal("name refresh changed existing quest policies")
 			}
 		})

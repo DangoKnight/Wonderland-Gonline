@@ -9,6 +9,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	serverwire "wonderland-gonline/internal/server/wire"
+	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
 
@@ -27,13 +28,21 @@ type eventSession struct {
 	onComplete       func() error
 	onChoice         func(byte) error
 	onMinigame       func(byte) error
+	bankOwner        uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
+
 const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 
 // endEvent is Player.ClearInteraction.
-func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
+func (s *Server) endEvent(c *Session) {
+	if c.event != nil {
+		c.event.bankOwner = 0
+	}
+	c.event = nil
+	c.arcade = nil
+}
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
@@ -47,16 +56,28 @@ func (s *Server) cancelInteraction(c *Session) error {
 }
 
 func (s *Server) finishEvent(c *Session, es *eventSession) error {
-	if c.event != es {
+	if es == nil || c.event != es {
 		return nil
 	}
+	if c.character == nil {
+		s.endEvent(c)
+		return nil
+	}
+	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
+	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
 	if err := s.sendAll(c, s.World.Sync(c.character, c.view, false)); err != nil {
 		return err
 	}
-	return s.syncMapProps(context.Background(), c, time.Now())
+	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
+	if openBank {
+		return s.openMoneyBank(c)
+	}
+	return nil
 }
 
 func (s *Server) rejectDisabled(c *Session) error {
@@ -92,17 +113,20 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // Acknowledgments before the wake-up animation are absorbed.
 		}
 		es := c.event
-		if es == nil {
-			return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
+		if es != nil {
+			if es.onChoice != nil || es.onMinigame != nil {
+				return nil // The question stays open until AC20:9.
+			}
+			if next := es.onComplete; next != nil {
+				es.onComplete = nil
+				es.transitions = 0
+				return next()
+			}
+			return s.finishEvent(c, es)
 		}
-		if es.onChoice != nil || es.onMinigame != nil {
-			return nil // The question stays open until AC20:9.
-		}
-		if next := es.onComplete; next != nil {
-			es.onComplete = nil
-			es.transitions = 0
-			return next()
-		}
+		// finishEvent already released this interaction. Ignore its trailing
+		// ACK at any latency: answering it with a resume creates an echo loop
+		// and can hide a service window opened after the dialogue.
 		return nil
 	case protocol.EventRegion:
 		return s.regionRequest(ctx, c, p[2:])
@@ -207,7 +231,11 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 		return true, s.startRecruitment(ctx, c, click)
 	}
 	for _, ev := range events {
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
+		i, err := s.findCollectionBranch(ctx, c, s.collectionNode(mapID, click, ev, nil), ev, time.Now())
+		if err != nil {
+			return true, err
+		}
+		if i >= 0 {
 			return true, s.startEvent(ctx, c, click, ev, i, true)
 		}
 	}
@@ -216,7 +244,7 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 
 // startEvent is StartSession: refuse unsupported actions before any change, lock the
 // player, then run actions until one waits for the client.
-func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool) error {
+func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool, nodes ...store.ResourceKey) error {
 	mapID := c.character.Map
 	transitions := 1
 	if c.event != nil {
@@ -229,7 +257,7 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	if s.World.Disabled(mapID, ev.ClickID) {
 		return s.rejectDisabled(c)
 	}
-	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now()); handled {
+	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now(), nodes...); handled {
 		return err
 	}
 	ev = s.World.PrepareStory(c.character, c.view, mapID, ev, branch)
@@ -1066,8 +1094,13 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 		if !ok {
 			continue
 		}
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-			return s.startEvent(ctx, c, 0, ev, i, true)
+		node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+		i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+		if err != nil {
+			return err
+		}
+		if i >= 0 {
+			return s.startEvent(ctx, c, 0, ev, i, true, node)
 		}
 	}
 	return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -1104,8 +1137,13 @@ func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16,
 			if !ok {
 				continue
 			}
-			if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-				return true, s.startEvent(ctx, c, 0, ev, i, true)
+			node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+			i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+			if err != nil {
+				return true, err
+			}
+			if i >= 0 {
+				return true, s.startEvent(ctx, c, 0, ev, i, true, node)
 			}
 		}
 	}

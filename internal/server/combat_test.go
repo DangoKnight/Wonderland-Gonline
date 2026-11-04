@@ -898,7 +898,7 @@ func TestCompiledElementalGrowthClinicAndPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.character.HP = 10
-	if err := s.openService(c, 6); err != nil {
+	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
 	wires[0].Reset()

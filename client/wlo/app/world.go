@@ -69,6 +69,7 @@ func (c *Client) warp(p []byte) {
 	// Loading a map forgets the area last entered (FUN_00304898), and the
 	// map is not ready until 5/4.
 	c.areas.last = 0
+	c.vacuum = vacuumRuntime{}
 	c.floorPendingPickup, c.floorHovered = 0, 0
 	c.worldItemFlights = nil
 	c.acquisitionActor = 0
@@ -241,6 +242,7 @@ func (c *Client) WalkKeys(left, up, right, down bool) {
 
 // sendLeg is 6/1 for a leg of the player's walk.
 func (c *Client) sendLeg(facing, x, y int) {
+	c.stopVacuum()
 	p := []byte{protocol.CommandMovement, protocol.MovementMove, byte(facing)}
 	p = binary.LittleEndian.AppendUint16(p, uint16(x))
 	p = binary.LittleEndian.AppendUint16(p, uint16(y))

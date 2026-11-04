@@ -89,10 +89,13 @@ type eventState struct {
 // clickNPC is a left click on a map NPC: within reach it sends 20/1,
 // otherwise it reports the range failure.
 func (c *Client) clickNPC(n *world.NPC) {
+	c.stopVacuum()
 	p := c.World.Player
 	if abs(p.X-n.X) <= npcReach && abs(p.Y-n.Y) <= npcReach {
 		c.World.StopWalk()
+		c.prepareVacuum(n.ClickID)
 		c.sendNPCClick(n.ClickID)
+		c.beginVacuum()
 		return
 	}
 	c.pendingNPC = nil

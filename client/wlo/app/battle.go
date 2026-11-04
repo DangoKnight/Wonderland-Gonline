@@ -264,6 +264,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.pendingActions = nil
 	}
 	if view.state.Active && (!wasActive || p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation) {
+		c.stopVacuum()
 		c.beginBattleResults()
 		c.closeBattleView()
 		c.startSceneFade(sceneFadeEnterBattle)

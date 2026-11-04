@@ -89,6 +89,7 @@ const (
 	HandshakeCombatOffer       = 240
 	HandshakeCombatAccept      = 241
 	HandshakeCombatEnabled     = 242
+	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -341,6 +342,7 @@ const (
 	InventoryRemove           = 9
 	InventoryMove             = 10
 	InventoryEquip            = 11
+	InventoryVacuumCollection = 73 // Native one-byte actor ID; zero stops collection.
 	InventoryUnequip          = 12
 	InventoryCompoundSuccess  = 13
 	InventoryCompound         = 14 // Primary Alchemy.
@@ -489,6 +491,19 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	LegacyStorageWireCode6 = 6
 	RemoteControlOpen      = 6
+
+	// Money bank counter. The client's bank form sends AC29:1 (withdraw) and
+	// AC29:2 (deposit) with the amount as a U32, and waits for AC29:7 or AC29:8
+	// to clear its in-flight flag. AC29:5 shows the window and AC29:4 publishes
+	// the account balance. Verified against aLogin's bank form.
+	MoneyBankWithdraw         = 1
+	MoneyBankDeposit          = 2
+	MoneyBankRejected         = 3 // Native bank form shows its "Bank is full.." rejection.
+	MoneyBankBankBalance      = 4
+	MoneyBankOpen             = 5
+	MoneyBankWithdrawComplete = 7
+	MoneyBankDepositComplete  = 8
+	MoneyBankAmountRequestLen = 6
 )
 
 // Storage subcommands (AC30).
@@ -761,6 +776,15 @@ const (
 	FishingCatch                  = 2
 	FishingStop                   = 3
 	NativeInactive                = 0
+)
+
+// AC66:2 is the server's native event-timer update. AC66 also has unrelated
+// reborn-job requests; timer updates are outbound and contain counted records.
+const (
+	CommandEventTimers    byte = 66
+	EventTimersUpdate     byte = 2
+	EventTimerHeaderBytes      = 3
+	EventTimerRecordBytes      = 10 // UInt16 timer ID followed by Float64 seconds.
 )
 
 // AC44's three-byte native request is form_NPCUpgrade. The legacy title adapter

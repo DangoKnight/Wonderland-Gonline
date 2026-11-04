@@ -132,7 +132,7 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		return false, nil
 	}
 	level := max(5, int(op.D3))
-	hp := 0 // Only an explicit event HP value overrides the common formula.
+	hp := 0 // A positive event HP value overrides the stored NPC HP.
 	if op.DW1 > 0 {
 		hp = int(op.DW1)
 	}
@@ -200,6 +200,10 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 			if npc, ok := s.Assets.NPCs[uint16(e.Template)]; ok {
 				e.Base = game.Attributes{Strength: npc.Stats[0], Constitution: npc.Stats[1], Intelligence: npc.Stats[2], Wisdom: npc.Stats[3], Agility: npc.Stats[4]}
 				e.Element = npc.Element
+				if e.HP <= 0 {
+					e.HP = int(npc.HP)
+				}
+				e.SP = int(npc.SP)
 			}
 		}
 	}

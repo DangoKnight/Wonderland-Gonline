@@ -19,6 +19,17 @@ func fieldFixture(t *testing.T) (*Server, *Session, *captureConn) {
 	battleSleep, turnTimeout = func(time.Duration) {}, time.Hour
 	t.Cleanup(func() { battleSleep, turnTimeout = time.Sleep, defaultTurnTimeout })
 	s, players, wires := worldFixture(t)
+	// Finish playback and cancel turn timers before closing the database or
+	// restoring global timing hooks. Otherwise an unfinished fixture can fire
+	// its next round during a later test and race that test's hook cleanup.
+	t.Cleanup(func() {
+		for _, player := range players {
+			settle(t, s, player)
+			s.worldMu.Lock()
+			s.abandonBattle(player)
+			s.worldMu.Unlock()
+		}
+	})
 	s.Assets.Maps[30001] = assets.Map{ID: 30001, NPCs: []assets.MapNPC{{ClickID: 4, Flags: 1, X: 1050, Y: 1080, Template: 17100}, {ClickID: 5, Flags: 1, X: 3000, Y: 3000, Template: 17100}}}
 	s.Assets.NPCs = map[uint16]assets.NPC{17100: {ID: 17100, Name: "Wild Boar", Level: 2, HP: 1}}
 	s.World = world.New(s.Assets)
@@ -42,7 +53,10 @@ func TestWildMonsterClickDefeatAndRespawn(t *testing.T) {
 	if err := s.worldCommand(ctx, c, []byte{20, 1, 4, 0}); err != nil || c.battle == nil {
 		t.Fatal("wild click did not start a battle", err)
 	}
-	// A clicked monster has at least 50 HP, so attack until it falls.
+	if f := c.battle.b.Defenders[0]; f.HP != 1 || f.MaxHP != 1 || f.SP != 0 || f.MaxSP != 0 {
+		t.Fatalf("wild monster did not use stored vitals: %+v", f)
+	}
+	// Attack until the clicked monster's stored HP is depleted.
 	for round := 0; c.battle != nil; round++ {
 		if round == 30 {
 			t.Fatal("battle did not end")
@@ -470,7 +484,7 @@ func boundedEncounterFixture(t *testing.T) (*Server, *Session, *captureConn) {
 	c.encounter.mapEnter = time.Now().Add(-time.Minute)
 	s.Assets.Maps[30001] = assets.Map{ID: 30001, NPCs: []assets.MapNPC{{ClickID: 4, Flags: 1, X: 1000, Y: 1000, Template: 17100, WalkBehavior: 3, WalkSteps: []assets.WalkStep{{X: uint32(0xfffffed4), Y: uint32(0xfffffed4)}, {X: 300, Y: 300}}}}}
 	s.World = world.New(s.Assets)
-	t.Cleanup(func() { s.worldMu.Lock(); defer s.worldMu.Unlock(); s.abandonBattle(c) })
+	t.Cleanup(func() { settle(t, s, c); s.worldMu.Lock(); defer s.worldMu.Unlock(); s.abandonBattle(c) })
 	return s, c, wire
 }
 

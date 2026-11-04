@@ -219,7 +219,8 @@ type Enemy struct {
 	Template      uint32
 	Name          string
 	Level         int
-	HP            int // Explicit scripted override; zero uses elemental growth.
+	HP            int // Stored NPC HP, or an explicit encounter override.
+	SP            int // Stored NPC SP; zero is a valid maximum.
 	Element       byte
 	Base          game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
 	ClickID       uint16
@@ -305,16 +306,13 @@ func enemyFighter(e Enemy, i int) *Fighter {
 	if e.Attack > 0 {
 		atk, matk = e.Attack, e.Attack
 	}
-	hp := int(full.MaxHP)
-	if e.HP > 0 {
-		hp = e.HP // Explicit scripted/trial override, not ordinary NPC HP.
-	}
+	hp, sp := max(1, e.HP), max(0, e.SP)
 	click := e.ClickID
 	if click == 0 {
 		click = uint16(2000 + i)
 	}
 	return &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
-		Skills: e.Skills, Level: level, Element: e.Element, MaxHP: max(1, hp), HP: max(1, hp), MaxSP: int(full.MaxSP), SP: int(full.MaxSP),
+		Skills: e.Skills, Level: level, Element: e.Element, MaxHP: hp, HP: hp, MaxSP: sp, SP: sp,
 		Atk: atk, Def: int(full.DEF), Matk: matk, Mdef: int(full.MDF), Spd: int(full.SPD), X: enemySlots[i][0], Y: enemySlots[i][1]}
 }
 

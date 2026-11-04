@@ -38,8 +38,10 @@ are outside this server persistence policy.
 
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
-Players, pets and enemies share `game.InnateCombat`; resolve NPC element and base
-attributes from the asset catalog rather than copying definitions into pet state.
+Players, pets and enemies share `game.InnateCombat` for derived combat stats;
+enemy HP/SP use stored NPC values, with explicit encounter HP overrides.
+Resolve NPC element and base attributes from the asset catalog rather than
+copying definitions into pet state.
 See [combat stats](COMBAT_STATS.md) for encounter overrides and fallbacks.
 Game content definitions belong in `assets.db`. Preserve the startup-only
 `pet_growth_formula` and `battle_exp_formula` selectors, `battle_gold_enabled`
@@ -47,11 +49,15 @@ switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v20 stores character state in typed tables and owned child rows.
+Gameplay schema v21 stores character state in typed tables and owned child rows.
+v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
+Claims and rewards commit together; keys identify the resource kind, map and source,
+independently of the character and native event timer ID. Per-source cooldown
+durations belong in the assets database's `ResourceRespawns` definitions.
 v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v38 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v39 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -636,21 +642,39 @@ acceptance separate from source and synthetic-packet verification.
 
 ## Bank currency
 
-Keep bank and carried gold separate in `game.Character`. Use
+Keep bank and carried gold separate in `game.Character`. Follow
 `DepositGoldToBank` and `WithdrawGoldFromBank` for currency movement: reject zero,
 insufficient funds, native uint32 bank overflow and transfers exceeding `MaxGold`.
 Reject before changing either balance so their combined total stays constant.
-The existing character transaction persists both balances; do not introduce a
-second bank table or a separate save. Older JSON states default to zero bank gold.
+Both counter and ATM transfers use `Store.TransferBankGold`: one conditional SQL
+update rechecks character ownership, durable funds and both caps, then reads back
+both balances in the same transaction. Update only those two state columns; do
+not checkpoint pending walking, recovery, pets or inventory. Refresh only those
+session/baseline currency fields after commit. Do not introduce a second bank
+table or a separate save. Older JSON states default to zero bank gold.
 
 Publish AC26:4 wallet refresh and native AC45 balances only after commit. Receipt
 write failures cannot undo a durable transfer. Keep bank operations inside the
 shared world/trade gates and scripted interaction ownership. PIN and character
 transfer reference handlers contain no working behavior; retain explicit
-unavailable responses until verified semantics exist. Do not infer an ATM NPC
-service operand from unused numeric slots or route deposits through AC29's unsafe
-legacy item-storage code. Keep actual-client activation and packet acceptance
-separate from synthetic protocol verification.
+unavailable responses until verified semantics exist. Keep actual-client
+activation and packet acceptance separate from synthetic protocol verification.
+
+The bank counter (event service 6) opens with AC29:5 followed by AC29:4 carrying
+the account balance. The native form then sends AC29:2 to deposit and AC29:1 to
+withdraw, both with the amount as a U32, and keeps an in-flight flag that only a
+completion clears: AC29:8 after a deposit and AC29:7 after a withdrawal. Answer
+an accepted operation with AC26:4, AC29:4 and that completion; answer a rejected
+amount with AC29:3, the unchanged AC29:4 and the same completion so the form
+unlocks. Clinics use event service 7. The AC45 subcommands remain the balance
+and ATM query/receipt layout, but the counter's own currency path is AC29.
+
+Queue a scripted bank opening on its owning event, with the character identity.
+`finishEvent` sends the movement release/resume before opening the bank; it must
+work without an extra acknowledgement of that resume. Cancellation, replacement,
+map changes and character handoff discard the old intent. With no active event,
+ignore trailing AC20:6 acknowledgements at any latency. Never answer an idle ACK
+with another resume or use a wall-clock debounce to hide that protocol loop.
 
 ## Native mall checkout
 

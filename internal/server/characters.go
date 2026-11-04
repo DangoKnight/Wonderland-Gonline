@@ -139,7 +139,11 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	packets = append(packets, s.monsterBookPackets(&char)...)
 	packets = append(packets, char.StatPackets(s.Assets.Items)...)
 	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandTrade, protocol.TradeOnlineTime, protocol.TradeOnlineTimeEnough}, []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
-	packets = append(packets, s.arrivalPackets(char, view, pets, 0)...)
+	arrival, err := s.arrivalPackets(char, view, pets, 0)
+	if err != nil {
+		return nil, err
+	}
+	packets = append(packets, arrival...)
 	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode15, 0}, []byte{protocol.CommandWire62, protocol.Wire62WireCode53, 2, 0}, serverwire.RecordPointStatus(char), []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode14, 2})
 	for slot := byte(1); slot <= 10; slot++ {
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode24, slot, 0, 0})
@@ -166,8 +170,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
-	c.event = nil
-	c.arcade = nil
+	s.endEvent(c)
 	c.walkMode = 0
 	c.fishing = nil
 	c.manufacturing = nil

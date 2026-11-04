@@ -1,5 +1,32 @@
 # Testing and validation
 
+## Bank counter robustness - 2026-11-04
+
+Built on PR #7 (`a4e294a`). Scripted bank opening belongs to its originating
+event and character, and follows that event's movement release/resume in the same
+completion flow. No extra resume acknowledgement is required. Trailing idle ACKs
+are ignored at any latency; cancellation, replacement, teleport and character
+changes cannot reopen an old bank window.
+
+Both AC29 counter and AC45 ATM transfers now use one SQL-authoritative, owned
+conditional update of only the two currency columns. Focused race tests cover
+separate database connections competing for the same funds, foreign ownership,
+stale session balances, injected SQL rollback, zero/insufficient/overflow amounts,
+native failure completions, malformed packets and failed receipt delivery.
+Buffered walking/recovery remains dirty until its normal checkpoint, which does
+not revert the bank transfer. Existing independent balance goldens and database
+reopen tests are retained.
+
+Affected bank, clinic, dialogue, event, minigame, hotel, storage, and teleport
+integration tests pass with the race detector. Affected-package vet and the
+server executable build pass. The initial expanded trade-gate test was corrected
+to allow its legitimate warning while forbidding state changes or bank receipts.
+Logs and the validation binary remain outside the checkout under ignored
+`var/validation/pr7-robustness-*.log` and `var/validation/pr7-bank-robustness.exe`.
+This is focused development validation; no full pre-push battery or new live
+client bank capture was run for these robustness changes. No schema upgrade is
+required.
+
 ## Floor-item input ownership and hover — 2026-11-03
 
 A floor-item click now cancels held-ground input, the old route/marker and any
@@ -3470,3 +3497,96 @@ Logs and the package-inventory summary are retained under ignored
 `var/validation/prepush-branches-20261104/`. Automated checks do not establish
 live-account or manual quest acceptance; the remaining gameplay limitations in
 [quest research](QUEST_RESEARCH.md) still apply.
+
+## Native manual collection validation - 2026-11-04
+
+Collection research and implementation are on `Client-rewrite`. Focused race
+checks pass for server event gathering, SQL claims, world branch planning,
+native timer packets and the assets v29 content migration. The installed North
+Island 60000/33 test uses the real EVE event: click, committed pool reward,
+180-second timer, step-complete acknowledgement, replay protection, cooldown
+dialogue and full-inventory rejection. Existing gathering restart, concurrent
+claim, rollback and failed-delivery checks pass.
+
+The migration upgrades an isolated Client v28 catalog and removes exactly 25
+resolved generated disables, with no added disables or changes to retained
+reasons. Tests retain operator reasons, mixed diagnostics, missing entries,
+incomplete pools and later operator disables across repeated initialization.
+The local quest-development v38 catalog and gameplay data are untouched.
+
+Focused client race tests pass for clicking the actual North Island grass
+sprite, the literal captured acquisition/timer/completion exchange, no actor
+flight, movement release, malformed atomic timer updates, ordinary NPC dialogue
+and completion acknowledgement. Affected-package vet and server, migration-tool
+and client executable builds pass. Logs and validation binaries are under
+ignored `var/validation/collection-usage/`. This is focused development
+validation, not a full pre-push battery or a new live vacuum test.
+
+## Shared resource cooldown validation - 2026-11-04
+
+Focused race tests pass across assets, asset SQL, store, world and server for
+global collection claims and independent per-source durations. Concurrent claims
+from different accounts and separate database connections produce one winner.
+Tests cover separate actors sharing a legacy timer, ground-item namespaces,
+exact expiry boundaries, full-inventory rollback and database reopen recovery.
+Server integration checks cover neighboring collection and ground sources with
+different configured cooldowns and restoring ground availability on map entry.
+World regression checks preserve pending respawn broadcasts when another player
+arrives after expiry but before the world ticker runs.
+
+Assets v29-to-v30 migration checks preserve authored overrides and intentionally
+empty definitions across repeated upgrades. An isolated installed catalog upgrade
+passes real North Island collection, water gathering, world entry, visibility,
+area entry and ground-pickup integration tests with the race detector. Existing
+quest-development v38 assets and live gameplay databases remain untouched.
+Focused client collection timer/acquisition race tests, affected-package vet and
+server, migration-tool and client executable builds pass. Logs and
+disposable outputs are under ignored `var/validation/shared-resources/`.
+
+## Vacuum client scheduling validation - 2026-11-04
+
+Focused client race tests pass for native start/stop/click bytes, deadline
+boundaries, single in-flight retries, changed respawn durations, failed attempts,
+starting on exhausted spots, movement, equipment removal, map/battle cancellation
+and connection isolation. A 30-second timer gives Gonline a 40-second wait; a
+240-second timer gives 250 seconds. Other servers keep the fixed 190-second
+Legacy interval. The matching executable confirms the decompiled scheduler's
+190,000-millisecond threshold and its exact eight resource-template references.
+
+The initial client run exposed an incorrect NPC-kind assumption; the corrected
+template-list implementation passes all vacuum tests with the race detector.
+Existing captured manual collection, malformed timer and combat negotiation/reset
+regressions also pass. Server/protocol race tests verify the literal collection
+capability bytes and availability with combat chains disabled while preserving
+combat opt-in. Affected-package vet and client/server executable builds pass.
+Ignored `var/validation/shared-resources/vacuum-*.log` retains the test history;
+validated binaries are `client-vacuum.exe` and `wonderland-vacuum.exe` there.
+No full pre-push battery or real-server vacuum validation was run for this change.
+
+## Complete collection pre-push validation - 2026-11-04
+
+Validated production commit `aafdeff` and test-fixture correction `44e5a4a`.
+The full server module ran with `-race -count=1 -timeout=60m -p 1 ./...` against
+the isolated v30 catalog. The full client module ran with GPU, native-data and
+compiled-bundle checks enabled. Final coverage includes every module package:
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,089 | 12 | 28 | 8 |
+| Client | 722 | 36 | 24 | 2 |
+
+The initial server run found an outdated login wire assertion and a simulation
+fixture cleanup race. The login golden now consumes the independent collection
+capability before authentication. Field fixtures settle playback and cancel battle
+timers before closing SQL or restoring timing hooks. Both fixes passed three
+focused race repetitions, followed by a complete passing server-package race run.
+Coverage combines that complete rerun with the other passing full-module packages;
+no test/package failures or race warnings remain in the final results.
+
+Full vet, tracked Go formatting, HTMLHint, Prettier, ten-second Read/EVE/NativeItems
+fuzz runs, server/client/migration builds and the entity-name review/export check
+pass. Python exporters pass 38 tests with one Windows symlink-privilege skip.
+Go skips retain their documented optional-reference, live-account and snapshot
+requirements; they are not live gameplay acceptance evidence. Logs, binaries and
+the strict package-coverage audit are under ignored
+`var/validation/prepush-collection-20261104/`, including `final-summary.json`.

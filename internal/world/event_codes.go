@@ -181,8 +181,8 @@ const (
 	ServiceArmorShop          = 3
 	ServicePropsKeeper        = 4
 	ServicePetHotel           = 5
-	ServiceClinic             = 6
-	ServiceClinicAlternate    = 7
+	ServiceBank               = 6
+	ServiceClinic             = 7
 	ServiceStockKeeper        = 9
 	ServiceRebornJobSelection = 10
 	ServiceCompanionRebirth   = 27

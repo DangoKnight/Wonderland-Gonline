@@ -42,6 +42,26 @@ func TestGroundPickupRespawn(t *testing.T) {
 	}
 }
 
+func TestGroundCooldownRestoreRetainsPendingRespawn(t *testing.T) {
+	w := groundFixture()
+	now := time.Unix(1000, 0)
+	target, ok := w.GroundAt(12345, 7)
+	if !ok {
+		t.Fatal("missing native item")
+	}
+	w.Take(12345, target, now)
+	w.RestoreGroundCooldowns(12345, map[uint16]time.Time{uint16(target.Slot): now.Add(time.Second)})
+	// Another arrival after expiry finds no active SQL clock. It must not erase
+	// the pending ticker notification for viewers already on this map.
+	w.RestoreGroundCooldowns(12345, nil)
+	if got := w.Respawn(now.Add(time.Second)); len(got[12345]) != 1 {
+		t.Fatal("map arrival suppressed the respawn broadcast", got)
+	}
+	if got := w.Respawn(now.Add(2 * time.Second)); len(got) != 0 {
+		t.Fatal("respawn broadcast repeated", got)
+	}
+}
+
 func TestGroundDropSlots(t *testing.T) {
 	w := groundFixture()
 	// Slot 2 (index), 7 (slot/click) are native; 300 cannot collide with a byte slot.

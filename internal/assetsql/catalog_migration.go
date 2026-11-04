@@ -10,7 +10,12 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 38
+const catalogSchemaVersion = 39
+
+// Branch compatibility: Client v30 introduced collection respawns while quest
+// v29 onward introduced independent content batches from the common v28 base.
+const clientCollectionSchemaVersion = 30
+const commonPreQuestSchemaVersion = 28
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -43,6 +48,18 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		// Client v30 and quest v30 used the same version for different features.
+		// Detect the Client lineage before adding its collection projection.
+		questVersion := schema.Version
+		if schema.Version == clientCollectionSchemaVersion && tx.Migrator().HasColumn(&catalogPresence{}, "ResourceRespawns") {
+			questVersion = commonPreQuestSchemaVersion
+		}
+		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 39 {
+			if err := migrateResourceRespawns(tx); err != nil {
+				return err
+			}
 		}
 
 		// Add dimensions before older upgrades read the expanded typed item row.
@@ -445,52 +462,52 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
-		if schema.Version < 29 {
+		if questVersion < 29 {
 			if err := migrateWikiQuests(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 29 {
+		if questVersion < 29 {
 			if err := migrateAdditionalWikiQuests(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 30 {
+		if questVersion < 30 {
 			if err := migrateRemainingWikiQuests(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 31 {
+		if questVersion < 31 {
 			if err := migrateWikiQuestCompanions(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 32 {
+		if questVersion < 32 {
 			if err := migrateEnabledWikiQuests(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 33 {
+		if questVersion < 33 {
 			if err := migrateWikiQuestDisguises(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 34 {
+		if questVersion < 34 {
 			if err := migrateWikiQuestActors(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 35 {
+		if questVersion < 35 {
 			if err := migrateWikiQuestConstellations(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 36 {
+		if questVersion < 36 {
 			if err := migrateWikiQuestBundles(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 37 {
+		if questVersion < 37 {
 			if err := migrateWikiQuestConditions(tx); err != nil {
 				return err
 			}
@@ -499,6 +516,11 @@ func migrateCatalog(tx *gorm.DB) error {
 			// Refresh reviewed names for development catalogs that already ran the
 			// original quest-only v28-v37 upgrades before the branch split.
 			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 39 {
+			if err := migrateCollectionUsage(tx); err != nil {
 				return err
 			}
 		}
@@ -614,6 +636,7 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err = seedNewChestDefaults(c); err != nil {
 		return err
 	}
+	initializeCollectionUsage(c)
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
 		if err := tx.Migrator().CreateTable(model); err != nil {
 			return err
@@ -655,6 +678,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps); err != nil {
 		return nil, err
 	}
 	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {

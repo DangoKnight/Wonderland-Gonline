@@ -12,6 +12,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	serverwire "wonderland-gonline/internal/server/wire"
+	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
 
@@ -317,7 +318,16 @@ func (s *Server) depart(c *Session, packet []byte) {
 // arrivalPackets follows Map.Warp_In for the entrant: load command, position, worn
 // equipment, sprite refresh, SendMapInfo with its visibility sync, then the quest
 // journal. Peers are exchanged after AC12:1. It resets the view's scene state.
-func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *petRoster, portal byte) [][]byte {
+func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *petRoster, portal byte) ([][]byte, error) {
+	clocks, err := s.Store.ActiveResourceCooldowns(context.Background(), store.ResourceGroundItem, char.Map, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	groundClocks := map[uint16]time.Time{}
+	for _, clock := range clocks {
+		groundClocks[clock.NodeID] = time.UnixMilli(clock.ExpiresAt).UTC()
+	}
+	s.World.RestoreGroundCooldowns(char.Map, groundClocks)
 	var packets [][]byte
 	for r := range s.World.StoryRules(assets.StoryArrivalPackets, &char, view, world.StoryContext{Map: char.Map}) {
 		for _, cue := range r.Cues {
@@ -330,7 +340,7 @@ func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *pet
 	packets = append(packets, s.World.MapInfo(&char, view, []uint32{char.ID})...)
 	packets = append(packets, s.World.Sync(&char, view, false)...)
 	packets = append(packets, s.rosterPackets(&char, pets)...)
-	return append(packets, s.World.Journal(&char, view)...)
+	return append(packets, s.World.Journal(&char, view)...), nil
 }
 
 // usePortal handles AC20:8. Reference: AC20.Recv8 and GameMap.Teleport(Regular).
@@ -507,7 +517,11 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	s.endEvent(c)
 	c.resumeAt = time.Time{}
 	c.encounter.enterMap()
-	for _, packet := range s.arrivalPackets(*char, c.view, c.pets, portal) {
+	packets, err := s.arrivalPackets(*char, c.view, c.pets, portal)
+	if err != nil {
+		return err
+	}
+	for _, packet := range packets {
 		if e := c.send(packet); e != nil {
 			return e
 		}

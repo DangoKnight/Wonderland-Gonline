@@ -114,6 +114,31 @@ func (w *World) Take(mapID uint16, t GroundTarget, now time.Time) {
 	w.ground.taken[mapID][t.Slot] = now.Add(t.native.Respawn)
 }
 
+// RespawnDelay is zero for transient player drops, which never respawn.
+func (t GroundTarget) RespawnDelay() time.Duration {
+	if t.native == nil {
+		return 0
+	}
+	return t.native.Respawn
+}
+
+// RestoreGroundCooldowns merges durable clocks before map publication. Retain
+// expired in-memory entries until Respawn broadcasts their return to peers.
+func (w *World) RestoreGroundCooldowns(mapID uint16, clocks map[uint16]time.Time) {
+	w.ground.mu.Lock()
+	defer w.ground.mu.Unlock()
+	if w.ground.taken[mapID] == nil {
+		w.ground.taken[mapID] = map[byte]time.Time{}
+	}
+	if m := w.maps[mapID]; m != nil {
+		for _, item := range m.Items {
+			if expiry, ok := clocks[uint16(item.Slot)]; ok {
+				w.ground.taken[mapID][item.Slot] = expiry
+			}
+		}
+	}
+}
+
 // FreeGroundSlots reserves nothing; it lists n slots unused by dropped items and by
 // native items' slots and click IDs, so a pickup cannot reach a neighboring node.
 func (w *World) FreeGroundSlots(mapID uint16, n int) ([]byte, bool) {

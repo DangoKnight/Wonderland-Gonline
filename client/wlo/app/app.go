@@ -131,13 +131,18 @@ type Client struct {
 	constellations     [constellationLimit]bool
 	talks              map[uint32]string
 	event              eventState
-	petAnnouncements   [][]byte
-	petAnnouncement    bool
-	pendingNPC         *world.NPC // clicked out of reach, sent on arrival
-	areas              areaWatch
-	sounds             []string // the sound table (soundtable.go)
-	sfx                *Sounds  // the effects player (set by Run)
-	ambient            ambience
+	eventTimers        map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
+
+	vacuum                  vacuumRuntime
+	gonlineCollectionTiming bool // Per-connection capability, independent of combat mode.
+
+	petAnnouncements [][]byte
+	petAnnouncement  bool
+	pendingNPC       *world.NPC // clicked out of reach, sent on arrival
+	areas            areaWatch
+	sounds           []string // the sound table (soundtable.go)
+	sfx              *Sounds  // the effects player (set by Run)
+	ambient          ambience
 	// Independent of the server's next event step.
 	minigameResultAckPending bool
 	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
@@ -244,7 +249,13 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.Lost)
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
-	c.Servers.OnConnecting = func() { c.combat = combatRuntime{}; c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
+	c.Servers.OnConnecting = func() {
+		c.combat = combatRuntime{}
+		c.vacuum = vacuumRuntime{}
+		c.gonlineCollectionTiming = false
+		c.clearProfileAccount()
+		c.Net.Send(login.Discovery())
+	}
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
 	c.Login.Account.Clipboard = loginClipboardText
@@ -377,6 +388,7 @@ func (c *Client) frame(draw bool) {
 		c.syncMiniMap()
 		c.constellationTick(c.Now())
 		c.eventTick()
+		c.vacuumTick()
 		c.areaTick()
 		c.ambientTick()
 		// The lost connection's snapshot is taken before the names and the
@@ -522,6 +534,8 @@ func (c *Client) dispatchNative(p []byte) {
 		sub = s[0]
 	}
 	switch {
+	case p[0] == protocol.CommandEventTimers && sub == protocol.EventTimersUpdate:
+		c.eventTimerPacket(p)
 	case p[0] == protocol.CommandLuckyDraw:
 		c.luckyDrawPacket(p)
 	case p[0] == protocol.CommandDiscovery:
@@ -799,6 +813,7 @@ func (c *Client) wrongPassword() {
 // roster is 63/1 (0x2ed7ec): the character selection opens
 // (FUN_00402468) and a remembered account is saved.
 func (c *Client) roster(s []byte) {
+	c.eventTimers = nil
 	c.rememberProfileAccount()
 	c.Chars.Roster(s)
 	if c.Login.Remember {

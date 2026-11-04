@@ -32,6 +32,10 @@ func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
 		return
 	}
+	if protocol.IsCollectionTimingCapability(p) {
+		c.gonlineCollectionTiming = true
+		return
+	}
 	if c.combatCapabilitiesPacket(p) {
 		return
 	}
