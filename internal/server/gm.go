@@ -333,7 +333,7 @@ func (s *Server) gmCombat(_ context.Context, c *Session, command string, args []
 		if !ok || npc.HP == 0 {
 			return s.chatFeedback(c, "Monster template is missing or has no HP.")
 		}
-		return s.startBattle(c, &battleRun{}, []battle.Enemy{{Template: uint32(npc.ID), Name: npc.Name, Level: int(npc.Level), HP: int(npc.HP), Element: npc.Element}})
+		return s.startBattle(c, &battleRun{}, []battle.Enemy{{Template: uint32(npc.ID), Name: npc.Name, Level: int(npc.Level), Element: npc.Element}})
 	}
 	if len(args) != 0 {
 		return s.chatFeedback(c, "Usage: /winbattle")

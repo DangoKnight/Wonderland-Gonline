@@ -5,6 +5,15 @@ simulation. This is a working core, **not complete native battle parity**.
 
 ## Implemented
 
+- The radial Skills command opens the separate native battle selector
+  (`TRe_BattleSkillForm`, constructor `FUN_0029b674`), using
+  `Form_BattleSkill_1`: three recent skills, a five-row scrollable learned list,
+  original skill icons and SP costs. `FUN_004816d8` supplies the combat type/order
+  filter. Single clicks arm targeting through the existing native/chain request
+  paths. Player and pet recent selections remain separate; the general Skills
+  module retains its tabs and tree. The selector closes on timeout, playback,
+  actor changes, battle exit or disconnect. Visual reference:
+  `var/battle-skills-window.png` (2026-11-03).
 - Post-combat results follow the native entry snapshot (`FUN_00394f68`) and
   exit comparison (`FUN_00394fe8`): confirmed player/pet EXP gains or losses,
   level-ups and pet amity changes. The summary also lists actual gold changes,
@@ -126,6 +135,22 @@ simulation. This is a working core, **not complete native battle parity**.
   The decoded roster still updates immediately for command validation;
   following absolute-stat packets reconcile after pending actions finish,
   without pulling displayed damage ahead of contact.
+- Damage numbers use the native AC50:1 packet boundary as their local combo
+  identity in both native streams and round chains. Single-hit participants
+  share one total. When one multi-hit skill is present, its pattern splits the
+  whole combo total; identical multi-hit skills share that pattern. Different
+  multi-hit skill IDs retain separate groups, and singles form their own group
+  when multiple different multi-hit skills participate. Groups remain separate
+  per target, roster generation and HP/SP resource. Damage and recovery on the
+  same resource retain native stat order to preserve clamping.
+  Integer splitting conserves the complete total, including wide combo sums;
+  repeated full weights normalize across contacts and missing weights split
+  evenly. Visible HP/SP follow those same grouped contact cues. Multi-hit numbers
+  alternate left/right in widening, side-mirrored arcs (`FUN_0039e884`,
+  `FUN_003a2e08`); movement uses contact age, including late-frame catch-up.
+  The arch approximates the native `FUN_003a2ff4` curve. Single-hit groups retain
+  vertical separation using their bitmap glyph height. Server damage calculations
+  and wire packets are unchanged.
 - Overkill uses the native AC53:3 removal (`FUN_00393c58` ->
   `FUN_00392484` state 7 -> `FUN_0039b58c`), rather than interpreting every
   knockout as removal. The sprite rises 300 pixels at one pixel/ms and then

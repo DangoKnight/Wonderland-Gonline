@@ -13,17 +13,17 @@ var ErrGatheringUnavailable = errors.New("resource gathering conditions are not 
 
 // GatherWater rechecks the branch against current durable state and commits the
 // item, timer and quest mark atomically. eligible must be read-only.
-func (s *Store) GatherWater(ctx context.Context, ref CharacterRef, timer, item uint16, maxStack byte, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
+func (s *Store) GatherWater(ctx context.Context, ref CharacterRef, node ResourceKey, timer, item uint16, maxStack byte, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
 	expected, supported := game.WaterGatheringItem(timer)
 	if !supported || item != expected || maxStack == 0 || maxStack > game.MaxItemStack || eligible == nil {
 		return game.Character{}, nil, ErrGatheringUnavailable
 	}
-	return s.gatherResources(ctx, ref, timer, map[uint16]int{item: 1}, map[uint16]byte{item: maxStack}, now, eligible, items, reservations...)
+	return s.gatherResources(ctx, ref, node, timer, game.WaterGatheringCooldown, map[uint16]int{item: 1}, map[uint16]byte{item: maxStack}, now, eligible, items, reservations...)
 }
 
 // GatherResources validates and commits every pool result with the shared node
 // cooldown. Definitions and the complete authored branch are checked by caller.
-func (s *Store) GatherResources(ctx context.Context, ref CharacterRef, timer uint16, rewards map[uint16]int, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
+func (s *Store) GatherResources(ctx context.Context, ref CharacterRef, node ResourceKey, timer uint16, cooldown time.Duration, rewards map[uint16]int, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
 	limits := map[uint16]byte{}
 	for id := range rewards {
 		definition, ok := items[id]
@@ -32,11 +32,11 @@ func (s *Store) GatherResources(ctx context.Context, ref CharacterRef, timer uin
 		}
 		limits[id] = definition.StackLimit()
 	}
-	return s.gatherResources(ctx, ref, timer, rewards, limits, now, eligible, items, reservations...)
+	return s.gatherResources(ctx, ref, node, timer, cooldown, rewards, limits, now, eligible, items, reservations...)
 }
 
-func (s *Store) gatherResources(ctx context.Context, ref CharacterRef, timer uint16, rewards map[uint16]int, limits map[uint16]byte, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
-	if timer == 0 || len(rewards) == 0 || eligible == nil {
+func (s *Store) gatherResources(ctx context.Context, ref CharacterRef, node ResourceKey, timer uint16, cooldown time.Duration, rewards map[uint16]int, limits map[uint16]byte, now time.Time, eligible func(*game.Character) bool, items map[uint16]game.ItemDefinition, reservations ...game.Character) (game.Character, []game.Addition, error) {
+	if !node.valid() || (node.Kind != ResourceCollectionActor && node.Kind != ResourceCollectionArea) || timer == 0 || len(rewards) == 0 || eligible == nil {
 		return game.Character{}, nil, ErrGatheringUnavailable
 	}
 	ids := make([]int, 0, len(rewards))
@@ -50,10 +50,19 @@ func (s *Store) gatherResources(ctx context.Context, ref CharacterRef, timer uin
 	var next game.Character
 	var adds []game.Addition
 	err := s.transaction(ctx, func(tx *gorm.DB) error {
+		if err := claimResource(tx, node, now, cooldown); err != nil {
+			if errors.Is(err, ErrResourceUnavailable) {
+				return ErrGatheringUnavailable
+			}
+			return err
+		}
 		var err error
 		next, err = loadCharacter(tx, ref)
 		if err != nil {
 			return err
+		}
+		if next.Map != node.MapID {
+			return ErrGatheringUnavailable
 		}
 		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
@@ -64,7 +73,7 @@ func (s *Store) gatherResources(ctx context.Context, ref CharacterRef, timer uin
 				free++
 			}
 		}
-		if free < len(rewards) || next.EventTimerActive(timer, now) || !eligible(&next) {
+		if free < len(rewards) || !eligible(&next) {
 			return ErrGatheringUnavailable
 		}
 		for _, n := range ids {
@@ -75,10 +84,6 @@ func (s *Store) gatherResources(ctx context.Context, ref CharacterRef, timer uin
 			}
 			adds = append(adds, part...)
 		}
-		if next.EventTimers == nil {
-			next.EventTimers = make(map[uint16]time.Time)
-		}
-		next.EventTimers[timer] = now.Add(game.WaterGatheringCooldown).UTC()
 		if next.Quests == nil {
 			next.Quests = make(map[uint32]game.Quest)
 		}

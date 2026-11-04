@@ -79,6 +79,7 @@ type Action struct {
 	Flags           byte
 	Targets         []Target
 	ActorGeneration uint64
+	Batch           uint64 // Local AC50:1 packet identity; never added to the wire.
 }
 type State struct {
 	Active, Ready, Finished bool
@@ -93,6 +94,7 @@ type State struct {
 	// turn limit.
 	Kind             byte
 	rosterGeneration uint64
+	actionBatch      uint64
 }
 
 // Native turn limits, FUN_00395efc: 30 seconds for kinds 2, 4 and 7-9,
@@ -328,7 +330,9 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 					}
 				}
 			}
+			s.actionBatch++
 			for i := range actions {
+				actions[i].Batch = s.actionBatch
 				actions[i].ActorGeneration = s.At(actions[i].Actor).Generation
 				for j := range actions[i].Targets {
 					actions[i].Targets[j].Generation = s.At(actions[i].Targets[j].Cell).Generation

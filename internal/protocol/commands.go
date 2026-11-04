@@ -89,6 +89,7 @@ const (
 	HandshakeCombatOffer       = 240
 	HandshakeCombatAccept      = 241
 	HandshakeCombatEnabled     = 242
+	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -258,11 +259,14 @@ const (
 	PetControlRename       = 6
 	PetControlBoardVehicle = 7
 	// Unresolved wire meaning; retain the numeric code until verified.
-	PetControlWireCode8             = 8
-	PetControlBoardVehicleAlternate = 9
-	PetControlDismountVehicle       = 10
+	PetControlWireCode8          = 8
+	PetControlPlaceVehicleManual = 9 // C>S; native request case 0x002c5cde.
+	PetControlPetName            = 9 // S>C; distinct direction-specific meaning.
+	PetControlDismountVehicle    = 10
 	// Unresolved wire meaning; retain the numeric code until verified.
 	PetControlWireCode11      = 11
+	PetControlVehiclePlaced   = 12 // S>C manual placement; automatic boarding uses 18.
+	PetControlVehicleProgress = 14 // S>C wear uint32 and fuel uint16; C>S 14 places a vehicle.
 	PetControlVehicleNoOp     = 13
 	PetControlPlaceVehicle    = 14
 	PetControlRemoveVehicle   = 15
@@ -327,10 +331,18 @@ const (
 	InventoryDrop             = 3
 	InventoryGroundItems      = 4
 	InventoryItems            = 5
+	InventoryAcquire          = 6 // Slotless native inventory gain, 33 bytes.
+	InventoryAcquisitionBytes = 33
+
+	// AC23:6's final byte requests an item-icon flight from the last clicked actor.
+	InventoryAcquisitionFromActor = 1
+
+	InventoryDestroyPrompt    = 7 // AC23:212 marker for undroppable items.
 	InventoryCompoundResult   = 8
 	InventoryRemove           = 9
 	InventoryMove             = 10
 	InventoryEquip            = 11
+	InventoryVacuumCollection = 73 // Native one-byte actor ID; zero stops collection.
 	InventoryUnequip          = 12
 	InventoryCompoundSuccess  = 13
 	InventoryCompound         = 14 // Primary Alchemy.
@@ -572,6 +584,7 @@ const (
 // BattleEffect subcommands (AC53).
 const (
 	BattleEffectOverkill = 3 // FUN_00393c58: remove through the upward flight state.
+	BattleEffectItemGain = 4 // Item ID, defeated cell, then recipient cell pairs.
 	// Compatibility alias. Ordinary knockouts do not send AC53:3.
 	BattleEffectDefeated  = BattleEffectOverkill
 	BattleEffectSubmitted = 5
@@ -763,6 +776,15 @@ const (
 	FishingCatch                  = 2
 	FishingStop                   = 3
 	NativeInactive                = 0
+)
+
+// AC66:2 is the server's native event-timer update. AC66 also has unrelated
+// reborn-job requests; timer updates are outbound and contain counted records.
+const (
+	CommandEventTimers    byte = 66
+	EventTimersUpdate     byte = 2
+	EventTimerHeaderBytes      = 3
+	EventTimerRecordBytes      = 10 // UInt16 timer ID followed by Float64 seconds.
 )
 
 // AC44's three-byte native request is form_NPCUpgrade. The legacy title adapter

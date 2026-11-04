@@ -36,9 +36,9 @@ func TestCharacterMetadataV13UpgradeReopenAndTentFloors(t *testing.T) {
 		c.Reborn = true
 		c.Potential = 300
 		c.RebornJob = 5
-		c.Pets = []game.Pet{{ID: 1, Slot: 1, Potential: 77}}
-		c.ReservePets = []game.Pet{{ID: 2, Slot: 2, Potential: 88}}
-		c.HotelPets = []game.Pet{{ID: 3, Slot: 3, Potential: 99}}
+		c.Pets = []game.Pet{{ID: 1, Slot: 1, Potential: 77, StatFoodUses: 1200}}
+		c.ReservePets = []game.Pet{{ID: 2, Slot: 2, Potential: 88, StatFoodUses: 42}}
+		c.HotelPets = []game.Pet{{ID: 3, Slot: 3, Potential: 99, StatFoodUses: 17}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -57,6 +57,12 @@ func TestCharacterMetadataV13UpgradeReopenAndTentFloors(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := chars[0]
+	if c.Pets[0].StatFoodUses != 1200 || c.ReservePets[0].StatFoodUses != 42 || c.HotelPets[0].StatFoodUses != 17 {
+		t.Fatal("food counters lost on reopen", c.Pets, c.ReservePets, c.HotelPets)
+	}
+	if err = db.UpdateCharacter(ctx, ref.Account, ref.ID, func(c *game.Character) error { c.Pets[0].StatFoodUses = 1201; return nil }); err == nil {
+		t.Fatal("SQL allowed pet food counter above 1200")
+	}
 	if c.Nickname != "Builder Nick" || c.Job != 3 || c.Potential != 300 || c.RebornJob != 5 || c.Pets[0].Potential != 77 || c.ReservePets[0].Potential != 88 || c.HotelPets[0].Potential != 99 {
 		t.Fatal(c)
 	}

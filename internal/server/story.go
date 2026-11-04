@@ -89,6 +89,13 @@ func (s *Server) arrivalScript(c *Session) error {
 	}
 	d, configured := s.cinematic("arrival", c.character.Map)
 	_, completed := c.character.Quests[d.CompletionMark]
+	if configured && !c.beachPending && !completed {
+		var err error
+		completed, err = s.Store.CinematicCompleted(context.Background(), store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, d.ID)
+		if err != nil {
+			return err
+		}
+	}
 	if !configured || (!c.beachPending && completed) {
 		ctx := context.Background()
 		if ran, err := s.storyArrival(ctx, c); ran || err != nil {
@@ -119,7 +126,9 @@ func (s *Server) beachIntro(c *Session, run *beachRun) {
 		s.worldMu.Lock()
 		defer s.worldMu.Unlock()
 		if c.beach == run && slices.Contains(run.definition.Maps, c.character.Map) {
-			s.advanceBeach(context.Background(), c, true)
+			if err := s.advanceBeach(context.Background(), c, true); err != nil {
+				s.Log.Error("arrival cinematic completion failed", "error", err)
+			}
 		}
 	})
 }
@@ -135,6 +144,9 @@ func (s *Server) advanceBeach(ctx context.Context, c *Session, force bool) error
 	if at < len(run.definition.Steps) {
 		run.step++
 		return s.cinematicCues(c, run.definition.Steps[at].Cues)
+	}
+	if err := s.Store.CompleteCinematic(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, run.definition.ID, time.Now()); err != nil {
+		return err
 	}
 	c.beach = nil
 	return s.cinematicCues(c, run.definition.Finish)
@@ -395,7 +407,7 @@ func (s *Server) finishRecruitment(ctx context.Context, c *Session, es *eventSes
 			stored.ReservePets = slices.Delete(stored.ReservePets, i, i+1)
 		}
 		pet.EnsureSkills(template, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		stored.Pets = append(stored.Pets, pet)
 		if err := applyStoryMarks(stored, policy.Marks, time.Now().UTC()); err != nil {
 			return err
@@ -422,7 +434,7 @@ func (s *Server) finishRecruitment(ctx context.Context, c *Session, es *eventSes
 		packets = append(packets, pet.RecruitPacket(next.ID, template))
 	}
 	slot := c.pets.slot(pet.ID)
-	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, slot, s.companionName(pet.ID, pet.Name)))
 	if list := s.petListPacket(c.character, c.pets); list != nil {
 		packets = append(packets, list)

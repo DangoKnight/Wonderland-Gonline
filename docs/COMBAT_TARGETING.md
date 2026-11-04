@@ -4,6 +4,61 @@ Skills can define explicit grade ranges and formation targets in `assets.db`.
 The executor supports area damage, healing, revival, buffs and debuffs for
 players, pets and monsters, including both PvP sides.
 
+All three use the same elemental innate stat formulas; NPC definitions supply
+pet/enemy elements and enemy base attributes. See [combat stats](COMBAT_STATS.md)
+for coefficients, explicit encounter overrides and the Private Server comparison.
+
+## Monster capture
+
+Capture follows the saved `var/reference-web/モンスター - Wonderland ONLINE Wiki_.htm`
+capture section: ordinary attempts permit player level +5, or +10 with an
+equipped usable Monster Net (25218) or Pet Net (25225). Targets must have lost
+HP and must not be under an active action-blocking seal/control effect. Native
+Npc.dat capture restriction byte 34 decides species eligibility, including boss
+exceptions; unknown definitions are rejected. Full parties and duplicate species
+remain prohibited, while distinct elemental templates remain distinct species.
+The wiki's tentative support-skill ban and music-based boss guess are not used
+as classifiers. It supplies no precise weakening threshold or success formula:
+the minimum weakening check is HP below maximum, and existing level/HP-weighted
+success odds are retained.
+
+Each net attempt consumes one of ten uses, even on failure. Durability is checked
+again and updated transactionally in SQL before publishing the attempt. Exhausted
+nets grant no level allowance. Failed/stale SQL writes do not grant the allowance
+or remove a monster. Existing pending recoverable session state is preserved.
+
+Captured monsters recruit at level one and amity 60. Each base attribute is
+halved with truncation; one extra attribute point per pair of odd original
+attributes is allocated using the configured pet growth policy. Fresh vitals
+are recalculated after those bonuses. Story recruitment and existing owned pets
+are unchanged. These server rules serve both legacy and Gonline clients. Asset
+schema v17 requires the preserving offline upgrade in `ASSET_DATABASE.md`.
+
+Recruitment is saved and delivered during round execution, after the capture
+animation and before the next action. New pets have zero EXP. Confirmed captures
+remain owned on subsequent escape or disconnect and are not awarded again at
+settlement. Kill loot uses a single roll copied to every contributing player/pet
+in the killing combo, with each pet's copy credited to its owner. Loot commits
+atomically across owners, then native acquisitions and item-flight messages play
+after the strike. See [live reference and policy](LEGACY_REWARDS_CAPTURE.md).
+
+## Monster target selection weights
+
+Hostile monster casts and basic attacks choose among eligible opponents with
+elemental weights: advantage 4, neutral 2, disadvantage 1. Thus fire prefers wind
+over neutral elements and avoids water without making any eligible target
+impossible to select. The relationships use the existing elemental damage table;
+these weights do not change damage. Players and pets have identical weights for
+the same element, regardless of roster order. Area skills choose their primary
+target this way, then expand using their normal formation rules.
+
+Usable skills remain uniformly selected before sampling the chosen skill's
+target. Healing, SP restoration and cleansing retain their existing support
+priorities; confusion redirects retain random ally selection. Previously,
+offensive skills picked the first eligible opponent, which favored players
+because they normally precede pets in the roster. Basic attacks were uniform.
+This server-side policy applies to both legacy and round-chain transport.
+
 ## Author definitions
 
 Edit an existing entry in the validated **Skills** administration dataset,

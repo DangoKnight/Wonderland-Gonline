@@ -13,18 +13,21 @@ import (
 
 var le = binary.LittleEndian
 
+const nativeNPCNameBytes = 10
+
 type NPC struct {
-	ID        uint16    `json:"id"`
-	Name      string    `json:"name"`
-	Type      byte      `json:"type"`
-	Level     byte      `json:"level"`
-	HP        uint32    `json:"hp"`
-	SP        uint32    `json:"sp"`
-	Element   byte      `json:"element"`
-	Stats     [5]uint16 `json:"stats"`
-	Skills    [3]uint16 `json:"skills"`
-	BookIndex uint16    `json:"book_index"`
-	Drops     [5]uint16 `json:"drops"` // Native loot slots, most to least likely.
+	CaptureRestriction byte      `json:"unknown_u8_offset_34"` // Native Catchable: zero permits capture.
+	ID                 uint16    `json:"id"`
+	Name               string    `json:"name"`
+	Type               byte      `json:"type"`
+	Level              byte      `json:"level"`
+	HP                 uint32    `json:"hp"`
+	SP                 uint32    `json:"sp"`
+	Element            byte      `json:"element"`
+	Stats              [5]uint16 `json:"stats"`
+	Skills             [3]uint16 `json:"skills"`
+	BookIndex          uint16    `json:"book_index"`
+	Drops              [5]uint16 `json:"drops"` // Native loot slots, most to least likely.
 }
 
 func ParseNPCs(data []byte) (map[uint16]NPC, error) {
@@ -37,11 +40,12 @@ func ParseNPCs(data []byte) (map[uint16]NPC, error) {
 		b := data[off : off+138]
 		word := func(i int) uint16 { return (le.Uint16(b[i:]) ^ 0x5209) - 1 }
 		n := NPC{ID: word(12), Type: (b[11] ^ 0xc8) - 1, Level: (b[37] ^ 0xc8) - 1, HP: (le.Uint32(b[38:]) ^ 0x0baeb716) - 1, SP: (le.Uint32(b[42:]) ^ 0x0baeb716) - 1, Element: (b[57] ^ 0xc8) - 1, BookIndex: word(90)}
+		n.CaptureRestriction = (b[nativeNPCCaptureRestrictionOffset] ^ 0xc8) - 1
 		if n.ID == 0 {
 			continue
 		}
 		var name []byte
-		for i := 10; i >= 1; i-- {
+		for i := nativeNPCNameBytes; i >= 1; i-- {
 			if b[i] >= 32 && b[i] <= 126 {
 				name = append(name, b[i])
 			}
@@ -166,6 +170,10 @@ type Catalog struct {
 	SkillEffects          map[string]EffectDefinition
 	AnimationTiming       map[uint16]int
 	NPCs                  map[uint16]NPC
+	PetInitialStats       map[uint32]game.PetInitialStats
+	PetFoods              map[uint16]PetFood
+	CollectionSpots       map[uint16]CollectionSpot
+	ResourceRespawns      []ResourceRespawn
 	Talks                 Talks
 	Maps                  map[uint16]Map
 	Mall                  []MallItem

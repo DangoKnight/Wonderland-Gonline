@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/world"
@@ -17,6 +16,29 @@ func useFixture(id uint16) (*Form, *[][]byte) {
 	var sent [][]byte
 	f.Send = func(p []byte) { sent = append(sent, append([]byte(nil), p...)) }
 	return f, &sent
+}
+
+func TestPetStatFoodUsesSelectedPetWithoutOptimisticConsumption(t *testing.T) {
+	f, sent := useFixture(27001)
+	f.State.Items[27001] = assets.NativeItem{Definition: game.ItemDefinition{ID: 27001, Type: 20, EquipSlot: 8}}
+	f.State.Pets[0] = UsePet{ID: 14156}
+	item := f.State.Bag[0]
+	if f.UseSelected(1, 1, 0, item) {
+		t.Fatal("food targeted player")
+	}
+	if !f.UseSelected(1, 1, 1, item) || len(*sent) != 1 || !bytes.Equal((*sent)[0], []byte{23, 15, 1, 1, 1, 0}) || f.State.Bag[0] != item {
+		t.Fatal("pet food request", *sent)
+	}
+}
+
+func TestVehicleUseRequestsManualPlacement(t *testing.T) {
+	f, sent := useFixture(48016)
+	f.State.Items[48016] = assets.NativeItem{Definition: game.ItemDefinition{Type: game.VehicleType}}
+	before := f.State.Bag
+	f.Use(1, false)
+	if len(*sent) != 1 || !bytes.Equal((*sent)[0], []byte{15, 9, 1, 144, 187}) || f.State.Bag != before {
+		t.Fatal("vehicle use must request placement without consuming", *sent)
+	}
 }
 func TestItemUseTargetedPacketsAndValidation(t *testing.T) {
 	f, sent := useFixture(32011)
@@ -65,7 +87,7 @@ func TestItemUsePotentialResults(t *testing.T) {
 	if f.PotentialReply([]byte{23, 213, 1, 2, 4}) || f.PotentialReply([]byte{23, 213, 1, 0, 13}) {
 		t.Fatal("mismatched/malformed reply accepted")
 	}
-	if !f.PotentialReply([]byte{23, 213, 1, 0, 4}) || f.Stats.Potential != 4 || !strings.Contains(notices[len(notices)-1], "failed") {
+	if !f.PotentialReply([]byte{23, 213, 1, 0, 4}) || f.Stats.Potential != 4 || len(notices) != 0 {
 		t.Fatal("processed failure treated as success")
 	}
 	if !f.UseSelected(1, 1, 0, item) || !f.PotentialReply([]byte{23, 213, 0, 0, 0}) || f.Stats.Potential != 4 {
@@ -80,8 +102,12 @@ func TestItemUsePotentialResults(t *testing.T) {
 	if !bytes.Equal((*sent)[len(*sent)-1], []byte{23, 126, 1, 4}) {
 		t.Fatal("pet pill request")
 	}
+	notices = nil
 	if !f.PotentialReply([]byte{23, 213, 1, 4, 10}) || f.State.Pets[3].Potential != 10 || f.Stats.Potential != 4 {
 		t.Fatal("pet failure changed player")
+	}
+	if len(notices) != 0 {
+		t.Fatal("potential results leaked to chat", notices)
 	}
 	f.State.Pets[3].Potential = 12
 	if f.UseSelected(1, 1, 4, item) {

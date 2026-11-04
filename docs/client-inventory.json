@@ -2045,7 +2045,7 @@
    "start": "1b9ca8",
    "end": "1d8a58",
    "functions": 229,
-   "cited": 14,
+   "cited": 20,
    "classes": [
     "TMailSaveBoxForm",
     "TPotentialForm",
@@ -2549,7 +2549,7 @@
    "start": "25fea0",
    "end": "2a7258",
    "functions": 465,
-   "cited": 85,
+   "cited": 89,
    "classes": [
     "TSe_TeamForm",
     "THotKeyImage",
@@ -2801,7 +2801,7 @@
    "start": "3030ec",
    "end": "30a510",
    "functions": 41,
-   "cited": 16,
+   "cited": 17,
    "classes": [
     "CH_TTrafficMenu",
     "CH_TMiniMapForm",
@@ -3045,7 +3045,7 @@
    "start": "34fad4",
    "end": "36e008",
    "functions": 202,
-   "cited": 25,
+   "cited": 26,
    "classes": [
     "TRe_GarageForm",
     "TSe_EquipForm2",
@@ -3121,7 +3121,7 @@
    "start": "389174",
    "end": "3a4258",
    "functions": 186,
-   "cited": 40,
+   "cited": 42,
    "classes": [
     "TFightHum",
     "TDZ_TestForm1",
@@ -3378,7 +3378,7 @@
    "start": "3d73b8",
    "end": "3f5a6c",
    "functions": 213,
-   "cited": 10,
+   "cited": 13,
    "classes": [
     "TGdThing",
     "TStallInFurItem",
@@ -3498,7 +3498,7 @@
    "start": "403e50",
    "end": "405e88",
    "functions": 23,
-   "cited": 6,
+   "cited": 5,
    "classes": [
     "TFMark"
    ],
@@ -3603,7 +3603,7 @@
    "start": "41010c",
    "end": "458cd8",
    "functions": 525,
-   "cited": 67,
+   "cited": 70,
    "classes": [
     "TPlayers",
     "TBasePlayer",
@@ -3681,7 +3681,7 @@
    "start": "4663b8",
    "end": "47b8d8",
    "functions": 403,
-   "cited": 217,
+   "cited": 212,
    "classes": [
     "TSe_ShortMsgPanel",
     "TBK_ImgListBox",
@@ -3773,7 +3773,7 @@
    "start": "480b74",
    "end": "4816d8",
    "functions": 16,
-   "cited": 1,
+   "cited": 2,
    "classes": [
     "TFNpc"
    ],
@@ -3795,7 +3795,7 @@
    "start": "4827a8",
    "end": "485d44",
    "functions": 46,
-   "cited": 15,
+   "cited": 16,
    "classes": [
     "Twb_MemSur",
     "Twb_PlainPic"
@@ -4202,7 +4202,7 @@
     267
    ],
    "functions": 481,
-   "cited": 224,
+   "cited": 219,
    "ranges": [
     "45d1d8-45dbdc",
     "45e048-464d74",
@@ -4220,7 +4220,7 @@
     276
    ],
    "functions": 56,
-   "cited": 17,
+   "cited": 18,
    "ranges": [
     "4827a8-485d44",
     "4868b8-486aac"
@@ -4254,7 +4254,7 @@
    "title": "Character creation",
    "go": "client/wlo/login (createrole.go, rolepanel.go)",
    "status": "ported",
-   "notes": "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173).",
+   "notes": "TJK_RoleImage, TJK_mansel and TRE_CreateCharacter (region 173). Translated element labels and selection bounds use full asset dimensions; the creation title draws a single atlas frame. Password and deletion-code editors align with their authored background fields and use complete border clips.",
    "regions": [
     193,
     194
@@ -4271,14 +4271,14 @@
    "title": "Roles: players, NPCs, sprites",
    "go": "client/wlo/role, client/wlo/world",
    "status": "partial",
-   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Server-driven roaming NPCs consume native AC22:2 with speed/facing, interrupted legs, background-session progression and AC22:4 movement cancellation. Expression and held-pose selection uses the Social window's Emote tab and Alt shortcuts. Not yet: passengers, additional vehicle classes, transforms.",
+   "notes": "THuman, TBaseNpc, TMapNpc, TPlayers. Verified full monster display names are compiled from the saved WLOHub reference, preserving custom names. Ported: sprite layering and colours, NPC looks and props, walking, peers, frame stepping, native AC32 expressions/held poses, stop poses, equipment refreshes, nicknames and presence metadata; shoreline water vehicle placement/boarding with server-confirmed AC15 receipts, water-only paths, explicit landing relocation, seated rider frames, native raft rider/canvas offsets, mounted weapon visibility/alignment and AC15:15 vehicle break strips; native NPC conversation facing, pose/prop exceptions and event-end facing restoration. Pet riding uses authored saddle tables, native canvas/anchor baselines and height flags, mount-before-rider raster order, fixed-frame positioning, additive movement corrections and mounted name clearance. Following pets use native trails and template-based name heights. Server-driven roaming NPCs consume native AC22:2 with speed/facing, interrupted legs, background-session progression and AC22:4 movement cancellation. Expression and held-pose selection uses the Social window's Emote tab and Alt shortcuts. Not yet: passengers, additional vehicle classes, transforms.",
    "regions": [
     262,
     263,
     264
    ],
    "functions": 567,
-   "cited": 76,
+   "cited": 79,
    "ranges": [
     "40f4b8-40f988",
     "41010c-458cd8",
@@ -4326,7 +4326,7 @@
     273
    ],
    "functions": 96,
-   "cited": 6,
+   "cited": 7,
    "ranges": [
     "1221c8-1221c8",
     "122264-122998",
@@ -4353,7 +4353,7 @@
     254
    ],
    "functions": 90,
-   "cited": 28,
+   "cited": 29,
    "ranges": [
     "2fdc40-302cf8",
     "302d90-302e00",
@@ -4429,7 +4429,7 @@
     197
    ],
    "functions": 490,
-   "cited": 87,
+   "cited": 91,
    "ranges": [
     "259760-25b1ac",
     "25b454-25d0ec",
@@ -4495,7 +4495,7 @@
     206
    ],
    "functions": 54,
-   "cited": 6,
+   "cited": 5,
    "ranges": [
     "15df98-161750",
     "403e50-405e88",
@@ -4507,7 +4507,7 @@
    "title": "Items, inventory and equipment",
    "go": "client/wlo/inventory, client/wlo/app (inventory.go)",
    "status": "partial",
-   "notes": "TFItem, TSe_itemObject, TSe_ItemImage, item grids, TEquip, equip forms, crafting materials. Item data and sprite layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, direct recovery/amity use on the inventory-selected player or pet, consumable effect breakdowns, Potential Pill requests/results, authoritative pet target rosters and initial potential snapshots, player/pet previews and stats, native Remote windows and main automation options (walking, basic PvE attacks, supplies, worn equipment, safeguarded discard/logout and optional status display), equipment swaps, AC23 updates and player attribute allocation with AC8 requests and four-byte counted amounts for reliable multi-attribute batches are ported. Remaining: full equipment bonus/socket/forge tooltip rules, repair, native rebirth/class allocation caps, full animated PotentialForm presentation, pet attribute allocation and advanced Remote skill assignment, secondary item containers and crafting.",
+   "notes": "TFItem, TSe_itemObject, TSe_ItemImage, item grids, TEquip, equip forms, crafting materials. Item data and sprite layering, native combined/status/bag forms, item icons, native item-info layout/type/rank/trade flags, capacity-limited drag quantities, direct recovery/amity use on the inventory-selected player or pet and server-authoritative permanent stat-food targeting, consumable effect breakdowns, native PotentialForm with player/pet selection, seated previews, cumulative bonuses, animated potential ring, aggregate pill counts, reusable server-confirmed attempts and button hover states, authoritative pet target rosters and initial potential snapshots, player/pet previews and stats, native Remote windows and main automation options (walking, basic PvE attacks, supplies, worn equipment, safeguarded discard/logout and optional status display), equipment swaps, AC23 updates and player attribute allocation with AC8 requests and four-byte counted amounts for reliable multi-attribute batches are ported. Remaining: full equipment bonus/socket/forge tooltip rules, repair, native rebirth/class allocation caps, pet attribute allocation and advanced Remote skill assignment, secondary item containers and crafting.",
    "regions": [
     225,
     245,
@@ -4518,7 +4518,7 @@
     169
    ],
    "functions": 715,
-   "cited": 51,
+   "cited": 58,
    "ranges": [
     "34fad4-36e008",
     "3c96f8-3cd798",
@@ -4545,7 +4545,7 @@
    "title": "Battle",
    "go": "client/wlo/battle, client/wlo/app/battle*.go, internal/battle",
    "status": "partial",
-   "notes": "UI modules open under native battle locks. Team pet Rest/Battle consumes owner and pet commands without defense, preserving outgoing vitals. Live reference packets establish owner-only selection receipts, four-byte exits and AC11:5 mode 5 with owned slots. FUN_0039108c sets the unavailable flag; FUN_0038ca44 hides native waiting participants and FUN_0039783c releases them on AC52:1. Gonline instead presents simultaneous ground entry/departure with independent visual actors. Replacements cannot act or be targeted, including by area attacks, until next turn. Both native streams and round chains retain movement barriers; queued settlement survives scene close. Full-round transport requires the opt-in combat_round_chain startup setting and explicit client negotiation. Missing timeout commands stay idle; selected commands and explicit Defend survive. Native E119 turtle indicators animate above unsubmitted players and pets from ten seconds remaining until submission, timeout or playback. Confirmed post-combat progression, pet amity, gold and material receipts appear in a compact notice below the top toolbar after the return fade. English yellow lines are centered without title/buttons; five visible rows retain scrolling for longer summaries. The notice expires after six seconds and ignores panel/text clicks. Native entry/exit snapshots support deferred round envelopes. Battle supplies accept captured 52-byte native AC50:2 requests with the opaque send trailer and retain compact 12-byte entries; captured mode-zero item recovery applies at contact with the native orange HP and cyan SP digit sheets. Item-ID/bag-slot requests use the native magic cursor, selection of all allied player/pet cells even at full vitals, enemy targeting for damaging throwables and linked native motions. Player/pet recovery and revival, signed vital effects and authored item skill effects execute only after transactional consumption; native and complete-round delivery share the result packets. AC11:12 carries the actual winning side; native victory roulette selects one living voiced winner and waits for final action/removal playback. Battle skill selection uses one click while hotbar dragging and ordinary skill browsing remain available. Explicit escape uses the reference level check against the strongest living enemy. Either owner or pet succeeding removes both; only a team leader's successful escape ends remaining participants' combat. Overkill/logout are separate. Native failure motion 60042 runs, trips and recovers without stat damage; repeat retains Flee 60041. Escaping-owner chains stop at departure while other owners continue after the participant close. Vitals and pet results commit before success publication. CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. Existing server rules are integrated with a dedicated client scene: native formation/background layers, player/pet/monster sprites, stances and defeated poses, radial attack/skills/defend/capture/flee icons and per-actor previous-action center/repeat controls, direct scene targeting and native cursors, batched stats/actions, duplicate-ready guards, MBTM action/frame timing, actor-relative mirrored movement, native HP/SP digits, contact-timed multi-hit damage, completed departure motions, a battle reveal, camera tracks, distance-based zoom and general/weapon/body sound tracks with recorded battle voices. Overkills require round damage above 150% of maximum HP, use the native upward removal and return players to their saved spawn while teammates continue; ordinary corpses remain. Server recovery packets use native additive modes. An optional Gonline extension negotiates full-round chains and atomic character/pet choice batches; native transport remains available, including mixed-client battles. See docs/COMBAT_TRANSPORT.md. Precise movement/camera/effect synchronization, the full native weapon sound resolver, remaining spell paths and special item effects without authored rules, dedicated battle skill form, spectator mode and remaining command/result presentation are pending. See docs/BATTLE_CLIENT_PARITY.md.",
+   "notes": "UI modules open under native battle locks. Team pet Rest/Battle consumes owner and pet commands without defense, preserving outgoing vitals. Live reference packets establish owner-only selection receipts, four-byte exits and AC11:5 mode 5 with owned slots. FUN_0039108c sets the unavailable flag; FUN_0038ca44 hides native waiting participants and FUN_0039783c releases them on AC52:1. Gonline instead presents simultaneous ground entry/departure with independent visual actors. Replacements cannot act or be targeted, including by area attacks, until next turn. Both native streams and round chains retain movement barriers; queued settlement survives scene close. Full-round transport requires the opt-in combat_round_chain startup setting and explicit client negotiation. Missing timeout commands stay idle; selected commands and explicit Defend survive. Native E119 turtle indicators animate above unsubmitted players and pets from ten seconds remaining until submission, timeout or playback. Confirmed post-combat progression, pet amity, gold and material receipts appear in a compact notice below the top toolbar after the return fade. English yellow lines are centered without title/buttons; five visible rows retain scrolling for longer summaries. The notice expires after six seconds and ignores panel/text clicks. Native entry/exit snapshots support deferred round envelopes. Battle supplies accept captured 52-byte native AC50:2 requests with the opaque send trailer and retain compact 12-byte entries; captured mode-zero item recovery applies at contact with the native orange HP and cyan SP digit sheets. Item-ID/bag-slot requests use the native magic cursor, selection of all allied player/pet cells even at full vitals, enemy targeting for damaging throwables and linked native motions. Player/pet recovery and revival, signed vital effects and authored item skill effects execute only after transactional consumption; native and complete-round delivery share the result packets. Damage display retains native packet combo boundaries. Singles pool into one total; one multi-hit skill splits the whole group, identical multi-hit skills merge, and different multi-hit skills keep separate groups with singles separate. Contact-timed HP/SP and total-conserving wide integer parts match the grouped popups; bitmap-height spacing separates successive numbers. Interleaved recovery retains native stat ordering. AC11:12 carries the actual winning side; native victory roulette selects one living voiced winner and waits for final action/removal playback. Battle skill selection uses one click while hotbar dragging and ordinary skill browsing remain available. Explicit escape uses the reference level check against the strongest living enemy. Either owner or pet succeeding removes both; only a team leader's successful escape ends remaining participants' combat. Overkill/logout are separate. Native failure motion 60042 runs, trips and recovers without stat damage; repeat retains Flee 60041. Escaping-owner chains stop at departure while other owners continue after the participant close. Vitals and pet results commit before success publication. CH_TBattleGround, CH_TBattleMotion, TSkill, TAttack, TFightHum, TFightField, TFightManage. Existing server rules are integrated with a dedicated client scene: native formation/background layers, player/pet/monster sprites, stances and defeated poses, radial attack/skills/defend/capture/flee icons and per-actor previous-action center/repeat controls, direct scene targeting and native cursors, batched stats/actions, duplicate-ready guards, MBTM action/frame timing, actor-relative mirrored movement, native HP/SP digits, contact-timed multi-hit damage, completed departure motions, a battle reveal, camera tracks, distance-based zoom and general/weapon/body sound tracks with recorded battle voices. Overkills require round damage above 150% of maximum HP, use the native upward removal and return players to their saved spawn while teammates continue; ordinary corpses remain. Server recovery packets use native additive modes. An optional Gonline extension negotiates full-round chains and atomic character/pet choice batches; native transport remains available, including mixed-client battles. See docs/COMBAT_TRANSPORT.md. Precise movement/camera/effect synchronization, the full native weapon sound resolver, remaining spell paths and special item effects without authored rules, dedicated battle skill form, spectator mode and remaining command/result presentation are pending. See docs/BATTLE_CLIENT_PARITY.md.",
    "regions": [
     227,
     228,
@@ -4553,7 +4553,7 @@
     231
    ],
    "functions": 356,
-   "cited": 71,
+   "cited": 73,
    "ranges": [
     "36e674-36e9e4",
     "36f144-377054",
@@ -4658,7 +4658,7 @@
    "title": "NPC services and feature forms",
    "go": "client/wlo/inventory (compound.go), client/wlo/lottery, client/wlo/app (compound.go, lucky_draw.go)",
    "status": "started",
-   "notes": "TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Native material-base labels are shown in compound tooltips. Junior checkbox and Superior tier selector are implemented. The legacy AC23:122 overworld effect is intentionally not sent because native aLogin interprets it as fishing cleanup. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, inns, titles, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported. Daily Lucky Draw (AC104:1) has the native toolbar form, twenty-slot reward preview, timed spin and server-confirmed allowance/results; inventory delivery remains on AC23:5.",
+   "notes": "Verified full item names are compiled from saved WLOHub pages, preserving custom names and native records. TRe_CompoundForm: native bag/five ingredient layout, drag/double-click selection, item tooltips, cauldron animation and server-confirmed two-to-five-input rank/base synthesis with books and learned skill tiers are implemented. Pet-food pairs use guaranteed food-only synthesis; mixed recipes are rejected. Native material-base labels are shown in compound tooltips. Junior checkbox and Superior tier selector are implemented. The legacy AC23:122 overworld effect is intentionally not sent because native aLogin interprets it as fishing cleanup. Careers, dungeon missions, mail boxes, notice boards, banking, express, auto-play, inns, titles, exchange lock, quest views (Tjo_TaskView), effect lights. Notice board and creation are ported. Daily Lucky Draw (AC104:1) has the native toolbar form, twenty-slot reward preview, timed spin and server-confirmed allowance/results; inventory delivery remains on AC23:5.",
    "regions": [
     143,
     144,
@@ -4682,7 +4682,7 @@
     205
    ],
    "functions": 1493,
-   "cited": 53,
+   "cited": 59,
    "ranges": [
     "152a64-154dec",
     "1552f4-1553c8",
@@ -4719,7 +4719,7 @@
     112
    ],
    "functions": 246,
-   "cited": 14,
+   "cited": 17,
    "ranges": [
     "3c856c-3c9420",
     "3d73b8-3f5a6c",
@@ -4732,7 +4732,7 @@
    "title": "Pets and riding",
    "go": "client/wlo/role, client/wlo/team, client/wlo/app (team.go)",
    "status": "partial",
-   "notes": "Pet selection/rest/battle/ride/release and confirmations, native directional riding poses, authored saddle tables, frame/height positioning, raster order, mounted/following name placement and follow trails are ported. Remaining pet-specific forms and passengers are pending.",
+   "notes": "Pet selection/rest/battle/ride/release and confirmations, native directional riding poses, authored saddle tables, frame/height positioning, raster order, mounted/following name placement and follow trails are ported. Item vehicles preserve battle selection and allow battle/rest switching while hiding following sprites until landing. Remaining pet-specific forms and passengers are pending.",
    "regions": [
     166,
     259,
@@ -5294,5 +5294,5 @@
    "client": false
   }
  ],
- "cited_functions": 931
+ "cited_functions": 947
 }

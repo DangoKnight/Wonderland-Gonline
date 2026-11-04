@@ -1,0 +1,47 @@
+source_pet_id,template_id,pet,stage,source_item_id,name,item_id,equipment_slot,grant_on_acquisition,status
+1,15657,Victoria,normal,2157,Victoria's Sword,11124,3,True,resolved
+1,15657,Victoria,reborn,2658,Scarlet Dracoblade,11153,3,False,resolved
+2,14162,Roca,normal,658,Machete,10063,3,True,resolved
+2,14162,Roca,reborn,2148,Cracking Broadsword,10077,3,False,resolved
+3,14156,Xaolan,normal,559,Xaolan's Jade,25028,6,True,resolved
+3,14156,Xaolan,reborn,2563,Prison Eclipse Staff,14142,3,False,resolved
+4,14081,Niss,normal,900,Lucy's Staff,14073,3,True,resolved
+4,14081,Niss,reborn,3536,Snow Staff,14139,3,False,resolved
+5,12095,Frederico,normal,1308,Frederico's Sword,11109,3,True,resolved
+5,12095,Frederico,reborn,2442,Hell's Sword,11142,3,False,resolved
+6,14175,Clive,normal,1986,Agnailed Stick,18065,3,True,resolved
+6,14175,Clive,reborn,3626,Gale Mace,18072,3,False,resolved
+7,12068,Magellan,normal,2014,Magellan's Sword,11100,3,True,resolved
+7,12068,Magellan,reborn,2451,Steel Rock Sword,11137,3,False,resolved
+8,14230,Elin,normal,1206,Plasma Gun,20044,3,True,resolved
+8,14230,Elin,reborn,1205,Plasma Wafer,20045,3,False,resolved
+9,14274,Sam,normal,1769,Wolf Soul,11119,3,True,resolved
+9,14274,Sam,reborn,2656,Lycan Fury,11155,3,False,resolved
+10,14637,Shizune,normal,1965,Thunder Talon,15059,3,True,resolved
+10,14637,Shizune,reborn,,,,,False,no item listed
+11,14548,Kanako,normal,3509,Shadow Bow,13067,3,True,resolved
+11,14548,Kanako,reborn,2465,Blue Moon Bow,13070,3,False,resolved
+12,15689,Hayate,normal,3289,Spring Katana,10075,3,True,resolved
+12,15689,Hayate,reborn,2441,Muramasa Katana,10081,3,False,resolved
+13,14609,Shasha,normal,,,,,False,no item listed
+13,14609,Shasha,reborn,3026,Frozen Orb Staff,14141,3,False,resolved
+14,14615,Qlaya,normal,1204,Nana's Staff,14074,3,True,resolved
+14,14615,Qlaya,reborn,3025,Compression Staff,14140,3,False,resolved
+15,12147,Louis,normal,1760,Louis' Gun,20046,3,True,resolved
+15,12147,Louis,reborn,,,,,False,no item listed
+16,35253,Joan,normal,3024,Goddess' Sword,11143,3,True,resolved
+16,35253,Joan,reborn,3391,Twilight Sword,11182,3,False,resolved
+17,14243,Angela,normal,2462,Angel Armlet,25537,6,True,resolved
+17,14243,Angela,reborn,3545,Light Star,14179,3,False,resolved
+18,14242,Eva,normal,1187,Evil Fork,12085,3,True,resolved
+18,14242,Eva,reborn,3448,Abyss Demon Fo,12126,3,False,resolved
+19,12148,Athena,normal,2749,Athena's Spear,12503,3,True,resolved
+19,12148,Athena,reborn,,,,,False,no item listed
+20,12149,Venus,normal,4635,Venus Armlet,25630,6,True,resolved
+20,12149,Venus,reborn,,,,,False,no item listed
+21,12178,Robinson,normal,,,,,False,no item listed
+21,12178,Robinson,reborn,,,,,False,no item listed
+22,17162,Little Monkey Rebirth,normal,3040,Banana Peel,33010,8,False,not equipment
+22,17162,Little Monkey Rebirth,reborn,3630,golden cudgel,18093,3,False,resolved
+23,17914,Charlotte,normal,1525,Fairy Armlet,25534,6,True,resolved
+23,17914,Charlotte,reborn,,,,,False,no item listed

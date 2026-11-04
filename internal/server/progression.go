@@ -108,9 +108,20 @@ func (s *Server) potentialPillWithRoll(ctx context.Context, c *Session, p []byte
 		oldPotential := *potential
 		*potential = level
 		if petIndex >= 0 {
-			next.Pets[petIndex].Normalize(s.Assets.Items, false)
+			pet := &next.Pets[petIndex]
+			template := s.petTemplate(pet.ID)
+			oldVitals := before.Pets[petIndex].Combat(s.Assets.Items, template)
+			pet.Normalize(s.Assets.Items, false, template)
+			// Apply the signed maximum change to the original current vital,
+			// preserving missing HP/SP on success and failure. Clamp only after
+			// adding the delta, using wide arithmetic to avoid under/overflow.
+			pet.HP = int32(min(int64(pet.MaxHP), max(0, int64(before.Pets[petIndex].HP)+int64(pet.MaxHP)-int64(oldVitals.MaxHP))))
+			pet.SP = int32(min(int64(pet.MaxSP), max(0, int64(before.Pets[petIndex].SP)+int64(pet.MaxSP)-int64(oldVitals.MaxSP))))
 		} else {
+			oldVitals := before.Combat(s.Assets.Items)
 			next.RecalculateVitals(s.Assets.Items)
+			next.HP = uint32(min(int64(next.MaxHP), max(0, int64(before.HP)+int64(next.MaxHP)-int64(oldVitals.MaxHP))))
+			next.SP = uint32(min(int64(next.MaxSP), max(0, int64(before.SP)+int64(next.MaxSP)-int64(oldVitals.MaxSP))))
 			if level < oldPotential && next.ForgetUnqualifiedSkills() {
 				snapshot := skillSnapshotWithRemovals(before, *next)
 				packet, err := s.nativeStatsSnapshot(snapshot).BaseStatsPacket(func(id uint16) (uint16, bool) { skill, ok := s.Assets.Skills[id]; return skill.TableOrder, ok })
@@ -145,7 +156,7 @@ func (s *Server) potentialPillWithRoll(ctx context.Context, c *Session, p []byte
 		packets = append(packets, c.character.StatPackets(s.Assets.Items)...)
 	} else {
 		i := slices.IndexFunc(c.character.Pets, func(p game.Pet) bool { return p.ID == petID })
-		packets = append(packets, c.character.Pets[i].ProgressionPackets(target, s.Assets.Items)...)
+		packets = append(packets, c.character.Pets[i].ProgressionPackets(target, s.Assets.Items, s.petTemplate(c.character.Pets[i].ID))...)
 	}
 	return s.sendAll(c, packets)
 }

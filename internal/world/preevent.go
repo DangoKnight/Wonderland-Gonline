@@ -500,7 +500,35 @@ func (w *World) Template(id uint32) (game.PetTemplate, bool) {
 		return game.PetTemplate{}, false
 	}
 	n, ok := w.catalog.NPCs[uint16(id)]
-	return game.PetTemplate{Type: n.Type, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}, ok
+	t := game.PetTemplate{Type: n.Type, Element: n.Element, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}
+	initial, exists := w.catalog.PetInitialStats[game.BroadcastID(id)]
+	if !exists {
+		// Recruitment and NPC appearances may use paired companion IDs, notably
+		// Roca. Preserve each NPC template, but share the starting-stat rule.
+		for template, candidate := range w.catalog.PetInitialStats {
+			if game.SamePet(template, id) {
+				initial, exists = candidate, true
+				break
+			}
+		}
+	}
+	if exists {
+		t.InitialStats = &initial
+	}
+	for _, definition := range w.catalog.Story.CompanionEquipment {
+		if !game.SamePet(definition.Template, id) {
+			continue
+		}
+		for _, item := range definition.Equipment {
+			if int(item.Slot) >= len(t.StartingEquipment) {
+				continue
+			}
+			if _, known := w.catalog.Items[item.ItemID]; known {
+				t.StartingEquipment[item.Slot] = game.Item{ID: item.ItemID, Count: 1}
+			}
+		}
+	}
+	return t, ok
 }
 
 // InParty is HasStoryCompanionInParty: a story companion template now in the party.

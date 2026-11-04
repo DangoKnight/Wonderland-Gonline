@@ -105,14 +105,9 @@ func (s *Server) gmBazaar(ctx context.Context, c *Session, _ string, args []stri
 }
 
 const (
-	gmPetNameMaxBytes         = 16
-	gmRobinsonTemplateID      = 12032
-	gmRobinsonBroadcastID     = 12178
-	gmRocaTemplateID          = 14161
-	gmRocaAlternateTemplateID = 14162
-	gmRocaMacheteItemID       = 10063
-	gmXaolanTemplateID        = 14156
-	gmXaolanJadeItemID        = 25028
+	gmPetNameMaxBytes     = 16
+	gmRobinsonTemplateID  = 12032
+	gmRobinsonBroadcastID = 12178
 )
 
 func gmSelectedPet(c *game.Character) int {
@@ -175,7 +170,7 @@ func (s *Server) gmPetEdit(ctx context.Context, c *Session, command string, args
 		pet.Exp = 0
 		pet.StatPoints += game.PetRebirthBonusStatPoints
 		pet.Amity = game.PetRebirthRequiredAmity
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		packets = append(packets, []byte{protocol.CommandPetRebirth, protocol.PetRebirthAscend, c.pets.slot(pet.ID), protocol.PetRebirthSucceeded})
 	case "petlvl", "petlevel":
 		if len(args) != 1 {
@@ -190,7 +185,7 @@ func (s *Server) gmPetEdit(ctx context.Context, c *Session, command string, args
 		pet.StatPoints = uint16(min(int(pet.StatPoints)+gained*game.StatPointsPerLevel, math.MaxUint16))
 		pet.Level = byte(level)
 		pet.Exp = 0
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 	case "petexp":
 		if len(args) != 1 {
 			return s.chatFeedback(c, "Usage: /petexp <EXP gain>")
@@ -200,10 +195,10 @@ func (s *Server) gmPetEdit(ctx context.Context, c *Session, command string, args
 			return s.chatFeedback(c, "Invalid pet EXP gain.")
 		}
 		grown := s.gainPetExp(pet, uint32(gain), petGrowth)
-		pet.Normalize(s.Assets.Items, grown > 0)
+		pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 	}
 	packets = append(packets, s.petListPacket(&next, c.pets))
-	packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 	if err := s.commit(ctx, c, next); err != nil {
 		return err
 	}
@@ -246,14 +241,8 @@ func (s *Server) gmRecruitPet(ctx context.Context, c *Session, args []string) er
 			next.ReservePets = slices.Delete(next.ReservePets, i, i+1)
 		} else {
 			fresh = true
-			switch {
-			case (templateID == gmRocaTemplateID || templateID == gmRocaAlternateTemplateID) && s.hasItem(gmRocaMacheteItemID):
-				pet.Equipment[2] = game.Item{ID: gmRocaMacheteItemID, Count: 1}
-			case templateID == gmXaolanTemplateID && s.hasItem(gmXaolanJadeItemID):
-				pet.Equipment[5] = game.Item{ID: gmXaolanJadeItemID, Count: 1}
-			}
 			pet.EnsureSkills(s.petTemplate(templateID), s.hasSkill)
-			pet.Normalize(s.Assets.Items, true)
+			pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		}
 		next.Pets = append(next.Pets, pet)
 		index = len(next.Pets) - 1
@@ -279,7 +268,7 @@ func (s *Server) gmRecruitPet(ctx context.Context, c *Session, args []string) er
 		packets = append(packets, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
 	}
 	packets = append(packets, s.petListPacket(c.character, c.pets), serverwire.PetNamePacket(next.ID, c.pets.slot(pet.ID), pet.Name), protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(next.ActivePet))
-	packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, s.World.Sync(c.character, c.view, false)...)
 	s.broadcastWorld(c, serverwire.PetMapPacket(next.ID, next.ActivePet, pet.Name))
 	if err := s.sendAll(c, packets); err != nil {

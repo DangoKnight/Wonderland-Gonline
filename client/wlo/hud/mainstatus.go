@@ -59,6 +59,7 @@ type MainStatus struct {
 	Recover *seui.FixedButton // +0x318 Btn_Allrecovery_1
 	Discuss *seui.FixedButton // +0x314 Btn_Discussion_1, hidden outside its mode
 	Pet     *PetStatus        // +0x2f4 compact active-pet portrait and stats
+	Vehicle *VehicleStatus
 
 	background, hpGauge, spGauge int
 	element                      byte
@@ -95,6 +96,7 @@ func NewMainStatus(env *seui.Env, f *login.Formula, stats *world.Stats) *MainSta
 	m.Recover.Init("Btn_Allrecovery_1", recoverLeft, statusButtonSize, statusButtonSize, 0, 0, true, statusButtonSize, statusButtonSize, statusButtonTop)
 	m.Recover.SetHint([]byte(recoverHint))
 	m.Pet = newPetStatus(env, m)
+	m.Vehicle = newVehicleStatus(env, m)
 	return m
 }
 
@@ -128,6 +130,7 @@ func (m *MainStatus) blinking() bool {
 // draw after it.
 func (m *MainStatus) Paint() {
 	m.Pet.Refresh()
+	m.Vehicle.Refresh()
 	s, scr, pics := m.Stats, m.Env.Screen, m.Env.Pics
 	at := func(p image.Point) image.Point { return statusCorner.Add(p) }
 	c := at(image.Point{})

@@ -5,10 +5,10 @@ each archive directory. See [Editing sprites](EDITING.md) for painting, animatio
 edits and direct Go client loading. The files below preserve the original data.
 
 This directory exports all 222 files from
-`Wonderland-Client/jma/`: 107 JMA pixel archives,
+the supplied WLRI installation's `jma/`: 107 JMA pixel archives,
 107 JXA animation indexes and eight JXAN encryption indexes.
 
-The export preserves 6,257 sprites and 816,578 frames. Twenty-one sprites
+The 2026-11-03 export preserves 6,280 sprites and 820,994 frames. Twenty-one sprites
 required authenticated decryption. Three orphan indexes (`002w4`, `003w4`,
 `004w4`) contain 18 records whose companion JMA archives are absent from the
 source. Those records are saved with `missing-companion-archive` status.
@@ -34,10 +34,10 @@ Each archive has a directory named after its original filename stem:
 hashes, totals and the exact executable used for key extraction. Frame name
 bytes that are not UTF-8 remain intact in `record_hex`.
 
-PNG pages are ignored by Git and regenerated locally; JSON metadata and
-compressed verification data are available for versioning.
+PNG pages, JSON metadata and compressed verification data are generated locally
+and ignored by Git.
 The editable export uses shared PNG atlases with identical frames stored once,
-avoiding 816,578 separate files. Atlas locations are recorded in `editable.json`.
+avoiding 820,994 separate files. Atlas locations are recorded in `editable.json`.
 Individual legacy frame PNGs can also be extracted as needed.
 These are client rendering assets; this export does not add image payloads to
 the server asset database or change the server's runtime configuration.
@@ -47,9 +47,10 @@ the server asset database or change the server's runtime configuration.
 From the repository root:
 
 ```sh
+wlo_client_source="/absolute/path/to/WLRI-client"
 go run ./cmd/sprite-export \
-  -input ../Wonderland-Client/jma \
-  -client-exe ../Wonderland-Client/aLogin.exe \
+  -input "$wlo_client_source/jma" \
+  -client-exe "$wlo_client_source/aLogin.exe" \
   -output data/sprites
 python3 tools/data_export/verify_sprites.py
 ```
@@ -86,3 +87,10 @@ exports PNG sheets and complete preservation metadata. It does not read saved
 The temporary working directory is removed automatically after the export.
 
 Atlas optimization removes empty frame directories after packing.
+
+Some updated clients append JMA sprites without extending their JXA animation
+tables. The exporter preserves the original JXA header and records exactly,
+exports every sprite's frames, and records `missing_action_records` in the
+preservation metadata. Sprites without an action record have no inferred
+animations; their animation boundaries require a matching source JXA. Truncated
+records, trailing bytes and action records exceeding the archive remain errors.

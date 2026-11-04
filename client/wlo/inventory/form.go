@@ -43,6 +43,10 @@ type Form struct {
 	Preview                                                         login.RoleView
 	Selected                                                        byte
 	DrawPet                                                         func(byte, int, int, int)
+	DrawPotentialPortrait                                           func(byte, image.Rectangle)
+	DrawPotentialPreview                                            func(byte, int, int)
+	LoadPotentialPictures                                           func()
+	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
 	Status                                                          *login.Status
 	Send                                                            func([]byte)
@@ -266,6 +270,17 @@ func (c *slotControl) item() game.Item {
 	}
 	return c.form.State.Bag[c.slot-1]
 }
+
+func (c *slotControl) HitTest(x, y int) bool {
+	it := c.item()
+	if c.worn || it.Empty() {
+		return c.Component.HitTest(x, y)
+	}
+	w, h := c.form.State.Items[it.ID].Definition.Footprint()
+	a := c.Abs()
+	// Include grid seams so a large item's hint does not blink between cells.
+	return image.Pt(x, y).In(image.Rect(a.X, a.Y, a.X+w*cellStep-(cellStep-cellSize), a.Y+h*cellStep-(cellStep-cellSize)))
+}
 func (c *slotControl) Paint() {
 	it := c.item()
 	if it.Empty() {
@@ -280,6 +295,7 @@ func (f *Form) drawItem(it game.Item, x, y int, showCount bool) {
 	if icon >= 0 {
 		f.Env.Pics.Draw(f.Env.Screen, icon, x, y, true)
 	}
+	f.drawVehicleCondition(it, x, y)
 	if showCount && it.Count > 0 {
 		f.Env.Text.Draw(x, y+19, 0, false, true, f.Env.Screen, []byte(strconv.Itoa(int(it.Count))), 13, 32, inventoryTextPaper, inventoryTextInk, 0)
 	}
@@ -447,6 +463,7 @@ func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 	if f.Dialog == nil {
 		d := &actionDialog{owner: f}
 		d.InitForm(d, f.Env)
+		d.AnimateMessage(f.Now)
 		d.Init("Form_ThrowThing", (800-209)/2, 0, 0, 0, 0, false, 87, 209, (600-87)/2)
 		d.Dockable = false
 		d.Count = seui.NewEditor(f.Env, d)
@@ -479,7 +496,7 @@ func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 	f.Env.UI.SetModal(true, d)
 }
 func (d *actionDialog) Paint() {
-	d.Env.Pics.Draw(d.Env.Screen, d.Image, d.Left, d.Top, true)
+	d.Env.Pics.DrawStretch(d.Env.Screen, d.Image, d.MessageRect(), true)
 	if d.prompt == moveQuantityTitle {
 		return
 	}

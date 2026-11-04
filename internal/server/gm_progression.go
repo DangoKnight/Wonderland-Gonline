@@ -147,8 +147,8 @@ func (s *Server) gmPlayerEdit(ctx context.Context, c *Session, command string, a
 			pet := &next.Pets[index]
 			pet.Base = next.Base
 			// Keep durable vitals consistent with native roster normalization.
-			pet.Normalize(s.Assets.Items, true)
-			packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items)...)
+			pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
+			packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 			packets = append(packets, s.petListPacket(&next, c.pets))
 		}
 		packets = append(packets, next.StatPackets(s.Assets.Items)...)

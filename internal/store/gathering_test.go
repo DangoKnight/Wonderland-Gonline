@@ -24,12 +24,13 @@ func TestWaterGatheringAtomicCooldownAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	for slot := byte(1); slot <= 2; slot++ {
-		if err := db.CreateCharacter(ctx, a, game.Character{ID: a.CharacterID(slot), Slot: slot, Name: []string{"Alice", "Bobby"}[slot-1], Level: 1}); err != nil {
+		if err := db.CreateCharacter(ctx, a, game.Character{ID: a.CharacterID(slot), Slot: slot, Name: []string{"Alice", "Bobby"}[slot-1], Level: 1, Map: 60001}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 	ref := CharacterRef{Account: a.ID, ID: a.CharacterID(1)}
+	node := ResourceKey{Kind: ResourceCollectionActor, MapID: 60001, NodeID: 88}
 	eligible := func(*game.Character) bool { return true }
 	var wg sync.WaitGroup
 	errs := make(chan error, 12)
@@ -37,7 +38,7 @@ func TestWaterGatheringAtomicCooldownAndRestart(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _, err := db.GatherWater(ctx, ref, 11009, 60001, 50, now, eligible, nil)
+			_, _, err := db.GatherWater(ctx, ref, node, 11009, 60001, 50, now, eligible, nil)
 			errs <- err
 		}()
 	}
@@ -55,7 +56,8 @@ func TestWaterGatheringAtomicCooldownAndRestart(t *testing.T) {
 		t.Fatal(successes)
 	}
 	chars, err := db.Characters(ctx, a.ID)
-	if err != nil || chars[0].Bag[0].ID != 60001 || chars[0].Bag[0].Count != 1 || chars[0].Quests[11009].State != game.InProgress || chars[0].Quests[11009].Step != 1 || !chars[0].EventTimers[11009].Equal(now.Add(180*time.Second)) {
+	expiry, clockErr := db.ResourceExpiry(ctx, node)
+	if err != nil || clockErr != nil || chars[0].Bag[0].ID != 60001 || chars[0].Bag[0].Count != 1 || chars[0].Quests[11009].State != game.InProgress || chars[0].Quests[11009].Step != 1 || len(chars[0].EventTimers) != 0 || !expiry.Equal(now.Add(180*time.Second)) {
 		t.Fatal(chars, err)
 	}
 	if err := db.Close(); err != nil {
@@ -65,20 +67,25 @@ func TestWaterGatheringAtomicCooldownAndRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.GatherWater(ctx, ref, 11009, 60001, 50, now.Add(179*time.Second), eligible, nil); !errors.Is(err, ErrGatheringUnavailable) {
+	if _, _, err := db.GatherWater(ctx, ref, node, 11009, 60001, 50, now.Add(179*time.Second), eligible, nil); !errors.Is(err, ErrGatheringUnavailable) {
 		t.Fatal("restart reset cooldown", err)
 	}
-	if _, _, err := db.GatherWater(ctx, ref, 11009, 60001, 50, now.Add(-time.Second), eligible, nil); !errors.Is(err, ErrGatheringUnavailable) {
+	if _, _, err := db.GatherWater(ctx, ref, node, 11009, 60001, 50, now.Add(-time.Second), eligible, nil); !errors.Is(err, ErrGatheringUnavailable) {
 		t.Fatal("clock rollback reset cooldown", err)
 	}
-	if next, _, err := db.GatherWater(ctx, ref, 11009, 60001, 50, now.Add(180*time.Second), eligible, nil); err != nil || next.Bag[0].Count != 2 {
+	if next, _, err := db.GatherWater(ctx, ref, node, 11009, 60001, 50, now.Add(180*time.Second), eligible, nil); err != nil || next.Bag[0].Count != 2 {
 		t.Fatal(next, err)
 	}
-	for _, other := range []struct {
+	if _, _, err := db.GatherWater(ctx, CharacterRef{Account: a.ID, ID: a.CharacterID(2)}, node, 11009, 60001, 50, now, eligible, nil); !errors.Is(err, ErrGatheringUnavailable) {
+		t.Fatal("second character bypassed shared cooldown", err)
+	}
+	for i, other := range []struct {
 		ref         CharacterRef
 		timer, item uint16
 	}{{CharacterRef{Account: a.ID, ID: a.CharacterID(2)}, 11009, 60001}, {ref, 11016, 60001}} {
-		if _, _, err := db.GatherWater(ctx, other.ref, other.timer, other.item, 50, now, eligible, nil); err != nil {
+		sibling := node
+		sibling.NodeID += uint16(i + 1)
+		if _, _, err := db.GatherWater(ctx, other.ref, sibling, other.timer, other.item, 50, now, eligible, nil); err != nil {
 			t.Fatal("independent timer denied", err)
 		}
 	}
@@ -88,17 +95,23 @@ func TestWaterGatheringFailureRollbackAndOwnership(t *testing.T) {
 	db, refs := pairFixture(t)
 	ctx := context.Background()
 	now := time.Now()
+	node := ResourceKey{Kind: ResourceCollectionActor, MapID: 60001, NodeID: 88}
+	for _, ref := range refs {
+		if err := db.UpdateCharacter(ctx, ref.Account, ref.ID, func(c *game.Character) error { c.Map = node.MapID; return nil }); err != nil {
+			t.Fatal(err)
+		}
+	}
 	yes := func(*game.Character) bool { return true }
 	no := func(*game.Character) bool { return false }
-	if _, _, err := db.GatherWater(ctx, refs[0], 11009, 60001, 50, now, no, nil); !errors.Is(err, ErrGatheringUnavailable) {
+	if _, _, err := db.GatherWater(ctx, refs[0], node, 11009, 60001, 50, now, no, nil); !errors.Is(err, ErrGatheringUnavailable) {
 		t.Fatal(err)
 	}
-	if _, _, err := db.GatherWater(ctx, refs[0], 11009, 60002, 50, now, yes, nil); !errors.Is(err, ErrGatheringUnavailable) {
+	if _, _, err := db.GatherWater(ctx, refs[0], node, 11009, 60002, 50, now, yes, nil); !errors.Is(err, ErrGatheringUnavailable) {
 		t.Fatal("wrong pool reward", err)
 	}
 	foreign := refs[0]
 	foreign.Account = refs[1].Account
-	if _, _, err := db.GatherWater(ctx, foreign, 11009, 60001, 50, now, yes, nil); !errors.Is(err, sql.ErrNoRows) {
+	if _, _, err := db.GatherWater(ctx, foreign, node, 11009, 60001, 50, now, yes, nil); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatal(err)
 	}
 	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error {
@@ -109,7 +122,7 @@ func TestWaterGatheringFailureRollbackAndOwnership(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.GatherWater(ctx, refs[0], 11009, 60001, 50, now, yes, nil); !errors.Is(err, ErrGatheringUnavailable) {
+	if _, _, err := db.GatherWater(ctx, refs[0], node, 11009, 60001, 50, now, yes, nil); !errors.Is(err, ErrGatheringUnavailable) {
 		t.Fatal("native free-slot requirement ignored", err)
 	}
 	if err := db.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error { c.Bag = game.Inventory{}; return nil }); err != nil {
@@ -118,7 +131,7 @@ func TestWaterGatheringFailureRollbackAndOwnership(t *testing.T) {
 	if _, err := db.db.Exec("CREATE TRIGGER fail_gather BEFORE UPDATE ON character_state BEGIN SELECT RAISE(ABORT,'injected failure'); END"); err != nil {
 		t.Fatal(err)
 	}
-	if _, adds, err := db.GatherWater(ctx, refs[0], 11009, 60001, 50, now, yes, nil); err == nil || adds != nil {
+	if _, adds, err := db.GatherWater(ctx, refs[0], node, 11009, 60001, 50, now, yes, nil); err == nil || adds != nil {
 		t.Fatal(adds, err)
 	}
 	chars, err := db.Characters(ctx, refs[0].Account)
@@ -128,7 +141,7 @@ func TestWaterGatheringFailureRollbackAndOwnership(t *testing.T) {
 	if _, err := db.db.Exec("DROP TRIGGER fail_gather"); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := db.GatherWater(ctx, refs[0], 11009, 60001, 50, now, yes, nil); err != nil {
+	if _, _, err := db.GatherWater(ctx, refs[0], node, 11009, 60001, 50, now, yes, nil); err != nil {
 		t.Fatal(err)
 	}
 }

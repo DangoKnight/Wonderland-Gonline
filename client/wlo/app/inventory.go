@@ -26,6 +26,12 @@ func (c *Client) canOpenModule() bool {
 
 func (c *Client) initInventory() {
 	c.InventoryState = &inventory.State{Items: c.items}
+	c.InventoryState.PetElement = func(id uint16) byte {
+		if c.npcTemplates == nil {
+			c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+		}
+		return c.npcTemplates[uint32(id)].Element
+	}
 	c.Inventory = inventory.NewForm(c.Env, c.InventoryState, c.Stats)
 	c.Inventory.Send = func(p []byte) {
 		if err := c.Net.Send(p); err != nil {
@@ -58,6 +64,7 @@ func (c *Client) initInventory() {
 	}
 	c.Inventory.BattleUse = c.selectBattleItem
 	c.Inventory.Now = func() time.Time { return c.Now() }
+	c.initPotentialPreview()
 	c.Inventory.Notice = c.Chat.Notice
 	c.Inventory.StartRemote = c.startRemote
 	c.Inventory.StopRemote = c.stopRemote
@@ -75,6 +82,7 @@ func (c *Client) initInventory() {
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	c.vacuum = vacuumRuntime{}
 	if c.battleResults.owner != p.ID {
 		c.resetBattleResults()
 	}
@@ -103,6 +111,7 @@ func (c *Client) resetInventory(p world.Player) {
 	if c.Skills != nil {
 		c.SkillState.Reset()
 		c.Skills.Reset()
+		c.BattleSkills.Reset()
 	}
 	*c.Stats = world.Stats{Formula: c.Stats.Formula}
 	c.Inventory.PlayerName = append([]byte(nil), p.Name...)
@@ -139,6 +148,9 @@ func (c *Client) refreshEquipment() {
 }
 
 func (c *Client) inventoryPacket(p []byte) {
+	if c.floorItemPacket(p) {
+		return
+	}
 	if c.World == nil || c.InventoryState == nil || len(p) < 2 {
 		return
 	}
@@ -151,8 +163,14 @@ func (c *Client) inventoryPacket(p []byte) {
 			}
 			return
 		}
-		if p[1] == protocol.InventoryItems {
+		if p[1] == protocol.InventoryItems || p[1] == protocol.InventoryAcquire {
 			c.recordBattleResultItems(bagBefore)
+		}
+		if p[1] == protocol.InventoryAcquire {
+			if c.vacuum.actor != 0 && c.vacuum.waiting {
+				c.vacuum.reward = true
+			}
+			c.presentItemAcquisition(p)
 		}
 		if p[1] == protocol.InventoryCompoundResult {
 			c.Compound.QueueResult(p[2])
@@ -175,6 +193,9 @@ func (c *Client) inventoryPacket(p []byte) {
 			}
 		}
 		if before != c.InventoryState.Equipment {
+			if !c.vacuumEquipped() {
+				c.stopVacuum()
+			}
 			c.refreshEquipment()
 		}
 		return
@@ -200,7 +221,7 @@ func (c *Client) inventoryPacket(p []byte) {
 		// AC23:15 acknowledges server-authoritative consumable use.
 
 	case protocol.InventoryWireCode212:
-		if len(p) == 7 && p[2] == 255 {
+		if len(p) == 7 && (p[2] == protocol.InventoryDestroyPrompt || p[2] == 255) {
 			c.Inventory.ConfirmDestroy(p[3], binary.LittleEndian.Uint16(p[4:]), p[6])
 		}
 	case protocol.InventoryMessage:

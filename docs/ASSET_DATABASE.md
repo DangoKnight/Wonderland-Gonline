@@ -8,6 +8,46 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v30 adds typed `ResourceRespawns` overrides for individual collection and
+ground-item cooldown durations. Gameplay v21 adds `resource_cooldowns`, keyed by
+resource kind, map and source ID. Each expiry is shared across players and commits
+with its reward. Existing definitions and character timer history are preserved.
+See [collection cooldown configuration](COLLECTION_SPOTS.md#shared-cooldowns-and-individual-durations).
+
+Assets v29 on `Client-rewrite` enables complete native manual-collection events
+whose old generated disable reason is now resolved. It preserves custom disable
+reasons, unsupported branches, edited reward pools and intentionally empty data.
+Stop the server and use the offline migration procedure below before deploying
+this branch. Quest-development catalogs use a separate later schema; do not
+downgrade or replace those databases with a Client catalog.
+
+Assets v28 applies 93 owner-confirmed entity renames and preserves 85 confirmed existing names. Unchecked review proposals do not affect gameplay. See [enemy name review](ENEMY_NAME_REVIEW.md).
+
+Assets v27 adds 129 researched enemy name corrections, bringing the compiled patch to 898 names. See [enemy name review](ENEMY_NAME_REVIEW.md).
+
+Assets v26 adds normal special equipment for 20 freshly acquired companions. See [companion starting equipment](PET_SPECIAL_EQUIPMENT.md).
+
+Assets v25 adds 162 collection-spot definitions, including 30 vacuum spots, with unresolved metadata retained explicitly. See [collection spots](COLLECTION_SPOTS.md).
+
+Assets v24 additionally restores Pineapple Monster (NPC 17001).
+
+Assets v23 restores 696 item display names with a preserving data migration. See [item name restoration](ITEM_NAMES.md).
+
+Assets v22 includes 768 NPC name mappings: verified names, owner-approved single-option suggestions, six explicit owner choices and Quest-free display names. It preserves edited names and absent records. See [monster name restoration](MONSTER_NAMES.md).
+
+Assets v19 adds typed stat-food compatibility definitions. Gameplay v20 adds a
+persistent 1,200-use limit counter to each pet, initialized at zero for existing
+pets. See [stat-boosting pet food](PET_FOOD.md).
+
+Asset v18 adds SQL-owned pet initial-attribute ranges and desired totals, using
+the owner's classic-WLO-first references. The migration preserves existing
+definitions and owned pets. See [pet initial attributes](PET_INITIAL_STATS.md).
+
+Asset v17 adds the typed NPC capture-restriction column from retained imported
+Npc.dat byte 34. It preserves all existing NPC edits and does not replay seeds
+on subsequent migrations. Runtime uses this column, never raw imported records.
+Upgrade before starting the new server; existing owned pets are unchanged.
+
 Stop the server and database editors first, and keep them stopped until the
 command finishes. The migration preserves accounts, credentials, character state
 and existing asset edits.
@@ -44,10 +84,10 @@ their backed-up sidecars to the configured paths. The configuration paths stay
 the same. Progress written after cutover will not exist in the original
 snapshots. Keep the backups until acceptance testing finishes.
 
-Gameplay schema v18 automatically converts older character rows transactionally
+Gameplay schema v21 automatically upgrades older character storage transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 16 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 30 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -196,7 +236,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v16. The upgrade procedure upgrades existing older installations
+Asset schema is now v30. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -240,7 +280,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v16. See
+before running the new server; runtime requires v30. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -278,7 +318,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v16 and reads only SQL definitions. The `Story` administration
+Runtime requires v30 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

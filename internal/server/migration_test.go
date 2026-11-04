@@ -289,7 +289,7 @@ func TestMigrationVoucherRollbackAndSparseRoster(t *testing.T) {
 		t.Fatal("voucher did not resolve sparse roster", c.character.Pets)
 	}
 	pet := c.character.Pets[index]
-	if pet.Level != 1 || pet.Amity != 60 || pet.Base != (game.Attributes{Strength: 7, Constitution: 8, Intelligence: 9, Wisdom: 10, Agility: 11}) || pet.HP != pet.MaxHP || pet.SP != pet.MaxSP {
+	if pet.Level != 1 || pet.Amity != 60 || pet.Base != (game.Attributes{Strength: 3, Constitution: 4, Intelligence: 4, Wisdom: 5, Agility: 5}) || pet.HP != pet.MaxHP || pet.SP != pet.MaxSP {
 		t.Fatal("voucher initialization differs", pet)
 	}
 	if !contains(wires[0].packets(t), []byte{8, 2, 4, 3, 0, 38, 1, 0, 0, 0, 0, 0, 0, 0, 0}) {

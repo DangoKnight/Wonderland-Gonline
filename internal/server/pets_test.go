@@ -508,7 +508,7 @@ func TestPetGrowthStartupFormulaReachesEXPGrants(t *testing.T) {
 	for _, tc := range []struct {
 		formula game.PetGrowthFormula
 		total   int
-	}{{game.PetGrowthBaseStats, 25}, {game.PetGrowthCombatStats, 120}} {
+	}{{game.PetGrowthBaseStats, 25}, {game.PetGrowthCombatStats, 108}} {
 		cfg := config.Default()
 		cfg.PetGrowthFormula = tc.formula
 		selected := New(cfg, s.Store, s.Assets, s.Log)
@@ -891,11 +891,11 @@ func TestRecruitSelectAndDismissCompanion(t *testing.T) {
 		t.Fatal("recruit", got)
 	}
 	recruit := got[2]
-	if recruit[0] != 15 || recruit[1] != 1 || recruit[6] != 0x4c || recruit[7] != 0x37 || recruit[11] != 8 || recruit[19] != 10 {
+	if recruit[0] != 15 || recruit[1] != 1 || recruit[6] != 0x4c || recruit[7] != 0x37 || recruit[11] != 4 || recruit[19] != 5 {
 		t.Fatalf("AC15:1 %v", recruit)
 	}
 	pet := c.character.Pets[0]
-	if pet.Level != 1 || pet.Amity != 60 || pet.Base.Agility != 10 || len(pet.Skills) != 1 || pet.HP != pet.MaxHP {
+	if pet.Level != 1 || pet.Amity != 60 || pet.Base.Agility != 5 || len(pet.Skills) != 1 || pet.HP != pet.MaxHP {
 		t.Fatal("new pet", pet)
 	}
 	// A party-only branch continues into the next eligible one: the companion's question.
@@ -955,6 +955,7 @@ func TestRecruitSelectAndDismissCompanion(t *testing.T) {
 func TestPetGrowthAndConditions(t *testing.T) {
 	tpl := game.PetTemplate{Stats: game.Attributes{Strength: 1, Constitution: 9, Intelligence: 1, Wisdom: 1, Agility: 1}}
 	p := game.NewPet(17100, "Boar", 1, tpl, nil)
+	initialConstitution := p.Base.Constitution
 	if p.ClientTotalExp() != 6 {
 		t.Fatal(p.ClientTotalExp())
 	}
@@ -963,7 +964,7 @@ func TestPetGrowthAndConditions(t *testing.T) {
 			t.Fatalf("growth total = %d, want 13", total)
 		}
 		return 1 // STR occupies roll 0; CON occupies rolls 1 through 9.
-	}); gained != 2 || p.Level != 3 || p.Base.Constitution != 11 {
+	}); gained != 2 || p.Level != 3 || p.Base.Constitution != initialConstitution+2 {
 		t.Fatal("growth", gained, p.Level, p.Base)
 	}
 	if p.ClientTotalExp() != 6+14+35 {

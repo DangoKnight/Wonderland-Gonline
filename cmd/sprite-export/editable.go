@@ -143,7 +143,7 @@ func exportEditable(root string, selected string, overwrite bool) error {
 			file.Close()
 			return err
 		}
-		if len(actions.Records) != len(archive.Entries) {
+		if len(actions.Records) > len(archive.Entries) {
 			file.Close()
 			return fmt.Errorf("action/sprite count mismatch")
 		}
@@ -160,8 +160,11 @@ func exportEditable(root string, selected string, overwrite bool) error {
 				return err
 			}
 			sprite := clientassets.EditableSprite{Index: i, Name: entry.Name, Frames: frames}
-			counts := actions.Records[i].Counts
-			if len(counts) != nativeActionRecordBytes {
+			var counts []int
+			if i < len(actions.Records) {
+				counts = actions.Records[i].Counts
+			}
+			if i < len(actions.Records) && len(counts) != nativeActionRecordBytes {
 				file.Close()
 				return fmt.Errorf("invalid native action record")
 			}

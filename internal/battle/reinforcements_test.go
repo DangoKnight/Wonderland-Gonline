@@ -9,7 +9,7 @@ func TestReinforcementWavesRetainRewardsAndSpawnAtRoundEnd(t *testing.T) {
 	self := &Fighter{Side: Attacker, Kind: Player, ID: 10001, X: 4, Y: 2, HP: 10000, MaxHP: 10000}
 	var enemies []Enemy
 	for i := 0; i < 17; i++ {
-		enemies = append(enemies, Enemy{Template: uint32(10000 + i), Level: 2, HP: 200, Element: 1})
+		enemies = append(enemies, Enemy{Template: uint32(10000 + i), Level: 2, HP: 200, SP: 96, Element: 1})
 	}
 	b := New([]*Fighter{self}, enemies)
 	if len(b.Defenders) != 8 || !b.HasReinforcements() {
@@ -34,7 +34,7 @@ func TestReinforcementWavesRetainRewardsAndSpawnAtRoundEnd(t *testing.T) {
 			break
 		}
 	}
-	want := []byte{11, 5, 2, 7, 0x18, 0x27, 0, 0, 0xd0, 7, 0, 0, 0, 0, 2, 2, 200, 0, 0, 0, 90, 0, 200, 0, 0, 0, 90, 0, 2, 1, 0, 0, 0, 0}
+	want := []byte{11, 5, 2, 7, 0x18, 0x27, 0, 0, 0xd0, 7, 0, 0, 0, 0, 2, 2, 200, 0, 0, 0, 96, 0, 200, 0, 0, 0, 96, 0, 2, 1, 0, 0, 0, 0}
 	if !bytes.Equal(spawn, want) {
 		t.Fatal("reinforcement spawn wire", spawn)
 	}

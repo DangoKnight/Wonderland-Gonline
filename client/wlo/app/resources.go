@@ -107,6 +107,9 @@ func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 	r.library = role.NewLibraryWith(r.sprites)
 	if raw, err := clientfs.ReadFile(a.DataPath(itemExport)); err == nil {
 		r.items, _ = assets.ParseItemCatalogJSON(raw)
+		if err := assets.ApplyItemNamePatches(r.items); err != nil {
+			return err
+		}
 	}
 	r.skillCatalog, _ = skills.Load(a)
 	r.audio = &SoundCache{}

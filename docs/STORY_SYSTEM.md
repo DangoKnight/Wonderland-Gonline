@@ -7,10 +7,18 @@ actor, dialogue, continuation or presentation policy does not require a rebuild.
 
 Asset schema **v16** extends the v15 typed `catalog_story*` tables with owned
 checkpoint marks on rules. Gameplay remains
-schema **v18**; existing character quest marks and progression retain their IDs
+schema **v19**; existing character quest marks and progression retain their IDs
 and values. Use the preserving [offline upgrade](ASSET_DATABASE.md) before running
 this server against an older assets database. Startup never loads story JSON or
 silently supplies missing policies from compiled defaults.
+
+Arrival presentation completion is stored independently in the gameplay table
+`character_cinematics`, keyed by character and authored cinematic ID. Finishing
+the Robinson rescue records this receipt before publishing its final cues, so
+logging back in does not replay it or create Robinson's native quest mark.
+An interrupted sequence can resume by replaying; an explicit shipwreck
+transition still requests the introduction. The v19 startup migration preserves
+existing characters and quest state and creates only the missing receipt table.
 
 ## Definitions and ownership
 

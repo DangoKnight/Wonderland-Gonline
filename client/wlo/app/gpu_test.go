@@ -19,12 +19,13 @@ import (
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 69
+const gpuParityStages = 79
 
 func isolateGPUFixture(t *testing.T) bool {
 	t.Helper()
@@ -140,6 +141,49 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 73:
+			c.Input.X, c.Input.Y, c.Input.Hovered = -100, -100, nil
+			c.InventoryState.Bag = game.Inventory{{ID: game.ItemPotentialPill, Count: 50}}
+			c.InventoryState.Pets[2] = inventory.UsePet{ID: 12178, Name: []byte("Robinson"), Stats: world.Stats{Level: 1, STR: 15, CON: 20, INT: 5, WIS: 8, AGI: 12}}
+			c.Stats.Potential = 0
+			c.inventoryPacket([]byte{23, 5})
+			c.Inventory.Show()
+			c.Inventory.Use(1, false)
+			if c.Inventory.UseDialog == nil || c.Inventory.UseDialog.Image < 0 || c.Pics.Find("PotentialFire1") < 0 || c.Pics.Find("PotentialFire2") < 0 {
+				g.err = fmt.Errorf("native Potential window assets missing")
+				return
+			}
+		case 74:
+			c.Inventory.UseDialog.SelectTarget(0)
+		case 75:
+			c.Inventory.UseDialog.SelectTarget(3)
+		case 76:
+			a := c.Inventory.UseDialog.Cancel.Abs()
+			c.Input.X, c.Input.Y, c.Input.Hovered = a.X+8, a.Y+8, nil
+		case 77:
+			a := c.Inventory.UseDialog.Confirm.Abs()
+			c.Input.X, c.Input.Y, c.Input.Hovered = a.X+8, a.Y+8, nil
+		case 78:
+			c.InventoryState.Pets[2].Potential = 1
+			c.InventoryState.Bag[0].Count = 49
+		case 72:
+			at := c.floorItemPoint(c.floorItems[1])
+			c.Input.X, c.Input.Y = at.X, at.Y
+		case 71:
+			c.worldItemFlights = nil
+			c.World.Player.X, c.World.Player.Y = 1322, 895
+		case 69:
+			c.battle.state.Active = false
+			c.resetBattleResults()
+			c.dispatch(selfPacket(10001, 2, 11016, 562, 635, 0, 444444444, 444444444, nil, "Dango"))
+			c.dispatch([]byte{5, 4})
+			c.dispatch([]byte{23, 4, 3, 1, 0, 106, 160, 0, 0, 174, 5, 103, 3, 160, 0, 0, 0, 3, 2, 0, 106, 160, 0, 0, 206, 1, 26, 2, 170, 0, 0, 0})
+			c.dispatch([]byte{20, 8})
+		case 70:
+			c.dispatch([]byte{23, 2, 2, 0, 1})
+			c.dispatch([]byte{23, 6, 106, 160, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+			at := c.Now().Add(300 * time.Millisecond)
+			c.Now = func() time.Time { return at }
 		case 67:
 			at := c.Now().Add(time.Second)
 			c.Now = func() time.Time { return at }
@@ -415,6 +459,21 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			n.X, n.Y, n.Shown = 1042, 1075, true
 			c.dispatch([]byte{22, 2, 1, 0, 0xb0, 4, 0x33, 4, 2})
 			c.Now = func() time.Time { return time.Unix(0, 0).Add(time.Minute + time.Second) }
+			c.World.Player.Body, c.World.Player.Head = 2, 1
+			world.Dress(c.World.Body, c.World.Player)
+			freezeGPUFixtureAnimations(c)
+			// Installed used-arcade speech, including its trailing event flag.
+			c.dispatch([]byte{20, 1, 0, 0, 0, 1, 1, 7, 0, 0, 1, 0, 0, 0, 0, 156, 119, 1})
+			start := c.Now()
+			for i := 1; i <= 6; i++ {
+				at := start.Add(time.Duration(i) * 16 * time.Millisecond)
+				c.Now = func() time.Time { return at }
+				c.Frame()
+			}
+			// Force a blink while the same player-art line remains open.
+			at := start.Add(9 * time.Second)
+			c.Now = func() time.Time { return at }
+			c.Frame()
 		case 1:
 			c.dispatch(selfPacket(10001, 2, 10017, 1042, 1075, 0, 444444444, 444444444, []uint16{22003, 21002, 24002}, "Tester"))
 			if c.World == nil {
@@ -482,6 +541,10 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			w.slide = sessionSlideTicks
 		}
 		w.Tick()
+		if g.stage == 72 && c.floorHovered != 1 {
+			g.err = fmt.Errorf("floor-item hover fixture failed: held=%v event=%v UI=%v hit=%d", c.held, c.event.active, c.uiHovered, c.floorItemAt(c.Input.X, c.Input.Y))
+			return
+		}
 		if g.stage == 68 && (len(c.battle.playing) != 1 || c.battle.shown[clientbattle.Cell{X: 4, Y: 2}].HP != 75 || len(c.battle.departures) != 0) {
 			g.err = fmt.Errorf("failed escape lost its native falling animation")
 			return
@@ -496,7 +559,7 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 				return
 			}
 		}
-		if g.stage >= 60 {
+		if g.stage >= 60 && g.stage <= 68 {
 			pet := c.battle.state.At(clientbattle.Cell{X: 3, Y: 2})
 			if pet == nil || pet.ID != 12032 || !c.battle.petPresented(*pet) || pet.Waiting != (g.stage <= 64) ||
 				g.stage <= 61 && (len(c.battle.petDepartures) != 1 || len(c.battle.arrivals) != 1) ||
@@ -509,7 +572,7 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			g.err = fmt.Errorf("post-combat results missing")
 			return
 		}
-		if g.stage >= 50 && (!c.battle.state.Active || c.Inventory.CanAct() ||
+		if g.stage >= 50 && g.stage <= 68 && (!c.battle.state.Active || c.Inventory.CanAct() ||
 			g.stage == 50 && !c.Social.Visible || g.stage == 51 && !c.Inventory.Visible || g.stage == 52 && !c.Team.Visible) {
 			g.err = fmt.Errorf("battle module missing at stage %d", g.stage)
 			return

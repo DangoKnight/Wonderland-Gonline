@@ -9,6 +9,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	serverwire "wonderland-gonline/internal/server/wire"
+	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
 
@@ -230,7 +231,11 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 		return true, s.startRecruitment(ctx, c, click)
 	}
 	for _, ev := range events {
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
+		i, err := s.findCollectionBranch(ctx, c, s.collectionNode(mapID, click, ev, nil), ev, time.Now())
+		if err != nil {
+			return true, err
+		}
+		if i >= 0 {
 			return true, s.startEvent(ctx, c, click, ev, i, true)
 		}
 	}
@@ -239,7 +244,7 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 
 // startEvent is StartSession: refuse unsupported actions before any change, lock the
 // player, then run actions until one waits for the client.
-func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool) error {
+func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool, nodes ...store.ResourceKey) error {
 	mapID := c.character.Map
 	transitions := 1
 	if c.event != nil {
@@ -252,7 +257,7 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	if s.World.Disabled(mapID, ev.ClickID) {
 		return s.rejectDisabled(c)
 	}
-	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now()); handled {
+	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now(), nodes...); handled {
 		return err
 	}
 	ev = s.World.PrepareStory(c.character, c.view, mapID, ev, branch)
@@ -1045,8 +1050,13 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 		if !ok {
 			continue
 		}
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-			return s.startEvent(ctx, c, 0, ev, i, true)
+		node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+		i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+		if err != nil {
+			return err
+		}
+		if i >= 0 {
+			return s.startEvent(ctx, c, 0, ev, i, true, node)
 		}
 	}
 	return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -1055,6 +1065,9 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 // tryRegion is TryExecuteRegion: a walk-in region containing the player (and, after a
 // move, not containing the previous position) runs its first eligible event.
 func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16, moved bool) (bool, error) {
+	if s.starterBeachQuestRaft(c) {
+		return false, nil
+	}
 	if c.event != nil {
 		return true, nil
 	}
@@ -1080,8 +1093,13 @@ func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16,
 			if !ok {
 				continue
 			}
-			if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-				return true, s.startEvent(ctx, c, 0, ev, i, true)
+			node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+			i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+			if err != nil {
+				return true, err
+			}
+			if i >= 0 {
+				return true, s.startEvent(ctx, c, 0, ev, i, true, node)
 			}
 		}
 	}
@@ -1109,6 +1127,9 @@ func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, err
 
 // regionRequest is AC20:4 (ExecuteRegionRequest): the client names a region it entered.
 func (s *Server) regionRequest(ctx context.Context, c *Session, data []byte) error {
+	if s.starterBeachQuestRaft(c) {
+		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	}
 	if len(data) != 2 {
 		if c.event == nil {
 			return c.send([]byte{protocol.CommandEvent, protocol.EventResume})

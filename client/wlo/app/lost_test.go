@@ -13,7 +13,11 @@ import (
 func TestLostConnection(t *testing.T) {
 	c, now, _ := enteredClient(t)
 	c.Frame()
+	c.minigameResultAckPending = true
 	c.disconnected()
+	if c.minigameResultAckPending {
+		t.Fatal("disconnect retained the previous session's minigame acknowledgement")
+	}
 	if !c.Lost.Visible || string(c.Lost.Text.Text) != "Connection lost" || !c.Lost.Leave.Visible || !c.Lost.Prev.Visible || c.Lost.Finish.Visible {
 		t.Fatalf("form visible %v, text %q", c.Lost.Visible, c.Lost.Text.Text)
 	}
@@ -34,7 +38,11 @@ func TestLostConnection(t *testing.T) {
 	if c.World.Player.X != x || c.World.Player.Y != y {
 		t.Fatal("the player walked offline")
 	}
+	c.minigameResultAckPending = true
 	c.Lost.Prev.OnClick()
+	if c.minigameResultAckPending {
+		t.Fatal("return to login retained the previous session's minigame acknowledgement")
+	}
 	if c.Lost.Visible || c.World != nil || !c.Servers.Visible || c.fade.frozen != nil {
 		t.Fatalf("after Prev: form %v, world %v, servers %v", c.Lost.Visible, c.World != nil, c.Servers.Visible)
 	}

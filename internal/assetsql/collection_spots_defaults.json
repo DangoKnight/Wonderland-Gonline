@@ -1,0 +1,3403 @@
+{
+  "1": {
+    "location": "Calcutta",
+    "region": "India",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      12300
+    ],
+    "map_id": 12300,
+    "rewards": [
+      {
+        "item_id": 42047,
+        "source_item_id": 306
+      },
+      {
+        "item_id": 42048,
+        "source_item_id": 309
+      },
+      {
+        "item_id": 44002,
+        "source_item_id": 949
+      },
+      {
+        "item_id": 42045,
+        "source_item_id": 2311
+      }
+    ]
+  },
+  "2": {
+    "location": "Fishing Village",
+    "region": "China",
+    "position_known": true,
+    "x": 1822,
+    "y": 1035,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12100
+    ],
+    "map_id": 12100,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "3": {
+    "location": "Fishing Village",
+    "region": "China",
+    "position_known": true,
+    "x": 1262,
+    "y": 1035,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12100
+    ],
+    "map_id": 12100,
+    "rewards": [
+      {
+        "item_id": 41092,
+        "source_item_id": 3013
+      }
+    ]
+  },
+  "4": {
+    "location": "Fishing Village",
+    "region": "China",
+    "position_known": true,
+    "x": 842,
+    "y": 2455,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      },
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45007,
+        "source_item_id": 3189
+      }
+    ]
+  },
+  "5": {
+    "location": "Fishing Village",
+    "region": "China",
+    "position_known": true,
+    "x": 5362,
+    "y": 4815,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40016,
+        "source_item_id": 231
+      },
+      {
+        "item_id": 40019,
+        "source_item_id": 253
+      },
+      {
+        "item_id": 40020,
+        "source_item_id": 872
+      },
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "6": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 2622,
+    "y": 4315,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "7": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 3422,
+    "y": 3795,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "8": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 3522,
+    "y": 3135,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 40012,
+        "source_item_id": 12
+      },
+      {
+        "item_id": 40011,
+        "source_item_id": 286
+      },
+      {
+        "item_id": 40007,
+        "source_item_id": 386
+      },
+      {
+        "item_id": 40008,
+        "source_item_id": 395
+      },
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "9": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 4082,
+    "y": 2955,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "10": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 3302,
+    "y": 1655,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "11": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 2342,
+    "y": 1435,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "12": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 1382,
+    "y": 2395,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "13": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 1662,
+    "y": 3235,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "14": {
+    "location": "Hawaii - Large Island",
+    "region": "",
+    "position_known": true,
+    "x": 702,
+    "y": 450,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60008
+    ],
+    "map_id": 60008,
+    "rewards": [
+      {
+        "item_id": 40003,
+        "source_item_id": 2536
+      }
+    ]
+  },
+  "15": {
+    "location": "Hawaii",
+    "region": "",
+    "position_known": true,
+    "x": 1242,
+    "y": 1435,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "16": {
+    "location": "Hawaii",
+    "region": "",
+    "position_known": true,
+    "x": 1522,
+    "y": 1075,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "17": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 142,
+    "y": 1535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "18": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 542,
+    "y": 1855,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "19": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 742,
+    "y": 1875,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41015,
+        "source_item_id": 3038
+      }
+    ]
+  },
+  "20": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1102,
+    "y": 1855,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "21": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 482,
+    "y": 795,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "22": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2302,
+    "y": 1735,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40023,
+        "source_item_id": 3042
+      }
+    ]
+  },
+  "23": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 32058,
+        "source_item_id": 1243
+      }
+    ]
+  },
+  "24": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2502,
+    "y": 175,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41130,
+        "source_item_id": 3070
+      }
+    ]
+  },
+  "25": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2802,
+    "y": 295,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41128,
+        "source_item_id": 2923
+      }
+    ]
+  },
+  "26": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2722,
+    "y": 755,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40013,
+        "source_item_id": 1743
+      }
+    ]
+  },
+  "27": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 3902,
+    "y": 1095,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "28": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 3602,
+    "y": 1295,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41132,
+        "source_item_id": 2945
+      }
+    ]
+  },
+  "29": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1822,
+    "y": 475,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "30": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2762,
+    "y": 535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40002,
+        "source_item_id": 2566
+      }
+    ]
+  },
+  "31": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1502,
+    "y": 775,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "32": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2662,
+    "y": 1135,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "33": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 3022,
+    "y": 1315,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41128,
+        "source_item_id": 2923
+      }
+    ]
+  },
+  "34": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1862,
+    "y": 1515,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41130,
+        "source_item_id": 3070
+      }
+    ]
+  },
+  "35": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1142,
+    "y": 1355,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "36": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40020,
+        "source_item_id": 872
+      }
+    ]
+  },
+  "37": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 602,
+    "y": 1075,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "38": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 242,
+    "y": 1115,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40002,
+        "source_item_id": 2566
+      }
+    ]
+  },
+  "39": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 222,
+    "y": 1535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "40": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2742,
+    "y": 835,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "41": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2882,
+    "y": 675,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40013,
+        "source_item_id": 1743
+      }
+    ]
+  },
+  "42": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1382,
+    "y": 1175,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "43": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1402,
+    "y": 1095,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "44": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1602,
+    "y": 795,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "45": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1382,
+    "y": 575,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 41015,
+        "source_item_id": 3038
+      }
+    ]
+  },
+  "46": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 1322,
+    "y": 353,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "47": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 782,
+    "y": 1135,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "48": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 742,
+    "y": 475,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "49": {
+    "location": "Holy Village",
+    "region": "South Island",
+    "position_known": true,
+    "x": 562,
+    "y": 375,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11003
+    ],
+    "map_id": 11003,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "50": {
+    "location": "Iceberg",
+    "region": "",
+    "position_known": true,
+    "x": 3622,
+    "y": 2215,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 42061,
+        "source_item_id": 657
+      },
+      {
+        "item_id": 42063,
+        "source_item_id": 662
+      },
+      {
+        "item_id": 42062,
+        "source_item_id": 881
+      },
+      {
+        "item_id": 42044,
+        "source_item_id": 3270
+      },
+      {
+        "item_id": 42060,
+        "source_item_id": 3271
+      }
+    ]
+  },
+  "51": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 2002,
+    "y": 3235,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60015
+    ],
+    "map_id": 60015,
+    "rewards": [
+      {
+        "item_id": 41132,
+        "source_item_id": 2945
+      }
+    ]
+  },
+  "52": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 2002,
+    "y": 3535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60015
+    ],
+    "map_id": 60015,
+    "rewards": [
+      {
+        "item_id": 40003,
+        "source_item_id": 2536
+      }
+    ]
+  },
+  "53": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 2062,
+    "y": 535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60015
+    ],
+    "map_id": 60015,
+    "rewards": [
+      {
+        "item_id": 41130,
+        "source_item_id": 3070
+      }
+    ]
+  },
+  "54": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 4702,
+    "y": 2975,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40023,
+        "source_item_id": 3042
+      }
+    ]
+  },
+  "55": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 4822,
+    "y": 3375,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40024,
+        "source_item_id": 3107
+      }
+    ]
+  },
+  "56": {
+    "location": "Inca",
+    "region": "",
+    "position_known": true,
+    "x": 2122,
+    "y": 1635,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60015
+    ],
+    "map_id": 60015,
+    "rewards": [
+      {
+        "item_id": 10031,
+        "source_item_id": 502
+      }
+    ]
+  },
+  "57": {
+    "location": "Jungle",
+    "region": "North Island",
+    "position_known": true,
+    "x": 4962,
+    "y": 1295,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11030,
+      11044,
+      11187,
+      12066,
+      12271,
+      12272,
+      12273,
+      12293,
+      13230,
+      13231,
+      13232
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "58": {
+    "location": "Jungle",
+    "region": "North Island",
+    "position_known": true,
+    "x": 3782,
+    "y": 1095,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11030,
+      11044,
+      11187,
+      12066,
+      12271,
+      12272,
+      12273,
+      12293,
+      13230,
+      13231,
+      13232
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40021,
+        "source_item_id": 2553
+      }
+    ]
+  },
+  "59": {
+    "location": "Jungle",
+    "region": "North Island",
+    "position_known": true,
+    "x": 2662,
+    "y": 355,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11030,
+      11044,
+      11187,
+      12066,
+      12271,
+      12272,
+      12273,
+      12293,
+      13230,
+      13231,
+      13232
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41005,
+        "source_item_id": 2852
+      }
+    ]
+  },
+  "60": {
+    "location": "Jungle",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1642,
+    "y": 1355,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      11030,
+      11044,
+      11187,
+      12066,
+      12271,
+      12272,
+      12273,
+      12293,
+      13230,
+      13231,
+      13232
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "61": {
+    "location": "Kama Cave",
+    "region": "North Island",
+    "position_known": true,
+    "x": 3962,
+    "y": 1935,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 42028,
+        "source_item_id": 821
+      },
+      {
+        "item_id": 42033,
+        "source_item_id": 832
+      },
+      {
+        "item_id": 42008,
+        "source_item_id": 3248
+      },
+      {
+        "item_id": 42024,
+        "source_item_id": 3257
+      }
+    ]
+  },
+  "62": {
+    "location": "Kelan Village's Cave",
+    "region": "",
+    "position_known": true,
+    "x": 1922,
+    "y": 1255,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 43001,
+        "source_item_id": 5
+      },
+      {
+        "item_id": 43002,
+        "source_item_id": 64
+      },
+      {
+        "item_id": 42043,
+        "source_item_id": 682
+      },
+      {
+        "item_id": 43004,
+        "source_item_id": 930
+      },
+      {
+        "item_id": 42038,
+        "source_item_id": 1213
+      },
+      {
+        "item_id": 43007,
+        "source_item_id": 1651
+      }
+    ]
+  },
+  "63": {
+    "location": "Kelan Village's Cave",
+    "region": "",
+    "position_known": true,
+    "x": 2802,
+    "y": 715,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 43001,
+        "source_item_id": 5
+      },
+      {
+        "item_id": 44005,
+        "source_item_id": 21
+      },
+      {
+        "item_id": 44003,
+        "source_item_id": 585
+      },
+      {
+        "item_id": 44006,
+        "source_item_id": 592
+      },
+      {
+        "item_id": 44007,
+        "source_item_id": 602
+      }
+    ]
+  },
+  "64": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 2962,
+    "y": 1135,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "65": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 5082,
+    "y": 1275,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "66": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 4502,
+    "y": 1695,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41004,
+        "source_item_id": 285
+      }
+    ]
+  },
+  "67": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 3782,
+    "y": 1275,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40023,
+        "source_item_id": 3042
+      }
+    ]
+  },
+  "68": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 3062,
+    "y": 1235,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40011,
+        "source_item_id": 286
+      }
+    ]
+  },
+  "69": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 2862,
+    "y": 1335,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 45006,
+        "source_item_id": 154
+      },
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      },
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45007,
+        "source_item_id": 3189
+      },
+      {
+        "item_id": 45004,
+        "source_item_id": 3219
+      }
+    ]
+  },
+  "70": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 3062,
+    "y": 695,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "71": {
+    "location": "Kelan Village's Woods",
+    "region": "",
+    "position_known": true,
+    "x": 882,
+    "y": 1495,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40022,
+        "source_item_id": 2569
+      }
+    ]
+  },
+  "72": {
+    "location": "Kelan Village",
+    "region": "North Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12000
+    ],
+    "map_id": 12000,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      }
+    ]
+  },
+  "73": {
+    "location": "Kelan Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1102,
+    "y": 1615,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12000
+    ],
+    "map_id": 12000,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      }
+    ]
+  },
+  "74": {
+    "location": "Kelan Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1802,
+    "y": 1635,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12000
+    ],
+    "map_id": 12000,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      }
+    ]
+  },
+  "75": {
+    "location": "Kelan Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 2182,
+    "y": 1255,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12000
+    ],
+    "map_id": 12000,
+    "rewards": [
+      {
+        "item_id": 43002,
+        "source_item_id": 64
+      }
+    ]
+  },
+  "76": {
+    "location": "Koyota",
+    "region": "",
+    "position_known": true,
+    "x": 4162,
+    "y": 455,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60011
+    ],
+    "map_id": 60011,
+    "rewards": [
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45007,
+        "source_item_id": 3189
+      },
+      {
+        "item_id": 45008,
+        "source_item_id": 3199
+      }
+    ]
+  },
+  "77": {
+    "location": "Koyota",
+    "region": "",
+    "position_known": true,
+    "x": 1002,
+    "y": 1195,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60011
+    ],
+    "map_id": 60011,
+    "rewards": [
+      {
+        "item_id": 42049,
+        "source_item_id": 329
+      },
+      {
+        "item_id": 42050,
+        "source_item_id": 379
+      },
+      {
+        "item_id": 44003,
+        "source_item_id": 585
+      },
+      {
+        "item_id": 44002,
+        "source_item_id": 949
+      },
+      {
+        "item_id": 42051,
+        "source_item_id": 3231
+      }
+    ]
+  },
+  "78": {
+    "location": "Koyota",
+    "region": "",
+    "position_known": true,
+    "x": 3842,
+    "y": 1335,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60011
+    ],
+    "map_id": 60011,
+    "rewards": [
+      {
+        "item_id": 60002,
+        "source_item_id": 905
+      }
+    ]
+  },
+  "79": {
+    "location": "Koyota",
+    "region": "",
+    "position_known": true,
+    "x": 602,
+    "y": 2695,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60011
+    ],
+    "map_id": 60011,
+    "rewards": [
+      {
+        "item_id": 40012,
+        "source_item_id": 12
+      },
+      {
+        "item_id": 40008,
+        "source_item_id": 395
+      },
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "80": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": true,
+    "x": 1622,
+    "y": 2095,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 40013,
+        "source_item_id": 1743
+      }
+    ]
+  },
+  "81": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 32067,
+        "source_item_id": 89
+      }
+    ]
+  },
+  "82": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": true,
+    "x": 1082,
+    "y": 855,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 40020,
+        "source_item_id": 872
+      }
+    ]
+  },
+  "83": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": true,
+    "x": 2282,
+    "y": 1075,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 32028,
+        "source_item_id": 941
+      }
+    ]
+  },
+  "84": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": true,
+    "x": 3762,
+    "y": 1455,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 40022,
+        "source_item_id": 2569
+      }
+    ]
+  },
+  "85": {
+    "location": "Kyoto",
+    "region": "Koyota",
+    "position_known": true,
+    "x": 3902,
+    "y": 1655,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12250
+    ],
+    "map_id": 12250,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "86": {
+    "location": "Maka Cave",
+    "region": "South Island",
+    "position_known": true,
+    "x": 4882,
+    "y": 1355,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 44002,
+        "source_item_id": 949
+      },
+      {
+        "item_id": 42020,
+        "source_item_id": 1656
+      },
+      {
+        "item_id": 42008,
+        "source_item_id": 3248
+      }
+    ]
+  },
+  "87": {
+    "location": "Maka Cave",
+    "region": "South Island",
+    "position_known": true,
+    "x": 2722,
+    "y": 1895,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 44005,
+        "source_item_id": 21
+      },
+      {
+        "item_id": 44004,
+        "source_item_id": 27
+      },
+      {
+        "item_id": 42023,
+        "source_item_id": 37
+      },
+      {
+        "item_id": 44001,
+        "source_item_id": 531
+      },
+      {
+        "item_id": 44007,
+        "source_item_id": 602
+      }
+    ]
+  },
+  "88": {
+    "location": "Mayan Forest",
+    "region": "",
+    "position_known": true,
+    "x": 562,
+    "y": 2435,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60005
+    ],
+    "map_id": 60005,
+    "rewards": [
+      {
+        "item_id": 60002,
+        "source_item_id": 905
+      }
+    ]
+  },
+  "89": {
+    "location": "Mayan Forest",
+    "region": "",
+    "position_known": true,
+    "x": 2362,
+    "y": 395,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60005
+    ],
+    "map_id": 60005,
+    "rewards": [
+      {
+        "item_id": 40012,
+        "source_item_id": 12
+      },
+      {
+        "item_id": 40007,
+        "source_item_id": 386
+      },
+      {
+        "item_id": 40008,
+        "source_item_id": 395
+      },
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "90": {
+    "location": "Mayan Forest",
+    "region": "",
+    "position_known": true,
+    "x": 2943,
+    "y": 2515,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60005
+    ],
+    "map_id": 60005,
+    "rewards": [
+      {
+        "item_id": 42074,
+        "source_item_id": 10
+      },
+      {
+        "item_id": 43002,
+        "source_item_id": 64
+      },
+      {
+        "item_id": 42055,
+        "source_item_id": 699
+      },
+      {
+        "item_id": 42005,
+        "source_item_id": 1504
+      }
+    ]
+  },
+  "91": {
+    "location": "Mayan Tribe",
+    "region": "",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12150
+    ],
+    "map_id": 12150,
+    "rewards": [
+      {
+        "item_id": 32059,
+        "source_item_id": 1257
+      }
+    ]
+  },
+  "92": {
+    "location": "Mayan Tribe",
+    "region": "",
+    "position_known": true,
+    "x": 302,
+    "y": 1315,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12150
+    ],
+    "map_id": 12150,
+    "rewards": [
+      {
+        "item_id": 42005,
+        "source_item_id": 1504
+      }
+    ]
+  },
+  "93": {
+    "location": "Mayan Tribe",
+    "region": "",
+    "position_known": true,
+    "x": 3282,
+    "y": 1175,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12150
+    ],
+    "map_id": 12150,
+    "rewards": [
+      {
+        "item_id": 40003,
+        "source_item_id": 2536
+      }
+    ]
+  },
+  "94": {
+    "location": "Mayan Tribe",
+    "region": "",
+    "position_known": true,
+    "x": 1682,
+    "y": 595,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12150
+    ],
+    "map_id": 12150,
+    "rewards": [
+      {
+        "item_id": 40003,
+        "source_item_id": 2536
+      }
+    ]
+  },
+  "95": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 542,
+    "y": 655,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "96": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 1382,
+    "y": 1375,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 40012,
+        "source_item_id": 12
+      },
+      {
+        "item_id": 40011,
+        "source_item_id": 286
+      },
+      {
+        "item_id": 40007,
+        "source_item_id": 386
+      },
+      {
+        "item_id": 40008,
+        "source_item_id": 395
+      },
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "97": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 4822,
+    "y": 655,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      },
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45007,
+        "source_item_id": 3189
+      },
+      {
+        "item_id": 45004,
+        "source_item_id": 3219
+      }
+    ]
+  },
+  "98": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 5202,
+    "y": 675,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "99": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 1702,
+    "y": 1055,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "100": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 1102,
+    "y": 2395,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 41128,
+        "source_item_id": 2923
+      }
+    ]
+  },
+  "101": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 942,
+    "y": 2395,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 41005,
+        "source_item_id": 2852
+      }
+    ]
+  },
+  "102": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 3542,
+    "y": 3835,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 44005,
+        "source_item_id": 21
+      },
+      {
+        "item_id": 44004,
+        "source_item_id": 27
+      },
+      {
+        "item_id": 44001,
+        "source_item_id": 531
+      },
+      {
+        "item_id": 44006,
+        "source_item_id": 592
+      },
+      {
+        "item_id": 44007,
+        "source_item_id": 602
+      },
+      {
+        "item_id": 44002,
+        "source_item_id": 949
+      }
+    ]
+  },
+  "103": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 5300,
+    "y": 1900,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": [
+      {
+        "item_id": 60001,
+        "source_item_id": 2010
+      }
+    ]
+  },
+  "104": {
+    "location": "Oslya",
+    "region": "",
+    "position_known": true,
+    "x": 1042,
+    "y": 635,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60006
+    ],
+    "map_id": 60006,
+    "rewards": [
+      {
+        "item_id": 42033,
+        "source_item_id": 832
+      },
+      {
+        "item_id": 42058,
+        "source_item_id": 1223
+      },
+      {
+        "item_id": 42020,
+        "source_item_id": 1656
+      },
+      {
+        "item_id": 42008,
+        "source_item_id": 3248
+      },
+      {
+        "item_id": 42014,
+        "source_item_id": 3254
+      }
+    ]
+  },
+  "105": {
+    "location": "Oslya",
+    "region": "",
+    "position_known": true,
+    "x": 4222,
+    "y": 975,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60006
+    ],
+    "map_id": 60006,
+    "rewards": [
+      {
+        "item_id": 42074,
+        "source_item_id": 10
+      },
+      {
+        "item_id": 44003,
+        "source_item_id": 585
+      },
+      {
+        "item_id": 47001,
+        "source_item_id": 1989
+      }
+    ]
+  },
+  "106": {
+    "location": "Persia",
+    "region": "",
+    "position_known": true,
+    "x": 120,
+    "y": 1190,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      13100
+    ],
+    "map_id": 13100,
+    "rewards": [
+      {
+        "item_id": 40002,
+        "source_item_id": 2566
+      }
+    ]
+  },
+  "107": {
+    "location": "Persia",
+    "region": "",
+    "position_known": true,
+    "x": 1910,
+    "y": 1190,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      13100
+    ],
+    "map_id": 13100,
+    "rewards": [
+      {
+        "item_id": 40023,
+        "source_item_id": 3042
+      }
+    ]
+  },
+  "108": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 4062,
+    "y": 2815,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 43001,
+        "source_item_id": 5
+      },
+      {
+        "item_id": 43002,
+        "source_item_id": 64
+      },
+      {
+        "item_id": 42043,
+        "source_item_id": 682
+      },
+      {
+        "item_id": 43004,
+        "source_item_id": 930
+      },
+      {
+        "item_id": 42038,
+        "source_item_id": 1213
+      },
+      {
+        "item_id": 43007,
+        "source_item_id": 1651
+      }
+    ]
+  },
+  "109": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 4902,
+    "y": 3095,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "110": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 5422,
+    "y": 1815,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "111": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 4882,
+    "y": 1715,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "112": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 4262,
+    "y": 1115,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "113": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 3402,
+    "y": 655,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "114": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 1502,
+    "y": 2175,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "115": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 1922,
+    "y": 3295,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "116": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 1402,
+    "y": 4475,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "117": {
+    "location": "Revival Isle",
+    "region": "",
+    "position_known": true,
+    "x": 562,
+    "y": 575,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60004
+    ],
+    "map_id": 60004,
+    "rewards": [
+      {
+        "item_id": 40002,
+        "source_item_id": 2566
+      }
+    ]
+  },
+  "118": {
+    "location": "Shayii Hill",
+    "region": "",
+    "position_known": true,
+    "x": 222,
+    "y": 450,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12281
+    ],
+    "map_id": 12281,
+    "rewards": [
+      {
+        "item_id": 40020,
+        "source_item_id": 872
+      }
+    ]
+  },
+  "119": {
+    "location": "South Island",
+    "region": "",
+    "position_known": true,
+    "x": 1362,
+    "y": 3575,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60002,
+      60003
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 60001,
+        "source_item_id": 2010
+      }
+    ]
+  },
+  "120": {
+    "location": "Stoowa Isle (Subterranean Maze)",
+    "region": "",
+    "position_known": true,
+    "x": 1702,
+    "y": 4555,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "121": {
+    "location": "Stoowa Isle (Subterranean Maze)",
+    "region": "",
+    "position_known": true,
+    "x": 1602,
+    "y": 5215,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "122": {
+    "location": "Subway",
+    "region": "",
+    "position_known": true,
+    "x": 2442,
+    "y": 615,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [
+      11035,
+      11039
+    ],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 44005,
+        "source_item_id": 21
+      },
+      {
+        "item_id": 44001,
+        "source_item_id": 531
+      },
+      {
+        "item_id": 44007,
+        "source_item_id": 602
+      },
+      {
+        "item_id": 42058,
+        "source_item_id": 1223
+      },
+      {
+        "item_id": 42064,
+        "source_item_id": 1990
+      }
+    ]
+  },
+  "123": {
+    "location": "Taiwan (Carnie) - Pleasure Island",
+    "region": "",
+    "position_known": true,
+    "x": 1782,
+    "y": 4895,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "124": {
+    "location": "Taiwan (Carnie) - Pleasure Island",
+    "region": "",
+    "position_known": true,
+    "x": 1522,
+    "y": 4595,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "125": {
+    "location": "Taiwan (Carnie) - Pleasure Island",
+    "region": "",
+    "position_known": true,
+    "x": 2242,
+    "y": 435,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 42053,
+        "source_item_id": 7
+      },
+      {
+        "item_id": 42001,
+        "source_item_id": 95
+      },
+      {
+        "item_id": 42057,
+        "source_item_id": 383
+      },
+      {
+        "item_id": 44003,
+        "source_item_id": 585
+      }
+    ]
+  },
+  "126": {
+    "location": "Taiwan (Carnie) - Pleasure Island",
+    "region": "",
+    "position_known": true,
+    "x": 2182,
+    "y": 1855,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45008,
+        "source_item_id": 3199
+      }
+    ]
+  },
+  "127": {
+    "location": "Universal Island",
+    "region": "",
+    "position_known": true,
+    "x": 722,
+    "y": 1135,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60007
+    ],
+    "map_id": 60007,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "128": {
+    "location": "Universal Island",
+    "region": "",
+    "position_known": true,
+    "x": 942,
+    "y": 1075,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60007
+    ],
+    "map_id": 60007,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "129": {
+    "location": "Universal Island",
+    "region": "",
+    "position_known": true,
+    "x": 982,
+    "y": 1115,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60007
+    ],
+    "map_id": 60007,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "130": {
+    "location": "Universal Island",
+    "region": "",
+    "position_known": true,
+    "x": 1582,
+    "y": 1415,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      60007
+    ],
+    "map_id": 60007,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "131": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 3222,
+    "y": 375,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41130,
+        "source_item_id": 3070
+      }
+    ]
+  },
+  "132": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 3562,
+    "y": 895,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41129,
+        "source_item_id": 2934
+      }
+    ]
+  },
+  "133": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 3762,
+    "y": 1055,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41128,
+        "source_item_id": 2923
+      }
+    ]
+  },
+  "134": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1642,
+    "y": 1075,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41132,
+        "source_item_id": 2945
+      }
+    ]
+  },
+  "135": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 2062,
+    "y": 695,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40015,
+        "source_item_id": 2544
+      }
+    ]
+  },
+  "136": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 32059,
+        "source_item_id": 1257
+      }
+    ]
+  },
+  "137": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 922,
+    "y": 275,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41127,
+        "source_item_id": 3088
+      }
+    ]
+  },
+  "138": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 82,
+    "y": 415,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41006,
+        "source_item_id": 3068
+      }
+    ]
+  },
+  "139": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 82,
+    "y": 416,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 44001,
+        "source_item_id": 531
+      }
+    ]
+  },
+  "140": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 602,
+    "y": 535,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 41127,
+        "source_item_id": 3088
+      }
+    ]
+  },
+  "141": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 32029,
+        "source_item_id": 3147
+      }
+    ]
+  },
+  "142": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40020,
+        "source_item_id": 872
+      }
+    ]
+  },
+  "143": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 2542,
+    "y": 1675,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      }
+    ]
+  },
+  "144": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": false,
+    "x": 0,
+    "y": 0,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 32013,
+        "source_item_id": 156
+      }
+    ]
+  },
+  "145": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1722,
+    "y": 1955,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "146": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1602,
+    "y": 1775,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "147": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1582,
+    "y": 2295,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40022,
+        "source_item_id": 2569
+      }
+    ]
+  },
+  "148": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 1822,
+    "y": 2415,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40015,
+        "source_item_id": 2544
+      }
+    ]
+  },
+  "149": {
+    "location": "Welling Village",
+    "region": "North Island",
+    "position_known": true,
+    "x": 2142,
+    "y": 2235,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [
+      12050
+    ],
+    "map_id": 12050,
+    "rewards": [
+      {
+        "item_id": 40015,
+        "source_item_id": 2544
+      }
+    ]
+  },
+  "150": {
+    "location": "Taiwan",
+    "region": "",
+    "position_known": true,
+    "x": 1782,
+    "y": 4895,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "151": {
+    "location": "Taiwan",
+    "region": "",
+    "position_known": true,
+    "x": 1522,
+    "y": 4595,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41066,
+        "source_item_id": 56
+      }
+    ]
+  },
+  "152": {
+    "location": "Taiwan",
+    "region": "",
+    "position_known": true,
+    "x": 2242,
+    "y": 435,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 42053,
+        "source_item_id": 7
+      },
+      {
+        "item_id": 42001,
+        "source_item_id": 95
+      },
+      {
+        "item_id": 42057,
+        "source_item_id": 383
+      },
+      {
+        "item_id": 44003,
+        "source_item_id": 585
+      }
+    ]
+  },
+  "153": {
+    "location": "Taiwan",
+    "region": "",
+    "position_known": true,
+    "x": 2182,
+    "y": 1855,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45008,
+        "source_item_id": 3199
+      }
+    ]
+  },
+  "154": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 2962,
+    "y": 1135,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "155": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 5082,
+    "y": 1275,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "156": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 4502,
+    "y": 1695,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 41004,
+        "source_item_id": 285
+      }
+    ]
+  },
+  "157": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 3782,
+    "y": 1275,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40023,
+        "source_item_id": 3042
+      }
+    ]
+  },
+  "158": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 3062,
+    "y": 1235,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40011,
+        "source_item_id": 286
+      }
+    ]
+  },
+  "159": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 2862,
+    "y": 1335,
+    "kind": "vacuum",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 45006,
+        "source_item_id": 154
+      },
+      {
+        "item_id": 45001,
+        "source_item_id": 1694
+      },
+      {
+        "item_id": 45005,
+        "source_item_id": 3178
+      },
+      {
+        "item_id": 45007,
+        "source_item_id": 3189
+      },
+      {
+        "item_id": 45004,
+        "source_item_id": 3219
+      }
+    ]
+  },
+  "160": {
+    "location": "Northeast Forest",
+    "region": "Kelan Village",
+    "position_known": true,
+    "x": 3062,
+    "y": 695,
+    "kind": "unresolved",
+    "source": "wlohub",
+    "map_candidates": [],
+    "map_id": 0,
+    "rewards": [
+      {
+        "item_id": 40014,
+        "source_item_id": 1799
+      }
+    ]
+  },
+  "65001": {
+    "location": "North Island",
+    "region": "",
+    "position_known": true,
+    "x": 5300,
+    "y": 1900,
+    "kind": "vacuum",
+    "source": "owner",
+    "map_candidates": [
+      60001
+    ],
+    "map_id": 60001,
+    "rewards": []
+  },
+  "65002": {
+    "location": "South Island",
+    "region": "",
+    "position_known": true,
+    "x": 1362,
+    "y": 3575,
+    "kind": "vacuum",
+    "source": "owner",
+    "map_candidates": [
+      60002,
+      60003
+    ],
+    "map_id": 0,
+    "rewards": []
+  }
+}

@@ -421,7 +421,8 @@ func TestEventGatheringMultiplePoolsAtomicCooldown(t *testing.T) {
 			sword += int(it.Count)
 		}
 	}
-	if food != 51 || sword != 1 || !c.character.EventTimers[11008].Equal(now.Add(180*time.Second)) {
+	expiry, clockErr := s.Store.ResourceExpiry(context.Background(), s.collectionNode(c.character.Map, 88, &ev, nil))
+	if food != 51 || sword != 1 || clockErr != nil || !expiry.Equal(now.Add(180*time.Second).Truncate(time.Millisecond)) {
 		t.Fatal("incomplete multi-pool reward")
 	}
 	before := c.character.Bag
@@ -450,20 +451,27 @@ func TestWaterGatheringNativePacketsAndCooldown(t *testing.T) {
 	if !bytes.Equal(packets[0], []byte{6, 2, 1}) {
 		t.Fatal(packets)
 	}
-	wantAdd := append([]byte{23, 5, 2, 0x61, 0xea, 1, 0}, make([]byte, 26)...)
+	wantAdd := append([]byte{23, 6, 0x61, 0xea, 1, 0}, make([]byte, 27)...)
 	if !bytes.Equal(packets[1], wantAdd) {
 		t.Fatal("native addition", packets[1])
 	}
-	if len(packets) < 6 || !bytes.Equal(packets[2], []byte{24, 4, 1, 43}) || !bytes.Equal(packets[3], []byte{24, 1, 1, 43, 1}) || !bytes.Equal(packets[4], []byte{6, 2, 0}) || !bytes.Equal(packets[5], []byte{20, 8}) {
-		t.Fatal("native mark and interaction release", packets)
+	if len(packets) < 6 || !bytes.Equal(packets[2], []byte{66, 2, 1, 1, 43, 0, 0, 0, 0, 0, 128, 102, 64}) || !bytes.Equal(packets[3], []byte{24, 4, 1, 43}) || !bytes.Equal(packets[4], []byte{24, 1, 1, 43, 1}) || !bytes.Equal(packets[5], []byte{20, 10}) {
+		t.Fatal("native timer, mark and completion", packets)
 	}
-	if c.event != nil || c.character.Bag[1].Count != 1 || c.character.Quests[11009].Step != 1 || !c.character.EventTimers[11009].Equal(now.Add(180*time.Second)) {
+	expiry, clockErr := s.Store.ResourceExpiry(context.Background(), s.collectionNode(c.character.Map, 88, ev, nil))
+	if c.event == nil || c.character.Bag[1].Count != 1 || c.character.Quests[11009].Step != 1 || clockErr != nil || !expiry.Equal(now.Add(180*time.Second)) {
 		t.Fatal(c.character)
 	}
-	if branch := s.World.FindBranchAt(c.character, c.view, 60001, ev, 0, 0, 0, -1, now); branch != 0 {
+	if err := s.eventCommand(context.Background(), c, []byte{20, 6}); err != nil || c.event != nil {
+		t.Fatal("collection acknowledgement did not release interaction", err)
+	}
+	if release := wire.packets(t); !contains(release, []byte{6, 2, 0}) || !contains(release, []byte{20, 8}) {
+		t.Fatal("collection acknowledgement missing release", release)
+	}
+	if branch, err := s.findCollectionBranch(context.Background(), c, s.collectionNode(c.character.Map, 88, ev, nil), ev, now); err != nil || branch != 0 {
 		t.Fatal("cooldown branch not selected", branch)
 	}
-	if branch := s.World.FindBranchAt(c.character, c.view, 60001, ev, 0, 0, 0, -1, now.Add(180*time.Second)); branch != 1 {
+	if branch, err := s.findCollectionBranch(context.Background(), c, s.collectionNode(c.character.Map, 88, ev, nil), ev, now.Add(180*time.Second)); err != nil || branch != 1 {
 		t.Fatal("expired timer branch", branch)
 	}
 	// A stale/replayed branch cannot grant despite current durable timer state.
@@ -474,19 +482,15 @@ func TestWaterGatheringNativePacketsAndCooldown(t *testing.T) {
 		t.Fatal(handled, err)
 	}
 	for _, p := range wire.packets(t) {
-		if len(p) > 1 && p[0] == 23 && p[1] == 5 {
+		if len(p) > 1 && p[0] == 23 && (p[1] == 5 || p[1] == 6) {
 			t.Fatal("duplicate grant")
 		}
 	}
 	// Native AC20 entry uses the same interception before rejecting opcode 14.
-	delete(c.character.EventTimers, 11009)
-	if err := s.Store.UpdateCharacter(context.Background(), c.account.ID, c.character.ID, func(stored *game.Character) error { delete(stored.EventTimers, 11009); return nil }); err != nil {
-		t.Fatal(err)
-	}
 	s.worldMu.Lock()
-	err = s.startEvent(context.Background(), c, 88, ev, 1, true)
+	err = s.startEvent(context.Background(), c, 89, ev, 1, true)
 	s.worldMu.Unlock()
-	if err != nil || c.character.Bag[1].Count != 2 || c.event != nil {
+	if err != nil || c.character.Bag[1].Count != 2 || c.event == nil {
 		t.Fatal("ordinary event entry did not gather", err)
 	}
 }
@@ -535,7 +539,7 @@ func TestWaterGatheringRejectsInvalidBranchAndStaleConditions(t *testing.T) {
 				t.Fatal("unexpected timer/mark change", err)
 			}
 			for _, p := range wire.packets(t) {
-				if len(p) > 1 && p[0] == 23 && p[1] == 5 {
+				if len(p) > 1 && p[0] == 23 && (p[1] == 5 || p[1] == 6) {
 					t.Fatal("rejected branch granted reward")
 				}
 			}
@@ -630,7 +634,8 @@ func TestWaterGatheringFailedReceiptRemainsDurable(t *testing.T) {
 		t.Fatal(handled, err)
 	}
 	chars, err := s.Store.Characters(context.Background(), c.account.ID)
-	if err != nil || chars[0].Bag[1].ID != 60001 || chars[0].Bag[1].Count != 1 || !chars[0].EventTimerActive(11009, now) {
+	expiry, clockErr := s.Store.ResourceExpiry(context.Background(), s.collectionNode(c.character.Map, 88, ev, nil))
+	if err != nil || clockErr != nil || chars[0].Bag[1].ID != 60001 || chars[0].Bag[1].Count != 1 || !expiry.After(now) {
 		t.Fatal("committed grant lost after receipt failure", err)
 	}
 	c.character = &chars[0]
@@ -654,7 +659,7 @@ func TestWaterGatheringCanceledCommitDoesNotPublishReward(t *testing.T) {
 		t.Fatal("failed commit changed session", handled, err)
 	}
 	for _, p := range wire.packets(t) {
-		if len(p) > 1 && ((p[0] == 23 && p[1] == 5) || p[0] == 24) {
+		if len(p) > 1 && ((p[0] == 23 && (p[1] == 5 || p[1] == 6)) || p[0] == 24 || p[0] == 66) {
 			t.Fatal("failed commit published a reward or mark", p)
 		}
 	}

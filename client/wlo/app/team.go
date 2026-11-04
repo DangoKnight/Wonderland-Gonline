@@ -24,6 +24,7 @@ func (c *Client) initTeam() {
 	c.Team.CanAct = c.Inventory.CanAct
 	c.Team.InBattle = func() bool { return c.battle.state.Active }
 	c.Team.CanChangePet = c.canChangeBattlePet
+	c.Team.RidingVehicle = func() bool { return c.World != nil && c.World.Player.VehicleID != 0 }
 	c.Team.Send = func(p []byte) error {
 		if err := c.Net.Send(p); err != nil {
 			return err
@@ -66,7 +67,7 @@ func (c *Client) initTeam() {
 	}
 	c.Team.DrawPetBody = func(slot byte, x, y, action int) {
 		if n := preview(slot); n != nil {
-			n.Draw(c.Screen, x, y, action)
+			n.Draw(c.Env.Screen, x, y, action)
 		}
 	}
 	c.Team.PetPreviewSize = func(slot byte) (int, int) {
@@ -312,7 +313,7 @@ func (c *Client) teamPacket(p []byte) bool {
 		}
 	case protocol.CommandPetControl:
 		switch p[1] {
-		case protocol.PetControlBoardVehicleAlternate:
+		case protocol.PetControlPetName:
 			if len(p) >= 7 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID && p[6] >= 1 && p[6] <= game.MaxPets {
 				pet := &c.InventoryState.Pets[p[6]-1]
 				pet.Name = append([]byte(nil), p[7:]...)
@@ -354,9 +355,12 @@ func (c *Client) teamPacket(p []byte) bool {
 			c.showCompanion(binary.LittleEndian.Uint32(p[2:]), uint16(binary.LittleEndian.Uint32(p[6:])), p[13:13+nameLen])
 			return true
 		case protocol.PetControlWireCode1:
+			before := c.InventoryState.Pets
 			if c.InventoryState.ApplyPetRecruit(p, c.World.Player.ID) {
 				c.assignPetSkills()
+				c.announceNewPets(before)
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			}
 			return true
 		case protocol.PetControlPetSlot:

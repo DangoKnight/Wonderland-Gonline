@@ -292,6 +292,7 @@ func (c *Client) useBinding(b hud.Binding) {
 		c.battle.selected = clientbattle.Cell{X: actor.x, Y: actor.y}
 		c.battle.binding = &b
 		c.Skills.Hide()
+		c.BattleSkills.Hide()
 		return
 	}
 	c.openHotbarTargets(b, actor)

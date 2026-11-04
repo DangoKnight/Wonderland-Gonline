@@ -124,6 +124,9 @@ func (s *Server) discoveryCommand(_ context.Context, c *Session, _ []byte) error
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if err := c.send(protocol.CollectionTimingCapability()); err != nil {
+		return err
+	}
 	if !s.combatRoundChain {
 		return nil
 	}

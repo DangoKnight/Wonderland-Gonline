@@ -134,34 +134,42 @@ func (s *Server) executeCompounding(ctx context.Context, c *Session, slots []byt
 			}
 			ids[i] = it.ID
 		}
-		tier, level, skill := next.AlchemySkill()
-		if len(requested) != 0 {
-			tier, level, skill = requested[0], 0, 0
-			wanted := uint16(game.AlchemyPrimarySkill)
-			switch tier {
-			case game.AlchemyJunior:
-				wanted = game.AlchemyJuniorSkill
-			case game.AlchemySuperior:
-				wanted = game.AlchemySuperiorSkill
-			}
-			for _, sk := range next.Skills {
-				if sk.ID == wanted && sk.Grade > 0 {
-					level, skill = min(sk.Grade, game.AlchemySkillMaximum), sk.ID
-				}
-			}
-			if tier != game.AlchemyPrimary && skill == 0 {
-				return game.ErrAlchemyIngredients
-			}
-		}
-		skillID = skill
-		for _, sk := range next.Skills {
-			if sk.ID == skill {
-				beforeEXP, beforeGrade = sk.EXP, sk.Grade
-			}
-		}
-		outcome, err := s.alchemyIndex.Compound(ids, tier, level, roll)
+		outcome, petFood, err := s.compoundPetFood(ids, roll)
 		if err != nil {
 			return err
+		}
+		var skill uint16
+		if !petFood {
+			tier, level, learnedSkill := next.AlchemySkill()
+			skill = learnedSkill
+			if len(requested) != 0 {
+				tier, level, skill = requested[0], 0, 0
+				wanted := uint16(game.AlchemyPrimarySkill)
+				switch tier {
+				case game.AlchemyJunior:
+					wanted = game.AlchemyJuniorSkill
+				case game.AlchemySuperior:
+					wanted = game.AlchemySuperiorSkill
+				}
+				for _, sk := range next.Skills {
+					if sk.ID == wanted && sk.Grade > 0 {
+						level, skill = min(sk.Grade, game.AlchemySkillMaximum), sk.ID
+					}
+				}
+				if tier != game.AlchemyPrimary && skill == 0 {
+					return game.ErrAlchemyIngredients
+				}
+			}
+			skillID = skill
+			for _, sk := range next.Skills {
+				if sk.ID == skill {
+					beforeEXP, beforeGrade = sk.EXP, sk.Grade
+				}
+			}
+			outcome, err = s.alchemyIndex.Compound(ids, tier, level, roll)
+			if err != nil {
+				return err
+			}
 		}
 		if _, ok := s.Assets.Items[outcome.ItemID]; !ok {
 			return game.ErrAlchemyResult
@@ -184,7 +192,9 @@ func (s *Server) executeCompounding(ctx context.Context, c *Session, slots []byt
 		if err != nil {
 			return err
 		}
-		execution.SkillPackets = next.AddSkillEXP(skill, game.AlchemySkillEXPGain)
+		if !petFood {
+			execution.SkillPackets = next.AddSkillEXP(skill, game.AlchemySkillEXPGain)
+		}
 		for _, sk := range next.Skills {
 			if sk.ID == skill {
 				afterEXP, afterGrade = sk.EXP, sk.Grade

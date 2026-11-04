@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"encoding/binary"
-	"fmt"
 	"time"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/game"
@@ -38,6 +37,10 @@ func (f *Form) useBag(slot byte) {
 		return
 	}
 	def := f.State.Items[it.ID].Definition
+	if def.Type == game.VehicleType {
+		f.send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlPlaceVehicleManual, slot}.U16(it.ID))
+		return
+	}
 	if potentialPill(it.ID) {
 		if f.potentialRequest != nil {
 			if f.itemUseTime().Sub(f.potentialRequest.sent) < potentialReplyTimeout {
@@ -107,6 +110,14 @@ func (f *Form) UseSelected(slot, count, target byte, expected game.Item) bool {
 		f.send([]byte{protocol.CommandInventory, protocol.InventoryPotentialPill, slot, target})
 	} else {
 		def := f.State.Items[expected.ID].Definition
+		if target == 0 && def.Type == game.ItemTypePetStatFood {
+			if f.Warning != nil {
+				f.Warning("Select a pet for this food.")
+			} else {
+				f.notice("Select a pet for this food.")
+			}
+			return false
+		}
 		if target == 0 && (def.Status[0] == itemAmityStatus || def.Status[1] == itemAmityStatus) {
 			f.notice("Select a pet for this item.")
 			return false
@@ -162,7 +173,9 @@ func (f *Form) PotentialReply(p []byte) bool {
 	}
 	f.potentialRequest = nil
 	if p[2] == protocol.PotentialPillRejected {
-		f.notice("The Potential Pill could not be used.")
+		if f.Warning != nil {
+			f.Warning("The Potential Pill could not be used.")
+		}
 		return true
 	}
 	if p[3] == 0 {
@@ -173,11 +186,14 @@ func (f *Form) PotentialReply(p []byte) bool {
 	}
 	switch {
 	case p[4] > pending.before:
-		f.notice(fmt.Sprintf("Potential increased to %d.", p[4]))
+		if f.Env != nil && f.Env.Sound != nil {
+			f.Env.Sound("sound\\SEB0300.wav")
+		}
 	case p[4] < pending.before:
-		f.notice(fmt.Sprintf("Potential attempt failed; potential decreased to %d.", p[4]))
 	default:
-		f.notice(fmt.Sprintf("Potential attempt failed; potential remains %d.", p[4]))
+		if f.UseDialog != nil && f.UseDialog.item.ID == game.ItemGoldenPotentialPill && f.Env != nil && f.Env.Sound != nil {
+			f.Env.Sound("sound\\wav0152.wav")
+		}
 	}
 	return true
 }

@@ -1,0 +1,697 @@
+id,original_name,name,source_ids
+10034,Pure Iron Knif,Pure Iron Knife,499
+10036,Copper Falchio,Copper Falchion,97
+10037,Bronze Falchio,Bronze Falchion,503
+10039,Pure Iron Falc,Pure Iron Falchion,589
+10040,Steel Broadswo,Steel Broadswords,865
+10044,Pure Iron Sabe,Pure Iron Saber,675
+10053,Crescent Katan,Crescent Katana,1231
+10054,Invisible Knif,Invisible Knife,917
+10055,Ghost Horn Kni,Ghost Horn Knife,588
+10067,Warrior's Falc,Warrior's Falchion,387
+10074,Wind Aurora Sw,Wind Aurora Sword,1796
+10078,Crescent Mache,Crescent Machete,1785
+10079,Beast Bone Fal,Beast Bone Falchion,2209
+10080,Chopping Falch,Chopping Falchion,2210
+10081,Muramasa Katan,Muramasa Katana,2441
+10082,Cool Blue Falc,Cool Blue Falchion,2211
+10085,Scythe of Wrat,Scythe of Wrath,2660
+10087,Crimson Bloodh,Crimson Bloodhook,2670
+10089,Lightflare Bla,Lightflare Blade,2889
+10092,Gold Dracoblad,Gold Dracoblade,2915
+11034,Pure Iron Swor,Pure Iron Sword,88
+11036,Copper Fine Sw,Copper Fine Sword,584
+11037,Bronze Fine Sw,Bronze Fine Sword,586
+11038,Iron Fine Swor,Iron Fine Sword,1238
+11039,Pure Iron Fine,Pure Iron Fine Sword,673
+11040,Steel Fine Swo,Steel Fine Sword,1237
+11041,Copper Big Swo,Copper Big Sword,1346
+11042,Bronze Big Swo,Bronze Big Sword,1269
+11044,Pure Iron Big,Pure Iron Big Sword,1298
+11045,Steel Big Swor,Steel Big Sword,937
+11052,Skinny Bronze,Skinny Bronze Sword,903
+11053,Skeleton Iron,Skeleton Iron Sword,565
+11054,Skinny Iron Sw,Skinny Iron Sword,566
+11055,Skeleton Steel,Skeleton Steel Sword,567
+11062,Rip Bronze Swo,Rip Bronze Sword,570
+11064,Rip Pure Iron,Rip Pure Iron Sword,572
+11065,Rip Steel Swor,Rip Steel Sword,574
+11070,Wave Bronze Sw,Wave Bronze Sword,577
+11071,Wave Iron Swor,Wave Iron Sword,1062
+11072,Curly Iron Swo,Curly Iron Sword,579
+11073,Wave Steel Swo,Wave Steel Sword,947
+11100,Magellan's Swo,Magellan's Sword,2014
+11109,Frederico's Sw,Frederico's Sword,1308
+11121,Long Bronze Sw,Long Bronze Sword,1612
+11124,Victoria's Swo,Victoria's Sword,2157
+11128,Twin Bluemoon,Twin Bluemoon Blades,1783
+11135,Choppy Iron Sw,Choppy Iron Sword,1967
+11137,Steel Rock Swo,Steel Rock Sword,2451
+11140,Golden Broadsw,Golden Broadsword,2213
+11145,Frozen Dragon,Frozen Dragon Sword,2216
+11150,Evil Dragon Bl,Evil Dragon Blades,2494
+11151,Stone Ghost Sw,Stone Ghost Sword,2522
+11153,Scarlet Dracob,Scarlet Dracoblade,2658
+11154,Swirlfire Swor,Swirlfire Sword,2662
+11157,Twin Dracoblad,Twin Dracoblade,2874
+12037,Pure Iron Spea,Pure Iron Spear,816
+12039,War Copper Spe,War Copper Spear,953
+12040,War Bronze Spe,War Bronze Spear,528
+12042,War Pure Iron,War Pure Iron Spear,533
+12043,War Steel Spea,War Steel Spear,526
+12048,Perfect Broad,Perfect Broad Spear,534
+12049,Skull Long Spe,Skull Long Spear,535
+12050,Perfect Long S,Perfect Long Spear,536
+12058,Pure Iron Trid,Pure Iron Trident,546
+12089,Acuminate Halb,Acuminate Halberd,1520
+12092,Fast Cross Pik,Fast Cross Pike,1616
+12111,Dusk War Halbe,Dusk War Halberd,2217
+12122,Crimson Halber,Crimson Halberd,2891
+12507,Fire Aurora Sw,Fire Aurora Sword,1800
+13037,Pretty Long Bo,Pretty Long Bow,506
+13042,Cursed Crossbo,Cursed Crossbow,611
+14058,Fallen Angel's,Fallen Angel's Wand,637
+14059,Archangel's Wa,Archangel's Wand,638
+14115,Dragon Soul Wa,Dragon Soul Wand,1470
+14117,Crystal Blue W,Crystal Blue Wand,670
+14127,Wind Aurora St,Wind Aurora Staff,1804
+14135,Ice Dragon Sta,Ice Dragon Staff,1991
+14138,Holy Light Sta,Holy Light Staff,1869
+14140,Compression St,Compression Staff,3025
+14141,Frozen Orb Sta,Frozen Orb Staff,3026
+14142,Prison Eclipse,Prison Eclipse Staff,2563
+14151,Wave Shifting,Wave Shifting Wand,2225
+14154,Sharp Eagle Wa,Sharp Eagle Wand,2228
+14163,Silver Eagle W,Silver Eagle Wand,2506
+14169,Staff of Prodi,Staff of Prodigy,2665
+14173,Flaming Eagle,Flaming Eagle Wand,2888
+14174,Azure Moon Wan,Azure Moon Wand,2890
+15062,Blazing Sun Ta,Blazing Sun Talon,1901
+15065,Icy Dragon Cla,Icy Dragon Claw,2233
+17034,Double Blades,Double Blades Ax,512
+17049,Long Handled A,Long Handled Ax,1080
+18002,Craftsman's Pe,Craftsman's Pestle,2334
+18035,Big Lauan Stic,Big Lauan Stick,3191
+18036,Big Cypress St,Big Cypress Stick,561
+18038,Great Thorn St,Great Thorn Stick,648
+18040,Great Iron Sti,Great Iron Stick,517
+18042,Meteorite Gave,Meteorite Gavel,650
+18043,Big Stone Gave,Big Stone Gavel,518
+18050,Pure Iron Gave,Pure Iron Gavel,891
+18073,Hematite Malle,Hematite Mallet,2002
+18078,Titanium Gold,Titanium Gold Hammer,2880
+21009,Restaurant Uni,Restaurant Uniform,713
+21014,Craftsman's Cl,Craftsman's Clothes,2333
+21061,Leather Garmen,Leather Garment,3211
+21063,Artificial Coa,Artificial Coat,3172
+21072,Color Clothes,Color Clothes (Stained Cloth),715
+21106,Defensive Armo,Defensive Armor,345
+21131,Pure Iron Armo,Pure Iron Armor,1833
+21135,War Demon Armo,War Demon Armor,1097
+21136,Pure Iron Lori,Pure Iron Loricae,757
+21155,Blue Steel Arm,Blue Steel Armor,766
+21166,Blue Dragon Go,Blue Dragon Gown,1182
+21167,Green Dragon G,Green Dragon Gown,1327
+21168,Red Dragon Gow,Red Dragon Gown,1055
+21171,White Dragon G,White Dragon Gown,671
+21182,Concealment Cl,Concealment Clothes,743
+21200,Blue Woolen Cl,Blue Woolen Clothes,1273
+21201,Green Woolen C,Green Woolen Clothes,1277
+21202,Red Woolen Clo,Red Woolen Clothes,751
+21203,Red Monster Cl,Red Monster Clothes,1181
+21206,Blue Monster C,Blue Monster Clothes,1059
+21219,Light Kung-Fu,Light Kung-Fu Suit,1180
+21220,Blue Kung-Fu S,Blue Kung-Fu Suit,1047
+21222,Soldier's Clot,Soldier's Clothes,1399
+21225,Earth Aurora C,Earth Aurora Clothes,1805
+21226,Water Aurora C,Water Aurora Clothes,1806
+21227,Fire Aurora Cl,Fire Aurora Clothes,1807
+21228,Wind Aurora Cl,Wind Aurora Clothes,1808
+21236,Magic Dragon C,Magic Dragon Cloak,1876
+21238,Verdant Wing S,Verdant Wing Suit,1973
+21241,Gray Ninja Sui,Gray Ninja Suit,1903
+21255,Delicate Kimon,Delicate Kimono,2444
+21256,Wind Demon Sui,Wind Demon Suit,2237
+21259,Purple Demon S,Purple Demon Suit,2240
+21260,Duke Shadow Su,Duke Shadow Suit,2241
+21264,Dark Feather S,Dark Feather Suit,2243
+21282,Swift Dragon S,Swift Dragon Suit,2244
+21285,Fire Kung-Fu S,Fire Kung-Fu Suit,2498
+21288,Jade Silk Clot,Jade Silk Cloth,2507
+21294,Blue Flame Lor,Blue Flame Loricae,2524
+21302,Crystal Lorica,Crystal Loricae,2537
+21318,Gold Dragon Qi,Gold Dragon Qipao,2542
+21321,Dragoon's Batt,Dragoon's Battlerobe,2604
+21324,Shimmeros Armo,Shimmeros Armor,2674
+21327,The Stealthy O,The Stealthy One,2678
+21330,Draconian Batt,Draconian Battlerobe,2884
+21334,Rosy Woolen Cl,Rosy Woolen Clothes,2877
+21338,Violahaze Batt,Violahaze Battlerobe,2917
+21339,Natura Zen Gar,Natura Zen Garb,2918
+22007,Round Headdres,Round Headdress,54
+22065,Green Headdres,Green Headdress,3213
+22076,Copper Hairwea,Copper Hairwear,781
+22081,Footman's Helm,Footman's Helmet,665
+22082,Knight's Helme,Knight's Helmet,805
+22093,Pure Iron Helm,Pure Iron Helmet,1770
+22098,Warrior's Helm,Warrior's Helmet,839
+22102,Fighting Helme,Fighting Helmet,1274
+22106,Blue Bird Helm,Blue Bird Helmet,849
+22120,Pure Iron Cres,Pure Iron Crest,1428
+22124,White Lord Cre,White Lord Crest,815
+22147,Legendary Crow,Legendary Crown,1466
+22150,Steel Roman He,Steel Roman Helmet,843
+22151,Golden Roman H,Golden Roman Helmet,847
+22153,Maid's Hairwea,Maid's Hairwear,817
+22156,Gold Swan Helm,Gold Swan Helmet,53
+22165,Kitten Hairwea,Kitten Hairwear,792
+22167,Swan Wing Helm,Swan Wing Helmet,850
+22176,Light Leather,Light Leather Hat,787
+22177,Brown Feather,Brown Feather Hat,799
+22178,Magic Feather,Magic Feather Hat,804
+22180,Dark Wizard Ha,Dark Wizard Hat,827
+22181,Purple Star Ha,Purple Star Hat,836
+22194,Potential Head,Potential Headscarf,1089
+22196,Perfect Headsc,Perfect Headscarf,1444
+22197,Heavenly Headb,Heavenly Headband,785
+22219,Sea Wing Helme,Sea Wing Helmet (Instance),1145
+22224,Earth Aurora H,Earth Aurora Hat,1809
+22225,Water Aurora H,Water Aurora Hat,1811
+22226,Fire Aurora Ha,Fire Aurora Hat,1812
+22227,Wind Aurora Ha,Wind Aurora Hat,1836
+22229,Delicate Helme,Delicate Helmet,1629
+22230,Banana Peel He,Banana Peel Helmet,1726
+22231,Traveller's Ha,Traveller's Hat,1721
+22233,Thunder Hairpi,Thunder Hairpin,1730
+22234,Pirate's Eye P,Pirate's Eye Patch,1724
+22235,Deity Headscar,Deity Headscarf,1732
+22251,Brass Beast He,Brass Beast Helmet,2247
+22254,Purple Headban,Purple Headband,2250
+22258,Grey Feather H,Grey Feather Hat,2254
+22503,Redbell Headba,Redbell Headband,2258
+22508,Ice Crystal He,Ice Crystal Helmet,2508
+22509,Dark Feather H,Dark Feather Helmet,2515
+22510,Jade Eagle Hel,Jade Eagle Helmet,2521
+22514,Gold Feather H,Gold Feather Helmet,2526
+22515,Magic Purple H,Magic Purple Hat,2532
+22536,Dark Bunny Ear,Dark Bunny Ears,2570
+22541,Bluehawk Headd,Bluehawk Headdress,2685
+22542,Bandana of Zea,Bandana of Zeal,2687
+22543,Sunrise Headdr,Sunrise Headdress,2883
+22544,Whitestone Cro,Whitestone Crown,2894
+22545,Apprentice's H,Apprentice's Hat,2885
+22547,Mystic Eagle H,Mystic Eagle Headdress,3011
+22548,Mystic Eagle H,Mystic Eagle Headdress,3011
+22549,Mystic Eagle H,Mystic Eagle Headdress,3011
+22550,Mystic Eagle H,Mystic Eagle Headdress,3011
+22551,Mystic Eagle H,Mystic Eagle Headdress,3011
+22552,Mystic Eagle H,Mystic Eagle Headdress,3011
+22553,Mystic Eagle H,Mystic Eagle Headdress,3011
+22554,Mystic Eagle H,Mystic Eagle Headdress,3011
+22555,Mystic Eagle H,Mystic Eagle Headdress,3011
+22556,Mystic Eagle H,Mystic Eagle Headdress,3011
+22564,Dark Bunny Ear,Dark Bunny Ears,2570
+22574,Dark Bunny Ear,Dark Bunny Ears,2570
+23061,Beast Fur Brac,Beast Fur Bracers,3216
+23062,Tiger Fur Brac,Tiger Fur Bracers,2713
+23063,Leather Bracer,Leather Bracers,3170
+23080,Pure Iron Cuff,Pure Iron Cuffs,1772
+23087,Giant Demon Gl,Giant Demon Gloves,977
+23114,Green Dragon B,Green Dragon Bracers,1065
+23115,Red Dragon Bra,Red Dragon Bracers,985
+23117,Resistent Brac,Resistent Bracers,987
+23121,Gray Steel Bra,Gray Steel Bracers,1038
+23122,Silvery Bracer,Silvery Bracers,980
+23124,Crystal Bracer,Crystal Bracers,983
+23131,Mysterious Bra,Mysterious Bracers,988
+23135,Steel Thorn Br,Steel Thorn Bracers,948
+23136,Red Leather Br,Red Leather Bracers,1256
+23137,Blue-rip Brace,Blue-rip Bracers,1888
+23153,Blue War Brace,Blue War Bracers (Instance),1409
+23156,Earth Aurora B,Earth Aurora Bracers,1813
+23157,Water Aurora B,Water Aurora Bracers,1814
+23158,Fire Aurora Br,Fire Aurora Bracers,1815
+23159,Wind Aurora Br,Wind Aurora Bracers,1816
+23168,Blue Ray Wrist,Blue Ray Wristband,1860
+23169,Verdant Wristb,Verdant Wristband,1889
+23170,Beaded Wristba,Beaded Wristband,1868
+23176,Flame Thorn Br,Flame Thorn Bracers,2264
+23180,Purple Flame G,Purple Flame Gloves,2268
+23182,Blue Crystal B,Blue Crystal Bracers,2269
+23183,Dark Bead Brac,Dark Bead Bracers,2270
+23185,Superior Brace,Superior Bracers,2510
+23187,Dreaming Brace,Dreaming Bracers,2519
+23190,Platimum Brace,Platimum Bracers,2688
+23193,Citrine Bracer,Citrine Bracers,2689
+23194,Ragesteel Brac,Ragesteel Bracers,2690
+23196,Heliotrope Arm,Heliotrope Armlet,2696
+23197,Whiteshade Glo,Whiteshade Gloves,2887
+23198,Darkshade Glov,Darkshade Gloves,2902
+23199,Forsaken Brace,Forsaken Bracers,2900
+24004,Gentleman's Sh,Gentleman's Shoes,2873
+24008,Student's Shoe,Student's Shoes,1540
+24014,Craftsman Shoe,Craftsman Shoes,2335
+24062,Copper Vine Sh,Copper Vine Shoes,3086
+24068,Great Copper S,Great Copper Shoes,364
+24072,Beast Fur Boot,Beast Fur Boots,915
+24075,Horsehide Boot,Horsehide Boots,1513
+24081,Pure Iron Boot,Pure Iron Boots,1773
+24082,Copper Winged,Copper Winged Boots,906
+24083,Long Knight Bo,Long Knight Boots,995
+24084,Knight War Boo,Knight War Boots,1004
+24085,Great Knight B,Great Knight Boots,1008
+24096,Copper Woven B,Copper Woven Boots,694
+24099,Silvery Winged,Silvery Winged Shoes,912
+24107,Long Copper Bo,Long Copper Boots,902
+24108,Golden Iron Bo,Golden Iron Boots,1002
+24109,Black Steel Bo,Black Steel Boots,1330
+24114,Light Fur Boot,Light Fur Boots,1240
+24120,Red Thorn Boot,Red Thorn Boots,1007
+24121,White Net Boot,White Net Boots,1100
+24128,Thick Beast Bo,Thick Beast Boots,1366
+24129,Comfortable Bo,Comfortable Boots,1365
+24130,Flax Green Boo,Flax Green Boots,1268
+24133,Dark Blue Boot,Dark Blue Boots,1326
+24135,Daffadilly Sho,Daffadilly Shoes,1048
+24150,Leather Net Bo,Leather Net Boots,1336
+24162,Nether World B,Nether World Boots,1295
+24163,Long Blue Boot,Long Blue Boots,1163
+24166,Long Purple Bo,Long Purple Boots,1458
+24167,Long White Boo,Long White Boots,1459
+24171,Fire Aurora Sh,Fire Aurora Shoes,1819
+24172,Wind Aurora Sh,Wind Aurora Shoes,1820
+24174,Light Blue Boo,Light Blue Boots,1621
+24176,Light Purple B,Light Purple Boots,1630
+24177,Red Flame Boot,Red Flame Boots,1631
+24178,Bloody War Boo,Bloody War Boots,1601
+24180,Strong Beast B,Strong Beast Boots,1731
+24181,Angel Rope Boo,Angel Rope Boots,1733
+24183,Protection Boo,Protection Boots,1861
+24189,Super Demon Bo,Super Demon Boots,2273
+24190,Dark Green Boo,Dark Green Boots,2274
+24193,Purple Light B,Purple Light Boots,2277
+24204,Blue Rider Boo,Blue Rider Boots,2283
+24205,Green Rider Bo,Green Rider Boots,2286
+24206,Orange Leather,Orange Leather Boots,2517
+24208,Dream Purple B,Dream Purple Boots,2527
+24230,Berylweave Sho,Berylweave Shoes,2704
+24231,White Dawn Sho,White Dawn Shoes,2904
+24232,Green Lush Boo,Green Lush Boots,2896
+24234,Black Quill Sh,Black Quill Shoes,2899
+25003,Black Crystal,Black Crystal Ring,877
+25004,Pure Silver Ri,Pure Silver Ring,878
+25012,Silvery Earrin,Silvery Earrings,344
+25015,Feather Earrin,Feather Earrings,1761
+25017,Crystal Earrin,Crystal Earrings,1165
+25018,Bright Earring,Bright Earrings,679
+25023,Emerald Neckla,Emerald Necklace,664
+25024,Red Jade Neckl,Red Jade Necklace,870
+25029,Resistent Neck,Resistent Necklace,1054
+25043,Phoenix Feathe,Phoenix Feather,1138
+25048,Blooded Neckla,Blooded Necklace,400
+25134,Cherish Neckla,Cherish Necklace,1425
+25140,Silvery Spell,Silvery Spell Bead,1312
+25143,Tight Waistban,Tight Waistband,1364
+25144,Solid Waistban,Solid Waistband,1764
+25148,Bulletproof Ve,Bulletproof Vest,1475
+25150,Smile Mud Stat,Smile Mud Statue,510
+25156,Fortitude Arml,Fortitude Armlet,1485
+25173,Belly Chain Ne,Belly Chain Necklace,3154
+25174,Resistant Arml,Resistant Armlet,1104
+25175,Dazzling Armle,Dazzling Armlet,1105
+25177,Defensive Arml,Defensive Armlet,1490
+25178,Brilliant Arml,Brilliant Armlet,1481
+25179,Original Armle,Original Armlet,1491
+25189,Mysterious Scr,Mysterious Scroll,1402
+25215,Archangel Wing,Archangel Wings,2961
+25531,Christmas Clot,Christmas Clothes,1132
+25532,Reindeer's Ant,Reindeer's Antler,1131
+25540,Decelerate Sad,Decelerate Saddle,2073
+25594,Fierce Necklac,Fierce Necklace,1719
+25626,7 Blessing Gua,7 Blessing Guard,2290
+25632,Magical Earbob,Magical Earbobs,2295
+25636,Sapphire Neckl,Sapphire Necklace,2509
+25637,Aurora Necklac,Aurora Necklace,2591
+25641,Tenacity Saddl,Tenacity Saddle,2706
+25642,Bluezircon Ear,Bluezircon Earrings,2699
+25644,Sterling Earri,Sterling Earrings,2698
+26004,Spirit Fork Bo,Spirit Fork Box,2388
+26016,Golden Rings B,Golden Rings Box,2190
+26018,Kung-Fu Suit B,Kung-Fu Suit Box,2183
+27012,Wolf Deity Bea,Wolf Deity Bean,1670
+27013,Delicate Riceb,Delicate Riceball,1747
+27015,Angel's Feathe,Angel's Feather,1671
+27018,Braised Tilapi,Braised Tilapia,2339
+30008,Small Poached,Small Poached Egg,1691
+30011,Ocean Heart Pi,Ocean Heart Piece,558
+30023,Farmer's Potat,Farmer's Potato,1657
+30024,Mysterious Cry,Mysterious Crystal,390
+30049,Steam Ship Vou,Steam Ship Voucher,2608
+30050,Motorbike Vouc,Motorbike Voucher,2066
+30051,Turtle Car Vou,Turtle Car Voucher,2065
+30054,Snake's Biliar,Snake's Biliary,1979
+30323,Magical Cure P,Magical Cure Potion,2352
+30328,Villager's Mon,Villager's Money,2418
+30334,Purple Chest K,Purple Chest Key,2561
+30351,Merchant's Tap,Merchant's Tapestrie,2435
+30352,Color Glass Dr,Color Glass Drops,2364
+30353,Merchant's Sta,Merchant's Stash,2365
+30354,Raw Sirloin St,Raw Sirloin Steak,1844
+30371,Purple Chest K,Purple Chest Key,2561
+32012,Wholegrain Bre,Wholegrain Bread,155
+32014,Driedmeat Brea,Driedmeat Bread,157
+32017,Australian Bre,Australian Bread,160
+32038,Rice With Roas,Rice With Roast Pork,180
+32039,Sparerib Over,Sparerib Over Rice,181
+32041,Fried Seafood,Fried Seafood Rice,183
+32042,Minced Pork Co,Minced Pork Congee,184
+32055,Braised Egg Be,Braised Egg Beancurd,196
+32063,Cabbage Noodle,Cabbage Noodles,202
+32064,Assorted Noodl,Assorted Noodles,203
+32065,Seafood Noodle,Seafood Noodles,204
+32069,Bicolor Sundae,Bicolor Sundaes,1247
+32071,Vanilla Ice Cr,Vanilla Ice Cream,1373
+32072,Chocolate Ice,Chocolate Ice Cream,366
+32073,Instant Noodle,Instant Noodles,1252
+32083,Roast Cuttlefi,Roast Cuttlefish,214
+32088,Braised Stingr,Braised Stingray,218
+32091,Rice Wine Chic,Rice Wine Chicken,219
+32094,Fugu Nigiri Su,Fugu Nigiri Sushi,1369
+32097,Braised Eel Ri,Braised Eel Rice,222
+32104,Steamed Stingr,Steamed Stingray,225
+32114,Braised Octopu,Braised Octopus,236
+32115,Crisp Cuttlefi,Crisp Cuttlefish,237
+32116,Roasted Lobste,Roasted Lobster,2445
+32118,Stewed Crabroe,Stewed Crabroes,239
+32125,Watermelon Jui,Watermelon Juice,20
+32127,Pineapple Juic,Pineapple Juice,2464
+32129,Strawberry Jui,Strawberry Juice,16
+32130,Gooseberry Jui,Gooseberry Juice,2473
+32134,Spring Milk Te,Spring Milk Tea,1404
+32135,Steamed Crab S,Steamed Crab ShaoMai,1405
+32136,Wonderful Nood,Wonderful Noodles,1406
+32137,Thousand-Leave,Thousand-Leaves Cake,1407
+32139,Tomato In Frie,Tomato In Fried Egg,240
+32144,Fried Potato L,Fried Potato Leaf,246
+32151,Roasted Chicke,Roasted Chicken,254
+32154,Roasted Tiger,Roasted Tiger Meat,257
+32156,Roasted Dog Me,Roasted Dog Meat,259
+32157,Roasted Roo Me,Roasted Roo Meat,260
+32158,Roasted Ostric,Roasted Ostrich Meat,261
+32159,Roasted Duck M,Roasted Duck Meat,262
+32160,Roasted Snake,Roasted Snake Meat,263
+32161,Roasted Wolf M,Roasted Wolf Meat,265
+32166,Pineapple Pops,Pineapple Popsicle,1071
+32168,Orange Popsicl,Orange Popsicle,1073
+32170,Grape Ice Crea,Grape Ice Cream,1075
+32171,Peach Ice Crea,Peach Ice Cream,1076
+32172,Mango Ice Crea,Mango Ice Cream,1077
+32173,Pork Bone Nood,Pork Bone Noodles,2097
+32174,Pork Miso Nood,Pork Miso Noodle,2012
+32177,Soy Porkbone N,Soy Porkbone Noodle,1437
+32178,Ginseng Chicke,Ginseng Chicken Stew,266
+32180,Ginseng Thick,Ginseng Thick Soup,268
+32181,Big Fried Cabb,Big Fried Cabbage,269
+32184,Salted Duck Eg,Salted Duck Egg,272
+32185,Boiled Quail E,Boiled Quail Egg,273
+32188,Small Rice Noo,Small Rice Noodles,403
+32189,Shrimp Rice No,Shrimp Rice Noodles,404
+32190,Fried Pork Noo,Fried Pork Noodles,406
+32194,Cabbage & Pork,Cabbage & Pork Buns,410
+32195,Big BBQ Pork B,Big BBQ Pork Buns,411
+32197,Fried Meat Bal,Fried Meat Ball,413
+32200,Shallot Fried,Shallot Fried Egg,416
+32201,Fried Rice Wit,Fried Rice With Ham,417
+32202,BBQ Pork Over,BBQ Pork Over Rice,418
+32203,Seafood Soft R,Seafood Soft Rice,419
+32204,Thick Seafood,Thick Seafood Soup,420
+32206,Big Custard Ta,Big Custard Tart,422
+32207,Strawberry Cak,Strawberry Cake,423
+32208,Braised Pork N,Braised Pork Noodles,424
+32210,Ginger Beancur,Ginger Beancurd,426
+32215,Vegetable Nood,Vegetable Noodles,431
+32217,Caraway Noodle,Caraway Noodles,433
+32223,Crabmeat Conge,Crabmeat Congee,439
+32227,Caraway Tilapi,Caraway Tilapia,443
+32230,Garlic Yellowc,Garlic Yellowcroaker,446
+32243,Delicious Octo,Delicious Octopus,459
+32244,Boiled Cuttlef,Boiled Cuttlefish,460
+32248,Tomato With Eg,Tomato With Egg,464
+32265,Sliced Dog Mea,Sliced Dog Meat,483
+32271,Soup of Chicke,Soup of Chicken,490
+32273,Gyrophora Chic,Gyrophora Chicken,492
+32277,Boiled Ducks E,Boiled Ducks Egg,496
+32278,Salted Quails,Salted Quails Egg,497
+32282,Cantaloupe Syr,Cantaloupe Syrup,2504
+32286,Christmas Swee,Christmas Sweets,1091
+32288,Lovely Chocola,Lovely Chocolate,1356
+32297,Apple Berry Sy,Apple Berry Syrup,2736
+32298,Lemon Berry Sy,Lemon Berry Syrup,2738
+32299,Mandar Berry S,Mandar Berry Syrup,2739
+32300,Grape Berry Sy,Grape Berry Syrup,2737
+32303,Fruit Berry Sy,Fruit Berry Syrup,2011
+32307,Soyseafood Ric,Soyseafood Rice,1217
+33001,Prepared Chine,Prepared Chinese Ink,2592
+33006,Poisonous Poti,Poisonous Potion,2601
+33017,Strengthening,Strengthening Potion,2151
+33019,Recovery Potio,Recovery Potion,927
+33020,Undead Bird Fe,Undead Bird Feather,119
+33022,Protection Pot,Protection Potion,1046
+33026,Biochemical Ba,Biochemical Battery,2448
+33044,Hot Sweet Pota,Hot Sweet Potato,1228
+33046,Recovery Medic,Recovery Medicine,2152
+33049,Heaven Fire Gl,Heaven Fire Glaze,1264
+34013,King Certifica,King Certification,1112
+34015,Glazed Stone B,Glazed Stone Bag,2158
+34018,Transfer Mirro,Transfer Mirror,2153
+34019,King Certifica,King Certification,1112
+34024,Olla Seafood N,Olla Seafood Noodles,1557
+34026,Protective EXP,Protective EXP Pill,2016
+34029,Protective EXP,Protective EXP Pill,2016
+34050,Magic Carpet D,Magic Carpet Design,2492
+34064,20% EXP Capsul,20% EXP Capsule,1309
+34065,25% EXP Capsul,25% EXP Capsule,1982
+34068,Love Picnic Lu,Love Picnic Lunch,1125
+34074,Whole Title De,Whole Title Deed,4
+34088,Small Love Bou,Small Love Bouquet,1127
+34089,Forgotten Scro,Forgotten Scroll,1114
+34104,Repairing Span,Repairing Spanner,1825
+34105,Repairing Poti,Repairing Potion,1574
+34118,Special Dumpli,Special Dumpling,1679
+34120,Silver Amity J,Silver Amity Jelly,1553
+34121,Gold Amity Jel,Gold Amity Jelly,1647
+34124,Fast Growth St,Fast Growth Statue,1562
+34129,Big Vacuum Cle,Big Vacuum Cleaner,2650
+34137,Pet Lethe Scro,Pet Lethe Scroll,1576
+34139,Pet Return Scr,Pet Return Scroll,1305
+34141,Big Magical Eg,Big Magical Egg,1972
+34148,Space Agreemen,Space Agreement,1107
+34155,Small Tear Pli,Small Tear Plier,1831
+34157,Cherry Door Vo,Cherry Door Voucher,1230
+34158,Beach Door Vou,Beach Door Voucher,1229
+34161,Fresh Fish Foo,Fresh Fish Food,1033
+34163,Teleport Scrol,Teleport Scroll,1830
+34169,Bamboo Dragonf,Bamboo Dragonfly,1665
+34178,Birthday Gift,Birthday Gift Box,1505
+34199,Strengthen Pac,Strengthen Pack,2588
+34203,Spirit Ricebal,Spirit Riceball,1934
+34215,Monkey Ricebal,Monkey Riceball,1931
+34217,Pumpkin Riceba,Pumpkin Riceball,1942
+34218,Butterfly Rice,Butterfly Riceball,1940
+34220,Ginseng Riceba,Ginseng Riceball,1945
+34223,Charlotte Rice,Charlotte Riceball,1952
+34224,Sea Lion Riceb,Sea Lion Riceball,1941
+34225,Dracula Riceba,Dracula Riceball,1948
+34227,Robinson Riceb,Robinson Riceball,1947
+34233,Passion Bouque,Passion Bouquet,2006
+34243,Cherubim Scrol,Cherubim Scroll,1925
+34247,Small Demon Sc,Small Demon Scroll,1921
+34253,Training Ticke,Training Ticket,1857
+34255,Archangel Scro,Archangel Scroll,2061
+34264,Enhanced Skin,Enhanced Skin Milk,2641
+34265,Block Magic Pe,Block Magic Perfume,2640
+34285,Super HP Potio,Super HP Potion,2347
+34350,Super Potentia,Super Potential Pill,2767
+34351,Anti-Potential,Anti-Potential Pill,2587
+37004,Big Wooden Gea,Big Wooden Gear,1370
+37005,Medium Wooden,Medium Wooden Gear,1376
+37006,Small Wooden G,Small Wooden Gear,176
+37011,Great Fishing,Great Fishing Tool,187
+37012,Sophisticated,Sophisticated Device,3228
+37015,Satellite Ante,Satellite Antenna,1987
+37018,Gas Storage Ta,Gas Storage Tank,2165
+37032,Pail Refrigera,Pail Refrigerant,1031
+37038,Original Rubbe,Original Rubber,3256
+37053,Massive Capsta,Massive Capstan,2060
+37054,Integrated Fla,Integrated Flavor,316
+37063,Water Equipmen,Water Equipment,198
+37071,80mm Special G,80mm Special Glass,1025
+37079,Little Ore Pow,Little Ore Powder,1581
+37082,Luxury Fishing,Luxury Fishing Tool,1286
+37085,Precision Circ,Precision Circuit,1717
+37086,Electronic Cry,Electronic Crystal,883
+37101,Magic Wool Bal,Magic Wool Ball,2421
+37104,Iron Fishing T,Iron Fishing Thread,2141
+37105,Simple Fishing,Simple Fishing Tool,553
+37112,Precision Sigh,Precision Sight,1985
+37122,Small Generato,Small Generator,1835
+37138,Big Linen Clot,Big Linen Cloth,1518
+37144,Small Fuel Tan,Small Fuel Tank,2198
+37145,Nuclear Machin,Nuclear Machine,125
+37149,Phosphorylatio,Phosphorylation,2655
+37160,Airship Framew,Airship Framework,2078
+37162,Ceramic Cylind,Ceramic Cylinder,958
+37163,Airship Balloo,Airship Balloon,2403
+37165,Hydrogen Gener,Hydrogen Generator,744
+37166,Cabin of Airsh,Cabin of Airship,2080
+37168,Aircraft Engin,Aircraft Engine,2223
+37176,Starting Devic,Starting Device,2099
+37180,Charcoal Powde,Charcoal Powder,2574
+37188,Assistant Devi,Assistant Device,1306
+37191,Body of Steam,Body of Steam Ship,130
+37193,Cabin of Steam,Cabin of Steam Ship,2105
+37194,Frame of Steam,Frame of Steam Ship,2245
+37196,Steer of Steam,Steer of Steam Ship,1702
+37204,Transformer Wi,Transformer Winding,1338
+37216,Filtering Circ,Filtering Circuit,1839
+37218,Anti-Gravity D,Anti-Gravity Device,2266
+37219,White Jade Pow,White Jade Powder,1597
+37220,Red Jade Powde,Red Jade Powder,1607
+37221,Delicate White,Delicate White Jade,2287
+37222,Delicate Red J,Delicate Red Jade,2296
+37226,Delicate Emera,Delicate Emerald,295
+37229,Immaculate Sap,Immaculate Sapphire,299
+37231,Delicate Diamo,Delicate Diamond,301
+37236,Polish Dragon,Polish Dragon Bone,2322
+37238,Blackart Powde,Blackart Powder,1618
+37239,Demon Jade Sto,Demon Jade Stone,304
+37240,Enclosed Cryst,Enclosed Crystal,305
+37241,Devil's Spar P,Devil's Spar Piece,606
+37256,Craftsman's Ha,Craftsman's Hammer,1690
+38003,Grinding Equip,Grinding Equipment,79
+38009,Crystal Furnac,Crystal Furnace,3078
+38013,Melting Furnac,Melting Furnace,74
+38014,Low-Temperatur,Low-Temperature Kiln,73
+38018,Spinning Machi,Spinning Machine,1988
+38023,Crude Oil Equi,Crude Oil Equipment,3111
+38024,Automatic Filt,Automatic Filter,3122
+38026,Water Desalina,Water Desalination,3067
+38028,Large Assembly,Large Assembly Tool,84
+38055,Resource Recyc,Resource Recycling,2343
+38057,Training Platf,Training Platform,3100
+38059,Kitty Recyclin,Kitty Recycling Bin,2342
+39024,Ancient Bathtu,Ancient Bathtub,1021
+39050,Desktop Comput,Desktop Computer,1841
+39074,Magic Sandglas,Magic Sandglass,1687
+39076,Pirate Ship Mo,Pirate Ship Model,2455
+39087,Decorative Dol,Decorative Dolphin,2409
+39090,White Desk Lam,White Desk Lamp,2733
+39094,Wire Game Mach,Wire Game Machine,1849
+39097,Magic Sandglas,Magic Sandglass,1687
+39100,Bicep Exercise,Bicep Exerciser,1029
+39115,Modular Stereo,Modular Stereos,1596
+39132,Material Cabin,Material Cabinet,1881
+39146,Spring Scroll,Spring Scrolls,5753
+39147,Spring Scroll,Spring Scrolls,5754
+39148,New Year Pictu,New Year Picture,1897
+39149,New Year Crack,New Year Cracker,1894
+39150,Cute Round Tab,Cute Round Table,1880
+39158,Katana Display,Katana Display Panel,2305
+39176,Snowflake Wall,Snowflake Wallpaper,2300
+39178,Snow Ground Ti,Snow Ground Tile,2312
+39187,Sunflower Plan,Sunflower Plants,2320
+39213,Snowy Wallpape,Snowy Wallpaper,2906
+40005,Alocasia Macro,Alocasia Macrorrhiza,2911
+40022,Blue Wild Flow,Blue Wild Flower,2569
+40039,Fine Golden Ro,Fine Golden Rose,1042
+41011,Chinese Cabbag,Chinese Cabbage,2990
+41019,Pachyrhizus Le,Pachyrhizus Leaf,2572
+41041,Mandarin Orang,Mandarin Orange,15
+41050,Small Pineappl,Small Pineapple,3273
+41055,Little Goosebe,Little Gooseberry,3031
+41129,Brazil Mushroo,Brazil Mushroom,2934
+41153,Yoyo Watermelo,Yoyo Watermelon,2758
+41155,Yoyo Strawberr,Yoyo Strawberry,2754
+42011,Copper Materia,Copper Material,783
+42012,Bronze Materia,Bronze Material,1192
+42022,Pure Iron Bloc,Pure Iron Block,3220
+42023,Pure Iron Fill,Pure Iron Fillet,37
+42037,Hard Aluminum,Hard Aluminum Plate,1633
+42065,Magnetic Powde,Magnetic Powder,1639
+42067,Refined Iron S,Refined Iron Sand,397
+42068,Delicate Hemat,Delicate Hematite,1210
+42075,Magic Crystal,Magic Crystal Powder,1043
+42078,Refined Hemati,Refined Hematite,1160
+42079,Refined Titani,Refined Titanium,1159
+42082,Refined White,Refined White Silver,1154
+45009,Cutted Fruit T,Cutted Fruit Tree,3133
+46002,Pigeon's Feath,Pigeon's Feather,384
+46004,Phoenix Feathe,Phoenix Feather,1138
+46005,Ostrich's Feat,Ostrich's Feather,109
+46014,Wild Rabbit Fu,Wild Rabbit Fur,328
+46015,White Rabbit F,White Rabbit Fur,324
+46016,Grey Rabbit Fu,Grey Rabbit Fur,365
+46017,Black Rabbit F,Black Rabbit Fur,860
+46025,Yellow Mink Fu,Yellow Mink Fur,102
+46026,Brown Vicugna,Brown Vicugna Fur,3125
+46027,Black Vicugna,Black Vicugna Fur,99
+46028,White Vicugna,White Vicugna Fur,100
+46033,Black Sheepski,Black Sheepskin,105
+46034,White Sheepski,White Sheepskin,2721
+46036,Small Buffalo,Small Buffalo Skin,3192
+46038,Small Scalper,Small Scalper Skin,3171
+46040,Small Urus Ski,Small Urus Skin,2663
+46041,Green Snake Sk,Green Snake Skin,103
+46042,White Snake Sk,White Snake Skin,3208
+46043,Fire Snake Ski,Fire Snake Skin,323
+46044,Yellow Snake S,Yellow Snake Skin,380
+46052,Fire Dragon Cl,Fire Dragon Claw,888
+46055,Delicate Leath,Delicate Leather,1044
+46058,Poisonous Juic,Poisonous Juice,2603
+46063,White Tiger Sk,White Tiger Skin,874
+46065,Northern Tiger,Northern Tiger Skin,355
+46067,Dark Tiger Ski,Dark Tiger Skin,376
+46074,Fresh Fish Sca,Fresh Fish Scale,855
+46076,Deep-Sea Fish,Deep-Sea Fish Scale,333
+46083,Rhinoceros Ski,Rhinoceros Skin,3121
+46086,Rattlesnake's,Rattlesnake's Tail,104
+46102,Poisonous Liqu,Poisonous Liquid,3215
+46105,Shell Flower's,Shell Flower's Venom,377
+46106,Black Widow's,Black Widow's Venom,330
+46108,Pufferfish Ven,Pufferfish Venom,319
+46133,Chameleon Tong,Chameleon Tongue,3183
+46143,Starfish Tenta,Starfish Tentacles,346
+46144,Anemones Tenta,Anemones Tentacles,3139
+46159,Drowcrusher To,Drowcrusher Tooth,768
+46161,Lei Dragon Thi,Lei Dragon Thigh,9
+46166,Seagull Feathe,Seagull Feather,3180
+46168,Swallow Feathe,Swallow Feather,504
+47011,Unleaded Gasol,Unleaded Gasoline,2812
+60005,Distilled Wate,Distilled Water,2575
+60009,Bottled Hot Wa,Bottled Hot Water,2005
+60010,Bottled Boiled,Bottled Boiled Water,2023
+61000,Clear Devil's,Clear Devil's Spar,600
+61001,Amber Devil's,Amber Devil's Spar,393
+61002,Cyan Devil's S,Cyan Devil's Spar,601
+61003,Brown Devil's,Brown Devil's Spar,1554
+61004,Orange Devil's,Orange Devil's Spar,604
+61005,Green Devil's,Green Devil's Spar,605
+61006,Red Devil's Sp,Red Devil's Spar,1543
+61007,Blue Devil's S,Blue Devil's Spar,961
+61008,Purple Devil's,Purple Devil's Spar,603
+61009,Black Devil's,Black Devil's Spar,1391
+61030,Shining Diamon,Shining Diamond,1546
+61046,Scarlet Diamon,Scarlet Diamond,2166
+61074,Dark Shadow Cr,Dark Shadow Crystal,2426
+62000,8% Bomb Diamon,8% Bomb Diamond,1220
+62001,10% Bomb Diamo,10% Bomb Diamond,1193
+62002,12% Bomb Diamo,12% Bomb Diamond,1313
+62003,14% Bomb Diamo,14% Bomb Diamond,1314
+62004,16% Bomb Diamo,16% Bomb Diamond,1315
+62005,18% Bomb Diamo,18% Bomb Diamond,1317
+62006,20% Bomb Diamo,20% Bomb Diamond,1318
+62007,22% Bomb Diamo,22% Bomb Diamond,1319
+62008,24% Bomb Diamo,24% Bomb Diamond,1320
+62009,26% Bomb Diamo,26% Bomb Diamond,1321
+62010,28% Bomb Diamo,28% Bomb Diamond,1322
+62011,32% Bomb Diamo,32% Bomb Diamond,1323

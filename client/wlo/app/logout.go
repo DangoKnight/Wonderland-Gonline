@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/seui"
@@ -28,13 +30,19 @@ func (f *logoutForm) Update(in *seui.Input) {
 		return
 	}
 	f.Form.Update(in)
+}
+
+func (f *logoutForm) drawContent() {
 	a := f.Abs()
 	c := f.c
+	if c.World == nil {
+		return
+	}
 	if f.preview != nil {
-		f.preview.DrawBody(c.Screen, a.X+40, a.Y+110, logoutPreviewAction)
+		f.preview.DrawBody(f.Env.Screen, a.X+40, a.Y+110, logoutPreviewAction)
 	}
 	name := c.World.Player.Name
-	c.Env.Text.Draw(a.X+40-len(name)*4, a.Y+123, 0, false, true, c.Screen, name, 15, 160, 0, logoutNameInk, 0)
+	c.Env.Text.Draw(a.X+40-len(name)*4, a.Y+123, 0, false, true, f.Env.Screen, name, 15, 160, 0, logoutNameInk, 0)
 }
 func (c *Client) logoutConfirmation(exit bool) {
 	c.closeSettingsPrompt()
@@ -45,6 +53,7 @@ func (c *Client) logoutConfirmation(exit bool) {
 		f.preview = &preview
 	}
 	f.InitForm(f, c.Env)
+	f.AnimateMessage(func() time.Time { return c.Now() })
 	f.Dockable = false
 	f.Name = "Logout confirmation"
 	f.Init("panel22", 255, 168, 324, 0, 0, true, logoutHeight, logoutWidth, 30)
@@ -96,6 +105,6 @@ func (f *logoutForm) Paint() {
 	if f.background == nil {
 		f.background = seui.ConfirmationBackground(f.Env, logoutWidth, logoutHeight)
 	}
-	a := f.Abs()
-	f.Env.Screen.Draw(a.X, a.Y, f.background, true)
+	f.Env.Screen.DrawStretch(f.MessageRect(), f.background, true)
+	f.drawContent()
 }

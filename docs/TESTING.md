@@ -27,6 +27,520 @@ This is focused development validation; no full pre-push battery or new live
 client bank capture was run for these robustness changes. No schema upgrade is
 required.
 
+## Floor-item input ownership and hover — 2026-11-03
+
+A floor-item click now cancels held-ground input, the old route/marker and any
+pending NPC interaction before requesting pickup. When an active walk stops,
+the client sends its current position with native AC6:1 before AC23:2; otherwise
+the server could check pickup reach from the previous leg's destination. Distant
+pickups own their approach and stop within reach. Arrival checks run during
+simulation even when a background session is not rendered. New ground/keyboard
+movement, map changes, or battle entry cancel pending pickup intent.
+
+Hover and clicks share opaque source-pixel hit testing, selecting the frontmost
+item by its native depth (and draw order on ties). Hover adds the native light
+level 15 from `FUN_003d7b80` within the sorted sprite pass, preserving foliage
+occlusion. A yellow outlined item name appears near the pointer as in the Legacy
+reference; UI/dialogue/battle state suppresses floor hover. Transparent icon
+margins continue to accept ordinary ground movement.
+
+Regressions cover the actual left Beach Coconut interrupting a held walk,
+independent raw stop/pickup packet order, background approach, cancellation,
+transparent margins, overlapping items, additive highlight and yellow text.
+Compiled-bundle GPU parity asserts that its hover fixture is selected and checks
+the highlighted item and label, in addition to both trees and the pickup arc.
+
+## Ground-item centre anchor — 2026-11-03
+
+Legacy `FUN_003d78e4` stores half the item canvas dimensions at +0x110/+0x111;
+`FUN_003d7b80` subtracts those halves on both axes for drawing. Gonline instead
+subtracted a full image height, placing a normal 32-pixel icon 16 pixels too high.
+Ground items and world acquisition flights now use the native centre anchor;
+battle reward flights retain their separate presentation. Click bounds use the
+same centred canvas, including its lower half. Tests pin the native 32-by-32
+bounds and lower-half pickup request, and exercise the frame-loop leaf overlap
+at the actual right Coconut coordinates (1454,871).
+
+The real-server capture `coconut-reference-20261103-01.pcapng` independently
+confirmed the complete native AC23:4 packet: right Coconut (1454,871), depth
++160; left Coconut (462,538), depth +170. These exactly match the corrected
+server packets and installed asset definitions. The frame-loop regressions now
+replay that full captured packet at both reference player positions and pin the
+native centred 32-by-32 canvases. GPU parity covers both trees and the pickup
+flight. No further server depth adjustment or per-item foliage mask was added.
+The capture completed and restored the original packet filters. Its SHA-256 is
+`BF20812887F999DD0DEDD1A759C00060DE792C25C03D17D431C3643E16E7321A`.
+
+## Native ground-item draw depth — 2026-11-03
+
+AC23:4 ends each 15-byte ground record with a signed 32-bit draw-depth offset.
+The Legacy receive path `FUN_003dc558` passes it to `FUN_003d78e4`, which stores
+it at +0x114; `FUN_0041d13c` sorts the item by Y + that offset. Gonline previously
+sent zero and discarded the received field. The raw final EVE item words now
+supply this offset without changing the asset table representation. Beach's
+right Coconut is (1454,871), depth +160; its left Coconut is (462,538), depth
++170. Initial map packets and respawn packets preserve these values, while
+player drops retain zero. This repairs the server packet for Legacy clients
+and the Gonline client's rendering through the same native protocol.
+
+These EVE words are no longer interpreted as respawn seconds. Native ground
+items use the existing 120-second fallback. No asset rows or schema change.
+Independent packet goldens cover the two coconuts and respawn; asset/client
+tests cover signed offsets. The client regression renders the left Coconut at
+the reference player position (562,635), while the zero-depth dropped-item test
+still checks native foliage occlusion. GPU parity includes the native +170
+Coconut and its pickup flight. Focused server pickup tests also retain inventory
+capacity, persistence and source-removal checks.
+
+## Coconut canopy and native harvesting presentation — 2026-11-03
+
+The reported Coconut is a floor item on Beach (map 11016). Floor items used to
+render after the entire world, bypassing the depth pass used by the player and
+monkey. They now enter `World.DrawWithSprites` at their ground Y, before actors
+on equal rows, with native scene objects covering them at their authored depth
+lines. This applies to every floor item. The earlier composite-palm override
+and its hand-authored mask metadata were removed; no source artwork or native
+depth values are changed.
+
+The regression uses the actual Beach foreground leaf picture 11016004 and a
+native Coconut ground-spawn packet. Every overlapping opaque leaf pixel must
+remain unchanged while the uncovered fruit stays visible. Generic scene tests
+cover sprites behind, between, tied with and in front of native objects,
+including a transparent opening. The bundled GPU fixture covers this same
+Beach ground item and a mid-flight pickup. A successful own AC23:2 receipt now
+starts the pickup arc; another player's removal does not. AC23:6 supplies the
+acquisition notice independently.
+
+Harvesting commits its existing transactional shared-node claim before sending
+native slotless AC23:6, with its final actor-flight byte enabled. This allows the
+Legacy client to present the reward too. Gonline displays the native acquisition
+notice for 1,300 ms and flies the item icon along a 600 ms parabola from the last
+clicked actor to the player. The flight survives event resume, expires normally,
+and is cleared on map changes. Rejected inventory receipts do not present gains.
+The arc duration/height are Gonline presentation choices; the native reference
+is `FUN_003dbdb8` → `FUN_00308e70` in the local aLogin decompile.
+
+Focused harvesting tests include an independent raw AC23:6 golden and verify
+that only the harvester receives the acquisition. Client tests cover native ground-item layering,
+inventory credit, notification, arc endpoints/apex, expiry and malformed grants.
+Compiled-bundle CPU/GPU parity includes the beach canopy and a mid-flight pickup.
+
+## Notification close continuity and persistent rescue presentation — 2026-11-03
+
+Timed notices queued their closing image after the ordinary UI closing pass,
+leaving one blank frame before it reappeared. Closing overlays now render in
+the original foreground pass after notice updates, including the expiry frame.
+Talk shares this ordering. Closing uses integer translation instead of scaling
+the captured image, preserving authored checkerboard/dither pixels and text.
+Tests check uninterrupted notification text across expiry and exact mask pixels
+during closing. UI/HUD and affected app notice/dialogue/battle-result tests,
+compiled-asset GPU parity and vet passed; the client candidate was rebuilt.
+
+Arrival cinematics checked the native Robinson quest mark to avoid replay, but
+finishing the introductory rescue intentionally does not create that quest.
+Gameplay schema v19 now stores independent owned receipts in
+`character_cinematics`, keyed by character and authored cinematic ID. Completion
+commits before finish cues; a failed write retains the run for retry. Login
+consults the receipt without modifying quests, inventory or buffered position.
+Interrupted presentations can replay; explicit new shipwreck transitions still
+play. Existing quest progress also continues to suppress the introduction.
+
+Focused store/server tests passed under `-race`: preserving v18 upgrade,
+ownership, idempotence, restart, canceled writes, rescue completion/reconnect
+and save-failure retry. Related older migration checks passed. Server vet and
+`bin/wonderland-server-next.exe` build passed. No running server was restarted
+or live database changed; the preserving migration runs at the next startup.
+
+## Player blink artwork and dialogue voice stalls — 2026-11-03
+
+The user confirmed that art disappeared while the same line remained open.
+Real player-art frames reproduced the cause: blink frame 1 contains only the
+eyelid patch (about 1,500–4,500 opaque pixels), while frame 0 contains the full
+character (about 23,000–45,000 pixels). Replacing frame 0 with frame 1 briefly
+removed the body. Human face rendering now retains the base and overlays the
+blink patch; direct explicit-frame drawing remains available for other uses.
+Coverage checks all 15 installed player appearances, plus a timed nine-second
+blink during the captured Breillat player line. Visually checked
+`var/player-art-blink-fixed.png`. The CPU/GPU parity fixture also forces that
+blink while keeping the same line open.
+
+Cold decoding of the installed Breillat recordings 30640/30642/30643 measured
+approximately 220/255/324 ms locally. `PlayVoice` performed this work on the UI
+thread, and PCM decoding held the shared cache mutex throughout. Recorded
+dialogue now uses one background worker per session and one pending latest-line
+slot. Dismissal/replacement/stop invalidates stale playback; shutdown stops the
+worker. The cache releases its mutex before file access/decoding, keeping cached
+effects responsive. No protocol or authored dialogue delays were changed.
+
+Deterministic blocked-decoder regressions verify nonblocking requests and cached
+effects, latest-only replacement, stop cancellation while the session remains
+open, and shutdown during decoding. Those audio/context tests passed under
+`-race`. Full role/HUD suites, focused app dialogue/Breillat/session integrations,
+compiled-asset CPU/GPU parity, vet and the candidate build passed. The temporary
+decode-timing diagnostic was removed after measurement.
+
+## Continuous map-edge clamping and brief complete-message closing — 2026-11-03
+
+The camera used the unpadded map edge to decide when to clamp, then subtracted
+the right-side 20-pixel margin only after crossing it. This let the view travel
+20 pixels beyond its final position and reverse at the boundary. Camera axes
+now clamp continuously to their final limits, including narrow maps; explicit
+cinematic camera positions remain unchanged. Regression coverage walks one
+pixel at a time through the boundaries on normal, near-screen and small maps,
+checking monotonic movement, bounded steps and no overshoot.
+
+Messages now close over 50 ms using a complete transparent image of panel and
+contents, avoiding the former empty-border interlude. Logical dismissal, answers
+and timeouts still happen immediately; closing images cannot receive input.
+A following line/reopened form cancels its preceding image. The same path
+covers Talk, timed notices and animated message forms, including battle results
+and confirmations. Compatible render targets avoid GPU readbacks; images are
+released on expiry, replacement, HideAll and session shutdown, with a bounded
+queue. Logout and pet preview drawing follows the active render target so it
+is included in the image.
+
+The world/UI/HUD/Team/Inventory suites and affected app dialogue, battle-result,
+logout, inventory, connection and pet-confirmation tests passed. Closing tests
+verify both panel and text remain during the brief transition, complete removal
+at 50 ms and cancellation by replacement. The compiled-asset CPU/GPU parity
+fixture passed. Modified-package vet and the client build passed.
+
+## Shared dialogue and notice presentation — 2026-11-03
+
+Moved the easing, 100 ms opening duration and eight-pixel inset into
+`seui/message.go`, shared with the Talk window. Applied the same presentation
+to battle results, system notices, connection messages, settings choices,
+logout, party/pet confirmations and inventory quantity/use prompts. Only the
+decoration animates; text, child controls and logical hit boxes stay available
+from the first frame. Message forms opt in explicitly, preserving ordinary
+module-window behavior. Expiry/dismissal removes the whole message without an
+empty closing panel. Existing timeout, scrolling and acknowledgement rules
+remain unchanged; battle results still expire after six seconds and ignore clicks.
+
+Coverage includes monotonic bounded geometry at irregular frame intervals,
+stable layout, repeat-show/reopen behavior, immediately available battle/notice
+content and no frame after expiry. Existing battle click/scroll/deadline,
+dialogue, settings, connection, logout, party/pet and inventory tests exercise
+the integrations. The UI/HUD/Team/Inventory suites passed. Visually checked
+`var/battle-results-message-animation.png`, including the initial opening frame.
+The affected app integration selection passed except two static-image checks
+that compared an opening panel against settled artwork. Those checks now wait
+for the shared opening duration before verifying the native quantity title and
+fixed logout pose; their focused rerun passed alongside both new message
+integrations. Vet for all modified packages, client build and diff checks passed.
+
+## Empty panel after Breillat's player line — 2026-11-03
+
+Replayed captured player talk 30641 ("Why do yo say that?") followed by
+Breillat's talk 30642 ("Since you want to talk with me, I will tell you what
+I think."). The trace has no empty speech step. The client itself created the
+blank interval: `Hide` removed content immediately, while `Draw` still painted
+the decorative panel through the 80 ms closing transition.
+
+The regression reproduced the empty player panel before the fix. Dismissed
+dialogue now removes panel and content together and stops hit testing. Hidden
+closing geometry remains available for a smooth next-line takeover. The raw
+packet test verifies one acknowledgement, no visible waiting panel and the
+next Breillat line; HUD tests also assert that a dismissed panel never paints.
+The HUD suite, focused dialogue/Breillat/movie integrations, vet and rebuilt
+`bin/wonderland-client-next.exe` passed.
+
+## Responsive Gonline dialogue transitions — 2026-11-03
+
+At the user's request, dialogue presentation now improves on Legacy rather than
+reproducing its stepped expansion and collapse. Text appears immediately; the
+decorative panel opens over 100 ms and closes over 80 ms with easing and an
+eight-pixel inset on each edge. Both dimensions move together, based on elapsed
+time. The follow-up fix above hides the closing panel with its content rather
+than painting an empty frame. Closing starts from the current size, repeated closes do not extend it,
+and a following line can reverse a close without resetting to a collapsed box.
+Panel visibility and hit testing catch up even when rendering was skipped.
+Event acknowledgements, answer values, rewards and protocol timing are unchanged.
+
+HUD tests cover monotonic bounded dimensions, the close deadline, repeated
+server closes, interruption, skipped frames and immediate text for plain, face
+and wide dialogues. The full HUD suite and focused Breillat, NPC/player dialogue,
+questions, dialogue layering, conversation, pet notices and beach/monkey movie
+tests passed. HUD/app vet and the rebuilt `bin/wonderland-client-next.exe` passed.
+
+## Breillat visibility while turning to speak — 2026-11-03
+
+Reproduced the intermittent disappearance with the installed Cabin Breillat
+sprite (template 10000): talk while standing directly above, below, left or
+right selects empty standing actions 8, 12, 10 or 14. Diagonal facings have
+artwork, explaining why the symptom depends on approach position. Event end
+restored the original action 11 and made her visible again.
+
+Native `FUN_00307ae8` turns conversation actors through `FUN_00432638`.
+`FUN_002fe570` resolves packed frame offsets by summing preceding action counts;
+an empty slot consequently addresses the next stored artwork. Conversation
+turning now selects the next available artwork within the standing group and
+preserves the original pose if none follows. This is based on sprite availability,
+without a Breillat-specific exception or a change to server-driven visibility.
+
+The real-asset regression failed for all four cardinal approach directions
+before the fix. It now checks nonempty bounds and rendered pixels in all eight
+directions, plus facing restoration. It also passes against the compiled
+`bin/client-assets.zip`. Unit coverage checks sparse facings and missing-artwork
+fallbacks alongside the existing full-direction, prop and special-pose rules.
+The world suite, related app dialogue/Breillat tests, world/app vet and updated
+`bin/wonderland-client-next.exe` build passed.
+
+## Breillat's immediate model switch — 2026-11-03
+
+Captured the legacy client on Gonline through a TCP relay, including two
+successful minigames, two voucher grants, the two-voucher exchange and the
+accepted Breillat conversion. The final dialogue acknowledgement was followed
+by `5 12 50 209 68 0 13`, an equipment snapshot, AC20:10, release and AC20:8.
+There is no self AC3 reload or AC12 warp. The native handler `FUN_00451110`
+uses `FUN_00484fcc` to map model 13 to body 4/head 3 and updates the player
+and cached teammate appearance in place. The model code is not a body type.
+
+The custom client had no model-transform handler, and its compatibility
+skill-grade handler consumed every AC5:12 packet before general dispatch.
+It now distinguishes the five-byte skill-grade layout from the seven-byte
+native model layout, applies the native model table and immediately redresses
+the player/portrait, inventory preview, peers and cached teammates. The
+following equipment snapshot supplies the converted outfit without resetting
+the map, vitals or event state. Unknown models and truncated packets do not
+mutate appearance. No server exception or wire change was introduced.
+
+The captured model packet failed the regression before the fix. Tests now
+replay the raw model/equipment/end sequence, verify self and peer/cache updates,
+preserve compact skill-grade updates, and compare rendered body/portrait pixels
+with body 4/head 3. All native model mappings and invalid-byte values are checked
+against an independent table. Focused model, skill UI and skill-state tests,
+app/login vet and the candidate client build passed. The focused native-model
+and app model-switch tests also passed under the race detector (43 seconds).
+The original Windows
+loopback capture contained no packets; only the verified relay trace is evidence
+for this sequence. Both relay listeners were stopped after logout, and the
+legacy server list was restored byte-for-byte from its backup.
+
+## Breillat acknowledgement after an arcade result — 2026-11-03
+
+The user confirmed that the failing interaction followed an arcade/minigame in
+the same login. The fresh-login relay capture succeeded: one AC20:6 advanced
+Breillat's line, followed by voucher removal, Chocolate Ice delivery and AC20:8.
+That trace establishes the working exchange, not a capture of the failed case.
+Both temporary relay listeners were stopped after logout; the original server
+list was not changed.
+
+A deterministic client regression reproduced the remaining failure. Sending a
+minigame result queued its acknowledgement in `event.done`; an incoming event
+end or next dialogue cleared it before the next frame. The server then consumed
+Breillat's first acknowledgement as the outstanding minigame-result acknowledgement,
+leaving the voucher exchange waiting. The result acknowledgement now lives outside
+the replaceable event state and is sent before ordinary dialogue acknowledgements.
+Disconnect and return-to-login clear it, preventing reuse in another session.
+
+The independent raw-packet regression covers both immediate event-end and
+next-dialogue replies, subsequent NPC advancement and absence of duplicate ACKs.
+Validation uses the focused Breillat/arcade regressions and server minigame event
+contract tests under the race detector, related app dialogue/minigame flows,
+the minigame package, logout reset tests, app/login vet and a rebuilt
+`bin/wonderland-client-next.exe`. An initial broader app race selection exceeded
+its three-minute timeout while decoding graphics fixtures, without an assertion
+failure; race coverage was narrowed to the affected handoff regressions, and the
+broader affected flow selection was run without the race detector.
+All final checks passed: focused app race regressions (104 seconds), server
+minigame contract race tests (40 seconds), related client flows (23 seconds),
+logout reset race test (30 seconds), minigame package, vet, build and diff checks.
+
+## Player dialogue with native trailing flags — 2026-11-03
+
+The installed used-arcade branch sends the player speech bytes
+`20 1 0 0 0 1 1 7 0 0 1 0 0 0 0 156 119 1`. The native client reads talk ID
+30620 as UInt16 (`FUN_00304fd0`, field +0x711c) for both text and voice lookup.
+Gonline previously combined the trailing flag with the ID and looked up 96156,
+rendering the portrait and empty window. The exact packet reproduced the empty
+line before the fix. Native talk IDs now take precedence; extended export
+references remain a fallback only when there is no native ID entry.
+
+Focused HUD/app dialogue, native-ID precedence, extended-reference fallback,
+question, conversation, event and recruitment tests passed. The used-arcade test
+checks the brown-haired player variant, exact English line and rendered yellow
+text pixels. The real compiled-bundle CPU/GPU parity fixture now includes this
+speech packet and large portrait; all 69 stages passed. App/HUD vet and the client
+candidate build passed. Visually checked ignored `var/player-dialogue-fixed.png`.
+No server protocol or artwork/layout changes were required.
+
+## Breillat dialogue acknowledgement after a pet notice — 2026-11-03
+
+Replayed the installed Cabin voucher exchange to establish its native speech,
+inventory debit/grant and event-close packets. A client regression reproduced
+the reported symptom: after AC20:8 hid a pet-join notice, the retained local-notice
+flag swallowed the next NPC dialogue's click, sending no AC20:6. The server
+therefore waited before committing the exchange, leaving movement locked.
+
+Server event frames now supersede local pet notices, and event completion clears
+their display flag. The independent raw-packet regression verifies ordinary,
+replaced and hidden-notice cases, one acknowledgement, voucher removal, reward
+delivery and movement/event release. It passes against editable assets and the
+real compiled bundle. Related NPC dialogue, question, conversation-facing,
+event-route, pet-recruitment and beach/monkey movie tests passed; app vet and
+`bin/wonderland-client-next.exe` build passed. The server protocol and exchange
+transaction behavior are unchanged. No running client/server was restarted.
+
+## Full pre-push validation — 2026-11-03
+
+For `0aa6f0f` (shared combat formulas and rapid player/pet targeting), both full
+module suites ran to completion with cache bypassed. The server command was
+`go test -race -count=1 -timeout=60m -json ./...`, with
+`WONDERLAND_TEST_ASSETS_DB` pointing to the installed `var/assets.db`. It recorded
+1,972 passing test/subtest entries, two failing expectations and 15 opt-in skips.
+The client command was `go test -count=1 -timeout=60m -json ./...`; it recorded
+627 passing entries, one failing expectation and 47 opt-in skips. No race warning,
+panic or build failure was reported. Logs are retained locally under ignored
+`var/validation/prepush-0aa6f0f/`.
+
+The three outdated expectations were corrected and verified separately; no
+production code changed during validation:
+
+- The maintained item export contains 7,325 records. Its source SHA-256 matches
+  the updated translated client's `Item.dat`; the previous assertion pinned
+  7,312. The full `internal/assets` package passed again under `-race`.
+- The multi-slot pickup golden still expected the old slot-based grant. It now
+  independently asserts raw native floor-removal bytes followed by the slotless
+  acquisition bytes. All `TestMultiSlot*` server tests passed under `-race`.
+- The real Roca sprite in the rebuilt assets lacks sitting action 51. The
+  companion integration now also verifies the existing standing fallback when
+  sitting is unsupported, independent pet facing during owner turns, available
+  lying animation and recovery packets. Its focused rerun passed. Eight-direction
+  pose behavior remains covered by the world tests in the completed client suite.
+
+Full root/client vet, tracked-source gofmt, Prettier and HTMLHint passed.
+Ten-second protocol and EVE fuzz runs passed (about 6.8 million and 3.3 million
+executions). Both executable candidates built. The asset compiler validated
+72,854 files, all reused, and the real compiled-bundle login/shared-world smoke
+test passed separately. GPU, live-account, original-reference and snapshot-only
+checks remain opt-in; their skips are not gameplay acceptance evidence. No
+running server/client process was restarted or database rebuilt.
+
+## Shared player, pet and enemy stat formulas — 2026-11-03
+
+Affected checks passed for `internal/game`, `internal/battle` and
+`internal/world`, plus focused server combat, encounter, capture, pet,
+progression, reward, GM and round-chain tests. Independent golden values cover
+all four elements and Floating's level-four `194/105` HP/SP and `10/12/8/10/12`
+combat stats. Battle construction checks identical attributes across players,
+pets and enemies, catalog-supplied pet elements/enemy attributes, explicit
+scripted HP/attack overrides and reinforcement SP packets. Existing native
+golden packet expectations remain independent raw bytes.
+
+Client inventory tests and the affected `TestBattle*`, `TestGonlineCombat*`,
+pet and inventory selection tests passed. The inventory regression checks the
+catalog Wind element and Floating's shared stats. Vet passed for
+`./internal/game ./internal/battle ./internal/server ./internal/world` and, from
+`client/`, `./wlo/inventory ./wlo/app`. Both `bin/wonderland-next.exe` and
+`bin/wonderland-client-next.exe` built successfully. No database migration or
+running-process restart was performed. See [combat stats](COMBAT_STATS.md).
+
+## Participation base EXP rate — 2026-11-03
+
+Participation mode now uses eight EXP per monster level, including eight for a
+level-one monster. Focused engine and server settlement tests verify the new
+base, unchanged simple-mode rate, combo bonus, inverse shares and battle-long
+revive assistance. The zero-level fallback treats malformed/unspecified levels
+as level one for participation mode. Vet and the server build pass.
+
+## Combo EXP pool bonus — 2026-11-03
+
+Participation EXP and server settlement checks pass with +40% for two distinct
+landed combo units, +50% for three, and ten additional percentage points per
+extra attacking unit. Tests cover solo/no bonus, support-only assistants,
+duplicate actors/supporters, two through eight combo units, fractional pool
+rounding and conserved inverse-level payouts. Updated server victory/escape/
+defeat/disconnect checks pass with the new shares. Simple EXP remains unchanged.
+
+## Battle-long revive assistance — 2026-11-03
+
+Focused participation, pet-switch and server settlement checks pass. Successful
+revives remain eligible through repeated kills and attacks; repeat revives
+deduplicate the caster, living-target no-ops do not qualify, returning pets keep
+their own revival history, replacements do not inherit it, and a fresh battle
+clears revival assistance. Ordinary healing retains next-attack lifetime.
+
+## Participation EXP — 2026-11-03
+
+Complete battle/game/config suites pass. Tests cover normalized inverse weights,
+exact pool conservation, deterministic remainders, the 200-base/three-participant
+example, solo EXP, killing versus nonlethal strikes, actual buff/heal/cast
+integration, active/expired/removed buffs, spent/no-op healing and deduplicated
+assistance. Race-enabled server checks pass for victory-only awards, separate
+player/pet shares, switched-out pets, defeat/escape/disconnect forfeiture, startup
+policy capture and existing native/chain combat integrations. Changed-package
+vet and `bin/wonderland-next.exe` build pass. No processes were restarted.
+
+## Battle gold startup policy — 2026-11-03
+
+Configuration tests cover omitted/enabled/disabled `battle_gold_enabled` and
+invalid types. Server integration verifies that enabled/disabled victory gold
+balances persist, EXP remains awarded, and mutating exported configuration after
+startup does not alter the captured policy. Quest-victory and native/chain round
+integration checks pass. Config/server vet and the updated server build pass.
+The default is enabled; changing the startup switch requires restart.
+
+## Immediate acquisitions and legacy inventory — 2026-11-03
+
+Passed complete affected battle/game/protocol and client inventory/battle suites.
+Focused server/store checks under the race detector cover multi-owner loot,
+second-recipient SQL rollback, deduplication, immediate capture persistence,
+disconnect retention, capture net use, native/chain delivery, pickup/drop order
+and amity-only knockout penalties. Client app checks cover the independent live
+AC23:6 bytes, native/chain acquisition and item flights, floor spawn/pickup,
+destruction marker 7, recruitment notices and result accounting. Updated the
+existing ground-item packet expectations to the captured order, keeping raw
+expected protocol bytes independent of production constants. Changed-package vet
+and both candidate builds pass. Visually checked `var/battle-acquisition.png`.
+No running server/client was restarted, and no database migration is added here.
+
+## Wiki capture rules — 2026-11-03
+
+Battle and game suites pass, including capture level boundaries, net allowance,
+weakening, seals, native restriction flags, stat budgets and story-pet isolation.
+The full assetsql suite passes, including preserving v16-to-v17 migration and
+repeat-upgrade edits. Server capture/settlement/native/chain integrations pass;
+capture-net checks cover success, failure, final use and SQL rollback. Asset
+checks pass except `TestMaintainedItemJSONCensus`, whose 7,312-item expectation
+predates the recent asset rebuild; this unrelated expectation is unchanged.
+Changed-package vet and the server build pass. The running server and databases
+were not restarted or migrated; use the documented offline migration before
+deploying `bin/wonderland-next.exe`.
+
+## Multi-hit damage number flight — 2026-11-03
+
+Focused client damage/combo tests pass in native and round-chain modes. Tests
+verify alternating, widening, side-mirrored multi-hit lanes, contact-aged arcs,
+unchanged single-hit motion, damage totals and stale-target rejection. Rendered
+and checked `var/battle-damage-fan.png`. Client app vet and the build of
+`bin/wonderland-client-next.exe` pass. The arc approximates the legacy curve;
+no server calculation or protocol changes were made.
+
+## Battle skill selector and captured pet level — 2026-11-03
+
+Passed the complete client `wlo/skills` suite and focused app checks for radial
+skill selection, recent skills, one-click targeting, general Skills browsing,
+pet commands, timer handling and battle exit. The native battle selector was
+rendered and visually checked at `var/battle-skills-window.png`. Its standalone
+checks cover learned-skill filtering, scrolling, recent-skill capacity and
+ordering, actor isolation and login reset. Focused server checks verify captured
+monsters recruit and persist at level one with fresh HP/SP and matching client
+progression packets, plus save-failure atomicity and battle completion. Vet
+passed for client app/skills and server. Built `bin/wonderland-client-next.exe`
+and `bin/wonderland-next.exe`; running processes were not restarted.
+
+## Monster elemental targeting — 2026-11-03
+
+Passed `go test ./internal/battle -count=1`, `go vet ./internal/battle`, and
+focused server integrations for `TestGonlineCombat*`, wild-monster victory,
+world-entry victory persistence and native/chain SP restoration. Deterministic
+ticket enumeration verifies all four elemental relationships, exact 4:2:1
+selection weights, equal player/pet chances with reversed roster order,
+basic/skill/debuff selection, and exclusion of unavailable replacement pets.
+Existing support AI and independent packet goldens remain passing. No protocol,
+database or client asset changes are needed for this targeting policy.
+
 ## Combat support and automatic targeting — 2026-11-03
 
 Passed the complete `internal/battle` suite under `-race`, focused asset support
@@ -442,6 +956,23 @@ session ownership or checkpoint behavior changes. For buffered fields, retain
 the cases in [test selection and correctness](#test-selection-and-correctness).
 
 ### Inventory checks
+
+Potential-window checks cover its native unselected/player/pet states, button
+hover artwork and Escape, sparse pet-slot mapping, canonical seated Robinson
+appearance, base attributes versus potential bonuses, aggregate unlocked pill
+counts, reusable attempts, duplicate-request gates and replacement pets:
+
+```sh
+cd client
+go test ./wlo/inventory ./wlo/app -run 'TestPotential|TestItemUsePotential' -count=1
+POTENTIAL_SNAPSHOT_DIR=/tmp/potential go test ./wlo/app -run '^TestPotentialNativeWindowAndReplies$' -count=1
+```
+
+Create the snapshot directory first. The snapshot test exports unselected,
+player, pet, Confirm/Cancel hover and successful-result views. CPU/GPU parity now
+covers 79 stages, including these six Potential states, with the compiled bundle.
+Sitting previews use native seated frames only; roster portraits remain available
+for pets whose artwork has no seated body frames.
 
 From the repository root:
 
@@ -2505,3 +3036,453 @@ and privileged Windows symlink checks remain unexecuted. Automated results do
 not establish live Legacy-client acceptance. Detailed logs, the complete test
 inventory, retry selections, final aggregate summary and rendered samples remain
 ignored under `var/validation/2026-11-03-prepush/`.
+
+### Updated client asset rebuild - 2026-11-03
+
+Rebuilt and installed the supplied updated WLRI assets: 7,325 items, 6,280 sprites
+and 820,994 frames, 16,195 pictures, 19,717 OGG tracks and 3,796 media sources.
+All 40 native data sources reconstruct byte-for-byte against the updated
+installation, including the previously mismatched `Item.dat`. Sprite preservation
+checks passed for all 222 sources; every editable frame passed pixel and placement
+comparison with its decoded original. Media checks validated 3,246 outputs and
+917 complete reconstructions. Exported asset checksums passed.
+
+Four source weapon JXAs have fewer records than their corresponding JMAs:
+`002w3`, `003w3`, `004w3` and `005w3` lack 6, 6, 6 and 2 action records respectively.
+The exporter now preserves the actual JXA header/records and all sprite frames,
+records `missing_action_records`, and leaves unavailable animations undefined.
+Malformed/truncated tables and excess records remain errors. Regression coverage
+checks independent raw-byte reconstruction, rejection boundaries, and nonempty
+frame preservation through editable export and atlas optimization.
+
+Passed `go test ./cmd/sprite-export ./internal/spritepack -count=1 -timeout=5m`,
+focused native sprite tests, exporter vet, and the Python exporter/media suite
+(24 passed, one Windows symlink-privilege skip). The independent sprite verifier
+also checks the missing-action inventory. Existing 121 unresolved custom media
+resources and 18 absent companion-archive records remain recorded.
+
+The rebuilt bundle contains 72,854 files, reusing 66,441 entries (6,037.9 MiB
+source). Its new image dimension baseline accompanies this verified asset revision;
+the previous baseline and core bundle are backed up. The runtime compiler cache
+was relocated to the installed `data/` path for subsequent incremental builds.
+Client smoke checks passed for direct/compiled login, compiled-versus-editable
+worlds and sprites, pet portraits and battle item motions. A separate installed
+bundle check compared every compiled frame of all 20 sprites without source
+action records and verified the updated item count.
+
+The previous 26,034 extracted files (5,752,495,913 bytes), checksum inventory,
+core bundle and local client catalogs remain under
+`var/backups/client-assets-20261103T065213Z/`; the old data tree is its `data/`
+directory. Tracked server definitions were checked byte-for-byte across cutover.
+Server asset/gameplay databases and the original client installation were not
+modified. Job records and verification logs are ignored under
+`var/asset-rebuild-20261103T065213Z/` and `var/current-asset-rebuild.json`.
+
+### Multi-hit and combo damage display - 2026-11-03
+
+Native AC50:1 records retain a local packet batch identity through animation
+queuing, including embedded native packets in round chains. Single-hit damage
+combines into one popup; one multi-hit skill pools the combo total into its
+contact pattern. Identical multi-hit skill IDs combine, while different multi-hit
+skills retain separate groups and leave singles in their own combined group.
+Target cells, roster generations, HP/SP resources and separate packets remain
+independent. Mixed damage/recovery preserves original stat order and clamping.
+
+Completed regressions cover every requested combination, different skills with
+equal timing, missed members, critical styling, small and wide totals, maximum
+uint64 splitting, raw native batch bytes and invalid-packet atomicity. Native and
+round-chain integration tests verify grouped HP changes at each contact, duplicate
+frame suppression and actual bitmap digit spacing. Real Water Hit and Combo x3
+metadata exercise four- and three-contact patterns. Late-frame catch-up and
+replacement-target checks passed. Existing authored percentages and raw wire
+goldens remain intact; repeated full weights normalize across contacts and missing
+weights split evenly.
+
+Affected battle/item/pet/departure/overkill/round-chain integration tests passed,
+along with the complete client battle and minigame packages. Focused packet,
+splitter, grouping and recovery-order checks passed under `-race`. Vet passed
+for `./wlo/battle ./wlo/app ./wlo/minigame`; built
+`bin/wonderland-client-next.exe`. The rendered
+`var/battle-damage-combo.png` was inspected for readable, nonoverlapping numbers.
+The client port inventory was regenerated. Server calculations, protocol layouts,
+databases and asset tables were unchanged by this correction.
+
+From `client/`, repeat the focused checks with:
+
+```powershell
+go test ./wlo/app -run '^Test(Battle(Damage|MultiHit|Vitals|Capture|HitReaction|Departure|Overkill|Pet|NewTurn|Actions|Item)|GonlineCombat(Sequential|Legacy|Native|Deferred))' -count=1 -timeout=6m
+go test ./wlo/battle ./wlo/minigame -count=1 -timeout=3m
+go test -race ./wlo/battle ./wlo/app -run '^Test(DamagePartsConserveWideTotals|ActionPacketsHaveIndependentLocalBatches|BattleDamageComboGrouping|BattleDamageGroupingBoundaries|BattleDamagePopupStackAndIdentity|BattleDamagePreservesInterleavedRecovery)$' -count=1 -timeout=3m
+go vet ./wlo/battle ./wlo/app ./wlo/minigame
+```
+
+## Dialogue indicator and pet initial attributes — 2026-11-04
+
+The long Robinson line is rendered with the actual two-frame next-indicator
+picture. Normal, portrait and wide dialogues reserve a six-pixel gap below the
+last text row. The rendered sample `var/dialogue-indicator-fixed.png` was inspected.
+Focused HUD and dialogue integrations pass.
+
+Pet initial-attribute definitions use classic WLO tables first, Rhodes tables
+for missing companions, and half-template fallback otherwise. Independent
+authored tests check all 30 rows and desired totals. Tests cover bounded rolls,
+capture rounding, fresh Robinson recruitment, restored reserve progression,
+SQL persistence, invalid totals and preserving asset migrations. Installed-data
+quest tests pass against the upgraded assets database. The v18 assets-only
+upgrade kept the previous database in
+`var/backups/pre-migrate-20261104-005406`; gameplay data was not migrated.
+
+Relevant checks, from the repository root:
+
+```powershell
+go test ./internal/game ./internal/world -count=1 -timeout=3m
+go test ./internal/assetsql -run 'TestPetInitial|TestStructuredCatalog|TestCatalogDefinition' -count=1 -timeout=3m
+$env:WONDERLAND_TEST_ASSETS_DB=(Resolve-Path var/assets.db).Path
+go test ./internal/server -run 'TestNativeRobinson|TestMonkeyNative|TestMonkeyAuthored|TestStoryRecruitment|TestNativeFredFinale|TestRecruitSelect|TestRobinsonRecruitment' -count=1 -timeout=3m
+```
+
+From `client/`:
+
+```powershell
+go test ./wlo/hud ./wlo/app -run 'TestTalk|TestLongDialogueClickIndicatorLayout' -count=1 -timeout=3m
+go test ./wlo/app -run 'Test.*Talk|Test.*Dialogue|TestBreillat' -count=1 -timeout=3m
+```
+
+## Stat-boosting pet food — 2026-11-04
+
+The 24 native type-20 food definitions are projected into structured SQL.
+Focused tests pass for random attribute selection, overflow protection, the
+1,200-use lifetime limit, batch clamping, invalid targets, native AC23/AC67
+requests, HP/SP maximum gains, RNG/SQL rollback and counters retained in party,
+reserve and hotel storage. Existing amity-feeding and Potential Pill checks pass.
+Both installed databases were upgraded with verified backups at
+`var/backups/pre-migrate-20261104-011038`: assets v19 and gameplay v20. Existing
+pet counters initialize at zero; existing stats and inventory are preserved.
+
+```powershell
+go test ./internal/server ./internal/store ./internal/assetsql ./internal/game ./internal/assets -run 'TestPetStatFood|TestPetFood|TestCharacterMetadata|TestPetFeeding' -count=1 -timeout=3m
+# From client/
+go test ./wlo/inventory -run 'TestPetStatFood|TestItemUse' -count=1 -timeout=3m
+```
+
+## Guaranteed pet-food compounding - 2026-11-04
+
+Focused checks pass for food-only inputs/outputs, equal-probability food result
+selection without a failure roll, native Primary/Junior/Superior commands without
+skill requirements or EXP, compatibility AC40, same-food pairs, mixed/extra
+ingredient rejection, locked slots, full inventory, random/save rollback and
+persisted native receipts. Client validation rejects mixed recipes without
+optimistic consumption. No database migration is needed.
+
+```powershell
+go test ./internal/server ./internal/assets ./internal/game -run 'TestPetFoodCompounding|TestCompounding|TestCompound|TestAlchemy|TestPetStatFood' -count=1 -timeout=3m
+# From client/
+go test ./wlo/inventory -run 'TestPetFoodCompounding|TestCompound|TestAlchemy' -count=1 -timeout=3m
+```
+## Pet-food growth mode - 2026-11-04
+
+Pet food shares the level-up weighted allocator and captured startup growth
+mode. Exhaustive interval tests cover template weights, unknown-template
+fallback and equipment-adjusted combat weights. Integration tests cover both
+configured modes, per-food recalculation in batches, unchanged lifetime caps,
+current vitals and transactional rejection/rollback. The level-up conditions
+fixture now checks two gained CON points relative to recruitment's starting
+value, allowing the existing half-template recruitment policy.
+
+```powershell
+go test ./internal/game ./internal/server -run 'TestPetFood|TestPetStatFood|TestPetGrowth' -count=1 -timeout=3m
+```
+## Character-creation translated layout - 2026-11-04
+
+Element selectors now retain their full translated bitmap dimensions for both
+painting and hit testing, with a matching nine-slice selection frame. Its three-pixel border is fully excluded from the transparent center to prevent interior tiling over labels. The title
+uses one row of its two-frame atlas. Existing creation/packet tests pass; the
+opt-in creation wizard snapshots were rendered and the element screen visually
+checked at `var/create-layout/create_3_fire.png` and `create_3_water.png`.
+
+```powershell
+# From client/; create the snapshot output directory first.
+$env:SNAPSHOT_DIR=(Resolve-Path ../var/create-layout).Path
+go test ./wlo/login ./wlo/app -run 'TestCreate|TestBuildLoginGolden' -count=1 -timeout=3m
+```
+## Password-field alignment - 2026-11-04
+
+Creation/deletion password editors now match the authored 104-by-14 field boxes
+at x=149 and clip the complete Panel26 image, removing the overlapping larger
+outline and duplicate border. Existing creation/password checks pass. The
+rendered `var/create-layout/create_5.png` was visually checked for all four
+fields and their labels.
+
+```powershell
+# From client/
+go test ./wlo/login ./wlo/app -run 'TestCreate|TestBuildLoginGolden|Test.*Password' -count=1 -timeout=3m
+```
+## Verified full monster names - 2026-11-04
+
+Extracted all 1,190 entries from 12 saved WLOHub pages, checking page identity,
+advertised totals, duplicate IDs and source checksums. The native export and
+pre-patch SQL independently produce the same 558 verified name restorations
+and 210 unresolved candidate records. All three authored CSV outputs reproduce
+byte-for-byte. Tests pass for parser entities/whitespace, duplicate pages,
+ambiguous/mismatched names, authored examples, client templates, preserving
+SQL names/other fields/missing records and repeat migrations. Asset migration
+v20 was verified against every patched SQL row; the original assets database
+is backed up at `var/backups/pre-migrate-20261104-052141`. Gameplay was unchanged.
+Both server and client candidate executables build.
+
+```powershell
+python -m unittest discover -s tools/data_export -p test_extract_monster_names.py -v
+go test ./internal/assets ./internal/assetsql ./internal/dbmigration -run 'TestNPCName|TestNativeNPC|TestCatalogDefinition|TestStructuredCatalog|TestCopy|TestUpgradeInPlace' -count=1 -timeout=3m
+# From client/
+go test ./wlo/world -run 'TestNPCFullMonsterNames|TestShipDeckNPCs|TestStandFacing' -count=1 -timeout=3m
+```
+
+Reproduction commands, matching limits and all reference artifacts are in
+[MONSTER_NAMES.md](MONSTER_NAMES.md).
+## Approved monster names and Quest cleanup - 2026-11-04
+
+Accepted the 192 review entries with a single proposed name. Quest removal
+collapses 12 further multi-option entries to the same display name. The compiled
+patch now covers 762 NPC IDs, with six genuinely different candidate sets left
+for review. Raw source facts remain unchanged. Tests cover approved mismatches,
+annotation-only ambiguity, preservation of custom names, upgrading previous
+Quest-labelled names (including names now equal to their native prefix), and
+client templates. Focused checks from the previous section pass. The backed-up
+v21 assets upgrade verified all 762 SQL names and no remaining Quest names;
+originals are at `var/backups/pre-migrate-20261104-052954`.
+## Explicit monster-name choices - 2026-11-04
+
+The six final owner choices are authored in name_choices.csv and applied by the
+extractor after validating the selected name against its reference candidates.
+All 768 mappings were verified in the local SQL catalog, leaving no unresolved
+candidate entries. Focused assets/migration, client template and Python parser
+checks pass, including all six exact names and rejection of invalid choices.
+The v22 assets-only upgrade retained its original database at
+`var/backups/pre-migrate-20261104-053555`. Both candidates rebuild successfully.
+## Full item names - 2026-11-04
+
+Extracted all 6,882 entries from 69 saved WLOHub item pages. The conservative
+icon/rank/description matcher restores 696 item names and retains 50 uncertain
+candidate rows. It excludes complete names and enhancement-prefix collisions.
+All four extraction artifacts reproduce byte-for-byte. Tests pass for parsing,
+matching, unknown ranks, duplicate pages, preserved raw records/custom names,
+v23 SQL migration and client inventory definitions. The installed assets-only
+upgrade verified all 696 names and retained its original database in
+`var/backups/pre-migrate-20261104-054400`. See [ITEM_NAMES.md](ITEM_NAMES.md).
+
+```powershell
+python -m unittest discover -s tools/data_export -p test_extract_item_names.py -v
+go test ./internal/assets ./internal/assetsql ./internal/dbmigration -run 'TestItemName|TestNPCName|TestCatalogDefinition|TestStructuredCatalog|TestCopy|TestUpgradeInPlace|TestNativeItem|TestItemCatalogJSON' -count=1 -timeout=3m
+# From client/
+go test ./wlo/app -run 'TestFullItemNames|TestItemUse|TestPetStatFood' -count=1 -timeout=3m
+```
+## Pineapple Monster name - 2026-11-04
+
+NPC 17001 now uses Pineapple Monster instead of the native short name Pineapple.
+Explicit owner choices may restore shorter source names without widening the
+automatic ten-byte prefix rule. Parser, authored table, client-template and SQL
+migration checks pass. Assets v24 was upgraded with an original backup at
+`var/backups/pre-migrate-20261104-054909`; the compiled table now has 769 entries.
+## Collection-spot definitions - 2026-11-04
+
+Imported 160 WLOHub reference spots plus two owner coordinates. SQL contains
+162 definitions, 251 listed rewards, 82 distinct native items and 30 vacuum
+entries. Location/reward metadata is fully resolved for 107 entries; other
+records preserve unknown fields explicitly. Tests cover page parsing, vacuum
+classification, ambiguous/out-of-bounds maps, reward matching, partial definitions,
+owner-authored rewards, exact seed counts and preserving edited/empty SQL tables.
+Seed and CSV reports reproduce byte-for-byte. The v25 assets-only migration kept
+originals at `var/backups/pre-migrate-20261104-061037`. This is a definition import;
+vacuum gameplay timing/tool rules remain unspecified. See COLLECTION_SPOTS.md.
+
+```powershell
+python -m unittest discover -s tools/data_export -p test_extract_collection_spots.py -v
+go test ./internal/assets ./internal/assetsql ./internal/dbmigration -run 'TestCollectionSpot|TestCatalogDefinition|TestStructuredCatalog|TestCopy|TestUpgradeInPlace' -count=1 -timeout=3m
+```
+
+## Companion starting equipment - 2026-11-04
+
+Twenty normal companion equipment mappings were imported from the saved pets
+page. Focused checks cover source stages and item matching, authored mappings,
+native slot validation, equipment-adjusted starting vitals, aliases, recruitment
+and vouchers, failed-transaction rollback, immediate AC15:8 roster publication,
+reserve preservation, and edited/empty/idempotent SQL migration. Existing capture,
+bazaar, GM recruitment and story migration integration selections pass. The
+older voucher fixture now expects the established half-template initial stats;
+the v16 story unit test runs its owning migration against its Story-only fixture.
+
+```powershell
+python -m unittest discover -s tools/data_export -p test_extract_pet_equipment.py
+go test ./internal/game ./internal/world ./internal/server ./internal/assetsql -run 'TestFreshPet|TestPetStartingEquipment|TestPetSpecialEquipment|TestMigrationVoucher|TestStory.*Migration|TestGMRecruitPet|Test.*Recruit' -count=1 -timeout=3m
+go test ./internal/server ./internal/store ./internal/assetsql -run 'TestPetSpecialEquipment|TestMigrationVoucher|Test.*Recruit|Test.*Capture|Test.*Bazaar|TestNativeRobinson|TestNativeFredFinale|TestNativeRoca|TestStory.*Migration|TestCatalogDefinition|TestStructuredCatalog' -count=1 -timeout=3m
+```
+
+The extractor reproduced all three artifacts byte-for-byte. Installed-catalog
+and native companion checks passed with `WONDERLAND_TEST_ASSETS_DB` pointing to
+the offline v26 database. All 20 native equipment mappings were read back from
+SQL. Both `bin/wonderland-server-next.exe` and `bin/wonderland-client-next.exe`
+build successfully. No client UI code changed in this feature.
+
+## Remaining enemy-name review - 2026-11-04
+
+Reviewed 2,063 candidate/capacity-length records against the saved reference and
+native metadata. Added 129 ID-specific names, bringing the patch to 898. Evidence
+and retained cases are documented in ENEMY_NAME_REVIEW.md. Checks cover native
+and source identity guards, missing leading/middle words, exact HP/SP evidence,
+false prefix/species matches, retained spelling/context, SQL custom-name and
+missing-record preservation, idempotent upgrades and client template loading.
+
+```powershell
+python -m unittest discover -s tools/data_export -p test_extract_monster_names.py
+python -m unittest discover -s tools/data_export -p test_review_enemy_names.py
+go test ./internal/assets ./internal/assetsql ./internal/dbmigration -run 'TestNPCName|TestCatalogDefinition|TestStructuredCatalog|TestCopy|TestUpgradeInPlace' -count=1 -timeout=3m
+# From client:
+go test ./wlo/world -run TestNPCFullMonsterNames -count=1 -timeout=3m
+```
+
+These focused checks pass. The extractor and review reproduce all CSV/manifest
+artifacts byte-for-byte. Assets v27 was backed up at
+`var/backups/pre-migrate-20261104-064512`; all 898 names were verified in SQL.
+Exactly 129 new name fields changed. A hash of every other NPC column across
+all 4,930 rows remained identical. Server/client next executables both build.
+
+## Full pre-push validation - 2026-11-04
+
+Validated `27b8f8d` and the subsequent validation-only test fixes across both Go
+modules. The complete server run used `-race -count=1 -timeout=60m -json ./...`
+with the installed v27 SQL catalog. The complete client run used
+`-count=1 -timeout=60m -json ./...`, with GPU, loose-data and compiled-bundle
+checks enabled. Final results, combining the full run with complete reruns of
+the corrected packages, cover every repository package:
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,072 | 12 | 28 | 8 |
+| Client | 710 | 36 | 24 | 1 |
+
+Initial validation found three issues, all resolved before pushing:
+
+- Vet rejected external unkeyed `game.Attributes` literals in three pet-stat
+  test files. Keyed fields retain exactly the same independent expected values;
+  the affected fixtures pass under the race detector.
+- The background-only Team/logout comparison included the logout portrait/name
+  after painting was unified for closing animations. The test now isolates the
+  decoration and retains separate portrait placement/static-pose checks. The
+  **entire client application package** passed its subsequent GPU-enabled rerun.
+- The opt-in translated-catalog test requires the original 7,312-record fixture,
+  not the updated 7,325-record extraction. The **entire assets package** passed
+  its subsequent race run with the designated original fixture. An ignored local
+  scratch program was also discovered by `./...`; ignored `var` research tools
+  were isolated behind their own local module boundary. Package-list comparison
+  confirms that every actual repository package was covered, with no remaining
+  failures. Scratch programs are not shipped or treated as product test packages.
+
+Additional checks passed: full server/client vet, tracked Go formatting,
+Prettier, HTMLHint, both ten-second protocol/EVE fuzz runs, and both executable
+builds. Client UI/world/inventory/role/skills/team/login race suites passed 184
+entries; app dialogue/confirmation race regressions passed another 19 entries.
+The Python exporter suite ran 37 tests, with one Windows symlink-privilege skip.
+The asset compiler validated all 72,854 files (6,037.9 MiB source), all reused.
+`TestCompiledBundleLoginAndSharedWorld` passed against the actual compiled packs.
+No race warning, runtime panic or remaining product-package failure was reported.
+
+The Go skips cover original-reference inputs not enabled or unavailable for the
+specific test, live-account operations, optional snapshots and one unavailable
+Windows symlink privilege; they are not manual gameplay acceptance evidence.
+Optional `golangci-lint` was not installed. Initial logs
+retain the resolved failures; final package results and complete-package reruns
+are recorded separately under ignored `var/validation/prepush-20261104/`, with
+`final-summary.json` checking results against both module package inventories.
+
+## Native manual collection validation - 2026-11-04
+
+Collection research and implementation are on `Client-rewrite`. Focused race
+checks pass for server event gathering, SQL claims, world branch planning,
+native timer packets and the assets v29 content migration. The installed North
+Island 60000/33 test uses the real EVE event: click, committed pool reward,
+180-second timer, step-complete acknowledgement, replay protection, cooldown
+dialogue and full-inventory rejection. Existing gathering restart, concurrent
+claim, rollback and failed-delivery checks pass.
+
+The migration upgrades an isolated Client v28 catalog and removes exactly 25
+resolved generated disables, with no added disables or changes to retained
+reasons. Tests retain operator reasons, mixed diagnostics, missing entries,
+incomplete pools and later operator disables across repeated initialization.
+The local quest-development v38 catalog and gameplay data are untouched.
+
+Focused client race tests pass for clicking the actual North Island grass
+sprite, the literal captured acquisition/timer/completion exchange, no actor
+flight, movement release, malformed atomic timer updates, ordinary NPC dialogue
+and completion acknowledgement. Affected-package vet and server, migration-tool
+and client executable builds pass. Logs and validation binaries are under
+ignored `var/validation/collection-usage/`. This is focused development
+validation, not a full pre-push battery or a new live vacuum test.
+
+## Shared resource cooldown validation - 2026-11-04
+
+Focused race tests pass across assets, asset SQL, store, world and server for
+global collection claims and independent per-source durations. Concurrent claims
+from different accounts and separate database connections produce one winner.
+Tests cover separate actors sharing a legacy timer, ground-item namespaces,
+exact expiry boundaries, full-inventory rollback and database reopen recovery.
+Server integration checks cover neighboring collection and ground sources with
+different configured cooldowns and restoring ground availability on map entry.
+World regression checks preserve pending respawn broadcasts when another player
+arrives after expiry but before the world ticker runs.
+
+Assets v29-to-v30 migration checks preserve authored overrides and intentionally
+empty definitions across repeated upgrades. An isolated installed catalog upgrade
+passes real North Island collection, water gathering, world entry, visibility,
+area entry and ground-pickup integration tests with the race detector. Existing
+quest-development v38 assets and live gameplay databases remain untouched.
+Focused client collection timer/acquisition race tests, affected-package vet and
+server, migration-tool and client executable builds pass. Logs and
+disposable outputs are under ignored `var/validation/shared-resources/`.
+
+## Vacuum client scheduling validation - 2026-11-04
+
+Focused client race tests pass for native start/stop/click bytes, deadline
+boundaries, single in-flight retries, changed respawn durations, failed attempts,
+starting on exhausted spots, movement, equipment removal, map/battle cancellation
+and connection isolation. A 30-second timer gives Gonline a 40-second wait; a
+240-second timer gives 250 seconds. Other servers keep the fixed 190-second
+Legacy interval. The matching executable confirms the decompiled scheduler's
+190,000-millisecond threshold and its exact eight resource-template references.
+
+The initial client run exposed an incorrect NPC-kind assumption; the corrected
+template-list implementation passes all vacuum tests with the race detector.
+Existing captured manual collection, malformed timer and combat negotiation/reset
+regressions also pass. Server/protocol race tests verify the literal collection
+capability bytes and availability with combat chains disabled while preserving
+combat opt-in. Affected-package vet and client/server executable builds pass.
+Ignored `var/validation/shared-resources/vacuum-*.log` retains the test history;
+validated binaries are `client-vacuum.exe` and `wonderland-vacuum.exe` there.
+No full pre-push battery or real-server vacuum validation was run for this change.
+
+## Complete collection pre-push validation - 2026-11-04
+
+Validated production commit `aafdeff` and test-fixture correction `44e5a4a`.
+The full server module ran with `-race -count=1 -timeout=60m -p 1 ./...` against
+the isolated v30 catalog. The full client module ran with GPU, native-data and
+compiled-bundle checks enabled. Final coverage includes every module package:
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,089 | 12 | 28 | 8 |
+| Client | 722 | 36 | 24 | 2 |
+
+The initial server run found an outdated login wire assertion and a simulation
+fixture cleanup race. The login golden now consumes the independent collection
+capability before authentication. Field fixtures settle playback and cancel battle
+timers before closing SQL or restoring timing hooks. Both fixes passed three
+focused race repetitions, followed by a complete passing server-package race run.
+Coverage combines that complete rerun with the other passing full-module packages;
+no test/package failures or race warnings remain in the final results.
+
+Full vet, tracked Go formatting, HTMLHint, Prettier, ten-second Read/EVE/NativeItems
+fuzz runs, server/client/migration builds and the entity-name review/export check
+pass. Python exporters pass 38 tests with one Windows symlink-privilege skip.
+Go skips retain their documented optional-reference, live-account and snapshot
+requirements; they are not live gameplay acceptance evidence. Logs, binaries and
+the strict package-coverage audit are under ignored
+`var/validation/prepush-collection-20261104/`, including `final-summary.json`.

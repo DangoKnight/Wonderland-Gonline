@@ -7,6 +7,40 @@ import (
 	"time"
 )
 
+func TestCompanionHiddenOnVehicleResumesAtLanding(t *testing.T) {
+	for _, peerOwner := range []bool{false, true} {
+		w := &World{Player: Player{ID: 1, X: 100, Y: 100}}
+		owner := &w.Player
+		if peerOwner {
+			w.Peers = map[uint32]*Peer{2: {Player: Player{ID: 2, X: 100, Y: 100}}}
+			owner = &w.Peers[2].Player
+		}
+		w.SetCompanion(owner.ID, 123, []byte("Pet"), nil)
+		owner.VehicleID = 48016
+		owner.X, owner.Y = 200, 200
+		w.Step(time.Unix(100, 0))
+		if _, _, _, visible := w.companionPosition(owner.ID); visible {
+			t.Fatal("pet follows vehicle")
+		}
+		if w.Companions[owner.ID].ID != 123 {
+			t.Fatal("hidden pet discarded")
+		}
+		w.SetCompanion(owner.ID, 456, []byte("Other"), nil)
+		if _, _, _, visible := w.companionPosition(owner.ID); visible {
+			t.Fatal("switched pet visible while riding")
+		}
+		owner.VehicleID = 0
+		x, y, _, visible := w.companionPosition(owner.ID)
+		if !visible || x != 200 || y != 200 || w.Companions[owner.ID].ID != 456 {
+			t.Fatal("latest pet did not resume at landing")
+		}
+		delete(w.Companions, owner.ID)
+		if _, _, _, visible := w.companionPosition(owner.ID); visible {
+			t.Fatal("rested pet reappeared")
+		}
+	}
+}
+
 // Native FUN_004245bc samples at 20 pixels per axis; FUN_00424a0c targets
 // the third entry. These expected positions are authored from those rules.
 func TestCompanionNativeTrail(t *testing.T) {

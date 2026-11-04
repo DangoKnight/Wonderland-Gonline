@@ -80,6 +80,13 @@ type GroundItem struct {
 	ItemID  uint32
 	Unknown [2]uint16
 }
+
+// DrawDepth is the signed trailing EVE item sort offset, retained as two raw
+// words in the asset tables. AC23:4 carries it as one signed 32-bit value.
+func (i GroundItem) DrawDepth() int32 {
+	return int32(uint32(i.Unknown[0]) | uint32(i.Unknown[1])<<16)
+}
+
 type Warp struct {
 	ClickID uint16
 	Name    string

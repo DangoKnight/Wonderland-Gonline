@@ -77,7 +77,7 @@ func (s *Server) battlePetCommand(ctx context.Context, c *Session, p []byte) err
 	if id != 0 {
 		i, _ := c.character.Pet(id)
 		pet := c.character.Pets[i]
-		incoming = battle.PetFighter(pet, next.ID, s.Assets.Items, 0)
+		incoming = battle.PetFighter(pet, next.ID, s.Assets.Items, 0, s.petTemplate(pet.ID))
 		incoming.ClickID = uint16(c.pets.slot(id))
 		selection = protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(next.ActivePet)
 		peers = append(peers, serverwire.PetMapPacket(next.ID, next.ActivePet, s.companionName(pet.ID, pet.Name)))

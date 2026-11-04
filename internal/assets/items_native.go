@@ -2,6 +2,7 @@ package assets
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"wonderland-gonline/internal/game"
 )
@@ -62,6 +63,40 @@ type NativeItem struct {
 	LargeIcon   uint16
 	Sprites     [nativeItemSpriteCount]uint16
 	Record      [nativeItemRecordBytes]byte
+}
+
+const vehicleCapacityRankOffset = 45 // Native Item.dat +0x31, excluding its four-byte prefix.
+const vehicleCapacityUnitsPerRank = 1800
+const vehicleCapacityRankPower = 1.3
+
+// VehicleCapacity follows FUN_00262974/FUN_0044d5d0: round(rank^1.3)*1800.
+func (i NativeItem) VehicleCapacity() uint32 {
+	if i.Definition.Type != game.VehicleType {
+		return 0
+	}
+	return uint32(math.RoundToEven(math.Pow(float64(i.Record[vehicleCapacityRankOffset]), vehicleCapacityRankPower))) * vehicleCapacityUnitsPerRank
+}
+
+// VehicleCondition is shared by inventory and the mounted-vehicle HUD.
+type VehicleCondition struct{ Health, Maximum, Fuel uint32 }
+
+func (i NativeItem) VehicleCondition(item game.Item) VehicleCondition {
+	if i.Definition.Type != game.VehicleType || item.Empty() {
+		return VehicleCondition{}
+	}
+	capacity := i.VehicleCapacity()
+	fuel := uint32(item.VehicleFuel())
+	if capacity == 0 {
+		capacity, fuel = game.VehicleWreckDamage, 0
+	}
+	health := capacity - min(capacity, item.VehicleWear())
+	// Precise native wear and the existing server damage percentage both
+	// constrain remaining health; neither display may restore spent health.
+	health = min(health, uint32(uint64(capacity)*uint64(game.VehicleWreckDamage-min(item.Damage, game.VehicleWreckDamage))/game.VehicleWreckDamage))
+	if item.ID == game.DisposableRaftItemID {
+		health = capacity
+	}
+	return VehicleCondition{Health: health, Maximum: capacity, Fuel: min(fuel, capacity)}
 }
 
 // ParseNativeItems reads version-nine Item.dat: one plaintext 451-byte header,

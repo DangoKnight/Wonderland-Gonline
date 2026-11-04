@@ -24,7 +24,8 @@ def digest(data):
 
 def verify(root):
     manifest = json.loads((root / 'sprite_manifest.json').read_text())
-    sprites = frames = decrypted = missing = 0
+    sprites = frames = decrypted = missing = missing_actions = 0
+    archive_counts = {Path(source['source']).stem.lower(): source['sprites'] for source in manifest['sources'] if source['format'] == 'decompiled-sprites'}
     for source in manifest['sources']:
         for output in source['outputs']:
             path = root / output['path']
@@ -38,6 +39,12 @@ def verify(root):
         if source['format'] != 'decompiled-sprites':
             original = bytes.fromhex(document['header_hex']) + b''.join(bytes.fromhex(row['record_hex']) for row in document['records'])
             assert len(original) == source['bytes'] and digest(original) == source['sha256'], metadata
+            if source['format'] == 'plaintext-jxa':
+                archive_count = archive_counts[Path(source['source']).stem.lower()]
+                absent = archive_count - len(document['records'])
+                assert absent >= 0 and document.get('sprite_count', archive_count) == archive_count, metadata
+                assert document.get('missing_action_records', 0) == absent, metadata
+                missing_actions += absent
             missing += sum(row.get('source_status') == 'missing-companion-archive' for row in document['records'])
             continue
         payload = zlib.decompress(base64.b64decode(document['decoded_archive_zlib_base64']))
@@ -76,7 +83,8 @@ def verify(root):
             assert digest(payload) == source['sha256'], metadata
         decrypted += changed
     assert (sprites, frames, decrypted) == (manifest['sprites'], manifest['frames'], manifest['decrypted_sprites'])
-    print(f"Verified {len(manifest['sources'])} sources, {sprites} sprites, {frames} frames, {decrypted} decrypted sprites; {missing} records have missing source archives")
+    assert missing_actions == manifest.get('missing_action_records', 0)
+    print(f"Verified {len(manifest['sources'])} sources, {sprites} sprites, {frames} frames, {decrypted} decrypted sprites; {missing} records have missing source archives; {missing_actions} sprites have no source action record")
 
 
 if __name__ == '__main__':

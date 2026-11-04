@@ -1,5 +1,24 @@
 package game
 
+import "encoding/binary"
+
+// Native item instance fields +0x20/+0x24 map to these bag metadata offsets.
+const (
+	VehicleWearMetadataOffset = 12
+	VehicleFuelMetadataOffset = 16
+)
+
+func (i Item) VehicleWear() uint32 {
+	return binary.LittleEndian.Uint32(i.Metadata[VehicleWearMetadataOffset:])
+}
+func (i Item) VehicleFuel() uint16 {
+	return binary.LittleEndian.Uint16(i.Metadata[VehicleFuelMetadataOffset:])
+}
+func (i *Item) SetVehicleProgress(wear uint32, fuel uint16) {
+	binary.LittleEndian.PutUint32(i.Metadata[VehicleWearMetadataOffset:], wear)
+	binary.LittleEndian.PutUint16(i.Metadata[VehicleFuelMetadataOffset:], fuel)
+}
+
 // VehicleType is eItemType.Vehicle in the native item table.
 const VehicleType byte = 39
 
@@ -35,7 +54,8 @@ func (c Character) Vehicle(slot byte, id uint16, items map[uint16]ItemDefinition
 }
 
 // NormalizeVehicle clears stale riding state after a bag mutation or on login.
-// Riding a valid item vehicle also excludes a companion mount.
+// Riding a valid item vehicle excludes a companion mount, but preserves the
+// selected battle pet. Hiding its following sprite is presentation state.
 func (c *Character) NormalizeVehicle(items map[uint16]ItemDefinition) bool {
 	beforeID, beforeSlot, beforeMount := c.ActiveVehicle, c.VehicleSlot, c.ActiveMount
 	if _, ok := c.Vehicle(c.VehicleSlot, c.ActiveVehicle, items); !ok {

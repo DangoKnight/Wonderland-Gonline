@@ -77,6 +77,12 @@ func (c *Companion) reset(owner *Player) {
 // screen offset. TFollowNpc (FUN_0041c5f0) moves with FUN_004126b8 and stops
 // at the trailing point; it does not catch up to the owner's final position.
 func (c *Companion) step(owner *Player, now time.Time) {
+	if owner.VehicleID != 0 {
+		// Retain selection, but discard the sailing trail. On landing the pet
+		// starts beside its owner instead of walking across the water to catch up.
+		c.initialized = false
+		return
+	}
 	at := image.Pt(owner.X, owner.Y)
 	if !c.initialized || abs(at.X-c.ownerPosition.X) >= companionTeleportDistance || abs(at.Y-c.ownerPosition.Y) >= companionTeleportDistance {
 		c.reset(owner)
@@ -135,6 +141,10 @@ func (w *World) companionPosition(owner uint32) (int, int, int, bool) {
 	c := w.Companions[owner]
 	p := w.companionOwner(owner)
 	if c == nil || p == nil {
+		return 0, 0, 0, false
+	}
+	if p.VehicleID != 0 {
+		c.initialized = false
 		return 0, 0, 0, false
 	}
 	if !c.initialized {

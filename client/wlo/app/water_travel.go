@@ -47,7 +47,13 @@ func (c *Client) walkWaterAware(x, y int, now time.Time) {
 		c.waterTravel.goal = &target
 		return
 	}
-	if (w.Scene.Water(x, y) && !w.Scene.WaterTravel) || (w.Scene.Land(x, y) && w.Scene.WaterTravel) {
+	if w.Scene.Water(x, y) && !w.Scene.WaterTravel {
+		// A click across land only walks toward its land endpoint. Reaching
+		// shore does not turn that earlier click into a boarding request.
+		if _, clear := w.Scene.DirectWaterEntry(w.Player.X, w.Player.Y, x, y); clear && w.Scene.WaterEdge(w.Player.X, w.Player.Y) {
+			c.waterTravel.goal = &target
+		}
+	} else if w.Scene.Land(x, y) && w.Scene.WaterTravel {
 		c.waterTravel.goal = &target
 	}
 	w.StopWalk()
@@ -90,18 +96,24 @@ func (c *Client) waterTravelTick() {
 		t.stage = protocol.PetControlDismountVehicle
 		t.origin = image.Pt(w.Player.X, w.Player.Y)
 		w.Relocate(shore)
-		// The server tracks announced endpoints. Report land while still mounted,
-		// before the dismount transaction snapshots the recovery position.
-		position := protocol.Builder{protocol.CommandMovement, protocol.MovementStop, byte(w.Player.Direction)}.U16(uint16(shore.X)).U16(uint16(shore.Y))
+		t.goal = nil // Landing ends this click at the dismount point.
+		c.groundHeld = false
+		// Ordinary landing sends dismount before land movement. On Starter
+		// Beach, Robinson's raft remains mounted until the server observes land
+		// and sends the scripted removal/break/dismount sequence.
+		if w.Player.Map != game.MapID11016 || t.requestID != game.DisposableRaftItemID {
+			c.Inventory.Send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlDismountVehicle, t.requestSlot}.U16(t.requestID))
+		}
+		facing := byte(w.Player.Direction) % (protocol.MovementDirectionMax + 1)
+		position := protocol.Builder{protocol.CommandMovement, protocol.MovementMove, facing}.U16(uint16(shore.X)).U16(uint16(shore.Y))
 		c.Inventory.Send(position.Bytes(make([]byte, movementCheckBytes)))
-		c.Inventory.Send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlDismountVehicle, t.requestSlot}.U16(t.requestID))
 		return
 	}
 	if !w.Scene.Water(t.goal.X, t.goal.Y) || !w.Scene.WaterEdge(w.Player.X, w.Player.Y) {
 		t.goal = nil
 		return
 	}
-	shore, ok := w.Scene.ShorePoint(w.Player.X, w.Player.Y, true)
+	shore, ok := w.Scene.DirectWaterEntry(w.Player.X, w.Player.Y, t.goal.X, t.goal.Y)
 	if !ok {
 		t.goal = nil
 		return
@@ -179,7 +191,7 @@ func (c *Client) vehiclePacket(p []byte) {
 		if len(p) != 7 {
 			return
 		}
-		owner = binary.LittleEndian.Uint32(p[3:])
+		slot, owner = p[2], binary.LittleEndian.Uint32(p[3:])
 	case protocol.PetControlRemoveVehicle:
 		if len(p) != 8 {
 			return
@@ -190,6 +202,7 @@ func (c *Client) vehiclePacket(p []byte) {
 		return
 	}
 	if owner != c.World.Player.ID {
+		delete(c.placedVehicles, vehicleKey{owner, slot})
 		if peer := c.World.Peers[owner]; peer != nil {
 			peer.VehicleID, peer.VehicleSlot = id, slot
 			c.setVehicleLook(peer.Role, id)
@@ -197,6 +210,16 @@ func (c *Client) vehiclePacket(p []byte) {
 		return
 	}
 	t := &c.waterTravel
+	if id == 0 && t.landing {
+		t.goal = nil
+		c.groundHeld = false
+	}
+	if id != 0 {
+		delete(c.placedVehicles, vehicleKey{owner, slot})
+		if c.TeamState != nil {
+			c.TeamState.MountPet = 0
+		}
+	}
 	c.World.Player.VehicleID, c.World.Player.VehicleSlot = id, slot
 	c.applyWaterVehicle()
 	t.requestID, t.requestSlot, t.landing, t.stage = 0, 0, false, 0

@@ -99,6 +99,7 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 	}
 	targets := skillTargets(enemies, selected, r.Skills[a.Skill], skillGrade(a.Actor, a.Skill), false)
 	packets := [][]byte{turnPacket(a.Actor), r.spend(a.Actor, a.Skill)}
+	a.supporters = a.Actor.consumeSupport()
 	var results []targetResult
 	var overkills []*Fighter
 	a.SkillEXP = game.CombatSkillEXPPerUse
@@ -121,6 +122,13 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	steps := []Step{{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}}
+	if r.RewardKill != nil {
+		for _, result := range results {
+			if result.result == protocol.BattleHitLanded && result.target.Dead() {
+				steps = r.appendKillReward(b, steps, result.target, []Action{a})
+			}
+		}
+	}
 	steps = b.appendOverkills(steps, overkills...)
 	return steps
 }

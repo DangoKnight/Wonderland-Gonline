@@ -1,0 +1,542 @@
+{
+  "14162": {
+    "Minimum": {
+      "strength": 4,
+      "constitution": 5,
+      "intelligence": 2,
+      "wisdom": 2,
+      "agility": 4
+    },
+    "Maximum": {
+      "strength": 5,
+      "constitution": 6,
+      "intelligence": 3,
+      "wisdom": 3,
+      "agility": 5
+    },
+    "TotalPoints": 18,
+    "Source": "https://wikiwiki.jp/wlo/NPC - レイチェル / Roca - initial abilities table (pre-rebirth)"
+  },
+  "14156": {
+    "Minimum": {
+      "strength": 1,
+      "constitution": 1,
+      "intelligence": 2,
+      "wisdom": 2,
+      "agility": 4
+    },
+    "Maximum": {
+      "strength": 2,
+      "constitution": 2,
+      "intelligence": 4,
+      "wisdom": 4,
+      "agility": 6
+    },
+    "TotalPoints": 13,
+    "Source": "https://wikiwiki.jp/wlo/NPC - リン / Xaolan - initial abilities table (pre-rebirth)"
+  },
+  "14081": {
+    "Minimum": {
+      "strength": 1,
+      "constitution": 1,
+      "intelligence": 5,
+      "wisdom": 5,
+      "agility": 2
+    },
+    "Maximum": {
+      "strength": 1,
+      "constitution": 1,
+      "intelligence": 6,
+      "wisdom": 6,
+      "agility": 2
+    },
+    "TotalPoints": 15,
+    "Source": "https://wikiwiki.jp/wlo/NPC - ニース / Niss - initial abilities table (pre-rebirth)"
+  },
+  "12068": {
+    "Minimum": {
+      "strength": 7,
+      "constitution": 6,
+      "intelligence": 4,
+      "wisdom": 5,
+      "agility": 3
+    },
+    "Maximum": {
+      "strength": 9,
+      "constitution": 7,
+      "intelligence": 6,
+      "wisdom": 6,
+      "agility": 3
+    },
+    "TotalPoints": 27,
+    "Source": "https://wikiwiki.jp/wlo/NPC - マゼラン / Magellan - initial abilities table (pre-rebirth)"
+  },
+  "17914": {
+    "Minimum": {
+      "strength": 2,
+      "constitution": 2,
+      "intelligence": 7,
+      "wisdom": 10,
+      "agility": 15
+    },
+    "Maximum": {
+      "strength": 2,
+      "constitution": 2,
+      "intelligence": 7,
+      "wisdom": 10,
+      "agility": 15
+    },
+    "TotalPoints": 36,
+    "Source": "https://wikiwiki.jp/wlo/NPC - シャルロット / Charlotte - initial abilities table (pre-rebirth)"
+  },
+  "14230": {
+    "Minimum": {
+      "strength": 3,
+      "constitution": 10,
+      "intelligence": 5,
+      "wisdom": 4,
+      "agility": 7
+    },
+    "Maximum": {
+      "strength": 4,
+      "constitution": 11,
+      "intelligence": 6,
+      "wisdom": 6,
+      "agility": 8
+    },
+    "TotalPoints": 30,
+    "Source": "https://wikiwiki.jp/wlo/NPC - アイリーン / Elin - initial abilities table (pre-rebirth)"
+  },
+  "14615": {
+    "Minimum": {
+      "strength": 3,
+      "constitution": 5,
+      "intelligence": 14,
+      "wisdom": 10,
+      "agility": 6
+    },
+    "Maximum": {
+      "strength": 3,
+      "constitution": 5,
+      "intelligence": 15,
+      "wisdom": 11,
+      "agility": 7
+    },
+    "TotalPoints": 39,
+    "Source": "https://wikiwiki.jp/wlo/NPC - ナキラー / Qlaya - initial abilities table (pre-rebirth)"
+  },
+  "14274": {
+    "Minimum": {
+      "strength": 21,
+      "constitution": 16,
+      "intelligence": 7,
+      "wisdom": 4,
+      "agility": 14
+    },
+    "Maximum": {
+      "strength": 22,
+      "constitution": 17,
+      "intelligence": 8,
+      "wisdom": 4,
+      "agility": 15
+    },
+    "TotalPoints": 63,
+    "Source": "https://wikiwiki.jp/wlo/NPC - サールス / Sam - initial abilities table (pre-rebirth)"
+  },
+  "14637": {
+    "Minimum": {
+      "strength": 12,
+      "constitution": 10,
+      "intelligence": 12,
+      "wisdom": 11,
+      "agility": 13
+    },
+    "Maximum": {
+      "strength": 12,
+      "constitution": 10,
+      "intelligence": 12,
+      "wisdom": 11,
+      "agility": 13
+    },
+    "TotalPoints": 58,
+    "Source": "https://wikiwiki.jp/wlo/NPC - 鈴音（すずね） / Shizune - initial abilities table (pre-rebirth)"
+  },
+  "17162": {
+    "Minimum": {
+      "strength": 1,
+      "constitution": 2,
+      "intelligence": 1,
+      "wisdom": 1,
+      "agility": 2
+    },
+    "Maximum": {
+      "strength": 1,
+      "constitution": 2,
+      "intelligence": 1,
+      "wisdom": 1,
+      "agility": 2
+    },
+    "TotalPoints": 7,
+    "Source": "https://wikiwiki.jp/wlo/NPC - 子ザル / Monkey - initial abilities table (pre-rebirth)"
+  },
+  "12179": {
+    "Minimum": {
+      "strength": 9,
+      "constitution": 9,
+      "intelligence": 5,
+      "wisdom": 5,
+      "agility": 8
+    },
+    "Maximum": {
+      "strength": 9,
+      "constitution": 9,
+      "intelligence": 5,
+      "wisdom": 5,
+      "agility": 8
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - 帝国レイチェル - initial abilities table",
+    "TotalPoints": 36
+  },
+  "12217": {
+    "Minimum": {
+      "strength": 19,
+      "constitution": 23,
+      "intelligence": 38,
+      "wisdom": 37,
+      "agility": 21
+    },
+    "Maximum": {
+      "strength": 19,
+      "constitution": 23,
+      "intelligence": 38,
+      "wisdom": 37,
+      "agility": 21
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - 影フリード - initial abilities table",
+    "TotalPoints": 138
+  },
+  "12219": {
+    "Minimum": {
+      "strength": 11,
+      "constitution": 19,
+      "intelligence": 24,
+      "wisdom": 25,
+      "agility": 24
+    },
+    "Maximum": {
+      "strength": 11,
+      "constitution": 19,
+      "intelligence": 24,
+      "wisdom": 25,
+      "agility": 24
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - 聖アンジェラ - initial abilities table",
+    "TotalPoints": 103
+  },
+  "12222": {
+    "Minimum": {
+      "strength": 12,
+      "constitution": 20,
+      "intelligence": 27,
+      "wisdom": 26,
+      "agility": 26
+    },
+    "Maximum": {
+      "strength": 12,
+      "constitution": 20,
+      "intelligence": 27,
+      "wisdom": 26,
+      "agility": 26
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - 闇夜コピュア - initial abilities table",
+    "TotalPoints": 111
+  },
+  "12178": {
+    "Minimum": {
+      "strength": 7,
+      "constitution": 10,
+      "intelligence": 2,
+      "wisdom": 4,
+      "agility": 6
+    },
+    "Maximum": {
+      "strength": 7,
+      "constitution": 11,
+      "intelligence": 2,
+      "wisdom": 5,
+      "agility": 7
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - ロビンソン - initial abilities table",
+    "TotalPoints": 30
+  },
+  "12180": {
+    "Minimum": {
+      "strength": 21,
+      "constitution": 30,
+      "intelligence": 43,
+      "wisdom": 36,
+      "agility": 5
+    },
+    "Maximum": {
+      "strength": 21,
+      "constitution": 30,
+      "intelligence": 43,
+      "wisdom": 36,
+      "agility": 5
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - カーマ - initial abilities table",
+    "TotalPoints": 135
+  },
+  "12181": {
+    "Minimum": {
+      "strength": 44,
+      "constitution": 40,
+      "intelligence": 20,
+      "wisdom": 25,
+      "agility": 6
+    },
+    "Maximum": {
+      "strength": 44,
+      "constitution": 40,
+      "intelligence": 20,
+      "wisdom": 25,
+      "agility": 6
+    },
+    "Source": "https://wikiwiki.jp/wlo_ratoku/NPC - 楊戩 - initial abilities table",
+    "TotalPoints": 135
+  },
+  "14548": {
+    "Minimum": {
+      "strength": 12,
+      "constitution": 16,
+      "intelligence": 11,
+      "wisdom": 14,
+      "agility": 12
+    },
+    "Maximum": {
+      "strength": 13,
+      "constitution": 17,
+      "intelligence": 12,
+      "wisdom": 15,
+      "agility": 12
+    },
+    "TotalPoints": 66,
+    "Source": "https://wikiwiki.jp/wlo/NPC - 加奈子（かなこ） / Kanako - initial abilities table (pre-rebirth)"
+  },
+  "14175": {
+    "Minimum": {
+      "strength": 7,
+      "constitution": 6,
+      "intelligence": 2,
+      "wisdom": 1,
+      "agility": 4
+    },
+    "Maximum": {
+      "strength": 8,
+      "constitution": 7,
+      "intelligence": 2,
+      "wisdom": 1,
+      "agility": 5
+    },
+    "TotalPoints": 21,
+    "Source": "https://wikiwiki.jp/wlo/NPC - クリフ / Clive - initial abilities table (pre-rebirth)"
+  },
+  "14609": {
+    "Minimum": {
+      "strength": 7,
+      "constitution": 6,
+      "intelligence": 15,
+      "wisdom": 15,
+      "agility": 8
+    },
+    "Maximum": {
+      "strength": 8,
+      "constitution": 6,
+      "intelligence": 16,
+      "wisdom": 16,
+      "agility": 9
+    },
+    "TotalPoints": 52,
+    "Source": "https://wikiwiki.jp/wlo/NPC - サシャ / Shasha - initial abilities table (pre-rebirth)"
+  },
+  "12095": {
+    "Minimum": {
+      "strength": 15,
+      "constitution": 19,
+      "intelligence": 34,
+      "wisdom": 33,
+      "agility": 17
+    },
+    "Maximum": {
+      "strength": 15,
+      "constitution": 19,
+      "intelligence": 34,
+      "wisdom": 33,
+      "agility": 17
+    },
+    "TotalPoints": 118,
+    "Source": "https://wikiwiki.jp/wlo/NPC - フリード / Frederico - initial abilities table (pre-rebirth)"
+  },
+  "14243": {
+    "Minimum": {
+      "strength": 7,
+      "constitution": 15,
+      "intelligence": 19,
+      "wisdom": 19,
+      "agility": 21
+    },
+    "Maximum": {
+      "strength": 7,
+      "constitution": 16,
+      "intelligence": 21,
+      "wisdom": 22,
+      "agility": 23
+    },
+    "TotalPoints": 84,
+    "Source": "https://wikiwiki.jp/wlo/NPC - アンジェラ / Angela - initial abilities table (pre-rebirth)"
+  },
+  "14242": {
+    "Minimum": {
+      "strength": 4,
+      "constitution": 5,
+      "intelligence": 13,
+      "wisdom": 12,
+      "agility": 12
+    },
+    "Maximum": {
+      "strength": 4,
+      "constitution": 6,
+      "intelligence": 15,
+      "wisdom": 14,
+      "agility": 14
+    },
+    "TotalPoints": 48,
+    "Source": "https://wikiwiki.jp/wlo/NPC - コピュア / Eva - initial abilities table (pre-rebirth)"
+  },
+  "12147": {
+    "Minimum": {
+      "strength": 11,
+      "constitution": 10,
+      "intelligence": 7,
+      "wisdom": 8,
+      "agility": 8
+    },
+    "Maximum": {
+      "strength": 12,
+      "constitution": 11,
+      "intelligence": 7,
+      "wisdom": 9,
+      "agility": 9
+    },
+    "TotalPoints": 45,
+    "Source": "https://wikiwiki.jp/wlo/NPC - ルイス / Louis - initial abilities table (pre-rebirth)"
+  },
+  "15657": {
+    "Minimum": {
+      "strength": 18,
+      "constitution": 18,
+      "intelligence": 6,
+      "wisdom": 11,
+      "agility": 12
+    },
+    "Maximum": {
+      "strength": 20,
+      "constitution": 20,
+      "intelligence": 6,
+      "wisdom": 12,
+      "agility": 13
+    },
+    "TotalPoints": 67,
+    "Source": "https://wikiwiki.jp/wlo/NPC - 燕玲（エンレイ） / Victoria - initial abilities table (pre-rebirth)"
+  },
+  "15689": {
+    "Minimum": {
+      "strength": 14,
+      "constitution": 10,
+      "intelligence": 11,
+      "wisdom": 13,
+      "agility": 12
+    },
+    "Maximum": {
+      "strength": 15,
+      "constitution": 10,
+      "intelligence": 11,
+      "wisdom": 14,
+      "agility": 12
+    },
+    "TotalPoints": 61,
+    "Source": "https://wikiwiki.jp/wlo/NPC - 疾風（はやて） / Hayate - initial abilities table (pre-rebirth)"
+  },
+  "12148": {
+    "Minimum": {
+      "strength": 19,
+      "constitution": 27,
+      "intelligence": 35,
+      "wisdom": 31,
+      "agility": 25
+    },
+    "Maximum": {
+      "strength": 19,
+      "constitution": 27,
+      "intelligence": 35,
+      "wisdom": 31,
+      "agility": 25
+    },
+    "TotalPoints": 137,
+    "Source": "https://wikiwiki.jp/wlo/NPC - アテナ / Athena - initial abilities table (pre-rebirth)"
+  },
+  "12149": {
+    "Minimum": {
+      "strength": 16,
+      "constitution": 24,
+      "intelligence": 34,
+      "wisdom": 33,
+      "agility": 26
+    },
+    "Maximum": {
+      "strength": 16,
+      "constitution": 24,
+      "intelligence": 34,
+      "wisdom": 33,
+      "agility": 26
+    },
+    "TotalPoints": 133,
+    "Source": "https://wikiwiki.jp/wlo/NPC - ヴィーナス / Venus - initial abilities table (pre-rebirth)"
+  },
+  "35253": {
+    "Minimum": {
+      "strength": 21,
+      "constitution": 20,
+      "intelligence": 11,
+      "wisdom": 5,
+      "agility": 14
+    },
+    "Maximum": {
+      "strength": 22,
+      "constitution": 21,
+      "intelligence": 11,
+      "wisdom": 5,
+      "agility": 14
+    },
+    "TotalPoints": 72,
+    "Source": "https://wikiwiki.jp/wlo/NPC - ジャンヌ・ダルク / Joan (Jeanne) - initial abilities table (pre-rebirth)"
+  },
+  "17454": {
+    "Minimum": {
+      "strength": 16,
+      "constitution": 10,
+      "intelligence": 2,
+      "wisdom": 1,
+      "agility": 3
+    },
+    "Maximum": {
+      "strength": 17,
+      "constitution": 11,
+      "intelligence": 3,
+      "wisdom": 1,
+      "agility": 4
+    },
+    "TotalPoints": 33,
+    "Source": "https://wikiwiki.jp/wlo/NPC - アレス / Arez - initial abilities table (pre-rebirth)"
+  }
+}

@@ -2,6 +2,40 @@ package battle
 
 import "wonderland-gonline/internal/assets"
 
+const (
+	monsterTargetAdvantageWeight    = 4
+	monsterTargetNeutralWeight      = 2
+	monsterTargetDisadvantageWeight = 1
+)
+
+func monsterTargetWeight(actor, target *Fighter) int {
+	switch relation := Elemental(actor.Element, target.Element); {
+	case relation > 1:
+		return monsterTargetAdvantageWeight
+	case relation < 1:
+		return monsterTargetDisadvantageWeight
+	default:
+		return monsterTargetNeutralWeight
+	}
+}
+
+// monsterTarget samples already validated hostile targets without a player/pet
+// preference. Even an elemental disadvantage retains a chance of being chosen.
+func (r Rules) monsterTarget(actor *Fighter, targets []*Fighter) *Fighter {
+	total := 0
+	for _, target := range targets {
+		total += monsterTargetWeight(actor, target)
+	}
+	roll := r.Next(0, total)
+	for _, target := range targets {
+		roll -= monsterTargetWeight(actor, target)
+		if roll < 0 {
+			return target
+		}
+	}
+	panic("monster target roll outside weight range")
+}
+
 // monsterSkill selects uniformly among distinct usable native slots. No skill ID
 // or name decides a buff/debuff: cast targets come from the effect definitions.
 // Healing retains the same compatibility classifier used for player abilities.
@@ -10,7 +44,11 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 		return Action{}, false
 	}
 	allies, enemies := b.Teams(actor.Side)
-	var choices []Action
+	type choice struct {
+		action         Action
+		hostileTargets []*Fighter
+	}
+	var choices []choice
 	seen := map[uint16]bool{}
 	for _, id := range actor.Skills {
 		if id == 0 || seen[id] || Basic(id) || !r.CanUse(actor, id) {
@@ -39,7 +77,7 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 						continue
 					}
 					needed = true
-					if f.Dead() || f.HasEffect(id) || (e.Target == assets.EffectAlly && f.Side != actor.Side) || (e.Target == assets.EffectEnemy && f.Side == actor.Side) {
+					if f.Dead() || f.Joining || f.HasEffect(id) || (e.Target == assets.EffectAlly && f.Side != actor.Side) || (e.Target == assets.EffectEnemy && f.Side == actor.Side) {
 						valid = false
 					}
 				}
@@ -73,8 +111,8 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 		if len(targets) == 0 {
 			continue
 		}
-		// Lowest HP ratio for support, stable first live enemy for offensive casts;
-		// random choice between skills does not consume rolls for rejected slots.
+		// Support retains its resource-ratio priority. Hostile targeting is sampled
+		// only after choosing a skill, so its target count cannot bias skill choice.
 		target := targets[0]
 		if a.Kind == "heal" {
 			for _, f := range targets[1:] {
@@ -88,10 +126,19 @@ func (r Rules) monsterSkill(b *Battle, actor *Fighter) (Action, bool) {
 			}
 		}
 		a.TX, a.TY = target.X, target.Y
-		choices = append(choices, a)
+		c := choice{action: a}
+		if target.Side != actor.Side {
+			c.hostileTargets = targets
+		}
+		choices = append(choices, c)
 	}
 	if len(choices) == 0 {
 		return Action{}, false
 	}
-	return choices[r.Next(0, len(choices))], true
+	c := choices[r.Next(0, len(choices))]
+	if len(c.hostileTargets) > 0 {
+		target := r.monsterTarget(actor, c.hostileTargets)
+		c.action.TX, c.action.TY = target.X, target.Y
+	}
+	return c.action, true
 }

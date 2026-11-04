@@ -87,7 +87,12 @@ func (s *State) recomputePet(p *UsePet) {
 	}
 	stats := &p.Stats
 	pet := game.Pet{ID: uint32(p.ID), Level: stats.Level, Base: game.Attributes{Strength: stats.STR, Constitution: stats.CON, Intelligence: stats.INT, Wisdom: stats.WIS, Agility: stats.AGI}, Equipment: p.Equipment}
-	c := pet.Combat(defs)
+	template := game.PetTemplate{}
+	if s.PetElement != nil {
+		template.Element = s.PetElement(p.ID)
+	}
+	c := pet.Combat(defs, template)
+	stats.Element = pet.Element(template)
 	stats.MaxHP, stats.MaxSP = uint32(c.MaxHP), uint16(c.MaxSP)
 	stats.Combat = [5]uint16{uint16(c.ATK), uint16(c.DEF), uint16(c.MAT), uint16(c.MDF), uint16(c.SPD)}
 }

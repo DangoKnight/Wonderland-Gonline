@@ -165,11 +165,18 @@ func (f *CompoundForm) Synthesize() {
 			slots = append(slots, s)
 		}
 	}
-	materials := 0
+	materials, foods := 0, 0
 	for _, slot := range slots {
+		if f.Inventory.State.Items[f.Inventory.State.Bag[slot-1].ID].Definition.Type == game.ItemTypePetStatFood {
+			foods++
+		}
 		if game.AlchemyBookBonus(f.Inventory.State.Bag[slot-1].ID) == 0 {
 			materials++
 		}
+	}
+	if foods > 0 && (foods != game.AlchemyMinimumMaterials || len(slots) != game.AlchemyMinimumMaterials) {
+		f.notice("Combine exactly two pet foods without other ingredients.")
+		return
 	}
 	if len(slots) < protocol.CompoundIngredientSlots || len(slots) > protocol.CompoundMaximumIngredients || materials < game.AlchemyMinimumMaterials {
 		f.notice("Synthesis requires at least two materials; books do not count as materials.")

@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"sort"
-	"strings"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/battle"
@@ -34,13 +34,15 @@ var (
 // (GetTeamMembers). Its quest event stays suspended until the outcome callback
 // resumes or releases it. Reference: PvEBattleManager.
 type battleRun struct {
-	b       *battle.Battle
-	members []*battleMember // members[0] started the battle and owns its event and loot.
-	event   *eventSession   // The suspended event, if a quest action started the battle.
-	source  uint16          // The battle action's d1: the callback branch's source.
-	flee    bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
-	timer   *time.Timer
-	turn    int // Increments per round so a stale timer cannot fire into a new round.
+	rewardError error
+	rewarded    map[*battle.Fighter]bool
+	b           *battle.Battle
+	members     []*battleMember // members[0] started the battle and owns its event and loot.
+	event       *eventSession   // The suspended event, if a quest action started the battle.
+	source      uint16          // The battle action's d1: the callback branch's source.
+	flee        bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
+	timer       *time.Timer
+	turn        int // Increments per round so a stale timer cannot fire into a new round.
 	// encounter is the visible overworld actor reserved for this battle.
 	encounter    uint16
 	encounterMap uint16
@@ -83,7 +85,9 @@ func (run *battleRun) active() []*battleMember {
 
 func (s *Server) rules() battle.Rules {
 	return battle.Rules{ComboDamagePerParticipant: s.comboDamagePerParticipant, Skills: s.Assets.Skills, Timing: s.Assets.AnimationTiming, Critical: s.Assets.Critical,
-		Next: func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
+		ExperienceFormula: s.battleEXPFormula,
+		NPCs:              s.Assets.NPCs,
+		Next:              func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
 }
 
 // fleeContinues lists the story battles whose flee resumes the event (OnFlee in C#).
@@ -124,7 +128,7 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		return false, nil
 	}
 	level := max(5, int(op.D3))
-	hp := level*35 + 200
+	hp := 0 // A positive event HP value overrides the stored NPC HP.
 	if op.DW1 > 0 {
 		hp = int(op.DW1)
 	}
@@ -135,9 +139,9 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 	var enemies []battle.Enemy
 	for _, t := range templates {
 		e := battle.Enemy{Template: t, Name: s.npcName(t), Level: level, HP: hp, ClickID: es.click}
-		// A formation enemy uses its own Npc.dat level, HP and element.
+		// A formation enemy uses its own Npc.dat level and element.
 		if npc, ok := s.Assets.NPCs[uint16(t)]; ok && len(formation) > 0 && t <= 0xffff {
-			e.Level, e.HP, e.Element = max(1, int(npc.Level)), max(1, int(npc.HP)), npc.Element
+			e.Level, e.Element = max(1, int(npc.Level)), npc.Element
 		}
 		enemies = append(enemies, e)
 	}
@@ -183,6 +187,19 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	for i := range enemies {
+		e := &enemies[i]
+		if e.Template <= math.MaxUint16 {
+			if npc, ok := s.Assets.NPCs[uint16(e.Template)]; ok {
+				e.Base = game.Attributes{Strength: npc.Stats[0], Constitution: npc.Stats[1], Intelligence: npc.Stats[2], Wisdom: npc.Stats[3], Agility: npc.Stats[4]}
+				e.Element = npc.Element
+				if e.HP <= 0 {
+					e.HP = int(npc.HP)
+				}
+				e.SP = int(npc.SP)
+			}
+		}
+	}
 	var fighters []*battle.Fighter
 	for i, m := range s.battleTeam(c) {
 		s.cancelTrade(m)
@@ -191,9 +208,9 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		if pet := m.character.BattlePet(); pet != nil {
 			copy := *pet
 			copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
-			copy.Normalize(s.Assets.Items, false)
+			copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 			copy.Name = s.companionName(copy.ID, copy.Name)
-			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i)
+			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
 			fighters = append(fighters, member.pet)
 		}
 		run.members = append(run.members, member)
@@ -242,7 +259,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16) error {
 	if i := battlePetIndex(*m.c.character, m); i >= 0 {
 		pet := m.c.character.Pets[i]
-		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items)); err != nil {
+		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))); err != nil {
 			return err
 		}
 	}
@@ -330,6 +347,14 @@ func (s *Server) tryRound(run *battleRun) {
 	run.turn++
 	s.captureEscapeLeaders(run)
 	steps, outcome := run.b.Round(s.combatRules(run))
+	if run.rewardError != nil {
+		s.Log.Warn("combat acquisition not committed", "error", run.rewardError)
+		for _, m := range run.active() {
+			s.abandonBattle(m.c)
+			m.c.conn.Close()
+		}
+		return
+	}
 	steps = append(run.petChanges, steps...)
 	run.petChanges = nil
 	go s.playRound(run, steps, outcome)
@@ -573,30 +598,42 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			if run.trial != nil {
 				first = append(first, s.trialReward(&next, run.trial)...)
 			}
-			if next.Gold < game.MaxGold {
+			if s.battleGoldEnabled && next.Gold < game.MaxGold {
 				next.Gold = uint32(min(uint64(next.Gold)+gold, uint64(game.MaxGold)))
 			}
-			var adds []game.Addition
-			if m == run.members[0] {
-				var dropped []string
-				adds, dropped = s.rollLoot(run, &next)
-				if len(dropped) > 0 {
-					last = append(last, serverwire.HeadBanner("Obtain "+strings.Join(dropped, ", ")))
-				}
+			playerEXP := exp
+			if s.battleEXPFormula == game.BattleEXPParticipation {
+				playerEXP = ScaleExperience(run.b.ParticipantEXP(m.self), s.expRateMultiplier)
 			}
-			levels := next.AddExp(exp)
+			levels := next.AddExp(playerEXP)
 			if levels > 0 {
 				next.Refill(s.Assets.Items)
 			}
 			if j := battlePetIndex(next, m); j >= 0 {
-				// The pet receives the same once-scaled reward as its owner.
+				// Simple mode shares the owner's reward. Participation mode grants
+				// each owned pet's accumulated kill share separately below.
 				pet := &next.Pets[j]
 				pet.HP = int32(max(1, m.pet.HP))
-				grown := s.gainPetExp(pet, uint32(min(exp, 1<<31-1)), petGrowth)
-				pet.Normalize(s.Assets.Items, grown > 0)
+				petEXP := exp
+				if s.battleEXPFormula == game.BattleEXPParticipation {
+					petEXP = 0
+				}
+				grown := s.gainPetExp(pet, uint32(min(petEXP, 1<<31-1)), petGrowth)
+				pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 			}
-			if len(adds) > 0 {
-				first = append(first, next.Bag.AdditionPacket(adds))
+			if s.battleEXPFormula == game.BattleEXPParticipation {
+				for i := range next.Pets {
+					pet := &next.Pets[i]
+					share := run.b.PetParticipantEXP(next.ID, pet.ID)
+					if share == 0 {
+						continue
+					}
+					grown := s.gainPetExp(pet, uint32(ScaleExperience(share, s.expRateMultiplier)), petGrowth)
+					pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
+					if slot := c.pets.slot(pet.ID); slot != 0 && (m.pet == nil || !game.SamePet(m.pet.ID, pet.ID)) {
+						first = append(first, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+					}
+				}
 			}
 			first = append(first, next.ExpPacket())
 			if levels > 0 {
@@ -651,31 +688,6 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	if len(results) > 0 {
 		go s.finishBattle(run, outcome, results, delay)
 	}
-}
-
-// rollLoot rolls every uncaptured monster's drops into next's bag.
-func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition, []string) {
-	var adds []game.Addition
-	var dropped []string
-	r := s.rules()
-	r.DropRateMultiplier = s.dropRateMultiplier
-	for _, m := range run.b.DefenderHistory() {
-		if m.Captured || m.Kind != battle.Monster || run.b.PvP {
-			continue
-		}
-		var native [5]uint16
-		if npc, ok := s.Assets.NPCs[uint16(m.Template)]; ok && m.Template <= 0xffff {
-			native = npc.Drops
-		}
-		for _, d := range r.RollDrops(s.Assets.Drops[m.Template], native, func(id uint16) bool { _, ok := s.Assets.Items[id]; return ok }) {
-			limit, _ := s.stackLimit(d.Item)
-			if a, e := next.Bag.Grant(game.Item{ID: d.Item}, int(d.Count), limit, s.Assets.Items); e == nil {
-				adds = append(adds, a...)
-				dropped = append(dropped, fmt.Sprintf("%s x%d", s.itemName(d.Item), d.Count))
-			}
-		}
-	}
-	return adds, dropped
 }
 
 // finishBattle plays the departure, then returns every member to the map. Only
@@ -819,6 +831,9 @@ func battlePetIndex(char game.Character, m *battleMember) int {
 func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
 	packets, peerPackets := s.activePetResults(run, m, next, outcome, roster)
 	for _, catch := range run.b.Captures {
+		if catch.Committed {
+			continue
+		}
 		if catch.Owner != next.ID {
 			continue
 		}
@@ -827,15 +842,17 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 			continue
 		}
 		t := s.petTemplate(catch.Template)
-		pet := game.NewPet(catch.Template, catch.Name, slot, t, s.Assets.Items)
-		pet.Level = byte(max(1, min(catch.Level, game.MaxLevel)))
+		pet := game.NewCapturedPet(catch.Template, catch.Name, slot, t, s.Assets.Items, petGrowth, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
 		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 		next.Pets = append(next.Pets, pet)
 		if roster.register(pet.ID) {
 			packets = append(packets, pet.RecruitPacket(next.ID, t))
 		}
-		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
+		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
+		if pet.Equipment != (game.Equipment{}) {
+			packets = append(packets, s.petListPacket(next, roster))
+		}
 		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
 	}
 	return packets, peerPackets
@@ -884,8 +901,8 @@ func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Ch
 				peerPackets = append(peerPackets, removed)
 			}
 		} else if slot != 0 {
-			pet.Normalize(s.Assets.Items, false)
-			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+			pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 		}
 	}
 	return packets, peerPackets
@@ -942,9 +959,9 @@ func (s *Server) startPvP(attacker, defender *Session) error {
 			if pet := c.character.BattlePet(); pet != nil {
 				copy := *pet
 				copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
-				copy.Normalize(s.Assets.Items, false)
+				copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 				copy.Name = s.companionName(copy.ID, copy.Name)
-				m.pet = battle.PetFighter(copy, c.character.ID, s.Assets.Items, i)
+				m.pet = battle.PetFighter(copy, c.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
 				battle.Place(m.pet, battle.Side(side+1), i)
 				fighters[side] = append(fighters[side], m.pet)
 			}

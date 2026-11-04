@@ -15,7 +15,9 @@ const (
 	pwFields       = 4
 	pwMinLen       = 6
 	pwMaxLen       = 10
-	pwFieldLeft    = 0x8d
+	pwFieldLeft    = 149 // Align with the field boxes authored into Form_InputPw_1/2.
+	pwFieldWidth   = 104
+	pwFieldHeight  = 14
 	pwFieldTop     = 0x7b
 	pwFieldStep    = 0x30
 	pwButtonTop    = 0x138
@@ -61,11 +63,11 @@ func NewInputPassword(env *seui.Env, a Assets) *InputPassword {
 	for i := 1; i <= pwFields; i++ {
 		e := seui.NewEditor(env, f)
 		top := (i-1)*pwFieldStep + pwFieldTop
-		e.Init("Panel26", 0x95, 0x15, 0x78, 0, 0, true, 0xe, 0x68, top)
 		e.SetMargins(1, 1, 1, 1)
 		e.SetColor(skinTextColor)
 		e.Color2 = 0
-		e.Init("Panel26", pwFieldLeft, 0x15, 0x68, 0, 0, true, 0xe, 0x89, top)
+		w, h := env.Pics.Size(env.Pics.Find("Panel26"))
+		e.Init("Panel26", pwFieldLeft, h, w, 0, 0, true, pwFieldHeight, pwFieldWidth, top)
 		e.SetMaxLen(pwMaxLen)
 		e.Password = true
 		e.Tag = i

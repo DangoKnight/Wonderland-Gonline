@@ -61,7 +61,9 @@ type Fighter struct {
 	overkillAnnounced    bool
 	// Absent marks disconnected owners; Withdrawn also excludes their fighters
 	// from targeting, actions and subsequent rounds without changing their vitals.
-	Absent bool
+	Absent           bool
+	immediateSupport map[*Fighter]bool // Valid until this entity's next offensive action.
+	reviveSupport    map[*Fighter]bool // Successful revivers qualify for the rest of this battle.
 }
 
 // hurt lowers HP and counts a knock-out.
@@ -107,6 +109,7 @@ func (f *Fighter) key() int { return int(f.X)<<8 | int(f.Y) }
 
 // Action is a submitted command (PendingAction).
 type Action struct {
+	supporters    []*Fighter // Transient assistance snapshot before this attack.
 	Actor         *Fighter
 	Player        uint32
 	Kind          string // attack, defend, idle, catch, flee, heal, effect, monster
@@ -150,7 +153,8 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
-	Items map[uint16]assets.BattleItem
+	ExperienceFormula game.BattleEXPFormula
+	Items             map[uint16]assets.BattleItem
 	// Called synchronously during Round, before an item effect or success packet.
 	CommitItem func(Action, *Fighter, int, int) bool
 	// Selects 10 percent per actual combo participant instead of the fixed bonus.
@@ -158,14 +162,22 @@ type Rules struct {
 	// Zero retains the default multiplier for existing rule constructors.
 	DropRateMultiplier float64
 	Skills             map[uint16]assets.Skill
-	Timing             map[uint16]int
-	Critical           game.CriticalHits
-	Next               func(lo, hi int) int
-	Float              func() float64
+	NPCs               map[uint16]assets.NPC
+	// PrepareCapture commits any equipped net use before rolling or publishing.
+	PrepareCapture func(Action) (levelAllowance int, committed bool)
+	CommitCapture  func(Capture) (Step, bool)
+	RewardKill     func(*Fighter, []Action) Step
+	Timing         map[uint16]int
+	Critical       game.CriticalHits
+	Next           func(lo, hi int) int
+	Float          func() float64
 }
 
 // Battle owns both sides of a PvE or PvP encounter.
 type Battle struct {
+	reviveSupport        map[experienceIdentity]map[*Fighter]bool
+	experience           map[experienceIdentity]uint64
+	experienceKills      map[*Fighter]bool
 	Reinforcements       [MaxEnemies][]Enemy
 	defeatedDefenders    []*Fighter
 	Attackers, Defenders []*Fighter
@@ -182,10 +194,11 @@ type Battle struct {
 
 // Capture is a caught monster for its owner's party.
 type Capture struct {
-	Owner    uint32
-	Template uint32
-	Name     string
-	Level    int
+	Committed bool // Recruitment was already saved during round calculation.
+	Owner     uint32
+	Template  uint32
+	Name      string
+	Level     int
 }
 
 // Grid positions (PvEBattleManager.*GridSlots).
@@ -203,17 +216,13 @@ type Enemy struct {
 	Template uint32
 	Name     string
 	Level    int
-	HP       int
+	HP       int // Stored NPC HP, or an explicit encounter override.
+	SP       int // Stored NPC SP; zero is a valid maximum.
 	Element  byte
+	Base     game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
 	ClickID  uint16
 	Skills   [3]uint16
 	Attack   int // Optional authored boss attack override.
-}
-
-// MonsterStats are the derived monster attributes of StartPvEBattle/ApplyQuestTemplate.
-func MonsterStats(level int) (sp, atk, def, spd int) {
-	r := func(v float64) int { return int(math.RoundToEven(v)) }
-	return level*20 + 50, r(float64(level)*1.5 + 5), r(float64(level)*1.2 + 3), r(float64(level)*1.3 + 4)
 }
 
 // PlayerFighter is BuildFighters for a character (no pets).
@@ -230,9 +239,10 @@ func PlayerFighter(c *game.Character, items map[uint16]game.ItemDefinition, slot
 }
 
 // PetFighter is BuildFighters for an owner's battle pet.
-func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, slot int) *Fighter {
-	full := p.Combat(items)
-	f := &Fighter{Side: Attacker, Kind: Pet, ID: game.BroadcastID(p.ID), Owner: owner, Name: p.Name, Level: p.Level, Element: p.Element(),
+func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, slot int, templates ...game.PetTemplate) *Fighter {
+	p.Normalize(items, false, templates...)
+	full := p.Combat(items, templates...)
+	f := &Fighter{Side: Attacker, Kind: Pet, ID: game.BroadcastID(p.ID), Owner: owner, Name: p.Name, Level: p.Level, Element: p.Element(templates...),
 		MaxHP: max(1, int(p.MaxHP)), HP: max(1, int(p.HP)), MaxSP: max(0, int(p.MaxSP)), SP: max(0, int(p.SP)),
 		Atk: int(full.ATK), Def: int(full.DEF), Matk: int(full.MAT), Mdef: int(full.MDF), Spd: int(full.SPD),
 		X: petSlots[slot][0], Y: petSlots[slot][1], Pet: &p}
@@ -244,6 +254,10 @@ func PetFighter(p game.Pet, owner uint32, items map[uint16]game.ItemDefinition, 
 
 // New builds a battle of one or more characters against enemies.
 func New(players []*Fighter, enemies []Enemy) *Battle {
+	for _, f := range players {
+		f.reviveSupport = nil
+		f.immediateSupport = nil
+	}
 	b := &Battle{Attackers: players, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
 	for i, e := range enemies {
 		if i >= MaxEnemies {
@@ -258,17 +272,20 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 }
 
 func enemyFighter(e Enemy, i int) *Fighter {
-	sp, atk, def, spd := MonsterStats(e.Level)
+	level := byte(min(math.MaxUint8, max(1, e.Level)))
+	full := game.InnateCombat(level, e.Element, e.Base)
+	atk, matk := int(full.ATK), int(full.MAT)
 	if e.Attack > 0 {
-		atk = e.Attack
+		atk, matk = e.Attack, e.Attack
 	}
+	hp, sp := max(1, e.HP), max(0, e.SP)
 	click := e.ClickID
 	if click == 0 {
 		click = uint16(2000 + i)
 	}
 	return &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
-		Skills: e.Skills, Level: byte(min(255, e.Level)), Element: e.Element, MaxHP: max(1, e.HP), HP: max(1, e.HP), MaxSP: sp, SP: sp,
-		Atk: atk, Def: def, Matk: atk, Mdef: def, Spd: spd, X: enemySlots[i][0], Y: enemySlots[i][1]}
+		Skills: e.Skills, Level: level, Element: e.Element, MaxHP: hp, HP: hp, MaxSP: sp, SP: sp,
+		Atk: atk, Def: int(full.DEF), Matk: matk, Mdef: int(full.MDF), Spd: int(full.SPD), X: enemySlots[i][0], Y: enemySlots[i][1]}
 }
 
 func record(p protocol.Builder, side byte, f *Fighter, kind byte, click uint16, owner uint32) protocol.Builder {
@@ -828,6 +845,7 @@ func (r Rules) support(b *Battle, a Action) Step {
 	var results []targetResult
 	for _, target := range targets {
 		hpBefore := target.HP
+		cleansed := s.CleansesStatus() && r.needsCleanse(target, s)
 		stat, amount := byte(0), 0
 		switch {
 		case s.RestoresSP():
@@ -841,6 +859,11 @@ func (r Rules) support(b *Battle, a Action) Step {
 		case isHeal(s):
 			amount = min(target.MaxHP-target.HP, max(40, int(float64(actor.attack())*2.2)+int(actor.Level)*15))
 			target.HP, stat = min(target.MaxHP, target.HP+amount), game.StatCurrentHP
+		}
+		if isRevive(s) && hpBefore <= 0 && target.HP > 0 {
+			b.recordReviveSupport(target, actor)
+		} else if amount > 0 || cleansed {
+			target.recordImmediateSupport(actor)
 		}
 		results = append(results, targetResult{target: target, result: protocol.BattleHitLanded, stat: stat, amount: amount, mode: protocol.BattleStatRecovery})
 		if a.SkillEXP == 0 {
@@ -895,6 +918,15 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 	}
 	full := len(roster) >= game.MaxPets
 	reason := ""
+	allowance := game.OrdinaryCaptureLevelAllowance
+	if r.PrepareCapture != nil {
+		var committed bool
+		allowance, committed = r.PrepareCapture(a)
+		if !committed {
+			return []Step{{Packets: [][]byte{systemLine("Capture could not be saved. Please try again.")}}}, true
+		}
+	}
+	definition, known := r.NPCs[uint16(target.Template)]
 	switch {
 	case full && duplicate:
 		reason = "Your pet team is full (4/4), and you already have this monster."
@@ -902,6 +934,14 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 		reason = "Your pet team is full (4/4). Make room before capturing."
 	case duplicate:
 		reason = "You already have this monster in your pet team."
+	case monster > level+allowance:
+		reason = "The monster's level is too high to capture."
+	case target.HP >= target.MaxHP:
+		reason = "Weaken the monster before capturing it."
+	case !target.CanAct():
+		reason = "A sealed monster cannot be captured."
+	case r.NPCs != nil && (target.Template > math.MaxUint16 || !known || !definition.CanCapture()):
+		reason = "This monster cannot be captured."
 	}
 	roll := r.Float() * 100
 	success := reason == "" && roll < chance
@@ -917,9 +957,18 @@ func (r Rules) capture(b *Battle, a Action) ([]Step, bool) {
 		steps = append(steps, Step{Packets: [][]byte{systemLine("Cannot capture " + target.Name + ": " + reason)}})
 		return steps, true
 	}
+	catch := Capture{Owner: owner, Template: target.Template, Name: target.Name, Level: int(target.Level)}
+	if r.CommitCapture != nil {
+		recruit, ok := r.CommitCapture(catch)
+		if !ok {
+			return nil, true
+		}
+		catch.Committed = true
+		steps = append(steps, recruit)
+	}
 	target.HP, target.Captured = 0, true
 	b.Roster[owner] = append(b.Roster[owner], target.Template)
-	b.Captures = append(b.Captures, Capture{Owner: owner, Template: target.Template, Name: target.Name, Level: int(target.Level)})
+	b.Captures = append(b.Captures, catch)
 	return steps, true
 }
 
@@ -1021,6 +1070,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				a := combo[i]
 				combo[i].SkillEXP = game.CombatSkillEXPPerUse
 				actor := a.Actor
+				a.supporters = actor.consumeSupport()
 				if a.Skill > 0 && !Basic(a.Skill) {
 					packets = append(packets, r.spend(actor, a.Skill))
 				}
@@ -1051,6 +1101,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				r.applyHitEffects(a.Actor, target, a.Skill)
 			}
 			steps = append(steps, Step{Packets: packets, Delay: delay, SkillUses: combo})
+			steps = r.appendKillReward(b, steps, target, landed)
 			steps = b.appendOverkill(steps, target)
 		}
 	}
@@ -1099,7 +1150,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 			return steps
 		}
 	}
-	t := targets[r.Next(0, len(targets))]
+	t := r.monsterTarget(m, targets)
 	if r.attackMisses(m, t, basicAttackSkill) {
 		return []Step{{Packets: [][]byte{turnPacket(m), missRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill)}, Delay: r.Delay(basicAttackSkill, "attack")}}
 	}
@@ -1185,7 +1236,7 @@ func (b *Battle) Rewards() (exp, gold uint64) {
 		if m.Captured || m.Kind != Monster {
 			continue
 		}
-		exp += uint64(max(10, int(m.Level)*15))
+		exp += MonsterExperience(m.Level)
 		gold += uint64(max(5, int(m.Level)*8))
 	}
 	return exp, gold

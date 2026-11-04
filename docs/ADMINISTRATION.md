@@ -143,7 +143,7 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v18 and structured asset schema v16.
+Current startup requires gameplay schema v19 and structured asset schema v17.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
 the preserving offline migration procedure for an existing installation. The
 [administration validation record](TESTING.md#administration-validation-history)

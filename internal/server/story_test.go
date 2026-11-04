@@ -619,10 +619,38 @@ func TestStormAndBeachRescue(t *testing.T) {
 	if _, exists := chars[0].Quests[beachQuest]; exists {
 		t.Fatal("presentation started Robinson quest")
 	}
+	// A fresh character snapshot must retain presentation completion without
+	// creating Robinson's independent quest mark.
+	c.character = &chars[0]
+	if err := s.arrivalScript(c); err != nil || c.beach != nil {
+		t.Fatal("completed rescue replayed on reconnect", err)
+	}
+	wire.packets(t)
 	if got = do(20, 1, 1, 0); c.event == nil || !contains(got, serverwire.EventFrame(1, 3, 1, 1, 0, 20001, 1, 0)) {
 		t.Fatal("manual Robinson dialogue", got)
 	}
 
+}
+
+func TestBeachCompletionWriteFailureCanRetry(t *testing.T) {
+	s, c, wire := eventFixture(t)
+	d, ok := s.cinematic("arrival", beachMap)
+	if !ok {
+		t.Fatal("arrival definition missing")
+	}
+	run := &beachRun{step: len(d.Steps) + 1, definition: d}
+	c.beach = run
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := s.advanceBeach(ctx, c, false); err == nil || c.beach != run {
+		t.Fatal("failed receipt released the cinematic", err)
+	}
+	if packets := wire.packets(t); len(packets) != 0 {
+		t.Fatal("failed receipt published completion", packets)
+	}
+	if err := s.advanceBeach(context.Background(), c, false); err != nil || c.beach != nil {
+		t.Fatal("completion retry failed", err)
+	}
 }
 
 func TestStarterShipSceneTransitions(t *testing.T) {

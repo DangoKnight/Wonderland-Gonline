@@ -143,23 +143,41 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 	}
 	bag := char.Bag
 	limit, known := s.stackLimit(target.Item.ID)
-	var adds []game.Addition
 	var e error
 	if known {
-		adds, e = bag.Grant(target.Item, 1, limit, s.Assets.Items)
+		_, e = bag.Grant(target.Item, 1, limit, s.Assets.Items)
 	}
 	// Unknown IDs cannot enter the bag; C# reports them as a full inventory too.
 	if !known || e != nil {
 		return c.send(serverwire.HeadBanner("Your inventory is full."))
 	}
-	if e = s.saveBag(ctx, c, bag); e != nil {
+	now := time.Now()
+	if cooldown := target.RespawnDelay(); cooldown > 0 {
+		cooldown = s.Assets.ResourceCooldown(store.ResourceGroundItem, char.Map, uint16(target.Slot), cooldown)
+		grant := target.Item
+		grant.Count = 1
+		next, err := s.Store.ClaimGroundItem(ctx, store.CharacterRef{Account: c.account.ID, ID: char.ID}, store.ResourceKey{Kind: store.ResourceGroundItem, MapID: char.Map, NodeID: uint16(target.Slot)}, grant, limit, now, cooldown, s.Assets.Items, char.Clone())
+		if errors.Is(err, store.ErrResourceUnavailable) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		s.adoptSavedCharacter(c, next)
+	} else if e = s.saveBag(ctx, c, bag); e != nil {
 		return e
 	}
-	s.World.Take(char.Map, target, time.Now())
-	if e = c.send(bag.AdditionPacket(adds)); e != nil {
-		return e
+	s.World.Take(char.Map, target, now)
+	if target.RespawnDelay() > 0 {
+		expiry := now.Add(s.Assets.ResourceCooldown(store.ResourceGroundItem, char.Map, uint16(target.Slot), target.RespawnDelay()))
+		s.World.RestoreGroundCooldowns(char.Map, map[uint16]time.Time{uint16(target.Slot): expiry})
 	}
 	if e = c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(1)); e != nil {
+		return e
+	}
+	grant := target.Item
+	grant.Count = 1
+	if e = c.send(game.AcquisitionPacket(grant)); e != nil {
 		return e
 	}
 	s.broadcastWorld(c, protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(0))
@@ -177,7 +195,7 @@ func (s *Server) drop(ctx context.Context, c *Session, slot, count byte) error {
 	}
 	if !s.Assets.Items[item.ID].Droppable() {
 		// The client asks whether to destroy the item instead.
-		return c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode212, 255, slot}.U16(item.ID).U8(count))
+		return c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode212, protocol.InventoryDestroyPrompt, slot}.U16(item.ID).U8(count))
 	}
 	if count == 0 || count > item.Count {
 		return nil
@@ -193,11 +211,12 @@ func (s *Server) drop(ctx context.Context, c *Session, slot, count byte) error {
 	if e := s.saveBag(ctx, c, bag); e != nil {
 		return e
 	}
-	packet := s.World.Drop(char.Map, slots, item, char.X, char.Y)
-	if e := c.send([]byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count}); e != nil {
+	s.World.Drop(char.Map, slots, item, char.X, char.Y)
+	packet := protocol.Builder{protocol.CommandInventory, protocol.InventoryDrop}.U16(item.ID).U16(char.X).U16(char.Y).U32(0).Bytes(slots)
+	if e := c.send(packet); e != nil {
 		return e
 	}
-	if e := c.send(packet); e != nil {
+	if e := c.send([]byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count}); e != nil {
 		return e
 	}
 	s.broadcastWorld(c, packet)
@@ -321,11 +340,11 @@ func (s *Server) allocateStats(ctx context.Context, c *Session, p []byte) error 
 		if !next.Pets[i].Allocate(requests) {
 			return nil
 		}
-		next.Pets[i].Normalize(s.Assets.Items, false)
+		next.Pets[i].Normalize(s.Assets.Items, false, s.petTemplate(next.Pets[i].ID))
 		if err := s.commit(ctx, c, next); err != nil {
 			return err
 		}
-		return s.sendAll(c, next.Pets[i].ProgressionPackets(target, s.Assets.Items))
+		return s.sendAll(c, next.Pets[i].ProgressionPackets(target, s.Assets.Items, s.petTemplate(next.Pets[i].ID)))
 	}
 	next := c.character.Clone()
 	if !next.Allocate(requests) {
@@ -386,9 +405,17 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 		if c.character.ActiveVehicle == id {
 			return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlDismountVehicle, 0}.U16(id))
 		}
-		return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlBoardVehicle, slot}.U16(id))
+		return s.vehicleCommand(ctx, c, protocol.Builder{protocol.CommandPetControl, protocol.PetControlPlaceVehicleManual, slot}.U16(id))
 	case id == starItem:
 		return c.send(serverwire.SystemLine("Stars are special quest tokens used for skill learning, resets, and rebirth quests."))
+	}
+	if _, food := s.Assets.PetFoods[id]; food {
+		var target byte
+		if p := c.character.BattlePet(); p != nil {
+			target = c.pets.slot(p.ID)
+		}
+		_, err := s.usePetStatFood(ctx, c, slot, 1, target)
+		return err
 	}
 	ok, e := s.recover(ctx, c, slot, 1, 0)
 	if e != nil || ok {
@@ -437,6 +464,11 @@ func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, ta
 		return err
 	}
 
+	if target <= game.MaxPets {
+		if handled, err := s.usePetStatFood(ctx, c, slot, count, byte(target)); handled || err != nil {
+			return err
+		}
+	}
 	if handled, err := s.redeemVoucher(ctx, c, slot, count, target); handled || err != nil {
 		return err
 	}
@@ -582,7 +614,7 @@ func (s *Server) recoverPet(ctx context.Context, c *Session, slot, count, target
 	}
 	next := c.character.Clone()
 	pet := &next.Pets[i]
-	pet.Normalize(s.Assets.Items, false)
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
 	hp, sp := int64(pet.HP), int64(pet.SP)
 	if (hpGain <= 0 && spGain <= 0) || ((hpGain <= 0 || hp >= int64(pet.MaxHP)) && (spGain <= 0 || sp >= int64(pet.MaxSP))) {
 		return false, nil
@@ -596,7 +628,7 @@ func (s *Server) recoverPet(ctx context.Context, c *Session, slot, count, target
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
-	packets := append([][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, used}}, pet.ProgressionPackets(target, s.Assets.Items)...)
+	packets := append([][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, used}}, pet.ProgressionPackets(target, s.Assets.Items, s.petTemplate(pet.ID))...)
 	return true, s.sendAll(c, append(packets, []byte{protocol.CommandInventory, protocol.InventoryItemUse}))
 }
 
@@ -699,8 +731,11 @@ func (s *Server) redeemVoucher(ctx context.Context, c *Session, slot, count byte
 	c.pets = roster
 	cs := roster.slot(pet.ID)
 	packets := [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, pet.RecruitPacket(next.ID, t)}
-	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items)...)
+	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
 	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, pet.Name), []byte{protocol.CommandInventory, protocol.InventoryItemUse}, serverwire.HeadBanner(pet.Name+" joined your party."))
+	if pet.Equipment != (game.Equipment{}) {
+		packets = append(packets, s.petListPacket(c.character, c.pets))
+	}
 	return true, s.sendAll(c, packets)
 }
 

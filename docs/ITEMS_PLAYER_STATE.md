@@ -200,6 +200,11 @@ persist in typed SQL, along with pet potential. GM rebirth, all six class stat
 modifiers and normalized rebirth progression are implemented. AC23:126 consumes
 normal, golden and Super Potential Pills transactionally for players and owned
 party pets. Failure/bonus rules are in [Potential Pills](NATIVE_COMMANDS.md#potential-pills).
+Potential changes apply the signed change of each maximum to current HP/SP,
+clamped between zero and the new maximum. For example, losing 40 maximum HP also
+subtracts 40 current HP. This preserves the missing amount for injured players
+and pets unless the result reaches zero. Unchanged maxima do not change current
+vitals. Vital changes commit with pill consumption and potential, before replies.
 AC66 changes separate metadata without granting advancement.
 
 Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Native furniture

@@ -130,21 +130,27 @@ type battleBody struct {
 	shadow byte
 }
 type battlePlay struct {
-	action clientbattle.Action
-	at     time.Time
-	hits   uint64
-	sounds uint64
-	audio  []clientbattle.SoundCue
-	voice  string
-	voiced bool
+	action        clientbattle.Action
+	at            time.Time
+	hits          uint64
+	sounds        uint64
+	audio         []clientbattle.SoundCue
+	voice         string
+	voiced        bool
+	damagePlanned map[battleDamageResultKey]bool
+	damage        []*battleDamageGroup
 }
 type battleFloat struct {
-	cell   clientbattle.Cell
-	text   []byte
-	ink    uint16
-	at     time.Time
-	font   string
-	amount uint32
+	cell       clientbattle.Cell
+	text       []byte
+	ink        uint16
+	at         time.Time
+	font       string
+	amount     uint64
+	rise       int // Extra upward displacement keeps successive hit numbers separate.
+	flight     int // Signed horizontal lane in half-units; zero rises vertically.
+	damage     bool
+	generation uint64
 }
 type battleView struct {
 	state               clientbattle.State
@@ -199,6 +205,9 @@ type battleView struct {
 // Native receive handlers: FUN_003920a0 (action batches), FUN_00392d3c
 // (absolute stats), FUN_003970e4 (turn actor).
 func (c *Client) remoteBattlePacket(p []byte) bool {
+	if c.battleItemGainPacket(p) {
+		return true
+	}
 	if c.World == nil || len(p) < 2 {
 		return false
 	}
@@ -255,12 +264,14 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.pendingActions = nil
 	}
 	if view.state.Active && (!wasActive || p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation) {
+		c.stopVacuum()
 		c.beginBattleResults()
 		c.closeBattleView()
 		c.startSceneFade(sceneFadeEnterBattle)
 		c.World.StopWalk()
 		c.groundHeld = false
 		c.pendingNPC = nil
+		c.floorPendingPickup, c.floorHovered = 0, 0
 		c.joinTeamTarget = false
 		c.friendTarget = false
 		c.tradeTarget = false
@@ -405,6 +416,10 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	return true
 }
 func (c *Client) closeBattleView() {
+	c.itemFlights = nil
+	if c.BattleSkills != nil {
+		c.BattleSkills.Hide()
+	}
 	c.combat.round = nil
 	c.combat.assembly = protocol.CombatAssembly{}
 	c.combat.choices = nil
@@ -593,9 +608,15 @@ func (c *Client) battleFrame(draw bool) bool {
 		if !v.state.Active {
 			return false
 		}
+		var queued []battlePlay
 		for _, a := range v.state.Actions {
-			v.playing = append(v.playing, c.newBattlePlay(a, now, a.Actor))
+			if f := v.state.At(a.Actor); a.ActorGeneration != 0 && (f == nil || f.Generation != a.ActorGeneration) {
+				continue
+			}
+			queued = append(queued, c.newBattlePlay(a, now, a.Actor))
 		}
+		planBattleDamage(queued, v.assets)
+		v.playing = append(v.playing, queued...)
 		v.state.Actions = nil
 		active := v.playing[:0]
 		for _, play := range v.playing {
@@ -616,10 +637,7 @@ func (c *Client) battleFrame(draw bool) bool {
 				duration = max(duration, m.EventAt(clientbattle.MotionEvent{Trigger: sound.Trigger})+sceneFadeFrame)
 			}
 			elapsed := now.Sub(play.at)
-			cues := len(m.Events)
-			if m.DamageMode == 0 || cues == 0 {
-				cues = 1
-			}
+			cues := m.HitCount()
 			for i := 0; i < cues; i++ {
 				hitAt := motionDuration / 2
 				if len(m.Events) > 0 {
@@ -628,7 +646,7 @@ func (c *Client) battleFrame(draw bool) bool {
 				mask := uint64(1) << i
 				if play.hits&mask == 0 && (elapsed >= hitAt || elapsed >= duration) {
 					play.hits |= mask
-					c.battleHit(play.action, now, play.at.Add(min(hitAt, duration)), m, i)
+					c.battleHit(&play, now, play.at.Add(min(hitAt, duration)), m, i)
 				}
 			}
 			if elapsed < duration {
@@ -785,14 +803,17 @@ func (c *Client) battleFrame(draw bool) bool {
 	}
 	c.drawDepartingPets(now, offset)
 	c.drawBattleEffects(now)
+	c.drawBattleItemGains(now, offset)
 	for _, f := range fighters {
 		c.drawBattleSlow(f, c.battleBody(f), positions[f.Cell], now)
 	}
 	for _, f := range v.floats {
-		elapsed := now.Sub(f.at)
-		at := f.cell.Position().Add(offset)
-		y := at.Y - 60 - int(elapsed/(30*time.Millisecond))
-		if f.font != "" && c.Pics.Find(f.font) >= 0 {
+		if shown, ok := v.shown[f.cell]; f.generation != 0 && (!ok || shown.Generation != f.generation) {
+			continue
+		}
+		at := f.cell.Position().Add(offset).Add(f.displacement(now))
+		y := at.Y - battleFloatOffsetPixels
+		if f.font != "" && f.amount <= battleMaxDigitAmount && c.Pics.Find(f.font) >= 0 {
 			minigame.DrawNumber(c.Screen, c.Pics, at.X, y, int(f.amount), true, battleDigitStyle, f.font)
 		} else {
 			c.Env.Text.Draw(at.X-len(f.text)*4, y, 0, false, true, c.Screen, f.text, 18, 160, 0, f.ink, 2)
@@ -822,7 +843,8 @@ func (c *Client) drawBattleBody(f clientbattle.Fighter, b *battleBody, at image.
 		b.npc.Draw(c.Screen, at.X, at.Y, action)
 	}
 }
-func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion clientbattle.Motion, cue int) {
+func (c *Client) battleHit(play *battlePlay, now, cueAt time.Time, motion clientbattle.Motion, cue int) {
+	a := play.action
 	for _, target := range a.Targets {
 		shown, exists := c.battle.shown[target.Cell]
 		if target.Generation != 0 && (!exists || target.Generation != shown.Generation) {
@@ -850,6 +872,9 @@ func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion c
 			f.HP, f.Removed = 0, true
 		}
 		for _, result := range target.Stats {
+			if play.damagePlanned[battleDamageResultKey{target.Cell, target.Generation, result.Stat}] && battleDamageStat(result) {
+				continue
+			}
 			amount := motion.DamageParts(result.Amount)[cue]
 			if amount == 0 {
 				continue
@@ -862,22 +887,29 @@ func (c *Client) battleHit(a clientbattle.Action, now, cueAt time.Time, motion c
 			case game.StatCurrentSP:
 				f.SP = uint16(clientbattle.ApplyStatResult(uint32(f.SP), uint32(f.MaxSP), part))
 			}
-			ink := uint16(0xf800)
+			if battleDamageStat(result) {
+				c.battleDamagePopup(target.Cell, target.Generation, result.Stat, result.Mode == protocol.BattleStatCriticalDamage, uint64(amount), now, cueAt, cue, motion.HitCount())
+				continue
+			}
+			ink := uint16(battleDamageInk)
 			font := battleDamageDigits
 			if result.Mode == protocol.BattleStatCriticalDamage {
-				ink = 0xffe0
+				ink = battleCriticalInk
 			}
 			// FUN_0039e884 uses the outlined orange HP sheet for recovery too;
 			// the Grape Syrup/Nian Noodle references confirm orange HP/cyan SP.
 			if result.Stat == game.StatCurrentSP {
-				ink = 0x001f
+				ink = battleSPInk
 				font = battleSPDigits
 			}
-			c.battle.floats = append(c.battle.floats, battleFloat{cell: target.Cell, text: []byte(fmt.Sprint(amount)), ink: ink, at: now, font: font, amount: amount})
+			c.battle.floats = append(c.battle.floats, battleFloat{cell: target.Cell, text: []byte(fmt.Sprint(amount)), ink: ink, at: now, font: font, amount: uint64(amount)})
 		}
 		if exists {
 			c.battle.shown[target.Cell] = f
 		}
+	}
+	for _, group := range play.damage {
+		c.battleDamageHit(group, cue, now, cueAt)
 	}
 }
 func (c *Client) battleActor() (remoteFighter, bool) {
@@ -915,10 +947,16 @@ func (c *Client) battleMenu() {
 	actor, ok := c.battleActor()
 	show := ok && v.binding == nil && v.item == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
 	if !show {
+		if c.BattleSkills != nil {
+			c.BattleSkills.Hide()
+		}
 		if v.menu != nil {
 			v.menu.Visible = false
 		}
 		return
+	}
+	if c.BattleSkills.Visible && c.BattleSkills.Selected != c.battleBinding(skills.BasicAttack, actor).Target {
+		c.BattleSkills.Hide()
 	}
 	if v.menu == nil {
 		// Native radial controls: constructor 0x002974a0 (missing from the
@@ -984,8 +1022,9 @@ func (c *Client) chooseBattleCommand(command int) {
 		c.battle.binding = &b
 	case battleCommandSkills:
 		b := c.battleBinding(skills.BasicAttack, actor)
-		c.Skills.Selected = b.Target
-		c.Skills.Show()
+		c.Skills.Hide()
+		c.BattleSkills.Selected = b.Target
+		c.BattleSkills.Show()
 	case battleCommandDefend:
 		c.submitHotbar(c.battleBinding(skills.Defense, actor), actor)
 	case battleCommandCapture:
@@ -1169,6 +1208,9 @@ func (c *Client) battleTimerTick(now time.Time) {
 		v.item = nil
 		if c.Skills != nil {
 			c.Skills.Hide()
+		}
+		if c.BattleSkills != nil {
+			c.BattleSkills.Hide()
 		}
 	}
 }

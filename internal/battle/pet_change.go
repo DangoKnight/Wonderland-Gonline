@@ -35,6 +35,7 @@ func (b *Battle) ReplacePet(owner, old, next *Fighter) []Step {
 	}
 	b.Idle(owner)
 	if next != nil {
+		next.reviveSupport = b.reviveSupport[next.experienceID()]
 		next.Side, next.Y = owner.Side, owner.Y
 		next.X = owner.X - 1
 		if owner.Side == Defender {

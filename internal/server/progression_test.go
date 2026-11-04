@@ -26,6 +26,7 @@ func potentialFixture(t *testing.T, itemID uint16, level uint16, target byte) (*
 	next.Bag[49] = game.Item{ID: itemID, Count: 1}
 	if target == 0 {
 		next.Potential = level
+		next.RecalculateVitals(s.Assets.Items)
 	} else {
 		next.Pets[1].Potential = level
 		next.Pets[1].Normalize(s.Assets.Items, false)
@@ -62,11 +63,11 @@ func TestPotentialPillPlayerAndPetSQLAndNativeReply(t *testing.T) {
 				t.Fatal("SQL mutation", err, saved)
 			}
 			if target == 0 {
-				if c.character.Potential != 12 || saved[0].Potential != 12 || c.character.HP != before.HP || c.character.SP != before.SP {
+				if c.character.Potential != 12 || saved[0].Potential != 12 || c.character.HP != before.HP+c.character.MaxHP-before.MaxHP || c.character.SP != before.SP+c.character.MaxSP-before.MaxSP {
 					t.Fatal("player potential/vitals")
 				}
 			} else {
-				if c.character.Pets[1].Potential != 12 || c.character.Pets[1].Slot != 3 || saved[0].Pets[1].Potential != 12 || c.character.Pets[1].Base != before.Pets[1].Base || c.character.Pets[1].HP != before.Pets[1].HP || !reflect.DeepEqual(c.character.Pets[0], before.Pets[0]) {
+				if c.character.Pets[1].Potential != 12 || c.character.Pets[1].Slot != 3 || saved[0].Pets[1].Potential != 12 || c.character.Pets[1].Base != before.Pets[1].Base || c.character.Pets[1].HP != before.Pets[1].HP+c.character.Pets[1].MaxHP-before.Pets[1].MaxHP || c.character.Pets[1].SP != before.Pets[1].SP+c.character.Pets[1].MaxSP-before.Pets[1].MaxSP || !reflect.DeepEqual(c.character.Pets[0], before.Pets[0]) {
 					t.Fatal("wrong persistent pet", c.character.Pets)
 				}
 				if !contains(packets, protocol.Builder{8, 2, 4, 2, 0, 28, 1}.U32(88).U32(0)) {

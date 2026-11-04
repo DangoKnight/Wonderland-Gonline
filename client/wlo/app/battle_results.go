@@ -218,10 +218,12 @@ func (c *Client) showBattleResults() {
 		c.UI.Add(r.form)
 	}
 	r.form.setLines(r.lines)
+	r.form.AnimateMessage(func() time.Time { return c.Now() })
 	r.until = c.Now().Add(battleResultsDuration)
 	// FUN_00394fe8 publishes one multiline notice, replacing earlier board
 	// entries. Clear transient loot notices so they cannot cover the summary.
-	c.Notices = Notices{panel: c.Notices.panel}
+	c.UI.CancelMessageExit(&c.Notices)
+	c.Notices = Notices{panel: c.Notices.panel, Now: c.Notices.Now}
 	r.form.Show()
 }
 

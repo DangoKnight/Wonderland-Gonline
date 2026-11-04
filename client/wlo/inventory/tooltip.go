@@ -3,6 +3,7 @@ package inventory
 import (
 	"encoding/binary"
 	"fmt"
+	"image"
 	"strings"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/internal/assets"
@@ -32,6 +33,8 @@ const (
 	itemSpeedBonusStatus         = 214
 	itemMagicAttackBonusStatus   = 215
 	itemMagicDefenseBonusStatus  = 216
+	itemHoverColor               = 0x0080ff // Warm footprint tint from the legacy reference.
+	itemHoverAlpha               = 80
 )
 
 // FUN_00485a20; authored type names are client presentation data.
@@ -115,17 +118,46 @@ func wrapItemInfo(lines []string) [][]byte {
 }
 
 func (c *slotControl) Hint() {
-	it := c.item()
-	if it.Empty() || c.form.drag != nil || c.Blocked() {
+	if c.form.drag != nil || c.Blocked() {
 		return
 	}
-	c.form.drawItemHint(&c.Component, it)
+	anchor := c
+	if !c.worn {
+		slot := c.form.State.BagAnchor(c.slot)
+		if slot == 0 {
+			return
+		}
+		anchor = c.form.Slots[slot-1]
+	}
+	it := anchor.item()
+	if it.Empty() {
+		return
+	}
+	w, h := 1, 1
+	if !c.worn {
+		w, h = c.form.State.Items[it.ID].Definition.Footprint()
+	}
+	a := anchor.Abs()
+	bounds := image.Rect(a.X, a.Y, a.X+w*cellStep-(cellStep-cellSize), a.Y+h*cellStep-(cellStep-cellSize))
+	c.Env.Screen.FillAlpha(bounds, itemHoverColor, itemHoverAlpha)
+	c.form.drawItem(it, a.X, a.Y, !c.worn)
+	c.form.drawItemHintBounds(&anchor.Component, it, bounds)
 }
 
 // Bag views share the native item breakdown without sharing selection state.
 func (f *Form) drawItemHint(control *seui.Component, it game.Item) {
+	f.drawItemHintBounds(control, it, control.Rect())
+}
+
+func (f *Form) drawItemHintBounds(control *seui.Component, it game.Item, bounds image.Rectangle) {
 	item := f.State.Items[it.ID]
 	lines := itemInfoLines(item, it.ID)
+	if item.Definition.Type == game.VehicleType {
+		condition := item.VehicleCondition(it)
+		if condition.Fuel > 0 {
+			lines = append(lines, fmt.Sprintf("Fuel: %d%%", uint64(condition.Fuel)*100/uint64(max(1, condition.Maximum))))
+		}
+	}
 	if control.Root().Base().Name == compoundNativeClass {
 		lines = append(lines, alchemyBaseLine(item))
 	}
@@ -143,11 +175,10 @@ func (f *Form) drawItemHint(control *seui.Component, it game.Item) {
 	// the painter. Preserve the resulting padding seen in the reference.
 	height := (len(lines) + len(clientassets.Big5Text(item.Description))*8/nativeDescriptionSizingWidth + 1) * itemInfoLineHeight
 	height = max(height, (len(rows)+1)*itemInfoLineHeight)
-	at := control.Abs()
 	panel.Width, panel.Height = itemInfoWidth, min(height, f.Env.Screen.H)
-	panel.Left, panel.Top = at.X+control.Width+2, at.Y
+	panel.Left, panel.Top = bounds.Max.X+2, bounds.Min.Y
 	if panel.Left+panel.Width > f.Env.Screen.W {
-		panel.Left = at.X - panel.Width - 2
+		panel.Left = bounds.Min.X - panel.Width - 2
 	}
 	panel.Left = max(0, panel.Left)
 	panel.Top = max(0, min(panel.Top, f.Env.Screen.H-panel.Height))

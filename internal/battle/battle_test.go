@@ -18,7 +18,7 @@ func hero() *game.Character {
 
 func setup(hp int) (*Battle, *Fighter) {
 	self := PlayerFighter(hero(), nil, 0)
-	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, ClickID: 3}}), self
+	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, SP: 99, ClickID: 3}}), self
 }
 
 func TestIntroAndSubmit(t *testing.T) {
@@ -84,13 +84,13 @@ func TestRoundDamageAndOutcomes(t *testing.T) {
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2})
 	steps, outcome := b.Round(lowest)
 	m := b.Defenders[0]
-	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*1.2+3) = 9.
-	// Basic damage = 12*2 - 9 + roll 1 = 16; slime ATK 12 hits for max(5, 14 - DEF 11) = 5.
-	if outcome != Continue || m.HP != 1000-16 || self.HP != 95 || len(steps) != 2 {
+	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*2 + 0*2) = 10.
+	// Basic damage = 12*2 - 10 + roll 1 = 15; slime ATK 7 hits for the damage floor of 5.
+	if outcome != Continue || m.HP != 1000-15 || self.HP != 95 || len(steps) != 2 {
 		t.Fatal(outcome, m.HP, self.HP, len(steps))
 	}
 	hit := steps[0].Packets[1]
-	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 16 || hit[20] != 1 {
+	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 15 || hit[20] != 1 {
 		t.Fatalf("hit record %v", hit)
 	}
 	// A magic skill spends SP and uses MAT against MDF.
@@ -160,6 +160,7 @@ func TestPetFighterAndCapture(t *testing.T) {
 		t.Fatal("pet record", intro[4])
 	}
 	// The pet's command comes from its owner; the round waits for both.
+	b.Defenders[0].HP--                                    // Capture requires a weakened target.
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2, 0x18, 0x27}) // Capture (10008) by the player.
 	if b.Ready() {
 		t.Fatal("round ran without the pet's command")

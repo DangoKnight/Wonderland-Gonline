@@ -18,11 +18,11 @@ func petGrowthEquipment() (Equipment, map[uint16]ItemDefinition) {
 func TestPetGrowthCombatStatsWeightedIntervals(t *testing.T) {
 	equipment, items := petGrowthEquipment()
 	counts := [5]int{}
-	for draw := 0; draw < 285; draw++ {
+	for draw := 0; draw < 225; draw++ {
 		p := Pet{ID: 17100, Level: 10, Base: Attributes{5, 5, 5, 5, 5}, Equipment: equipment}
 		p.grow(PetTemplate{Stats: Attributes{Strength: 1000}}, true, func(total int) int {
-			if total != 285 {
-				t.Fatalf("total=%d, want 285", total)
+			if total != 225 {
+				t.Fatalf("total=%d, want 225", total)
 			}
 			return draw
 		}, PetGrowthOptions{Formula: PetGrowthCombatStats, Items: items})
@@ -37,7 +37,7 @@ func TestPetGrowthCombatStatsWeightedIntervals(t *testing.T) {
 		}
 	}
 	// Independent expected combat weights include positive and negative equipment.
-	if counts != [5]int{44, 84, 54, 36, 67} {
+	if counts != [5]int{44, 25, 54, 35, 67} {
 		t.Fatal(counts)
 	}
 }
@@ -46,7 +46,7 @@ func TestPetGrowthCombatElementAndRecalculation(t *testing.T) {
 	equipment, items := petGrowthEquipment()
 	p := Pet{ID: 12178, Level: 10, Base: Attributes{5, 5, 5, 5, 5}, Equipment: equipment}
 	weights := p.growthWeights(PetTemplate{}, false, []PetGrowthOptions{{Formula: PetGrowthCombatStats, Items: items}})
-	want := [5]int{44, 24, 54, 36, 67} // Existing Earth companion combat rules reduce the DEF level term.
+	want := [5]int{44, 30, 54, 38, 65} // Earth uses the shared player DEF/MDF/AGI coefficients.
 	for i, v := range weights {
 		if v != want[i] {
 			t.Fatal(weights)
@@ -55,9 +55,9 @@ func TestPetGrowthCombatElementAndRecalculation(t *testing.T) {
 	p = Pet{ID: 17100, Level: 1, Base: Attributes{5, 5, 5, 5, 5}}
 	calls := 0
 	levels := p.GainExp(49, PetTemplate{}, false, func(total int) int {
-		// Level 2 weights: 13+25+13+15+14; AGI grows, then level 3 weights:
-		// 14+33+14+17+18. Each draw sees the new level and preceding point.
-		wantTotal := []int{80, 96}[calls]
+		// Level 2 weights: 13+14+13+14+14; AGI grows, then level 3 weights:
+		// 14+16+14+16+18. Each draw sees the new level and preceding point.
+		wantTotal := []int{68, 78}[calls]
 		calls++
 		if total != wantTotal {
 			t.Fatalf("draw %d total=%d, want %d", calls, total, wantTotal)
@@ -82,7 +82,7 @@ func TestPetGrowthCombatCapsAndMinimumWeights(t *testing.T) {
 	}
 	p = Pet{Level: 10, Base: Attributes{Strength: 65535, Constitution: 5, Intelligence: 5, Wisdom: 5, Agility: 5}}
 	p.grow(PetTemplate{}, false, func(total int) int {
-		if total != 171 {
+		if total != 111 {
 			t.Fatal("capped stat retained", total)
 		}
 		return 0

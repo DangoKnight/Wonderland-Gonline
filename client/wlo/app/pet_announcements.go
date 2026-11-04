@@ -30,7 +30,11 @@ func (c *Client) announceNewPets(before [game.MaxPets]inventory.UsePet) {
 		}
 		text := bytes.Clone(pet.Name)
 		text = append(text, []byte(" joins the party")...)
-		c.petAnnouncements = append(c.petAnnouncements, text)
+		if c.battle.state.Active {
+			c.Notices.Show(text, battleResultsDuration, c.Now())
+		} else {
+			c.petAnnouncements = append(c.petAnnouncements, text)
+		}
 		if c.Env.Sound != nil {
 			c.Env.Sound(petRecruitmentSound)
 		}

@@ -206,7 +206,7 @@ func (s *Server) harvestProp(ctx context.Context, c *Session, n world.NPC) (bool
 	if reward.Gold > 0 {
 		item = game.Item{}
 	}
-	next, adds, err := s.Store.ClaimMapPropReward(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, item, def.StackLimit(), reward.Gold, time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, s.Assets.Items, *c.character)
+	next, _, err := s.Store.ClaimMapPropReward(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, c.character.Map, n.ClickID, item, def.StackLimit(), reward.Gold, time.Now(), time.Duration(pool.RespawnSeconds)*time.Second, s.Assets.Items, *c.character)
 	if errors.Is(err, store.ErrPropEmpty) || errors.Is(err, store.ErrPropRewardUnavailable) || errors.Is(err, game.ErrInventoryFull) {
 		return true, s.sendAll(c, [][]byte{serverwire.HeadBanner(err.Error()), {protocol.CommandEvent, protocol.EventResume}})
 	}
@@ -217,7 +217,7 @@ func (s *Server) harvestProp(ctx context.Context, c *Session, n world.NPC) (bool
 	s.closeStall(c)
 	s.cancelTrade(c)
 	s.publishProp(next.Map, n.ClickID, propBrokenFrame)
-	receipt := next.Bag.AdditionPacket(adds)
+	receipt := game.ActorAcquisitionPacket(item)
 	if reward.Gold > 0 {
 		receipt = protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold)
 	}

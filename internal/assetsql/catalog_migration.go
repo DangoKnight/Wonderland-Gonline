@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 16
+const catalogSchemaVersion = 30
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -43,6 +43,12 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 30 {
+			if err := migrateResourceRespawns(tx); err != nil {
+				return err
+			}
 		}
 
 		// Add dimensions before older upgrades read the expanded typed item row.
@@ -385,6 +391,71 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 17 {
+			if err := migrateCaptureRestrictions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 18 {
+			if err := migratePetInitialStats(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 19 {
+			if err := migratePetFoods(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 20 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 21 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 22 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 23 {
+			if err := migrateItemNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 24 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 25 {
+			if err := migrateCollectionSpots(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 26 {
+			if err := migratePetSpecialEquipment(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 27 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 28 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 29 {
+			if err := migrateCollectionUsage(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -392,6 +463,25 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Story = assets.DefaultStoryDefinitions()
+	c.Story.CompanionEquipment, err = seedPetSpecialEquipment(c.Story.CompanionEquipment, false)
+	if err != nil {
+		return err
+	}
+	c.CollectionSpots, err = defaultCollectionSpots(c)
+	if err != nil {
+		return err
+	}
+	if err := initializeItemNames(c); err != nil {
+		return err
+	}
+	if err := initializeNPCNames(c); err != nil {
+		return err
+	}
+	c.PetFoods = defaultPetFoods(c.NativeItems)
+	c.PetInitialStats, err = defaultPetInitialStats()
+	if err != nil {
+		return err
+	}
 	c.Terrains, err = importedTerrains(tx)
 	if err != nil {
 		return err
@@ -471,6 +561,7 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err = seedNewChestDefaults(c); err != nil {
 		return err
 	}
+	initializeCollectionUsage(c)
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
 		if err := tx.Migrator().CreateTable(model); err != nil {
 			return err
@@ -503,6 +594,18 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = validatePetInitialStats(c.PetInitialStats); err != nil {
+		return nil, err
+	}
+	if err = validatePetFoods(c.PetFoods); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps); err != nil {
 		return nil, err
 	}
 	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {

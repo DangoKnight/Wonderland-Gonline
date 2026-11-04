@@ -49,6 +49,7 @@ type Form struct {
 	CanAct             func() bool
 	InBattle           func() bool
 	CanChangePet       func() bool
+	RidingVehicle      func() bool
 	Send               func([]byte) error
 	Notice             func(string)
 	NameOf             func(uint32) []byte
@@ -232,6 +233,12 @@ func (f *Form) SetMode(slot byte, mode int) {
 	if !allowed || slot < 1 || slot > game.MaxPets {
 		return
 	}
+	if mode == modeRide && f.RidingVehicle != nil && f.RidingVehicle() {
+		if f.Notice != nil {
+			f.Notice("Rest the vehicle before riding a pet.")
+		}
+		return
+	}
 	pet := f.Inventory.State.Pets[slot-1]
 	if pet.ID == 0 {
 		return
@@ -362,7 +369,7 @@ func (f *Form) Refresh() {
 	}
 	for i, b := range f.Options {
 		b.Visible = f.menuSlot != 0 && !f.Instances.Visible
-		b.Enabled = changePet && (i != modeRide || f.InBattle == nil || !f.InBattle())
+		b.Enabled = changePet && (i != modeRide || (f.RidingVehicle == nil || !f.RidingVehicle()) && (f.InBattle == nil || !f.InBattle()))
 		b.Top = petRowTop + (int(f.menuSlot)-1)*petRowStep - 63 + i*20
 	}
 
@@ -500,6 +507,7 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 		d.cancel = cancel[0]
 	}
 	d.InitForm(d, f.Env)
+	d.AnimateMessage(f.Inventory.Now)
 	d.Dockable = false
 	width, height := 280, 200
 	if slot != 0 && f.PetPreviewSize != nil {
@@ -589,7 +597,7 @@ func (d *confirmation) Paint() {
 		d.background = seui.ConfirmationBackground(d.Env, d.Width, d.Height)
 	}
 	a := d.Abs()
-	d.Env.Screen.Draw(a.X, a.Y, d.background, true)
+	d.Env.Screen.DrawStretch(d.MessageRect(), d.background, true)
 	if d.slot != 0 && d.owner.DrawPetBody != nil {
 		x := a.X + d.Width - d.previewWidth/2 - confirmationBodyMargin
 		y := a.Y + d.previewHeight + confirmationBodyTop

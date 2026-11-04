@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unresolved entity names — visual review</title>
+<style>
+:root{font:15px/1.5 system-ui,sans-serif;color:#203044;background:#eef2f6}body{margin:0;padding:24px}main{max-width:1450px;margin:auto}h1{font-size:28px;margin:0 0 8px}p{max-width:1000px}header{background:white;padding:24px;border-radius:12px;margin-bottom:20px}.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:20px 0}input[type=search]{font:inherit;padding:10px 14px;min-width:300px;border:1px solid #9aabbd;border-radius:6px}table{width:100%;border-collapse:collapse;background:white}th{text-align:left;background:#233e60;color:white;position:sticky;top:0;z-index:1}th,td{padding:14px;border-bottom:1px solid #dce3eb;vertical-align:top}td:first-child{width:185px;text-align:center;background:repeating-conic-gradient(#e1e6eb 0 25%,#f1f4f7 0 50%) 0/18px 18px}.sprite{max-width:180px;max-height:160px;object-fit:contain;image-rendering:pixelated}small{display:block;color:#53647a}td:first-child small{background:#f5f7fa}summary{cursor:pointer;color:#465e7d}details{margin-top:10px;font-size:13px}.empty{color:#6a7786}tr[hidden]{display:none}#count{font-weight:600}a{color:#185c9a}@media print{body{padding:0}.controls{display:none}th{position:static}tr{break-inside:avoid}header{padding:0}.sprite{max-height:110px}details{display:none}}
+</style>
+<style>
+.name-edit{font:inherit;width:220px;max-width:100%;box-sizing:border-box;padding:9px;border:1px solid #9aabbd;border-radius:5px}.certainty{display:block;margin-top:12px;white-space:nowrap}button{font:inherit;background:#233e60;color:white;border:0;border-radius:6px;padding:11px 18px;cursor:pointer}button:hover{background:#365d8d}#save-status{font-size:14px}td:last-child{min-width:240px}@media print{.name-edit{border:0;padding:0}}
+</style>
+<main>
+<header>
+<h1>Unresolved entity names</h1>
+<p><strong>{{len .Entries}} entities</strong> from the saved name review; {{.WithCandidates}} have longer-name prefix candidates. This includes monsters, NPCs and props. “Unresolved” does not mean the current name is wrong or truncated.</p>
+<p>Sprites use the client’s native archive lookup and each entity’s palette, showing one available frame. Candidate names are research leads, not approved replacements. Matching stats alone can describe a different creature. {{.Missing}} entities lack a visible frame in the installed assets.</p>
+<p>Enter your proposed name and check <strong>Certain</strong> when confident. To confirm an existing name, enter that same name. Leave names blank when undecided. Export includes every entity, even those hidden by a filter, with certainty recorded separately.</p>
+<div class="controls"><label>Search <input id="search" type="search" placeholder="Entity ID, current name or candidate"></label><label><input id="candidates" type="checkbox"> Only entries with prefix candidates</label><span id="count" aria-live="polite"></span></div>
+<div class="controls"><button id="export" type="button">Export whole list (CSV)</button><span id="review-count"></span></div>
+<p id="save-status" role="status"></p>
+</header>
+<table><thead><tr><th>Entity sprite</th><th>Entity ID</th><th>Current name</th><th>Name candidates / evidence</th><th>Your review</th></tr></thead><tbody>
+{{range .Entries}}<tr data-id="{{.ID}}" data-name="{{.Name}}" data-leads="{{.Candidates}}" data-metadata="{{.Metadata}}" data-notes="{{.Notes}}" data-sprite="{{.Sprite}}" data-candidates="{{if .Candidates}}yes{{else}}no{{end}}">
+<td>{{if .View.URL}}<img class="sprite" loading="lazy" src="{{.View.URL}}" alt="Sprite for entity {{.ID}}: {{.Name}}">{{else}}<span class="empty">{{.View.Error}}</span>{{end}}<small>Sprite {{.Sprite}}{{if .View.URL}} · action {{.View.Action}}{{end}}</small></td>
+<td>{{.ID}}</td><td><strong>{{.Name}}</strong><small>Level {{.Level}} · element {{.Element}}</small></td>
+<td>{{if .Candidates}}<strong>Prefix candidates</strong><div>{{.Candidates}}</div>{{else}}<span class="empty">No longer-name prefix candidate in the saved reference.</span>{{end}}
+{{if .Metadata}}<details><summary>Other names with matching level, element and attributes</summary>{{.Metadata}}<p>These matches do not establish identity.</p></details>{{end}}
+<details><summary>Review notes</summary>{{.Notes}}</details></td>
+<td><label for="name-{{.ID}}">Proposed name</label><br><input id="name-{{.ID}}" class="name-edit" type="text" autocomplete="off" placeholder="Leave blank if undecided"><label class="certainty"><input class="certain" type="checkbox" disabled> Certain</label></td></tr>{{end}}
+</tbody></table>
+<p>Source: <code>tools/data_export/reference/wlohub/enemy_name_review.csv</code>. Sprites are embedded in this file; no network connection is required.</p>
+</main>
+<script>
+{{reviewScript}}
+</script>
+</html>

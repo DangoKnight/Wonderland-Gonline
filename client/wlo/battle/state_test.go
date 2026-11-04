@@ -241,10 +241,10 @@ func TestNativeDamageCues(t *testing.T) {
 		t.Fatalf("parts %v", p)
 	}
 	m.Events = []MotionEvent{{Percent: 100}, {Percent: 100}, {Percent: 100}}
-	if p := m.DamageParts(101); !reflect.DeepEqual(p, []uint32{101, 0, 0}) {
+	if p := m.DamageParts(101); !reflect.DeepEqual(p, []uint32{34, 34, 33}) {
 		t.Fatalf("excess %v", p)
 	}
-	if p := m.DamageParts(^uint32(0)); !reflect.DeepEqual(p, []uint32{^uint32(0), 0, 0}) {
+	if p := m.DamageParts(^uint32(0)); !reflect.DeepEqual(p, []uint32{1431655765, 1431655765, 1431655765}) {
 		t.Fatalf("overflow %v", p)
 	}
 	a, e := Load(login.NewAssets("../../../data"))

@@ -91,8 +91,11 @@ func (c *Client) sceneFrozen() bool { return c.fade.step > 0 || c.fade.frozen !=
 // reason ("Connection lost" unless the server left one) with Leave and
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
+	c.minigameResultAckPending = false
 	c.resetBattleResults()
 	c.combat = combatRuntime{}
+	c.vacuum = vacuumRuntime{}
+	c.gonlineCollectionTiming = false
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Reset()
 	}
@@ -116,6 +119,7 @@ func (c *Client) disconnected() {
 	}
 	if c.Skills != nil {
 		c.Skills.Hide()
+		c.BattleSkills.Hide()
 	}
 	if c.Settings != nil {
 		c.Settings.Hide()
@@ -146,6 +150,7 @@ func (c *Client) disconnected() {
 // lostPrev is Prev (0x3a547c): the form closes, the game state resets
 // (FUN_00314bf4) and the server list returns.
 func (c *Client) lostPrev() {
+	c.minigameResultAckPending = false
 	c.Lost.Hide()
 	if c.fade.frozen != nil {
 		c.fade.frozen.Close()

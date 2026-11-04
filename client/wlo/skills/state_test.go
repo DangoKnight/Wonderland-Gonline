@@ -73,6 +73,29 @@ func TestMalformedSkillUpdatesPreserveState(t *testing.T) {
 		t.Fatal("truncation changed state")
 	}
 }
+
+func TestSnapshotZeroGradeRemovesForgottenSkills(t *testing.T) {
+	s := testState()
+	if !s.Snapshot(snapshot([]byte{94, 0, 2, 50, 0, 0, 0}, []byte{113, 0, 1, 0, 0, 0, 0})) {
+		t.Fatal("initial snapshot")
+	}
+	p := snapshot([]byte{94, 0, 0, 0, 0, 0, 0}, []byte{113, 0, 1, 0, 0, 0, 0})
+	if !s.Snapshot(p) {
+		t.Fatal("removal snapshot rejected")
+	}
+	if _, exists := s.Learned[11016]; exists {
+		t.Fatal("zero-grade removal retained as learned")
+	}
+	if len(s.Learned) != 1 || s.Learned[11166].Grade != 1 {
+		t.Fatal("retained skill changed", s.Learned)
+	}
+	if !s.Snapshot(p) || len(s.Learned) != 1 {
+		t.Fatal("repeated removal changed state")
+	}
+	if !s.Apply([]byte{5, 12, 8, 43, 1}) || s.Learned[11016].Grade != 1 {
+		t.Fatal("forgotten skill cannot be relearned")
+	}
+}
 func TestCatalogDecodedMetadata(t *testing.T) {
 	decoded := make([]byte, 148)
 	decoded[100], decoded[101], decoded[105] = 4, 0x12, 5

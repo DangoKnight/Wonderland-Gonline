@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"math"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/settings"
@@ -152,6 +154,7 @@ func (c *Client) settingsAction(action string) {
 func (c *Client) settingsPrompt(message string, choices []string, selectChoice func(int)) {
 	c.closeSettingsPrompt()
 	f := seui.NewForm(c.Env)
+	f.AnimateMessage(func() time.Time { return c.Now() })
 	c.settingsPromptForm = f
 	f.Dockable = false
 	f.Init("panel15", 250, 50, 50, 0, 0, true, 140, 300, 180)

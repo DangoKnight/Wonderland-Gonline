@@ -138,8 +138,9 @@ func TestMaintainedItemJSONCensus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 7312 || items[10002].Definition.Name != "Plate" || items[27025].Definition.Type != 20 {
-		t.Fatal("maintained JSON catalog changed")
+	// Updated translated-client export: source SHA-256 302b13d11c66602779ddfa5f19f103a836f38d71823f47c56a5bab1a166ac00e.
+	if len(items) != 7325 || items[10002].Definition.Name != "Plate" || items[27025].Definition.Type != 20 {
+		t.Fatalf("maintained JSON catalog changed: %d items", len(items))
 	}
 	for _, id := range []uint16{34381, 21303, 61370} {
 		if _, ok := items[id]; ok {

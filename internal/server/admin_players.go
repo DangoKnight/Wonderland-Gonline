@@ -99,8 +99,8 @@ func (s *Server) adminPlayerActionLocked(ctx context.Context, id uint32, command
 		next.Refill(s.Assets.Items)
 		packets := next.StatPackets(s.Assets.Items)
 		if i := gmSelectedPet(&next); i >= 0 {
-			next.Pets[i].Normalize(s.Assets.Items, true)
-			packets = append(packets, next.Pets[i].ProgressionPackets(c.pets.slot(next.Pets[i].ID), s.Assets.Items)...)
+			next.Pets[i].Normalize(s.Assets.Items, true, s.petTemplate(next.Pets[i].ID))
+			packets = append(packets, next.Pets[i].ProgressionPackets(c.pets.slot(next.Pets[i].ID), s.Assets.Items, s.petTemplate(next.Pets[i].ID))...)
 		}
 		if err := s.commit(ctx, c, next); err != nil {
 			return err

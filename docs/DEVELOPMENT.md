@@ -38,15 +38,26 @@ are outside this server persistence policy.
 
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
+Players, pets and enemies share `game.InnateCombat` for derived combat stats;
+enemy HP/SP use stored NPC values, with explicit encounter HP overrides.
+Resolve NPC element and base attributes from the asset catalog rather than
+copying definitions into pet state.
+See [combat stats](COMBAT_STATS.md) for encounter overrides and fallbacks.
 Game content definitions belong in `assets.db`. Preserve the startup-only
-`pet_growth_formula` selector and `combo_damage_per_participant` switch as server
+`pet_growth_formula` and `battle_exp_formula` selectors, `battle_gold_enabled`
+switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v18 stores character state in typed tables and owned child rows.
+Gameplay schema v21 stores character state in typed tables and owned child rows.
+v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
+Claims and rewards commit together; keys identify the resource kind, map and source,
+independently of the character and native event timer ID. Per-source cooldown
+durations belong in the assets database's `ResourceRespawns` definitions.
+v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v16 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v30 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure

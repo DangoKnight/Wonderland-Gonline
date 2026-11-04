@@ -63,6 +63,12 @@ func (s *State) Snapshot(p []byte) bool {
 		if grade > game.SkillGradeLimit(id) {
 			return false
 		}
+		// Native AC5:3 includes zero-grade records to clear forgotten skills
+		// (FUN_004381c4), including potential-loss snapshots. These records
+		// are removals, not learned skills with zero progress.
+		if grade == 0 {
+			continue
+		}
 		exp := binary.LittleEndian.Uint32(p[o+3:])
 		if game.IsAlchemySkill(id) {
 			next[id] = alchemyProgress(grade, exp)

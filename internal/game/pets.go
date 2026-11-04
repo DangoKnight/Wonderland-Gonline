@@ -2,6 +2,7 @@ package game
 
 import (
 	"math"
+	"math/rand/v2"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -40,31 +41,44 @@ type PetSkill struct {
 // Pet is one owned companion. Slot is its party (or reserve) slot; the client's own
 // slot numbering is assigned per login and is not stored.
 type Pet struct {
-	Slot       byte       `json:"slot"`
-	ID         uint32     `json:"id"`
-	Name       string     `json:"name"`
-	Level      byte       `json:"level"`
-	Exp        uint32     `json:"exp"` // EXP within the current level.
-	HP         int32      `json:"hp"`
-	MaxHP      int32      `json:"max_hp"`
-	SP         int32      `json:"sp"`
-	MaxSP      int32      `json:"max_sp"`
-	Base       Attributes `json:"base"`
-	StatPoints uint16     `json:"stat_points,omitempty"`
-	Amity      byte       `json:"amity"`
-	Battle     bool       `json:"battle,omitempty"`
-	Reborn     bool       `json:"reborn,omitempty"`
-	Potential  uint16     `json:"potential,omitempty"`
-	Job        byte       `json:"job,omitempty"`
-	Equipment  Equipment  `json:"equipment"`
-	Skills     []PetSkill `json:"skills,omitempty"`
+	Slot         byte       `json:"slot"`
+	ID           uint32     `json:"id"`
+	Name         string     `json:"name"`
+	Level        byte       `json:"level"`
+	Exp          uint32     `json:"exp"` // EXP within the current level.
+	HP           int32      `json:"hp"`
+	MaxHP        int32      `json:"max_hp"`
+	SP           int32      `json:"sp"`
+	MaxSP        int32      `json:"max_sp"`
+	Base         Attributes `json:"base"`
+	StatPoints   uint16     `json:"stat_points,omitempty"`
+	Amity        byte       `json:"amity"`
+	Battle       bool       `json:"battle,omitempty"`
+	Reborn       bool       `json:"reborn,omitempty"`
+	Potential    uint16     `json:"potential,omitempty"`
+	StatFoodUses uint16     `json:"stat_food_uses,omitempty"`
+	Job          byte       `json:"job,omitempty"`
+	Equipment    Equipment  `json:"equipment"`
+	Skills       []PetSkill `json:"skills,omitempty"`
 }
 
 // PetTemplate is the Npc.dat data a pet derives from.
 type PetTemplate struct {
-	Type   byte
-	Stats  Attributes
-	Skills [3]uint16
+	Type              byte
+	Element           byte
+	Stats             Attributes
+	Skills            [3]uint16
+	InitialStats      *PetInitialStats // SQL-owned recruitment override; nil uses half template attributes.
+	StartingEquipment Equipment        // SQL-owned equipment for fresh acquisitions only.
+}
+
+// PetInitialStats contains inclusive recruitment ranges and their desired sum.
+// Source records the authored reference; combat and vital formulas stay in code.
+type PetInitialStats struct {
+	Minimum     Attributes
+	Maximum     Attributes
+	TotalPoints uint32
+	Source      string
 }
 
 // BroadcastID is GetCompanionBroadcastId: Robinson is 12032 as an NPC and 12178 as a pet.
@@ -105,60 +119,42 @@ func StoryCompanion(id uint32, t PetTemplate, known bool) bool {
 	return false
 }
 
-// Element is the pet's element: only Robinson is earth.
-func (p Pet) Element() byte {
+// Element comes from the shared NPC definition. Missing definitions use neutral
+// baseline growth; Robinson retains its historical earth compatibility fallback.
+func (p Pet) Element(templates ...PetTemplate) byte {
+	if len(templates) > 0 && templates[0].Element != 0 {
+		return templates[0].Element
+	}
 	if p.ID == 12032 || p.ID == 12178 {
 		return Earth
 	}
 	return 0
 }
 
-func roundStat(v float64) int32 { return int32(math.RoundToEven(v)) }
-
-// Calculated stats (PlayerPetData.Calculated*).
-func (p Pet) CalculatedMaxHP() int32 {
-	l, con := float64(p.Level), float64(p.Attributes().Constitution)
-	return max(1, roundStat(math.Pow(l, .35)*con*2+l+con*2+180))
+// Calculated vitals use the same elemental growth as player characters.
+func (p Pet) CalculatedMaxHP(templates ...PetTemplate) int32 {
+	return max(1, InnateCombat(p.Level, p.Element(templates...), p.Attributes()).MaxHP)
 }
-func (p Pet) CalculatedMaxSP() int32 {
-	l, wis := float64(p.Level), float64(p.Attributes().Wisdom)
-	return max(0, roundStat(math.Pow(l, .3)*wis*3.2+l+wis*2+94))
+func (p Pet) CalculatedMaxSP(templates ...PetTemplate) int32 {
+	return max(0, InnateCombat(p.Level, p.Element(templates...), p.Attributes()).MaxSP)
 }
 
 // Combat is the pet's derived battle stats with its equipment.
-func (p Pet) Combat(items map[uint16]ItemDefinition) Combat {
-	a := p.Attributes()
-	l := float64(p.Level)
-	e := p.Element()
-	pick := func(water, other float64) float64 {
-		if e == 2 {
-			return water
-		}
-		return other
-	}
-	defLevel := 2.0
-	if e == 0 {
-		defLevel = 8
-	}
-	spdLevel := 1.6
-	if e == 3 {
-		spdLevel = 2.1
-	}
+func (p Pet) Combat(items map[uint16]ItemDefinition, templates ...PetTemplate) Combat {
+	c := InnateCombat(p.Level, p.Element(templates...), p.Attributes())
 	b := p.Equipment.Bonuses(items)
 	return Combat{
-		MaxHP: max(1, p.CalculatedMaxHP()+b.HP), MaxSP: max(0, p.CalculatedMaxSP()+b.SP),
-		ATK: max(0, roundStat(l*pick(2, 1.4)+float64(a.Strength)*2)+int32(int16(b.ATK))),
-		DEF: max(0, roundStat(l*defLevel+float64(a.Constitution)*1.75)+int32(int16(b.DEF))),
-		MAT: max(0, roundStat(l*pick(1.6, 1.4)+float64(a.Intelligence)*2)+int32(int16(b.MAT))),
-		MDF: max(0, roundStat(l*pick(2.2, 2)+float64(a.Wisdom)*2.2)+int32(int16(b.MDF))),
-		SPD: max(0, roundStat(l*spdLevel+float64(a.Agility)*2.2)+int32(int16(b.SPD))),
+		MaxHP: max(1, c.MaxHP+b.HP), MaxSP: max(0, c.MaxSP+b.SP),
+		ATK: max(0, c.ATK+int32(int16(b.ATK))), DEF: max(0, c.DEF+int32(int16(b.DEF))),
+		MAT: max(0, c.MAT+int32(int16(b.MAT))), MDF: max(0, c.MDF+int32(int16(b.MDF))),
+		SPD: max(0, c.SPD+int32(int16(b.SPD))),
 	}
 }
 
 // Normalize is NormalizeClientStats: maxima follow stats and equipment; current
 // vitals are clamped or refilled.
-func (p *Pet) Normalize(items map[uint16]ItemDefinition, refill bool) {
-	c := p.Combat(items)
+func (p *Pet) Normalize(items map[uint16]ItemDefinition, refill bool, templates ...PetTemplate) {
+	c := p.Combat(items, templates...)
 	p.MaxHP, p.MaxSP = c.MaxHP, c.MaxSP
 	if refill {
 		p.HP, p.SP = p.MaxHP, p.MaxSP
@@ -197,6 +193,12 @@ func (p Pet) ClientTotalExp() uint32 {
 // grow adds one point per level using the selected five-attribute weight formula.
 // Zero weights retain a minimum chance of one; capped attributes are excluded.
 func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int, options ...PetGrowthOptions) {
+	_, _ = p.addGrowthStat(t, known, func(n int) (int, error) { return roll(n), nil }, options...)
+}
+
+// addGrowthStat is shared by level-ups and permanent pet food. Errors are
+// returned before mutation so resource-consuming callers can roll back safely.
+func (p *Pet) addGrowthStat(t PetTemplate, known bool, roll func(int) (int, error), options ...PetGrowthOptions) (bool, error) {
 	weights := p.growthWeights(t, known, options)
 	values := []*uint16{&p.Base.Strength, &p.Base.Constitution, &p.Base.Intelligence, &p.Base.Wisdom, &p.Base.Agility}
 	var candidates []int
@@ -206,19 +208,26 @@ func (p *Pet) grow(t PetTemplate, known bool, roll func(int) int, options ...Pet
 		}
 	}
 	if len(candidates) == 0 {
-		return
+		return false, nil
 	}
 	total := 0
 	for _, i := range candidates {
 		total += max(1, weights[i])
 	}
-	r := roll(total)
+	r, err := roll(total)
+	if err != nil {
+		return false, err
+	}
+	if r < 0 || r >= total {
+		return false, ErrPetGrowthRoll
+	}
 	for _, i := range candidates {
 		if r -= max(1, weights[i]); r < 0 {
 			*values[i]++
-			return
+			return true, nil
 		}
 	}
+	return false, nil
 }
 
 // GainExp adds EXP and levels the pet up to MaxLevel, growing one stat per level.
@@ -239,9 +248,40 @@ func (p *Pet) GainExp(amount uint32, t PetTemplate, known bool, roll func(int) i
 }
 
 // NewPet is a freshly recruited companion at level 1 with full vitals.
-func NewPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition) Pet {
-	p := Pet{Slot: slot, ID: id, Name: name, Level: 1, Amity: 60, Base: t.Stats}
-	p.Normalize(items, true)
+func NewPet(id uint32, name string, slot byte, t PetTemplate, items map[uint16]ItemDefinition, rolls ...func(int) int) Pet {
+	base := Attributes{t.Stats.Strength / 2, t.Stats.Constitution / 2, t.Stats.Intelligence / 2, t.Stats.Wisdom / 2, t.Stats.Agility / 2}
+	if t.InitialStats != nil {
+		roll := rand.IntN
+		if len(rolls) > 0 && rolls[0] != nil {
+			roll = rolls[0]
+		}
+		lo, hi := t.InitialStats.Minimum, t.InitialStats.Maximum
+		base = lo
+		values := []*uint16{&base.Strength, &base.Constitution, &base.Intelligence, &base.Wisdom, &base.Agility}
+		limits := []uint16{hi.Strength, hi.Constitution, hi.Intelligence, hi.Wisdom, hi.Agility}
+		total := uint32(lo.Strength) + uint32(lo.Constitution) + uint32(lo.Intelligence) + uint32(lo.Wisdom) + uint32(lo.Agility)
+		for total < t.InitialStats.TotalPoints {
+			var candidates []int
+			for i, value := range values {
+				if *value < limits[i] {
+					candidates = append(candidates, i)
+				}
+			}
+			if len(candidates) == 0 {
+				break
+			} // Catalog validation rejects impossible budgets.
+			i := candidates[roll(len(candidates))]
+			(*values[i])++
+			total++
+		}
+	}
+	p := Pet{Slot: slot, ID: id, Name: name, Level: 1, Amity: 60, Base: base}
+	for index, item := range t.StartingEquipment {
+		if definition, known := items[item.ID]; known && item.ID != 0 && int(definition.EquipSlot) == index+1 {
+			p.Equipment[index] = Item{ID: item.ID, Count: 1}
+		}
+	}
+	p.Normalize(items, true, t)
 	return p
 }
 
@@ -373,10 +413,10 @@ func PetStat(clientSlot, stat byte, value int64) []byte {
 }
 
 // ProgressionPackets are SendPetProgression plus SendPetEquipmentStats.
-func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition) [][]byte {
+func (p Pet) ProgressionPackets(clientSlot byte, items map[uint16]ItemDefinition, templates ...PetTemplate) [][]byte {
 	a := p.Attributes()
 	b := p.Equipment.Bonuses(items)
-	c := p.Combat(items)
+	c := p.Combat(items, templates...)
 	out := [][]byte{
 		PetStat(clientSlot, 35, int64(p.Level)),
 		PetStat(clientSlot, 38, int64(p.StatPoints)), PetStat(clientSlot, 36, int64(p.ClientTotalExp())),

@@ -31,6 +31,16 @@ const (
 // numberGlyphs is the digit count of a number font picture (0-9, stacked).
 const numberGlyphs = 10
 
+// NumberHeight returns the native bitmap digit height for popup layout.
+func NumberHeight(pics *picdb.DB, font string) int {
+	i := pics.Find(font)
+	if i < 0 {
+		return 0
+	}
+	_, height := pics.Size(i)
+	return height / numberGlyphs
+}
+
 // DrawNumber is FUN_003b9c00: |value| in a picture font whose ten digits
 // are stacked vertically, at (x, y), centred horizontally when centred.
 func DrawNumber(dst *surface.Surface, pics *picdb.DB, x, y, value int, centred bool, style int, font string) {

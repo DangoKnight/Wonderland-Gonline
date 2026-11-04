@@ -27,7 +27,7 @@ func (s *Server) sendVehiclePackets(c *Session, packets [][]byte) error {
 	return nil
 }
 
-// vehicleCommand ports AC15:7/9 boarding, 14 placement, 10 landing and 13 ACK.
+// vehicleCommand ports AC15:7 boarding, 9/14 placement, 10 landing and 13 ACK.
 // Placement only announces coordinates; confirmation owns the active state.
 func (s *Server) vehicleCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
@@ -47,12 +47,17 @@ func (s *Server) vehicleCommand(ctx context.Context, c *Session, p []byte) error
 	}
 	slot, id := p[2], uint16(p[3])|uint16(p[4])<<8
 	switch p[1] {
+	case protocol.PetControlPlaceVehicleManual:
+		if _, ok := c.character.Vehicle(slot, id, s.Assets.Items); !ok || c.character.ActiveVehicle != 0 {
+			return nil
+		}
+		return s.sendVehiclePackets(c, [][]byte{protocol.Builder{protocol.CommandPetControl, protocol.PetControlVehiclePlaced, slot}.U32(c.character.ID).U16(id).U32(uint32(c.character.X)).U32(uint32(c.character.Y))})
 	case protocol.PetControlPlaceVehicle:
 		if _, ok := c.character.Vehicle(slot, id, s.Assets.Items); !ok {
 			return nil
 		}
 		return c.send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlVehiclePosition, slot}.U32(c.character.ID).U16(id).U32(uint32(c.character.X)).U32(uint32(c.character.Y)))
-	case protocol.PetControlBoardVehicle, protocol.PetControlBoardVehicleAlternate:
+	case protocol.PetControlBoardVehicle:
 		if _, ok := c.character.Vehicle(slot, id, s.Assets.Items); !ok {
 			return nil
 		}
@@ -71,12 +76,19 @@ func (s *Server) vehicleCommand(ctx context.Context, c *Session, p []byte) error
 		}
 		return s.sendVehiclePackets(c, append(unride, serverwire.VehicleMountPacket(c.character)))
 	case protocol.PetControlDismountVehicle:
-		// The discriminator is not an inventory slot. The owned slot controls removal.
+		// The discriminator is not an inventory slot. Normal landing releases
+		// the owned slot without consuming the raft (legacy capture 2026-11-03).
 		if id == 0 || c.character.ActiveVehicle != id {
 			return nil
 		}
-		if id == game.DisposableRaftItemID {
-			return s.wreckVehicle(ctx, c)
+		if s.starterBeachQuestRaft(c) {
+			// Native landing may announce dismount before its land coordinate.
+			// Keep the raft until AC6 reports actual clear ground, then consume
+			// it atomically with the landing position. No water dismount bypass.
+			if terrain, ok := s.Assets.Terrains[c.character.Map]; ok && terrain.Land(int(c.character.X), int(c.character.Y)) {
+				return s.wreckVehicle(ctx, c)
+			}
+			return nil
 		}
 		return s.dismountVehicle(ctx, c)
 	default:
@@ -123,7 +135,7 @@ func (s *Server) wreckVehicle(ctx context.Context, c *Session) error {
 		return err
 	}
 	// Commit position and consumption together, then publish recovery placement
-	// (if needed), deletion, break, dismount and the scene-load gate.
+	// (if needed), deletion, break and dismount.
 	if err := s.commitState(ctx, c, next); err != nil {
 		return err
 	}
@@ -139,6 +151,9 @@ func (s *Server) wreckVehicle(ctx context.Context, c *Session) error {
 	if err := s.sendVehiclePackets(c, packets); err != nil {
 		return err
 	}
+	if old.ActiveVehicle == game.DisposableRaftItemID && old.Map == game.MapID11016 {
+		return nil // Legacy scripted landing has no scene-load refresh.
+	}
 	return c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 }
 
@@ -153,10 +168,18 @@ func (s *Server) wearVehicle(ctx context.Context, c *Session) error {
 	if !ok {
 		return s.dismountVehicle(ctx, c)
 	}
+	if item.ID == game.DisposableRaftItemID {
+		// Robinson's raft does not lose health. Break only on clear Beach land,
+		// never from map arrival, a coordinate threshold or ordinary water wear.
+		if terrain, ok := s.Assets.Terrains[old.Map]; old.Map == game.MapID11016 && ok && terrain.Land(int(old.X), int(old.Y)) {
+			return s.wreckVehicle(ctx, c)
+		}
+		return nil
+	}
 	if !game.Raft(item.ID) {
 		return nil
 	}
-	if item.Damage >= game.VehicleWreckDamage-1 || (item.ID == game.DisposableRaftItemID && old.Map == game.MapID11016 && old.X >= starterBeachRaftBreakX && old.Y >= starterBeachRaftBreakY) {
+	if item.Damage >= game.VehicleWreckDamage-1 {
 		return s.wreckVehicle(ctx, c)
 	}
 	next := old.Clone()
@@ -167,8 +190,13 @@ func (s *Server) wearVehicle(ctx context.Context, c *Session) error {
 	return c.send(next.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems))
 }
 
-const starterBeachRaftBreakX = 280
-const starterBeachRaftBreakY = 950
+func (s *Server) starterBeachQuestRaft(c *Session) bool {
+	if c.character.Map != game.MapID11016 || c.character.ActiveVehicle != game.DisposableRaftItemID {
+		return false
+	}
+	_, ok := c.character.Vehicle(c.character.VehicleSlot, c.character.ActiveVehicle, s.Assets.Items)
+	return ok
+}
 
 // Native AC15:13 may carry the acknowledged owner ID (FUN_0044b380).
 const vehicleAckShortBytes = 2

@@ -74,9 +74,15 @@ func TestSharedMapPropClaimsVisibilityRecoveryAndRespawn(t *testing.T) {
 	if err != nil || !handled || bagCount(players[0].character.Bag, 32176) != before+2 {
 		t.Fatal("claim", handled, err)
 	}
+	// Native slotless grant: two Clay, metadata empty, fly from clicked actor.
+	acquisition := []byte{23, 6, 176, 125, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	replies := [][][]byte{wires[0].packets(t), wires[1].packets(t)}
+	if !contains(replies[0], acquisition) || contains(replies[1], acquisition) {
+		t.Fatal("harvest receipt must announce and animate only for its owner")
+	}
 	want := protocol.Builder{22, 1}.U16(9).U8(1)
 	for _, i := range []int{0, 1} {
-		if !contains(wires[i].packets(t), want) {
+		if !contains(replies[i], want) {
 			t.Fatal("missing broken frame", i)
 		}
 	}

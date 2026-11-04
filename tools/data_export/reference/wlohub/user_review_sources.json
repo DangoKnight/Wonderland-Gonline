@@ -1,0 +1,11 @@
+{
+  "source": "owner visual review",
+  "input_file": "entity-name-corrections.csv",
+  "input_sha256": "0232b56f5d4bf7d384d674e40dc47d3d8d6ac187b2d09ded84e1f14ae55f8b15",
+  "entered": 277,
+  "certain": 178,
+  "certain_renames": 93,
+  "certain_unchanged": 85,
+  "tentative": 99,
+  "review_table_sha256": "4b79e866497f9127dfae0a501b805ef9e170d6837d7e682da78958f71e89f155"
+}

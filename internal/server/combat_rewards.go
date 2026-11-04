@@ -58,18 +58,21 @@ func (s *Server) legacyBattleRewards(next *game.Character, run *battleRun, roste
 					t := s.petTemplate(definition.Companion)
 					pet = game.NewPet(definition.Companion, s.companionName(definition.Companion, ""), slot, t, s.Assets.Items)
 					for _, equipment := range definition.Equipment {
-						if int(equipment.Slot) < len(pet.Equipment) && s.hasItem(equipment.ItemID) {
+						if int(equipment.Slot) < len(pet.Equipment) && pet.Equipment[equipment.Slot].Empty() && s.hasItem(equipment.ItemID) {
 							pet.Equipment[equipment.Slot] = game.Item{ID: equipment.ItemID, Count: 1}
 						}
 					}
 					pet.EnsureSkills(t, s.hasSkill)
-					pet.Normalize(s.Assets.Items, true)
+					pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 				}
 				next.Pets = append(next.Pets, pet)
 				if roster.register(pet.ID) {
 					packets = append(packets, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
 				}
-				packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
+				packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
+				if pet.Equipment != (game.Equipment{}) {
+					packets = append(packets, s.petListPacket(next, roster))
+				}
 			}
 		}
 		q.ID = definition.Quest

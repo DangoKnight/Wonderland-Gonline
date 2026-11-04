@@ -528,8 +528,13 @@ func TestTeamDismissMatchesLogoutBackground(t *testing.T) {
 	want := append([]uint16(nil), c.Screen.Pix...)
 	c.UI.Modal.KeyDown(seui.VKEscape, 0)
 	c.logoutConfirmation(false)
+	// Paint now includes the logout portrait/name so close animations retain
+	// them. This comparison checks decoration, independently of those contents.
+	preview, name := c.logoutPrompt.preview, c.World.Player.Name
+	c.logoutPrompt.preview, c.World.Player.Name = nil, nil
 	c.Screen.Fill(image.Rect(0, 0, 800, 600), 0)
 	c.logoutPrompt.Paint()
+	c.logoutPrompt.preview, c.World.Player.Name = preview, name
 	if !slices.Equal(want, c.Screen.Pix) {
 		t.Fatal("Teams confirmation background differs from logout")
 	}
@@ -592,6 +597,8 @@ func TestLogoutConfirmationStaticNativePose(t *testing.T) {
 	if f.preview == c.Inventory.Preview {
 		t.Fatal("logout preview must have independent animation state")
 	}
+	// Opening changes the panel, not the preview's native fixed pose.
+	*now = now.Add(seui.MessageOpenDuration)
 	paint := func() { c.Screen.Fill(image.Rect(0, 0, 800, 600), 0); f.Update(c.Input) }
 	paint()
 	before := append([]uint16(nil), c.Screen.Pix...)
