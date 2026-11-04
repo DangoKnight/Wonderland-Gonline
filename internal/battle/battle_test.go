@@ -18,7 +18,7 @@ func hero() *game.Character {
 
 func setup(hp int) (*Battle, *Fighter) {
 	self := PlayerFighter(hero(), nil, 0)
-	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, ClickID: 3}}), self
+	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, SP: 99, ClickID: 3}}), self
 }
 
 func TestIntroAndSubmit(t *testing.T) {

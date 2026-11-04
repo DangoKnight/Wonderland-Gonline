@@ -42,7 +42,10 @@ func TestWildMonsterClickDefeatAndRespawn(t *testing.T) {
 	if err := s.worldCommand(ctx, c, []byte{20, 1, 4, 0}); err != nil || c.battle == nil {
 		t.Fatal("wild click did not start a battle", err)
 	}
-	// A clicked monster has at least 50 HP, so attack until it falls.
+	if f := c.battle.b.Defenders[0]; f.HP != 1 || f.MaxHP != 1 || f.SP != 0 || f.MaxSP != 0 {
+		t.Fatalf("wild monster did not use stored vitals: %+v", f)
+	}
+	// Attack until the clicked monster's stored HP is depleted.
 	for round := 0; c.battle != nil; round++ {
 		if round == 30 {
 			t.Fatal("battle did not end")

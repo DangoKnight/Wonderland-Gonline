@@ -1,10 +1,11 @@
 # Shared combat stat formulas
 
-Players, owned pets and enemies use `game.InnateCombat`, with coefficients owned
+Players and owned pets use `game.InnateCombat`, with coefficients owned
 by `internal/game/growth_parameters.go`. Their effective permanent attributes,
 level and element feed the same calculation. Rounded innate stats precede
-equipment and player reborn class bonuses. Player appearance and potential
-bonuses still contribute to player attributes; pet potential contributes to pet
+equipment and player reborn class bonuses. Enemies share the ATK/DEF/MAT/MDF/SPD
+formulas; their HP/SP come from stored NPC definitions. Player appearance and
+potential bonuses still contribute to player attributes; pet potential contributes to pet
 attributes. Automatic pet attribute growth remains selectable independently.
 
 | Stat | Current common formula before equipment/class bonuses |
@@ -31,13 +32,14 @@ No wire-layout or database schema change is required. Existing pets receive the
 new derived values when recalculated; their permanent allocated attributes are
 preserved.
 
-Ordinary wild, proximity, scripted-formation and GM-spawned enemies calculate
-HP/SP too; raw NPC HP/SP no longer replace these formulas. Explicit event HP and
-trial HP/attack overrides remain authoritative. Missing NPC attributes use zero
-attributes rather than inventing level-scaled STR/CON/INT/WIS/AGI. Reinforcements
-use the same construction as the first wave.
+Ordinary wild, proximity, scripted-formation and GM-spawned enemies use stored
+NPC HP/SP, independently of encounter level variations. Explicit event HP and
+trial HP/attack overrides remain authoritative. Zero SP is valid; absent or zero
+HP has a minimum of one, with no player-vitals formula fallback. Missing NPC
+attributes use zero attributes rather than inventing level-scaled
+STR/CON/INT/WIS/AGI. Reinforcements use the same construction as the first wave.
 
-For Floating at level 4, STR/CON/INT/WIS/AGI `2/2/1/1/2`, Wind gives
+For an owned Floating pet at level 4, STR/CON/INT/WIS/AGI `2/2/1/1/2`, Wind gives
 HP/SP `194/105` and ATK/DEF/MAT/MDF/SPD `10/12/8/10/12`. Its previous pet DEF was
 36 because the inherited unknown-element rule used eight defense per level.
 

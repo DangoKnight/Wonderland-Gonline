@@ -509,15 +509,15 @@ func TestGMCombatVictoryAwardsOnce(t *testing.T) {
 	s, p, _ := chatFixture(t)
 	c := p[0]
 	c.gmLevel.Store(1)
-	s.Assets.NPCs = map[uint16]assets.NPC{42: {ID: 42, Name: "GM monster", Level: 4, HP: 200, Element: 1}}
+	s.Assets.NPCs = map[uint16]assets.NPC{42: {ID: 42, Name: "GM monster", Level: 4, HP: 200, SP: 17, Element: 1}}
 	say(t, s, c, "/fight 65535")
 	if c.battle != nil {
 		t.Fatal("unknown battle started")
 	}
 	say(t, s, c, "/battle 42")
 	run := c.battle
-	if run == nil || run.b.Defenders[0].MaxHP != 184 || run.b.Defenders[0].Element != game.Earth {
-		t.Fatal("battle did not use template element and common HP formula")
+	if run == nil || run.b.Defenders[0].MaxHP != 200 || run.b.Defenders[0].MaxSP != 17 || run.b.Defenders[0].Element != game.Earth {
+		t.Fatal("battle did not use template element and stored HP/SP")
 	}
 	say(t, s, c, "/killmonsters")
 	s.worldMu.Lock()

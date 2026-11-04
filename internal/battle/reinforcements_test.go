@@ -9,7 +9,7 @@ func TestReinforcementWavesRetainRewardsAndSpawnAtRoundEnd(t *testing.T) {
 	self := &Fighter{Side: Attacker, Kind: Player, ID: 10001, X: 4, Y: 2, HP: 10000, MaxHP: 10000}
 	var enemies []Enemy
 	for i := 0; i < 17; i++ {
-		enemies = append(enemies, Enemy{Template: uint32(10000 + i), Level: 2, HP: 200, Element: 1})
+		enemies = append(enemies, Enemy{Template: uint32(10000 + i), Level: 2, HP: 200, SP: 96, Element: 1})
 	}
 	b := New([]*Fighter{self}, enemies)
 	if len(b.Defenders) != 8 || !b.HasReinforcements() {
