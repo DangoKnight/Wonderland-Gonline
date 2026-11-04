@@ -12,7 +12,7 @@ func TestRobinsonRecruitmentUsesInitialStatsAndRestoresReserveUnchanged(t *testi
 	s, players, _ := petFixture(t)
 	c := players[0]
 	s.Assets.NPCs[12178] = assets.NPC{ID: 12178, Name: "Robinson", Level: 20, Type: 4, Element: game.Wind, Stats: [5]uint16{15, 20, 5, 8, 12}}
-	s.Assets.PetInitialStats = map[uint32]game.PetInitialStats{12178: {Minimum: game.Attributes{7, 10, 2, 4, 6}, Maximum: game.Attributes{7, 11, 2, 5, 7}, TotalPoints: 30}}
+	s.Assets.PetInitialStats = map[uint32]game.PetInitialStats{12178: {Minimum: game.Attributes{Strength: 7, Constitution: 10, Intelligence: 2, Wisdom: 4, Agility: 6}, Maximum: game.Attributes{Strength: 7, Constitution: 11, Intelligence: 2, Wisdom: 5, Agility: 7}, TotalPoints: 30}}
 	s.World = world.New(s.Assets)
 	if ok, err := s.recruit(context.Background(), c, 12032); err != nil || !ok {
 		t.Fatal(ok, err)

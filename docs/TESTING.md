@@ -3318,3 +3318,51 @@ artifacts byte-for-byte. Assets v27 was backed up at
 `var/backups/pre-migrate-20261104-064512`; all 898 names were verified in SQL.
 Exactly 129 new name fields changed. A hash of every other NPC column across
 all 4,930 rows remained identical. Server/client next executables both build.
+
+## Full pre-push validation - 2026-11-04
+
+Validated `27b8f8d` and the subsequent validation-only test fixes across both Go
+modules. The complete server run used `-race -count=1 -timeout=60m -json ./...`
+with the installed v27 SQL catalog. The complete client run used
+`-count=1 -timeout=60m -json ./...`, with GPU, loose-data and compiled-bundle
+checks enabled. Final results, combining the full run with complete reruns of
+the corrected packages, cover every repository package:
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,072 | 12 | 28 | 8 |
+| Client | 710 | 36 | 24 | 1 |
+
+Initial validation found three issues, all resolved before pushing:
+
+- Vet rejected external unkeyed `game.Attributes` literals in three pet-stat
+  test files. Keyed fields retain exactly the same independent expected values;
+  the affected fixtures pass under the race detector.
+- The background-only Team/logout comparison included the logout portrait/name
+  after painting was unified for closing animations. The test now isolates the
+  decoration and retains separate portrait placement/static-pose checks. The
+  **entire client application package** passed its subsequent GPU-enabled rerun.
+- The opt-in translated-catalog test requires the original 7,312-record fixture,
+  not the updated 7,325-record extraction. The **entire assets package** passed
+  its subsequent race run with the designated original fixture. An ignored local
+  scratch program was also discovered by `./...`; ignored `var` research tools
+  were isolated behind their own local module boundary. Package-list comparison
+  confirms that every actual repository package was covered, with no remaining
+  failures. Scratch programs are not shipped or treated as product test packages.
+
+Additional checks passed: full server/client vet, tracked Go formatting,
+Prettier, HTMLHint, both ten-second protocol/EVE fuzz runs, and both executable
+builds. Client UI/world/inventory/role/skills/team/login race suites passed 184
+entries; app dialogue/confirmation race regressions passed another 19 entries.
+The Python exporter suite ran 37 tests, with one Windows symlink-privilege skip.
+The asset compiler validated all 72,854 files (6,037.9 MiB source), all reused.
+`TestCompiledBundleLoginAndSharedWorld` passed against the actual compiled packs.
+No race warning, runtime panic or remaining product-package failure was reported.
+
+The Go skips cover original-reference inputs not enabled or unavailable for the
+specific test, live-account operations, optional snapshots and one unavailable
+Windows symlink privilege; they are not manual gameplay acceptance evidence.
+Optional `golangci-lint` was not installed. Initial logs
+retain the resolved failures; final package results and complete-package reruns
+are recorded separately under ignored `var/validation/prepush-20261104/`, with
+`final-summary.json` checking results against both module package inventories.
