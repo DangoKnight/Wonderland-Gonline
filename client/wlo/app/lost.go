@@ -148,6 +148,8 @@ func (c *Client) disconnected() {
 // lostPrev is Prev (0x3a547c): the form closes, the game state resets
 // (FUN_00314bf4) and the server list returns.
 func (c *Client) lostPrev() {
+	c.constellation = nil
+	c.constellations = [constellationLimit]bool{}
 	c.minigameResultAckPending = false
 	c.Lost.Hide()
 	if c.fade.frozen != nil {

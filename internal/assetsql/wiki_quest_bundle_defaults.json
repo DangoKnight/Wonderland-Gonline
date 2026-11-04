@@ -1,0 +1,627 @@
+[
+  {
+    "id": "wiki_quest_bundle_10071_6_6",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        10071
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 15070,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 46072,
+      "value": 4294967291
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_11052_3_24",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        11052
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        24
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 13114,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 12068,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_11062_2_8",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        11062
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 13108,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 41007,
+      "value": 4294967291
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_11079_1_15",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        11079
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        15
+      ],
+      "allow_missing": true
+    },
+    "value": 6,
+    "mark": 13104,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30020,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_11149_2_20",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        11149
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 23,
+    "mark": 13172,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 12095,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_11187_3_12",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        11187
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        12
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 13210,
+    "pattern": {
+      "code": 5,
+      "d1": 13210,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12145_7_7",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12145
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 21048,
+    "pattern": {
+      "code": 11,
+      "d1": 15222,
+      "d2": 1,
+      "d3": 0,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12145_7_9",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12145
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        9
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 21048,
+    "pattern": {
+      "code": 11,
+      "d1": 15225,
+      "d2": 1,
+      "d3": 0,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12145_7_11",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12145
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 21048,
+    "pattern": {
+      "code": 11,
+      "d1": 25067,
+      "d2": 1,
+      "d3": 0,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12145_7_13",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12145
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 21048,
+    "pattern": {
+      "code": 11,
+      "d1": 15166,
+      "d2": 1,
+      "d3": 0,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12159_2_18",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12159
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        18
+      ],
+      "allow_missing": true
+    },
+    "value": 15,
+    "mark": 13008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 48008,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12273_6_10",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12273
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 12,
+    "mark": 13138,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 14548,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12284_2_1",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12284
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 14,
+    "mark": 13164,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30136,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12408_3_12",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12408
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        12
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 14046,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 14243,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12521_2_19",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12521
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        19
+      ],
+      "allow_missing": true
+    },
+    "value": 7,
+    "mark": 13176,
+    "pattern": {
+      "code": 5,
+      "d1": 13176,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12603_4_2",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12603
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 14028,
+    "pattern": {
+      "code": 3,
+      "d1": 2,
+      "d2": 17858,
+      "d3": 0,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12639_3_1",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12639
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 14032,
+    "pattern": {
+      "code": 3,
+      "d1": 2,
+      "d2": 17899,
+      "d3": 0,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12647_11_18",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12647
+      ],
+      "events": [
+        11
+      ],
+      "branches": [
+        18
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15096,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 17914,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12647_12_6",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12647
+      ],
+      "events": [
+        12
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15096,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 17914,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_12800_43_24",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        12800
+      ],
+      "events": [
+        43
+      ],
+      "branches": [
+        24
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 21102,
+    "pattern": {
+      "code": 3,
+      "d1": 1,
+      "d2": 12147,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_13013_2_16",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        13013
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15158,
+    "pattern": {
+      "code": 5,
+      "d1": 15158,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_13013_3_14",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        13013
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        14
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15158,
+    "pattern": {
+      "code": 5,
+      "d1": 15158,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_13013_4_14",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        13013
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        14
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15158,
+    "pattern": {
+      "code": 5,
+      "d1": 15158,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_13013_5_14",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        13013
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        14
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15158,
+    "pattern": {
+      "code": 5,
+      "d1": 15158,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_quest_bundle_13013_6_14",
+    "kind": "quest_reward_bundle",
+    "scope": {
+      "maps": [
+        13013
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        14
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15158,
+    "pattern": {
+      "code": 5,
+      "d1": 15158,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  }
+]

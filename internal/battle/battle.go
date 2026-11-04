@@ -211,17 +211,20 @@ var (
 // MaxEnemies is the number of enemy grid slots.
 const MaxEnemies = 8
 
+const FormationSlotSequential = 0 // Compatibility for encounters without authored EVE queues.
+
 // Enemy describes one monster to spawn.
 type Enemy struct {
-	Template uint32
-	Name     string
-	Level    int
-	HP       int // Explicit scripted override; zero uses elemental growth.
-	Element  byte
-	Base     game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
-	ClickID  uint16
-	Skills   [3]uint16
-	Attack   int // Optional authored boss attack override.
+	FormationSlot byte // Native shared occupant queue; FormationSlotSequential uses encounter ordering.
+	Template      uint32
+	Name          string
+	Level         int
+	HP            int // Explicit scripted override; zero uses elemental growth.
+	Element       byte
+	Base          game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
+	ClickID       uint16
+	Skills        [3]uint16
+	Attack        int // Optional authored boss attack override.
 }
 
 // PlayerFighter is BuildFighters for a character (no pets).
@@ -258,13 +261,38 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 		f.immediateSupport = nil
 	}
 	b := &Battle{Attackers: players, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
+	occupied := [MaxEnemies]bool{}
+	formationSlots := map[byte]int{}
 	for i, e := range enemies {
-		if i >= MaxEnemies {
-			slot := i % MaxEnemies
+		// Keep the existing first-seen screen ordering. Native slot IDs own
+		// reinforcement queues; they are not inferred screen coordinates.
+		slot := i % MaxEnemies
+		if e.FormationSlot != FormationSlotSequential && int(e.FormationSlot) <= MaxEnemies {
+			if existing, known := formationSlots[e.FormationSlot]; known {
+				slot = existing
+			} else {
+				for candidate, used := range occupied {
+					if !used {
+						slot = candidate
+						break
+					}
+				}
+				formationSlots[e.FormationSlot] = slot
+			}
+		} else {
+			for candidate, used := range occupied {
+				if !used {
+					slot = candidate
+					break
+				}
+			}
+		}
+		if occupied[slot] {
 			b.Reinforcements[slot] = append(b.Reinforcements[slot], e)
 			continue
 		}
-		b.Defenders = append(b.Defenders, enemyFighter(e, i))
+		occupied[slot] = true
+		b.Defenders = append(b.Defenders, enemyFighter(e, slot))
 	}
 
 	return b

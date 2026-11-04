@@ -111,8 +111,12 @@ func fleeContinues(mapID, event uint16) bool {
 // the enemies. It returns false when no battle can be built. Caller holds worldMu.
 func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, error) {
 	var formation []uint32
+	var members []world.FormationMember
 	if op.Code == world.ActionBattle {
-		formation = s.World.Formation(es.mapID, op.D2)
+		members = s.World.FormationMembers(es.mapID, op.D2)
+		for _, member := range members {
+			formation = append(formation, member.Template)
+		}
 	}
 	id := uint32(0)
 	switch {
@@ -137,8 +141,11 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		templates = []uint32{id}
 	}
 	var enemies []battle.Enemy
-	for _, t := range templates {
+	for index, t := range templates {
 		e := battle.Enemy{Template: t, Name: s.npcName(t), Level: level, HP: hp, ClickID: es.click}
+		if index < len(members) {
+			e.FormationSlot = members[index].Slot
+		}
 		// A formation enemy uses its own Npc.dat level and element.
 		if npc, ok := s.Assets.NPCs[uint16(t)]; ok && len(formation) > 0 && t <= 0xffff {
 			e.Level, e.Element = max(1, int(npc.Level)), npc.Element

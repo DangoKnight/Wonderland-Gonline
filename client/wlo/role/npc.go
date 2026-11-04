@@ -70,6 +70,13 @@ func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
 // SetLit turns the hover highlight on or off.
 func (n *NPC) SetLit(on bool) { n.Lit = on }
 
+// RestartAnimation is an authoritative scene action, even when its action
+// number matches the previously playing animation.
+func (n *NPC) RestartAnimation() {
+	n.frame, n.lastAction = 0, -1
+	n.frameAt = n.Now()
+}
+
 // Sprite is the drawn sprite ID.
 func (n *NPC) Sprite() int { return n.sprite }
 

@@ -155,6 +155,10 @@ func TestStoryMigrationPreservesEditsAndEmptyDefinitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantStory := assets.DefaultStoryDefinitions()
+	wantStory.Rules, err = seedWikiQuests(wantStory.Rules, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	wantStory.CompanionEquipment, err = seedPetSpecialEquipment(wantStory.CompanionEquipment, false)
 	if err != nil {
 		t.Fatal(err)
@@ -180,6 +184,10 @@ func TestStoryMigrationPreservesEditsAndEmptyDefinitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = LoadDatabase(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defs.Rules, err = seedWikiQuests(defs.Rules, true)
 	if err != nil || !reflect.DeepEqual(got.Story, defs) {
 		t.Fatal("migration replaced edited story", err)
 	}
@@ -281,6 +289,10 @@ func TestStoryInstalledMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := assets.DefaultStoryDefinitions()
+	want.Rules, err = seedWikiQuests(want.Rules, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	want.CompanionEquipment, err = seedPetSpecialEquipment(want.CompanionEquipment, false)
 	if err != nil {
 		t.Fatal(err)

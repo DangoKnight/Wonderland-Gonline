@@ -1,0 +1,14 @@
+{
+  "native_catalog_sha256": "df7d7cb35c88466cd9361a76b4e3cae559497b17c86768c560feecb13a75bd20",
+  "quest_bindings": 13,
+  "reviewed_native_details": 9,
+  "companion_revive_rows": 20,
+  "files": {
+    "article_links.csv": "15d357b79498845626a88e4bb4097122dc1707f8f33f07bb3e298ab35004a19b",
+    "companion_revive_costs.csv": "5e4922851a15460c8c2b90ddd26724512f00b2a998b89b6bc3933b9cec8719b5",
+    "native_comparisons.csv": "1c145c224923ff2928c82b2e26612ab4aed23514e38ae88a547fa591ba28c64c",
+    "pages.csv": "a69af8a397468ecc5e24cba0f327f3a779bd0746b26478fc5b958af7b78642be",
+    "quest_bindings.csv": "d3cf3e2a7c286c699275fb6548cca2af6d214ee4ddd3e8f92ee48b1045fcd1b3",
+    "quest_sections.csv": "ba437d5ee17fa11fcc8c953db3edb28ce655c8c40797ec7608b96d1449ce6fcf"
+  }
+}

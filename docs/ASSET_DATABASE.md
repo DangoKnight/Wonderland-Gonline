@@ -8,6 +8,8 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v29–v38 add atomic native quest completion, temporary escorts/disguises, native quest NPC reactions and removal of two obsolete quest disable reasons. See [quest research and implementation](QUEST_RESEARCH.md) and the [complete 345-entry notepad list](QUEST_LIST.md). Gameplay remains v20.
+
 Assets v28 applies 93 owner-confirmed entity renames and preserves 85 confirmed existing names. Unchecked review proposals do not affect gameplay. See [enemy name review](ENEMY_NAME_REVIEW.md).
 
 Assets v27 adds 129 researched enemy name corrections, bringing the compiled patch to 898 names. See [enemy name review](ENEMY_NAME_REVIEW.md).
@@ -74,7 +76,7 @@ snapshots. Keep the backups until acceptance testing finishes.
 Gameplay schema v20 automatically upgrades older character storage transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 28 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 38 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -223,7 +225,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v28. The upgrade procedure upgrades existing older installations
+Asset schema is now v38. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -267,7 +269,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v28. See
+before running the new server; runtime requires v38. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -305,7 +307,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v28 and reads only SQL definitions. The `Story` administration
+Runtime requires v38 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

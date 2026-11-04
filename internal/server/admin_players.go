@@ -472,7 +472,7 @@ func (s *Server) EditAdminCharacterFields(ctx context.Context, id uint32, versio
 	s.adoptSavedCharacter(c, next)
 	if scope == "quests" {
 		packets = append(packets, s.World.Journal(c.character, c.view)...)
-		packets = append(packets, storyConstellations(c.character))
+		packets = append(packets, s.storyConstellations(c.character))
 		packets = append(packets, s.World.Sync(c.character, c.view, false)...)
 	}
 	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})

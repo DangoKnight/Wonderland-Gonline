@@ -2599,6 +2599,42 @@
           "value": 1
         }
       ]
+    },
+    {
+      "id": "quest_constellation_1",
+      "kind": "constellation",
+      "mark": 13087,
+      "value": 1,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_6",
+      "kind": "constellation",
+      "mark": 13173,
+      "value": 6,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_8",
+      "kind": "constellation",
+      "mark": 13203,
+      "value": 8,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_20",
+      "kind": "constellation",
+      "mark": 13151,
+      "value": 20,
+      "scope": {
+        "allow_missing": true
+      }
     }
   ],
   "recruitments": [

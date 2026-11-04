@@ -434,6 +434,7 @@ func stepDone(sub byte) bool {
 // no longer holds the player (+0x2392 = 0), so a door event's 6/2 hold
 // ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
+	c.stopConstellation()
 	for npc, action := range c.event.npcFacings {
 		npc.Action = action
 	}
@@ -455,6 +456,10 @@ func (c *Client) advanceTalk() {
 
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
+	// Native +0x732a holds AC20:6 until the entire constellation sequence ends.
+	if c.constellation != nil {
+		return
+	}
 	if c.minigameResultAckPending {
 		c.minigameResultAckPending = false
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})

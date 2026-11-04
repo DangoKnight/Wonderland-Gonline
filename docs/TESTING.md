@@ -3366,3 +3366,56 @@ Optional `golangci-lint` was not installed. Initial logs
 retain the resolved failures; final package results and complete-package reruns
 are recorded separately under ignored `var/validation/prepush-20261104/`, with
 `final-summary.json` checking results against both module package inventories.
+
+## Wiki quest implementation validation - 2026-11-04
+
+The subsequent quest work uses the preserved assets v38 catalog (gameplay v20).
+This was focused development validation, separate from the earlier pre-push run.
+
+The race-enabled server selection passed across `internal/server`, `assetsql`,
+`world`, `assets` and `battle`. It covers all 350 installed resource contracts,
+25 mixed skill/companion bundles, 15 escort contracts, disguise/actor policies,
+constellation receipts, equipment and inventory gates, Sledge Wolf alternatives,
+SQL rollback/stale-state/replay checks and failed post-commit delivery. Complete
+`internal/world` and `internal/battle` race suites also passed. Story/catalog and
+offline-copy/upgrade migration regressions passed under the race detector,
+including operator edits, historical deletions, empty collections and repeated
+upgrades. The final focused server selection ran in 114.456 seconds.
+
+Client application/world/role regressions passed for constellation acknowledgements,
+native NPC presentation, disguises, event/dialogue behavior and Breillat. Both
+`WONDERLAND_TEST_DATA_ROOT` and `WONDERLAND_TEST_CLIENT_BUNDLE` were enabled;
+`TestCompiledBundleLoginAndSharedWorld` loads the actual star/sky artwork and checks
+that shared resources do not share cutscene state. The app selection ran in
+26.750 seconds. Server and client executable builds and affected-package vet pass.
+The six Python quest-extractor tests pass, and the reviewed bundle/parent seeds
+reproduce exactly from the cached reference catalog. Changed Go files are formatted
+and `git diff --check` passes.
+
+The final static action audit covers 1,701 events bound to all 345 notepad entries,
+with no reported action/capability/formation gaps. This is not a live playthrough
+of 345 quests. Native formation coordinates, constellation particle/panel parity,
+the separate marriage ceremony and detailed multi-map/team acceptance remain
+explicitly unverified; see [quest research](QUEST_RESEARCH.md).
+
+
+## Translation / quest branch split validation - 2026-11-04
+
+The Client translation commit was tested independently in a clean detached
+checkout: native-name and SQL migration regressions pass, and the review tool
+compiles and passes vet. The confirmed-name importer and client name-loading
+checks pass; the extracted patch reproduces 991 changed names and preserves 85
+explicit unchanged confirmations. Tentative names are excluded.
+
+On quest-development, assets v38 supports both the translation-only v28 upgrade
+and existing development v37 catalogs. Tests prove the initial three quest
+contracts are supplied to v28 and a deliberately deleted quest policy remains
+absent after the v37 name refresh. The local backed-up upgrade changed exactly
+93 NPC names with all other fields identical across 4,930 records.
+
+The final focused quest/name selection passed under the race detector across
+server, assets, assetsql, world and battle (server: 118.862 seconds). The client
+quest/name selection passed with loose and compiled assets enabled (app: 32.792
+seconds). The ten quest research parser/extractor tests, affected-package vet,
+format checks and both executable builds pass. No push was requested; this is
+focused pre-commit validation, not a new full-server pre-push run.

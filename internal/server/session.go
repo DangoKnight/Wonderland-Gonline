@@ -52,6 +52,7 @@ type Session struct {
 	manufacturingLoaded  bool
 	fishing              *fishingRun // Transient cast; guarded by worldMu.
 	emote                byte        // Current AC32 pose; guarded by worldMu.
+	shapeshift           uint16      // Cosmetic NPC disguise, guarded by worldMu.
 	restedAt             time.Time   // Last resting recovery while sitting or lying; guarded by worldMu.
 	view                 *world.View
 	pets                 *petRoster

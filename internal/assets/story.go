@@ -23,35 +23,40 @@ type StoryDefinitions struct {
 }
 
 const (
-	StoryForwardOnly     = "forward_only"
-	StoryPriority        = "branch_priority"
-	StoryBlock           = "block_event"
-	StoryContinue        = "continue"
-	StoryClick           = "click_route"
-	StoryClickMark       = "click_mark"
-	StoryCandidate       = "candidate"
-	StoryArrival         = "arrival"
-	StoryArrivalCleanup  = "arrival_cleanup"
-	StoryArrivalRegion   = "arrival_region"
-	StoryVisibility      = "visibility"
-	StoryFinalVisibility = "final_visibility"
-	StoryCondition       = "condition"
-	StoryPreCondition    = "precondition"
-	StoryPropCondition   = "prop_condition"
-	StoryEquipmentGate   = "equipment_gate"
-	StoryPreFallback     = "pre_fallback"
-	StoryMovieMode       = "movie_mode"
-	StoryChoiceMode      = "choice_mode"
-	StoryActorCapability = "actor_capability"
-	StoryOutcome         = "outcome"
-	StoryRepair          = "repair"
-	StoryRegionMargin    = "region_margin"
-	StoryTransition      = "transition"
-	StoryExchange        = "item_exchange"
-	StoryRecruitBlock    = "recruit_block"
-	StorySyncActors      = "sync_actors"
-	StoryPreserveActor   = "preserve_actor"
-	StoryArrivalPackets  = "arrival_packets"
+	StoryForwardOnly       = "forward_only"
+	StoryPriority          = "branch_priority"
+	StoryBlock             = "block_event"
+	StoryContinue          = "continue"
+	StoryClick             = "click_route"
+	StoryClickMark         = "click_mark"
+	StoryCandidate         = "candidate"
+	StoryArrival           = "arrival"
+	StoryArrivalCleanup    = "arrival_cleanup"
+	StoryArrivalRegion     = "arrival_region"
+	StoryVisibility        = "visibility"
+	StoryFinalVisibility   = "final_visibility"
+	StoryCondition         = "condition"
+	StoryPreCondition      = "precondition"
+	StoryPropCondition     = "prop_condition"
+	StoryEquipmentGate     = "equipment_gate"
+	StoryPreFallback       = "pre_fallback"
+	StoryMovieMode         = "movie_mode"
+	StoryChoiceMode        = "choice_mode"
+	StoryActorCapability   = "actor_capability"
+	StoryOutcome           = "outcome"
+	StoryRepair            = "repair"
+	StoryRegionMargin      = "region_margin"
+	StoryTransition        = "transition"
+	StoryExchange          = "item_exchange"
+	StoryQuestCompletion   = "quest_completion"
+	StoryQuestRewardBundle = "quest_reward_bundle"
+	StoryQuestCompanion    = "quest_companion"
+	StoryQuestDisguise     = "quest_disguise"
+	StoryConstellation     = "constellation"
+	StoryRecruitBlock      = "recruit_block"
+	StorySyncActors        = "sync_actors"
+	StoryPreserveActor     = "preserve_actor"
+	StoryArrivalPackets    = "arrival_packets"
 	// Retained for imported authored data compatibility. Vehicle consumption is
 	// resolved by terrain-based landing, never by this old portal hint.
 	StoryPortalConsumeVehicle = "portal_consume_vehicle"
@@ -277,7 +282,7 @@ func DefaultStoryDefinitions() StoryDefinitions {
 
 func validateStoryStructure(d StoryDefinitions) error {
 	kinds := map[string]bool{}
-	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
+	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryQuestCompletion, StoryQuestRewardBundle, StoryQuestCompanion, StoryQuestDisguise, StoryConstellation, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
 		kinds[k] = true
 	}
 	seen := map[string]bool{}
@@ -294,6 +299,12 @@ func validateStoryStructure(d StoryDefinitions) error {
 		}
 		if !kinds[r.Kind] {
 			return fmt.Errorf("story %s: unknown kind %q", r.ID, r.Kind)
+		}
+		if (r.Kind == StoryQuestCompletion || r.Kind == StoryQuestCompanion || r.Kind == StoryQuestRewardBundle) && (r.Mark == 0 || r.Value < 0 || len(r.Scope.Maps) == 0 || len(r.Scope.Events) == 0 || len(r.Scope.Branches) == 0 || len(r.Gates) != 0) {
+			return fmt.Errorf("story %s: quest completion requires an exact scope, native checkpoint and nonnegative tail index", r.ID)
+		}
+		if r.Kind == StoryQuestDisguise && (len(r.Scope.Maps) == 0 || len(r.Scope.Events) == 0 || len(r.Scope.Branches) == 0 || r.Pattern.Code == nil || r.Pattern.D1 == nil || r.Pattern.D2 == nil || r.Pattern.D3 == nil || r.Pattern.Value == nil || len(r.Gates) != 0) {
+			return fmt.Errorf("story %s: quest disguise requires exact scope and operands", r.ID)
 		}
 		for _, g := range r.Gates {
 			if err := validateStoryGate(g); err != nil {
@@ -378,3 +389,6 @@ const (
 	StoryOutcomeForward = 1
 	StoryOutcomeBounded = 2
 )
+
+// MaxStoryConstellationID is the native AC15:19 list limit (IDs below 89).
+const MaxStoryConstellationID = 88

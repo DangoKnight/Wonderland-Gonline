@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 28
+const catalogSchemaVersion = 38
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -445,6 +445,63 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 29 {
+			if err := migrateWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 29 {
+			if err := migrateAdditionalWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 30 {
+			if err := migrateRemainingWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 31 {
+			if err := migrateWikiQuestCompanions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 32 {
+			if err := migrateEnabledWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 33 {
+			if err := migrateWikiQuestDisguises(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 34 {
+			if err := migrateWikiQuestActors(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 35 {
+			if err := migrateWikiQuestConstellations(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 36 {
+			if err := migrateWikiQuestBundles(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 37 {
+			if err := migrateWikiQuestConditions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 38 {
+			// Refresh reviewed names for development catalogs that already ran the
+			// original quest-only v28-v37 upgrades before the branch split.
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -452,6 +509,13 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Story = assets.DefaultStoryDefinitions()
+	if err := initializeEnabledWikiQuests(c); err != nil {
+		return err
+	}
+	c.Story.Rules, err = seedWikiQuests(c.Story.Rules, false)
+	if err != nil {
+		return err
+	}
 	c.Story.CompanionEquipment, err = seedPetSpecialEquipment(c.Story.CompanionEquipment, false)
 	if err != nil {
 		return err

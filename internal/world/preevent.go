@@ -198,8 +198,9 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 				return present
 			case 2:
 				return !present
-			case 3:
-				// The only 2/2/3 record is Clive's prison branch with the active-Clive alternative.
+			case CompanionConditionPrisonPresence, CompanionConditionCaptureAbsence:
+				// These legacy operands are enabled only by reviewed SQL contracts:
+				// Clive's prison presence and the Sledge Wolf capture encounter.
 				event := uint16(0)
 				if ev != nil {
 					event = ev.ClickID
@@ -282,6 +283,13 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		return (w2 == MissionVariableAdd && compare(actual, value, op)) || (w2 == MissionVariableAbsent && actual == 0)
 	case ConditionCompanionRebirth:
 		return w1 == uint16(c.CompanionRebirthState())
+	case ConditionPlayerEquipment:
+		// FUN_0049c76c converts EVE 16 to native condition 22: equipment
+		// selector, item identity and equality comparison; no quantity operand.
+		if w1 < PlayerEquipmentFirstSelector || w1 > PlayerEquipmentLastSelector || w3 != 0 || value != 0 || (op != CompareEqual && op != CompareNotEqual) {
+			return false
+		}
+		return (c.Equipment[w1-PlayerEquipmentFirstSelector].ID == w2) == (op == CompareEqual)
 	case ConditionCompanionEquipment:
 		event := uint16(0)
 		if ev != nil {
@@ -295,16 +303,44 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		slot := int(policy.Value)
 		return present && slot >= 0 && slot < len(c.Pets[index].Equipment) && compare(int64(c.Pets[index].Equipment[slot].ID), int64(w3), op)
 	case ConditionFreeBagSlots:
-		free := int64(0)
-		for _, it := range c.Bag {
-			if it.ID == 0 {
-				free++
-			}
-		}
-		return w1 == 1 && compare(free, value, op)
+		return w.inventoryCapacity(c, w1, w2, w3, value, op)
 	}
 	// Unknown condition types never authorize rewards.
 	return false
+}
+
+func (w *World) inventoryCapacity(c *game.Character, selector, item, reserved uint16, value int64, comparison byte) bool {
+	if reserved != 0 {
+		return false
+	}
+	cells, err := c.Bag.Occupancy(w.catalog.Items)
+	if err != nil {
+		return false
+	}
+	if selector == BagCapacityFreeCells {
+		if item != 0 {
+			return false
+		}
+		free := int64(0)
+		for _, anchor := range cells {
+			if anchor == 0 {
+				free++
+			}
+		}
+		return compare(free, value, comparison)
+	}
+	if (selector != BagCapacityCanReceive && selector != BagCapacityCannotReceive) || value != 0 || comparison != 0 {
+		return false
+	}
+	definition, known := w.catalog.Items[item]
+	if !known || item == 0 {
+		return false
+	}
+	// Native paired branches select either the actual grant or the inventory-full
+	// dialogue. Probe a copy: checking capacity must never reserve or grant items.
+	bag := c.Bag
+	fits := bag.Add(game.Item{ID: item, Count: 1}, 1, definition.StackLimit(), w.catalog.Items) == nil
+	return fits == (selector == BagCapacityCanReceive)
 }
 
 func handsInVehicle(ev *assets.Event, vehicle uint16) bool {

@@ -376,6 +376,11 @@ committed results. See the
 
 ## Live legacy-client acceptance
 
+The [complete wiki notepad quest list](docs/QUEST_LIST.md) preserves all 345 source
+entries. [Quest research and implementation](docs/QUEST_RESEARCH.md) records the
+native-script bindings, preserving asset upgrades, implemented gaps and remaining
+walkthrough verification.
+
 Use the [native-client acceptance procedure](docs/TESTING.md#native-client-acceptance)
 to prepare isolated scenario characters, login credentials and feature checklists.
 
