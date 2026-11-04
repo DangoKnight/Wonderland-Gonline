@@ -27,13 +27,21 @@ type eventSession struct {
 	onComplete       func() error
 	onChoice         func(byte) error
 	onMinigame       func(byte) error
+	bankOwner        uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
+
 const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 
 // endEvent is Player.ClearInteraction.
-func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
+func (s *Server) endEvent(c *Session) {
+	if c.event != nil {
+		c.event.bankOwner = 0
+	}
+	c.event = nil
+	c.arcade = nil
+}
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
@@ -47,16 +55,28 @@ func (s *Server) cancelInteraction(c *Session) error {
 }
 
 func (s *Server) finishEvent(c *Session, es *eventSession) error {
-	if c.event != es {
+	if es == nil || c.event != es {
 		return nil
 	}
+	if c.character == nil {
+		s.endEvent(c)
+		return nil
+	}
+	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
+	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
 	if err := s.sendAll(c, s.World.Sync(c.character, c.view, false)); err != nil {
 		return err
 	}
-	return s.syncMapProps(context.Background(), c, time.Now())
+	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
+	if openBank {
+		return s.openMoneyBank(c)
+	}
+	return nil
 }
 
 func (s *Server) rejectDisabled(c *Session) error {
@@ -92,17 +112,20 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // Acknowledgments before the wake-up animation are absorbed.
 		}
 		es := c.event
-		if es == nil {
-			return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
+		if es != nil {
+			if es.onChoice != nil || es.onMinigame != nil {
+				return nil // The question stays open until AC20:9.
+			}
+			if next := es.onComplete; next != nil {
+				es.onComplete = nil
+				es.transitions = 0
+				return next()
+			}
+			return s.finishEvent(c, es)
 		}
-		if es.onChoice != nil || es.onMinigame != nil {
-			return nil // The question stays open until AC20:9.
-		}
-		if next := es.onComplete; next != nil {
-			es.onComplete = nil
-			es.transitions = 0
-			return next()
-		}
+		// finishEvent already released this interaction. Ignore its trailing
+		// ACK at any latency: answering it with a resume creates an echo loop
+		// and can hide a service window opened after the dialogue.
 		return nil
 	case protocol.EventRegion:
 		return s.regionRequest(ctx, c, p[2:])

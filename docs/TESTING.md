@@ -1,5 +1,32 @@
 # Testing and validation
 
+## Bank counter robustness - 2026-11-04
+
+Built on PR #7 (`a4e294a`). Scripted bank opening belongs to its originating
+event and character, and follows that event's movement release/resume in the same
+completion flow. No extra resume acknowledgement is required. Trailing idle ACKs
+are ignored at any latency; cancellation, replacement, teleport and character
+changes cannot reopen an old bank window.
+
+Both AC29 counter and AC45 ATM transfers now use one SQL-authoritative, owned
+conditional update of only the two currency columns. Focused race tests cover
+separate database connections competing for the same funds, foreign ownership,
+stale session balances, injected SQL rollback, zero/insufficient/overflow amounts,
+native failure completions, malformed packets and failed receipt delivery.
+Buffered walking/recovery remains dirty until its normal checkpoint, which does
+not revert the bank transfer. Existing independent balance goldens and database
+reopen tests are retained.
+
+Affected bank, clinic, dialogue, event, minigame, hotel, storage, and teleport
+integration tests pass with the race detector. Affected-package vet and the
+server executable build pass. The initial expanded trade-gate test was corrected
+to allow its legitimate warning while forbidding state changes or bank receipts.
+Logs and the validation binary remain outside the checkout under ignored
+`var/validation/pr7-robustness-*.log` and `var/validation/pr7-bank-robustness.exe`.
+This is focused development validation; no full pre-push battery or new live
+client bank capture was run for these robustness changes. No schema upgrade is
+required.
+
 ## Combat support and automatic targeting — 2026-11-03
 
 Passed the complete `internal/battle` suite under `-race`, focused asset support

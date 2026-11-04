@@ -165,8 +165,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
-	c.event = nil
-	c.arcade = nil
+	s.endEvent(c)
 	c.walkMode = 0
 	c.fishing = nil
 	c.manufacturing = nil
