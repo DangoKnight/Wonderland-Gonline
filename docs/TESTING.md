@@ -3431,3 +3431,31 @@ combat opt-in. Affected-package vet and client/server executable builds pass.
 Ignored `var/validation/shared-resources/vacuum-*.log` retains the test history;
 validated binaries are `client-vacuum.exe` and `wonderland-vacuum.exe` there.
 No full pre-push battery or real-server vacuum validation was run for this change.
+
+## Complete collection pre-push validation - 2026-11-04
+
+Validated production commit `aafdeff` and test-fixture correction `44e5a4a`.
+The full server module ran with `-race -count=1 -timeout=60m -p 1 ./...` against
+the isolated v30 catalog. The full client module ran with GPU, native-data and
+compiled-bundle checks enabled. Final coverage includes every module package:
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,089 | 12 | 28 | 8 |
+| Client | 722 | 36 | 24 | 2 |
+
+The initial server run found an outdated login wire assertion and a simulation
+fixture cleanup race. The login golden now consumes the independent collection
+capability before authentication. Field fixtures settle playback and cancel battle
+timers before closing SQL or restoring timing hooks. Both fixes passed three
+focused race repetitions, followed by a complete passing server-package race run.
+Coverage combines that complete rerun with the other passing full-module packages;
+no test/package failures or race warnings remain in the final results.
+
+Full vet, tracked Go formatting, HTMLHint, Prettier, ten-second Read/EVE/NativeItems
+fuzz runs, server/client/migration builds and the entity-name review/export check
+pass. Python exporters pass 38 tests with one Windows symlink-privilege skip.
+Go skips retain their documented optional-reference, live-account and snapshot
+requirements; they are not live gameplay acceptance evidence. Logs, binaries and
+the strict package-coverage audit are under ignored
+`var/validation/prepush-collection-20261104/`, including `final-summary.json`.
