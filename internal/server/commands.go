@@ -92,6 +92,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandPackContents:    {handler: withoutContext((*Server).packContentsCommand), policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandEquipmentRepair: {handler: (*Server).repairCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandBank:            {handler: (*Server).bankCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
+	protocol.CommandLegacyStorage:   {handler: (*Server).moneyBankCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandAlchemy:         {handler: (*Server).hotbarOrAlchemyCommand, beforeWorldGates: isNativeHotbarAssignment, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPetFeeding:      {handler: (*Server).petFeedingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPetTraining:     {handler: (*Server).petTrainingCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},

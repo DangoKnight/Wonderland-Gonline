@@ -30,6 +30,10 @@ type eventSession struct {
 }
 
 const clickResume = 1500 * time.Millisecond
+
+// ackResumeCooldown coalesces the client's acknowledge/resume loop: it answers
+// every resume with another acknowledgment, which would otherwise repeat forever.
+const ackResumeCooldown = 400 * time.Millisecond
 const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 
 // endEvent is Player.ClearInteraction.
@@ -43,7 +47,10 @@ func (s *Server) cancelInteraction(c *Session) error {
 	if posture {
 		s.sendOrClose(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode30, 0}.U32(c.character.ID).U8(0), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	}
-	return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
+	if err := s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) finishEvent(c *Session, es *eventSession) error {
@@ -92,16 +99,35 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // Acknowledgments before the wake-up animation are absorbed.
 		}
 		es := c.event
-		if es == nil {
-			return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
+		if es != nil {
+			if es.onChoice != nil || es.onMinigame != nil {
+				return nil // The question stays open until AC20:9.
+			}
+			if next := es.onComplete; next != nil {
+				es.onComplete = nil
+				es.transitions = 0
+				return next()
+			}
+			// Nothing else waits on this dialogue, so finish it: a stale event
+			// session blocks portals and other interactions.
+			s.endEvent(c)
 		}
-		if es.onChoice != nil || es.onMinigame != nil {
-			return nil // The question stays open until AC20:9.
+		// The client needs one resume to leave its dialogue state, but it answers
+		// every resume with another acknowledgment. Coalesce that loop so windows
+		// opened after the dialogue, such as the bank counter, stay visible.
+		if time.Since(c.ackResumeAt) < ackResumeCooldown {
+			return nil
 		}
-		if next := es.onComplete; next != nil {
-			es.onComplete = nil
-			es.transitions = 0
-			return next()
+		c.ackResumeAt = time.Now()
+		if err := s.sendAll(c, [][]byte{
+			{protocol.CommandMovement, protocol.MovementMovementLock, 0},
+			{protocol.CommandEvent, protocol.EventResume},
+		}); err != nil {
+			return err
+		}
+		if c.pendingBankOpen {
+			c.pendingBankOpen = false
+			return s.openMoneyBank(c)
 		}
 		return nil
 	case protocol.EventRegion:

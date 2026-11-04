@@ -642,10 +642,17 @@ Publish AC26:4 wallet refresh and native AC45 balances only after commit. Receip
 write failures cannot undo a durable transfer. Keep bank operations inside the
 shared world/trade gates and scripted interaction ownership. PIN and character
 transfer reference handlers contain no working behavior; retain explicit
-unavailable responses until verified semantics exist. Do not infer an ATM NPC
-service operand from unused numeric slots or route deposits through AC29's unsafe
-legacy item-storage code. Keep actual-client activation and packet acceptance
-separate from synthetic protocol verification.
+unavailable responses until verified semantics exist. Keep actual-client
+activation and packet acceptance separate from synthetic protocol verification.
+
+The bank counter (event service 6) opens with AC29:5 followed by AC29:4 carrying
+the account balance. The native form then sends AC29:2 to deposit and AC29:1 to
+withdraw, both with the amount as a U32, and keeps an in-flight flag that only a
+completion clears: AC29:8 after a deposit and AC29:7 after a withdrawal. Answer
+an accepted operation with AC26:4, AC29:4 and that completion; answer a rejected
+amount with AC29:3, the unchanged AC29:4 and the same completion so the form
+unlocks. Clinics use event service 7. The AC45 subcommands remain the balance
+and ATM query/receipt layout, but the counter's own currency path is AC29.
 
 ## Native mall checkout
 

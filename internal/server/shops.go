@@ -39,7 +39,13 @@ func (s *Server) openService(c *Session, action uint16) error {
 		return s.openNPCShop(c, action)
 	case world.ServicePropsKeeper, world.ServiceStockKeeper: // Props keeper and stock keeper both open item storage.
 		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
-	case world.ServiceClinic, world.ServiceClinicAlternate: // Clinic: offer a free rest when HP or SP is missing.
+	case world.ServiceBank: // Bank counter: the dialogue close would hide the form, so open it after the resume.
+		if c.event != nil {
+			c.pendingBankOpen = true
+			return nil
+		}
+		return s.openMoneyBank(c)
+	case world.ServiceClinic: // Clinic: offer a free rest when HP or SP is missing.
 		full := c.character.Combat(s.Assets.Items)
 		needs := int64(c.character.HP) < int64(full.MaxHP) || int64(c.character.SP) < int64(full.MaxSP)
 		for _, pet := range c.character.Pets {
@@ -574,9 +580,9 @@ func serviceKind(n world.NPC) byte {
 	case contains("props keep", "storage") || n.Template == 14134:
 		return 4
 	case contains("stock keep", "bank", "vault", "exchanger") || n.Template == 14181 || n.Template == 14157:
-		return 9
+		return world.ServiceBank
 	case contains("doctor", "witch", "clinic") || n.Template == 14151:
-		return 6
+		return world.ServiceClinic
 	case contains("pet hotel", "pet keep", "hotel") || n.Template == 14182 || n.Template == 14152:
 		return 5
 	case contains("props shop", "weapon shop", "armor shop") || n.Template == 13007 || n.Template == 13006 || n.Template == 13005:
@@ -595,7 +601,7 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 	if kind == 0 {
 		return false, nil
 	}
-	if kind == 4 || kind == 9 || kind == 5 {
+	if kind == world.ServicePropsKeeper || kind == world.ServiceStockKeeper || kind == world.ServiceBank || kind == world.ServicePetHotel {
 		return true, s.openService(c, uint16(kind))
 	}
 	es := &eventSession{mapID: c.character.Map, click: n.ClickID}
@@ -603,14 +609,14 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 	if err := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); err != nil {
 		return true, err
 	}
-	if kind == 6 {
+	if kind == world.ServiceClinic {
 		es.onChoice = func(choice byte) error {
 			if c.event != es || c.character.Map != es.mapID {
 				return nil
 			}
 			switch choice {
 			case 30, 1:
-				if err := s.openService(c, 6); err != nil {
+				if err := s.openService(c, world.ServiceClinic); err != nil {
 					return err
 				}
 			case 31, 2:
@@ -728,6 +734,59 @@ func (s *Server) bankCommand(ctx context.Context, c *Session, p []byte) error {
 		return err
 	}
 	return s.sendAll(c, [][]byte{protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold), serverwire.BankBalancePacket(&next, p[1])})
+}
+
+// openMoneyBank shows the native money window and publishes the account balance.
+func (s *Server) openMoneyBank(c *Session) error {
+	return s.sendAll(c, [][]byte{
+		{protocol.CommandLegacyStorage, protocol.MoneyBankOpen},
+		protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankBankBalance}.U32(c.character.BankGold),
+	})
+}
+
+// moneyBankCommand handles the bank counter's AC29 deposit and withdraw. The
+// client's bank form clears its in-flight flag only when the matching
+// completion arrives, so an accepted operation publishes the wallet, the
+// account balance and that completion together.
+func (s *Server) moneyBankCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 2 {
+		return protocol.ErrMalformed
+	}
+	if c.event != nil || c.storm || c.beach != nil {
+		return nil
+	}
+	if p[1] != protocol.MoneyBankWithdraw && p[1] != protocol.MoneyBankDeposit {
+		return nil
+	}
+	if len(p) != protocol.MoneyBankAmountRequestLen {
+		return protocol.ErrMalformed
+	}
+	amount := protocol.NewReader(p[2:]).U32()
+	next := c.character.Clone()
+	var changed bool
+	var done byte
+	if p[1] == protocol.MoneyBankDeposit {
+		changed, done = next.DepositGoldToBank(amount), protocol.MoneyBankDepositComplete
+	} else {
+		changed, done = next.WithdrawGoldFromBank(amount), protocol.MoneyBankWithdrawComplete
+	}
+	if !changed {
+		// The native form keeps its in-flight flag until a completion arrives, so
+		// reject with the native message and unlock the same way a success does.
+		return s.sendAll(c, [][]byte{
+			{protocol.CommandLegacyStorage, protocol.MoneyBankRejected},
+			protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankBankBalance}.U32(c.character.BankGold),
+			{protocol.CommandLegacyStorage, done},
+		})
+	}
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	return s.sendAll(c, [][]byte{
+		protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold),
+		protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankBankBalance}.U32(next.BankGold),
+		{protocol.CommandLegacyStorage, done},
+	})
 }
 
 // decodeHotel validates the entire AC31 selection before any mutation.

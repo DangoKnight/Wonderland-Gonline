@@ -38,6 +38,8 @@ type Session struct {
 	openTent              *openTent // Guarded by worldMu.
 	tentOwner             uint32    // Private scene identity; guarded by worldMu.
 	motdSent              bool      // One welcome popup per character login, guarded by worldMu.
+	pendingBankOpen       bool      // Bank counter waits for the dialogue close; guarded by worldMu.
+	ackResumeAt           time.Time // Last acknowledge/resume answer; guarded by worldMu.
 	adminFeedback         *[]string // Scoped to a web action under worldMu.
 	invisible             bool      // GM ghost mode; guarded by worldMu.
 	pendingName           string

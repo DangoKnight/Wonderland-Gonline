@@ -332,8 +332,8 @@ func TestFallbackServiceClassification(t *testing.T) {
 		n    world.NPC
 		want byte
 	}{
-		{world.NPC{Template: 14134}, 4}, {world.NPC{Name: "Stock Keeper"}, 9},
-		{world.NPC{Name: "Witch Doctor Hotel"}, 6}, {world.NPC{Name: "PET KEEPER"}, 5},
+		{world.NPC{Template: 14134}, 4}, {world.NPC{Name: "Stock Keeper"}, world.ServiceBank},
+		{world.NPC{Name: "Witch Doctor Hotel"}, world.ServiceClinic}, {world.NPC{Name: "PET KEEPER"}, 5},
 		{world.NPC{Template: 13006}, 1}, {world.NPC{Template: 13005}, 2},
 		{world.NPC{Name: "Villager"}, 0},
 	} {
@@ -482,6 +482,89 @@ func TestStorageTransfers(t *testing.T) {
 	}
 }
 
+func TestBankServiceOpensNativeAtmWindow(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	if err := s.openService(players[0], world.ServiceBank); err != nil {
+		t.Fatal(err)
+	}
+	// Without an event the counter opens immediately.
+	got := wires[0].packets(t)
+	if len(got) != 2 || !bytes.Equal(got[0], []byte{29, 5}) || !bytes.Equal(got[1], []byte{29, 4, 0, 0, 0, 0}) {
+		t.Fatal(got)
+	}
+}
+
+func TestBankOpensAfterDialogueClose(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	c.event = &eventSession{mapID: c.character.Map}
+	if err := s.openService(c, world.ServiceBank); err != nil {
+		t.Fatal(err)
+	}
+	if wires[0].Len() != 0 {
+		t.Fatal("bank opened before the dialogue closed")
+	}
+	if err := s.cancelInteraction(c); err != nil {
+		t.Fatal(err)
+	}
+	if got := wires[0].packets(t); len(got) != 2 || got[0][0] != 6 || got[1][0] != 20 {
+		t.Fatalf("dialogue close must not open the bank: %v", got)
+	}
+	// The acknowledgment releases movement, resumes the dialogue and opens the bank.
+	if err := s.eventCommand(context.Background(), c, []byte{protocol.CommandEvent, protocol.EventAcknowledge}); err != nil {
+		t.Fatal(err)
+	}
+	got := wires[0].packets(t)
+	if len(got) != 4 || got[0][0] != 6 || got[0][2] != 0 || got[1][0] != 20 ||
+		!bytes.Equal(got[2], []byte{29, 5}) || !bytes.Equal(got[3], []byte{29, 4, 0, 0, 0, 0}) {
+		t.Fatal(got)
+	}
+	if c.event != nil {
+		t.Fatal("dialogue session stayed open and would block portals")
+	}
+	// A repeated acknowledgment in the cooldown window is absorbed.
+	if err := s.eventCommand(context.Background(), c, []byte{protocol.CommandEvent, protocol.EventAcknowledge}); err != nil {
+		t.Fatal(err)
+	}
+	if got := wires[0].packets(t); len(got) != 0 {
+		t.Fatalf("acknowledgment loop not coalesced: %v", got)
+	}
+}
+
+func TestMoneyBankDepositAndWithdraw(t *testing.T) {
+	s, c, w := bankFixture(t)
+	before := c.character.Clone()
+	tradeDo(t, s, c, protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankDeposit}.U32(125))
+	got := w[0].packets(t)
+	if len(got) != 3 || got[0][0] != 26 || got[0][1] != 4 ||
+		!bytes.Equal(got[1], []byte{29, protocol.MoneyBankBankBalance, 225, 0, 0, 0}) ||
+		!bytes.Equal(got[2], []byte{29, protocol.MoneyBankDepositComplete}) {
+		t.Fatal(got)
+	}
+	if c.character.BankGold != before.BankGold+125 || c.character.Gold != before.Gold-125 {
+		t.Fatal(c.character.BankGold, c.character.Gold)
+	}
+	tradeDo(t, s, c, protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankWithdraw}.U32(50))
+	got = w[0].packets(t)
+	if len(got) != 3 || !bytes.Equal(got[1], []byte{29, protocol.MoneyBankBankBalance, 175, 0, 0, 0}) ||
+		!bytes.Equal(got[2], []byte{29, protocol.MoneyBankWithdrawComplete}) {
+		t.Fatal(got)
+	}
+	if c.character.BankGold != before.BankGold+75 || c.character.Gold != before.Gold-75 {
+		t.Fatal(c.character.BankGold, c.character.Gold)
+	}
+	// An impossible amount is rejected natively and still unlocks the form.
+	tradeDo(t, s, c, protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankWithdraw}.U32(1_000_000))
+	got = w[0].packets(t)
+	if len(got) != 3 || !bytes.Equal(got[0], []byte{29, protocol.MoneyBankRejected}) ||
+		!bytes.Equal(got[2], []byte{29, protocol.MoneyBankWithdrawComplete}) {
+		t.Fatal(got)
+	}
+	if c.character.BankGold != before.BankGold+75 {
+		t.Fatal(c.character.BankGold)
+	}
+}
+
 func TestClinicRest(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	ctx := context.Background()
@@ -490,14 +573,14 @@ func TestClinicRest(t *testing.T) {
 		t.Fatal(err)
 	}
 	wires[0].Reset()
-	if err := s.openService(c, 6); err != nil {
+	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
 	if got := wires[0].packets(t); !bytes.Equal(got[0], protocol.Builder{31, 2}.U32(0xffffffff)) {
 		t.Fatal("full HP still offered a rest", got)
 	}
 	c.character.HP = 10
-	if err := s.openService(c, 6); err != nil {
+	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
 	wires[0].Reset()

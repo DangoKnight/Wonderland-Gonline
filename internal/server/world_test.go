@@ -339,7 +339,7 @@ func TestClinicRestHealsAllAccompanyingPetsOnly(t *testing.T) {
 	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.openService(c, 6); err != nil {
+	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
 	if !contains(wires[0].packets(t), []byte{31, 2, 0, 0, 0, 0}) {
@@ -551,7 +551,7 @@ func TestClinicFailedSaveRetainsOfferAndPetState(t *testing.T) {
 	c.ready = true
 	c.character.HP = 1
 	c.character.Pets = []game.Pet{{ID: 17100, Level: 1, HP: 1, SP: 0, Base: game.Attributes{Constitution: 5, Wisdom: 5}}}
-	if err := s.openService(c, 6); err != nil {
+	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
 	before := c.character.Clone()
