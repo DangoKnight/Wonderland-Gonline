@@ -63,3 +63,32 @@ func TestNPCNameInitialization(t *testing.T) {
 		t.Fatal(c.NPCs, err)
 	}
 }
+
+func TestNPCNameOwnerReviewMigration(t *testing.T) {
+	path := runtimeDatabaseFixture(t)
+	if err := MigrateDatabase(path); err != nil {
+		t.Fatal(err)
+	}
+	db, err := assetdb.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer assetdb.Close(db)
+	for _, row := range []NPCsRow{{NPCsKey: 12072, ValueID: 12072, ValueName: "Old Dragon", ValueHP: 123}, {NPCsKey: 11013, ValueID: 11013, ValueName: "Custom cat"}, {NPCsKey: 14493, ValueID: 14493, ValueName: "Clay Soldi"}, {NPCsKey: 14223, ValueID: 14223, ValueName: "Weapon Imp"}} {
+		if err := db.Save(&row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Model(&catalogSchema{}).Where("id = ?", catalogMetadataID).Update("version", 27).Error; err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := MigrateDatabase(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows, err := readNPCs(db)
+	if err != nil || rows[12072].Name != "Old Man" || rows[12072].HP != 123 || rows[11013].Name != "Custom cat" || rows[14493].Name != "Terracotta Soldier" || rows[14223].Name != "Weapon Imp" {
+		t.Fatal("owner review migration changed identity, edits or tentative names", err)
+	}
+}

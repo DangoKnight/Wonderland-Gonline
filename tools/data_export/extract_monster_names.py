@@ -70,7 +70,7 @@ def display_name(name, strip_quest):
     return ' '.join(name.split())
 
 
-def match(monsters, database=None, npc_export=None, accept_single=False, strip_quest=False, choices=None, reviewed=None):
+def match(monsters, database=None, npc_export=None, accept_single=False, strip_quest=False, choices=None, reviewed=None, manual=None):
     if npc_export is not None:
         npcs = []
         for row in json.loads(npc_export.read_text(encoding='utf-8'))['records']:
@@ -90,6 +90,13 @@ def match(monsters, database=None, npc_export=None, accept_single=False, strip_q
     patches, review = [], []
     for npc in npcs:
         old = npc['value_name']
+        if manual and npc['value_id'] in manual:
+            decision = manual[npc['value_id']]
+            if old != decision['original_name']:
+                raise ValueError(f'owner review {npc["value_id"]}: native name changed')
+            if decision['name'] != old:
+                patches.append(dict(id=npc['value_id'], original_name=old, name=decision['name'], source_ids='owner-review', previous_name=''))
+            continue
         if reviewed and npc['value_id'] in reviewed:
             decision = reviewed[npc['value_id']]
             if old != decision['original_name']:
@@ -161,6 +168,7 @@ def main():
     parser.add_argument('--strip-quest', action='store_true', help='remove Quest annotations from display names, preserving raw reference names')
     parser.add_argument('--name-choices', type=Path, default=Path(__file__).parent/'reference'/'wlohub'/'name_choices.csv', help='authored ID-specific owner choices')
     parser.add_argument('--reviewed-names', type=Path, default=Path(__file__).parent/'reference'/'wlohub'/'enemy_name_resolutions.csv', help='ID-specific researched corrections with native/source identity checks')
+    parser.add_argument('--manual-reviews', type=Path, default=Path(__file__).resolve().parents[2]/'internal/assets/npc_name_reviews.csv', help='owner-reviewed names; only certain rows are applied')
     args = parser.parse_args()
     monsters, sources = extract(args.pages)
     with args.name_choices.open(encoding='utf-8', newline='') as stream:
@@ -170,7 +178,12 @@ def main():
     reviewed = {int(row['id']): row for row in rows}
     if len(reviewed) != len(rows) or choices.keys() & reviewed.keys():
         raise ValueError('duplicate reviewed/owner identity')
-    patches, review = match(monsters, args.assets_db, args.npc_export, args.accept_single_candidates, args.strip_quest, choices, reviewed)
+    with args.manual_reviews.open(encoding='utf-8', newline='') as stream:
+        manual_rows = list(csv.DictReader(stream))
+    if len({r['id'] for r in manual_rows}) != len(manual_rows) or any(r['certain'] not in ('true','false') for r in manual_rows):
+        raise ValueError('invalid owner review identities or certainty')
+    manual = {int(r['id']): r for r in manual_rows if r['certain'] == 'true'}
+    patches, review = match(monsters, args.assets_db, args.npc_export, args.accept_single_candidates, args.strip_quest, choices, reviewed, manual)
     # Keep raw names in memory for earlier-name migration aliases, but export
     # the same cleaned display names as the compiled patch.
     exported_monsters = [{**m, 'name': display_name(m['name'], args.strip_quest)} for m in monsters]
@@ -182,6 +195,7 @@ def main():
     manifest['strip_quest'] = args.strip_quest
     manifest['name_choices_sha256'] = hashlib.sha256(args.name_choices.read_bytes()).hexdigest()
     manifest['reviewed_names_sha256'] = hashlib.sha256(args.reviewed_names.read_bytes()).hexdigest()
+    manifest['manual_reviews_sha256'] = hashlib.sha256(args.manual_reviews.read_bytes()).hexdigest()
     if args.npc_export:
         manifest['npc_export_sha256'] = hashlib.sha256(args.npc_export.read_bytes()).hexdigest()
     (args.output_dir/'sources.json').write_bytes((json.dumps(manifest, ensure_ascii=False, indent=2)+'\n').encode())

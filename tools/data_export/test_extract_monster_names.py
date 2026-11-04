@@ -8,6 +8,19 @@ import extract_monster_names as names
 
 
 class MonsterNamesTest(unittest.TestCase):
+    def test_owner_review_can_shorten_names_and_preserve_confirmed_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory, 'npcs.json')
+            def native(id, name):
+                return dict(fields=dict(id=id,level=1,element=1,hp=1,sp=1,strength=1,constitution=1,intelligence=1,wisdom=1,agility=1),name=dict(text=name))
+            path.write_text(json.dumps(dict(records=[native(1,'Old Dragon'),native(2,'Bear')])),encoding='utf-8')
+            manual={1:dict(original_name='Old Dragon',name='Old Man'),2:dict(original_name='Bear',name='Bear')}
+            patches, review=names.match([],npc_export=path,manual=manual)
+            self.assertEqual(patches,[dict(id=1,original_name='Old Dragon',name='Old Man',source_ids='owner-review',previous_name='')])
+            self.assertFalse(review)
+            with self.assertRaisesRegex(ValueError,'native name changed'):
+                names.match([],npc_export=path,manual={1:dict(original_name='Changed',name='Old Man')})
+
     def test_reviewed_nonprefix_names_guard_native_and_source_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, 'npcs.json')

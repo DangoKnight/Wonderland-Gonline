@@ -36,6 +36,11 @@ func TestNPCFullMonsterNames(t *testing.T) {
 			t.Fatal(id, got, want)
 		}
 	}
+	for id, want := range map[uint32]string{11008: "Little Persian Cat", 12072: "Old Man", 12113: "Tutankhamun", 14493: "Terracotta Soldier", 14223: "Weapon Imp", 15357: "Gold Sculp"} {
+		if templates[id].Name != want {
+			t.Fatal("owner certainty or reviewed name lost", id, templates[id].Name, want)
+		}
+	}
 }
 
 type paintCount struct{ n *int }

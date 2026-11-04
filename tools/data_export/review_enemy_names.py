@@ -22,12 +22,13 @@ def read_csv(path):
         return list(csv.DictReader(stream))
 
 
-def review(native, reference, patches, resolutions):
+def review(native, reference, patches, resolutions, manual=None):
+    manual = manual or {}
     results = []
     for record in sorted(native, key=lambda r: r['fields']['id']):
         f, old = record['fields'], record['name']['text']
         identity = f['id']
-        if identity in patches and identity not in resolutions or not old:
+        if (identity in patches and identity not in resolutions and identity not in manual) or not old:
             continue
         candidates = [r for r in reference if r['name'].startswith(old) and len(r['name']) > len(old)]
         if not candidates and len(old.encode('utf-8')) != NATIVE_NPC_NAME_BYTES:
@@ -38,7 +39,13 @@ def review(native, reference, patches, resolutions):
         vital_names = sorted({r['name'] for r in exact if int(r['hp']) == f['hp'] and int(r['sp']) == f['sp']})
         extension = sorted({r['name'] for r in exact if r in candidates})
         resolution = resolutions.get(identity)
-        if resolution:
+        if identity in manual:
+            owner = manual[identity]
+            if owner['original_name'] != old:
+                raise ValueError(f'owner review {identity}: native name changed')
+            status, chosen = ('owner renamed' if owner['name'] != old else 'owner confirmed'), owner['name']
+            notes, sources = 'Owner visual review with certainty checked; not inferred from shared metadata.', 'owner-review'
+        elif resolution:
             status, chosen, notes = 'rename', resolution['name'], resolution['notes']
             sources = resolution['source_ids']
         elif full:
@@ -75,14 +82,19 @@ def main():
     p.add_argument('--reference', type=Path, default=REFERENCE / 'monsters.csv')
     p.add_argument('--resolutions', type=Path, default=REFERENCE / 'enemy_name_resolutions.csv')
     p.add_argument('--npc-patch', type=Path, default=Path(__file__).resolve().parents[2] / 'internal/assets/npc_names.csv')
+    p.add_argument('--manual-reviews', type=Path, default=Path(__file__).resolve().parents[2] / 'internal/assets/npc_name_reviews.csv')
     a = p.parse_args()
     native = json.loads(a.npc_export.read_text(encoding='utf-8'))['records']
+    manual_rows = read_csv(a.manual_reviews)
+    if len({r['id'] for r in manual_rows}) != len(manual_rows) or any(r['certain'] not in ('true','false') for r in manual_rows):
+        raise ValueError('invalid owner review identities or certainty')
+    manual = {int(r['id']): r for r in manual_rows if r['certain']=='true'}
     rows = review(native, read_csv(a.reference), {int(r['id']) for r in read_csv(a.npc_patch)},
-                  {int(r['id']): r for r in read_csv(a.resolutions)})
+                  {int(r['id']): r for r in read_csv(a.resolutions)}, manual)
     write_csv(a.output_dir / 'enemy_name_review.csv', rows, list(rows[0]))
     counts = dict(collections.Counter(r['decision'] for r in rows))
     manifest = dict(native_records=len(native), reviewed=len(rows), decisions=counts,
-                    input_sha256={k: hashlib.sha256(getattr(a, k).read_bytes()).hexdigest() for k in ('npc_export', 'reference', 'resolutions', 'npc_patch')})
+                    input_sha256={k: hashlib.sha256(getattr(a, k).read_bytes()).hexdigest() for k in ('npc_export', 'reference', 'resolutions', 'npc_patch', 'manual_reviews')})
     (a.output_dir / 'enemy_review_sources.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({k: v for k, v in manifest.items() if k != 'input_sha256'}))
 

@@ -23,6 +23,29 @@ The unresolved count does **not** mean 1,809 names are truncated. Many are valid
 short names, NPCs absent from the monster reference, or capacity-length names
 that may already be complete. They retain their existing display names.
 
+## Owner visual review and translation revision (assets v28)
+
+The partial visual review contains 277 entered names. The owner authorized applying
+only the 178 marked certain: **93 renames and 85 confirmed existing names**.
+The compiled restoration CSV now contains 991 changed names; the runtime patch
+also retains the 85 explicit unchanged confirmations. The other 99 entered
+proposals remain tentative and do not affect client or server names. All original
+IDs and names were checked against the native export and installed SQL catalog.
+
+`internal/assets/npc_name_reviews.csv` preserves all entered proposals and their
+certainty flags. `user_review_sources.json` records the original export checksum.
+The extraction/review tools consume this authored table reproducibly. Confirmed
+names may be shorter than the legacy name, while administrator overrides still
+win. This resolves 178 formerly unresolved entries, leaving **1,631** unresolved.
+The earlier 129-correction census below describes the preceding automated review.
+
+The v28 preserving migration updates only matching NPC name fields; missing rows,
+custom names, player-owned pet names, stats and other gameplay data remain intact.
+Focused native-patch, migration, client-loading and Python exporter tests pass.
+The review document/export script checks also cover complete-list export despite
+filters, CSV quoting/Unicode/newlines, certainty, local persistence and unavailable
+browser storage.
+
 ## Evidence and decisions
 
 The 129 authored resolutions break down as follows:
@@ -64,6 +87,31 @@ spellings, including Scopion and Scopian, remain verbatim in accepted full names
 this review does not invent separate spelling corrections.
 
 ## Reproduction and deployment
+
+A searchable, self-contained HTML document pairs every unresolved entity's ID,
+current name and candidate leads with its palette-correct sprite. It includes all
+1,809 unresolved records, with a filter for the 211 that have longer-name prefix
+candidates. Matching-stat names are separate evidence, never confirmed replacements.
+Generate it from the `client` directory:
+
+```powershell
+go run ./cmd/enemy-name-document -review ../tools/data_export/reference/wlohub/enemy_name_review.csv -data ../data -output ../var/reports/enemy-names.html
+```
+
+Open `var/reports/enemy-names.html` in a browser. Images are embedded, so the file
+can be copied and opened offline. Each row has a proposed-name field and a
+certainty checkbox; entering the existing name confirms it without renaming.
+Edits are saved in browser local storage when available. Export whole list saves
+`entity-name-corrections.csv` with every entity, including filtered-out rows,
+original IDs/names, proposed names, certainty and source evidence. Blank proposals
+remain undecided, and unchecked proposals remain tentative. The CSV is the
+portable backup to send for applying corrections; browser storage alone does not
+update the HTML file or another browser. The generator also saves a small PNG contact
+sheet for visual checks. The generated document and sprite pixels remain under
+ignored `var`, following the policy against committing reconstructable client
+assets. With the current extraction, 1,808 records render; entity 19165
+(`Crossdrirt`, sprite 1433) has no visible first frame in any native action and
+is explicitly marked unavailable.
 
 ```powershell
 python tools/data_export/extract_monster_names.py --pages var/reference-web/monsters --npc-export data/npc_data.json --accept-single-candidates --strip-quest --output-dir var/enemy-names
