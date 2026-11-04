@@ -3419,3 +3419,54 @@ quest/name selection passed with loose and compiled assets enabled (app: 32.792
 seconds). The ten quest research parser/extractor tests, affected-package vet,
 format checks and both executable builds pass. No push was requested; this is
 focused pre-commit validation, not a new full-server pre-push run.
+
+## Both-branch pre-push validation - 2026-11-04
+
+The translation branch `Client-rewrite` (`c6d15ad`) and quest branch
+`quest-development` (`0401b3c` plus the validation-only fix below) were validated
+independently. The Client checkout used its own upgraded v28 assets database;
+the quest checkout used the installed v38 database. Gameplay data was not reset.
+
+Server modules were tested with `-race -count=1 -timeout=60m`; client modules
+used the documented `-count=1 -timeout=60m` command, with GPU, loose-data and
+actual compiled-bundle client checks enabled. An optional full-client race run
+was stopped because its artwork tests thrashed under the memory limit; its
+partial log is retained and is not counted as completed coverage. Heavy package
+runs were serialized with `-p 1` after Windows memory-quota and full-system-drive
+errors interrupted the initial parallel validation. Complete package reruns
+replace interrupted or failed package results; the original logs are retained.
+The regenerable Go build cache was cleared and subsequent build caches and test
+temporary files were directed to the workspace drive.
+
+Final results cover every package in both branches' module inventories:
+
+| Branch / module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Client-rewrite / server | 2,074 | 12 | 28 | 8 |
+| Client-rewrite / client | 710 | 36 | 24 | 2 |
+| quest-development / server | 2,140 | 12 | 28 | 9 |
+| quest-development / client | 715 | 36 | 24 | 2 |
+
+There are no remaining test failures, race reports or missing packages. Original
+client reference paths were restored in the isolated checkout; the full UI
+package and the two affected native SQL/sprite comparison tests then passed.
+Remaining skips cover optional reference fixtures, snapshot outputs, live-account
+operations and Windows symlink privileges. The Python suites ran 38 Client and
+48 quest tests, each with one symlink-privilege skip.
+
+Validation found one test expectation issue: installed migrations append
+constellation metadata in a different order from fresh seeds. The migration
+comparison now canonicalizes only constellation metadata, preserving every
+executable rule's relative order and the independent repeated-migration check.
+No gameplay behavior changed for this correction.
+
+Additional checks cover both modules' vet and executable builds, tracked Go
+formatting, Prettier, HTMLHint, review-tool JavaScript syntax and export behavior,
+both branches' Python exporter suites, and ten-second protocol, EVE and native
+item fuzz runs. The asset compiler checked all 72,854 files (6,037.9 MiB source),
+all reused. Optional `golangci-lint` was unavailable.
+
+Logs and the package-inventory summary are retained under ignored
+`var/validation/prepush-branches-20261104/`. Automated checks do not establish
+live-account or manual quest acceptance; the remaining gameplay limitations in
+[quest research](QUEST_RESEARCH.md) still apply.

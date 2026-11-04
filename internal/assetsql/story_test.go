@@ -297,7 +297,25 @@ func TestStoryInstalledMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got.Story, want) {
+	// Later migrations append constellation metadata without moving existing
+	// policies. Fresh seeds include four of those definitions earlier. Membership
+	// is sent in numeric star order, so metadata order has no execution semantics;
+	// every other rule must retain its authored relative ordering.
+	canonical := func(rules []assets.StoryRule) []assets.StoryRule {
+		var ordered, constellations []assets.StoryRule
+		for _, rule := range rules {
+			if rule.Kind == assets.StoryConstellation {
+				constellations = append(constellations, rule)
+			} else {
+				ordered = append(ordered, rule)
+			}
+		}
+		slices.SortFunc(constellations, func(a, b assets.StoryRule) int { return strings.Compare(a.ID, b.ID) })
+		return append(ordered, constellations...)
+	}
+	actual := got.Story
+	actual.Rules, want.Rules = canonical(actual.Rules), canonical(want.Rules)
+	if !reflect.DeepEqual(actual, want) {
 		t.Fatal("installed story seed mismatch")
 	}
 	if err = MigrateDatabase(path); err != nil {
