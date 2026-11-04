@@ -89,6 +89,7 @@ const (
 	HandshakeCombatOffer       = 240
 	HandshakeCombatAccept      = 241
 	HandshakeCombatEnabled     = 242
+	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -341,6 +342,7 @@ const (
 	InventoryRemove           = 9
 	InventoryMove             = 10
 	InventoryEquip            = 11
+	InventoryVacuumCollection = 73 // Native one-byte actor ID; zero stops collection.
 	InventoryUnequip          = 12
 	InventoryCompoundSuccess  = 13
 	InventoryCompound         = 14 // Primary Alchemy.
@@ -761,6 +763,15 @@ const (
 	FishingCatch                  = 2
 	FishingStop                   = 3
 	NativeInactive                = 0
+)
+
+// AC66:2 is the server's native event-timer update. AC66 also has unrelated
+// reborn-job requests; timer updates are outbound and contain counted records.
+const (
+	CommandEventTimers    byte = 66
+	EventTimersUpdate     byte = 2
+	EventTimerHeaderBytes      = 3
+	EventTimerRecordBytes      = 10 // UInt16 timer ID followed by Float64 seconds.
 )
 
 // AC44's three-byte native request is form_NPCUpgrade. The legacy title adapter

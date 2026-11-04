@@ -3,11 +3,20 @@
 package wire
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math"
+	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
+
+// EventTimerUpdate is the captured AC66:2 remaining-time notification.
+func EventTimerUpdate(timer uint16, remaining time.Duration) []byte {
+	p := protocol.Builder{protocol.CommandEventTimers, protocol.EventTimersUpdate, 1}.U16(timer)
+	return binary.LittleEndian.AppendUint64(p, math.Float64bits(max(0, remaining.Seconds())))
+}
 
 // EventFrame is BuildEventFrame, the native AC20:1 layout: type, subject, actor, mode,
 // value, text or question, branch.

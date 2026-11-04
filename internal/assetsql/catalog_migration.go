@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 28
+const catalogSchemaVersion = 30
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -43,6 +43,12 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 30 {
+			if err := migrateResourceRespawns(tx); err != nil {
+				return err
+			}
 		}
 
 		// Add dimensions before older upgrades read the expanded typed item row.
@@ -445,6 +451,11 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 29 {
+			if err := migrateCollectionUsage(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -550,6 +561,7 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err = seedNewChestDefaults(c); err != nil {
 		return err
 	}
+	initializeCollectionUsage(c)
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
 		if err := tx.Migrator().CreateTable(model); err != nil {
 			return err
@@ -591,6 +603,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps); err != nil {
 		return nil, err
 	}
 	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {

@@ -173,6 +173,7 @@ type Catalog struct {
 	PetInitialStats       map[uint32]game.PetInitialStats
 	PetFoods              map[uint16]PetFood
 	CollectionSpots       map[uint16]CollectionSpot
+	ResourceRespawns      []ResourceRespawn
 	Talks                 Talks
 	Maps                  map[uint16]Map
 	Mall                  []MallItem

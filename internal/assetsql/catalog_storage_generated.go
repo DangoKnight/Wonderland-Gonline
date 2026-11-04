@@ -9074,6 +9074,53 @@ func readCollectionSpotsRewards(tx *gorm.DB, CollectionSpotsKey uint16) ([]asset
 	return result, nil
 }
 
+type ResourceRespawnsRow struct {
+	ResourceRespawnsOrdinal int `gorm:"column:resource_respawns_ordinal;primaryKey;autoIncrement:false"`
+	ValueKind               game.ResourceKind
+	ValueMapID              uint16
+	ValueNodeID             uint16
+	ValueCooldownSeconds    uint32
+}
+
+func (ResourceRespawnsRow) TableName() string { return "catalog_resource_respawns" }
+func writeResourceRespawns(tx *gorm.DB, values []assets.ResourceRespawn) error {
+	var rows []ResourceRespawnsRow
+	for key, value := range values {
+		row := ResourceRespawnsRow{ResourceRespawnsOrdinal: key}
+		row.ValueKind = value.Kind
+		row.ValueMapID = value.MapID
+		row.ValueNodeID = value.NodeID
+		row.ValueCooldownSeconds = value.CooldownSeconds
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readResourceRespawns(tx *gorm.DB) ([]assets.ResourceRespawn, error) {
+	result := make([]assets.ResourceRespawn, 0)
+	var rows []ResourceRespawnsRow
+	query := tx
+	if err := query.Order("resource_respawns_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.ResourceRespawn
+		value.Kind = row.ValueKind
+		value.MapID = row.ValueMapID
+		value.NodeID = row.ValueNodeID
+		value.CooldownSeconds = row.ValueCooldownSeconds
+		if row.ResourceRespawnsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type TalksRow struct {
 	TalksKey             int `gorm:"column:talks_key;primaryKey;autoIncrement:false"`
 	ValueByIDPresent     bool
@@ -11365,6 +11412,7 @@ type catalogPresence struct {
 	PetInitialStats       bool
 	PetFoods              bool
 	CollectionSpots       bool
+	ResourceRespawns      bool
 	Maps                  bool
 	Mall                  bool
 	Marks                 bool
@@ -11518,6 +11566,7 @@ func catalogTables() []any {
 		&CollectionSpotsRow{},
 		&CollectionSpotsMapCandidatesRow{},
 		&CollectionSpotsRewardsRow{},
+		&ResourceRespawnsRow{},
 		&TalksRow{},
 		&TalksByIDRow{},
 		&TalksByIndexRow{},
@@ -11671,6 +11720,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&TalksRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&ResourceRespawnsRow{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&CollectionSpotsRewardsRow{}).Error; err != nil {
@@ -12114,6 +12166,7 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.PetInitialStats = c.PetInitialStats != nil
 	presence.PetFoods = c.PetFoods != nil
 	presence.CollectionSpots = c.CollectionSpots != nil
+	presence.ResourceRespawns = c.ResourceRespawns != nil
 	presence.Maps = c.Maps != nil
 	presence.Mall = c.Mall != nil
 	presence.Marks = c.Marks != nil
@@ -12228,6 +12281,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := writeCollectionSpots(tx, c.CollectionSpots); err != nil {
+		return err
+	}
+	if err := writeResourceRespawns(tx, c.ResourceRespawns); err != nil {
 		return err
 	}
 	if err := writeTalks(tx, c.Talks); err != nil {
@@ -12410,6 +12466,10 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.ResourceRespawns, err = readResourceRespawns(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Talks, err = readTalks(tx)
 	if err != nil {
 		return nil, err
@@ -12543,6 +12603,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	if !presence.CollectionSpots {
 		c.CollectionSpots = nil
+	}
+	if !presence.ResourceRespawns {
+		c.ResourceRespawns = nil
 	}
 	if !presence.Maps {
 		c.Maps = nil

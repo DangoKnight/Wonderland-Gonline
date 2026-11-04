@@ -357,7 +357,7 @@ func (s *Server) fishingCatchAnimation(c *Session, item uint16) [][]byte {
 
 // Caller holds worldMu. The whole water branch is intercepted before the ordinary
 // event loop so a failed timer claim cannot leave a reward or quest mark behind.
-func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, now time.Time) (bool, error) {
+func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, now time.Time, nodes ...store.ResourceKey) (bool, error) {
 	plan, involved := s.World.PlanEventGathering(c.character.Map, ev, branch)
 	if !involved {
 		return false, nil
@@ -388,8 +388,11 @@ func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16
 		}
 		rewards[id]++
 	}
-	next, adds, err := s.Store.GatherResources(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, plan.Timer, rewards, now, func(stored *game.Character) bool {
-		return stored.Map == es.mapID && s.World.FindBranchAt(stored, c.view, es.mapID, ev, world.TriggerEntry, 0, 0, -1, now) == branch
+	node := s.collectionNode(es.mapID, click, ev, nodes)
+	cooldown := s.Assets.ResourceCooldown(node.Kind, node.MapID, node.NodeID, plan.Cooldown)
+	timers := s.collectionTimers(es.mapID, ev)
+	next, adds, err := s.Store.GatherResources(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, node, plan.Timer, cooldown, rewards, now, func(stored *game.Character) bool {
+		return stored.Map == es.mapID && s.World.FindBranchAt(collectionCharacter(stored, timers, time.Time{}), c.view, es.mapID, ev, world.TriggerEntry, 0, 0, -1, now) == branch
 	}, s.Assets.Items, c.character.Clone())
 	if errors.Is(err, store.ErrGatheringUnavailable) || errors.Is(err, game.ErrInventoryFull) {
 		return reject()
@@ -398,10 +401,21 @@ func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16
 		return true, errors.Join(err, s.cancelInteraction(c))
 	}
 	s.adoptSavedCharacter(c, next)
-	packets := [][]byte{next.Bag.AdditionPacket(adds)}
+	// Use the native slotless receipt so both clients present the acquisition.
+	// Keep the committed addition order, metadata and split-stack quantities.
+	var packets [][]byte
+	for _, add := range adds {
+		item := next.Bag[add.Slot-1]
+		item.Count = add.Count
+		packets = append(packets, game.AcquisitionPacket(item))
+	}
+	packets = append(packets, serverwire.EventTimerUpdate(plan.Timer, cooldown))
 	packets = append(packets, s.World.QuestUpdate(c.view, uint32(plan.Timer), next.Quests[uint32(plan.Timer)])...)
+	packets = append(packets, []byte{protocol.CommandEvent, protocol.EventStepComplete})
+	// Acknowledgement ends presentation, never commits or grants the reward again.
+	es.onComplete = func() error { return s.finishEvent(c, es) }
 	if err := s.sendAll(c, packets); err != nil {
 		return true, err
 	}
-	return true, s.finishEvent(c, es)
+	return true, nil
 }

@@ -3366,3 +3366,68 @@ Optional `golangci-lint` was not installed. Initial logs
 retain the resolved failures; final package results and complete-package reruns
 are recorded separately under ignored `var/validation/prepush-20261104/`, with
 `final-summary.json` checking results against both module package inventories.
+
+## Native manual collection validation - 2026-11-04
+
+Collection research and implementation are on `Client-rewrite`. Focused race
+checks pass for server event gathering, SQL claims, world branch planning,
+native timer packets and the assets v29 content migration. The installed North
+Island 60000/33 test uses the real EVE event: click, committed pool reward,
+180-second timer, step-complete acknowledgement, replay protection, cooldown
+dialogue and full-inventory rejection. Existing gathering restart, concurrent
+claim, rollback and failed-delivery checks pass.
+
+The migration upgrades an isolated Client v28 catalog and removes exactly 25
+resolved generated disables, with no added disables or changes to retained
+reasons. Tests retain operator reasons, mixed diagnostics, missing entries,
+incomplete pools and later operator disables across repeated initialization.
+The local quest-development v38 catalog and gameplay data are untouched.
+
+Focused client race tests pass for clicking the actual North Island grass
+sprite, the literal captured acquisition/timer/completion exchange, no actor
+flight, movement release, malformed atomic timer updates, ordinary NPC dialogue
+and completion acknowledgement. Affected-package vet and server, migration-tool
+and client executable builds pass. Logs and validation binaries are under
+ignored `var/validation/collection-usage/`. This is focused development
+validation, not a full pre-push battery or a new live vacuum test.
+
+## Shared resource cooldown validation - 2026-11-04
+
+Focused race tests pass across assets, asset SQL, store, world and server for
+global collection claims and independent per-source durations. Concurrent claims
+from different accounts and separate database connections produce one winner.
+Tests cover separate actors sharing a legacy timer, ground-item namespaces,
+exact expiry boundaries, full-inventory rollback and database reopen recovery.
+Server integration checks cover neighboring collection and ground sources with
+different configured cooldowns and restoring ground availability on map entry.
+World regression checks preserve pending respawn broadcasts when another player
+arrives after expiry but before the world ticker runs.
+
+Assets v29-to-v30 migration checks preserve authored overrides and intentionally
+empty definitions across repeated upgrades. An isolated installed catalog upgrade
+passes real North Island collection, water gathering, world entry, visibility,
+area entry and ground-pickup integration tests with the race detector. Existing
+quest-development v38 assets and live gameplay databases remain untouched.
+Focused client collection timer/acquisition race tests, affected-package vet and
+server, migration-tool and client executable builds pass. Logs and
+disposable outputs are under ignored `var/validation/shared-resources/`.
+
+## Vacuum client scheduling validation - 2026-11-04
+
+Focused client race tests pass for native start/stop/click bytes, deadline
+boundaries, single in-flight retries, changed respawn durations, failed attempts,
+starting on exhausted spots, movement, equipment removal, map/battle cancellation
+and connection isolation. A 30-second timer gives Gonline a 40-second wait; a
+240-second timer gives 250 seconds. Other servers keep the fixed 190-second
+Legacy interval. The matching executable confirms the decompiled scheduler's
+190,000-millisecond threshold and its exact eight resource-template references.
+
+The initial client run exposed an incorrect NPC-kind assumption; the corrected
+template-list implementation passes all vacuum tests with the race detector.
+Existing captured manual collection, malformed timer and combat negotiation/reset
+regressions also pass. Server/protocol race tests verify the literal collection
+capability bytes and availability with combat chains disabled while preserving
+combat opt-in. Affected-package vet and client/server executable builds pass.
+Ignored `var/validation/shared-resources/vacuum-*.log` retains the test history;
+validated binaries are `client-vacuum.exe` and `wonderland-vacuum.exe` there.
+No full pre-push battery or real-server vacuum validation was run for this change.

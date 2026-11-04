@@ -82,6 +82,7 @@ func (c *Client) initInventory() {
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	c.vacuum = vacuumRuntime{}
 	if c.battleResults.owner != p.ID {
 		c.resetBattleResults()
 	}
@@ -166,6 +167,9 @@ func (c *Client) inventoryPacket(p []byte) {
 			c.recordBattleResultItems(bagBefore)
 		}
 		if p[1] == protocol.InventoryAcquire {
+			if c.vacuum.actor != 0 && c.vacuum.waiting {
+				c.vacuum.reward = true
+			}
 			c.presentItemAcquisition(p)
 		}
 		if p[1] == protocol.InventoryCompoundResult {
@@ -189,6 +193,9 @@ func (c *Client) inventoryPacket(p []byte) {
 			}
 		}
 		if before != c.InventoryState.Equipment {
+			if !c.vacuumEquipped() {
+				c.stopVacuum()
+			}
 			c.refreshEquipment()
 		}
 		return

@@ -94,6 +94,8 @@ func (c *Client) disconnected() {
 	c.minigameResultAckPending = false
 	c.resetBattleResults()
 	c.combat = combatRuntime{}
+	c.vacuum = vacuumRuntime{}
+	c.gonlineCollectionTiming = false
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Reset()
 	}

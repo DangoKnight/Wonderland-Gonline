@@ -64,6 +64,14 @@ restarts retain cooldowns. Per-character scripted chests retain their existing
 separate quest/cooldown behavior. Adjust reward pools and respawn seconds through
 the existing ChestPools administration dataset.
 
+Native ground items and scripted collection nodes use shared durable expiries in
+`wonderland.db.resource_cooldowns`. Each map/source has an independent timer and
+can have a different cooldown duration through the typed `ResourceRespawns`
+asset definition. Ground-item availability is restored before publishing map
+entry; the world ticker broadcasts respawns to current viewers. Claims commit
+inventory rewards and expiry together. Player-dropped items do not respawn.
+See [collection cooldowns](COLLECTION_SPOTS.md#shared-cooldowns-and-individual-durations).
+
 ## Scene constraints
 
 `Catalog.Terrains` contains scene dimensions and raw collision grids from WLRI

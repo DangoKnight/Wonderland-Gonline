@@ -151,10 +151,27 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 	if !known || e != nil {
 		return c.send(serverwire.HeadBanner("Your inventory is full."))
 	}
-	if e = s.saveBag(ctx, c, bag); e != nil {
+	now := time.Now()
+	if cooldown := target.RespawnDelay(); cooldown > 0 {
+		cooldown = s.Assets.ResourceCooldown(store.ResourceGroundItem, char.Map, uint16(target.Slot), cooldown)
+		grant := target.Item
+		grant.Count = 1
+		next, err := s.Store.ClaimGroundItem(ctx, store.CharacterRef{Account: c.account.ID, ID: char.ID}, store.ResourceKey{Kind: store.ResourceGroundItem, MapID: char.Map, NodeID: uint16(target.Slot)}, grant, limit, now, cooldown, s.Assets.Items, char.Clone())
+		if errors.Is(err, store.ErrResourceUnavailable) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		s.adoptSavedCharacter(c, next)
+	} else if e = s.saveBag(ctx, c, bag); e != nil {
 		return e
 	}
-	s.World.Take(char.Map, target, time.Now())
+	s.World.Take(char.Map, target, now)
+	if target.RespawnDelay() > 0 {
+		expiry := now.Add(s.Assets.ResourceCooldown(store.ResourceGroundItem, char.Map, uint16(target.Slot), target.RespawnDelay()))
+		s.World.RestoreGroundCooldowns(char.Map, map[uint16]time.Time{uint16(target.Slot): expiry})
+	}
 	if e = c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(1)); e != nil {
 		return e
 	}
