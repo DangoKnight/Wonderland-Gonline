@@ -41,7 +41,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
 	case world.ServiceBank: // Bank counter: the dialogue close would hide the form, so open it after the resume.
 		if c.event != nil {
-			c.pendingBankOpen = true
+			c.event.bankOwner = c.character.ID
 			return nil
 		}
 		return s.openMoneyBank(c)
@@ -718,22 +718,33 @@ func (s *Server) bankCommand(ctx context.Context, c *Session, p []byte) error {
 		return c.send(serverwire.BankBalancePacket(c.character, protocol.BankBalance))
 	}
 	amount := protocol.NewReader(p[2:]).U32()
-	next := c.character.Clone()
-	changed := false
-	if p[1] == protocol.BankDeposit {
-		changed = next.DepositGoldToBank(amount)
-	} else {
-		changed = next.WithdrawGoldFromBank(amount)
+	changed, err := s.transferBankGold(ctx, c, amount, p[1] == protocol.BankDeposit)
+	if err != nil {
+		return err
 	}
 	if !changed {
 		return s.sendAll(c, [][]byte{serverwire.HeadBanner("The requested bank transaction is unavailable."), serverwire.BankBalancePacket(c.character, protocol.BankBalance)})
 	}
-	// The existing character transaction saves both balances together. Publish
-	// an authoritative wallet balance instead of the reference's pre-save debit.
-	if err := s.commit(ctx, c, next); err != nil {
-		return err
+	return s.sendAll(c, [][]byte{protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(c.character.Gold), serverwire.BankBalancePacket(c.character, p[1])})
+}
+
+// Both native counter and ATM paths use the same authoritative SQL transfer.
+// Only the two committed currency fields enter the session/baseline; pending
+// walking, resting and inventory state cannot be checkpointed by a bank request.
+func (s *Server) transferBankGold(ctx context.Context, c *Session, amount uint32, deposit bool) (bool, error) {
+	balances, changed, err := s.Store.TransferBankGold(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, amount, deposit)
+	if err != nil {
+		return false, err
 	}
-	return s.sendAll(c, [][]byte{protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold), serverwire.BankBalancePacket(&next, p[1])})
+	oldGold := c.character.Gold
+	c.character.Gold, c.character.BankGold = balances.Gold, balances.BankGold
+	if c.autosaveBaseline != nil {
+		c.autosaveBaseline.Gold, c.autosaveBaseline.BankGold = balances.Gold, balances.BankGold
+	}
+	if oldGold != balances.Gold {
+		s.closeStall(c)
+	}
+	return changed, nil
 }
 
 // openMoneyBank shows the native money window and publishes the account balance.
@@ -762,13 +773,15 @@ func (s *Server) moneyBankCommand(ctx context.Context, c *Session, p []byte) err
 		return protocol.ErrMalformed
 	}
 	amount := protocol.NewReader(p[2:]).U32()
-	next := c.character.Clone()
-	var changed bool
+	changed, err := s.transferBankGold(ctx, c, amount, p[1] == protocol.MoneyBankDeposit)
+	if err != nil {
+		return err
+	}
 	var done byte
 	if p[1] == protocol.MoneyBankDeposit {
-		changed, done = next.DepositGoldToBank(amount), protocol.MoneyBankDepositComplete
+		done = protocol.MoneyBankDepositComplete
 	} else {
-		changed, done = next.WithdrawGoldFromBank(amount), protocol.MoneyBankWithdrawComplete
+		done = protocol.MoneyBankWithdrawComplete
 	}
 	if !changed {
 		// The native form keeps its in-flight flag until a completion arrives, so
@@ -779,12 +792,9 @@ func (s *Server) moneyBankCommand(ctx context.Context, c *Session, p []byte) err
 			{protocol.CommandLegacyStorage, done},
 		})
 	}
-	if err := s.commit(ctx, c, next); err != nil {
-		return err
-	}
 	return s.sendAll(c, [][]byte{
-		protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold),
-		protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankBankBalance}.U32(next.BankGold),
+		protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(c.character.Gold),
+		protocol.Builder{protocol.CommandLegacyStorage, protocol.MoneyBankBankBalance}.U32(c.character.BankGold),
 		{protocol.CommandLegacyStorage, done},
 	})
 }

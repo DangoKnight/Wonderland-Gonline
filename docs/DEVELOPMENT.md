@@ -631,12 +631,16 @@ acceptance separate from source and synthetic-packet verification.
 
 ## Bank currency
 
-Keep bank and carried gold separate in `game.Character`. Use
+Keep bank and carried gold separate in `game.Character`. Follow
 `DepositGoldToBank` and `WithdrawGoldFromBank` for currency movement: reject zero,
 insufficient funds, native uint32 bank overflow and transfers exceeding `MaxGold`.
 Reject before changing either balance so their combined total stays constant.
-The existing character transaction persists both balances; do not introduce a
-second bank table or a separate save. Older JSON states default to zero bank gold.
+Both counter and ATM transfers use `Store.TransferBankGold`: one conditional SQL
+update rechecks character ownership, durable funds and both caps, then reads back
+both balances in the same transaction. Update only those two state columns; do
+not checkpoint pending walking, recovery, pets or inventory. Refresh only those
+session/baseline currency fields after commit. Do not introduce a second bank
+table or a separate save. Older JSON states default to zero bank gold.
 
 Publish AC26:4 wallet refresh and native AC45 balances only after commit. Receipt
 write failures cannot undo a durable transfer. Keep bank operations inside the
@@ -653,6 +657,13 @@ an accepted operation with AC26:4, AC29:4 and that completion; answer a rejected
 amount with AC29:3, the unchanged AC29:4 and the same completion so the form
 unlocks. Clinics use event service 7. The AC45 subcommands remain the balance
 and ATM query/receipt layout, but the counter's own currency path is AC29.
+
+Queue a scripted bank opening on its owning event, with the character identity.
+`finishEvent` sends the movement release/resume before opening the bank; it must
+work without an extra acknowledgement of that resume. Cancellation, replacement,
+map changes and character handoff discard the old intent. With no active event,
+ignore trailing AC20:6 acknowledgements at any latency. Never answer an idle ACK
+with another resume or use a wall-clock debounce to hide that protocol loop.
 
 ## Native mall checkout
 

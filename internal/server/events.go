@@ -27,17 +27,21 @@ type eventSession struct {
 	onComplete       func() error
 	onChoice         func(byte) error
 	onMinigame       func(byte) error
+	bankOwner        uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
 
-// ackResumeCooldown coalesces the client's acknowledge/resume loop: it answers
-// every resume with another acknowledgment, which would otherwise repeat forever.
-const ackResumeCooldown = 400 * time.Millisecond
 const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 
 // endEvent is Player.ClearInteraction.
-func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
+func (s *Server) endEvent(c *Session) {
+	if c.event != nil {
+		c.event.bankOwner = 0
+	}
+	c.event = nil
+	c.arcade = nil
+}
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
@@ -47,23 +51,32 @@ func (s *Server) cancelInteraction(c *Session) error {
 	if posture {
 		s.sendOrClose(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode30, 0}.U32(c.character.ID).U8(0), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
 	}
-	if err := s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}}); err != nil {
-		return err
-	}
-	return nil
+	return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
 }
 
 func (s *Server) finishEvent(c *Session, es *eventSession) error {
-	if c.event != es {
+	if es == nil || c.event != es {
 		return nil
 	}
+	if c.character == nil {
+		s.endEvent(c)
+		return nil
+	}
+	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
+	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
 	if err := s.sendAll(c, s.World.Sync(c.character, c.view, false)); err != nil {
 		return err
 	}
-	return s.syncMapProps(context.Background(), c, time.Now())
+	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
+	if openBank {
+		return s.openMoneyBank(c)
+	}
+	return nil
 }
 
 func (s *Server) rejectDisabled(c *Session) error {
@@ -108,27 +121,11 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 				es.transitions = 0
 				return next()
 			}
-			// Nothing else waits on this dialogue, so finish it: a stale event
-			// session blocks portals and other interactions.
-			s.endEvent(c)
+			return s.finishEvent(c, es)
 		}
-		// The client needs one resume to leave its dialogue state, but it answers
-		// every resume with another acknowledgment. Coalesce that loop so windows
-		// opened after the dialogue, such as the bank counter, stay visible.
-		if time.Since(c.ackResumeAt) < ackResumeCooldown {
-			return nil
-		}
-		c.ackResumeAt = time.Now()
-		if err := s.sendAll(c, [][]byte{
-			{protocol.CommandMovement, protocol.MovementMovementLock, 0},
-			{protocol.CommandEvent, protocol.EventResume},
-		}); err != nil {
-			return err
-		}
-		if c.pendingBankOpen {
-			c.pendingBankOpen = false
-			return s.openMoneyBank(c)
-		}
+		// finishEvent already released this interaction. Ignore its trailing
+		// ACK at any latency: answering it with a resume creates an echo loop
+		// and can hide a service window opened after the dialogue.
 		return nil
 	case protocol.EventRegion:
 		return s.regionRequest(ctx, c, p[2:])

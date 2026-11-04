@@ -504,16 +504,11 @@ func TestBankOpensAfterDialogueClose(t *testing.T) {
 	if wires[0].Len() != 0 {
 		t.Fatal("bank opened before the dialogue closed")
 	}
-	if err := s.cancelInteraction(c); err != nil {
+	if err := s.finishEvent(c, c.event); err != nil {
 		t.Fatal(err)
 	}
-	if got := wires[0].packets(t); len(got) != 2 || got[0][0] != 6 || got[1][0] != 20 {
-		t.Fatalf("dialogue close must not open the bank: %v", got)
-	}
-	// The acknowledgment releases movement, resumes the dialogue and opens the bank.
-	if err := s.eventCommand(context.Background(), c, []byte{protocol.CommandEvent, protocol.EventAcknowledge}); err != nil {
-		t.Fatal(err)
-	}
+	// Finish releases movement, resumes the dialogue, then opens the bank.
+	// It must also work for clients that do not ACK a resume packet.
 	got := wires[0].packets(t)
 	if len(got) != 4 || got[0][0] != 6 || got[0][2] != 0 || got[1][0] != 20 ||
 		!bytes.Equal(got[2], []byte{29, 5}) || !bytes.Equal(got[3], []byte{29, 4, 0, 0, 0, 0}) {
@@ -522,7 +517,7 @@ func TestBankOpensAfterDialogueClose(t *testing.T) {
 	if c.event != nil {
 		t.Fatal("dialogue session stayed open and would block portals")
 	}
-	// A repeated acknowledgment in the cooldown window is absorbed.
+	// A trailing acknowledgement is ignored without a wall-clock deadline.
 	if err := s.eventCommand(context.Background(), c, []byte{protocol.CommandEvent, protocol.EventAcknowledge}); err != nil {
 		t.Fatal(err)
 	}
