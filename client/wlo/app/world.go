@@ -85,6 +85,7 @@ func (c *Client) warp(p []byte) {
 	c.placedVehicles = nil
 	c.vehicleEffects = vehicleEffectState{}
 	pl := c.World.Player
+	mapChanged := binary.LittleEndian.Uint16(p[4:]) != pl.Map
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
 	if pl.Map != c.World.Player.Map {
@@ -111,6 +112,9 @@ func (c *Client) warp(p []byte) {
 		c.MainStatus.Portrait = w.Body
 	} else {
 		c.World.Player = pl
+	}
+	if mapChanged {
+		c.queueAreaTitle()
 	}
 	c.Net.Send([]byte{protocol.CommandMapAcknowledgment, protocol.MapAcknowledgmentMapLoaded})
 }

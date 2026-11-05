@@ -238,7 +238,9 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 				if !own {
 					return true, false
 				}
-				next = State{Self: s.Self, Side: next.Side, Active: true, Background: binary.LittleEndian.Uint16(p[2:]), Turn: s.Turn + 1}
+				// FUN_0038e4f4 passes only the first header byte to the scene
+				// selector. The following byte is independent formation metadata.
+				next = State{Self: s.Self, Side: next.Side, Active: true, Background: uint16(p[2]), Turn: s.Turn + 1}
 			} else if !s.Active {
 				return true, false
 			}

@@ -90,6 +90,13 @@ const (
 	HandshakeCombatAccept      = 241
 	HandshakeCombatEnabled     = 242
 	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
+	HandshakeBackdropOffer     = 244
+	HandshakeBackdropAccept    = 245
+	HandshakeBackdropEnabled   = 246
+	HandshakeBackdropLocation  = 247
+	HandshakeConnectionOffer   = 248
+	HandshakeConnectionAccept  = 249
+	HandshakeConnectionEnabled = 250
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -300,6 +307,15 @@ const (
 	EventBattleBegin  = 12
 	// Unresolved wire meaning; retain the numeric code until verified.
 	EventWireCode33 = 33
+)
+
+// Native NPC speech modes: EVE dword2 selects whether dialogue turns the actor.
+const (
+	// Older hand-authored/synthetic events omit the operand; retain their
+	// existing turn-to-player behavior. Native NPC speech uses modes 1 or 2.
+	EventTalkCompatibilityDefault = 0
+	EventTalkTurnToPlayer         = 1
+	EventTalkPreserveFacing       = 2
 )
 
 // Native movie modes: a map load releases mode 2's rendering hold.

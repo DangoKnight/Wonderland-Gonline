@@ -71,6 +71,27 @@ func SceneNames(a login.Assets) (map[uint16]string, error) {
 	return out, nil
 }
 
+// SceneTitleGroups is FUN_003075f0's title identity at SceneData runtime +100
+// (disk offset 94). Equal groups suppress repeated area titles across maps.
+func SceneTitleGroups(a login.Assets) (map[uint16]uint16, error) {
+	var doc struct {
+		Records []struct {
+			Fields struct {
+				ID    uint16 `json:"id"`
+				Title uint16 `json:"unknown_u16_offset_94"`
+			} `json:"fields"`
+		} `json:"records"`
+	}
+	if err := readJSON(a.DataPath(sceneExport), &doc); err != nil {
+		return nil, err
+	}
+	out := make(map[uint16]uint16, len(doc.Records))
+	for _, r := range doc.Records {
+		out[r.Fields.ID] = r.Fields.Title
+	}
+	return out, nil
+}
+
 // SceneMusic maps scene IDs to their background track (the record's
 // second name at +0x1f, "BGM0007" for Ship Deck), played as
 // Sound\<track>.wav (0x3bce95).

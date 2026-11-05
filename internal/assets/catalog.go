@@ -152,6 +152,7 @@ type Catalog struct {
 	RebornClasses       []RebornClass
 	Fishing             FishingRules
 	Terrains            map[uint16]Terrain
+	BattleBackdrops     map[uint16]BattleBackdrop
 
 	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`
@@ -307,6 +308,13 @@ func Load(dir, itemCatalog string) (*Catalog, error) {
 		v, e := ParseEVE(b)
 		if e == nil {
 			c.Maps = v
+		}
+		return e
+	})
+	load("Ground.MMG", func(b []byte) error {
+		v, e := ParseBattleBackdrops(b)
+		if e == nil {
+			c.BattleBackdrops = v
 		}
 		return e
 	})

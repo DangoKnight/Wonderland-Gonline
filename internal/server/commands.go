@@ -124,17 +124,16 @@ func (s *Server) discoveryCommand(_ context.Context, c *Session, _ []byte) error
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
-	if err := c.send(protocol.CollectionTimingCapability()); err != nil {
-		return err
-	}
-	if !s.combatRoundChain {
-		return nil
-	}
-	c.combatOffered = true
-	return c.send(protocol.CombatCapabilities(protocol.HandshakeCombatOffer, protocol.CombatCapabilityRoundChain))
+	return s.offerConnectionProtocol(c)
 }
 
 func (s *Server) handshakeCommand(_ context.Context, c *Session, p []byte) error {
+	if len(p) > 2 && p[1] == protocol.HandshakeConnectionAccept {
+		return s.acceptConnectionProtocol(c, p)
+	}
+	if len(p) > 2 && p[1] == protocol.HandshakeBackdropAccept {
+		return s.acceptClientBackdrops(c, p)
+	}
 	if len(p) > 2 && p[1] == protocol.HandshakeCombatAccept {
 		return s.acceptCombatProtocol(c, p)
 	}

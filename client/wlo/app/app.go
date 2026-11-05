@@ -140,6 +140,8 @@ type Client struct {
 
 	vacuum                  vacuumRuntime
 	gonlineCollectionTiming bool // Per-connection capability, independent of combat mode.
+	backdrops               backdropRuntime
+	connection              connectionRuntime
 
 	petAnnouncements [][]byte
 	petAnnouncement  bool
@@ -178,6 +180,7 @@ type Client struct {
 	// first entry.
 	sceneNames map[uint16]string
 	mapScenes  map[uint16]uint16
+	areaTitle  areaTitle
 	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
 	// movies, and each scene's weather byte.
 	weather      *weather.Layer
@@ -258,6 +261,8 @@ func New(o Options) (*Client, error) {
 		c.combat = combatRuntime{}
 		c.vacuum = vacuumRuntime{}
 		c.gonlineCollectionTiming = false
+		c.backdrops = backdropRuntime{}
+		c.connection = connectionRuntime{}
 		c.clearProfileAccount()
 		c.Net.Send(login.Discovery())
 	}
@@ -398,6 +403,7 @@ func (c *Client) frame(draw bool) {
 		c.eventTick()
 		c.vacuumTick()
 		c.areaTick()
+		c.areaTitleTick(c.Now())
 		c.ambientTick()
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
@@ -417,6 +423,7 @@ func (c *Client) frame(draw bool) {
 			c.drawClinicRest()
 			c.drawVehicleEffects()
 			c.drawFloorItemName()
+			c.drawAreaTitle(c.Now())
 			dialogueOverlay = true
 		}
 		c.sportFrame()
@@ -763,6 +770,7 @@ func (c *Client) dispatchNative(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.mapReady = false
 	c.placedVehicles = nil
 	c.floorItems = nil
 	c.floorPendingPickup = 0
@@ -798,6 +806,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.UI.HideAll()
 	c.World = w
 	c.resetInventory(pl)
+	c.queueAreaTitle()
 	c.playMapMusic()
 	c.MainStatus.Show()
 	c.FuncButtons.Show()

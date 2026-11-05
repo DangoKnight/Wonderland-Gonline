@@ -444,7 +444,9 @@ func (c *Client) remoteInventoryReceipt(p []byte) {
 	}
 }
 func (c *Client) resetRemoteRuntime() {
+	c.areaTitle = areaTitle{}
 	c.closeBattleView()
+	c.battle.actionHistory = nil
 	c.battle.state = clientbattle.State{}
 	c.stopRemote()
 	c.remote = remoteRuntime{button: c.remote.button}

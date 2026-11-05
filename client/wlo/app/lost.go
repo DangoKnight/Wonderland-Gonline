@@ -91,11 +91,16 @@ func (c *Client) sceneFrozen() bool { return c.fade.step > 0 || c.fade.frozen !=
 // reason ("Connection lost" unless the server left one) with Leave and
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
+	c.areaTitle = areaTitle{}
+	c.battle.actionHistory = nil
+	c.battle.auto = false
 	c.minigameResultAckPending = false
 	c.resetBattleResults()
 	c.combat = combatRuntime{}
 	c.vacuum = vacuumRuntime{}
 	c.gonlineCollectionTiming = false
+	c.backdrops = backdropRuntime{}
+	c.connection = connectionRuntime{}
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Reset()
 	}

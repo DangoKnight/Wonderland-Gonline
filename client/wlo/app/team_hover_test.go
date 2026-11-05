@@ -50,6 +50,9 @@ func TestJoinTeamPlayerAndPetHover(t *testing.T) {
 	p.X += 90
 	p.Name = []byte("Peer")
 	human := role.NewHuman(c.lib, c.items)
+	// Pixel comparisons must use the scene's fixed clock; a real-time actor
+	// can change animation frames between the lit and unlit draws under load.
+	human.Now = c.Now
 	peer := &world.Peer{Player: p, Role: human}
 	world.Dress(human, p)
 	c.World.Peers = map[uint32]*world.Peer{p.ID: peer}
@@ -81,6 +84,7 @@ func TestJoinTeamPlayerAndPetHover(t *testing.T) {
 	}
 	template := c.npcTemplates[17162]
 	pet := role.NewNPC(c.lib, template.Look, template.Colors)
+	pet.Now = c.Now
 	c.World.SetCompanion(p.ID, 17162, []byte("S.Monkey"), pet)
 	c.World.Companions[p.ID].Info = template
 	playerAt := find(func(x, y int) bool {

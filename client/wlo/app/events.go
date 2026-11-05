@@ -61,7 +61,7 @@ const (
 	musicPlay    = 1
 	musicRestore = 2
 	// Speakers, and the talk mode that turns the NPC.
-	npcTalkTurn      = 1
+	npcTalkTurn      = protocol.EventTalkTurnToPlayer
 	eventSpeakerNPC  = 3
 	eventSpeakerSelf = 7
 	// eventChoiceCancel closes a question (the server's cancel value).

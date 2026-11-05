@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientruntime"
 	"wonderland-gonline/internal/spritepack"
@@ -24,7 +25,7 @@ func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	}
 	put(t, filepath.Join(source, "audio", "odd_index.json"), []byte(`{"source":"private installation path"}`))
 
-	put(t, filepath.Join(source, "ground_data.json"), []byte(`{"entries":[{"name":"10017.map","terrain":{"width":800,"height":600,"grid_width":2,"grid_height":2,"cells_hex":"01020304"}}]}`))
+	put(t, filepath.Join(source, "ground_data.json"), []byte(`{"entries":[{"name":"10017.map","decoded_hex":"1400000014000000000100010000000000006450015b0a0014002c019001","terrain":{"width":800,"height":600,"grid_width":2,"grid_height":2,"cells_hex":"01020304"}}]}`))
 	put(t, filepath.Join(source, "eve_data.json"), []byte(`{"maps":[{"id":10017,"scene":12,"decoded_hex":"010203"}]}`))
 	put(t, filepath.Join(source, "wem_data.json"), []byte(`{"entries":[{"name":"100.wem","decoded_hex":"000102"}]}`))
 	put(t, filepath.Join(source, "database_data.json"), []byte(`{"private":"do not ship"}`))
@@ -65,6 +66,10 @@ func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	}
 	if !bytes.Equal(g.Terrain.Cells, []byte{1, 2, 3, 4}) || g.Terrain.CellsHex != "" {
 		t.Fatal("walk grid was not compiled")
+	}
+	var backdrops map[uint16]clientassets.GroundBackdrops
+	if err = clientruntime.Read(filepath.Join(root, clientruntime.BattleBackdropsFile), &backdrops); err != nil || backdrops[10017].At(10, 20) != 91 || backdrops[10017].At(0, 0) != 80 {
+		t.Fatal("native backdrop regions were not packaged", backdrops, err)
 	}
 	var events map[uint16]uint16
 	if err = clientruntime.Read(filepath.Join(root, clientruntime.EventIndex), &events); err != nil || events[10017] != 12 {

@@ -13,6 +13,21 @@ Start with [GETTING_STARTED.md](GETTING_STARTED.md) for WLRI extraction, server
 setup and compiling/running both programs. Use [CONFIGURATION.md](CONFIGURATION.md)
 for connection settings and client overrides.
 
+Area changes display the English scene name at the center of the game view.
+The Legacy title-group identity comes from SceneData.dat offset 94
+(`FUN_003075f0`); its `t10002` Kelan artwork contains seven animation frames.
+Gonline renders a continuous 2200 ms ripple effect instead. Ripple travel runs
+for 2120 ms, so the last ring disappears just before the title. Text reveals
+behind the outer ring with opacity increasing through the intermediate rings
+to full opacity at the innermost ring, and fades over the final
+500 ms. The text gently waves
+horizontally throughout the effect, and the thicker ripples dissolve towards an elliptical
+boundary instead of clipping against the title canvas. It waits for map readiness
+and visible gameplay, respects shared area groups, and does not intercept input.
+Maps without native title artwork use their English scene name as a fallback.
+The small title canvas uses alpha-blended GPU-compatible drawing without scene
+readback. No asset rebuild or database migration is needed for this overlay.
+
 ## Direct decoded assets
 
 The game client can run directly against repository `data/`:
@@ -1433,3 +1448,9 @@ The two rescue `.sty` files were hash-checked against the original client under
 executable (`var/ghidra/aLogin.exe`, SHA-256 `ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`);
 the installation's current `aLogin.exe` has a different hash, so these addresses
 are not claimed as verified offsets in that executable.
+
+Gonline Server can negotiate local battle backdrop resolution independently of
+combat round chains. The client uses its native map regions at the shared battle
+entry location. Legacy servers retain control of their own backdrop selectors.
+Runtime bundles include `runtime/battle_backdrops.bin`; older bundles decline
+this capability until rebuilt. See [the backdrop protocol](BATTLE_BACKDROPS.md).

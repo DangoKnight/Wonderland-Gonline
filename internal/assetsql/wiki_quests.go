@@ -22,6 +22,18 @@ var nativeQuestRevisionV45 []byte
 //go:embed native_quest_revision_v46.json
 var nativeQuestRevisionV46 []byte
 
+//go:embed native_quest_revision_v47.json
+var nativeQuestRevisionV47 []byte
+
+//go:embed native_quest_revision_v48.json
+var nativeQuestRevisionV48 []byte
+
+//go:embed native_quest_revision_v49.json
+var nativeQuestRevisionV49 []byte
+
+//go:embed native_quest_revision_v50.json
+var nativeQuestRevisionV50 []byte
+
 //go:embed wiki_quest_defaults.json
 var wikiQuestDefaults []byte
 

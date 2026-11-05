@@ -186,6 +186,7 @@ type battleView struct {
 	itemActors          map[clientbattle.Cell]bool
 	previous            *seui.FixedButton
 	lastActions         map[clientbattle.Cell]battlePreviousAction
+	actionHistory       map[battleActionIdentity]uint16 // Per-login history, retained between battles.
 	pendingActions      map[clientbattle.Cell]battlePreviousAction
 	// The turn countdown (+0xce3): started when a round opens for one of
 	// our fighters, ticking each second, closing the choice at -1.
@@ -258,6 +259,9 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	}
 	if !valid {
 		return false
+	}
+	if p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation {
+		c.resolveBattleBackdrop()
 	}
 	if view.state.Turn != turn {
 		c.hotbar.submitted = nil
@@ -349,10 +353,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		cell := clientbattle.Cell{X: p[2], Y: p[3]}
 		if action, ok := view.pendingActions[cell]; ok {
 			if f := view.state.At(cell); f != nil && f.ID == action.id && f.Owner == action.owner && f.Kind == action.kind {
-				if view.lastActions == nil {
-					view.lastActions = map[clientbattle.Cell]battlePreviousAction{}
-				}
-				view.lastActions[cell] = action
+				c.saveBattleAction(cell, action)
 			}
 			delete(view.pendingActions, cell)
 		}
@@ -362,7 +363,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 	if p[0] == protocol.CommandBattleAction && p[1] == protocol.BattleActionAnimation {
 		for _, action := range view.state.Actions[queued:] {
 			if view.itemActors[action.Actor] || action.Skill == assets.BattleItemHumanMotion || action.Skill == assets.BattleItemCreatureMotion {
-				delete(view.lastActions, action.Actor)
+				c.forgetBattleAction(action.Actor)
 				continue
 			}
 			f := view.state.At(action.Actor)
@@ -377,10 +378,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 			if old.id == f.ID && old.owner == f.Owner && old.kind == f.Kind && (old.skill == id || f.Kind == clientbattle.Player && c.bindingSkillID(hud.Binding{ID: old.skill}) == id) {
 				id = old.skill
 			}
-			if view.lastActions == nil {
-				view.lastActions = map[clientbattle.Cell]battlePreviousAction{}
-			}
-			view.lastActions[action.Actor] = battlePreviousAction{f.ID, f.Owner, f.Kind, id}
+			c.saveBattleAction(action.Actor, battlePreviousAction{f.ID, f.Owner, f.Kind, id})
 		}
 	}
 	if !view.state.Active && wasActive {
@@ -398,6 +396,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.closeHotbarTarget()
 		c.remote.nextWalk = c.Now().Add(remoteWalkPause)
 	}
+	c.restoreBattleActions()
 	view.syncShown()
 	b := remoteBattle{active: view.state.Active && !view.closing, ready: view.state.Ready, prompt: view.state.Prompt}
 	vitalPacket := p[0] == protocol.CommandBattleAction && p[1] == protocol.BattleActionAnimation || p[0] == protocol.CommandBattleStat && p[1] == protocol.BattleStatValues || p[0] == protocol.CommandBattleEffect && p[1] == protocol.BattleEffectOverkill
@@ -467,6 +466,7 @@ func (c *Client) closeBattleView() {
 	v.waitStart = time.Time{}
 	v.timedOut = false
 	v.auto = false
+	v.autoTurn = 0
 	v.camera = image.Point{}
 	v.zoom = image.Rectangle{}
 	if v.zoomCanvas != nil {
@@ -546,6 +546,11 @@ func (c *Client) battleBody(f clientbattle.Fighter) *battleBody {
 		}
 		if ok {
 			b.npc = role.NewNPC(c.lib, template.Look, template.Colors)
+			// FUN_00433318: default NPC weapons are separate layers for native
+			// movement kinds 0 and 2. Pets use their owned equipment instead.
+			if f.Kind == clientbattle.Monster && (template.MoveKind == world.MoveKindDefaultWeapon || template.MoveKind == world.MoveKindAlternateDefaultWeapon) {
+				b.npc.SetBattleWeapon(template.WeaponSprite)
+			}
 			b.npc.Now = func() time.Time { return c.Now() }
 			b.height = world.DefaultBattleHeight
 			b.moveKind = template.MoveKind
@@ -1346,11 +1351,9 @@ func (c *Client) battleOverlay() {
 }
 
 // battleAutoTick is the radial "auto" command (FUN_00297f84 case 5,
-// FUN_0039c238): once per round each of our fighters attacks (skill 10001)
-// the first living fighter of the other half, scanning columns 1-2 from the
-// right half and 4-3 from the left, rows 1-4 (FUN_0039a5b8). The auto-play
-// form's configured skills (PTR_DAT_004ca6b0) are not ported; the native
-// fallback attack is used.
+// FUN_0039c238): once per round each owned fighter repeats its last usable
+// damaging attack, falling back to Basic Attack for other actions or low SP.
+// Targets retain the native column/row scan order (FUN_0039a5b8).
 func (c *Client) battleAutoTick() {
 	v := &c.battle
 	c.battleAutoCancel()
@@ -1362,6 +1365,7 @@ func (c *Client) battleAutoTick() {
 		if !v.state.CanChoose(clientbattle.Cell{X: actor.x, Y: actor.y}) || c.hotbar.submitted[[2]byte{actor.x, actor.y}] {
 			continue
 		}
+		binding := c.battleAutoBinding(actor)
 		columns := []byte{4, 3}
 		if actor.x >= 3 {
 			columns = []byte{1, 2}
@@ -1370,7 +1374,7 @@ func (c *Client) battleAutoTick() {
 		for _, x := range columns {
 			for y := byte(1); y <= clientbattle.GridRows && !found; y++ {
 				for _, f := range c.remote.battle.fighters {
-					if f.x == x && f.y == y && f.hp > 0 {
+					if f.x == x && f.y == y && f.hp > 0 && c.hotbarTargetAllowed(binding, actor, f) {
 						target, found = f, true
 						break
 					}
@@ -1383,8 +1387,24 @@ func (c *Client) battleAutoTick() {
 		if !found {
 			return
 		}
-		c.submitHotbar(c.battleBinding(skills.BasicAttack, actor), target)
+		c.submitHotbar(binding, target)
 	}
+}
+
+// AUTO remembers each fighter independently. Item use clears its previous
+// action; support, control and debuff skills must never be replayed by AUTO.
+func (c *Client) battleAutoBinding(actor remoteFighter) hud.Binding {
+	basic := c.battleBinding(skills.BasicAttack, actor)
+	last, ok := c.battle.lastActions[clientbattle.Cell{X: actor.x, Y: actor.y}]
+	if !ok || last.id != actor.id || last.owner != actor.owner || last.kind != actor.kind || c.SkillState == nil || c.SkillState.Catalog == nil {
+		return basic
+	}
+	binding := c.battleBinding(last.skill, actor)
+	d, known := c.SkillState.Catalog.Definitions[c.bindingSkillID(binding)]
+	if !known || !c.bindingLearned(binding) || d.SP > actor.sp || (d.EffectLayer != skills.Physical && d.EffectLayer != skills.Magical) || d.TargetKnown && !d.AllowsTarget(false, false) {
+		return basic
+	}
+	return binding
 }
 
 // battleAutoCancel shows the auto cancel button while automatic actions run.

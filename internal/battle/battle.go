@@ -207,6 +207,9 @@ var (
 	playerSlots = [][2]byte{{4, 2}, {4, 3}, {4, 1}, {4, 4}}
 	petSlots    = [][2]byte{{3, 2}, {3, 3}, {3, 1}, {3, 4}}
 	enemySlots  = [][2]byte{{2, 2}, {2, 3}, {2, 1}, {2, 4}, {1, 2}, {1, 3}, {1, 1}, {1, 4}}
+	// EVE's explicit slot IDs, in wire grid coordinates. Unlike unpositioned
+	// encounters, authored formations must not be packed into first-seen slots.
+	eveEnemySlots = [MaxEnemies][2]byte{{1, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 1}, {2, 2}, {2, 3}, {2, 4}}
 )
 
 // MaxEnemies is the number of enemy grid slots.
@@ -266,8 +269,8 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 	occupied := [MaxEnemies]bool{}
 	formationSlots := map[byte]int{}
 	for i, e := range enemies {
-		// Keep the existing first-seen screen ordering. Native slot IDs own
-		// reinforcement queues; they are not inferred screen coordinates.
+		// Keep first-seen roster/queue ordering. The authored slot also controls
+		// the fighter's grid coordinates, independently of this storage index.
 		slot := i % MaxEnemies
 		if e.FormationSlot != FormationSlotSequential && int(e.FormationSlot) <= MaxEnemies {
 			if existing, known := formationSlots[e.FormationSlot]; known {
@@ -301,6 +304,10 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 }
 
 func enemyFighter(e Enemy, i int) *Fighter {
+	position := enemySlots[i]
+	if e.FormationSlot != FormationSlotSequential && int(e.FormationSlot) <= len(eveEnemySlots) {
+		position = eveEnemySlots[e.FormationSlot-1]
+	}
 	level := byte(min(math.MaxUint8, max(1, e.Level)))
 	full := game.InnateCombat(level, e.Element, e.Base)
 	atk, matk := int(full.ATK), int(full.MAT)
@@ -314,7 +321,7 @@ func enemyFighter(e Enemy, i int) *Fighter {
 	}
 	return &Fighter{Side: Defender, Kind: Monster, ID: e.Template, Template: e.Template, ClickID: click, Name: e.Name,
 		Skills: e.Skills, Level: level, Element: e.Element, MaxHP: hp, HP: hp, MaxSP: sp, SP: sp,
-		Atk: atk, Def: int(full.DEF), Matk: matk, Mdef: int(full.MDF), Spd: int(full.SPD), X: enemySlots[i][0], Y: enemySlots[i][1]}
+		Atk: atk, Def: int(full.DEF), Matk: matk, Mdef: int(full.MDF), Spd: int(full.SPD), X: position[0], Y: position[1]}
 }
 
 func record(p protocol.Builder, side byte, f *Fighter, kind byte, click uint16, owner uint32) protocol.Builder {
@@ -343,9 +350,13 @@ func TurnLimit(kind byte) time.Duration {
 	return 20 * time.Second
 }
 
-func (b *Battle) Intro(self *Fighter, background uint16) [][]byte {
+// The two formation header bytes are separate fields. Native FUN_0038e4f4
+// reads a byte backdrop selector; Gonline leaves the opaque second byte zero.
+const compatibilityFormationMetadata byte = 0
+
+func (b *Battle) Intro(self *Fighter, background byte) [][]byte {
 	out := [][]byte{{protocol.CommandEvent, protocol.EventBattleBegin}, {protocol.CommandMovement, protocol.MovementMovementLock, 1}}
-	out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateFormation}.U16(background), byte(self.Side), self, 2, 0, 0), []byte{protocol.CommandBattleState, protocol.BattleStateInitialize, KindStandard})
+	out = append(out, record(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateFormation}.U8(background).U8(compatibilityFormationMetadata), byte(self.Side), self, 2, 0, 0), []byte{protocol.CommandBattleState, protocol.BattleStateInitialize, KindStandard})
 	allies, enemies := b.Teams(self.Side)
 	for _, f := range allies {
 		if f != self && f.Kind == Player && !f.Withdrawn && !f.Overkilled {

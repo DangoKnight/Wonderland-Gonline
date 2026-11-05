@@ -6564,6 +6564,108 @@ func readTerrains(tx *gorm.DB) (map[uint16]assets.Terrain, error) {
 	return result, nil
 }
 
+type BattleBackdropsRow struct {
+	BattleBackdropsKey  uint16 `gorm:"column:battle_backdrops_key;primaryKey;autoIncrement:false"`
+	ValueDefault        uint8
+	ValueRegionsPresent bool
+}
+
+func (BattleBackdropsRow) TableName() string { return "catalog_battle_backdrops" }
+func writeBattleBackdrops(tx *gorm.DB, values map[uint16]assets.BattleBackdrop) error {
+	var rows []BattleBackdropsRow
+	for key, value := range values {
+		row := BattleBackdropsRow{BattleBackdropsKey: key}
+		row.ValueDefault = value.Default
+		row.ValueRegionsPresent = value.Regions != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeBattleBackdropsRegions(tx, value.Regions, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readBattleBackdrops(tx *gorm.DB) (map[uint16]assets.BattleBackdrop, error) {
+	result := make(map[uint16]assets.BattleBackdrop)
+	var rows []BattleBackdropsRow
+	query := tx
+	if err := query.Order("battle_backdrops_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.BattleBackdrop
+		value.Default = row.ValueDefault
+		if row.ValueRegionsPresent {
+			var err error
+			value.Regions, err = readBattleBackdropsRegions(tx, row.BattleBackdropsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.BattleBackdropsKey] = value
+	}
+	return result, nil
+}
+
+type BattleBackdropsRegionsRow struct {
+	BattleBackdropsKey            uint16              `gorm:"column:battle_backdrops_key;primaryKey;autoIncrement:false"`
+	BattleBackdropsRegionsOrdinal int                 `gorm:"column:battle_backdrops_regions_ordinal;primaryKey;autoIncrement:false"`
+	Parent                        *BattleBackdropsRow `gorm:"belongsTo:Parent;foreignKey:BattleBackdropsKey;references:BattleBackdropsKey;constraint:OnDelete:CASCADE"`
+	ValueSelector                 uint8
+	ValueLeft                     uint16
+	ValueTop                      uint16
+	ValueRight                    uint16
+	ValueBottom                   uint16
+}
+
+func (BattleBackdropsRegionsRow) TableName() string { return "catalog_battle_backdrops_regions" }
+func writeBattleBackdropsRegions(tx *gorm.DB, values []assets.BattleBackdropRegion, BattleBackdropsKey uint16) error {
+	var rows []BattleBackdropsRegionsRow
+	for key, value := range values {
+		row := BattleBackdropsRegionsRow{BattleBackdropsKey: BattleBackdropsKey, BattleBackdropsRegionsOrdinal: key}
+		row.ValueSelector = value.Selector
+		row.ValueLeft = value.Left
+		row.ValueTop = value.Top
+		row.ValueRight = value.Right
+		row.ValueBottom = value.Bottom
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readBattleBackdropsRegions(tx *gorm.DB, BattleBackdropsKey uint16) ([]assets.BattleBackdropRegion, error) {
+	result := make([]assets.BattleBackdropRegion, 0)
+	var rows []BattleBackdropsRegionsRow
+	query := tx
+	query = query.Where("battle_backdrops_key = ?", BattleBackdropsKey)
+	if err := query.Order("battle_backdrops_regions_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.BattleBackdropRegion
+		value.Selector = row.ValueSelector
+		value.Left = row.ValueLeft
+		value.Top = row.ValueTop
+		value.Right = row.ValueRight
+		value.Bottom = row.ValueBottom
+		if row.BattleBackdropsRegionsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type ArcadesRow struct {
 	ArcadesOrdinal            int `gorm:"column:arcades_ordinal;primaryKey;autoIncrement:false"`
 	ValueKind                 uint8
@@ -11402,6 +11504,7 @@ type catalogPresence struct {
 	Manufacturing         bool
 	RebornClasses         bool
 	Terrains              bool
+	BattleBackdrops       bool
 	Arcades               bool
 	CombatTrials          bool
 	QuestVisibility       bool
@@ -11527,6 +11630,8 @@ func catalogTables() []any {
 		&FishingMapsRow{},
 		&FishingRewardsRow{},
 		&TerrainsRow{},
+		&BattleBackdropsRow{},
+		&BattleBackdropsRegionsRow{},
 		&ArcadesRow{},
 		&ArcadesRewardsRow{},
 		&TentsRow{},
@@ -11854,6 +11959,12 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&ArcadesRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&BattleBackdropsRegionsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&BattleBackdropsRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&TerrainsRow{}).Error; err != nil {
 		return err
 	}
@@ -12156,6 +12267,7 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.Manufacturing = c.Manufacturing != nil
 	presence.RebornClasses = c.RebornClasses != nil
 	presence.Terrains = c.Terrains != nil
+	presence.BattleBackdrops = c.BattleBackdrops != nil
 	presence.Arcades = c.Arcades != nil
 	presence.CombatTrials = c.CombatTrials != nil
 	presence.QuestVisibility = c.QuestVisibility != nil
@@ -12233,6 +12345,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := writeTerrains(tx, c.Terrains); err != nil {
+		return err
+	}
+	if err := writeBattleBackdrops(tx, c.BattleBackdrops); err != nil {
 		return err
 	}
 	if err := writeArcades(tx, c.Arcades); err != nil {
@@ -12398,6 +12513,10 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	c.Terrains, err = readTerrains(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.BattleBackdrops, err = readBattleBackdrops(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -12567,6 +12686,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	if !presence.Terrains {
 		c.Terrains = nil
+	}
+	if !presence.BattleBackdrops {
+		c.BattleBackdrops = nil
 	}
 	if !presence.Arcades {
 		c.Arcades = nil

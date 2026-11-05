@@ -2416,17 +2416,6 @@
       "pattern": {}
     },
     {
-      "id": "kelan_xaolan_house_battle_background",
-      "kind": "battle_background",
-      "scope": {
-        "maps": [
-          12002
-        ],
-        "allow_missing": true
-      },
-      "value": 140
-    },
-    {
       "id": "robbery_show_actors",
       "kind": "visit_visibility",
       "scope": {

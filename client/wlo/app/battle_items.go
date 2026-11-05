@@ -96,6 +96,6 @@ func (c *Client) submitBattleItem(target remoteFighter) {
 		c.battle.itemActors = map[clientbattle.Cell]bool{}
 	}
 	c.battle.itemActors[actor.Cell] = true
-	delete(c.battle.lastActions, actor.Cell)
+	c.forgetBattleAction(actor.Cell)
 	c.battle.item = nil
 }

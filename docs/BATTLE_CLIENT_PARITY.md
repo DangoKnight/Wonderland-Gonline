@@ -88,8 +88,19 @@ simulation. This is a working core, **not complete native battle parity**.
 - Native 4 by 4 formation, player equipment and NPC/pet sprites, battle stances,
   defeated poses, names, HP/SP bars, hover highlighting and transient HUD vitals.
   Battle sprite clocks and state belong to each workspace session.
+- Enemy default weapons follow `FUN_00433318`: Npc.dat disk offset 84 is
+  a weapon sprite ID, drawn separately after the body for native movement
+  categories 0 and 2. The layer uses its weapon archive, the body's action/frame
+  and the native 68-pixel weapon canvas correction. Pirate Leader 14155 uses
+  sprite 4025; Hijackers 12049/12050 use 4032. This adds no inventory item or
+  combat stat bonus.
 - Scene-data background selection, fallback scene 59081, three ordered layers
   and native initial camera. Pictures use existing loose/compiled asset loaders.
+  Native AC11:250 has a byte backdrop selector followed by independent metadata;
+  the latter must not be interpreted as a high backdrop byte. Captured `[82,25]`
+  selects scene 59082, while Lakeside Jungle selector 91 selects scene 59091.
+  Server schema v50 selects from native per-map position regions; see
+  [backdrop evidence](BATTLE_BACKDROPS.md).
 - The native radial icons and positions for attack, skills, defend, capture and
   flee. Select owned player/pet actors and target fighters directly, with native
   sword/magic/capture cursors. Skills and
@@ -219,11 +230,15 @@ simulation. This is a working core, **not complete native battle parity**.
 - The radial now has all native buttons (constructor `0x002974a0`, decoded from
   its jump table): 4, the item bag at (90, 126), opens the item form
   (`FUN_00351700`); 5, `auto` at (42, 126), attacks each round with every
-  owned fighter (skill 10001) against the first living fighter of the other
+  owned fighter against the first eligible living fighter of the other
   half, scanning columns 1–2 or 4–3 and rows 1–4 (`FUN_0039c238`,
   `FUN_0039a5b8`). While auto runs, the cancel button `Btn_Battle_5_1` (button 3
-  of +0x51c, at (762, 526)) stops it (`FUN_00298f7c`). The auto-play form's
-  configured skills are not ported; the native fallback attack is used.
+  of +0x51c, at (762, 526)) stops it (`FUN_00298f7c`). Each fighter repeats
+  its last physical or magical attack. Item use, support, control and debuff
+  actions fall back to Basic Attack (10001), as do forgotten skills and attacks
+  whose SP cost exceeds current SP. Player and pet action histories are separate
+  and survive between battles during the current login, including actions chosen
+  by AUTO. AUTO itself turns off at battle exit; the next battle starts manually.
 
 - Battle supplies: double-click a usable bag item from the Items command or
   Inventory, then click a fighter; item shortcuts enter the same targeting mode.

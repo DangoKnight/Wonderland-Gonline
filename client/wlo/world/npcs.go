@@ -97,6 +97,7 @@ type NPCTemplate struct {
 	Name         string
 	Kind         byte
 	Look         uint16
+	WeaponSprite uint16 // Npc.dat disk +84: default battle weapon, not an item ID.
 	Face         uint16
 	Icon         uint16 // Npc.dat +0x10: 007-family small companion portrait
 	TalkLow      byte   // +0x5a: 1 stands the talk window's body lower
@@ -114,6 +115,13 @@ type NPCTemplate struct {
 	BattleSoundBody   byte // Npc.dat +0x27 including prefix: actor audio group.
 	BattleSoundWeapon byte // +0x28 (disk 36): native weapon category for movement kind 1.
 }
+
+// These native movement categories use the NPC template's default weapon in
+// combat (FUN_00433318). Their broader movement semantics remain unresolved.
+const (
+	MoveKindDefaultWeapon          = 0
+	MoveKindAlternateDefaultWeapon = 2
+)
 
 // NPCPainter draws an NPC's sprite at its feet.
 type NPCPainter interface {
@@ -313,6 +321,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				Skill3            uint16 `json:"skill_3"`
 				Kind              byte   `json:"type"`
 				Look              uint16 `json:"unknown_u16_offset_14"`
+				WeaponSprite      uint16 `json:"unknown_u16_offset_84"`
 				Color1            uint32 `json:"unknown_u32_offset_18"`
 				Color2            uint32 `json:"unknown_u32_offset_22"`
 				Color3            uint32 `json:"unknown_u32_offset_26"`
@@ -345,7 +354,7 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 			r.Name.Text = namePatches[uint16(f.ID)].Apply(r.Name.Text)
 		}
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody, BattleSoundWeapon: f.BattleSoundWeapon}
+			WeaponSprite: f.WeaponSprite, Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody, BattleSoundWeapon: f.BattleSoundWeapon}
 	}
 	npcData.path, npcData.templates = path, out
 	return out, nil

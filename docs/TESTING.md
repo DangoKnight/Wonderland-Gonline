@@ -1,5 +1,45 @@
 # Testing and validation
 
+## Full quest-development pre-push validation — 2026-11-05
+
+Validated native map backdrops/schema v50, client-local backdrop selection, the
+connection-wide GLON hello, battle formation/weapon/AUTO fixes and area-title
+presentation. The full root module ran with `go test -json -race -count=1
+-timeout=60m -p 1 ./...`; the separate client module ran with `go test -json
+-count=1 -timeout=60m -p 1 ./...`, including installed source assets, freshly
+compiled packs and opt-in GPU checks. Used a consistent disposable copy of the
+configured schema-v50 assets database; live gameplay state was not modified.
+Live account creation/deletion opt-ins were cleared.
+
+The final package/test audit covers all 38 server packages and 26 client
+packages. It records 2,318 passing server test/subtest results with 2 skips,
+and 827 passing client test/subtest results with 36 skips. No unresolved failed
+tests, missing packages or race reports remain. Packages with no tests are
+reported separately: 10 server and 2 client package skips.
+
+The initial full run exposed two test issues. The socket-login wire golden
+still expected the superseded GLCT offer; it now independently pins the combined
+GLON hello and confirms a Legacy login can ignore it. The complete socket login
+and connection/configuration regressions passed again under `-race`. The team
+hover pixel test mixed real-time actor animations with a fixed scene clock;
+both actor clocks now use the scene clock without weakening highlight or pixel
+assertions. The entire client app package passed again with native/GPU options,
+including that test in full package order. Other packages retain their full-run
+results; the audit merges the explicitly recorded corrected reruns.
+
+Also passed full server/client vet, server/client/migration builds, all three
+10-second fuzz targets (`FuzzRead`, `FuzzEVE`, `FuzzNativeItems`), Python exporter
+validation (48 tests, one optional skip), web formatting, HTML lint, Go formatting
+and whitespace checks. Runtime asset packaging passed (72,855 files, 72,853
+reused); an independent mounted-pack check verified 1,147 backdrop maps, 1,398
+rectangles and the reference lakeside selector. No new original artwork extraction
+was required. This automated run does not establish new interactive live-server
+acceptance.
+
+Logs, package inventories, final `summary.json`, the isolated assets snapshot
+and build binaries remain under ignored
+`var/validation/prepush-quest-20261105-connection/`.
+
 ## Native NPC services — 2026-11-04
 
 Kelan Legacy captures and screenshots now back the client shop buy/sell,

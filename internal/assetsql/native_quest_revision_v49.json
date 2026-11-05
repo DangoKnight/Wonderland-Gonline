@@ -1,0 +1,17 @@
+{
+  "id": "north_island_seaflower_beach_v49",
+  "append": [
+    {
+      "rule": {
+        "id": "north_island_seaflower_beach_battle_background",
+        "kind": "battle_background",
+        "scope": {
+          "maps": [60000],
+          "events": [36, 37, 38, 40, 41, 42, 43],
+          "allow_missing": true
+        },
+        "value": 50
+      }
+    }
+  ]
+}

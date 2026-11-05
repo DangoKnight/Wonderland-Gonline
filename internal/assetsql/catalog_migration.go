@@ -10,11 +10,15 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 46
+const catalogSchemaVersion = 50
+const nativeMapBackdropSchemaVersion = 50
 const nativeQuestPolicyRevisionSchemaVersion = 43
 const nativeQuestVisibilityRevisionSchemaVersion = 44
 const nativeQuestBackdropRevisionSchemaVersion = 45
 const nativeXaolanVisibilityRevisionSchemaVersion = 46
+const nativeXaolanBackdropRevisionSchemaVersion = 47
+const nativeEncounterBackdropRevisionSchemaVersion = 48
+const nativeSeaflowerBackdropRevisionSchemaVersion = 49
 
 // Branch compatibility: Client v30 introduced collection respawns while quest
 // v29 onward introduced independent content batches from the common v28 base.
@@ -555,6 +559,29 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < nativeXaolanBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV47); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeEncounterBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV48); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeSeaflowerBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV49); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeMapBackdropSchemaVersion {
+			if err := migrateBattleBackdrops(tx); err != nil {
+				return err
+			}
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV50); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -589,6 +616,10 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Terrains, err = importedTerrains(tx)
+	if err != nil {
+		return err
+	}
+	c.BattleBackdrops, err = importedBattleBackdrops(tx)
 	if err != nil {
 		return err
 	}
@@ -731,6 +762,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = assets.ValidateTerrains(c.Terrains); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateBattleBackdrops(c.BattleBackdrops); err != nil {
 		return nil, err
 	}
 	if err = assets.ValidateArcades(c.Arcades, c.Items); err != nil {

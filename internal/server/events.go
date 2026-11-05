@@ -534,7 +534,11 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			case op.PlayerSpeech():
 				return c.send(serverwire.SpeechFrame(7, 0, op.TalkID(), op.Index))
 			case op.NPCSpeech():
-				return c.send(serverwire.SpeechFrame(3, op.D1, op.TalkID(), op.Index))
+				mode := byte(op.DW2)
+				if mode == protocol.EventTalkCompatibilityDefault {
+					mode = protocol.EventTalkTurnToPlayer
+				}
+				return c.send(serverwire.SpeechFrameWithMode(3, op.D1, op.TalkID(), op.Index, mode))
 			}
 			if movie {
 				raw := op.Raw()

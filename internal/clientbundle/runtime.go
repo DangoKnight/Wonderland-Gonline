@@ -87,6 +87,19 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	if contains(c.files, "ground_data.json") {
+		if err = c.generate("battle-backdrops", []string{"ground_data.json"}, func(write func(string, any) error) error {
+			var doc clientruntime.BackdropExport
+			if e := c.readJSON("ground_data.json", &doc); e != nil {
+				return e
+			}
+			values, e := doc.Decode()
+			if e != nil {
+				return e
+			}
+			return write(clientruntime.BattleBackdropsFile, values)
+		}); err != nil {
+			return Result{}, err
+		}
 		if err = c.generate("ground", []string{"ground_data.json"}, func(write func(string, any) error) error {
 			var doc struct {
 				Entries []clientruntime.Ground `json:"entries"`

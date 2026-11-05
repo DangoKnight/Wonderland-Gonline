@@ -23,6 +23,9 @@ func TestLegacyPetSwitchWaitNextTurn(t *testing.T) {
 		}
 	}
 	cell := Cell{3, 2}
+	if s.Background != 82 {
+		t.Fatal("formation metadata changed the native backdrop selector", s.Background)
+	}
 	f := s.At(cell)
 	if f == nil || !f.Waiting || f.Side != Attacker || f.Click != 2 || f.ID != 14162 || s.CanChoose(cell) {
 		t.Fatal("entry mode 5 did not defer participation", f)

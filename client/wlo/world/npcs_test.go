@@ -17,6 +17,19 @@ func TestStandFacing(t *testing.T) {
 	}
 }
 
+func TestNativePirateWeaponSprites(t *testing.T) {
+	needAssets(t)
+	templates, err := NPCTemplates(assets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[uint32]uint16{14155: 4025, 12049: 4032, 12050: 4032} {
+		if got := templates[id].WeaponSprite; got != want {
+			t.Fatalf("NPC %d weapon sprite = %d, want %d", id, got, want)
+		}
+	}
+}
+
 func TestNPCFullMonsterNames(t *testing.T) {
 	needAssets(t)
 	templates, err := NPCTemplates(assets)

@@ -3,10 +3,10 @@ package assets
 import "testing"
 
 func TestStoryBattleBackgroundValidation(t *testing.T) {
-	for _, value := range []int64{-1, 0, 140, 65535, 65536} {
+	for _, value := range []int64{-1, 0, 140, 255, 256, 65535, 65536} {
 		r := StoryRule{ID: "room_backdrop", Kind: StoryBattleBackground, Scope: StoryScope{Maps: []uint16{12002}}, Value: value}
 		err := ValidateStoryDefinitions(StoryDefinitions{Rules: []StoryRule{r}})
-		if (err == nil) != (value >= 0 && value <= 65535) {
+		if (err == nil) != (value >= 0 && value <= 255) {
 			t.Fatal("invalid background selector validation", value, err)
 		}
 	}

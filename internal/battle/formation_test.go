@@ -2,6 +2,17 @@ package battle
 
 import "testing"
 
+func TestNativeFormationUsesAuthoredCoordinates(t *testing.T) {
+	// Native EVE slot order, independently authored from the wire grid layout.
+	want := [][2]byte{{1, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 1}, {2, 2}, {2, 3}, {2, 4}}
+	for i, position := range want {
+		b := New(nil, []Enemy{{Template: 12049, FormationSlot: byte(i + 1)}})
+		if got := b.Defenders[0]; got.X != position[0] || got.Y != position[1] {
+			t.Fatalf("native slot %d = (%d,%d), want %v", i+1, got.X, got.Y, position)
+		}
+	}
+}
+
 func TestNativeFormationQueuesRepeatedOccupants(t *testing.T) {
 	// Black monster formation 10082:1: five records across three native slots.
 	b := New(nil, []Enemy{{Template: 17921, FormationSlot: 2}, {Template: 17922, FormationSlot: 5}, {Template: 17923, FormationSlot: 7}, {Template: 17924, FormationSlot: 5}, {Template: 17925, FormationSlot: 7}})

@@ -40,6 +40,8 @@ type Resources struct {
 	audio                     *SoundCache
 	scenes                    bool
 	sceneNames                map[uint16]string
+	sceneTitleGroups          map[uint16]uint16
+	battleBackdrops           map[uint16]clientassets.GroundBackdrops
 	mapScenes                 map[uint16]uint16
 	sceneWeather              map[uint16]byte
 	sceneMusic                map[uint16]string
@@ -113,6 +115,7 @@ func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 	}
 	r.skillCatalog, _ = skills.Load(a)
 	r.audio = &SoundCache{}
+	r.battleBackdrops, _ = world.BattleBackdrops(a)
 	r.ready = true
 	return nil
 }
@@ -122,6 +125,7 @@ func (r *Resources) loadScenes(a login.Assets) {
 	}
 	r.scenes = true
 	r.sceneNames, _ = world.SceneNames(a)
+	r.sceneTitleGroups, _ = world.SceneTitleGroups(a)
 	r.mapScenes, _ = world.MapScenes(a)
 	r.sceneWeather, _ = world.SceneWeather(a)
 	r.sceneMusic, _ = world.SceneMusic(a)
