@@ -276,7 +276,13 @@ simulation. This is a working core, **not complete native battle parity**.
   fighters on the right, `FUN_003768ec`), a strip of frame-count rows drawn
   centred on the point, additively at level 30 when its first pixel is the
   marker 1, else keyed. Effects start at their trigger (1-100 a keyframe,
-  otherwise milliseconds), step a frame per interval (mode 1 loops, Repeat
+  otherwise milliseconds). The first keyframe becomes active only after initial
+  approach arrival: native motion counter +0x524 remains zero until
+  `FUN_00375ff0` reaches the first point. `FUN_00379c18` uses that counter for
+  frame cues; later counters advance after the previous hold in `FUN_00373954`.
+  This keeps bee skills 30027/30033 from showing their first effect during the
+  approach, and shares the corrected cue with sound and damage timing.
+  Effects step a frame per interval (mode 1 loops, Repeat
   times when set; 2 holds the last frame; 3 ends after it), and stay on the
   first point or travel the points at their speed (mode 2 ends on the last).
   Points are placed like the motion's own, anchored where the attacker

@@ -609,19 +609,20 @@ func TestWorldEntryRejectsInvalidCreationAllocation(t *testing.T) {
 }
 
 func TestWorldEntryStoryConstellations(t *testing.T) {
+	s, _, _ := worldFixture(t)
 	c := &game.Character{Quests: map[uint32]game.Quest{}}
-	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 0}) {
+	if got := s.storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 0}) {
 		t.Fatal(got)
 	}
 	for _, id := range []uint32{13087, 13173, 13203, 13151} {
 		c.Quests[id] = game.Quest{State: game.InProgress, Step: 1}
 	}
-	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 4, 1, 6, 8, 20}) {
+	if got := s.storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 4, 1, 6, 8, 20}) {
 		t.Fatal(got)
 	}
 	c.Quests[13087] = game.Quest{State: game.Completed, Step: 1}
 	c.Quests[13173] = game.Quest{State: game.InProgress, Step: 0}
-	if got := storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 2, 8, 20}) {
+	if got := s.storyConstellations(c); !bytes.Equal(got, []byte{15, 19, 2, 8, 20}) {
 		t.Fatal(got)
 	}
 }

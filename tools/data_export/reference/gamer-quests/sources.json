@@ -1,0 +1,664 @@
+{
+  "menu_url": "https://acg.gamer.com.tw/wikimenu.php?s=113640",
+  "portal_id": "113640",
+  "namespace": "9045:",
+  "menu_sha256": "780c18ea8f7c4ae6fdf341dcd561b6bc201cb3b371984e50b5d3599923dd5ada",
+  "page_count": 72,
+  "fetched_pages": 72,
+  "fact_sections": 266,
+  "roots": [
+    "一般任務",
+    "任務寵任務",
+    "任務技能",
+    "任務解說",
+    "友達任務",
+    "女神技能",
+    "寵物NPC",
+    "寶箱鑰匙任務",
+    "戰鬥任務",
+    "戰鬥技能任務",
+    "星星任務",
+    "海洋之心任務",
+    "煉金術",
+    "生活技能",
+    "生活技能任務",
+    "真女神技",
+    "笑臉泥菩薩任務",
+    "箭雨",
+    "結婚系統",
+    "經驗聖水任務",
+    "職業技能",
+    "轉職任務",
+    "道具任務",
+    "魂閃",
+    "魯賓遜新手島",
+    "龍魂技"
+  ],
+  "extra_titles": [],
+  "context_titles": [
+    "中國",
+    "中國漁村",
+    "京都",
+    "仁川",
+    "企鵝村",
+    "克蘭村",
+    "冰山",
+    "加爾喀達",
+    "北島",
+    "南島",
+    "卡瑪那瓦山",
+    "印加",
+    "司徒華島",
+    "埃及",
+    "基督城",
+    "基督村",
+    "夏威夷",
+    "天空之城",
+    "威靈村",
+    "威靈村國會對面",
+    "崖州",
+    "復活島",
+    "放羊的小孩",
+    "曼谷",
+    "朝鮮",
+    "澳斯利亞",
+    "珂克山洞",
+    "瑪雅",
+    "瑪雅叢林",
+    "瑪雅部落",
+    "空中花園",
+    "美人魚事件",
+    "蝦夷",
+    "誠實的代價",
+    "謎樣的少女",
+    "農場",
+    "邪馬台",
+    "長安",
+    "長耳部落",
+    "開羅",
+    "關西",
+    "雅典",
+    "雅典城",
+    "雪島",
+    "馬丘比丘",
+    "鬼島"
+  ],
+  "sources": [
+    {
+      "title": "一般任務",
+      "file": "37c7fb5387881b2c.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "921b475ae905c00b691b5fa2c43cff125275f35c7f8f5105f8ba518c00a893d4",
+      "bytes": 142095,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "任務寵任務",
+      "file": "a60f31eb8fb15866.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "abf9bc3cc4ef6dea71d4e260f0eb65e640bebf07756b596173acb4495f3e073b",
+      "bytes": 127230,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "任務技能",
+      "file": "6e6ce65cefbdf84a.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E6%8A%80%E8%83%BD&ss=113640",
+      "sha256": "ec34f9e9d0cd568ba56b1d7f40a6699cb7f0c6457b092270b7e463dfcc8292a4",
+      "bytes": 108720,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "任務解說",
+      "file": "ba1d983876f6cf55.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E8%A7%A3%E8%AA%AA&ss=113640",
+      "sha256": "4961b9ec1c256dd2f4b763e44f038b5a0609055d60e0540dc721422a4c86b692",
+      "bytes": 105857,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "友達任務",
+      "file": "94178259c4526c46.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8F%8B%E9%81%94%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "95c5032cfaf724ef56d2752db30e3990d9fa2ba1a8282992eb3dc71a68843c37",
+      "bytes": 95612,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "女神技能",
+      "file": "d973a168c093df04.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640",
+      "sha256": "30ee455e0d71d09163e395763825ae190df0c0075080131438bef269daca06e6",
+      "bytes": 102799,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "寵物NPC",
+      "file": "b3789b8478249db2.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B5%E7%89%A9NPC&ss=113640",
+      "sha256": "8d7159fd4c370cc6a823321b35633dd98c44070e07c01e6b7a51025525c13b6e",
+      "bytes": 109576,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "寶箱鑰匙任務",
+      "file": "8aebef0626693c1c.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "0a4ea8de22d982b992bbb4170eaac6f96995a270711aa87d2442dbe95ce40e9e",
+      "bytes": 97801,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "戰鬥任務",
+      "file": "1a78c7048d040fb7.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "8ee3ad65edef5e783637bbc8b8dd94741425434d67ec28ae4c2f4ad18329176b",
+      "bytes": 120689,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "戰鬥技能任務",
+      "file": "c86bb635c78fef40.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "18e14e1cba074a0f7c6e847805716fbe3e5154da79ce6a527d042140749b0ee6",
+      "bytes": 94599,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "星星任務",
+      "file": "f42877aed91784d2.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "bdeef72f3c77f97668ed8c2d3f805a9844585d514f9a1207309b906b8cb53c52",
+      "bytes": 150794,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "海洋之心任務",
+      "file": "57ea665858387c45.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "09cd3b41b3c64935ec913e2f444b4aaeb5222dca0de698d494b110c22c368a5c",
+      "bytes": 99187,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "煉金術",
+      "file": "5d7408d3608ffcb4.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%85%89%E9%87%91%E8%A1%93&ss=113640",
+      "sha256": "7d8d792911a28e046991bb14be9135eef4f4b64a7bf1961bb3648d847a1f5a52",
+      "bytes": 97910,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "生活技能",
+      "file": "72a34ac957acbc9d.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640",
+      "sha256": "8c4154cdf42307664ee1639f32a82356fb0091ff25ecad69862def54fb41ae81",
+      "bytes": 106403,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "生活技能任務",
+      "file": "03c7755cd56b28f8.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "c3ee9c54c454b248ef0dc9482243072351a67eb7485bb51f11886296b75d68d2",
+      "bytes": 97916,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "真女神技",
+      "file": "0a731958cc6b480a.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%9C%9F%E5%A5%B3%E7%A5%9E%E6%8A%80&ss=113640",
+      "sha256": "70f519a3aadf20e98dee3cb8f4de5911c8f6096e6a3c1f7f4658cbf21c4299b1",
+      "bytes": 95410,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "笑臉泥菩薩任務",
+      "file": "98074218497fe487.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AC%91%E8%87%89%E6%B3%A5%E8%8F%A9%E8%96%A9%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "3d9671077c9c62d37e2ec90cecb84ce42cd7aa2e22cdd0ac0593c402fe7a1758",
+      "bytes": 95551,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "箭雨",
+      "file": "059db8072c4ae8da.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AE%AD%E9%9B%A8&ss=113640",
+      "sha256": "2a886d4528cb4a32a77e31f708662b1f326cd7c07ffb9359383dbc5185189f52",
+      "bytes": 94472,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "結婚系統",
+      "file": "734190ed70ffae9f.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B5%90%E5%A9%9A%E7%B3%BB%E7%B5%B1&ss=113640",
+      "sha256": "162e68475fb55a50271a66be954aa47453333abea6ceb4c5e8e4367bd87d8333",
+      "bytes": 93180,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "經驗聖水任務",
+      "file": "4764116f2024551a.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "9119bfd4479249c476440ebe4562b2bc45784f33c186b216e899803770e3fc91",
+      "bytes": 103620,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "職業技能",
+      "file": "7175c026c28a2cf0.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%81%B7%E6%A5%AD%E6%8A%80%E8%83%BD&ss=113640",
+      "sha256": "ededb959341471d7f26d7931c8b27b72230d3608fa9906ee1b3be8ad3def49cc",
+      "bytes": 95056,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "轉職任務",
+      "file": "402398833fec4c4c.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%BD%89%E8%81%B7%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "66ad818021616fa05a19c269ad991f6eed530f4b5e4bd152ceb82908a299969b",
+      "bytes": 95100,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "道具任務",
+      "file": "d05e96b10dd0495a.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640",
+      "sha256": "30c25cbb4c0073eb3e2781a58ae391f809d456a6cebbb67ed5743a18f6f955a1",
+      "bytes": 101998,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "魂閃",
+      "file": "22164202c80f9a20.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%AD%82%E9%96%83&ss=113640",
+      "sha256": "b013096f3c36e206473021bf1dfb6faf525988c87f337374d606bd6dfa7ec247",
+      "bytes": 94071,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "魯賓遜新手島",
+      "file": "0e5d4b063b061e78.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%AD%AF%E8%B3%93%E9%81%9C%E6%96%B0%E6%89%8B%E5%B3%B6&ss=113640",
+      "sha256": "2dd0635558bb07c8c8c5dfac3ea1c419bbb3af6ef663a5f77fae592bac3c95e2",
+      "bytes": 91292,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "龍魂技",
+      "file": "2e374178dd0ba69b.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%BE%8D%E9%AD%82%E6%8A%80&ss=113640",
+      "sha256": "fd475f4138c5e99c998380b3816675eab174078337a5314b23765783317a17a8",
+      "bytes": 91607,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "克蘭村",
+      "file": "e0c93505a3d5d1a2.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%85%8B%E8%98%AD%E6%9D%91&ss=113640",
+      "sha256": "557cd9af7e03127a9eb45b9ec0f895cab2b5dab9f3baaab4517e4c4d0b5aa972",
+      "bytes": 95217,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "北島",
+      "file": "9591063da7a36f0f.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8C%97%E5%B3%B6&ss=113640",
+      "sha256": "46ff50904b71f6571b4aa8d889eb03f6f79db054a51f37df399b3393241f11d8",
+      "bytes": 98985,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "威靈村",
+      "file": "a8f22f4488f843ca.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A8%81%E9%9D%88%E6%9D%91&ss=113640",
+      "sha256": "d76dc7820299f2579cae425b7925e4a0b4c2a396213c9d7bcb4a1dc4908548a3",
+      "bytes": 95436,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "基督城",
+      "file": "471b44baa76389f0.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%9F%BA%E7%9D%A3%E5%9F%8E&ss=113640",
+      "sha256": "3448bd1697e01cc28eb441391d9edc0a991305f19fdefde5a2da384980c9bd95",
+      "bytes": 95878,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "威靈村國會對面",
+      "file": "16553e5f3568a2dd.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A8%81%E9%9D%88%E6%9D%91%E5%9C%8B%E6%9C%83%E5%B0%8D%E9%9D%A2&ss=113640",
+      "sha256": "10a44a366d74f48a86d9a27ba8c936d1cc5d9ff669309f8371737814fb388221",
+      "bytes": 90955,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "南島",
+      "file": "aaf9e17d6de0e65b.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8D%97%E5%B3%B6&ss=113640",
+      "sha256": "a47369664145efe40d2c327eee20e9da6537020c48d240cafc414f111a37b06e",
+      "bytes": 96400,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "復活島",
+      "file": "47ecb119c5355f61.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%BE%A9%E6%B4%BB%E5%B3%B6&ss=113640",
+      "sha256": "f97671ca3fac912afb811849d0117dc0985c17ec6e5ca0f668d67d46b4258f43",
+      "bytes": 90847,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "長耳部落",
+      "file": "e9bddc436238ea77.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%95%B7%E8%80%B3%E9%83%A8%E8%90%BD&ss=113640",
+      "sha256": "279563110c4e8ab612b9e7872c5b2cc9d613aed1566e0aaa637baa430711a36a",
+      "bytes": 90860,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "瑪雅",
+      "file": "c903a58ba76bb8c1.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%91%AA%E9%9B%85&ss=113640",
+      "sha256": "5d141667a6946cd886a6488cb392ae508d7c6efff0625146db7c26a0798b5142",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "瑪雅部落",
+      "file": "3a728c7e9916e9d9.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%91%AA%E9%9B%85%E9%83%A8%E8%90%BD&ss=113640",
+      "sha256": "2dd37b4dfac00bc31a4051d2a4e06635ef7d41b0025b4e1c1d2f64afcdd1f063",
+      "bytes": 90860,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "邪馬台",
+      "file": "8e854566737186d8.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%82%AA%E9%A6%AC%E5%8F%B0&ss=113640",
+      "sha256": "4eec0581fa5e70ff16512956009e2d3b1a0500c9d45980e207b8dd09a23c1c8f",
+      "bytes": 90842,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "關西",
+      "file": "16a6363fee993685.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%97%9C%E8%A5%BF&ss=113640",
+      "sha256": "a3f79721c068772e80d7814fd4ecc6ad0186c9f8ffeab757bd06c245e63d33e3",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "京都",
+      "file": "58d07b8a69516695.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BA%AC%E9%83%BD&ss=113640",
+      "sha256": "3ea3e17baf400956765feea9361ce757d094c8955afddcdcc07bef88a310bfa0",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "朝鮮",
+      "file": "9dda68d1d1dfb665.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%9C%9D%E9%AE%AE&ss=113640",
+      "sha256": "093165d81b75d1dea53a6d969990e4259c1097bd8a8e9faa677092d8a1f9b6e3",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "仁川",
+      "file": "8a31803011625b69.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%81%E5%B7%9D&ss=113640",
+      "sha256": "ce4acc7afd62c39d76208b9ef0299e27d087dab56a0975f8e0bad6e2b7e5890c",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "中國漁村",
+      "file": "8c46ed4eee30565b.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%AD%E5%9C%8B%E6%BC%81%E6%9D%91&ss=113640",
+      "sha256": "cf73b0c7f5501285708b9273bb8564d88d5555d1d352db4ff4296b364c2c5ba5",
+      "bytes": 90864,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "中國",
+      "file": "75e69392284016e9.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%AD%E5%9C%8B&ss=113640",
+      "sha256": "c5c94b11cb45f00fc2527b9b7817b3d72c9e7abdc5435d5ca8f3db259f86ce45",
+      "bytes": 93502,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "長安",
+      "file": "706108acdf2dde65.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%95%B7%E5%AE%89&ss=113640",
+      "sha256": "4301b14f2e8863724198175d990d9f681eedfeb9c26b9b67ac0173cf30c20978",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "曼谷",
+      "file": "6790c32cc11b02bf.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%9B%BC%E8%B0%B7&ss=113640",
+      "sha256": "df61c023cba4bc80723f0226c8be643be11da3637469eca343333c55aed7f8c7",
+      "bytes": 93728,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "加爾喀達",
+      "file": "15a99187946119a4.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8A%A0%E7%88%BE%E5%96%80%E9%81%94&ss=113640",
+      "sha256": "259f82a4007fd0de62685057df4d51e71ecb196393e4c91119344fd0428f01dd",
+      "bytes": 90864,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "崖州",
+      "file": "c3be7fef0dd190c1.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%B4%96%E5%B7%9E&ss=113640",
+      "sha256": "ac060132a75b57008687ae8c83217f14025951e77d3fd7e2806458ec31f559f9",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "埃及",
+      "file": "75fb1f4a2a987290.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%9F%83%E5%8F%8A&ss=113640",
+      "sha256": "f2221bcfdb50f510ff4b3fabd5d2baa6a094379d30b4c95e489e822b6bd8ead2",
+      "bytes": 90828,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "開羅",
+      "file": "ffd882b72825ac59.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%96%8B%E7%BE%85&ss=113640",
+      "sha256": "ad8d83087cc395b99d572cbaeca948390d56367d8c88e2f156d4e18126fcf55d",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "空中花園",
+      "file": "868c9449385e6b79.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%A9%BA%E4%B8%AD%E8%8A%B1%E5%9C%92&ss=113640",
+      "sha256": "1062a62619ca5eac53ed3f2d7ce0c957a5184b63b63e3536fc3d94290a2b8a1e",
+      "bytes": 90883,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "雅典",
+      "file": "f4470534322968e8.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%9B%85%E5%85%B8&ss=113640",
+      "sha256": "f319e739ebdeb7a137f1cb9212c2a1170a6daab56429438320e2198b4d17200b",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "司徒華島",
+      "file": "e16c5866f0969cb9.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8F%B8%E5%BE%92%E8%8F%AF%E5%B3%B6&ss=113640",
+      "sha256": "70d9f9ab6298a98e0cb0e90636e7696d053555afbdf9785d72ba596fdfbf5475",
+      "bytes": 91383,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "謎樣的少女",
+      "file": "472cfbc52428ad52.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%AC%8E%E6%A8%A3%E7%9A%84%E5%B0%91%E5%A5%B3&ss=113640",
+      "sha256": "07e9742a488eb183d92f7addc105b202ebdd9581c01d415ba12cbb8fc46a96ff",
+      "bytes": 90907,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "冰山",
+      "file": "6776e93ccf41eb37.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%86%B0%E5%B1%B1&ss=113640",
+      "sha256": "cfa05399007f87761c82902a6778acdec5c8c69bd545b935dc2db84c48018383",
+      "bytes": 90828,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "天空之城",
+      "file": "ad8ca4801bd6869f.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A4%A9%E7%A9%BA%E4%B9%8B%E5%9F%8E&ss=113640",
+      "sha256": "5dec4c7032a68eff673405aeb38b69fb895e16d387ebd0a5fa0e127d19e35f26",
+      "bytes": 90860,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "蝦夷",
+      "file": "39b725a137c1f5f0.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%9D%A6%E5%A4%B7&ss=113640",
+      "sha256": "6c26144372bc33ed4a40a7b9f70c90dc41f0aec50d7e132a6564882e2634fe1c",
+      "bytes": 90828,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "澳斯利亞",
+      "file": "4fdef7c86a3b0d68.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%BE%B3%E6%96%AF%E5%88%A9%E4%BA%9E&ss=113640",
+      "sha256": "1edd9985241a84ea44ff3cf491678a478396dceeb7a65194435bde2a6bdbec17",
+      "bytes": 90860,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "瑪雅叢林",
+      "file": "206638e509bdbc86.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%91%AA%E9%9B%85%E5%8F%A2%E6%9E%97&ss=113640",
+      "sha256": "4171fa3c6cf0993220070a85710aa158258792b8d83c874b860889861ae9c0a2",
+      "bytes": 90883,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "馬丘比丘",
+      "file": "f79d5717a6e02c05.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%A6%AC%E4%B8%98%E6%AF%94%E4%B8%98&ss=113640",
+      "sha256": "8107bb4c973ca52125a8b7c53141a7021a4ac2e3a15f0205c1cf2df81f536247",
+      "bytes": 90860,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "雪島",
+      "file": "6bb98fd8f3b0f545.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%9B%AA%E5%B3%B6&ss=113640",
+      "sha256": "4f33d186bdb976301a2f35ec5edc909d68f6d5cae600babd43302ebe2610918d",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "印加",
+      "file": "3033fdf48600fae6.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8D%B0%E5%8A%A0&ss=113640",
+      "sha256": "173178e3f43d113448e5e560f0a540af38886212ba41058345fec88363788da7",
+      "bytes": 90824,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "雅典城",
+      "file": "bfd5ec0a0b970721.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%9B%85%E5%85%B8%E5%9F%8E&ss=113640",
+      "sha256": "d548cbbe9cee0308b616c1983e3b603f810e6cfb10bae9b14a0fcee662ab8dd5",
+      "bytes": 90859,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "珂克山洞",
+      "file": "b847498e1cd4cc54.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%8F%82%E5%85%8B%E5%B1%B1%E6%B4%9E&ss=113640",
+      "sha256": "8330d1c0876212f47fd6b3fa5b7d669ccc5e15adc2a52493b03b63aa76439034",
+      "bytes": 90883,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "企鵝村",
+      "file": "fd1d0d6827b7bcf9.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BC%81%E9%B5%9D%E6%9D%91&ss=113640",
+      "sha256": "c6b49c4ce2785cf8265d9d0fec91e993c97466a32c2aa9c78ac2057d79648c2e",
+      "bytes": 90846,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "鬼島",
+      "file": "e2379b600f11d15e.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%AC%BC%E5%B3%B6&ss=113640",
+      "sha256": "e8fcc82ff28c8e2b4ba256a6a769995ad550ac5b392d7b70685e2931b6fee70d",
+      "bytes": 90826,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "卡瑪那瓦山",
+      "file": "9f8b4b77076ef63e.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8D%A1%E7%91%AA%E9%82%A3%E7%93%A6%E5%B1%B1&ss=113640",
+      "sha256": "be10e9ee913806c261e58cb3a325b8a24f3d574cb8b9fcb381df7e39921edc83",
+      "bytes": 90907,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "夏威夷",
+      "file": "1bdf7740cbeeb960.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A4%8F%E5%A8%81%E5%A4%B7&ss=113640",
+      "sha256": "9ced542e7214783133ea81fb6ba8c0f20b84329f339b54b02f72725541edffb9",
+      "bytes": 93609,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "誠實的代價",
+      "file": "991c3087f460ed45.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%AA%A0%E5%AF%A6%E7%9A%84%E4%BB%A3%E5%83%B9&ss=113640",
+      "sha256": "3c7894e6dc758fd71b9bcc964ec247d8cdad034e9563b66d01f5f11828af836e",
+      "bytes": 90907,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "美人魚事件",
+      "file": "f20b9261eba0280e.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%BE%8E%E4%BA%BA%E9%AD%9A%E4%BA%8B%E4%BB%B6&ss=113640",
+      "sha256": "a39269e6db12b4cc2bf8bd86bc79e6f1047c16186d6214e218183956668a8764",
+      "bytes": 90907,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "農場",
+      "file": "6caafa70a7aaf5e2.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%BE%B2%E5%A0%B4&ss=113640",
+      "sha256": "82df2437485e0c79491e8c21c927ef2e4be2eb771bc6e7c0ca01d04efe902d8a",
+      "bytes": 90835,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "放羊的小孩",
+      "file": "4a6ec87bd8369039.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%94%BE%E7%BE%8A%E7%9A%84%E5%B0%8F%E5%AD%A9&ss=113640",
+      "sha256": "a72dabdefdb4ef4408eb3371c05c4080327d5a9e592457944de12da488c08d3e",
+      "bytes": 90907,
+      "utf8_replacement_characters": 0
+    },
+    {
+      "title": "基督村",
+      "file": "7def50098811f4f0.html",
+      "url": "https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%9F%BA%E7%9D%A3%E6%9D%91&ss=113640",
+      "sha256": "223287844ca69a727f38902fb50d09ebec45ac6dcce0eed8996c76e594c14807",
+      "bytes": 94443,
+      "utf8_replacement_characters": 0
+    }
+  ]
+}

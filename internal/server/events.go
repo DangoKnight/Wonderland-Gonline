@@ -280,8 +280,8 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	if e := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); e != nil {
 		return e
 	}
-	for _, o := range ev.Branches[branch].Operations {
-		if op := world.DecodeOp(o); op.Unsupported() || (op.Code == world.ActionTransform && !s.transformationAllowed(mapID, ev, branch, op)) || (op.Code == world.ActionLearnSkill && !s.hasSkill(op.D1)) {
+	for index, o := range ev.Branches[branch].Operations {
+		if op := world.DecodeOp(o); (op.Unsupported() && !s.World.QuestCompanionAction(mapID, ev, branch, index)) || (op.Code == world.ActionTransform && !s.transformationAllowed(mapID, ev, branch, op)) || (op.Code == world.ActionLearnSkill && !s.hasSkill(op.D1)) {
 			s.Log.Info("unsupported quest action", "map", mapID, "event", ev.ClickID, "branch", ev.Branches[branch].Index, "step", op.Index, "opcode", op.Code)
 			if e := c.send(serverwire.HeadBanner("This quest action is not supported yet. Please report this quest.")); e != nil {
 				return e
@@ -313,6 +313,9 @@ func (s *Server) actorCapability(c *Session, es *eventSession, op world.Op) bool
 // canDeliver is CanDeliverPendingRewards: every reward before the next client step must
 // fit before the first of them is given.
 func (s *Server) canDeliver(c *Session, es *eventSession) bool {
+	if plan, ok := s.World.QuestCompanion(es.mapID, es.ev, es.branch, es.index); ok {
+		return s.canChangeQuestCompanion(c.character, plan)
+	}
 	ops := es.ev.Branches[es.branch].Operations
 	gold := int64(c.character.Gold)
 	var changes []game.ItemChange
@@ -468,6 +471,18 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 	}
 	resume := func() error { return s.advance(ctx, c, es) }
 	for es.index < len(br.Operations) {
+		if plan, ok := s.World.QuestCompanion(es.mapID, es.ev, es.branch, es.index); ok {
+			if err := s.changeQuestCompanion(ctx, c, es, plan); err != nil {
+				return err
+			}
+			break
+		}
+		if plan, ok := s.World.QuestCompletion(es.mapID, es.ev, es.branch, es.index); ok {
+			if err := s.completeNativeQuest(ctx, c, es, plan); err != nil {
+				return err
+			}
+			break
+		}
 		op := world.DecodeOp(br.Operations[es.index])
 		es.index++
 		if op.Code == world.ActionMinigame {
@@ -509,7 +524,7 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			return s.sendPathGroup(c, es, op)
 		}
 		speech := op.PlayerSpeech() || op.NPCSpeech()
-		path := op.Code == world.ActionActor && (op.D2 == 9 || (s.actorCapability(c, es, op) && (op.D2 == 10 || op.D2 == 11)))
+		path := op.Code == world.ActionActor && (op.D2 == world.ActorActionPath || (s.actorCapability(c, es, op) && (op.D2 == world.ActorActionTurn || op.D2 == world.ActorActionConstellation)))
 		movie := op.Code == world.ActionMovie && (op.D1 == 1 || op.D1 == 2)
 		music := op.Code == world.ActionEffect
 		effect := op.Code == world.ActionPlayer && (op.D1 == 6 || op.D1 == 7)
@@ -633,21 +648,40 @@ func (s *Server) itemName(id uint16) string {
 	return fmt.Sprintf("Item #%d", id)
 }
 
-func freeSlots(c *game.Character) int {
+func (s *Server) freeBagCells(c *game.Character) int {
+	cells, err := c.Bag.Occupancy(s.Assets.Items)
+	if err != nil {
+		return 0
+	}
 	n := 0
-	for _, it := range c.Bag {
-		if it.ID == 0 {
+	for _, anchor := range cells {
+		if anchor == 0 {
 			n++
 		}
 	}
 	return n
 }
 
+func itemCapacityFailure(es *eventSession) bool {
+	if es == nil || es.ev == nil || es.branch < 0 || es.branch >= len(es.ev.Branches) {
+		return false
+	}
+	branches := es.ev.Branches
+	end := min(len(branches), es.branch+1+world.DecodeCond(branches[es.branch].Condition).ExtraConditions())
+	for _, branch := range branches[es.branch:end] {
+		condition := world.DecodeCond(branch.Condition)
+		if condition.Kind == world.ConditionFreeBagSlots && condition.W1 == world.BagCapacityCannotReceive {
+			return true
+		}
+	}
+	return false
+}
+
 // fallbackDialogue sends an untyped dialogue line; its acknowledgment ends the event.
 // C# only released the client there and left the event active, which blocked the next
 // click until a map change.
 func (s *Server) fallbackDialogue(c *Session, es *eventSession, step, portrait, speaker byte, talk uint32) (bool, error) {
-	if slices.Contains(s.Assets.Story.FullBagWarnings, talk) && freeSlots(c.character) >= 1 {
+	if slices.Contains(s.Assets.Story.FullBagWarnings, talk) && !itemCapacityFailure(es) && s.freeBagCells(c.character) >= 1 {
 		return true, nil // An inventory-full warning with space left.
 	}
 	es.onComplete = func() error { return s.finishEvent(c, es) }
@@ -674,7 +708,13 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 		case op.D1 == world.PlayerActionAnimation:
 			return true, c.send(serverwire.EventFrame(14, byte(op.D2), op.D3, 0, 0, 0, op.Index, br.Index))
 		case op.D1 == world.PlayerActionEffect:
-			return true, c.send(serverwire.EventFrame(9, 1, 0, 1, uint32(op.D2), op.D3, op.Index, br.Index))
+			frame := serverwire.EventFrame(9, 1, 0, 1, uint32(op.D2), op.D3, op.Index, br.Index)
+			if op.D3 == world.PlayerEffectExpressionMode && op.D2 > 0 && op.D2 <= world.PlayerExpressionMaximumOperand {
+				p := protocol.Builder{protocol.CommandPose, protocol.PoseEmote}.U32(c.character.ID).U8(byte(world.PlayerExpressionOffset + op.D2))
+				s.broadcastWorld(c, p)
+				return true, s.sendAll(c, [][]byte{p, frame})
+			}
+			return true, c.send(frame)
 		case op.D1 == world.PlayerActionRecordPoint:
 			// A Record site saves the current position as the return point.
 			next := char.Clone()
@@ -927,14 +967,18 @@ func (s *Server) questMark(ctx context.Context, c *Session, op world.Op) (bool, 
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
+	return true, s.sendAll(c, s.questMarkPackets(c, id, q))
+}
+
+func (s *Server) questMarkPackets(c *Session, id uint32, q game.Quest) [][]byte {
 	packets := s.World.QuestUpdate(c.view, id, q)
-	for _, reward := range storyStars {
-		if id == reward.mark {
-			packets = append(packets, storyConstellations(c.character))
+	for reward := range s.World.StoryRules(assets.StoryConstellation, nil, nil, world.StoryContext{}) {
+		if id == reward.Mark {
+			packets = append(packets, s.storyConstellations(c.character))
 			break
 		}
 	}
-	return true, s.sendAll(c, packets)
+	return packets
 }
 
 // actorAction is opcode 2: animations, paths, prop frames, actor visibility and lines.
@@ -948,10 +992,10 @@ func (s *Server) actorAction(ctx context.Context, c *Session, es *eventSession, 
 				return false, nil
 			}
 			if op.D2 == world.ActorActionAnimation {
-				return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneWireCode8}.U16(op.D1).U8(byte(op.D3)).U8(byte(op.DW2)))
+				return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneActorAnimation}.U16(op.D1).U8(byte(op.D3)).U8(byte(op.DW2)))
 			}
-			return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneWireCode7}.U16(op.D1).U8(byte(op.D3)))
-		case world.ActorActionWireCode10:
+			return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneActorExpression}.U16(op.D1).U8(byte(op.D3)))
+		case world.ActorActionTurn:
 			return true, c.send(serverwire.EventFrame(11, byte(op.D1), op.D2, byte(op.D3), op.DW2, 0, op.Index, br.Index))
 		}
 		star := byte(op.Value())

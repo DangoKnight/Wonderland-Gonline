@@ -659,6 +659,12 @@ func (s *Server) redeemStoryExchange(ctx context.Context, c *Session, es *eventS
 // The acceptance branch's marks and model are committed together. Read fresh
 // player state inside the transaction, including the outfit replacement.
 func (s *Server) transformStoryCharacter(ctx context.Context, c *Session, es *eventSession, op world.Op) (bool, error) {
+	if template, ok := s.World.QuestDisguise(es.mapID, es.ev, es.branch, op); ok {
+		c.shapeshift = template
+		packet := shapeshiftPacket(c)
+		s.broadcastWorld(c, packet)
+		return true, s.sendAll(c, [][]byte{packet, {protocol.CommandEvent, protocol.EventStepComplete}})
+	}
 	policy, allowed := s.World.Transformation(es.mapID, es.ev, es.branch, op)
 	if !allowed {
 		return false, nil
@@ -697,6 +703,9 @@ func (s *Server) transformStoryCharacter(ctx context.Context, c *Session, es *ev
 		return false, errors.Join(err, s.cancelInteraction(c))
 	}
 	s.adoptSavedCharacter(c, next)
+	if c.shapeshift != 0 {
+		s.clearShapeshift(c)
+	}
 	appearance, err := next.AppearancePacket(true)
 	if err != nil {
 		return false, err
@@ -730,6 +739,9 @@ func (s *Server) transformStoryCharacter(ctx context.Context, c *Session, es *ev
 }
 
 func (s *Server) transformationAllowed(mapID uint16, ev *assets.Event, branch int, op world.Op) bool {
+	if _, ok := s.World.QuestDisguise(mapID, ev, branch, op); ok {
+		return true
+	}
 	_, ok := s.World.Transformation(mapID, ev, branch, op)
 	return ok
 }

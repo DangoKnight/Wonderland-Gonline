@@ -142,6 +142,76 @@ all matching edits in order: remove, prepend, replace the first match, move befo
 another operation, or copy speech from an authored branch. Recovery routes use
 existing durable marks to resume or finish interrupted story checkpoints.
 
+### Native honey quest example
+
+Kelan's honey quest uses this same executor. The EVE programs own acceptance,
+dialogue, honey delivery, the bee formation, battle outcomes, hand-in and the
+patient's pose. Native pre-events hide the honey actors while honey is carried
+and after hand-in. The only additional runtime policy is a scoped `continue`
+rule linking map 12000, event 25, branch 1 to branch 4: after the honey grant,
+the warning and battle continue within the same interaction. Its ID is an
+editor label; runtime dispatch depends on its kind, scope and operands.
+
+The native/custom distinction matters: `QuestDefinitions` offers simpler custom
+dialogue and step-based quests. Native quests use Story/EVE to retain the
+original action sequence and Legacy protocol. No honey-specific runtime module
+or replacement dialogue engine is required. See the
+[captured reference](HONEY_QUEST_NATIVE_RESEARCH.md).
+
+### Native Lost Dog visibility
+
+Kelan's hogpen dog (map 12000, actor 20) is visible before acceptance. Native
+event 26 then runs its bark and hogpen dialogue without changing progress. Once
+request mark 13046 reaches active step 1, the same event selects the recovery
+branch, moves/hides that actor, reveals the returned dog (actor 28) and advances
+the request to step 2. The native pre-events reconstruct the two actors' states
+on re-entry; mark 13047 gates the completed hand-in. The server does not equate
+being visible with being eligible for recovery.
+
+Asset revision v44 removes the four stock `dog_*` visibility overrides that
+previously hid the hogpen dog before acceptance. This uses the same revision
+helper as the honey correction, with its before-images authored in
+[`native_quest_revision_v44.json`](../internal/assetsql/native_quest_revision_v44.json).
+Installed-data tests cover fresh, accepted, recovered and finished visibility,
+and execute both the pre-acceptance dialogue and accepted recovery branch.
+
+### Battle backdrop policies
+
+`battle_background` selects the native UInt16 formation background with `value`.
+It supports the ordinary map, event, branch, actor and player-state gates, so
+encounter scenery stays in structured Story definitions. Operation patterns are
+not used for this kind. A running battle selects its backdrop at entry; every
+participating client receives that selector. Unconfigured encounters retain the
+historical compatibility selection.
+
+The default map-12002 policy selects wire value 140 for Xaolan's house. The
+native client subtracts 0x1988 with UInt16 wrapping (`FUN_0036f448`), resolving
+scene 59140. Its sole layer is artwork 59140, verified against the Legacy
+screenshot. The Gonline client accepts this single-layer record rather than
+requiring a third/sky layer and falling back to grassland. Schema v45 installs
+this rule through `native_quest_revision_v45.json`, guarded by the existing
+robbery quest policy family. Same-ID edits and intentionally empty/removed
+families remain intact.
+
+### Declarative policy revisions
+
+Offline asset upgrades can use the reusable `storyRevision` migration helper.
+The v43 definition is authored in
+[`native_quest_revision_v43.json`](../internal/assetsql/native_quest_revision_v43.json).
+It contains exact `remove` before-images, `replace` pairs with the same rule ID,
+and `append` entries optionally guarded by `when_any_present` policy IDs.
+Guards inspect the original collection, so removing an obsolete parent and
+adding its successor works in one revision. Existing same-ID additions are
+preserved. Intentionally empty collections remain empty; unrelated definitions,
+operator edits and surviving rule order are retained.
+
+This file is versioned migration input, not a runtime definition store. The
+catalog migration runner invokes it inside the upgrade transaction; subsequent
+gameplay uses the structured Story SQL tables. Future native quest corrections
+can reuse the helper with their own revision data rather than adding a
+quest-specific Go migration function. Revisions are applied once at their
+schema boundary, preventing later upgrades from restoring deleted policies.
+
 Cinematic cues name protocol operations such as movie, pose, actor action,
 movement lock and quest display; they contain no arbitrary socket bytes or SQL.
 Lengths and native numeric ranges are validated before publication. Character IDs
@@ -215,3 +285,13 @@ Focused checks and the installed-data migration/parity results are recorded in
 [TESTING.md](TESTING.md#story-system-migration--2026-11-01); optimization benchmarks
 and regression checks follow in the same document. Native script and wire checks
 remain distinct from live native-client acceptance.
+
+### Visit-scoped actor visibility
+
+`visit_visibility` snapshots the selected actors' native visibility during the
+first scene synchronization. Subsequent quest-mark changes do not remove them
+mid-scene; explicit scripted show/hide commands still take precedence. Map entry
+resets the snapshot and evaluates the durable quest progress again. Schema v46
+replaces the stock Xaolan rescue visibility overrides with this policy for
+actors 2 and 3 in map 12002. Native pre-events hide them after the rescue on the
+next visit, while later quest stages can show alternate actors 6 and 7.

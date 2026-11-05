@@ -360,9 +360,14 @@ func (s *Server) reviveMonsters(now time.Time) {
 // AC5:5 resets the actor shape. The reference server's proposed AC23:122 success effect is
 // fishing cleanup in the verified WLRI client and must not be sent here.
 func (s *Server) clearShapeshift(c *Session) {
-	p := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateShapeshift}.U32(c.character.ID).U16(0)
+	c.shapeshift = 0
+	p := shapeshiftPacket(c)
 	s.broadcastWorld(c, p)
 	s.sendOrClose(c, p)
+}
+
+func shapeshiftPacket(c *Session) []byte {
+	return protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateShapeshift}.U32(c.character.ID).U16(c.shapeshift)
 }
 
 // Resting recovery is a server rule of this port: neither aLogin nor the

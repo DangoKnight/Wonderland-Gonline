@@ -1,0 +1,107 @@
+{
+  "id": "native_xaolan_visibility_v46",
+  "remove": [
+    {
+      "id": "robbery_hide_companion",
+      "kind": "final_visibility",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "actors": [
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13033,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "mark_state",
+          "id": 13004,
+          "op": "ne",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "mark_state",
+          "id": 13005,
+          "op": "ne",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "party_broadcast",
+          "id": 14156,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        }
+      ],
+      "pattern": {}
+    }
+  ],
+  "replace": [
+    {
+      "before": {
+        "id": "robbery_show_actors",
+        "kind": "final_visibility",
+        "scope": {
+          "maps": [
+            12002
+          ],
+          "actors": [
+            2,
+            3
+          ],
+          "allow_missing": true
+        },
+        "gates": [
+          {
+            "source": "active_mark_step",
+            "id": 13033,
+            "op": "eq",
+            "value": 1,
+            "group": 0
+          },
+          {
+            "source": "mark_state",
+            "id": 13004,
+            "op": "ne",
+            "value": 1,
+            "group": 0
+          },
+          {
+            "source": "mark_state",
+            "id": 13005,
+            "op": "ne",
+            "value": 1,
+            "group": 0
+          }
+        ],
+        "pattern": {},
+        "value": 1
+      },
+      "after": {
+        "id": "robbery_show_actors",
+        "kind": "visit_visibility",
+        "scope": {
+          "maps": [
+            12002
+          ],
+          "actors": [
+            2,
+            3
+          ],
+          "allow_missing": true
+        },
+        "pattern": {}
+      }
+    }
+  ]
+}

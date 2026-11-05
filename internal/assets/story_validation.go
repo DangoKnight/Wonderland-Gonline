@@ -85,6 +85,25 @@ func ValidateStoryDefinitions(d StoryDefinitions) error {
 			return fmt.Errorf("story %s: marks require a checkpoint rule", r.ID)
 		}
 		switch r.Kind {
+		case StoryVisitVisibility:
+			if len(r.Scope.Maps) == 0 || len(r.Scope.Actors) == 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || r.Pattern != (StoryPattern{}) || r.Value != 0 {
+				return fmt.Errorf("invalid visit visibility scope")
+			}
+		case StoryBattleBackground:
+			if r.Value < 0 || r.Value > math.MaxUint16 || r.Pattern != (StoryPattern{}) {
+				return fmt.Errorf("invalid story battle background")
+			}
+		case StoryConstellation:
+			if r.Mark == 0 || r.Mark > math.MaxUint16 || r.Value < 1 || r.Value > MaxStoryConstellationID || r.Pattern != (StoryPattern{}) || len(r.Gates) != 0 || len(r.Scope.Maps) != 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || len(r.Scope.Actors) != 0 {
+				return fmt.Errorf("invalid constellation completion definition")
+			}
+		case StoryQuestCompletion, StoryQuestCompanion, StoryQuestRewardBundle:
+			if r.Mark > math.MaxUint16 || r.Value > math.MaxUint8 || r.Pattern.Code == nil {
+				return fmt.Errorf("invalid quest completion guard")
+			}
+			if r.Kind == StoryQuestCompanion && (r.Template == 0 || r.Template > math.MaxUint16) {
+				return fmt.Errorf("invalid quest companion template")
+			}
 		case StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition:
 			if r.Value < 0 || r.Value > 1 {
 				return fmt.Errorf("story %s: expected boolean result", r.ID)
@@ -304,6 +323,16 @@ func ValidateStoryCatalog(c *Catalog) error {
 
 		if r.Scope.AllowMissing {
 			continue
+		}
+		if r.Kind == StoryQuestCompletion || r.Kind == StoryQuestCompanion || r.Kind == StoryConstellation || r.Kind == StoryQuestRewardBundle {
+			if _, exists := c.Marks[uint16(r.Mark)]; !exists {
+				return fmt.Errorf("story %s: unknown quest completion mark %d", r.ID, r.Mark)
+			}
+		}
+		if r.Kind == StoryQuestCompanion {
+			if _, exists := c.NPCs[uint16(r.Template)]; !exists || r.Template > math.MaxUint16 || r.Template == 0 {
+				return fmt.Errorf("story %s: unknown quest companion %d", r.ID, r.Template)
+			}
 		}
 		for _, mark := range r.Marks {
 			_, native := c.Marks[uint16(mark.ID)]

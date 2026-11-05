@@ -1,0 +1,249 @@
+{
+  "id": "native_quest_progression_v43",
+  "remove": [
+    {
+      "id": "wine_actors_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          17,
+          18,
+          19
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 13023,
+          "op": "ne",
+          "value": 3
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "wine_actors_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          17,
+          18,
+          19
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "honeycomb_battle_completion",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "events": [
+          25
+        ],
+        "branches": [
+          6,
+          7
+        ],
+        "allow_missing": true
+      },
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "prepend",
+          "match": {},
+          "before": {},
+          "operations": [
+            {
+              "index": 3,
+              "code": 5,
+              "d1": 13023,
+              "d2": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "honey_patient_pose_until_hand_in",
+      "kind": "precondition",
+      "scope": {
+        "maps": [
+          12004
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_step",
+          "id": 13023,
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "pattern": {
+        "code": 5,
+        "d1": 13023,
+        "d2": 1,
+        "d3": 1,
+        "d4": 5,
+        "d5": 0,
+        "d6_low": 0
+      },
+      "value": 1
+    },
+    {
+      "id": "wine_actors_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          18,
+          19
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 13023,
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "wine_actors_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          18,
+          19
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    }
+  ],
+  "replace": [
+    {
+      "before": {
+        "id": "always_visible_kelan",
+        "kind": "visibility",
+        "scope": {
+          "maps": [
+            12000
+          ],
+          "actors": [
+            17,
+            10,
+            31,
+            29
+          ],
+          "allow_missing": true
+        },
+        "gates": [],
+        "pattern": {},
+        "value": 1
+      },
+      "after": {
+        "id": "always_visible_kelan",
+        "kind": "visibility",
+        "scope": {
+          "maps": [
+            12000
+          ],
+          "actors": [
+            10,
+            31,
+            29
+          ],
+          "allow_missing": true
+        },
+        "gates": [],
+        "pattern": {},
+        "value": 1
+      }
+    },
+    {
+      "before": {
+        "id": "kelan_scenery",
+        "kind": "preserve_actor",
+        "scope": {
+          "maps": [
+            12000
+          ],
+          "actors": [
+            17,
+            10,
+            31
+          ],
+          "allow_missing": true
+        },
+        "gates": [],
+        "pattern": {}
+      },
+      "after": {
+        "id": "kelan_scenery",
+        "kind": "preserve_actor",
+        "scope": {
+          "maps": [
+            12000
+          ],
+          "actors": [
+            10,
+            31
+          ],
+          "allow_missing": true
+        },
+        "gates": [],
+        "pattern": {}
+      }
+    }
+  ],
+  "append": [
+    {
+      "when_any_present": [
+        "wine_actors_visible"
+      ],
+      "rule": {
+        "id": "honeycomb_start_bee_battle",
+        "kind": "continue",
+        "scope": {
+          "maps": [
+            12000
+          ],
+          "events": [
+            25
+          ],
+          "branches": [
+            1
+          ],
+          "allow_missing": true
+        },
+        "target_branch": 4,
+        "pattern": {}
+      }
+    }
+  ]
+}

@@ -10,7 +10,18 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 31
+const catalogSchemaVersion = 46
+const nativeQuestPolicyRevisionSchemaVersion = 43
+const nativeQuestVisibilityRevisionSchemaVersion = 44
+const nativeQuestBackdropRevisionSchemaVersion = 45
+const nativeXaolanVisibilityRevisionSchemaVersion = 46
+
+// Branch compatibility: Client v30 introduced collection respawns while quest
+// v29 onward introduced independent content batches from the common v28 base.
+const clientCollectionSchemaVersion = 30
+const clientEquipmentSchemaVersion = 31
+const clientHoneycombSchemaVersion = 32
+const commonPreQuestSchemaVersion = 28
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -44,13 +55,19 @@ func migrateCatalog(tx *gorm.DB) error {
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
 		}
+		// Client v30 and quest v30 used the same version for different features.
+		// Detect the Client lineage before adding its collection projection.
+		questVersion := schema.Version
+		if schema.Version >= clientCollectionSchemaVersion && schema.Version <= clientHoneycombSchemaVersion && tx.Migrator().HasColumn(&catalogPresence{}, "ResourceRespawns") {
+			questVersion = commonPreQuestSchemaVersion
+		}
 		// Earlier content migrations read the complete generated projection.
-		if schema.Version < 31 {
+		if schema.Version < 40 {
 			if err := migrateEquipLevel(tx); err != nil {
 				return err
 			}
 		}
-		if schema.Version < 30 {
+		if schema.Version < 39 {
 			if err := migrateResourceRespawns(tx); err != nil {
 				return err
 			}
@@ -456,8 +473,85 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
-		if schema.Version < 29 {
+		if questVersion < 29 {
+			if err := migrateWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 29 {
+			if err := migrateAdditionalWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 30 {
+			if err := migrateRemainingWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 31 {
+			if err := migrateWikiQuestCompanions(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 32 {
+			if err := migrateEnabledWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 33 {
+			if err := migrateWikiQuestDisguises(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 34 {
+			if err := migrateWikiQuestActors(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 35 {
+			if err := migrateWikiQuestConstellations(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 36 {
+			if err := migrateWikiQuestBundles(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 37 {
+			if err := migrateWikiQuestConditions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 38 {
+			// Refresh reviewed names for development catalogs that already ran the
+			// original quest-only v28-v37 upgrades before the branch split.
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 39 {
 			if err := migrateCollectionUsage(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestPolicyRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV43); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestVisibilityRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV44); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV45); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanVisibilityRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV46); err != nil {
 				return err
 			}
 		}
@@ -468,6 +562,13 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Story = assets.DefaultStoryDefinitions()
+	if err := initializeEnabledWikiQuests(c); err != nil {
+		return err
+	}
+	c.Story.Rules, err = seedWikiQuests(c.Story.Rules, false)
+	if err != nil {
+		return err
+	}
 	c.Story.CompanionEquipment, err = seedPetSpecialEquipment(c.Story.CompanionEquipment, false)
 	if err != nil {
 		return err

@@ -99,14 +99,17 @@ func (f *BattleForm) Refresh() {
 		return
 	}
 	for id, progress := range t.Skills {
-		d := f.Browser.definition(id, t)
+		// FUN_0029bad4 checks the learned table entry before resolving its
+		// character-specific presentation. Stunt alias 15003 owns the order;
+		// the actual character skill (for example Love Wish) has order zero.
+		d := f.Browser.Catalog.Definitions[id]
 		// FUN_004816d8 checks native type 1..7 and a nonzero table order.
 		if progress.Grade != 0 && d.Type >= nativeBattleSkillFirstType && d.Type <= nativeBattleSkillLastType && d.TableOrder != 0 && id != BasicAttack && id != Defense {
 			f.rows = append(f.rows, id)
 		}
 	}
 	sort.Slice(f.rows, func(i, j int) bool {
-		a, b := f.Browser.definition(f.rows[i], t), f.Browser.definition(f.rows[j], t)
+		a, b := f.Browser.Catalog.Definitions[f.rows[i]], f.Browser.Catalog.Definitions[f.rows[j]]
 		if a.TableOrder == b.TableOrder {
 			return a.ID < b.ID
 		}

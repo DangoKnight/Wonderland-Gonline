@@ -271,7 +271,7 @@ func (c *Client) startSport(s []byte) {
 		g.Rand, g.Sound, g.Music, g.Result = rand.IntN, c.playSound, c.playMusic, result
 		sp.game = g
 		layout = sheepLayout
-		if g.Variant != 1 {
+		if g.Variant != minigame.DreamSheepVariant {
 			layout.form = "Pig_Exp_Form"
 		}
 		exit, exitLeft, exitTop = "MiniGame_Exit_Btn", 720, 520

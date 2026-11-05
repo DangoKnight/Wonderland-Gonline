@@ -585,6 +585,23 @@ func TestMinigameNativeStartResultsAndReplay(t *testing.T) {
 	}
 }
 
+func TestMinigameAuthoredPigVariantGolden(t *testing.T) {
+	s, c, wire := eventFixture(t)
+	es := &eventSession{mapID: c.character.Map, ev: &assets.Event{}}
+	c.event = es
+	// Native Kelan event 17: opcode 9, kind 5, parameter 11000, variant 2.
+	// Keep the source bytes and expected packet independent of the encoder.
+	var source assets.Operation
+	copy(source.Data[:], []byte{9, 5, 0, 248, 42, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+	if err := s.startMinigame(context.Background(), c, es, world.DecodeOp(source)); err != nil {
+		t.Fatal(err)
+	}
+	packets := wire.packets(t)
+	if !contains(packets, []byte{57, 1, 5, 248, 42, 2}) || !contains(packets, []byte{20, 9}) {
+		t.Fatal("authored pig variant was replaced by the sheep default", packets)
+	}
+}
+
 func TestMinigameCancellationAndLock(t *testing.T) {
 	for _, action := range []string{"cancel", "warp", "disconnect"} {
 		s, c, wire, _ := minigameFixture(t, 4, 0x2710)

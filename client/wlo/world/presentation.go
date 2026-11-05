@@ -75,34 +75,55 @@ func (w *World) drawExpressions(cx, cy int, now time.Time) {
 		} else if w.HidePlayer {
 			continue
 		}
-		pic := w.Env.Pics.Find("E" + strconv.Itoa(int(expression.Code)))
-		width, height := w.Env.Pics.Size(pic)
-		frames := height / expressionFrameSize
-		if width < expressionFrameSize || frames == 0 {
+		if !w.drawExpressionAt(expression, p.X-cx, p.Y-cy-peerNameLift, now) {
 			delete(w.Expressions, id)
-			continue
 		}
-		elapsed := max(now.Sub(expression.Started), 0)
-		frame := int(elapsed / expressionFrameEvery)
-		if frame >= frames*expressionRepeats {
-			delete(w.Expressions, id)
-			continue
-		}
-		dx, dy := 0, 0
-		switch code := expression.Code; {
-		case code >= 101 && code <= 111:
-			dx, dy = 30, -5
-		case code == 112 || code == 113 || code == 116:
-			dx, dy = 7, 22
-		case code == 114 || code == 115:
-			dx = 20
-		case code >= 117 && code <= 119:
-			dx, dy = -2, -25
-		}
-		row := frame % frames
-		w.Env.Pics.DrawRect(w.Env.Screen, pic, p.X-cx-expressionHeadLeft+dx, p.Y-cy-peerNameLift-expressionHeadLift+dy,
-			image.Rect(0, row*expressionFrameSize, expressionFrameSize, (row+1)*expressionFrameSize), true)
 	}
+	for click, expression := range w.NPCExpressions {
+		n := w.NPCs[click]
+		if n == nil || !n.Shown {
+			delete(w.NPCExpressions, click)
+			continue
+		}
+		anchor := 0
+		if n.Painter != nil {
+			if y, ok := n.Painter.FirstAnchorY(); ok {
+				anchor = y
+			}
+		}
+		if !w.drawExpressionAt(expression, n.X-cx, n.Y-cy+nameTop(nameHeight(n.Info, anchor)), now) {
+			delete(w.NPCExpressions, click)
+		}
+	}
+}
+
+func (w *World) drawExpressionAt(expression Expression, x, headY int, now time.Time) bool {
+	pic := w.Env.Pics.Find("E" + strconv.Itoa(int(expression.Code)))
+	width, height := w.Env.Pics.Size(pic)
+	frames := height / expressionFrameSize
+	if width < expressionFrameSize || frames == 0 {
+		return false
+	}
+	elapsed := max(now.Sub(expression.Started), 0)
+	frame := int(elapsed / expressionFrameEvery)
+	if frame >= frames*expressionRepeats {
+		return false
+	}
+	dx, dy := 0, 0
+	switch code := expression.Code; {
+	case code >= 101 && code <= 111:
+		dx, dy = 30, -5
+	case code == 112 || code == 113 || code == 116:
+		dx, dy = 7, 22
+	case code == 114 || code == 115:
+		dx = 20
+	case code >= 117 && code <= 119:
+		dx, dy = -2, -25
+	}
+	row := frame % frames
+	w.Env.Pics.DrawRect(w.Env.Screen, pic, x-expressionHeadLeft+dx, headY-expressionHeadLift+dy,
+		image.Rect(0, row*expressionFrameSize, expressionFrameSize, (row+1)*expressionFrameSize), true)
+	return true
 }
 
 // ApplyPeerMovement preserves native stop actions (8..73 and 99), whose

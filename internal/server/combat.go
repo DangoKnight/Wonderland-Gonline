@@ -111,8 +111,12 @@ func fleeContinues(mapID, event uint16) bool {
 // the enemies. It returns false when no battle can be built. Caller holds worldMu.
 func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, error) {
 	var formation []uint32
+	var members []world.FormationMember
 	if op.Code == world.ActionBattle {
-		formation = s.World.Formation(es.mapID, op.D2)
+		members = s.World.FormationMembers(es.mapID, op.D2)
+		for _, member := range members {
+			formation = append(formation, member.Template)
+		}
 	}
 	id := uint32(0)
 	switch {
@@ -137,8 +141,11 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		templates = []uint32{id}
 	}
 	var enemies []battle.Enemy
-	for _, t := range templates {
+	for index, t := range templates {
 		e := battle.Enemy{Template: t, Name: s.npcName(t), Level: level, HP: hp, ClickID: es.click}
+		if index < len(members) {
+			e.FormationSlot = members[index].Slot
+		}
 		// A formation enemy uses its own Npc.dat level and element.
 		if npc, ok := s.Assets.NPCs[uint16(t)]; ok && len(formation) > 0 && t <= 0xffff {
 			e.Level, e.Element = max(1, int(npc.Level)), npc.Element
@@ -221,10 +228,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 	}
 	run.b = battle.New(fighters, enemies)
-	background := uint16(1)
-	if c.character.Map < game.MapID10000 {
-		background = c.character.Map
-	}
+	background := s.battleBackground(c, run)
 	for _, m := range run.members {
 		for _, p := range m.c.character.Pets {
 			run.b.Roster[m.c.character.ID] = append(run.b.Roster[m.c.character.ID], p.ID)
@@ -972,10 +976,7 @@ func (s *Server) startPvP(attacker, defender *Session) error {
 	for _, m := range run.members {
 		m.c.battle = run
 	}
-	background := uint16(1)
-	if attacker.character.Map < game.MapID10000 {
-		background = attacker.character.Map
-	}
+	background := s.battleBackground(attacker, run)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			run.b.Finished = true

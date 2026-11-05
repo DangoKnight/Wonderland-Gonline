@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"time"
+	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/surface"
 )
@@ -23,30 +24,63 @@ type Sheep struct {
 	target            image.Rectangle
 	NewMonster        func(uint16) Monster
 	sleeper           Monster
+	hammerAt          time.Time
 }
 
 const (
-	sheepSeconds           = 30
-	sheepCueFrames         = 25
-	sheepDifficultySeconds = 6
-	sheepCueKinds          = 6
-	sheepDreamSheepNPC     = 17371
-	sheepDreamPigNPC       = 17400
-	sheepTargetLeft        = 307
-	sheepTargetTop         = 234
-	sheepTargetWidth       = 110
-	sheepTargetHeight      = 97
+	DreamSheepVariant      byte = 1
+	DreamPigVariant        byte = 2
+	sheepSeconds                = 30
+	sheepCueFrames              = 25
+	sheepDifficultySeconds      = 6
+	sheepCueKinds               = 6
+	sheepDreamSheepNPC          = 17371
+	sheepDreamPigNPC            = 17400
+	sheepTargetLeft             = 307
+	sheepTargetTop              = 234
+	sheepTargetWidth            = 110
+	sheepTargetHeight           = 97
+	sheepHammerX                = 375
+	sheepHammerY                = 200
+	sheepHammerFrames           = 3
+	sheepHammerBackTick         = 4
+	sheepHammerHitTick          = 8
+	sheepHammerResetTick        = 11
+	sheepStandingHammer         = 0
+	sheepRaisedHammer           = 1
+	sheepStrikingHammer         = 2
+	sheepSleeperX               = 475
+	sheepSleeperY               = 550
+	sheepSleepingAction         = 26
+	sheepWakingAction           = 28
+	sheepLifeSpacing            = 76
+	sheepLifeWidth              = 66
+	sheepLifeHeight             = 62
+	sheepLifeY                  = 15
+	sheepHUDY                   = 25
+	sheepLifeLabelX             = 15
+	sheepTimeLabelX             = 345
+	sheepTimeDigitsX            = 445
+	sheepScoreLabelX            = 630
+	sheepScoreDigitsX           = 730
 )
 
 func NewSheep(pics *picdb.DB, variant byte) *Sheep {
-	if variant != 1 && variant != 2 {
-		variant = 1
+	if variant != DreamSheepVariant && variant != DreamPigVariant {
+		variant = DreamSheepVariant
 	}
 	return &Sheep{Round: newRound(pics), Variant: variant, Lives: arcadeLives, remaining: sheepSeconds,
 		target: image.Rect(sheepTargetLeft, sheepTargetTop, sheepTargetLeft+sheepTargetWidth, sheepTargetTop+sheepTargetHeight)}
 }
+
+func (g *Sheep) Cursor() cursor.Shape {
+	if g.Started && !g.finished && g.resultAt.IsZero() {
+		return cursor.ShapeHammer
+	}
+	return cursor.ShapeNormal
+}
 func (g *Sheep) Pictures() []string {
-	return []string{"59102", "SheepGameBG_2", "59087", "59090", "Sleepbabo", "sheepDreamLife", "Hammer_1", "SheepDream_1", "SheepDream_2", "SheepDream_3", "SheepDream_4", "SheepDream_5", "SheepDream_6", "SheepDream_7", "SheepDream_8", "SheepDream_9"}
+	return []string{"59102", "SheepGameBG_2", "59087", "59090", "Sleepbabo", "sheepDreamLife", "sheepDreamLife_2", "Hammer_1", "MiniGame_Life_1", "MiniGame_Time_1", "MiniGame_Score_1", "Num_White5_1", "Word_Red_64L", "Word_Red_64U", "SheepDream_1", "SheepDream_2", "SheepDream_3", "SheepDream_4", "SheepDream_5", "SheepDream_6", "SheepDream_7", "SheepDream_8", "SheepDream_9"}
 }
 func (g *Sheep) Begin(now time.Time) {
 	if g.Started || g.Done() {
@@ -57,7 +91,7 @@ func (g *Sheep) Begin(now time.Time) {
 	g.cue = 0
 	if g.NewMonster != nil {
 		id := uint16(sheepDreamSheepNPC)
-		if g.Variant == 2 {
+		if g.Variant == DreamPigVariant {
 			id = sheepDreamPigNPC
 		}
 		g.sleeper = g.NewMonster(id)
@@ -94,7 +128,11 @@ func (g *Sheep) Update(now time.Time) {
 }
 func (g *Sheep) Click(x, y int, now time.Time) {
 	g.Update(now)
-	if !g.ready(now) || g.answered || !g.hitTarget(x, y) {
+	if !g.ready(now) || !g.hitTarget(x, y) || g.hammerFrame(now) != sheepStandingHammer {
+		return
+	}
+	g.hammerAt = now
+	if g.answered {
 		return
 	}
 	g.answered = true
@@ -109,25 +147,49 @@ func (g *Sheep) Click(x, y int, now time.Time) {
 		g.finish(false, now)
 	}
 }
-func (g *Sheep) Draw(dst *surface.Surface, _, _ int, _ time.Time) {
+func (g *Sheep) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	dst.Fill(image.Rect(0, 0, dst.W, dst.H), arcadePanel)
 	g.picture(dst, "59102", -50, -50)
 	g.picture(dst, "59087", -50, 130)
 	g.picture(dst, "59090", -50, -100)
 	g.picture(dst, "SheepGameBG_2", 200, 130)
-	arcadeText(dst, 30, 15, fmt.Sprintf("Dream  Lives: %d  Score: %d  Time: %d", g.Lives, g.Score, g.remaining))
-	arcadeText(dst, 220, 490, "Hit matching dreams; avoid false dreams.")
+	g.picture(dst, "MiniGame_Life_1", sheepLifeLabelX, sheepHUDY)
+	g.picture(dst, "MiniGame_Time_1", sheepTimeLabelX, sheepHUDY)
+	g.picture(dst, "MiniGame_Score_1", sheepScoreLabelX, sheepHUDY)
+	if g.Pics != nil {
+		life := "sheepDreamLife"
+		if g.Variant == DreamPigVariant {
+			life = "sheepDreamLife_2"
+		}
+		if icon := g.Pics.Find(life); icon >= 0 {
+			for i := 1; i <= g.Lives; i++ {
+				g.Pics.DrawStretch(dst, icon, image.Rect(i*sheepLifeSpacing, sheepLifeY, i*sheepLifeSpacing+sheepLifeWidth, sheepLifeY+sheepLifeHeight), true)
+			}
+		}
+		DrawNumber(dst, g.Pics, sheepTimeDigitsX, sheepHUDY, g.remaining, false, NumberSmall, "Num_White5_1")
+		DrawNumber(dst, g.Pics, sheepScoreDigitsX, sheepHUDY, g.Score, false, NumberSmall, "Num_White5_1")
+	}
 	if !g.Started {
 		return
 	}
 	if g.sleeper != nil {
-		g.sleeper.Draw(dst, 515, 500, 26)
+		action := sheepSleepingAction
+		if !g.resultAt.IsZero() && !g.win {
+			action = sheepWakingAction
+		}
+		g.sleeper.Draw(dst, sheepSleeperX, sheepSleeperY, action)
 	}
 	sleepX := 425
-	if g.Variant == 2 {
+	if g.Variant == DreamPigVariant {
 		sleepX = 405
 	}
-	g.strip(dst, "Sleepbabo", sleepX, 300, 0, 2)
+	if g.resultAt.IsZero() || g.win {
+		sleepY := 470
+		if g.Variant == DreamPigVariant {
+			sleepY = 480
+		}
+		g.strip(dst, "Sleepbabo", sleepX, sleepY, int(now.Sub(g.startedAt)/(time.Second/2))%2, 2)
+	}
 	index := (int(g.Variant)-1)*4 + 2
 	switch g.cue % 4 {
 	case 1:
@@ -142,9 +204,36 @@ func (g *Sheep) Draw(dst *surface.Surface, _, _ int, _ time.Time) {
 		frame = 1
 	}
 	g.strip(dst, fmt.Sprintf("SheepDream_%d", index), 300, 220-max(0, 100-g.frames*20), frame, 2)
-	dst.Frame(g.target, arcadeWhite)
-	arcadeText(dst, 365, 350, fmt.Sprintf("Cue %d", g.cue+1))
-	g.outcome(dst)
+	// FUN_00139c60 draws a three-row hammer at a fixed point, independent
+	// of mouse position. FUN_001391b0 selects rows on the 30 ms game clock.
+	g.strip(dst, "Hammer_1", sheepHammerX, sheepHammerY, g.hammerFrame(now), sheepHammerFrames)
+	if (!g.resultAt.IsZero() || g.finished) && g.Pics != nil {
+		label := "You Lose"
+		if g.win {
+			label = "You Win"
+		}
+		DrawWord(dst, g.Pics, 400, 200, label, true, 65, 0, FontRed)
+	}
+}
+
+func (g *Sheep) hammerFrame(now time.Time) int {
+	if g.hammerAt.IsZero() {
+		return sheepStandingHammer
+	}
+	if !g.resultAt.IsZero() && now.After(g.resultAt) {
+		now = g.resultAt
+	}
+	tick := int(now.Sub(g.hammerAt) / arcadeFrame)
+	switch {
+	case tick >= sheepHammerResetTick:
+		return sheepStandingHammer
+	case tick >= sheepHammerHitTick:
+		return sheepStrikingHammer
+	case tick >= sheepHammerBackTick:
+		return sheepRaisedHammer
+	default:
+		return sheepStandingHammer
+	}
 }
 
 // The three native click regions from FUN_0013a28c cover the dream and actor.

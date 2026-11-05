@@ -1,0 +1,2152 @@
+[
+  {
+    "id": "wiki_native_completion_11003_45_20",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11003
+      ],
+      "events": [
+        45
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 14050,
+    "pattern": {
+      "code": 5,
+      "d1": 14050,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_11003_51_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11003
+      ],
+      "events": [
+        51
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 9,
+    "mark": 18006,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34085,
+      "value": 2
+    }
+  },
+  {
+    "id": "wiki_native_completion_11003_54_9",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11003
+      ],
+      "events": [
+        54
+      ],
+      "branches": [
+        9
+      ],
+      "allow_missing": true
+    },
+    "value": 10,
+    "mark": 18006,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34085,
+      "value": 2
+    }
+  },
+  {
+    "id": "wiki_native_completion_11004_13_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11004
+      ],
+      "events": [
+        13
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 12062,
+    "pattern": {
+      "code": 5,
+      "d1": 12063,
+      "d2": 1,
+      "d3": 1,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11005_27_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11005
+      ],
+      "events": [
+        27
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 12072,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34125,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11048_3_1",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11048
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 18,
+    "mark": 12010,
+    "pattern": {
+      "code": 5,
+      "d1": 12010,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_11144_2_8",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11144
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 15048,
+    "pattern": {
+      "code": 5,
+      "d1": 15048,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_11158_2_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11158
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15068,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30153,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11195_1_20",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11195
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16032,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34147,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11195_2_20",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11195
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16032,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34147,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11195_6_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11195
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16032,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34147,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_11195_7_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        11195
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16032,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34147,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12004_2_6",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12004
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 13,
+    "mark": 13022,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30034,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12050_68_20",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12050
+      ],
+      "events": [
+        68
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 16014,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 44004,
+      "value": 5
+    }
+  },
+  {
+    "id": "wiki_native_completion_12050_69_9",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12050
+      ],
+      "events": [
+        69
+      ],
+      "branches": [
+        9
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 16014,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 44004,
+      "value": 5
+    }
+  },
+  {
+    "id": "wiki_native_completion_12050_70_9",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12050
+      ],
+      "events": [
+        70
+      ],
+      "branches": [
+        9
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 16014,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 44004,
+      "value": 5
+    }
+  },
+  {
+    "id": "wiki_native_completion_12050_71_9",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12050
+      ],
+      "events": [
+        71
+      ],
+      "branches": [
+        9
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 16014,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 44004,
+      "value": 5
+    }
+  },
+  {
+    "id": "wiki_native_completion_12100_9_13",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12100
+      ],
+      "events": [
+        9
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 15028,
+    "pattern": {
+      "code": 5,
+      "d1": 15028,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12100_15_1",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12100
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 12000,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30008,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12110_14_8",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12110
+      ],
+      "events": [
+        14
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 7,
+    "mark": 20026,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 43001,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12113_4_8",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12113
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 18008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30226,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12116_3_15",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12116
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        15
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16036,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34088,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12132_1_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12132
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 13186,
+    "pattern": {
+      "code": 5,
+      "d1": 13186,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12150_31_6",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12150
+      ],
+      "events": [
+        31
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 12006,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 42005,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12151_3_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12151
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 12004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30015,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12200_15_1",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12200
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 13120,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30058,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12299_6_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12299
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 16046,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34131,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12299_7_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12299
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 16046,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34131,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12299_8_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12299
+      ],
+      "events": [
+        8
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 16046,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34131,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12355_7_12",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12355
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        12
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 12054,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34048,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12405_2_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12405
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15026,
+    "pattern": {
+      "code": 5,
+      "d1": 15026,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12450_10_15",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12450
+      ],
+      "events": [
+        10
+      ],
+      "branches": [
+        15
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16030,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12502_3_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12502
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 13204,
+    "pattern": {
+      "code": 5,
+      "d1": 13204,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12502_3_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12502
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 13204,
+    "pattern": {
+      "code": 5,
+      "d1": 13204,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12512_13_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12512
+      ],
+      "events": [
+        13
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15044,
+    "pattern": {
+      "code": 5,
+      "d1": 15044,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12512_14_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12512
+      ],
+      "events": [
+        14
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15044,
+    "pattern": {
+      "code": 5,
+      "d1": 15044,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12516_4_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12516
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 2,
+    "mark": 13200,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30181,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12544_1_15",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12544
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        15
+      ],
+      "allow_missing": true
+    },
+    "value": 18,
+    "mark": 16040,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12544_3_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12544
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 17,
+    "mark": 16040,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12544_6_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12544
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 17,
+    "mark": 16040,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12544_7_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12544
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 17,
+    "mark": 16040,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 42004,
+      "value": 10
+    }
+  },
+  {
+    "id": "wiki_native_completion_12600_20_5",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12600
+      ],
+      "events": [
+        20
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 13188,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30164,
+      "value": 4294967295
+    }
+  },
+  {
+    "id": "wiki_native_completion_12700_7_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12700
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 6,
+    "mark": 20036,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 5,
+      "d3": 1,
+      "value": 800
+    }
+  },
+  {
+    "id": "wiki_native_completion_12700_12_13",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12700
+      ],
+      "events": [
+        12
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 16000,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34146,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12700_15_2",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12700
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 16000,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34146,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12761_1_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12761
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 13214,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34086,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12763_1_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12763
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 8,
+    "mark": 13216,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34089,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12765_13_25",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        13
+      ],
+      "branches": [
+        25
+      ],
+      "allow_missing": true
+    },
+    "value": 11,
+    "mark": 15144,
+    "pattern": {
+      "code": 5,
+      "d1": 15144,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12765_15_25",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        25
+      ],
+      "allow_missing": true
+    },
+    "value": 12,
+    "mark": 15144,
+    "pattern": {
+      "code": 5,
+      "d1": 15144,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12765_22_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        22
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 10,
+    "mark": 15144,
+    "pattern": {
+      "code": 5,
+      "d1": 15144,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12803_3_8",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12803
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 15124,
+    "pattern": {
+      "code": 5,
+      "d1": 15124,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12803_3_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12803
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15124,
+    "pattern": {
+      "code": 5,
+      "d1": 15124,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12803_4_8",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12803
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        8
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15124,
+    "pattern": {
+      "code": 5,
+      "d1": 15124,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12803_5_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12803
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 15124,
+    "pattern": {
+      "code": 5,
+      "d1": 15124,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12803_5_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12803
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15124,
+    "pattern": {
+      "code": 5,
+      "d1": 15124,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12831_5_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12831
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16010,
+    "pattern": {
+      "code": 5,
+      "d1": 16010,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12831_5_14",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12831
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        14
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16010,
+    "pattern": {
+      "code": 5,
+      "d1": 16010,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_12832_1_3",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12832
+      ],
+      "events": [
+        1
+      ],
+      "branches": [
+        3
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 21070,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34136,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_2_23",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        23
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_3_12",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        12
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_3_17",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        17
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_4_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_5_20",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12866_6_1",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12866
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "value": 3,
+    "mark": 16038,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30293,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12906_7_13",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12906
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 10044,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34061,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12950_12_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12950
+      ],
+      "events": [
+        12
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 16042,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34136,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12950_15_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12950
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 16042,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34136,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_12950_16_4",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        12950
+      ],
+      "events": [
+        16
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 16042,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34136,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13100_25_17",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13100
+      ],
+      "events": [
+        25
+      ],
+      "branches": [
+        17
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16006,
+    "pattern": {
+      "code": 5,
+      "d1": 16006,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_13106_2_17",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13106
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        17
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34131,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13109_4_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13109
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 14,
+    "mark": 16034,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13109_5_5",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13109
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 14,
+    "mark": 16034,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13109_7_5",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13109
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 14,
+    "mark": 16034,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13109_8_5",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13109
+      ],
+      "events": [
+        8
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 14,
+    "mark": 16034,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34090,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13210_2_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13210
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 32290,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13210_5_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13210
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 32290,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13210_7_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13210
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 32290,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13210_9_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13210
+      ],
+      "events": [
+        9
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16008,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 32290,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13214_3_21",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13214
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        21
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 14110,
+    "pattern": {
+      "code": 5,
+      "d1": 14110,
+      "d2": 2,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "wiki_native_completion_13215_4_10",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13215
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        10
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16028,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34185,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_13215_5_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        13215
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 16028,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 34185,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_native_completion_60002_78_21",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        60002
+      ],
+      "events": [
+        78
+      ],
+      "branches": [
+        21
+      ],
+      "allow_missing": true
+    },
+    "value": 4,
+    "mark": 18026,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 1,
+      "d3": 30137,
+      "value": 3
+    }
+  },
+  {
+    "id": "wiki_native_completion_60010_51_16",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        60010
+      ],
+      "events": [
+        51
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 20004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 5,
+      "d3": 1,
+      "value": 3000
+    }
+  },
+  {
+    "id": "wiki_native_completion_60010_51_19",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        60010
+      ],
+      "events": [
+        51
+      ],
+      "branches": [
+        19
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 20004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 5,
+      "d3": 1,
+      "value": 3000
+    }
+  },
+  {
+    "id": "wiki_native_completion_60010_53_7",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        60010
+      ],
+      "events": [
+        53
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 20004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 5,
+      "d3": 1,
+      "value": 3000
+    }
+  },
+  {
+    "id": "wiki_native_completion_60010_53_11",
+    "kind": "quest_completion",
+    "scope": {
+      "maps": [
+        60010
+      ],
+      "events": [
+        53
+      ],
+      "branches": [
+        11
+      ],
+      "allow_missing": true
+    },
+    "value": 5,
+    "mark": 20004,
+    "pattern": {
+      "code": 1,
+      "d1": 1,
+      "d2": 5,
+      "d3": 1,
+      "value": 3000
+    }
+  }
+]

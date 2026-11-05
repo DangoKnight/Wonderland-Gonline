@@ -310,19 +310,19 @@ const (
 
 // Scene subcommands (AC22).
 const (
-	SceneActorState    = 1
-	SceneActorFacing   = 1
-	SceneActorWalk     = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
-	SceneActorPosition = 4
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode7 = 7
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode8     = 8
-	SceneActorPose     = 9              // Actor U16, animation U8, held frame U8 (255 animates).
-	SceneWireCode9     = SceneActorPose // Compatibility name for existing callers.
-	SceneActorHide     = 10             // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
-	SceneActorMovement = 11
-	SceneActorAction   = 12
+	SceneActorState      = 1
+	SceneActorFacing     = 1
+	SceneActorWalk       = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
+	SceneActorPosition   = 4
+	SceneActorExpression = 7                    // Click UInt16, expression UInt8 (native adds 100).
+	SceneActorAnimation  = 8                    // Click UInt16, action UInt8, optional compatibility UInt8.
+	SceneWireCode7       = SceneActorExpression // Retained compatibility name.
+	SceneWireCode8       = SceneActorAnimation
+	SceneActorPose       = 9              // Actor U16, animation U8, held frame U8 (255 animates).
+	SceneWireCode9       = SceneActorPose // Retained compatibility name.
+	SceneActorHide       = 10             // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
+	SceneActorMovement   = 11
+	SceneActorAction     = 12
 )
 
 // Inventory subcommands (AC23).
@@ -963,6 +963,7 @@ const (
 	SceneReadyNativeAckRequestBytes = 3
 	MonsterBookDiscover             = 9
 	StoryConstellationList          = 19
+	StoryConstellationAcquire       = 20 // Constellation UInt8, map actor UInt8 (zero=self).
 )
 
 // PalaceTrial preserves the AC77 request/reply envelope.

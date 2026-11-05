@@ -132,6 +132,8 @@ type Client struct {
 	sport              *sportPlay // the running minigame
 	sceneMusic         map[uint16]string
 	eventMusic         string // event kind 15's track (+0x732c)
+	constellation      *constellationRun
+	constellations     [constellationLimit]bool
 	talks              map[uint32]string
 	event              eventState
 	eventTimers        map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
@@ -366,7 +368,7 @@ func (c *Client) Frame() { c.frame(true) }
 // frame always pumps networking, simulation and automation; background
 // thumbnails render at a lower rate. Movies/minigames retain their own clocks.
 func (c *Client) frame(draw bool) {
-	draw = draw || c.movie != nil || c.sport != nil || c.fade.step > 0
+	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
 	if draw {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
@@ -392,6 +394,7 @@ func (c *Client) frame(draw bool) {
 		c.reachNPC()
 		c.reachFloorItem()
 		c.syncMiniMap()
+		c.constellationTick(c.Now())
 		c.eventTick()
 		c.vacuumTick()
 		c.areaTick()
@@ -475,6 +478,9 @@ func (c *Client) frame(draw bool) {
 		c.UI.DrawOverlayMessageExits()
 	}
 	c.uiHovered = c.Input.Hovered != nil
+	if draw {
+		c.drawConstellation(c.Now())
+	}
 	c.updateCursor(now)
 }
 
@@ -579,6 +585,10 @@ func (c *Client) dispatchNative(p []byte) {
 		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationList:
+		c.receiveConstellations(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationAcquire:
+		c.startConstellation(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehiclePlaced:
 		c.placeVehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehicleProgress:
@@ -636,6 +646,8 @@ func (c *Client) dispatchNative(p []byte) {
 		c.receivePose(s)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateModelTransform:
 		c.receiveModelTransform(p)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateShapeshift:
+		c.receiveShapeshift(p)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateEquipmentSnapshot:
 		if c.World != nil {
 			c.World.ApplyPeerEquipment(s[1:])
@@ -713,6 +725,10 @@ func (c *Client) dispatchNative(p []byte) {
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorWalk:
 		// Native AC22:2, dispatch 0x002e55fc -> FUN_0041869c.
 		if c.World != nil && !c.World.ApplyActorWalk(s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case p[0] == protocol.CommandScene && (sub == protocol.SceneActorExpression || sub == protocol.SceneActorAnimation):
+		if c.World != nil && !c.World.ApplyNPCPresentation(sub, s[1:], c.Now()) && c.Unhandled != nil {
 			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorAction:

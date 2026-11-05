@@ -499,6 +499,19 @@ func (c *Client) battleBody(f clientbattle.Fighter) *battleBody {
 				return b
 			}
 		}
+		if shape, ok := c.World.Shapeshifts[pl.ID]; ok {
+			b.npc = role.NewNPC(c.lib, shape.Info.Look, shape.Info.Colors)
+			b.npc.Now = func() time.Time { return c.Now() }
+			b.npc.SetHeightScale(shape.Info.HeightScale)
+			b.moveKind, b.shadow = shape.Info.MoveKind, shape.Info.Shadow
+			b.height = world.DefaultBattleHeight
+			if anchor, ok := b.npc.FirstAnchorY(); ok {
+				b.height = world.BattleHeight(shape.Info, anchor)
+			}
+			b.name = pl.Name
+			v.bodies[f.Cell] = b
+			return b
+		}
 		b.human = role.NewHuman(c.lib, c.items)
 		b.human.Now = func() time.Time { return c.Now() }
 		ch := login.CharacterSlot{Body: pl.Body, Head: pl.Head, Color1: pl.Color1, Color2: pl.Color2}

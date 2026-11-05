@@ -282,6 +282,10 @@ func (w *World) Sync(c *game.Character, v *View, force bool) [][]byte {
 	sort.Slice(order, func(i, j int) bool { return order[i] < order[j] })
 	for _, id := range order {
 		visible, hidden := w.visible(c, v, mapID, id), v.Hidden[id]
+		// Snapshot selected actors for this visit; explicit scripted changes still win.
+		if _, ok := w.StoryFirst(assets.StoryVisitVisibility, c, v, StoryContext{Map: mapID, Actor: id}); ok {
+			v.Actors[id] = visible
+		}
 		if !visible && (force || !hidden) {
 			out = append(out, w.HideActor(v, mapID, id))
 		} else if visible && (force || hidden) {
