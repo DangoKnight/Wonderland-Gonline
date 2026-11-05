@@ -177,7 +177,8 @@ func (c *Client) eventFrame(s []byte) {
 
 // turnNPC is kind 11 (case 0xb): the NPC whose click ID is the subject
 // byte turns toward the player, another NPC, or a direction. The NPC's
-// +0x1efc check and FUN_0030a344's release are not ported.
+// +0x1efc check is not ported. A valid scripted turn releases the saved
+// conversation facing (FUN_0030a344).
 func (c *Client) turnNPC(click uint16, mode byte, value int) {
 	n := c.World.NPCs[click]
 	if n == nil {
@@ -201,6 +202,7 @@ func (c *Client) turnNPC(click uint16, mode byte, value int) {
 	default:
 		return
 	}
+	n.Conversation = false
 	n.Action = world.TurnAction(n.Action, n.X, n.Y, x, y)
 }
 
@@ -293,6 +295,12 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 			FaceWidth(int) int
 			BodyWidth(int) int
 		}); ok {
+			// Keep the compact portrait available for question layouts even
+			// when ordinary player dialogue uses the large character artwork.
+			who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
+				f.DrawFace(dst, x, y, role.PortraitAction, blinking)
+			}
+			who.FaceBodyW = f.BodyWidth(role.PortraitAction)
 			// The player speaks in the wide form with the large art
 			// (+0x2a8); the original also checks the worn look against
 			// a table (PTR_DAT_004ca774), which is not ported. Without
@@ -303,10 +311,6 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 				who.ArtW = f.BodyWidth(role.TalkArtAction)
 				who.Art = func(dst *surface.Surface, x, y int, blinking bool) {
 					f.DrawFace(dst, x, y, role.TalkArtAction, blinking)
-				}
-			} else {
-				who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
-					f.DrawFace(dst, x, y, role.PortraitAction, blinking)
 				}
 			}
 		}
@@ -445,7 +449,9 @@ func stepDone(sub byte) bool {
 func (c *Client) eventResume() {
 	c.stopConstellation()
 	for npc, action := range c.event.npcFacings {
-		npc.Action = action
+		if npc.Conversation {
+			npc.Action = action
+		}
 		npc.Conversation = false
 	}
 	c.event = eventState{}
@@ -507,6 +513,11 @@ func (c *Client) faceConversation(subject byte, actor uint16, turn bool) {
 	p := &c.World.Player
 	if c.event.npcFacings == nil {
 		c.event.npcFacings = map[*world.NPC]int{}
+	}
+	// A scripted animation, held pose or turn releases the earlier saved
+	// facing. A later line begins a new conversation from the authored pose.
+	if !n.Conversation {
+		delete(c.event.npcFacings, n)
 	}
 	n.BeginConversation(c.Now())
 	if _, saved := c.event.npcFacings[n]; !saved {

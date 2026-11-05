@@ -74,6 +74,61 @@ func TestUnportedMinigame(t *testing.T) {
 
 const minigameSecond = time.Second
 
+func TestDreamVariantsAndHammerCursor(t *testing.T) {
+	for _, tc := range []struct {
+		variant byte
+		npc     uint16
+		form    string
+	}{
+		{1, 17371, "Sheep_Exp_Form"}, {2, 17400, "Pig_Exp_Form"},
+	} {
+		c, _, _ := enteredClient(t)
+		// Native UInt16 parameter followed by the authored variant byte.
+		c.dispatch([]byte{57, 1, 5, 248, 42, tc.variant})
+		g := c.sport.game.(*minigame.Sheep)
+		if g.Variant != tc.variant || c.sport.start.Image != c.Pics.Find(tc.form) {
+			t.Fatal("incorrect dream variant/form", tc.variant)
+		}
+		var sleeper uint16
+		g.NewMonster = func(id uint16) minigame.Monster { sleeper = id; return nil }
+		if c.sportCursor() != 0 {
+			t.Fatal("hammer selected before starting")
+		}
+		c.sport.start.Start.Click()
+		c.Input.X, c.Input.Y = 350, 300
+		c.Frame()
+		if sleeper != tc.npc || c.sportCursor() != cursor.ShapeHammer || c.Cursors.Current != cursor.ShapeHammer {
+			t.Fatal("wrong sleeper or cursor", sleeper, c.sportCursor(), c.Cursors.Current)
+		}
+		g.End(false)
+		c.Frame()
+		if c.sportCursor() != 0 || c.Cursors.Current == cursor.ShapeHammer {
+			t.Fatal("hammer remained after game end")
+		}
+	}
+}
+
+func TestPigDreamReferenceSnapshots(t *testing.T) {
+	out := os.Getenv("SHEEP_SNAPSHOT")
+	if out == "" {
+		t.Skip("set SHEEP_SNAPSHOT")
+	}
+	c, now, _ := enteredClient(t)
+	c.dispatch([]byte{57, 1, 5, 0, 0, 2})
+	g := c.sport.game.(*minigame.Sheep)
+	g.Rand = func(int) int { return 3 }
+	c.Frame()
+	savePNG(t, strings.TrimSuffix(out, ".png")+"_start.png", c)
+	c.sport.start.Start.Click()
+	*now = now.Add(time.Second)
+	c.Frame()
+	savePNG(t, strings.TrimSuffix(out, ".png")+"_ready.png", c)
+	c.GroundClick(350, 300)
+	*now = now.Add(240 * time.Millisecond)
+	c.Frame()
+	savePNG(t, out, c)
+}
+
 // TestMoleSnapshot renders the running game for comparison with
 // In-Game/Mole_Minigame.png when MOLE_SNAPSHOT names an output file.
 func TestMoleSnapshot(t *testing.T) {

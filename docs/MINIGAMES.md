@@ -41,6 +41,33 @@ forms include watermelon, conundrum, chess, dice and lotto; their entry and
 network flows need separate investigation. Lucky (kind 13) is the falling-object
 sport, distinct from the server's daily Lucky Draw feature (AC104).
 
+## Sheep and pig dreams
+
+The EVE launch carries a UInt16 parameter in D2 and a variant byte in D3.
+Kelan's sleeping-pig event (map 12000, event 17) uses parameter 11000 and
+variant 2, producing `[57,1,5,248,42,2]`; variant 1 is the sheep game.
+The server preserves authored D3 instead of forcing the default variant 1.
+Scripts with D3 zero retain the historical default. `FUN_003bd398` passes
+the final byte to `FUN_00138f3c`. The client selects the matching explanation,
+life icons, dream sheets and sleeper template. During active play it selects
+the hammer cursor; the explanation and completed round use ordinary UI cursors.
+
+Dream-game rendering follows `FUN_001398a8` and `FUN_00139c60`: native life,
+time and score pictures, variant-specific life icons, vertically sliced dream
+artwork, and the fixed-position `Hammer_1` sheet at (375,200). The hammer is
+three stacked frames, selected by `FUN_001391b0`'s 30 ms ticks: ready through
+tick 3, raised at 4–7, striking at 8–10, then ready again. Valid target clicks
+restart a ready hammer; repeated strikes do not score or charge lives twice
+for the same cue. Diagnostic target rectangles and cue-number labels are not
+drawn. The sleeper uses the native (475,550) anchor and waking action on loss.
+
+Focused tests cover hammer frame boundaries, click/scoring independence and
+the clean dream area. Set `SHEEP_SNAPSHOT` and run
+`go test ./wlo/app -run TestPigDreamReferenceSnapshots -count=1` from `client/`
+to render the explanation, ready and striking scenes using the actual assets.
+Initial visual checks are in `var/validation/pig-dream/`. Full native sleeper
+animation and impact-effect parity remain separate from these corrections.
+
 ## Throw entry points and source data
 
 Throw (kind 1) has NPC-linked launch operations in the imported WLRI EVE

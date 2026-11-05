@@ -57,7 +57,7 @@ durations belong in the assets database's `ResourceRespawns` definitions.
 v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v40 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v46 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure

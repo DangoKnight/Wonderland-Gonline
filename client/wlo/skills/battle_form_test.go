@@ -1,14 +1,72 @@
 package skills
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 )
+
+func TestCharacterStuntsUseLearnedAliasInBothWindows(t *testing.T) {
+	catalog, err := Load(login.NewAssets("../../../data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for body, heads := range map[uint16]int{1: 1, 2: 2, 3: 4, 4: 8} {
+		for head := 0; head < heads; head++ {
+			t.Run(fmt.Sprintf("%d/%d", body, head), func(t *testing.T) {
+				env := &seui.Env{Pics: picdb.New(), Screen: surface.New(800, 600)}
+				seui.NewManager(env, &seui.Input{})
+				id := game.StarterStunt(body, uint16(head))
+				d := catalog.Definitions[id]
+				if d.ID == 0 || d.TableOrder != 0 {
+					t.Fatal("unexpected native stunt record", id, d.TableOrder)
+				}
+				learned := map[uint16]Progress{game.StarterStuntClientID: {Grade: 1}}
+				browser := NewForm(env, catalog)
+				browser.Targets = func() []Target { return []Target{{Skills: learned, Stunt: id}} }
+				for tab := Physical; tab <= Life; tab++ {
+					if category(d, tab) {
+						browser.SetTab(tab)
+						break
+					}
+				}
+				if len(browser.rows) == 0 || browser.rows[len(browser.rows)-1] != game.StarterStuntClientID {
+					t.Fatal("unique skill missing from browser", id, browser.rows)
+				}
+				f := NewBattleForm(env, browser)
+				env.UI.Add(f)
+				var requestedIcon string
+				browser.LoadPictures = func(names ...string) { requestedIcon = names[0] }
+				f.Show()
+				if len(f.rows) != 1 || f.rows[0] != game.StarterStuntClientID || string(f.List.Items[0]) != d.Name {
+					t.Fatal("unique skill missing or wrongly named", id, f.rows, f.List.Items)
+				}
+				if requestedIcon != d.IconName() {
+					t.Fatal("wrong unique skill icon", id)
+				}
+				var selected uint16
+				f.Use = func(skill uint16, _ byte) { selected = skill }
+				f.List.OnSelect(0)
+				f.Refresh()
+				if selected != game.StarterStuntClientID || len(f.recentRows) != 1 {
+					t.Fatal("stunt alias or recent selection lost", selected)
+				}
+				delete(learned, game.StarterStuntClientID)
+				f.Refresh()
+				if len(f.rows) != 0 || len(f.recentRows) != 0 {
+					t.Fatal("unlearned stunt exposed")
+				}
+			})
+		}
+	}
+}
 
 func TestBattleFormLearnedFilteringScrollingAndRecentActors(t *testing.T) {
 	env := &seui.Env{Pics: picdb.New(), Screen: surface.New(800, 600)}

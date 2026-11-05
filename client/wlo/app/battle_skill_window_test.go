@@ -62,6 +62,26 @@ func TestBattleSkillsCloseAndGeneralModuleIndependent(t *testing.T) {
 	}
 }
 
+func TestBattleLoveWishFromNativeStuntSnapshot(t *testing.T) {
+	c, _, sent := enterBattle(t)
+	c.World.Player.Body, c.World.Player.Head = 2, 0
+	// Native AC5:3 identifies the avatar skill by table order 188, not 15041.
+	c.dispatch(skillSnapshot([]byte{188, 0, 1, 0, 0, 0, 0}))
+	c.Skills.SetTab(skills.Magical)
+	if len(c.Skills.List.Items) != 1 || string(c.Skills.List.Items[0]) != "Love Wish" {
+		t.Fatal("Love Wish missing from general skill window", c.Skills.List.Items)
+	}
+	c.chooseBattleCommand(battleCommandSkills)
+	if len(c.BattleSkills.List.Items) != 1 || string(c.BattleSkills.List.Items[0]) != "Love Wish" {
+		t.Fatal("Love Wish missing from battle skill window", c.BattleSkills.List.Items)
+	}
+	c.BattleSkills.List.OnSelect(0)
+	c.GroundClick(230, 370)
+	if packets := sent(); len(packets) != 1 || !bytes.Equal(packets[0], []byte{50, 1, 4, 2, 2, 2, 155, 58}) {
+		t.Fatal("Love Wish did not preserve the native stunt alias", packets)
+	}
+}
+
 func TestBattleSkillsReferenceSnapshot(t *testing.T) {
 	out := os.Getenv("BATTLE_SKILLS_SNAPSHOT")
 	if out == "" {

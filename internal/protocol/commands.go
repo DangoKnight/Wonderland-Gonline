@@ -315,7 +315,7 @@ const (
 	SceneActorWalk       = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
 	SceneActorPosition   = 4
 	SceneActorExpression = 7                    // Click UInt16, expression UInt8 (native adds 100).
-	SceneActorAnimation  = 8                    // Click UInt16, action UInt8, compatibility UInt8.
+	SceneActorAnimation  = 8                    // Click UInt16, action UInt8, optional compatibility UInt8.
 	SceneWireCode7       = SceneActorExpression // Retained compatibility name.
 	SceneWireCode8       = SceneActorAnimation
 	SceneActorPose       = 9              // Actor U16, animation U8, held frame U8 (255 animates).

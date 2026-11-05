@@ -92,6 +92,9 @@ type Speaker struct {
 	// player).
 	Face Face
 	Left bool
+	// FaceBodyW is the body sprite width in the portrait action. Native
+	// player-face placement uses half this width, not half the face artwork.
+	FaceBodyW int
 	// Body draws the whole NPC in body mode, its feet at (x, y); BodyW and
 	// BodyH are its frame's size (the library's +8, +0xc).
 	Body         func(dst *surface.Surface, x, y int)
@@ -170,7 +173,7 @@ const (
 	talkStyle       = 2
 	talkNPCFaceX    = -0x49 // from the right edge
 	talkFaceY       = 0x46
-	talkPlayerFaceX = 0x2d + 0x40 // 0x2d plus half the face sprite (+8), taken as 128 wide
+	talkPlayerFaceX = 0x2d // plus half the body sprite width in the portrait action
 	talkNameY       = 0x24
 	talkNameInk     = 0xffff
 	// Body mode (FUN_0034cb7c): the feet at (right − width/2 − 0x1e,
@@ -314,6 +317,10 @@ func (t *Talk) reserveNextSpace(textY int) {
 // Ask shows a question: its prompt as the line and its options, which
 // Pick reports; yesNo shows OK and Cancel buttons for two options instead.
 func (t *Talk) Ask(prompt [][]byte, who Speaker, player []byte, options [][]byte, yesNo bool) {
+	// FUN_0034d00c / FUN_0034d150 use the compact question form. Large
+	// player artwork belongs to ordinary dialogue and its fixed wide form
+	// bypasses the option-list sizing below.
+	who.Art, who.ArtW = nil, 0
 	t.Say(bytes.Join(prompt, []byte{'\r'}), who, player)
 	t.yesNo = yesNo
 	t.options = make([][]byte, len(options))
@@ -672,7 +679,7 @@ func (t *Talk) drawSpeaker(left int, now time.Time) {
 	case who.Face != nil:
 		x = left + t.w + talkNPCFaceX
 		if who.Left {
-			x = left + talkPlayerFaceX
+			x = left + talkPlayerFaceX + who.FaceBodyW/2
 		}
 		y := talkTop + talkFaceY
 		who.Face(env.Screen, x, y, t.blinking(now))

@@ -35,6 +35,7 @@ const (
 	StoryArrivalRegion     = "arrival_region"
 	StoryVisibility        = "visibility"
 	StoryFinalVisibility   = "final_visibility"
+	StoryVisitVisibility   = "visit_visibility"
 	StoryCondition         = "condition"
 	StoryPreCondition      = "precondition"
 	StoryPropCondition     = "prop_condition"
@@ -44,6 +45,7 @@ const (
 	StoryChoiceMode        = "choice_mode"
 	StoryActorCapability   = "actor_capability"
 	StoryOutcome           = "outcome"
+	StoryBattleBackground  = "battle_background"
 	StoryRepair            = "repair"
 	StoryRegionMargin      = "region_margin"
 	StoryTransition        = "transition"
@@ -282,7 +284,7 @@ func DefaultStoryDefinitions() StoryDefinitions {
 
 func validateStoryStructure(d StoryDefinitions) error {
 	kinds := map[string]bool{}
-	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryQuestCompletion, StoryQuestRewardBundle, StoryQuestCompanion, StoryQuestDisguise, StoryConstellation, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
+	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryVisitVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryBattleBackground, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryQuestCompletion, StoryQuestRewardBundle, StoryQuestCompanion, StoryQuestDisguise, StoryConstellation, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
 		kinds[k] = true
 	}
 	seen := map[string]bool{}

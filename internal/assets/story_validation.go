@@ -85,6 +85,14 @@ func ValidateStoryDefinitions(d StoryDefinitions) error {
 			return fmt.Errorf("story %s: marks require a checkpoint rule", r.ID)
 		}
 		switch r.Kind {
+		case StoryVisitVisibility:
+			if len(r.Scope.Maps) == 0 || len(r.Scope.Actors) == 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || r.Pattern != (StoryPattern{}) || r.Value != 0 {
+				return fmt.Errorf("invalid visit visibility scope")
+			}
+		case StoryBattleBackground:
+			if r.Value < 0 || r.Value > math.MaxUint16 || r.Pattern != (StoryPattern{}) {
+				return fmt.Errorf("invalid story battle background")
+			}
 		case StoryConstellation:
 			if r.Mark == 0 || r.Mark > math.MaxUint16 || r.Value < 1 || r.Value > MaxStoryConstellationID || r.Pattern != (StoryPattern{}) || len(r.Gates) != 0 || len(r.Scope.Maps) != 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || len(r.Scope.Actors) != 0 {
 				return fmt.Errorf("invalid constellation completion definition")

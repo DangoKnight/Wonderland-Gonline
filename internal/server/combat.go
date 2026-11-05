@@ -228,10 +228,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 	}
 	run.b = battle.New(fighters, enemies)
-	background := uint16(1)
-	if c.character.Map < game.MapID10000 {
-		background = c.character.Map
-	}
+	background := s.battleBackground(c, run)
 	for _, m := range run.members {
 		for _, p := range m.c.character.Pets {
 			run.b.Roster[m.c.character.ID] = append(run.b.Roster[m.c.character.ID], p.ID)
@@ -979,10 +976,7 @@ func (s *Server) startPvP(attacker, defender *Session) error {
 	for _, m := range run.members {
 		m.c.battle = run
 	}
-	background := uint16(1)
-	if attacker.character.Map < game.MapID10000 {
-		background = attacker.character.Map
-	}
+	background := s.battleBackground(attacker, run)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			run.b.Finished = true

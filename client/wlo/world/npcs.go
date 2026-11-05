@@ -455,21 +455,25 @@ func (w *World) ApplyActorPose(p []byte) bool {
 		return false
 	}
 	if n := w.NPCs[binary.LittleEndian.Uint16(p)]; n != nil {
-		n.applyPose(p[2], p[3])
+		if n.applyPose(p[2], p[3]) {
+			// FUN_004464dc releases saved conversation facing via FUN_0030a344.
+			n.Conversation = false
+		}
 	}
 	return true
 }
 
-func (n *NPC) applyPose(pose, frame byte) {
+func (n *NPC) applyPose(pose, frame byte) bool {
 	action := PoseAction(int(pose), n.Action)
 	if painter, ok := n.Painter.(interface{ FrameSize(int) (int, int) }); ok {
 		if width, height := painter.FrameSize(action); width == 0 || height == 0 {
-			return
+			return false
 		}
 	}
 	n.stopWalk()
 	n.Action = action
 	n.Fixed, n.Wrap, n.Frame = frame != frameFree, false, int(frame)
+	return true
 }
 
 // Hover marks the NPC under a screen point as hovered (drawn lit, as the

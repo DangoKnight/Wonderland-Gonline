@@ -10,6 +10,18 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:embed native_quest_revision_v43.json
+var nativeQuestRevisionV43 []byte
+
+//go:embed native_quest_revision_v44.json
+var nativeQuestRevisionV44 []byte
+
+//go:embed native_quest_revision_v45.json
+var nativeQuestRevisionV45 []byte
+
+//go:embed native_quest_revision_v46.json
+var nativeQuestRevisionV46 []byte
+
 //go:embed wiki_quest_defaults.json
 var wikiQuestDefaults []byte
 

@@ -28,22 +28,30 @@ func TestNativeNPCAnimationAndExpression(t *testing.T) {
 	painter := &scenePainter{}
 	n := &NPC{ClickID: 1, X: 200, Y: 300, Shown: true, Action: 8, Painter: painter, Fixed: true, Frame: 3, route: npcRoute{queued: true}}
 	w := &World{NPCs: map[uint16]*NPC{1: n}}
+	n.Conversation = true
 	// AC22:8's byte action selects the first available sprite in its family.
-	if !w.ApplyNPCPresentation(8, []byte{1, 0, 26, 255}, now) || n.Action != 27 || n.Fixed || n.route.queued || painter.restarted != 1 {
+	if !w.ApplyNPCPresentation(8, []byte{1, 0, 26, 255}, now) || n.Action != 27 || n.Fixed || n.route.queued || painter.restarted != 1 || n.Conversation {
 		t.Fatal("native animation not applied", n)
 	}
 	if !w.ApplyNPCPresentation(8, []byte{1, 0, 26, 0}, now) || painter.restarted != 2 {
 		t.Fatal("same action did not restart")
 	}
-	if !w.ApplyNPCPresentation(7, []byte{1, 0, 2}, now) || w.NPCExpressions[1].Code != 102 {
+	if !w.ApplyNPCPresentation(8, []byte{1, 0, 26}, now) || painter.restarted != 3 {
+		t.Fatal("captured Legacy animation without compatibility byte rejected")
+	}
+	n.Conversation = true
+	if !w.ApplyNPCPresentation(7, []byte{1, 0, 2}, now) || w.NPCExpressions[1].Code != 102 || !n.Conversation {
 		t.Fatal("NPC expression did not add 100")
+	}
+	if !w.ApplyNPCPresentation(8, []byte{1, 0, 8}, now) || !n.Conversation || n.Action != 27 {
+		t.Fatal("unsupported animation released dialogue restoration")
 	}
 	for _, p := range [][]byte{{}, {1}, {1, 0}, {1, 0, 2, 0}} {
 		if w.ApplyNPCPresentation(7, p, now) {
 			t.Fatal("malformed expression accepted")
 		}
 	}
-	for _, p := range [][]byte{{}, {1, 0, 26}, {1, 0, 26, 0, 0}} {
+	for _, p := range [][]byte{{}, {1}, {1, 0}, {1, 0, 26, 0, 0}} {
 		if w.ApplyNPCPresentation(8, p, now) {
 			t.Fatal("malformed animation accepted")
 		}

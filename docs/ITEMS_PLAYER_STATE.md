@@ -254,7 +254,13 @@ recovery, funded potential training and the pending socket/upstairs rules.
 
 ## Utility item use
 
-Notepad 34038 opens the SQL-backed quest journal. Remote Control 34058 opens its
+Notepad 34038 is obtained from the Astrology lady (native map 12003, event 4),
+not from the starter pack, and opens the SQL-backed quest journal. Existing
+asset databases can apply `tools/sql/remove-starter-notepad.sql` after backup;
+restart the server afterward to reload the catalog. This content patch preserves
+other starter grants and does not remove notepads from existing characters.
+The starter seed's raw source fields retain the original import for provenance;
+its parsed `value` contains the corrected grants. Remote Control 34058 opens its
 native control form. Kelan Scroll 30001 consumes one item with its SQL-defined
 return destination in the same transaction. These use real WLRI definitions;
 legacy Chocolate/White Rice IDs are not reinterpreted as utility items. Short

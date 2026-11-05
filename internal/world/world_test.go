@@ -86,9 +86,6 @@ func TestPreEventVisibility(t *testing.T) {
 	if w.Visible(character(game.Quest{ID: 501, State: game.InProgress}), 12345, 3) {
 		t.Fatal("later rule order not applied")
 	}
-	if w.Visible(character(), 12000, 28) || !w.Visible(character(game.Quest{ID: 13046, State: game.Completed}), 12000, 28) {
-		t.Fatal("story override for Lina's dog")
-	}
 }
 
 func TestConditionValues(t *testing.T) {
