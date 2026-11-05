@@ -48,6 +48,18 @@ func worldFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 		sessions = append(sessions, &Session{conn: wire, info: SessionInfo{ID: uint64(i + 1)}, account: a, character: &char, view: world.NewView(), pets: newPetRoster()})
 		wires = append(wires, wire)
 	}
+	// Idle turn timers must not launch new playback after the fixture ends.
+	// Tests driving playback explicitly own its completion; some use deliberately
+	// partial battle objects, so teardown must not execute gameplay against them.
+	t.Cleanup(func() {
+		s.worldMu.Lock()
+		defer s.worldMu.Unlock()
+		for _, player := range sessions {
+			if player.battle != nil && player.battle.timer != nil {
+				player.battle.timer.Stop()
+			}
+		}
+	})
 	return s, sessions, wires
 }
 

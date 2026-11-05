@@ -297,25 +297,39 @@ func TestStoryInstalledMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Later migrations append constellation metadata without moving existing
-	// policies. Fresh seeds include four of those definitions earlier. Membership
-	// is sent in numeric star order, so metadata order has no execution semantics;
-	// every other rule must retain its authored relative ordering.
+	// Migrations retain existing policy positions, whereas fresh seeds may place
+	// independent lookup kinds elsewhere. Visibility snapshots and backgrounds
+	// never compete with other kinds; preserve precedence within each kind while
+	// comparing them separately. Constellations are sent in numeric star order.
+	// All remaining executable rules retain their authored relative ordering.
 	canonical := func(rules []assets.StoryRule) []assets.StoryRule {
-		var ordered, constellations []assets.StoryRule
+		var ordered, constellations, visits, backgrounds []assets.StoryRule
 		for _, rule := range rules {
-			if rule.Kind == assets.StoryConstellation {
+			switch rule.Kind {
+			case assets.StoryConstellation:
 				constellations = append(constellations, rule)
-			} else {
+			case assets.StoryVisitVisibility:
+				visits = append(visits, rule)
+			case assets.StoryBattleBackground:
+				backgrounds = append(backgrounds, rule)
+			default:
 				ordered = append(ordered, rule)
 			}
 		}
 		slices.SortFunc(constellations, func(a, b assets.StoryRule) int { return strings.Compare(a.ID, b.ID) })
+		ordered = append(ordered, visits...)
+		ordered = append(ordered, backgrounds...)
 		return append(ordered, constellations...)
 	}
 	actual := got.Story
 	actual.Rules, want.Rules = canonical(actual.Rules), canonical(want.Rules)
 	if !reflect.DeepEqual(actual, want) {
+		for i := range min(len(actual.Rules), len(want.Rules)) {
+			if !reflect.DeepEqual(actual.Rules[i], want.Rules[i]) {
+				t.Logf("first rule difference at %d: actual=%+v expected=%+v", i, actual.Rules[i], want.Rules[i])
+				break
+			}
+		}
 		t.Fatal("installed story seed mismatch")
 	}
 	if err = MigrateDatabase(path); err != nil {

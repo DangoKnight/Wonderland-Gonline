@@ -558,6 +558,9 @@ func TestVehicleMovesAreBlockedAndRemovalDismounts(t *testing.T) {
 	if c.character.Bag[1].ID != 48016 || c.character.Bag[2].ID != 48016 || wires[0].Len() != 0 {
 		t.Fatal("boarded slot moved")
 	}
+	if err := s.openService(c, world.ServicePropsKeeper); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.worldCommand(context.Background(), c, []byte{30, 2, 2}); err != nil {
 		t.Fatal(err)
 	}
@@ -567,6 +570,34 @@ func TestVehicleMovesAreBlockedAndRemovalDismounts(t *testing.T) {
 	packet := protocol.Builder{15, 11, 2}.U32(c.character.ID)
 	if !contains(wires[0].packets(t), packet) || !contains(wires[1].packets(t), packet) {
 		t.Fatal("removal not replicated")
+	}
+	saved, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || saved[0].ActiveVehicle != 0 || saved[0].VehicleSlot != 0 || !saved[0].Bag[1].Empty() || saved[0].Storage[0].ID != 48016 {
+		t.Fatal("storage and dismount were not saved together", err)
+	}
+}
+
+func TestVehicleStorageFailureKeepsMount(t *testing.T) {
+	s, c, wires := vehicleFixture(t)
+	vehicleDo(t, s, c, 7, 2, 48016)
+	if err := s.openService(c, world.ServicePropsKeeper); err != nil {
+		t.Fatal(err)
+	}
+	for _, wire := range wires {
+		wire.Reset()
+	}
+	before := c.character.Clone()
+	s.Store.Close()
+	if err := s.worldCommand(context.Background(), c, []byte{30, 2, 2}); err == nil {
+		t.Fatal("failed storage save accepted")
+	}
+	if c.character.Bag != before.Bag || c.character.Storage != before.Storage || c.character.ActiveVehicle != before.ActiveVehicle || c.character.VehicleSlot != before.VehicleSlot {
+		t.Fatal("failed storage save changed mount or resources")
+	}
+	for _, wire := range wires {
+		if wire.Len() != 0 {
+			t.Fatal("failed storage save published a dismount")
+		}
 	}
 }
 

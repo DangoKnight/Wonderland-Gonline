@@ -277,6 +277,14 @@ func TestWaterfallMirrorContinuationAndVisitReset(t *testing.T) {
 			if c.event == nil || c.event.branch != 2 || !c.view.Actors[8] {
 				t.Fatal("mirror choice did not continue to beam rules")
 			}
+			// Mode-zero choices send their own completion ACK before the user
+			// advances the dialogue opened by the selected branch.
+			if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
+				t.Fatal(err)
+			}
+			if c.event == nil || c.event.branch != 2 {
+				t.Fatal("choice acknowledgement skipped the beam dialogue")
+			}
 			if err := s.worldCommand(ctx, c, []byte{20, 6}); err != nil {
 				t.Fatal(err)
 			}

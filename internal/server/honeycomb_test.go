@@ -160,6 +160,10 @@ func TestInstalledHoneycombBees(t *testing.T) {
 		// completing 13023. The patient must still be down on a fresh visit.
 		c.character.Map = 12004
 		c.view = world.NewView()
+		// Mirror a real map transition before the SQL-owned hand-in guard runs.
+		if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+			t.Fatal(err)
+		}
 		down := false
 		posePackets := s.World.Sync(c.character, c.view, true)
 		for _, packet := range posePackets {

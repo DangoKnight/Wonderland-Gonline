@@ -3610,3 +3610,48 @@ Go skips retain their documented optional-reference, live-account and snapshot
 requirements; they are not live gameplay acceptance evidence. Logs, binaries and
 the strict package-coverage audit are under ignored
 `var/validation/prepush-collection-20261104/`, including `final-summary.json`.
+
+## Quest/client consolidation validation - 2026-11-05
+
+Merged quest development into `Client-rewrite`, then into `main`. Validation
+used an isolated, consistently copied assets database upgraded to schema v46;
+running gameplay and assets databases were not modified.
+
+The complete server module ran with `-race -count=1 -timeout=60m -p 1`.
+Passing full-package reruns cover assets, asset SQL, encrypted-client assets,
+and server integrations after fixture corrections. The final waterfall ACK and
+NPC resource changes have additional focused race runs covering vehicle,
+shop, sale, storage, hotel, clinic and quest integrations. The complete client
+module passed with GPU, native-data and compiled-bundle checks enabled.
+
+The final audit combines complete package coverage with the passing corrected
+reruns; original failed attempts remain available for diagnosis.
+
+| Module | Passing test/subtest entries | Skipped entries | Passing packages | Packages without tests |
+| --- | ---: | ---: | ---: | ---: |
+| Server | 2,270 | 10 | 28 | 9 |
+| Client | 786 | 37 | 24 | 2 |
+
+Validation corrected the stale 7,312-item catalog census (now 7,325), comparisons
+of independent story lookup kinds, SQL setup for clinic and honey hand-in tests,
+and a waterfall test missing the native choice-completion ACK. World fixtures
+now cancel idle battle timers before database teardown, preventing later tests
+from racing their battle timing hooks. Repeated pet/potential and partial-battle
+fixture regressions pass under the race detector.
+
+A real storage regression was fixed: moving the ridden vehicle out of the bag
+now normalizes mount ownership inside the resource transaction and publishes
+the native dismount only after commit. Tests verify durable bag/storage/mount
+state, peer replication and no state changes or receipts on a failed save.
+
+Both modules' vet and executable builds pass; the final server was rebuilt after
+the resource fix. Python exporters pass 48 tests with one Windows symlink skip.
+Prettier, HTMLHint, tracked Go formatting, review-tool JavaScript syntax/export,
+and ten-second protocol/EVE/native-item fuzz runs pass. The asset compiler
+checked all 72,854 files (6,037.9 MiB source), all reused. The encrypted-sprite
+fixture uses its matching original translated executable. Optional live-account,
+snapshot and platform tests remain skipped; golangci-lint is unavailable.
+
+Logs, validation binaries and the strict package audit are retained under
+ignored `var/validation/prepush-merged-20261105/`, including `final-summary.json`.
+These automated results do not establish live gameplay acceptance.

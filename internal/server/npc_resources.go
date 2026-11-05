@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 	"wonderland-gonline/internal/game"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
 )
 
@@ -33,6 +34,9 @@ func (s *Server) commitNPCResources(ctx context.Context, c *Session, next game.C
 				return errNPCResourceConflict
 			}
 			current.Bag = next.Bag
+			// Resource removal may invalidate the ridden inventory slot. Clear
+			// the mount in the same transaction as the bag/storage transfer.
+			current.NormalizeVehicle(s.Assets.Items)
 		}
 		if before.Storage != next.Storage {
 			if current.Storage != before.Storage {
@@ -57,6 +61,9 @@ func (s *Server) commitNPCResources(ctx context.Context, c *Session, next game.C
 		return err
 	}
 	s.adoptSavedCharacter(c, saved)
+	if before.ActiveVehicle != 0 && (before.ActiveVehicle != saved.ActiveVehicle || before.VehicleSlot != saved.VehicleSlot) {
+		return s.sendVehiclePackets(c, [][]byte{serverwire.VehicleDismountPacket(&before)})
+	}
 	return nil
 }
 

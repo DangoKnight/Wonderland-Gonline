@@ -898,6 +898,11 @@ func TestCompiledElementalGrowthClinicAndPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.character.HP = 10
+	// Treatment reloads owned SQL state. Persist this test's authored base stats
+	// and damage before opening the service, as normal gameplay would.
+	if err := s.commit(ctx, c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.openService(c, world.ServiceClinic); err != nil {
 		t.Fatal(err)
 	}
