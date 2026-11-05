@@ -3618,9 +3618,10 @@ used an isolated, consistently copied assets database upgraded to schema v46;
 running gameplay and assets databases were not modified.
 
 The complete server module ran with `-race -count=1 -timeout=60m -p 1`.
-Passing full-package reruns cover assets, asset SQL, encrypted-client assets,
-and server integrations after fixture corrections. The final waterfall ACK and
-NPC resource changes have additional focused race runs covering vehicle,
+Passing full-package reruns cover assets, asset SQL and encrypted-client assets.
+A complete server integration rerun verified the timer cleanup. Its remaining
+waterfall ACK and vehicle-storage failures were corrected and replaced by
+passing focused race runs covering vehicle,
 shop, sale, storage, hotel, clinic and quest integrations. The complete client
 module passed with GPU, native-data and compiled-bundle checks enabled.
 
