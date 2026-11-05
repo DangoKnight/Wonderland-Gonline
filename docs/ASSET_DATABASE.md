@@ -8,6 +8,12 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v51 keeps Xaolan's house recruitment dialogue and its following choice
+in one interaction. It adds a scoped continuation from event 9, branch 1 to
+branch 4, preserving existing same-ID administrator policies and deliberately
+empty policy collections. Stop the server and run the offline migration below
+before starting the rebuilt server. No client asset rebuild is required.
+
 Assets v50 imports every map's native default backdrop and ordered spatial
 regions from retained `Ground.MMG` bytes into `catalog_battle_backdrops` and
 `catalog_battle_backdrops_regions`. All 1,119 EVE maps have matching definitions;

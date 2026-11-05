@@ -174,3 +174,40 @@ func TestAreaTitleMapEntryLifecycle(t *testing.T) {
 		t.Fatal("title state leaked into another login")
 	}
 }
+
+func TestAreaTitleNativeTransitionRules(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	for _, tc := range []struct {
+		name  string
+		mapID uint16
+		show  bool
+	}{
+		{"North Island entry", 60001, true},
+		{"North Island to Kelan", 12000, true},
+		{"Kelan to house", 12002, false},
+		{"house to Kelan", 12000, false},
+		{"Kelan to North Island", 60001, true},
+		{"same North Island title group", 60000, false},
+		{"Ship Deck", 10001, false},
+		{"Cabin", 10002, false},
+		{"return to Ship Deck", 10001, false},
+		{"another civilian house", 12004, false},
+		{"another house to Kelan", 12000, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c.World.Player.Map = tc.mapID
+			c.World.SceneName = c.sceneNames[c.mapScenes[tc.mapID]]
+			c.queueAreaTitle()
+			if c.areaTitle.pending != tc.show {
+				t.Fatalf("title queued=%v want %v", c.areaTitle.pending, tc.show)
+			}
+			// Expiring a presentation must retain the previous scene category.
+			category := c.areaTitle.category
+			c.areaTitle.started = *now
+			c.areaTitleTick(now.Add(areaTitleDuration))
+			if c.areaTitle.category != category {
+				t.Fatal("expiry lost transition category")
+			}
+		})
+	}
+}

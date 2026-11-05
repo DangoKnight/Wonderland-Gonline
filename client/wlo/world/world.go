@@ -124,8 +124,9 @@ type World struct {
 	// door lights' frames.
 	Areas []Area
 	// Mines are the map's mines (MapMines), for the minimap.
-	Mines      []Mine
-	lightsFrom time.Time
+	Mines         []Mine
+	lightsFrom    time.Time
+	exitIndicator *exitIndicator
 	// OnLeg is called as each leg of a walk starts, with the facing and
 	// the waypoint (the client sends 6/1).
 	OnLeg  func(facing, x, y int)

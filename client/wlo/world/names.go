@@ -92,6 +92,32 @@ func SceneTitleGroups(a login.Assets) (map[uint16]uint16, error) {
 	return out, nil
 }
 
+// Scene categories used by FUN_003075f0 to suppress village titles when
+// returning from interiors. Values are SceneData runtime +0x1d (disk 23).
+const (
+	SceneCategoryVillage  = 2
+	SceneCategoryInterior = 3
+)
+
+func SceneCategories(a login.Assets) (map[uint16]byte, error) {
+	var doc struct {
+		Records []struct {
+			Fields struct {
+				ID       uint16 `json:"id"`
+				Category byte   `json:"unknown_u8_offset_23"`
+			} `json:"fields"`
+		} `json:"records"`
+	}
+	if err := readJSON(a.DataPath(sceneExport), &doc); err != nil {
+		return nil, err
+	}
+	out := make(map[uint16]byte, len(doc.Records))
+	for _, r := range doc.Records {
+		out[r.Fields.ID] = r.Fields.Category
+	}
+	return out, nil
+}
+
 // SceneMusic maps scene IDs to their background track (the record's
 // second name at +0x1f, "BGM0007" for Ship Deck), played as
 // Sound\<track>.wav (0x3bce95).

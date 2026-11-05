@@ -160,6 +160,9 @@ func TestNPCEventRefusals(t *testing.T) {
 	if !contains(got, protocol.Builder{22, 1}.U16(4).U8(1)) || c.character.Quests[world.ChestKey(10017, 4)].State != game.Completed || c.character.Bag[0].ID != 24001 {
 		t.Fatal("chest", got)
 	}
+	if c.view.Props[4] != 1 {
+		t.Fatal("claimed container did not update the session prop state")
+	}
 	// The emptied chest no longer matches its "not opened" condition.
 	if got = click(8); len(got) != 1 || !bytes.Equal(got[0], []byte{20, 8}) {
 		t.Fatal("emptied chest reopened", got)

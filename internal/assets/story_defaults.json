@@ -2429,6 +2429,25 @@
         "allow_missing": true
       },
       "pattern": {}
+    },
+    {
+      "id": "xaolan_recruitment_question_continuation",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "events": [
+          9
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_branch": 4
     }
   ],
   "recruitments": [

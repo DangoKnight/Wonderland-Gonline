@@ -176,18 +176,3 @@ func (l *ChatLog) drawBackgroundGrid() {
 		}
 	}
 }
-func (l *ChatLog) tickerBytes() int {
-	limit := min(len(l.ticker), chatTickerShown, max(l.listWidth()/chatCharWidth, 1))
-	n := 0
-	for n < limit {
-		step := 1
-		if l.ticker[n] >= 0x80 && n+1 < len(l.ticker) {
-			step = 2
-		}
-		if n+step > limit {
-			break
-		}
-		n += step
-	}
-	return n
-}

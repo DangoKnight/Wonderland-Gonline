@@ -12,6 +12,7 @@ import (
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/world"
 )
 
 // Native FUN_003075f0 compares SceneData's title groups and plays t<group>
@@ -42,6 +43,7 @@ const (
 
 type areaTitle struct {
 	identity       uint32
+	category       byte
 	name           string
 	pending        bool
 	started        time.Time
@@ -60,17 +62,17 @@ func (c *Client) queueAreaTitle() {
 	}
 	mapID := c.World.Player.Map
 	var group uint16
+	var category byte
 	if c.resources != nil {
 		group = c.resources.sceneTitleGroups[c.mapScenes[mapID]]
+		category = c.resources.sceneCategories[c.mapScenes[mapID]]
 	}
-	identity := uint32(mapID)
-	if group != 0 {
-		identity = uint32(group) << 16
-	}
-	previous := c.areaTitle.identity
-	c.areaTitle = areaTitle{identity: identity}
+	identity := uint32(group) << 16
+	previous := c.areaTitle
+	c.areaTitle = areaTitle{identity: identity, category: category}
 	name := strings.TrimSpace(c.World.SceneName)
-	if identity != previous && name != "" {
+	returningToVillage := category == world.SceneCategoryVillage && previous.category == world.SceneCategoryInterior
+	if group != 0 && identity != previous.identity && !returningToVillage && name != "" {
 		c.areaTitle.name, c.areaTitle.pending = name, true
 	}
 }
@@ -78,7 +80,7 @@ func (c *Client) queueAreaTitle() {
 func (c *Client) areaTitleTick(now time.Time) {
 	t := &c.areaTitle
 	if !t.started.IsZero() && (now.Sub(t.started) >= areaTitleDuration || c.battle.state.Active || c.movie != nil) {
-		*t = areaTitle{identity: t.identity}
+		*t = areaTitle{identity: t.identity, category: t.category}
 	}
 	if !t.pending || !c.mapReady || c.sceneFrozen() || c.movie != nil || c.battle.state.Active || c.sceneFade.mode != sceneFadeNone {
 		return

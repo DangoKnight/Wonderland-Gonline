@@ -43,13 +43,14 @@ type ChatLog struct {
 	Pointer func() (int, int)
 	Hovered uint32
 
-	ticker  []byte   // +0x170, the shown ticker text
-	queue   [][]byte // +0x178, system lines waiting for the ticker
-	message []byte   // +0x174, the line being typed in
-	next    int      // +0x188, its next character (from 1)
-	plays   int      // +0x18a, how often it has played
-	tickAt  time.Time
-	strip   int // Panel_TalkForm2_1, the strip in this mode
+	ticker       []byte   // +0x170, the shown ticker text
+	queue        [][]byte // +0x178, system lines waiting for the ticker
+	message      []byte   // +0x174, the line being typed in
+	next         int      // +0x188, its next character (from 1)
+	plays        int      // +0x18a, how often it has played
+	tickAt       time.Time
+	strip        int // Panel_TalkForm2_1, the strip in this mode
+	tickerCanvas *surface.Surface
 }
 
 // ChatLine is one wrapped row of the list.
@@ -365,7 +366,7 @@ func (l *ChatLog) tick() {
 // Paint draws the scroll bar, the list's rows (newest at the bottom) and
 // the ticker.
 func (l *ChatLog) Paint() {
-	scr, pics, txt := l.Env.Screen, l.Env.Pics, l.Env.Text
+	scr, pics := l.Env.Screen, l.Env.Pics
 	if l.Mode == ChatOpaque && l.background != nil {
 		l.drawBackgroundGrid()
 		l.background.Left, l.background.Top = l.Left, l.Top
@@ -396,9 +397,43 @@ func (l *ChatLog) Paint() {
 	}
 	l.tick()
 	if l.ticker != nil {
-		shown := l.ticker[:l.tickerBytes()]
-		txt.Draw(l.Left+chatTickerX, l.Top+l.Height-(chatTop+chatHeight-chatTickerY), 0, false, true, scr, shown, 0, len(shown)*chatCharWidth+chatCharWidth, 0, ChannelInk(ChannelSystem), chatTextStyle)
+		l.paintTicker()
 	}
+}
+
+// Interpolate between the native character ticks. Draw into a small transparent
+// strip so partial glyphs are clipped at both edges of the chat window.
+func (l *ChatLog) paintTicker() {
+	width := min(chatTickerShown*chatCharWidth, max(l.listWidth(), chatCharWidth))
+	const extra = 2 * chatCharWidth // One complete Big5 glyph beyond the right edge.
+	if l.tickerCanvas == nil || l.tickerCanvas.W != width+extra {
+		l.tickerCanvas = surface.New(width+extra, chatRowHeight)
+	}
+	l.tickerCanvas.Fill(image.Rect(0, 0, width+extra, chatRowHeight), 0)
+	text := append([]byte(nil), l.ticker...)
+	if l.next < len(l.message) {
+		n := 1
+		if l.message[l.next] >= 0x80 && l.next+1 < len(l.message) {
+			n = 2
+		}
+		text = append(text, l.message[l.next:l.next+n]...)
+	}
+	// Disable wrapping; the canvas itself clips the off-screen glyphs.
+	l.Env.Text.Draw(0, 0, 0, false, true, l.tickerCanvas, text, 0, (len(text)+1)*chatCharWidth, 0, ChannelInk(ChannelSystem), chatTextStyle)
+	offset := l.tickerOffset(l.Now())
+	l.Env.Screen.DrawRect(l.Left+chatTickerX, l.Top+l.Height-(chatTop+chatHeight-chatTickerY), image.Rect(offset, 0, offset+width, chatRowHeight), l.tickerCanvas, true)
+}
+
+func (l *ChatLog) tickerOffset(now time.Time) int {
+	if len(l.ticker) == 0 {
+		return 0
+	}
+	step := chatCharWidth
+	if l.ticker[0] >= 0x80 && len(l.ticker) > 1 {
+		step *= 2
+	}
+	elapsed := max(time.Duration(0), min(now.Sub(l.tickAt), chatTickerEvery))
+	return int(elapsed * time.Duration(step) / chatTickerEvery)
 }
 
 // SetLocked freezes the current viewport while other players add messages.

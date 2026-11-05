@@ -34,6 +34,9 @@ var nativeQuestRevisionV49 []byte
 //go:embed native_quest_revision_v50.json
 var nativeQuestRevisionV50 []byte
 
+//go:embed native_quest_revision_v51.json
+var nativeQuestRevisionV51 []byte
+
 //go:embed wiki_quest_defaults.json
 var wikiQuestDefaults []byte
 

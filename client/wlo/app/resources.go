@@ -41,6 +41,7 @@ type Resources struct {
 	scenes                    bool
 	sceneNames                map[uint16]string
 	sceneTitleGroups          map[uint16]uint16
+	sceneCategories           map[uint16]byte
 	battleBackdrops           map[uint16]clientassets.GroundBackdrops
 	mapScenes                 map[uint16]uint16
 	sceneWeather              map[uint16]byte
@@ -126,6 +127,7 @@ func (r *Resources) loadScenes(a login.Assets) {
 	r.scenes = true
 	r.sceneNames, _ = world.SceneNames(a)
 	r.sceneTitleGroups, _ = world.SceneTitleGroups(a)
+	r.sceneCategories, _ = world.SceneCategories(a)
 	r.mapScenes, _ = world.MapScenes(a)
 	r.sceneWeather, _ = world.SceneWeather(a)
 	r.sceneMusic, _ = world.SceneMusic(a)

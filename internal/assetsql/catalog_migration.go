@@ -10,7 +10,8 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 50
+const catalogSchemaVersion = 51
+const nativeXaolanRecruitmentContinuationSchemaVersion = 51
 const nativeMapBackdropSchemaVersion = 50
 const nativeQuestPolicyRevisionSchemaVersion = 43
 const nativeQuestVisibilityRevisionSchemaVersion = 44
@@ -579,6 +580,11 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 			if err := migrateStoryRevision(tx, nativeQuestRevisionV50); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanRecruitmentContinuationSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV51); err != nil {
 				return err
 			}
 		}

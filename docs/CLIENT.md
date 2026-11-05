@@ -13,7 +13,7 @@ Start with [GETTING_STARTED.md](GETTING_STARTED.md) for WLRI extraction, server
 setup and compiling/running both programs. Use [CONFIGURATION.md](CONFIGURATION.md)
 for connection settings and client overrides.
 
-Area changes display the English scene name at the center of the game view.
+Eligible area changes display the English scene name at the center of the game view.
 The Legacy title-group identity comes from SceneData.dat offset 94
 (`FUN_003075f0`); its `t10002` Kelan artwork contains seven animation frames.
 Gonline renders a continuous 2200 ms ripple effect instead. Ripple travel runs
@@ -24,7 +24,10 @@ to full opacity at the innermost ring, and fades over the final
 horizontally throughout the effect, and the thicker ripples dissolve towards an elliptical
 boundary instead of clipping against the title canvas. It waits for map readiness
 and visible gameplay, respects shared area groups, and does not intercept input.
-Maps without native title artwork use their English scene name as a fallback.
+Scenes with title group zero do not trigger the overlay. Returning from an
+interior (SceneData.dat disk offset 23, category 3) to a village (category 2)
+also suppresses it, matching Legacy. Kelan/North Island transitions show titles;
+Civilian House visits and Cabin/Ship Deck transitions do not.
 The small title canvas uses alpha-blended GPU-compatible drawing without scene
 readback. No asset rebuild or database migration is needed for this overlay.
 

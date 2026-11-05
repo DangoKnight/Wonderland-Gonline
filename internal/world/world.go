@@ -145,6 +145,11 @@ func questPropOpened(m *Map, n NPC, c *game.Character) bool {
 	if expiry, ok := c.ChestRespawns[ChestKey(c.Map, n.ClickID)]; ok {
 		return time.Now().Before(expiry)
 	}
+	// Native breakable containers need not belong to the chest template
+	// ranges. Their claimed reward is the authoritative opened-state receipt.
+	if q, ok := c.Quests[ChestKey(c.Map, n.ClickID)]; ok && q.State == game.Completed {
+		return true
+	}
 	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax) || (n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax)) {
 		return false
 	}

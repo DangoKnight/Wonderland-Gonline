@@ -932,7 +932,7 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	}
 	packets = append(packets, serverwire.HeadBanner(fmt.Sprintf("Obtain %s x%d", s.itemName(op.D3), amount)), []byte{protocol.CommandEvent, protocol.EventStepComplete})
 	if chest {
-		if c.view != nil && pool != nil {
+		if c.view != nil {
 			c.view.Props[es.ev.ClickID] = 1
 		}
 		packets = append(packets, protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(es.ev.ClickID).U8(1))

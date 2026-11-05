@@ -35,7 +35,6 @@ const (
 	DoorLightPicture      = "DoorLight"
 	SmallDoorLightPicture = "SmallDoorLight"
 	doorLightFrames       = 13
-	smallDoorLightFrames  = 4
 	doorLightInterval     = 300 * time.Millisecond
 	doorLightLevel        = 0x18
 )
@@ -90,17 +89,14 @@ func MapAreas(rec native.Map) []Area {
 	return out
 }
 
-// drawLights is FUN_00403b8c: each door light whose point is on screen,
-// added to the picture under it, one frame every 300 ms.
+// drawLights keeps FUN_00403b8c's native portal effect and EVE positions,
+// replacing small exit lights with a continuous procedural pointer.
 func (w *World) drawLights(cx, cy int, now time.Time) {
 	pics := w.Env.Pics
+	var pointerDrawn bool
 	for _, a := range w.Areas {
-		name, frames := DoorLightPicture, doorLightFrames
-		switch a.Light {
-		case NoLight:
+		if a.Light == NoLight {
 			continue
-		case SmallLight:
-			name, frames = SmallDoorLightPicture, smallDoorLightFrames
 		}
 		if a.LightAt.X == 0 && a.LightAt.Y == 0 {
 			continue
@@ -109,13 +105,24 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 		if sx < 0 || sx > w.Env.Screen.W || sy < 0 || sy > w.Env.Screen.H {
 			continue
 		}
-		i := pics.Find(name)
-		pw, ph := pics.Size(i)
-		if i < 0 || ph < frames {
+		if a.Light == SmallLight {
+			if w.exitIndicator == nil {
+				w.exitIndicator = newExitIndicator()
+			}
+			if !pointerDrawn {
+				w.exitIndicator.render(now.Sub(w.lightsFrom))
+				pointerDrawn = true
+			}
+			w.exitIndicator.draw(w.Env.Screen, sx, sy)
 			continue
 		}
-		fh := ph / frames
-		frame := int(now.Sub(w.lightsFrom)/doorLightInterval) % frames
+		i := pics.Find(DoorLightPicture)
+		pw, ph := pics.Size(i)
+		if i < 0 || ph < doorLightFrames {
+			continue
+		}
+		fh := ph / doorLightFrames
+		frame := int(now.Sub(w.lightsFrom)/doorLightInterval) % doorLightFrames
 		pics.DrawLight(w.Env.Screen, i, sx-pw/2, sy-fh+fh/4, image.Rect(0, frame*fh, pw, (frame+1)*fh), doorLightLevel)
 	}
 }
