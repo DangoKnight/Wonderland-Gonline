@@ -140,6 +140,13 @@ func TestExportedAssets(t *testing.T) {
 	if bg := a.Background(1); bg.Pictures != [3]uint16{59083, 59084, 59085} {
 		t.Fatalf("scene %+v", bg)
 	}
+	// Native indoor records have one foreground layer and no sky layer.
+	if a.Scene(140) != 59140 || a.Background(140).Pictures != [3]uint16{59140, 0, 0} {
+		t.Fatal("indoor scene fell back to the outdoor background", a.Background(140))
+	}
+	if a.Scene(139) != 59139 || a.Background(139).Pictures != [3]uint16{59141, 0, 0} {
+		t.Fatal("alternate single-layer room scene missing")
+	}
 }
 
 func TestNativeMotionPositionsAndDirections(t *testing.T) {

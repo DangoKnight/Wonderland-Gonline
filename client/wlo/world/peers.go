@@ -125,6 +125,7 @@ func (w *World) RemovePeer(id uint32) {
 	delete(w.Peers, id)
 	delete(w.Expressions, id)
 	delete(w.Companions, id)
+	delete(w.Shapeshifts, id)
 }
 
 // PeerName is the name of a player on the map, nil when unknown.

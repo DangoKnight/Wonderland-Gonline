@@ -366,7 +366,8 @@ func Load(a login.Assets) (*Assets, error) {
 		for i := range bg.Heights {
 			bg.Heights[i] = r.U16()
 		}
-		if bg.Pictures[2] != 0 {
+		// Native room/cave scenes can consist solely of the foreground.
+		if bg.Pictures != [3]uint16{} {
 			out.Backgrounds[id] = bg
 		}
 	}
@@ -637,6 +638,9 @@ func (m Motion) FrameAt(elapsed time.Duration) int {
 }
 
 // FUN_00379c18 distinguishes frame triggers from millisecond triggers.
+// The native motion counter (+0x524) stays zero during the initial approach;
+// FUN_00375ff0 sets it to one only on arrival. Later frame counters advance
+// after the previous hold (FUN_00373954), before travel to the next point.
 func (m Motion) EventAt(e MotionEvent) time.Duration {
 	if e.Trigger == 0 || e.Trigger > nativeMotionLastFrameTrigger {
 		return time.Duration(e.Trigger) * time.Millisecond
@@ -644,6 +648,9 @@ func (m Motion) EventAt(e MotionEvent) time.Duration {
 	var at time.Duration
 	for i, span := range m.frameSpans() {
 		if uint32(i+1) >= e.Trigger {
+			if i == 0 {
+				return max(time.Duration(0), span-m.Frames[0].Hold-motionTick)
+			}
 			return at
 		}
 		at += span

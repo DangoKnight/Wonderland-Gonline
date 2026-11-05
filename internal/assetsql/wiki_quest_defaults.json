@@ -1,0 +1,26 @@
+[
+  {
+    "id": "wiki_auntie_soup_completion",
+    "kind": "quest_completion",
+    "scope": {"maps": [12050], "events": [35], "branches": [11], "allow_missing": true},
+    "value": 2,
+    "mark": 13000,
+    "pattern": {"code": 1, "d1": 1, "d2": 1, "d3": 30023, "value": 4294967295}
+  },
+  {
+    "id": "wiki_dinner_incident_completion",
+    "kind": "quest_completion",
+    "scope": {"maps": [12000], "events": [14], "branches": [10], "allow_missing": true},
+    "value": 6,
+    "mark": 12018,
+    "pattern": {"code": 1, "d1": 1, "d2": 1, "d3": 30028, "value": 4294967295}
+  },
+  {
+    "id": "wiki_squirrel_mission_completion",
+    "kind": "quest_completion",
+    "scope": {"maps": [12050], "events": [37], "branches": [15], "allow_missing": true},
+    "value": 2,
+    "mark": 12012,
+    "pattern": {"code": 1, "d1": 1, "d2": 1, "d3": 41141, "value": 12}
+  }
+]

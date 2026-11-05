@@ -71,6 +71,9 @@ type Form struct {
 	Dialog                                                          *actionDialog
 	UseDialog                                                       *useDialog
 	potentialRequest                                                *potentialRequest
+	Potential                                                       *seui.FixedButton
+	pointAnimationAt                                                time.Time
+	destroyWarning                                                  *destroyWarning
 }
 type dragItem struct {
 	slot  int
@@ -99,6 +102,13 @@ func NewForm(env *seui.Env, state *State, stats *world.Stats) *Form {
 	f.Close.SetHint([]byte("[ESC]"))
 	f.RotateLeft = f.button("Btn_ArrowL_9", 40, 245, 20, 20, func() { f.SelectNext(-1) })
 	f.RotateRight = f.button("Btn_ArrowR_9", 139, 245, 20, 20, func() { f.SelectNext(1) })
+	f.Potential = f.button("Btn_Potential_1", 126, 88, 43, 20, func() {
+		if !f.allowed() {
+			return
+		}
+		f.openUse(0, game.Item{ID: game.ItemPotentialPill})
+		f.UseDialog.SelectTarget(f.Selected)
+	})
 	// Native callbacks select the previous/next party pet, keeping action 17;
 	// they do not rotate the player.
 	f.RotateLeft.Enabled, f.RotateRight.Enabled = false, false
@@ -172,6 +182,7 @@ func (f *Form) SetMode(mode byte) {
 	f.syncAllocationControls()
 	f.RotateLeft.SetVisible(mode != 2)
 	f.RotateRight.SetVisible(mode != 2)
+	f.Potential.SetVisible(mode != 2)
 	for i, c := range f.Slots {
 		c.SetVisible(mode != 1)
 		left := gridLeft
@@ -186,6 +197,9 @@ func (f *Form) SetMode(mode byte) {
 	}
 }
 func (f *Form) Hide() {
+	if f.destroyWarning != nil {
+		f.destroyWarning.Hide()
+	}
 	f.CancelPoints()
 	f.drag = nil
 	if f.Dialog != nil {
@@ -218,7 +232,6 @@ func (f *Form) Paint() {
 	f.Status.Level(stats.Level, at(20, 88), true)
 	element := f.Env.Pics.Find(fmt.Sprintf("Icon_Element_%d_1", stats.Element))
 	f.Env.Pics.Draw(f.Env.Screen, element, f.Left+19, f.Top+56, true)
-	f.Env.Pics.DrawRect(f.Env.Screen, f.Env.Pics.Find("Btn_Potential_1"), f.Left+126, f.Top+88, image.Rect(0, 0, 43, 20), true)
 	f.label(172, 90, strconv.Itoa(int(stats.Potential)))
 	if f.Selected != 0 && f.DrawPet != nil {
 		f.DrawPet(f.Selected, f.Left+previewX, f.Top+previewY, previewBattleReady)
@@ -237,6 +250,7 @@ func (f *Form) Paint() {
 	f.label(100, 301, fmt.Sprintf("%.0f%%", ratio*100))
 	f.label(45, 318, strconv.Itoa(int(f.Stats.Gold)))
 	f.label(160, 317, strconv.Itoa(int(uint32(stats.Points)-f.draftTotal())))
+	f.paintPointAnimation(stats.Points)
 	combat := stats.CombatValues()
 	for i, v := range combat {
 		f.label(44, 337+i*16, strconv.Itoa(int(v)))
@@ -423,11 +437,23 @@ func (f *Form) release(x, y int) {
 		}
 	}
 	if !image.Pt(x, y).In(f.Rect()) && !d.worn && f.Env.UI.Input.Hovered == nil {
-		f.quantity("Drop how many?", d.item.Count, func(count byte) {
+		// Native non-droppable categories are destroyed, not placed on the
+		// ground. Warn before sending anything; keep the server's 23/212
+		// confirmation path for unknown definitions and server overrides.
+		request := func(count byte) {
 			if f.State.Bag[d.slot-1] == d.item {
+				if definition, known := f.State.Items[d.item.ID]; known && !definition.Definition.Droppable() {
+					f.ConfirmDestroy(byte(d.slot), d.item.ID, count)
+					return
+				}
 				f.send([]byte{protocol.CommandInventory, protocol.InventoryDrop, byte(d.slot), count, 0})
 			}
-		})
+		}
+		if d.split && d.item.Count > 1 {
+			f.quantity("Select quantity", d.item.Count, request)
+		} else {
+			request(1)
+		}
 	}
 }
 func (f *Form) DrawDragged() {
@@ -452,11 +478,12 @@ func (f *Form) notice(s string) {
 // No inventory mutation occurs until a server reply.
 type actionDialog struct {
 	seui.Form
-	owner  *Form
-	Count  *seui.Editor
-	prompt string
-	limit  byte
-	submit func(byte)
+	owner       *Form
+	Count       *seui.Editor
+	prompt      string
+	limit       byte
+	submit      func(byte)
+	returnModal seui.Control
 }
 
 func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
@@ -490,6 +517,7 @@ func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 		f.Dialog = d
 	}
 	d := f.Dialog
+	d.returnModal = f.Env.UI.Modal
 	d.prompt, d.limit, d.submit = prompt, limit, submit
 	d.Count.SetText([]byte(strconv.Itoa(int(limit))))
 	d.Show()
@@ -512,7 +540,11 @@ func (d *actionDialog) adjust(delta int) {
 func (d *actionDialog) Hide() {
 	if d.Env.UI.Modal == d {
 		d.Env.UI.SetModal(false, d)
+		if d.returnModal != nil && d.returnModal != d && d.returnModal.Base().Visible {
+			d.Env.UI.SetModal(true, d.returnModal)
+		}
 	}
+	d.returnModal = nil
 	d.submit = nil
 	d.Form.Hide()
 }
@@ -541,9 +573,9 @@ func (f *Form) ConfirmDestroy(slot byte, id uint16, count byte) {
 	if !f.Visible {
 		f.Show()
 	}
-	f.quantity("Destroy how many?", count, func(n byte) {
+	f.showDestroyWarning(item, count, func() {
 		if f.State.Bag[slot-1] == item {
-			f.send([]byte{protocol.CommandInventory, protocol.InventoryDestroy, slot, n, 0})
+			f.send([]byte{protocol.CommandInventory, protocol.InventoryDestroy, slot, count, 0})
 		}
 	})
 }

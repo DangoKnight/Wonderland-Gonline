@@ -50,9 +50,25 @@ const (
 	ConditionTeamSize           = 13
 	ConditionWaterGathering     = 14
 	ConditionFreeBagSlots       = 15
+	ConditionPlayerEquipment    = 16
 	ConditionCompanionEquipment = 17
 	ConditionMissionVariable    = 19
 	ConditionCompanionRebirth   = 21
+)
+
+// EVE condition 16 selectors are one higher than the native equipment slot:
+// 2=head, 3=body, 4=hand, 5=arm, 6=feet, 7=special.
+const (
+	PlayerEquipmentFirstSelector = 2
+	PlayerEquipmentLastSelector  = 7
+)
+
+// EVE condition 15 becomes native inventory condition 21. Its selector
+// distinguishes a free-cell count from positive/negative item-capacity gates.
+const (
+	BagCapacityFreeCells     = 1
+	BagCapacityCanReceive    = 2
+	BagCapacityCannotReceive = 3
 )
 
 const (
@@ -61,6 +77,12 @@ const (
 	SubjectRebornJob    = 5
 	GenderMale          = 7
 	GenderFemale        = 8
+)
+
+// Other scopes of these legacy companion-condition selectors remain unresolved.
+const (
+	CompanionConditionPrisonPresence = 3
+	CompanionConditionCaptureAbsence = 4
 )
 
 // Condition comparison operators.
@@ -96,6 +118,41 @@ const (
 	PlayerActionEffect          = 7
 )
 
+// EVE player-effect expressions use the same E101..E124 strips as AC32:1.
+const (
+	PlayerEffectExpressionMode     = 1
+	PlayerExpressionOffset         = 100
+	PlayerExpressionMaximumOperand = 24
+)
+
+// Reward kinds and quest checkpoint modes are separate EVE operand namespaces.
+const (
+	PlayerRewardItem       = 1
+	PlayerRewardGold       = 2
+	PlayerRewardExperience = 5
+	PlayerExperienceValue  = 1
+	QuestMarkAdvance       = 1
+	QuestMarkComplete      = 2
+)
+
+// Companion actions 3/4 are temporary quest escorts. They require an authored
+// quest_companion policy; recognizing these operands does not enable them globally.
+const (
+	CompanionRecruit                = 1
+	CompanionDismiss                = 2
+	CompanionQuestJoin              = 3
+	CompanionQuestLeave             = 4
+	CompanionQuestJoinCompatibility = 1
+	ActorVisibilityCompatibility    = 65535
+)
+
+// EVE transformation modes distinguish permanent character conversion from a
+// temporary NPC shape. Only SQL-scoped disguise actions are enabled here.
+const (
+	TransformNPCDisguise  = 2
+	TransformRestoreShape = 3
+)
+
 // ActionActor D2 operands.
 const (
 	ActorActionSpeech             = 0
@@ -106,9 +163,12 @@ const (
 	ActorActionPropState          = 5
 	ActorActionChoice             = 6
 	ActorActionPose               = 7
-	ActorActionAnimationAlternate = 8
+	ActorActionExpression         = 8
+	ActorActionAnimationAlternate = ActorActionExpression // Retained compatibility name.
 	ActorActionPath               = 9
-	ActorActionWireCode10         = 10
+	ActorActionTurn               = 10
+	ActorActionWireCode10         = ActorActionTurn // Retained compatibility name.
+	ActorActionConstellation      = 11
 )
 
 // EVE entry rectangles use cells of this many pixels.

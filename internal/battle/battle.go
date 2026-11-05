@@ -178,6 +178,7 @@ type Battle struct {
 	reviveSupport        map[experienceIdentity]map[*Fighter]bool
 	experience           map[experienceIdentity]uint64
 	experienceKills      map[*Fighter]bool
+	experienceDamage     map[*Fighter]map[experienceIdentity]*Fighter
 	Reinforcements       [MaxEnemies][]Enemy
 	defeatedDefenders    []*Fighter
 	Attackers, Defenders []*Fighter
@@ -211,18 +212,21 @@ var (
 // MaxEnemies is the number of enemy grid slots.
 const MaxEnemies = 8
 
+const FormationSlotSequential = 0 // Compatibility for encounters without authored EVE queues.
+
 // Enemy describes one monster to spawn.
 type Enemy struct {
-	Template uint32
-	Name     string
-	Level    int
-	HP       int // Stored NPC HP, or an explicit encounter override.
-	SP       int // Stored NPC SP; zero is a valid maximum.
-	Element  byte
-	Base     game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
-	ClickID  uint16
-	Skills   [3]uint16
-	Attack   int // Optional authored boss attack override.
+	FormationSlot byte // Native shared occupant queue; FormationSlotSequential uses encounter ordering.
+	Template      uint32
+	Name          string
+	Level         int
+	HP            int // Stored NPC HP, or an explicit encounter override.
+	SP            int // Stored NPC SP; zero is a valid maximum.
+	Element       byte
+	Base          game.Attributes // Authored NPC STR/CON/INT/WIS/AGI.
+	ClickID       uint16
+	Skills        [3]uint16
+	Attack        int // Optional authored boss attack override.
 }
 
 // PlayerFighter is BuildFighters for a character (no pets).
@@ -259,13 +263,38 @@ func New(players []*Fighter, enemies []Enemy) *Battle {
 		f.immediateSupport = nil
 	}
 	b := &Battle{Attackers: players, Pending: map[int]Action{}, Roster: map[uint32][]uint32{}}
+	occupied := [MaxEnemies]bool{}
+	formationSlots := map[byte]int{}
 	for i, e := range enemies {
-		if i >= MaxEnemies {
-			slot := i % MaxEnemies
+		// Keep the existing first-seen screen ordering. Native slot IDs own
+		// reinforcement queues; they are not inferred screen coordinates.
+		slot := i % MaxEnemies
+		if e.FormationSlot != FormationSlotSequential && int(e.FormationSlot) <= MaxEnemies {
+			if existing, known := formationSlots[e.FormationSlot]; known {
+				slot = existing
+			} else {
+				for candidate, used := range occupied {
+					if !used {
+						slot = candidate
+						break
+					}
+				}
+				formationSlots[e.FormationSlot] = slot
+			}
+		} else {
+			for candidate, used := range occupied {
+				if !used {
+					slot = candidate
+					break
+				}
+			}
+		}
+		if occupied[slot] {
 			b.Reinforcements[slot] = append(b.Reinforcements[slot], e)
 			continue
 		}
-		b.Defenders = append(b.Defenders, enemyFighter(e, i))
+		occupied[slot] = true
+		b.Defenders = append(b.Defenders, enemyFighter(e, slot))
 	}
 
 	return b
@@ -1086,6 +1115,9 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				landed = append(landed, a)
 				guarded := defending[target.key()]
 				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
+				if r.ExperienceFormula == game.BattleEXPParticipation {
+					b.recordExperienceDamage(target, actor, dmg)
+				}
 				combo[i].SkillEXP = game.CombatSkillEXP(dmg, max(0, target.HP-total), target.MaxHP)
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
 				received += uint64(dmg)

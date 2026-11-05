@@ -5,8 +5,54 @@ import (
 	"testing"
 	"time"
 
+	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
 )
+
+func TestPlayerQuestionPortraitUsesNativeBodyWidthAnchor(t *testing.T) {
+	var at image.Point
+	tk := &Talk{Env: &seui.Env{}, origin: image.Pt(226, 25), w: 340}
+	tk.who = Speaker{Left: true, FaceBodyW: 24, Face: func(_ *surface.Surface, x, y int, _ bool) { at = image.Pt(x, y) }}
+	tk.drawSpeaker(226, time.Unix(100, 0))
+	if at != image.Pt(283, 95) {
+		t.Fatal("player portrait overlaps the question prompt", at)
+	}
+}
+
+func TestPlayerQuestionsUseCompactPortraitAndVisibleOptions(t *testing.T) {
+	face := func(_ *surface.Surface, _, _ int, _ bool) {}
+	who := Speaker{Left: true, Face: face, Art: face, ArtW: 200}
+	for _, yesNo := range []bool{false, true} {
+		now := time.Unix(100, 0)
+		tk := &Talk{Now: func() time.Time { return now }}
+		tk.Say([]byte("Ordinary player dialogue"), who, nil)
+		if !tk.big {
+			t.Fatal("ordinary player dialogue lost large artwork")
+		}
+		tk.Ask([][]byte{[]byte("What should I do?")}, who, nil, [][]byte{[]byte("Help them."), []byte("Ignore them.")}, yesNo)
+		if tk.big || tk.who.Art != nil || tk.who.Face == nil || !tk.who.Left || tk.origin.Y != talkTop {
+			t.Fatal("question did not use the compact player portrait")
+		}
+		now = now.Add(time.Second)
+		tk.tick(now)
+		for option := range tk.options {
+			point := tk.OptionPoint(option)
+			if yesNo {
+				continue
+			}
+			if point.X < 0 || point.Y < 0 || point.Y >= talkScreenH {
+				t.Fatal("option is off screen", point)
+			}
+			if row, cancel := tk.Pick(point.X, point.Y); row != option || cancel {
+				t.Fatal("option cannot be selected", row, cancel)
+			}
+		}
+		tk.Say([]byte("The next ordinary dialogue"), who, nil)
+		if !tk.big {
+			t.Fatal("question permanently disabled player artwork")
+		}
+	}
+}
 
 func TestTalkNextIndicatorBelowLongText(t *testing.T) {
 	text := []byte("Yes, I did. But I've only been to the islands nearby. I was always sent back by a violent wave every time I had almost reached the open sea. Several years of failure have passed me to give up. By the way, what's your name?")

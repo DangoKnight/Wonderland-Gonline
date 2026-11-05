@@ -35,6 +35,7 @@ const (
 	nativeItemDescriptionOffset       = 147
 	nativeItemDescriptionBytes        = 254
 	nativeItemBuyPriceOffset          = 114
+	nativeItemEquipLevelOffset        = 113 // Decoded Item.dat wearer minimum level (player and pet).
 )
 
 // Disk offsets traced from aLogin's FUN_003cdfa4. Its in-memory object has a
@@ -143,6 +144,7 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		}
 		item.Definition = game.ItemDefinition{CellWidth: b[nativeItemCellWidthOffset], CellHeight: b[nativeItemCellHeightOffset], ID: id, Name: name, Type: b[nativeItemTypeOffset], EquipSlot: uint16(b[nativeItemEquipSlotOffset]), Level: uint16(b[nativeItemLegacyLevelOffset]), Status: [2]uint16{le.Uint16(b[nativeItemStatusOffset:]), le.Uint16(b[nativeItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[nativeItemValueOffset:])), int32(le.Uint32(b[nativeItemValueOffset+4:]))}}
 		item.Description = description
+		item.InitializeEquipLevel()
 		item.Icon = le.Uint16(b[nativeItemIconOffset:])
 		item.LargeIcon = le.Uint16(b[nativeItemLargeIconOffset:])
 		for i := range item.Sprites {
@@ -156,6 +158,12 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		return nil, fmt.Errorf("native item catalog: no item definitions")
 	}
 	return out, nil
+}
+
+// InitializeEquipLevel projects the native equipment requirement at import or
+// explicit database migration time. It is distinct from the legacy Level field.
+func (item *NativeItem) InitializeEquipLevel() {
+	item.Definition.EquipLevel = uint16(item.Record[nativeItemEquipLevelOffset])
 }
 
 // BuyPrice is the native shop price stored at Item.dat +0x72.

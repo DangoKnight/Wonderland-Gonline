@@ -29,6 +29,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 		c.view.CompanionRebirthOpen = true
 		return c.send([]byte{protocol.CommandCompanionRebirth, protocol.CompanionRebirthOpen})
 	case world.ServicePetHotel:
+		c.hotelMap = c.character.Map
 		return s.sendAll(c, append(s.hotelPackets(c.character), []byte{protocol.CommandNPCService, protocol.PetHotelOpen}))
 	case world.ServiceWeaponShop, world.ServicePropsShop, world.ServiceArmorShop: // Weapon shop, props shop, armor shop: selling only, as in C#.
 		mode := 0
@@ -38,6 +39,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 		c.saleMode, c.saleMap = mode, c.character.Map
 		return s.openNPCShop(c, action)
 	case world.ServicePropsKeeper, world.ServiceStockKeeper: // Props keeper and stock keeper both open item storage.
+		c.storageMap = c.character.Map
 		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
 	case world.ServiceBank: // Bank counter: the dialogue close would hide the form, so open it after the resume.
 		if c.event != nil {
@@ -67,20 +69,27 @@ func (s *Server) confirmRest(ctx context.Context, c *Session) error {
 	if c.restMap == 0 || c.restMap != c.character.Map || c.battle != nil {
 		return nil
 	}
-	next := c.character.Clone()
-	next.Refill(s.Assets.Items)
-	for i := range next.Pets {
-		next.Pets[i].Normalize(s.Assets.Items, true, s.petTemplate(next.Pets[i].ID))
+	next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(next *game.Character) error {
+		if next.Map != c.character.Map {
+			return errNPCResourceConflict
+		}
+		next.Refill(s.Assets.Items)
+		for i := range next.Pets {
+			next.Pets[i].Normalize(s.Assets.Items, true, s.petTemplate(next.Pets[i].ID))
+		}
+		return nil
+	}, *c.character)
+	if err != nil {
+		return err
 	}
-	if e := s.commit(ctx, c, next); e != nil {
-		return e
-	}
+	s.adoptSavedCharacter(c, next)
 	c.restMap = 0
 	packets := next.StatPackets(s.Assets.Items)
 	for _, pet := range next.Pets {
 		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 	}
-	return s.sendAll(c, append(packets, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateRestEffect}.U32(next.ID), []byte{protocol.CommandNPCService, protocol.ClinicRestConfirm, 0}))
+	packets = append([][]byte{{protocol.CommandNPCService, protocol.ClinicRestAnimation}}, packets...)
+	return s.sendAll(c, append(packets, []byte{protocol.CommandNPCService, protocol.ClinicRestConfirm, 0}))
 }
 
 // Sale results (NpcSaleResult).
@@ -95,6 +104,9 @@ const (
 // sellItems is AC27:2 (Inventory.SellToNpc): whole selected stacks, the last byte is
 // the shop mode. Equipment sells only in mode 0 and other items only in mode 1.
 func (s *Server) sellItems(ctx context.Context, c *Session, p []byte) error {
+	if c.battle != nil {
+		return nil
+	}
 	if len(p) >= 2 && p[1] == protocol.ShopBuy {
 		return s.buyNPCItems(ctx, c, p)
 	}
@@ -148,19 +160,23 @@ func (s *Server) sell(ctx context.Context, c *Session, slots []byte, mode int) (
 	var packets [][]byte
 	for _, slot := range slots {
 		count := next.Bag[slot-1].Count
+		price := s.Assets.SalePrices[next.Bag[slot-1].ID].Price * uint32(count)
 		next.Bag[slot-1] = game.Item{}
-		packets = append(packets, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count})
+		packets = append(packets, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, count}, protocol.Builder{protocol.CommandGold, protocol.GoldGain}.U32(price))
 	}
-	if e := s.commit(ctx, c, next); e != nil {
+	if e := s.commitNPCResources(ctx, c, next); e != nil {
 		return 0, nil, e
 	}
-	return saleSuccess, append(packets, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold)), nil
+	return saleSuccess, packets, nil
 }
 
 // storageCommand is AC30: 1 withdraws and 2 deposits selected slots; with two slots,
 // 3 moves within storage, 4 deposits into a storage slot and 5 withdraws into a bag
 // slot. A fresh storage snapshot always follows. Caller holds worldMu.
 func (s *Server) storageCommand(ctx context.Context, c *Session, p []byte) error {
+	if c.storageMap == 0 || c.storageMap != c.character.Map || c.battle != nil {
+		return nil
+	}
 	if len(p) < 2 || p[1] < protocol.StorageWithdraw || p[1] > protocol.StorageWithdrawToSlot {
 		return nil
 	}
@@ -168,6 +184,7 @@ func (s *Server) storageCommand(ctx context.Context, c *Session, p []byte) error
 	next := c.character.Clone()
 	var packets [][]byte
 	changed := false
+	incremental := p[1] == protocol.StorageWithdraw || p[1] == protocol.StorageDeposit
 	move := func(fromBag, toBag bool, from, to byte) {
 		src, dst := &next.Storage, &next.Storage
 		if fromBag {
@@ -176,12 +193,25 @@ func (s *Server) storageCommand(ctx context.Context, c *Session, p []byte) error
 		if toBag {
 			dst = &next.Bag
 		}
+		if from < 1 || from > game.BagSize {
+			return
+		}
+		item := src[from-1]
 		if moved, adds := s.transfer(src, dst, from, to); moved > 0 {
 			changed = true
 			if fromBag {
 				packets = append(packets, []byte{protocol.CommandInventory, protocol.InventoryRemove, from, moved})
 			}
-			if toBag {
+			if incremental {
+				item.Count = moved
+				if fromBag {
+					q := game.AcquisitionPacket(item)
+					q[0], q[1] = protocol.CommandStorage, protocol.StorageAdd
+					packets = append(packets, q)
+				} else {
+					packets = append(packets, []byte{protocol.CommandStorage, protocol.StorageRemove, from, moved}, game.AcquisitionPacket(item))
+				}
+			} else if toBag {
 				packets = append(packets, next.Bag.AdditionPacket(adds))
 			}
 		}
@@ -206,11 +236,18 @@ func (s *Server) storageCommand(ctx context.Context, c *Session, p []byte) error
 		}
 	}
 	if changed {
-		if e := s.commit(ctx, c, next); e != nil {
+		if e := s.commitNPCResources(ctx, c, next); e != nil {
 			return e
 		}
 	} else {
 		packets = nil
+	}
+	if incremental {
+		unlock := byte(protocol.StorageWithdrawUnlock)
+		if p[1] == protocol.StorageDeposit {
+			unlock = protocol.StorageDepositUnlock
+		}
+		return s.sendAll(c, append(packets, []byte{protocol.CommandStorage, unlock}))
 	}
 	// Storage lists are additive: clear the client copy before the snapshot.
 	return s.sendAll(c, append(packets, []byte{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), []byte{protocol.CommandStorage, protocol.StorageDepositComplete}, []byte{protocol.CommandStorage, protocol.StorageWithdrawComplete}))
@@ -333,6 +370,8 @@ const (
 	npcShopMemberBytes              = 5
 	npcShopWeaponsKind         byte = 2
 	npcShopPropsKind           byte = 3
+	npcShopItemKind            byte = 2
+	npcShopOptionType          byte = 3
 	npcShopFallbackPrice            = 10
 	npcShopSalePriceMultiplier      = 10
 	npcArmorMerchantTemplate        = 13005
@@ -356,7 +395,7 @@ func (s *Server) openNPCShop(c *Session, service uint16) error {
 		for i := 0; i < len(group.Members); i += npcShopMemberBytes {
 			record := group.Members[i:]
 			id := uint16(record[1]) | uint16(record[2])<<8
-			if record[0] != 0 && id != 0 {
+			if record[0] != 0 && id != 0 && record[3] == npcShopItemKind && record[4] == npcShopOptionType {
 				c.view.ShopItems[uint16(record[0])] = id
 			}
 		}
@@ -473,10 +512,11 @@ func (s *Server) buyNPCItems(ctx context.Context, c *Session, p []byte) error {
 	if err != nil {
 		return err
 	}
-	if c.view == nil || len(c.view.ShopItems) == 0 || c.saleMap != c.character.Map || c.event != nil {
+	if c.view == nil || len(c.view.ShopItems) == 0 || c.saleMap != c.character.Map || c.event != nil && !c.event.shopCart {
 		return reply()
 	}
 	var total uint64
+	var costs []uint32
 	for i := range entries {
 		e := &entries[i]
 		id, found := c.view.ShopItems[e.item]
@@ -503,23 +543,26 @@ func (s *Server) buyNPCItems(ctx context.Context, c *Session, p []byte) error {
 			price = npcShopFallbackPrice
 		}
 		total += price * uint64(e.count)
+		if price*uint64(e.count) > game.MaxGold {
+			result = protocol.ShopBuyNotEnoughGold
+			return reply()
+		}
+		costs = append(costs, uint32(price*uint64(e.count)))
 	}
 	if total > game.MaxGold {
 		result = protocol.ShopBuyNotEnoughGold
 		return reply()
 	}
 	insufficient := errors.New("NPC purchase funds unavailable")
-	var adds []game.Addition
 	next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(next *game.Character) error {
 		if uint64(next.Gold) < total {
 			return insufficient
 		}
 		for _, e := range entries {
-			part, err := next.Bag.Grant(game.Item{ID: e.item}, int(e.count), s.Assets.Items[e.item].StackLimit(), s.Assets.Items)
+			_, err := next.Bag.Grant(game.Item{ID: e.item}, int(e.count), s.Assets.Items[e.item].StackLimit(), s.Assets.Items)
 			if err != nil {
 				return err
 			}
-			adds = append(adds, part...)
 		}
 		next.Gold -= uint32(total)
 		return nil
@@ -536,7 +579,14 @@ func (s *Server) buyNPCItems(ctx context.Context, c *Session, p []byte) error {
 		return err
 	}
 	s.adoptSavedCharacter(c, next)
-	return s.sendAll(c, [][]byte{next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold), {protocol.CommandShop, protocol.ShopBuy, protocol.ShopBuySuccess}})
+	if c.event != nil {
+		c.event.shopCart = false
+	}
+	var packets [][]byte
+	for i, e := range entries {
+		packets = append(packets, protocol.Builder{protocol.CommandGold, protocol.GoldSpend}.U32(costs[i]), game.AcquisitionPacket(game.Item{ID: e.item, Count: e.count}))
+	}
+	return s.sendAll(c, append(packets, []byte{protocol.CommandShop, protocol.ShopBuy, protocol.ShopBuySuccess}))
 }
 
 // QuestNpc.ResolveTalkIdForNpc's default native Kelan welcome line.
@@ -861,7 +911,7 @@ func (s *Server) hotelPackets(char *game.Character) [][]byte {
 // registration and success packets are changed only after the durable commit.
 func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	deposits, withdrawals, ok := decodeHotel(p)
-	if !ok || c.battle != nil {
+	if !ok || c.battle != nil || c.hotelMap == 0 || c.hotelMap != c.character.Map {
 		return nil
 	}
 	unlock := func() error {
@@ -923,7 +973,7 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 		pet.Slot, pet.Battle = free(next.Pets), false
 		next.Pets = append(next.Pets, pet)
 	}
-	if err := s.commit(ctx, c, next); err != nil {
+	if err := s.commitNPCResources(ctx, c, next); err != nil {
 		return err
 	}
 	for _, pet := range outgoing {
@@ -931,6 +981,7 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	for i, pet := range incoming {
 		c.pets.register(pet.ID)
+		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
 		packets = append(packets, []byte{protocol.CommandNPCService, protocol.PetHotelCopyToTeam, withdrawals[i], c.pets.slot(pet.ID)}, []byte{protocol.CommandNPCService, protocol.NPCServiceWireCode4, withdrawals[i]})
 	}
 	if mountRemoved {
@@ -946,10 +997,12 @@ func (s *Server) hotelCommand(ctx context.Context, c *Session, p []byte) error {
 	if roster := s.petListPacket(c.character, c.pets); roster != nil {
 		packets = append(packets, roster)
 	}
-	for _, pet := range incoming {
-		packets = append(packets, pet.ProgressionPackets(c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
-	}
+
 	packets = append(packets, s.hotelPackets(c.character)...)
-	packets = append(packets, []byte{protocol.CommandNPCService, protocol.PetHotelStorageUnlock}, []byte{protocol.CommandNPCService, protocol.PetHotelModalUnlock})
+	responseUnlock := byte(protocol.PetHotelStorageUnlock)
+	if len(outgoing) > 0 && len(incoming) == 0 {
+		responseUnlock = protocol.PetHotelDepositUnlock
+	}
+	packets = append(packets, []byte{protocol.CommandNPCService, responseUnlock}, []byte{protocol.CommandNPCService, protocol.PetHotelModalUnlock})
 	return s.sendAll(c, packets)
 }

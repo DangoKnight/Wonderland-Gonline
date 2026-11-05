@@ -52,6 +52,7 @@ type Session struct {
 	manufacturingLoaded  bool
 	fishing              *fishingRun // Transient cast; guarded by worldMu.
 	emote                byte        // Current AC32 pose; guarded by worldMu.
+	shapeshift           uint16      // Cosmetic NPC disguise, guarded by worldMu.
 	restedAt             time.Time   // Last resting recovery while sitting or lying; guarded by worldMu.
 	view                 *world.View
 	pets                 *petRoster
@@ -70,7 +71,9 @@ type Session struct {
 	combatSequence       uint32
 	encounter            encounterState
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
-	restMap              uint16             // PendingRestMap: the clinic offered a rest on this map.
+	storageMap           uint16             // NPC storage authority; invalidated by movement or a new interaction.
+	hotelMap             uint16
+	restMap              uint16 // PendingRestMap: the clinic offered a rest on this map.
 	// Trade state is guarded by worldMu.
 	gathering        *gatheringRun     // Guarded by worldMu.
 	marriageProposal *marriageProposal // Guarded by worldMu.

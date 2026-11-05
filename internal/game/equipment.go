@@ -162,9 +162,10 @@ func ChangeBanner(prefix string, before, after Combat) string {
 }
 
 var ErrCannotEquip = errors.New("item cannot be equipped")
+var ErrEquipLevel = errors.New("Insufficient level")
 
 // Wear follows Inventory.TryEquip: a single bag item moves onto its native slot and any
-// previously worn item takes its bag slot. Like C#, no level or body rule is checked.
+// previously worn item takes its bag slot. The wearer must meet the native level requirement.
 func (c *Character) Wear(from byte, items map[uint16]ItemDefinition) error {
 	if from < 1 || from > BagSize {
 		return ErrCannotEquip
@@ -176,6 +177,9 @@ func (c *Character) Wear(from byte, items map[uint16]ItemDefinition) error {
 	}
 	if c.Equipment[slot-1].Locked {
 		return ErrCannotEquip
+	}
+	if uint16(c.Level) < items[item.ID].EquipLevel {
+		return ErrEquipLevel
 	}
 	bag := c.Bag
 	bag[from-1] = Item{}

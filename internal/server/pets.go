@@ -510,7 +510,7 @@ func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from,
 	next := c.character.Clone()
 	pet := &next.Pets[i]
 	before := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
-	transfer := game.Character{Bag: next.Bag, Equipment: pet.Equipment}
+	transfer := game.Character{Level: pet.Level, Bag: next.Bag, Equipment: pet.Equipment}
 	var err error
 	packet := []byte{protocol.CommandInventory, protocol.InventoryWireCode23, slot, from}
 	if wear {
@@ -533,6 +533,9 @@ func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from,
 		packet = []byte{protocol.CommandInventory, protocol.InventoryWireCode22, slot, from, to}
 	}
 	if err != nil {
+		if errors.Is(err, game.ErrEquipLevel) {
+			return c.send(serverwire.HeadBanner(game.ErrEquipLevel.Error()))
+		}
 		return nil
 	}
 	next.Bag, pet.Equipment = transfer.Bag, transfer.Equipment

@@ -177,7 +177,8 @@ func (c *Client) eventFrame(s []byte) {
 
 // turnNPC is kind 11 (case 0xb): the NPC whose click ID is the subject
 // byte turns toward the player, another NPC, or a direction. The NPC's
-// +0x1efc check and FUN_0030a344's release are not ported.
+// +0x1efc check is not ported. A valid scripted turn releases the saved
+// conversation facing (FUN_0030a344).
 func (c *Client) turnNPC(click uint16, mode byte, value int) {
 	n := c.World.NPCs[click]
 	if n == nil {
@@ -201,6 +202,7 @@ func (c *Client) turnNPC(click uint16, mode byte, value int) {
 	default:
 		return
 	}
+	n.Conversation = false
 	n.Action = world.TurnAction(n.Action, n.X, n.Y, x, y)
 }
 
@@ -293,6 +295,12 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 			FaceWidth(int) int
 			BodyWidth(int) int
 		}); ok {
+			// Keep the compact portrait available for question layouts even
+			// when ordinary player dialogue uses the large character artwork.
+			who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
+				f.DrawFace(dst, x, y, role.PortraitAction, blinking)
+			}
+			who.FaceBodyW = f.BodyWidth(role.PortraitAction)
 			// The player speaks in the wide form with the large art
 			// (+0x2a8); the original also checks the worn look against
 			// a table (PTR_DAT_004ca774), which is not ported. Without
@@ -303,10 +311,6 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 				who.ArtW = f.BodyWidth(role.TalkArtAction)
 				who.Art = func(dst *surface.Surface, x, y int, blinking bool) {
 					f.DrawFace(dst, x, y, role.TalkArtAction, blinking)
-				}
-			} else {
-				who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
-					f.DrawFace(dst, x, y, role.PortraitAction, blinking)
 				}
 			}
 		}
@@ -346,10 +350,13 @@ const (
 // ask is kind 6 (FUN_00304fd0 case 6): the question's prompt and options
 // in the talk window, spoken by an NPC or the player. Mode 0 marks the
 // step done as well, so the answer is followed by 20/6; mode 1 sends only
-// the answer. Questions for other forms (+0x42 1 or 3: the item and
-// trade pickers) are not ported and are closed.
+// the answer. Item-picker questions (+0x42 1 or 3) open the native shop form;
+// unsupported non-item pickers are closed explicitly.
 func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 	q, ok := c.World.Questions[id]
+	if ok && q.Mode != 0 && c.shopQuestion(q) {
+		return
+	}
 	if !ok || q.Mode != 0 {
 		log.Printf("event: question %d (form %d) not ported, closing", id, q.Mode)
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, eventChoiceCancel})
@@ -400,7 +407,10 @@ func (c *Client) answer(v byte) {
 	c.event.answers = nil
 	c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, v})
 	if v != eventChoiceCancel && c.event.ackAnswer {
-		c.event.done = true
+		// Send the question's ACK with its answer, before a new server frame
+		// can replace the step and erase or misattribute the pending ACK.
+		c.event.done = false
+		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
 	}
 }
 
@@ -437,8 +447,12 @@ func stepDone(sub byte) bool {
 // no longer holds the player (+0x2392 = 0), so a door event's 6/2 hold
 // ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
+	c.stopConstellation()
 	for npc, action := range c.event.npcFacings {
-		npc.Action = action
+		if npc.Conversation {
+			npc.Action = action
+		}
+		npc.Conversation = false
 	}
 	c.event = eventState{}
 	c.held = false
@@ -458,6 +472,10 @@ func (c *Client) advanceTalk() {
 
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
+	// Native +0x732a holds AC20:6 until the entire constellation sequence ends.
+	if c.constellation != nil {
+		return
+	}
 	if c.minigameResultAckPending {
 		c.minigameResultAckPending = false
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
@@ -469,6 +487,9 @@ func (c *Client) eventTick() {
 		c.petAnnouncement = true
 	}
 	// FUN_00307300 holds a finished step while route walkers are queued.
+	if !c.clinicUntil.IsZero() {
+		return
+	}
 	if c.event.done && c.World != nil && !c.World.RoutesDone() {
 		return
 	}
@@ -490,16 +511,20 @@ func (c *Client) faceConversation(subject byte, actor uint16, turn bool) {
 		return
 	}
 	p := &c.World.Player
+	if c.event.npcFacings == nil {
+		c.event.npcFacings = map[*world.NPC]int{}
+	}
+	// A scripted animation, held pose or turn releases the earlier saved
+	// facing. A later line begins a new conversation from the authored pose.
+	if !n.Conversation {
+		delete(c.event.npcFacings, n)
+	}
+	n.BeginConversation(c.Now())
+	if _, saved := c.event.npcFacings[n]; !saved {
+		c.event.npcFacings[n] = n.Action
+	}
 	if turn {
-		original := n.Action
-		if n.FaceConversation(p.X, p.Y) {
-			if c.event.npcFacings == nil {
-				c.event.npcFacings = map[*world.NPC]int{}
-			}
-			if _, saved := c.event.npcFacings[n]; !saved {
-				c.event.npcFacings[n] = original
-			}
-		}
+		n.FaceConversation(p.X, p.Y)
 	}
 	// The player faces the speaker even when the speaker is exempt from turning.
 	c.World.StopWalk()

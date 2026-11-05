@@ -112,6 +112,9 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 			if target == selected {
 				a.SkillEXP = game.CombatSkillEXP(result.amount, target.HP, target.MaxHP)
 			}
+			if r.ExperienceFormula == game.BattleEXPParticipation {
+				b.recordExperienceDamage(target, a.Actor, result.amount)
+			}
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
 			if target.Overkilled {
@@ -122,7 +125,7 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	steps := []Step{{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}}
-	if r.RewardKill != nil {
+	if r.RewardKill != nil || r.ExperienceFormula == game.BattleEXPParticipation {
 		for _, result := range results {
 			if result.result == protocol.BattleHitLanded && result.target.Dead() {
 				steps = r.appendKillReward(b, steps, result.target, []Action{a})

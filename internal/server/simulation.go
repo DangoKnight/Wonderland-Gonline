@@ -14,13 +14,20 @@ import (
 )
 
 const (
-	actorDetectionRadius    = 200
-	actorTargetScanInterval = 3 * time.Second
+	actorDetectionRadius     = 200
+	actorTargetScanInterval  = 500 * time.Millisecond
+	actorSimulationInterval  = 500 * time.Millisecond
+	worldMaintenanceInterval = time.Second
 )
 
 // The existing process ticker owns ambient movement as well as respawns.
 // worldMu serializes it with map entry, movement, events and battle transitions.
 func (s *Server) simulateWorld(now time.Time) {
+	s.simulateWorldTick(now, true)
+}
+
+// Scan-only ticks retain targets without issuing additional movement packets.
+func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
 	maps := map[uint16][]*Session{}
@@ -88,17 +95,24 @@ func (s *Server) simulateWorld(now time.Time) {
 				pursuit.target = 0
 				pursuit.nextScan = now.Add(actorTargetScanInterval)
 			}
-			nearest := math.Inf(1)
+			if !scan && pursuit.target == 0 {
+				continue
+			}
+			nearest := int64(actorDetectionRadius*actorDetectionRadius + 1)
 			for _, c := range viewers {
 				if !scan && c.character.ID != pursuit.target {
+					continue
+				}
+				dx, dy := int64(c.character.X)-int64(npc.X), int64(c.character.Y)-int64(npc.Y)
+				distance := dx*dx + dy*dy
+				if distance > actorDetectionRadius*actorDetectionRadius || distance >= nearest {
 					continue
 				}
 				if !ambientEncounterAvailable(c, now) || !bounds.Contains(c.character.X, c.character.Y) ||
 					c.view.Hidden[npc.ClickID] || !s.World.VisibleIn(c.character, c.view, mapID, npc.ClickID) || s.World.InParty(c.character, npc.Template) {
 					continue
 				}
-				distance := math.Hypot(float64(int(c.character.X)-int(npc.X)), float64(int(c.character.Y)-int(npc.Y)))
-				if distance <= actorDetectionRadius && distance < nearest {
+				if distance < nearest {
 					nearest = distance
 					pursuit.target = c.character.ID
 					pursued[npc.ClickID] = c
@@ -132,13 +146,17 @@ func (s *Server) simulateWorld(now time.Time) {
 				paused[npc.ClickID] = true
 			}
 		}
+		if !movement {
+			continue
+		}
 		for _, move := range s.World.AdvanceActorsToward(mapID, now, paused, targets, nil) {
 			npc, _ := s.World.NPC(mapID, move.Click)
+			packet := move.Packet()
 			for _, c := range viewers {
 				if c.view.Hidden[move.Click] || !s.World.VisibleIn(c.character, c.view, mapID, move.Click) || s.World.InParty(c.character, npc.Template) {
 					continue
 				}
-				s.sendOrClose(c, move.Packet())
+				s.sendOrClose(c, packet)
 			}
 		}
 	}
@@ -342,9 +360,14 @@ func (s *Server) reviveMonsters(now time.Time) {
 // AC5:5 resets the actor shape. The reference server's proposed AC23:122 success effect is
 // fishing cleanup in the verified WLRI client and must not be sent here.
 func (s *Server) clearShapeshift(c *Session) {
-	p := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateShapeshift}.U32(c.character.ID).U16(0)
+	c.shapeshift = 0
+	p := shapeshiftPacket(c)
 	s.broadcastWorld(c, p)
 	s.sendOrClose(c, p)
+}
+
+func shapeshiftPacket(c *Session) []byte {
+	return protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateShapeshift}.U32(c.character.ID).U16(c.shapeshift)
 }
 
 // Resting recovery is a server rule of this port: neither aLogin nor the

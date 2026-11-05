@@ -8,6 +8,51 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v46 replaces the stock Xaolan rescue visibility overrides with a
+visit-scoped visibility policy. Xaolan and her grandmother remain for the rescue
+scene, then native map-entry events hide them on the next visit. Later quest
+stages retain their native alternate actors. The migration preserves edited
+rules and player quest progress. Stop the server and run the offline upgrade
+below before restarting the rebuilt server.
+
+Assets v45 adds a modular `battle_background` policy for Xaolan's Kelan house
+(map 12002). Its native wire selector 140 resolves to room scene 59140. Client
+scene loading now supports native single-layer backgrounds as well as layered
+outdoor scenes. The content migration retains same-ID edits and intentionally
+removed quest families. Rebuild the server, run the offline upgrade below and
+restart both server and client to apply the correction.
+
+Assets v44 removes the stock Lost Dog visibility overrides in favor of the
+native Kelan pre-events. The Shiba Inu in the hogpen is visible before accepting
+the quest, but its native interaction only recovers it after acceptance. After
+recovery it disappears from the hogpen and appears beside its owner. The shared
+declarative policy revision preserves edited rules and intentionally empty
+collections; it does not change existing player quest progress.
+
+Assets v43 follows the 2026-11-05 Legacy capture of Kelan's honey quest.
+Collecting honey continues into the bee warning and battle. Battle outcomes hide
+the bees without completing the hand-in mark. Native pre-events keep the patient
+lying down and the honey actors hidden while carrying honey; the hand-in exchanges
+item 30034 for 23108 and advances progress, allowing the patient to stand.
+The migration removes only matching stock visibility/completion/pose overrides
+from earlier versions; edited rules and deliberately empty collections survive.
+Use the offline upgrade command below. Characters already affected by the old
+premature completion can be repaired, with the server stopped and a backup, using
+`tools/sql/repair-honey-hand-in.sql` against the gameplay database. That repair
+only clears the invalid completed/step-zero mark while the original request is
+active and the character still carries honey; it never grants another reward.
+
+Assets v40 (Client v31) adds the typed equipment minimum level (`EquipLevel`), projected once
+from retained decoded Item.dat byte 113. This differs from the legacy `Level`
+field. Player and pet equipment checks use this requirement; Radio Set requires
+level 10. Repeated upgrades preserve administrator edits. Stop the server and
+run the offline migration below before deploying this version.
+
+Client v30 through v32 catalogs are recognized independently of quest schema versions.
+They upgrade to v46 without losing existing definitions.
+
+Assets v29–v38 add atomic native quest completion, temporary escorts/disguises, native quest NPC reactions and removal of two obsolete quest disable reasons. See [quest research and implementation](QUEST_RESEARCH.md) and the [complete 345-entry notepad list](QUEST_LIST.md). Gameplay now uses v21.
+
 Assets v30 adds typed `ResourceRespawns` overrides for individual collection and
 ground-item cooldown durations. Gameplay v21 adds `resource_cooldowns`, keyed by
 resource kind, map and source ID. Each expiry is shared across players and commits
@@ -20,6 +65,8 @@ reasons, unsupported branches, edited reward pools and intentionally empty data.
 Stop the server and use the offline migration procedure below before deploying
 this branch. Quest-development catalogs use a separate later schema; do not
 downgrade or replace those databases with a Client catalog.
+
+Assets v39 combines the quest and collection migrations. Client v30 and quest v38 catalogs can both be upgraded offline while preserving existing definitions. Upgrade older Client catalogs to main v30 before moving to this branch.
 
 Assets v28 applies 93 owner-confirmed entity renames and preserves 85 confirmed existing names. Unchecked review proposals do not affect gameplay. See [enemy name review](ENEMY_NAME_REVIEW.md).
 
@@ -87,7 +134,7 @@ snapshots. Keep the backups until acceptance testing finishes.
 Gameplay schema v21 automatically upgrades older character storage transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 30 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 42 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -236,7 +283,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v30. The upgrade procedure upgrades existing older installations
+Asset schema is now v46. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -280,7 +327,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v30. See
+before running the new server; runtime requires v46. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -318,7 +365,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v30 and reads only SQL definitions. The `Story` administration
+Runtime requires v46 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

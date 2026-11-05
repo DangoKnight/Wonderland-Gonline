@@ -109,11 +109,13 @@ func (r *reader) str() []byte { return append([]byte(nil), r.take(int(r.u8()))..
 
 // World is the in-game state.
 type World struct {
-	Env       *seui.Env
-	Scene     *Scene
-	SceneName string
-	Player    Player
-	Body      login.RoleView
+	Shapeshifts    map[uint32]PlayerShape
+	NPCExpressions map[uint16]Expression
+	Env            *seui.Env
+	Scene          *Scene
+	SceneName      string
+	Player         Player
+	Body           login.RoleView
 	// NPCs are the map's NPC objects by click ID (MapNPCs).
 	NPCs map[uint16]*NPC
 	// Questions are the map's event questions by click ID.
@@ -262,7 +264,7 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		}
 	}
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			figures = append(figures, figure{n.SortY(), func() {
 				w.drawShadow(n, n.X-cx, n.Y-cy)
 				if l, ok := n.Painter.(interface{ SetLit(bool) }); ok {
@@ -280,7 +282,9 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 				if lit, ok := p.Role.(interface{ SetLit(bool) }); ok {
 					lit.SetLit(w.JoinTeamSelection && w.teamHover.owner == p.ID)
 				}
-				p.Role.DrawBody(scr, p.X-cx, p.Y-cy, p.Direction)
+				if !w.drawShapeshift(scr, p.ID, p.X-cx, p.Y-cy, p.Direction) {
+					p.Role.DrawBody(scr, p.X-cx, p.Y-cy, p.Direction)
+				}
 			}})
 		}
 	}
@@ -301,7 +305,9 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		i := sort.Search(len(figures), func(i int) bool { return figures[i].y > w.Player.Y })
 		figures = slices.Insert(figures, i, figure{w.Player.Y, func() {
 			w.drawSmallShadow(px, py)
-			w.Body.DrawBody(scr, px, py, w.Player.Direction)
+			if !w.drawShapeshift(scr, w.Player.ID, px, py, w.Player.Direction) {
+				w.Body.DrawBody(scr, px, py, w.Player.Direction)
+			}
 		}})
 	}
 	for i := range objects {
@@ -341,7 +347,7 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 func (w *World) drawNames(cx, cy, px int) {
 	scr, txt := w.Env.Screen, w.Env.Text
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			w.drawName(n, n.X-cx, n.Y-cy)
 		}
 	}

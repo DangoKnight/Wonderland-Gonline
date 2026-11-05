@@ -25,6 +25,9 @@ func (w *World) ApplyActorWalk(p []byte, now time.Time) bool {
 	if n == nil {
 		return true // Native dispatcher ignores unknown click IDs.
 	}
+	if n.Conversation {
+		return true
+	}
 	n.stepWalk(now)
 	if p[6] != 0 {
 		n.walker.pixelsPerMillisecond = actorSpeed(p[6])
@@ -55,4 +58,10 @@ func (n *NPC) stopWalk() {
 	pos := Player{X: n.X, Y: n.Y, Direction: int32(n.Action)}
 	n.walker.Stop(&pos)
 	n.Action = int(pos.Direction)
+}
+
+func (n *NPC) BeginConversation(now time.Time) {
+	n.stepWalk(now)
+	n.stopWalk()
+	n.Conversation = true
 }

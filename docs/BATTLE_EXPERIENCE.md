@@ -16,8 +16,11 @@ There is no level or support weighting. PvP does not award monster EXP.
 ## Participation
 
 Each direct killing attack records the distinct player/pet entities that landed
-hits in that killing combo, plus eligible direct assistants. Earlier damage
-alone is insufficient. A solo attack, area attack or damaging item can have one
+hits in that killing combo, plus eligible direct assistants. A player or pet
+that previously dealt positive HP damage to that same monster receives half
+participation. Repeated hits do not stack this credit. Killing-combo or eligible
+support participation replaces the half credit with full credit. A solo attack,
+area attack or damaging item can have one
 killing contributor. Assisters count once even if they helped multiple comboers
 or also attacked. Pets are independent entities for both the pool and shares;
 their EXP is awarded to the pet, not added to the owner's personal EXP.
@@ -30,12 +33,19 @@ division but do not increase `COMBO_UNITS`.
 The normalized inverse-level formula requested by the owner is:
 
 ```text
-POOL = BASE * N
+PARTICIPATION = 1 for killing comboers/assistants, 0.5 for earlier damage only
+POOL = BASE * SUM(PARTICIPATION)
 COMBO_UNITS >= 2: POOL *= 1.40 + 0.10 * (COMBO_UNITS - 2)
 N = 1: participant gets POOL
-N > 1: share = POOL * (LEVEL_SUM - participant level)
-                    / ((N - 1) * LEVEL_SUM)
+N > 1: WEIGHT = PARTICIPATION * (LEVEL_SUM - participant level)
+       share = POOL * WEIGHT / SUM(WEIGHT)
 ```
+
+Earlier attackers do not increase the killing combo bonus. For two equal-level
+units and a 200 base reward, an earlier attacker and a solo killer receive
+100 and 200 EXP respectively. If both join the killing combo, both receive
+full credit and the two-unit bonus: 280 EXP each. Only positive HP damage is
+tracked; misses and SP-only effects do not establish earlier damage credit.
 
 For a base reward of 200, two killing comboers plus one assistant produce a
 600 base pool, increased by 40% to 840 EXP. Levels 10/20/30 receive 350/280/210

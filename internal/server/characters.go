@@ -154,7 +154,7 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	if char.RebornJob != 0 {
 		packets = append(packets, []byte{protocol.CommandRebornJob, protocol.RebornJobMetadata, char.RebornJob, protocol.NativeActive})
 	}
-	packets = append(packets, storyConstellations(&char))
+	packets = append(packets, s.storyConstellations(&char))
 	packets = append(packets, []byte{protocol.CommandHandshake, protocol.HandshakeWorldReady}, []byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionReady}, protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint}.U32(char.ID).U8(0))
 	return packets, nil
 }
@@ -165,6 +165,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 		return err
 	}
 	c.character = &char
+	c.shapeshift = 0
 	c.openTent, c.tentOwner = nil, 0
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
@@ -180,6 +181,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.warped = false
 	c.storm, c.stormAck, c.beachPending, c.beach, c.battle = false, false, false, nil, nil
 	c.restMap, c.saleMode = 0, -1
+	c.storageMap, c.hotelMap = 0, 0
 	c.encounter = encounterState{next: firstEncounter}
 	c.encounter.enterMap()
 	c.slot = char.Slot

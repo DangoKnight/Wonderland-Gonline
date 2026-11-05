@@ -1,0 +1,127 @@
+{
+  "index_url": "https://wonderlandonline.fandom.com/wiki/Quests_by_Notepad_Page",
+  "category_url": "https://wonderlandonline.fandom.com/wiki/Category:Quests",
+  "notepad_quests": 345,
+  "category_articles": 368,
+  "fetched_canonical_articles": 427,
+  "linked_native_scripts": 345,
+  "completion_candidates": 350,
+  "completion_checkpoints": 210,
+  "reward_bundle_candidates": 25,
+  "extended_existing_completions": 4,
+  "actor_candidates": 877,
+  "historical_story_sha256": "feb929a26c8e60bd9ac70f75af622f82aef942b4f10393a2878d8b31c28dd002",
+  "constellation_actor_candidates": 16,
+  "native_battle_actions": 551,
+  "native_battle_formations": 287,
+  "formations_with_premature_flat_spawns": 95,
+  "completion_aliases_sha256": "216d2a38dbca0b19d7ceaeba31443435ec1025e9321165778d5b819dc9c17b76",
+  "notepad_aliases_sha256": "1ce0d8d8a576ea6aef7be2f2ea860aabc02cb4de8c3860c0f18b6af43a7dc24f",
+  "sources": [
+    {
+      "file": "notepad-1.txt",
+      "sha256": "f0259bede7ffc70285e311ac1aa21a2f027c4085a944c14004b57854650bd9dc"
+    },
+    {
+      "file": "category.json",
+      "sha256": "b635630a442b9862c1ffbed7758f25f48814537c0505d08028dfe1c8485a5e6f"
+    },
+    {
+      "file": "batch-00.json",
+      "sha256": "4d13e3b2128ce57c0642179ccabef1a5a1d137a9c306bd140fdc9df68b0a99e3"
+    },
+    {
+      "file": "batch-01.json",
+      "sha256": "ad75340ac60d4037784412c75477cbd9596f1837ec79e085a1b96ab6ee390624"
+    },
+    {
+      "file": "batch-02.json",
+      "sha256": "69bcb931b44c82fad6c84b89c768ea88b5ed0ff443597839b96c851f4d1059c0"
+    },
+    {
+      "file": "batch-03.json",
+      "sha256": "97d9c7c3eef6f31cde9fdda46aee931beb0bdd5bef42b7cb1df657c1272d06ee"
+    },
+    {
+      "file": "batch-04.json",
+      "sha256": "e47f14a76f1e9763df6f30ac351c0202caee5b984b5fddb4ecd69f3ab367b04b"
+    },
+    {
+      "file": "batch-05.json",
+      "sha256": "bf38c030cd1707e0f579c1d802d8e669c0df10857e495b4d4be2f484436d2c4a"
+    },
+    {
+      "file": "batch-06.json",
+      "sha256": "64ea2715706e25477bcba7211ef37f52827cbe7b94e755717dc45e2a94e9357f"
+    },
+    {
+      "file": "batch-07.json",
+      "sha256": "fb3a5a438b703ea3dc97ba8e972763c61448e50923820a49deac46135614d491"
+    },
+    {
+      "file": "batch-08.json",
+      "sha256": "140e6a7db566e56fdb6e973798c103b78452dfb42bf8b16b67c09d4af491fdf3"
+    },
+    {
+      "file": "batch-09.json",
+      "sha256": "735bd781b00882bff4fa101e6407a04b213021af9da47d713da52039dd93691e"
+    },
+    {
+      "file": "batch-10.json",
+      "sha256": "64239d7d41eb7974dfd29233b62db9068ca1fd33621fbb90a312b538c851a3ba"
+    },
+    {
+      "file": "batch-11.json",
+      "sha256": "bb2680bd297e5f795579ce8839c744fd509e08466f58160801158a5084356b80"
+    },
+    {
+      "file": "batch-12.json",
+      "sha256": "134cd6535d6eb243dda22e988613cc3db6ac00b6917914a1e3ecadac3db60ece"
+    },
+    {
+      "file": "batch-13.json",
+      "sha256": "ccd4c07ceaa4e3c475710a346243fa7fd649e5979bd489118d74d77f9ffa3063"
+    },
+    {
+      "file": "batch-14.json",
+      "sha256": "2f555a4375b2572554d87480fc2d0ccd18b5923fba5a67da257e8ce44efbc2bb"
+    },
+    {
+      "file": "batch-15.json",
+      "sha256": "b9f1cdcba7d258d089234c7022ccb9dce6ee3e833dde734546ed2d8a45cbf5c3"
+    },
+    {
+      "file": "batch-16.json",
+      "sha256": "d039e59f4a5b14f6674f5be09d70971ee11a229c3b6aedc669dafec9f5d1dae2"
+    },
+    {
+      "file": "batch-17.json",
+      "sha256": "899d9b2916726246b1e81879b49375f3416401b0765cf7840379df9a070eb65f"
+    },
+    {
+      "file": "batch-18.json",
+      "sha256": "62876eea7a4144ca12715d577166f578b1b1e15e1067372051d7a15ee947f677"
+    },
+    {
+      "file": "batch-19.json",
+      "sha256": "8a89475d3c1a6ea0cf2bb9eb338885fc055d7de6f32a2970ea03b0f1ea41f308"
+    },
+    {
+      "file": "batch-20.json",
+      "sha256": "c0fc63815ff1b593ad12adb13ebfbc9d07cf6178cf73fda0e8cc41eb6510c975"
+    },
+    {
+      "file": "batch-21.json",
+      "sha256": "b52e88494d8e0b272261e4ec8f18d56825ff7cd5497188aeb9872cd3bb7fb00e"
+    },
+    {
+      "file": "batch-22.json",
+      "sha256": "12f734af279c05013d03a4284ff1f7b27c1f306ab2d7068d942d7d2ea687dee4"
+    },
+    {
+      "file": "batch-23.json",
+      "sha256": "cbc352d49d955d5df76b77e7ff060f97fb847da3c29b1fff0ec548a23abf360e"
+    }
+  ],
+  "native_catalog_sha256": "df7d7cb35c88466cd9361a76b4e3cae559497b17c86768c560feecb13a75bd20"
+}

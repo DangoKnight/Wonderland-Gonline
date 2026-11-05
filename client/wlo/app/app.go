@@ -94,6 +94,10 @@ type Client struct {
 	Business           *hud.Business
 	LuckyDraw          *lottery.Form
 	Trade              *inventory.TradeForm
+	Services           *inventory.ServiceForm
+	clinicPrompt       *clinicPrompt
+	clinicUntil        time.Time
+	clinicSleepGlyph   *surface.Surface
 	friendAsk          *friendAsk // the open friend question
 	remote             remoteRuntime
 	battle             battleView
@@ -104,13 +108,14 @@ type Client struct {
 	MainStatus         *hud.MainStatus  // the status panel over the world
 	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
 	MainButtons        *hud.MainBtnForm // the menu at the bottom right
-	HotKeys            *hud.HotKeyForm  // the F1–F8 bar
-	ChatBar            *hud.InputBar    // the chat bar
-	groundHeld         bool             // the left button went down on the ground
-	groundSince        time.Time        // when it went down
-	uiHovered          bool             // a control was under the pointer last frame
-	nextWalk           time.Time        // next re-plan while a button or arrow is held
-	Chat               *hud.ChatLog     // the chat log over the map
+	inventoryPoints    inventoryPointAlert
+	HotKeys            *hud.HotKeyForm // the F1–F8 bar
+	ChatBar            *hud.InputBar   // the chat bar
+	groundHeld         bool            // the left button went down on the ground
+	groundSince        time.Time       // when it went down
+	uiHovered          bool            // a control was under the pointer last frame
+	nextWalk           time.Time       // next re-plan while a button or arrow is held
+	Chat               *hud.ChatLog    // the chat log over the map
 	npcTemplates       map[uint32]world.NPCTemplate
 	Talk               *hud.Talk // the event talk window
 	MiniMap            *hud.MiniMap
@@ -127,6 +132,8 @@ type Client struct {
 	sport              *sportPlay // the running minigame
 	sceneMusic         map[uint16]string
 	eventMusic         string // event kind 15's track (+0x732c)
+	constellation      *constellationRun
+	constellations     [constellationLimit]bool
 	talks              map[uint32]string
 	event              eventState
 	eventTimers        map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
@@ -344,6 +351,7 @@ func New(o Options) (*Client, error) {
 	c.initPetStatus()
 	c.initVehicleStatus()
 	c.initTrade()
+	c.initServices()
 	c.initLuckyDraw()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
@@ -360,7 +368,7 @@ func (c *Client) Frame() { c.frame(true) }
 // frame always pumps networking, simulation and automation; background
 // thumbnails render at a lower rate. Movies/minigames retain their own clocks.
 func (c *Client) frame(draw bool) {
-	draw = draw || c.movie != nil || c.sport != nil || c.fade.step > 0
+	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
 	if draw {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
@@ -369,6 +377,8 @@ func (c *Client) frame(draw bool) {
 	c.sceneFadeTick(c.Now())
 	c.friendAskTick(c.Now())
 	c.luckyDrawTick()
+	c.inventoryPointTick()
+	c.clinicTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
@@ -384,6 +394,7 @@ func (c *Client) frame(draw bool) {
 		c.reachNPC()
 		c.reachFloorItem()
 		c.syncMiniMap()
+		c.constellationTick(c.Now())
 		c.eventTick()
 		c.vacuumTick()
 		c.areaTick()
@@ -391,13 +402,19 @@ func (c *Client) frame(draw bool) {
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
 		fading := c.fade.step > 0
-		c.World.HideNames = c.Talk.Drawn() || fading
+		c.World.HideNames = c.Talk.Drawn() || fading || !c.clinicUntil.IsZero()
 		c.World.Cinematic = fading
 		if c.battleFrame(draw) {
 			// Battle owns the scene while the map and networking keep ticking.
 		} else if !c.movieFrame() && draw {
+			hide := c.World.HidePlayer
+			if !c.clinicUntil.IsZero() {
+				c.World.HidePlayer = true
+			}
 			c.World.DrawWithSprites(append(c.floorItemSprites(), c.placedVehicleSprites()...))
+			c.World.HidePlayer = hide
 			c.drawWorldItemGains(c.Now())
+			c.drawClinicRest()
 			c.drawVehicleEffects()
 			c.drawFloorItemName()
 			dialogueOverlay = true
@@ -408,6 +425,7 @@ func (c *Client) frame(draw bool) {
 	}
 	now := c.Now()
 	c.battleResultsTick(now)
+	c.layoutRewardNotices()
 	if draw {
 		c.drawSceneFade()
 	}
@@ -460,6 +478,9 @@ func (c *Client) frame(draw bool) {
 		c.UI.DrawOverlayMessageExits()
 	}
 	c.uiHovered = c.Input.Hovered != nil
+	if draw {
+		c.drawConstellation(c.Now())
+	}
 	c.updateCursor(now)
 }
 
@@ -505,6 +526,9 @@ func (c *Client) dispatchNative(p []byte) {
 		return
 	}
 	if c.friendsPacket(p) {
+		return
+	}
+	if c.servicePacket(p) {
 		return
 	}
 	if c.tradePacket(p) {
@@ -561,6 +585,10 @@ func (c *Client) dispatchNative(p []byte) {
 		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationList:
+		c.receiveConstellations(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationAcquire:
+		c.startConstellation(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehiclePlaced:
 		c.placeVehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehicleProgress:
@@ -618,6 +646,8 @@ func (c *Client) dispatchNative(p []byte) {
 		c.receivePose(s)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateModelTransform:
 		c.receiveModelTransform(p)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateShapeshift:
+		c.receiveShapeshift(p)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateEquipmentSnapshot:
 		if c.World != nil {
 			c.World.ApplyPeerEquipment(s[1:])
@@ -697,6 +727,10 @@ func (c *Client) dispatchNative(p []byte) {
 		if c.World != nil && !c.World.ApplyActorWalk(s[1:], c.Now()) && c.Unhandled != nil {
 			c.Unhandled(p)
 		}
+	case p[0] == protocol.CommandScene && (sub == protocol.SceneActorExpression || sub == protocol.SceneActorAnimation):
+		if c.World != nil && !c.World.ApplyNPCPresentation(sub, s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorAction:
 		// AC22:12 (FUN_00459d88) sets a minimap sign.
 		if c.World != nil && !c.World.ApplySign(s[1:]) && c.Unhandled != nil {
@@ -706,6 +740,10 @@ func (c *Client) dispatchNative(p []byte) {
 		// AC22:4 (FUN_0038cf30) moves, shows and hides map NPCs.
 		if c.World != nil {
 			c.World.ApplyActorPositions(s[1:])
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPose:
+		if c.World != nil && !c.World.ApplyActorPose(s[1:]) && c.Unhandled != nil {
+			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionDelete:
 		// 35/2 (0x2eab55) reports a deletion.

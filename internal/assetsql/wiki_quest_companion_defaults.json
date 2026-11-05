@@ -1,0 +1,392 @@
+[
+  {
+    "id": "water_path_escort_2_5",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        2
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 5,
+      "d1": 15148,
+      "d2": 1,
+      "d3": 1,
+      "value": 1
+    }
+  },
+  {
+    "id": "water_path_escort_3_5",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_3_13",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_3_21",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        21
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_4_5",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_4_13",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        13
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_4_21",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        4
+      ],
+      "branches": [
+        21
+      ],
+      "allow_missing": true
+    },
+    "value": 1,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_5_6",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_5_16",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_5_26",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        26
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_6_6",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        6
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_6_16",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_6_26",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        26
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 3,
+      "d1": 3,
+      "d2": 30178,
+      "d3": 1,
+      "value": 0
+    }
+  },
+  {
+    "id": "water_path_escort_7_5",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 5,
+      "d1": 15148,
+      "d2": 1,
+      "d3": 1,
+      "value": 1
+    }
+  },
+  {
+    "id": "water_path_escort_8_5",
+    "kind": "quest_companion",
+    "scope": {
+      "maps": [
+        13118
+      ],
+      "events": [
+        8
+      ],
+      "branches": [
+        5
+      ],
+      "allow_missing": true
+    },
+    "value": 0,
+    "mark": 15148,
+    "template": 30178,
+    "pattern": {
+      "code": 5,
+      "d1": 15148,
+      "d2": 1,
+      "d3": 1,
+      "value": 1
+    }
+  }
+]

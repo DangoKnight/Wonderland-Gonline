@@ -20,7 +20,7 @@ const (
 
 // Battle movement/event locks restrict gameplay, but do not close browsing UI.
 func (c *Client) canOpenModule() bool {
-	return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.sceneFrozen() &&
+	return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.sceneFrozen() && c.clinicUntil.IsZero() &&
 		(c.battle.state.Active || !c.held && !c.event.active)
 }
 
@@ -82,6 +82,7 @@ func (c *Client) initInventory() {
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	c.inventoryPoints = inventoryPointAlert{}
 	c.vacuum = vacuumRuntime{}
 	if c.battleResults.owner != p.ID {
 		c.resetBattleResults()
@@ -102,6 +103,11 @@ func (c *Client) resetInventory(p world.Player) {
 	c.setJoinTeamTarget(false)
 	c.setFriendTarget(false)
 	c.resetTrade()
+	if c.Services != nil {
+		c.Services.Reset()
+	}
+	c.closeClinicPrompt()
+	c.clinicUntil = time.Time{}
 	c.Inventory.AllocationReply()
 	c.Inventory.ResetUse()
 	c.Inventory.ResetRemote()
@@ -124,6 +130,28 @@ func (c *Client) resetInventory(p world.Player) {
 	c.loadHotbar()
 	c.loadEmotes()
 	c.loadMail()
+}
+
+type inventoryPointAlert struct {
+	points  uint16
+	pending bool
+}
+
+func (c *Client) inventoryPointTick() {
+	if c.Inventory == nil || c.MainButtons == nil || c.Stats == nil {
+		return
+	}
+	a := &c.inventoryPoints
+	points := c.Stats.Points
+	if points > a.points {
+		a.pending = true
+	}
+	a.points = points
+	if points == 0 || c.Inventory.Visible {
+		a.pending = false
+	}
+	c.MainButtons.Buttons[mainInventoryButton].Now = c.Now
+	c.MainButtons.InventoryAttention(a.pending)
 }
 
 func (c *Client) refreshEquipment() {

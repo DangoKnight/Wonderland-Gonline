@@ -281,6 +281,24 @@ func (o Op) Unsupported() bool {
 // Formation lists the enemy templates of a map battle entry (EVE category 8): each
 // 3-byte member starts with a template ID; IDs below 10000 are not monsters.
 func (w *World) Formation(mapID, entry uint16) []uint32 {
+	members := w.FormationMembers(mapID, entry)
+	var out []uint32
+	for _, member := range members {
+		out = append(out, member.Template)
+	}
+	return out
+}
+
+// FormationMember preserves the third byte of a native three-byte battle
+// record. Repeated slots are occupants queued behind the same initial enemy.
+type FormationMember struct {
+	Template uint32
+	Slot     byte
+}
+
+const nativeBattleMemberBytes = 3 // NPC template UInt16 followed by occupant queue UInt8.
+
+func (w *World) FormationMembers(mapID, entry uint16) []FormationMember {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return nil
@@ -289,10 +307,10 @@ func (w *World) Formation(mapID, entry uint16) []uint32 {
 		if b.ClickID != entry {
 			continue
 		}
-		var out []uint32
-		for i := 0; i+3 <= len(b.Team1); i += 3 {
+		var out []FormationMember
+		for i := 0; i+nativeBattleMemberBytes <= len(b.Team1); i += nativeBattleMemberBytes {
 			if id := uint32(b.Team1[i]) | uint32(b.Team1[i+1])<<8; id >= MinMonsterTemplateID {
-				out = append(out, id)
+				out = append(out, FormationMember{Template: id, Slot: b.Team1[i+2]})
 			}
 		}
 		return out

@@ -1,0 +1,10 @@
+[
+  {
+    "id": "wiki_sledge_wolf_capture_subject",
+    "kind": "condition",
+    "scope": {"maps": [12350], "events": [19], "allow_missing": true},
+    "gates": [{"source": "party", "id": 17759, "op": "eq", "value": 0}],
+    "pattern": {"code": 2, "d1": 2, "d2": 4, "d3": 17759, "d4": 0, "value": 0},
+    "value": 1
+  }
+]

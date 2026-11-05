@@ -12,6 +12,70 @@ func experienceParty() (*Fighter, *Fighter, *Fighter) {
 		&Fighter{Kind: Pet, ID: 10501, Owner: 1, Side: Attacker, Level: 30, HP: 100, MaxHP: 100, X: 3, Y: 1}
 }
 
+func TestEarlierDamageHalfParticipationAndUpgrade(t *testing.T) {
+	for _, full := range []bool{false, true} {
+		a, killer, _ := experienceParty()
+		a.Level, killer.Level = 10, 10
+		b := &Battle{}
+		target := &Fighter{Kind: Monster, Side: Defender, Level: 25, HP: 100}
+		b.recordExperienceDamage(target, a, 5)
+		b.recordExperienceDamage(target, a, 5) // Repeated damage never stacks credits.
+		target.HP = 0
+		actors := []Action{{Actor: killer}}
+		if full {
+			actors = append(actors, Action{Actor: a})
+		}
+		b.recordKillExperience(target, actors)
+		wantA, wantKiller := uint64(100), uint64(200) // 200 * 1.5 pool, equal levels weighted 1:2.
+		if full {
+			wantA, wantKiller = 280, 280
+		} // Two full comboers, +40%.
+		if b.ParticipantEXP(a) != wantA || b.ParticipantEXP(killer) != wantKiller {
+			t.Fatal(full, b.experience)
+		}
+		other := &Fighter{Kind: Monster, Side: Defender, Level: 25}
+		b.recordKillExperience(other, []Action{{Actor: killer}})
+		if b.ParticipantEXP(a) != wantA {
+			t.Fatal("damage credit leaked to another monster")
+		}
+	}
+}
+
+func TestEarlierDamageEligibilityAndSupportUpgrade(t *testing.T) {
+	a, killer, pet := experienceParty()
+	a.Level, killer.Level, pet.Level = 10, 10, 10
+	b := &Battle{}
+	target := &Fighter{Kind: Monster, Side: Defender, Level: 25, HP: 100}
+	b.recordExperienceDamage(target, a, 0)
+	if len(b.experienceDamage) != 0 {
+		t.Fatal("zero damage credited")
+	}
+	b.recordExperienceDamage(target, a, 1)
+	b.recordExperienceDamage(target, pet, 1)
+	pet.Withdrawn = true
+	target.HP = 0
+	b.recordKillExperience(target, []Action{{Actor: killer, supporters: []*Fighter{a}}})
+	if b.ParticipantEXP(a) != 200 || b.ParticipantEXP(killer) != 200 || b.ParticipantEXP(pet) != 0 {
+		t.Fatal(b.experience)
+	}
+}
+
+func TestEarlierDamageRecordedByNonlethalAttack(t *testing.T) {
+	b, r, actions := comboFixture(100, 100)
+	r.ExperienceFormula = game.BattleEXPParticipation
+	target := b.Defenders[0]
+	target.HP, target.MaxHP = 100000, 100000
+	r.attack(b, actions[:1], nil)
+	if len(b.experienceDamage[target]) != 1 || len(b.experience) != 0 {
+		t.Fatal("nonlethal attack not tracked")
+	}
+	target.HP = 1
+	r.attack(b, actions[1:], nil)
+	if b.ParticipantEXP(actions[0].Actor) == 0 || b.ParticipantEXP(actions[1].Actor) == 0 {
+		t.Fatal("earlier attacker lost participation", b.experience)
+	}
+}
+
 func TestParticipationExperienceBaseRateIsSeparateFromSimple(t *testing.T) {
 	for _, tc := range []struct {
 		level                 byte

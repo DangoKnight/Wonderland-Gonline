@@ -20,6 +20,7 @@ const (
 	battleCameraAnchorTarget   = 2
 	battleCameraLeftAdjust     = 18 // FUN_0037b730.
 	battleCameraVerticalAdjust = 40
+	battleCameraReturnMinimum  = 200 * time.Millisecond
 )
 
 func battleCameraOrigin() image.Point { return image.Pt(battleSceneCameraX, battleSceneCameraY) }
@@ -34,7 +35,7 @@ func (c *Client) battleCamera(now time.Time) {
 	v := &c.battle
 	v.camera, v.zoom = battleCameraOrigin(), image.Rect(0, 0, ScreenWidth, ScreenHeight)
 	for _, p := range v.playing {
-		if len(p.action.Targets) == 0 || v.assets == nil {
+		if now.Before(p.at) || len(p.action.Targets) == 0 || v.assets == nil {
 			continue
 		}
 		m := v.assets.Motions[p.action.Skill]
@@ -65,6 +66,27 @@ func (c *Client) battleCamera(now time.Time) {
 }
 
 func motionCamera(m clientbattle.Motion, actor, target clientbattle.Cell, elapsed time.Duration) image.Point {
+	duration := m.Duration()
+	if len(m.Camera) == 0 || duration <= 0 {
+		return authoredMotionCamera(m, actor, target, elapsed)
+	}
+	// Freeze the return's starting point. Continuing to follow the actor here
+	// pans toward its formation slot, then snaps to field center at cleanup.
+	start := min(m.ReturnStart(), max(time.Duration(0), duration-battleCameraReturnMinimum))
+	if elapsed < start {
+		return authoredMotionCamera(m, actor, target, elapsed)
+	}
+	if elapsed >= duration {
+		return battleCameraOrigin()
+	}
+	from := authoredMotionCamera(m, actor, target, start)
+	progress := max(0, float64(elapsed-start)/float64(duration-start))
+	progress = progress * progress * (3 - 2*progress)
+	origin := battleCameraOrigin()
+	return image.Pt(from.X+int(math.RoundToEven(float64(origin.X-from.X)*progress)), from.Y+int(math.RoundToEven(float64(origin.Y-from.Y)*progress)))
+}
+
+func authoredMotionCamera(m clientbattle.Motion, actor, target clientbattle.Cell, elapsed time.Duration) image.Point {
 	origin := battleCameraOrigin()
 	if len(m.Camera) == 0 {
 		return origin

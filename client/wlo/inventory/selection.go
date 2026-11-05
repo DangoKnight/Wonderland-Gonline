@@ -72,6 +72,15 @@ func (f *Form) Equipment() game.Equipment {
 	return f.State.Equipment
 }
 func (f *Form) equipBag(slot byte) {
+	if slot < 1 || slot > game.BagSize {
+		return
+	}
+	if uint16(f.DisplayStats().Level) < f.State.Items[f.State.Bag[slot-1].ID].Definition.EquipLevel {
+		if f.Warning != nil {
+			f.Warning(game.ErrEquipLevel.Error())
+		}
+		return
+	}
 	if f.Selected == 0 {
 		f.send([]byte{protocol.CommandInventory, protocol.InventoryEquip, slot})
 	} else {

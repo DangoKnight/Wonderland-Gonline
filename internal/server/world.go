@@ -68,6 +68,12 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		return err
 	}
 	arrival = append(arrival, s.peerPetPackets(c.character)...)
+	if c.shapeshift != 0 {
+		arrival = append(arrival, shapeshiftPacket(c))
+		if err := c.send(shapeshiftPacket(c)); err != nil {
+			return err
+		}
+	}
 	peers := s.peers(c)
 	// Finish the entrant's snapshot before publishing it to existing players.
 	for _, peer := range peers {
@@ -87,6 +93,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if peer.emote != 0 {
 			// SendMapInfo replays a peer's held pose.
 			packets = append(packets, protocol.Builder{protocol.CommandPose, protocol.PoseBroadcast}.U32(peer.character.ID).U8(peer.emote))
+		}
+		if peer.shapeshift != 0 {
+			packets = append(packets, shapeshiftPacket(peer))
 		}
 		for _, packet := range packets {
 			if err := c.send(packet); err != nil {
@@ -502,6 +511,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	c.info.Map = dst.Map
 	s.mu.Unlock()
 	c.restMap = 0
+	c.storageMap, c.hotelMap = 0, 0
 	c.ready, c.warped = false, true
 	c.arrived = true
 	c.restoreUIAfterMapLoad = c.restoreUIAfterMapLoad || c.event != nil
@@ -522,24 +532,20 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 
 const maxMonsterBookIndex = 5500
 
-// QuestManager.SendStoryConstellations uses active completion marks, rather
-// than Completed (which represents a removed mark). Order is native UI order.
-var storyStars = [...]struct {
-	mark uint32
-	star byte
-}{
-	{13087, 1},  // Xaolan: Cygnus.
-	{13173, 6},  // Niss.
-	{13203, 8},  // Roca.
-	{13151, 20}, // Clive: Bootes.
-}
-
-func storyConstellations(c *game.Character) []byte {
+// Constellation membership belongs to SQL definitions; native receipt marks
+// remain active after completion, unlike a removed/completed quest mark.
+func (s *Server) storyConstellations(c *game.Character) []byte {
+	var owned [assets.MaxStoryConstellationID + 1]bool
+	for reward := range s.World.StoryRules(assets.StoryConstellation, nil, nil, world.StoryContext{}) {
+		q := c.Quests[reward.Mark]
+		if reward.Value > 0 && reward.Value <= assets.MaxStoryConstellationID && q.State == game.InProgress && q.Step > 0 {
+			owned[reward.Value] = true
+		}
+	}
 	out := protocol.Builder{protocol.CommandStoryConstellation, protocol.StoryConstellationList, 0}
-	for _, reward := range storyStars {
-		q := c.Quests[reward.mark]
-		if q.State == game.InProgress && q.Step > 0 {
-			out = out.U8(reward.star)
+	for id, present := range owned {
+		if present {
+			out = out.U8(byte(id))
 		}
 	}
 	out[2] = byte(len(out) - 3)
@@ -699,6 +705,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	if x != prevX || y != prevY {
 		// Moving away invalidates the NPC shop catalog and sale authority.
 		c.saleMode, c.saleMap = -1, 0
+		c.storageMap, c.hotelMap = 0, 0
 		if c.view != nil {
 			c.view.ShopItems = nil
 		}

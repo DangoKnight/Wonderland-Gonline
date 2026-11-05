@@ -247,6 +247,12 @@ func (s *Server) startMinigame(ctx context.Context, c *Session, es *eventSession
 	if op.D2 > 0 {
 		seed = uint32(op.D2) | minigameSeedHighByte
 	}
+	// The third launch byte is EVE's D3 variant (FUN_003bd398 local_7),
+	// not part of the UInt16 parameter. Pig dreams require variant 2.
+	// Zero retains the historical default for scripts without a variant.
+	if op.D3 > 0 {
+		seed = seed&math.MaxUint16 | uint32(byte(op.D3))<<16
+	}
 	es.onMinigame = func(result byte) error {
 		if c.event != es || c.character.Map != es.mapID {
 			return nil

@@ -105,7 +105,7 @@ func (w *World) MiniMapSigns() []Sign {
 	var out []Sign
 	ids := make([]uint16, 0, len(w.NPCs))
 	for id, n := range w.NPCs {
-		if n.Shown && n.Sign != 0 {
+		if n.Visible() && n.Sign != 0 {
 			ids = append(ids, id)
 		}
 	}

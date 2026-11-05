@@ -23,18 +23,21 @@ func TestBattleEscapeFailurePlaysNativeFall(t *testing.T) {
 			if pet {
 				cell.X = 3
 			}
-			// Native motion 60042, no stat results: failure trips without damage.
-			p := []byte{50, 1, 11, 0, cell.X, cell.Y, 138, 234, 0, 1, cell.X, cell.Y, 1, 0, 0}
+			// Native motion 60046, no stat results: failure trips without damage.
+			p := []byte{50, 1, 11, 0, cell.X, cell.Y, 142, 234, 0, 1, cell.X, cell.Y, 1, 0, 0}
 			c.dispatch(p)
 			c.battleFrame(false)
 			if c.battle.lastActions[cell].skill != 60041 {
 				t.Fatal("failed flee replaced the repeat command with its animation ID")
 			}
-			motion := c.battle.assets.Motions[60042]
+			motion := c.battle.assets.Motions[60046]
+			if len(c.battle.floats) != 0 {
+				t.Fatal("failure notification appeared before falling")
+			}
 			var fall time.Duration
 			for at := time.Duration(0); at < motion.Duration(); at += 10 * time.Millisecond {
 				pose, _ := motion.PoseAt(cell, clientbattle.Cell{}, at, c.battleBody(*c.battle.state.At(cell)).moveKind)
-				if pose == 64 || pose == 65 {
+				if pose == 26 || pose == 27 {
 					fall = at
 					break
 				}
@@ -44,6 +47,13 @@ func TestBattleEscapeFailurePlaysNativeFall(t *testing.T) {
 			}
 			*now = c.battle.playing[0].at.Add(fall)
 			c.battleFrame(false)
+			if len(c.battle.floats) != 1 || !c.battle.floats[0].failure {
+				t.Fatal("missing failure notification at fall")
+			}
+			c.battleFrame(false)
+			if len(c.battle.floats) != 1 {
+				t.Fatal("failure notification duplicated")
+			}
 			if !c.battle.state.Active || c.battle.state.At(cell).HP != 100 || len(c.battle.playing) != 1 || len(c.battle.departures) != 0 {
 				t.Fatal("escape failure damaged or removed actor")
 			}

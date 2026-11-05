@@ -128,10 +128,10 @@ func TestInventoryDragAndEquipment(t *testing.T) {
 	c.dispatch([]byte{23, 16, 1, 1})
 	c.dispatch([]byte{23, 212, 255, 1, 100, 0, 1})
 	before := len(sent)
-	if !c.Inventory.Dialog.Visible || len(sent) != before {
+	if c.UI.Modal == nil || len(sent) != before {
 		t.Fatal("destroy was not confirmed")
 	}
-	c.Inventory.Dialog.Count.OnEnter()
+	c.UI.Modal.Base().Children[0].(*seui.FixedButton).OnClick()
 	if len(sent) != before+1 || !bytes.Equal(sent[len(sent)-1], []byte{23, 124, 1, 1, 0}) {
 		t.Fatal("destroy confirmation", sent)
 	}
@@ -155,7 +155,7 @@ func TestInventoryDisconnectClosesQuantity(t *testing.T) {
 		t.Fatal("no confirmation")
 	}
 	c.disconnected()
-	if c.Inventory.Visible || c.UI.Modal != nil || c.Inventory.Dialog.Visible {
+	if c.Inventory.Visible || c.UI.Modal != nil || (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) {
 		t.Fatal("inventory modal blocked reconnect")
 	}
 }
@@ -168,11 +168,11 @@ func TestInventoryQuantityDoesNotBlockMinigame(t *testing.T) {
 	c.InventoryState.Bag[0] = game.Item{ID: 100, Count: 1}
 	c.dispatch([]byte{23, 212, 255, 1, 100, 0, 1})
 	c.dispatch(moleStart)
-	if c.Inventory.Dialog.Visible || c.UI.Modal != nil || c.Inventory.Visible {
+	if (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) || c.UI.Modal != nil || c.Inventory.Visible {
 		t.Fatal("inventory confirmation blocks game")
 	}
 	c.dispatch([]byte{57, 2})
-	if !c.Inventory.Visible || c.Inventory.Dialog.Visible {
+	if !c.Inventory.Visible || (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) {
 		t.Fatal("stale confirmation restored with HUD")
 	}
 }

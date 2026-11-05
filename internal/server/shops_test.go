@@ -224,6 +224,7 @@ func TestHotelExchangeAndPersistence(t *testing.T) {
 	s, players, wires := petFixture(t)
 	c, wire := players[0], wires[0]
 	ctx := context.Background()
+	c.hotelMap = c.character.Map
 	next := c.character.Clone()
 	for i := 0; i < 4; i++ {
 		next.Pets = append(next.Pets, game.Pet{ID: uint32(14000 + i), Slot: byte(i + 1), Name: "Team", Level: 2, Exp: 10, Amity: 80, Skills: []game.PetSkill{{ID: 11001, Grade: 2, Exp: 99}}})
@@ -293,7 +294,7 @@ func TestNPCShopCatalogPurchaseAndAuthority(t *testing.T) {
 	c := players[0]
 	s.Assets.NPCBuyPrices = map[uint16]uint32{32176: 7}
 	m := s.Assets.Maps[c.character.Map]
-	m.Interactive = []assets.Group{{Header: []byte{3}, Members: []byte{1, 0xb0, 0x7d, 0, 0}}}
+	m.Interactive = []assets.Group{{Header: []byte{3}, Members: []byte{1, 0xb0, 0x7d, 2, 3}}}
 	s.Assets.Maps[c.character.Map] = m
 	if err := s.openService(c, world.ServicePropsShop); err != nil {
 		t.Fatal(err)
@@ -436,7 +437,7 @@ func TestShopSale(t *testing.T) {
 		t.Fatal("sold props in the equipment mode", got)
 	}
 	got := sell(1, 1)
-	if len(got) != 3 || !bytes.Equal(got[0], []byte{23, 9, 1, 50}) || !bytes.Equal(got[1], protocol.Builder{26, 4}.U32(150)) || !bytes.Equal(got[2], []byte{27, 2, saleSuccess}) {
+	if len(got) != 3 || !bytes.Equal(got[0], []byte{23, 9, 1, 50}) || !bytes.Equal(got[1], protocol.Builder{26, 1}.U32(150)) || !bytes.Equal(got[2], []byte{27, 2, saleSuccess}) {
 		t.Fatal("sale", got)
 	}
 	chars, err := s.Store.Characters(ctx, c.account.ID)
@@ -452,6 +453,7 @@ func TestStorageTransfers(t *testing.T) {
 	s, players, wires := worldFixture(t)
 	ctx := context.Background()
 	c := players[0]
+	c.storageMap = c.character.Map
 	if err := s.worldCommand(ctx, c, []byte{12, 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -465,7 +467,7 @@ func TestStorageTransfers(t *testing.T) {
 	}
 	// Deposit bag slot 1, then withdraw storage slot 1 into bag slot 7.
 	got := do(30, 2, 1)
-	if !bytes.Equal(got[0], []byte{23, 9, 1, 50}) || !bytes.Equal(got[1], []byte{30, 8}) || c.character.Storage[0] != (game.Item{ID: 32176, Count: 50}) || !c.character.Bag[0].Empty() {
+	if !bytes.Equal(got[0], []byte{23, 9, 1, 50}) || got[1][0] != 30 || got[1][1] != 2 || c.character.Storage[0] != (game.Item{ID: 32176, Count: 50}) || !c.character.Bag[0].Empty() {
 		t.Fatal("deposit", got)
 	}
 	got = do(30, 5, 7, 1)
@@ -476,8 +478,8 @@ func TestStorageTransfers(t *testing.T) {
 	if err != nil || chars[0].Bag[6].Count != 50 {
 		t.Fatal("storage not persisted", err)
 	}
-	// A failed move still answers with the storage snapshot.
-	if got = do(30, 1, 9); len(got) != 4 || !bytes.Equal(got[0], []byte{30, 8}) {
+	// A failed move releases the pending native withdrawal without a mutation.
+	if got = do(30, 1, 9); len(got) != 1 || !bytes.Equal(got[0], []byte{30, 6}) {
 		t.Fatal("empty withdraw", got)
 	}
 }
@@ -664,13 +666,13 @@ func TestParseShopCartNativeForms(t *testing.T) {
 
 func TestNPCShopCatalogUsesEveInteractiveSlots(t *testing.T) {
 	s := &Server{Assets: &assets.Catalog{Maps: map[uint16]assets.Map{
-		12000: {Interactive: []assets.Group{{Header: []byte{3, 0, 0}, Members: []byte{1, 0x2c, 0x7d, 0, 0, 2, 0x11, 0x7d, 0, 0}}}},
+		12000: {Interactive: []assets.Group{{Header: []byte{3, 1, 0}, Members: []byte{1, 0x2c, 0x7d, 2, 3, 2, 0x11, 0x7d, 2, 3, 3, 0x11, 0x7d, 2, 4}}}},
 	}}}
 	c := &Session{conn: &captureConn{}, character: &game.Character{Map: 12000}, view: world.NewView()}
 	if err := s.openNPCShop(c, world.ServicePropsShop); err != nil {
 		t.Fatal(err)
 	}
-	if c.view.ShopItems[1] != 32044 || c.view.ShopItems[2] != 32017 {
+	if c.view.ShopItems[1] != 32044 || c.view.ShopItems[2] != 32017 || len(c.view.ShopItems) != 2 {
 		t.Fatal(c.view.ShopItems)
 	}
 }

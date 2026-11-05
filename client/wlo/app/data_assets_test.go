@@ -87,6 +87,14 @@ func TestCompiledBundleLoginAndSharedWorld(t *testing.T) {
 	}
 	c.LuckyDraw.Hide()
 	c.Frame()
+	c.dispatch([]byte{15, 20, 6, 0})
+	if run := c.constellation; run == nil || run.picture < 0 || run.sky < 0 {
+		t.Fatal("compiled constellation artwork unavailable")
+	}
+	if next.constellation != nil {
+		t.Fatal("shared resources leaked constellation cutscene state")
+	}
+	c.stopConstellation()
 	if path := os.Getenv("BUNDLE_SNAPSHOT"); path != "" {
 		savePNG(t, path, c)
 	}
