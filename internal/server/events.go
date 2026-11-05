@@ -17,18 +17,21 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
-	transitions      int
-	chestReward      *assets.ChestReward
-	mapID, click     uint16
-	ev               *assets.Event
-	branch           int
-	index            int
-	transition       bool
-	cinematicPosture bool
-	onComplete       func() error
-	onChoice         func(byte) error
-	onMinigame       func(byte) error
-	bankOwner        uint32 // Queued service belongs to this event and character.
+	transitions        int
+	chestReward        *assets.ChestReward
+	mapID, click       uint16
+	ev                 *assets.Event
+	branch             int
+	index              int
+	transition         bool
+	cinematicPosture   bool
+	onComplete         func() error
+	onChoice           func(byte) error
+	onMinigame         func(byte) error
+	choiceAcknowledged bool // Mode-zero questions send AC20:6 after their answer.
+	ignoreChoiceAck    bool
+	shopCart           bool   // Native item-picker question owns a purchase.
+	bankOwner          uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
@@ -114,6 +117,10 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 		}
 		es := c.event
 		if es != nil {
+			if es.ignoreChoiceAck {
+				es.ignoreChoiceAck = false
+				return nil
+			}
 			if es.onChoice != nil || es.onMinigame != nil {
 				return nil // The question stays open until AC20:9.
 			}
@@ -141,7 +148,11 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			choose := es.onChoice
 			es.onChoice = nil
 			es.transitions = 0
-			return choose(p[2])
+			err := choose(p[2])
+			if err == nil && es.choiceAcknowledged && c.event != nil {
+				c.event.ignoreChoiceAck = true
+			}
+			return err
 		}
 		return nil
 	}
@@ -171,6 +182,7 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 	}
 	c.lastClick, c.lastClickMap = click, char.Map
 	c.restMap, c.saleMode = 0, -1
+	c.storageMap, c.hotelMap = 0, 0
 	c.view.ShopItems = nil
 	if c.view.Hidden[click] || !s.World.VisibleIn(char, c.view, char.Map, click) {
 		if e := c.send(s.World.HideActor(c.view, char.Map, click)); e != nil {
@@ -488,6 +500,8 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			if r, ok := s.eventPolicy(assets.StoryChoiceMode, c, es, op); ok {
 				mode = byte(r.Value)
 			}
+			s.authorizeShopQuestion(c, es, question)
+			es.choiceAcknowledged = mode == 0
 			return c.send(serverwire.EventFrame(6, subject, actor, mode, 0, question, op.Index, br.Index))
 		}
 		if op.NPCPath() {

@@ -12,6 +12,34 @@ import (
 	"wonderland-gonline/client/wlo/surface"
 )
 
+func TestRewardNoticesBelowDialogueAndClickDismiss(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	confirmed := 0
+	c.confirm([]byte("Here is your reward."), func() { confirmed++ })
+	c.Notices.Show([]byte("Obtain Coconut x1"), 6*time.Second, *now)
+	*now = now.Add(300 * time.Millisecond)
+	c.Frame()
+	if c.Notices.panel.Top < c.Talk.Bounds().Max.Y+rewardNoticeGap {
+		t.Fatal("reward overlaps dialogue")
+	}
+	p := c.Notices.panel
+	c.GroundClick(p.Left+p.Width/2, p.Top+p.Height/2)
+	if c.Notices.shown || !c.Talk.Shown() || confirmed != 0 || c.groundHeld {
+		t.Fatal("notice click advanced dialogue or moved player")
+	}
+	f := newBattleResultsForm(c.Env)
+	c.UI.Add(f)
+	f.setLines([]string{"Player gained 20 EXP"})
+	f.Show()
+	c.battleResults.form = f
+	c.battleResults.until = now.Add(6 * time.Second)
+	c.Notices.Show([]byte("Obtain Wood x1"), 6*time.Second, *now)
+	c.Frame()
+	if f.Top < c.Talk.Bounds().Max.Y+rewardNoticeGap || c.Notices.panel.Top < f.Bottom()+rewardNoticeGap {
+		t.Fatal("reward boards did not stack")
+	}
+}
+
 func TestDialogueAbovePanels(t *testing.T) {
 	for _, name := range []string{"social", "inventory", "settings"} {
 		t.Run(name, func(t *testing.T) {

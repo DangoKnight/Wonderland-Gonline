@@ -5,6 +5,29 @@ import (
 	"time"
 )
 
+func TestConversationStopsAmbientNPCWalk(t *testing.T) {
+	now := time.Unix(0, 0)
+	n := &NPC{ClickID: 1, X: 100, Y: 100, Action: 8, Info: NPCTemplate{Kind: 2}}
+	w := &World{NPCs: map[uint16]*NPC{1: n}}
+	w.ApplyActorWalk([]byte{1, 0, 200, 0, 100, 0, 2}, now)
+	n.BeginConversation(now.Add(time.Second))
+	if n.X != 140 || n.walker.Walking() {
+		t.Fatal("conversation did not stop at current position")
+	}
+	n.FaceConversation(140, 200)
+	action := n.Action
+	w.ApplyActorWalk([]byte{1, 0, 44, 1, 100, 0, 2}, now.Add(2*time.Second))
+	n.stepWalk(now.Add(3 * time.Second))
+	if n.X != 140 || n.Y != 100 || n.Action != action {
+		t.Fatal("ambient walk interrupted conversation")
+	}
+	n.Conversation = false
+	w.ApplyActorWalk([]byte{1, 0, 200, 0, 100, 0, 2}, now.Add(4*time.Second))
+	if !n.walker.Walking() {
+		t.Fatal("ambient movement did not resume")
+	}
+}
+
 func TestActorWalkNativeSpeedAndInterruption(t *testing.T) {
 	now := time.Unix(0, 0)
 	n := &NPC{ClickID: 1, X: 100, Y: 100, Action: 8, Shown: true}

@@ -38,8 +38,9 @@ const (
 	battleSceneCameraX      = 432 // FUN_0036f448 -> FUN_0036ff4c.
 	battleSceneCameraY      = 232
 	battleCatchSkill        = 10008
+	battleCatchFailureSkill = 10009
 	battleFleeSkill         = 60041
-	battleFleeFailureSkill  = 60042               // Native run/trip/recover result; repeat still submits Flee.
+	battleFleeFailureSkill  = 60046               // Native run/trip/recover result; repeat still submits Flee.
 	battleDamageDigits      = "Num_YellowRed10_2" // FUN_0039e884.
 	battleSPDigits          = "Num_Blue10_1"
 	battleDigitStyle        = 4 // FUN_003b9c00: 20-pixel advance, centered.
@@ -130,15 +131,18 @@ type battleBody struct {
 	shadow byte
 }
 type battlePlay struct {
-	action        clientbattle.Action
-	at            time.Time
-	hits          uint64
-	sounds        uint64
-	audio         []clientbattle.SoundCue
-	voice         string
-	voiced        bool
-	damagePlanned map[battleDamageResultKey]bool
-	damage        []*battleDamageGroup
+	captureRemoval bool // Remove the target after its authored drag, not at contact.
+	captureDrag    *battleCaptureDrag
+	action         clientbattle.Action
+	at             time.Time
+	hits           uint64
+	sounds         uint64
+	audio          []clientbattle.SoundCue
+	voice          string
+	voiced         bool
+	fleeFailed     bool
+	damagePlanned  map[battleDamageResultKey]bool
+	damage         []*battleDamageGroup
 }
 type battleFloat struct {
 	cell       clientbattle.Cell
@@ -151,6 +155,7 @@ type battleFloat struct {
 	flight     int // Signed horizontal lane in half-units; zero rises vertically.
 	damage     bool
 	generation uint64
+	failure    bool
 }
 type battleView struct {
 	state               clientbattle.State
@@ -620,12 +625,19 @@ func (c *Client) battleFrame(draw bool) bool {
 		v.state.Actions = nil
 		active := v.playing[:0]
 		for _, play := range v.playing {
+			if now.Before(play.at) {
+				active = append(active, play)
+				continue
+			}
 			if f := v.state.At(play.action.Actor); play.action.ActorGeneration != 0 && (f == nil || f.Generation != play.action.ActorGeneration) {
 				continue
 			}
 			m := clientbattle.Motion{}
 			if v.assets != nil {
 				m = v.assets.Motions[play.action.Skill]
+			}
+			if play.captureRemoval {
+				m = m.Departure()
 			}
 			c.battleAudio(&play, m, now)
 			duration := m.Duration()
@@ -637,6 +649,16 @@ func (c *Client) battleFrame(draw bool) bool {
 				duration = max(duration, m.EventAt(clientbattle.MotionEvent{Trigger: sound.Trigger})+sceneFadeFrame)
 			}
 			elapsed := now.Sub(play.at)
+			if play.action.Skill == battleFleeFailureSkill && !play.fleeFailed {
+				fallAt := m.EventAt(clientbattle.MotionEvent{Trigger: battleFleeFallFrame})
+				if elapsed >= fallAt {
+					play.fleeFailed = true
+					v.floats = append(v.floats, battleFloat{cell: play.action.Actor, generation: play.action.ActorGeneration, at: play.at.Add(fallAt), failure: true})
+				}
+			}
+			if play.captureDrag != nil {
+				duration = play.captureDrag.motion.ReturnStart() + play.captureDrag.returnDuration - play.at.Sub(play.captureDrag.started)
+			}
 			cues := m.HitCount()
 			for i := 0; i < cues; i++ {
 				hitAt := motionDuration / 2
@@ -651,6 +673,10 @@ func (c *Client) battleFrame(draw bool) bool {
 			}
 			if elapsed < duration {
 				active = append(active, play)
+			} else if play.captureRemoval {
+				f := v.shown[play.action.Actor]
+				f.Removed = true
+				v.shown[play.action.Actor] = f
 			}
 		}
 		v.playing = append(active, v.reactions...)
@@ -724,7 +750,19 @@ func (c *Client) battleFrame(draw bool) bool {
 	for _, play := range v.playing {
 		if v.assets != nil {
 			if motion, ok := v.assets.Motions[play.action.Skill]; ok {
+				if play.captureRemoval {
+					motion = motion.Departure()
+				}
 				positions[play.action.Actor] = motion.PositionAt(play.action.Actor, battleTarget(play.action), now.Sub(play.at))
+				if play.action.Skill == battleCatchSkill || play.action.Skill == battleCatchFailureSkill {
+					drag := battleCaptureDrag{actor: play.action.Actor, target: battleTarget(play.action), motion: motion, started: play.at}
+					if now.Sub(play.at) <= motion.ReturnStart() {
+						positions[play.action.Actor] = drag.capturerPosition(now)
+					}
+				}
+				if play.captureDrag != nil {
+					positions[play.action.Actor] = play.captureDrag.position(play.action.Actor, now)
+				}
 			}
 		}
 	}
@@ -767,9 +805,25 @@ func (c *Client) battleFrame(draw bool) bool {
 		for _, p := range v.playing {
 			if p.action.Actor == f.Cell && v.assets != nil {
 				m := v.assets.Motions[p.action.Skill]
+				if p.captureRemoval {
+					m = m.Departure()
+				}
 				if len(m.Frames) > 0 {
-					action, frame = m.PoseAt(f.Cell, battleTarget(p.action), now.Sub(p.at), b.moveKind)
-					lift = m.LiftAt(f.Cell, battleTarget(p.action), now.Sub(p.at))
+					elapsed := now.Sub(p.at)
+					if d := p.captureDrag; d != nil {
+						if now.Before(d.pullStart()) {
+							continue
+						}
+						// Hold the authored dragged pose until release, then play
+						// the reaction's return pose on the same release clock.
+						if released := now.Sub(d.started) - d.motion.ReturnStart(); released >= 0 {
+							elapsed = m.ReturnStart() + released
+						} else {
+							elapsed = min(elapsed, m.ReturnStart()-time.Nanosecond)
+						}
+					}
+					action, frame = m.PoseAt(f.Cell, battleTarget(p.action), elapsed, b.moveKind)
+					lift = m.LiftAt(f.Cell, battleTarget(p.action), elapsed)
 				}
 			}
 		}
@@ -812,6 +866,10 @@ func (c *Client) battleFrame(draw bool) bool {
 			continue
 		}
 		at := f.cell.Position().Add(offset).Add(f.displacement(now))
+		if f.failure {
+			c.drawEscapeFailure(positions[f.cell].Add(f.displacement(now)))
+			continue
+		}
 		y := at.Y - battleFloatOffsetPixels
 		if f.font != "" && f.amount <= battleMaxDigitAmount && c.Pics.Find(f.font) >= 0 {
 			minigame.DrawNumber(c.Screen, c.Pics, at.X, y, int(f.amount), true, battleDigitStyle, f.font)
@@ -854,7 +912,16 @@ func (c *Client) battleHit(play *battlePlay, now, cueAt time.Time, motion client
 		if cue == 0 && motion.Reaction != 0 && target.Result != protocol.BattleHitMiss && target.Cell != a.Actor {
 			// It starts at the cue's time, so a late frame does not delay it.
 			if r, ok := c.battle.assets.Motions[motion.Reaction]; ok && now.Sub(cueAt) < r.Duration() {
-				c.battle.reactions = append(c.battle.reactions, c.newBattlePlay(clientbattle.Action{Actor: target.Cell, Skill: motion.Reaction}, cueAt, a.Actor))
+				p := c.newBattlePlay(clientbattle.Action{Actor: target.Cell, ActorGeneration: target.Generation, Skill: motion.Reaction}, cueAt, a.Actor)
+				p.captureRemoval = a.Skill == battleCatchSkill && target.Result == protocol.BattleHitLanded
+				if p.captureRemoval || a.Skill == battleCatchFailureSkill {
+					p.captureDrag = &battleCaptureDrag{actor: a.Actor, target: target.Cell, motion: motion, started: play.at}
+					p.at = p.captureDrag.pullStart()
+					if !p.captureRemoval {
+						p.captureDrag.returnDuration = r.Duration() - r.ReturnStart()
+					}
+				}
+				c.battle.reactions = append(c.battle.reactions, p)
 			}
 		}
 		if target.Result == protocol.BattleHitMiss {
@@ -868,9 +935,6 @@ func (c *Client) battleHit(play *battlePlay, now, cueAt time.Time, motion client
 			continue
 		}
 		f, exists := c.battle.shown[target.Cell]
-		if cue == 0 && a.Skill == battleCatchSkill && exists {
-			f.HP, f.Removed = 0, true
-		}
 		for _, result := range target.Stats {
 			if play.damagePlanned[battleDamageResultKey{target.Cell, target.Generation, result.Stat}] && battleDamageStat(result) {
 				continue
@@ -1365,11 +1429,17 @@ func (c *Client) drawBattleEffects(now time.Time) {
 		return
 	}
 	for _, play := range v.playing {
+		if now.Before(play.at) {
+			continue
+		}
 		m, ok := v.assets.Motions[play.action.Skill]
 		if !ok || len(m.Effects) == 0 {
 			continue
 		}
 		for _, e := range m.EffectsAt(play.action.Actor, battleTarget(play.action), now.Sub(play.at)) {
+			if play.captureDrag != nil {
+				e.At = e.At.Add(play.captureDrag.position(play.action.Actor, now).Sub(m.PositionAt(play.action.Actor, battleTarget(play.action), now.Sub(play.at))))
+			}
 			i := c.Pics.Find(e.Picture)
 			if i < 0 && !v.missing[e.Picture] {
 				c.loadPictures(e.Picture)

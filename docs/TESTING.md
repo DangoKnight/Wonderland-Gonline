@@ -1,5 +1,25 @@
 # Testing and validation
 
+## Native NPC services — 2026-11-04
+
+Kelan Legacy captures and screenshots now back the client shop buy/sell,
+Props Keeper storage, treatment and Pet Hotel windows. The existing spawn-point
+save path remains in use. Native cart and selected-slot requests have independent
+byte tests; captured incremental inventory/currency replies are replayed through
+the client. Server regressions cover owned SQL state, stale inventory, pending
+walking/recovery, service scope, native receipt order and hotel progression.
+Hotel potential and amity fields were traced through FUN_003b377c/FUN_003b3cfc;
+the earlier independent default hotel-record golden is retained.
+
+Focused server/game tests pass with the race detector. Affected client inventory,
+world, event/dialogue, trade, companion and lifecycle integrations pass. Affected
+vet checks and server/client executable builds pass. Native-artwork CPU snapshots
+were inspected for the service windows and treatment. Logs and validation binaries
+are under ignored `var/validation/npc-services-*`; screenshots are under
+`var/validation/npc-service-screens/`. This is development validation, with live
+Legacy/Gonline interoperability acceptance still pending. No full pre-push battery
+was run and no schema upgrade is required.
+
 ## Bank counter robustness - 2026-11-04
 
 Built on PR #7 (`a4e294a`). Scripted bank opening belongs to its originating

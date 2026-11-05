@@ -1,5 +1,24 @@
 # World Simulation
 
+## Native client visibility overrides
+
+Kelan's Exchanger (map 12000, template 14157, click 40) has EVE flags 5,
+including initial visibility. Legacy `FUN_004235d8`, called on every actor
+update by `FUN_004236f0`, nevertheless suppresses her in Kelan. The client
+keeps this override separate from server visibility and applies it to drawing,
+names, hit testing and minimap signs, including after show packets. Exchangers
+on other maps and adjacent NPCs retain normal visibility.
+
+## NPC held poses
+
+The client handles AC22:9 as actor ID, animation and held frame, following
+`FUN_004464dc` and `FUN_00430f90`. Frame 255 animates freely. AC22:4 also
+applies its nonzero action and state-frame fields to non-prop actors; zero
+action preserves their pose. Direction comes from the current pose family.
+Kelan Civilian House (map 12004), click 2/template 14021, requests fallen
+animation 26 at frame 1 in its entry pre-event. Visibility updates and
+conversation facing must preserve that held pose.
+
 ## Implemented scope
 
 `internal/world/simulation.go` ports `QuestNpc.Update` from Private Server:
@@ -13,11 +32,13 @@
 - Behaviors 2–5 begin movement after 1–3 seconds and wait 1–3 seconds after
   estimated arrival before choosing another route. This replaces authored
   waypoint delays and the previous 5–10-second random roaming schedule.
-- Hostile actors search every three seconds when no eligible player is retained,
+- Hostile actors search every half second when no eligible player is retained,
   including while wandering or patrolling. Acquiring a player can interrupt
   those routes or their stationary waits. A valid player target and active
   pursuit leg remain selected; losing a target restarts the search interval.
   Bounded/random roamers restrict acquisition and pursuit to fixed spawn areas.
+  Pursuit pauses for half a second after arrival, then resumes on the next
+  one-second movement tick. Normal wandering retains its existing pauses.
 - NPC snapshots interpolate the estimated current position at the native
   speed of 40 pixels per second. Interruptions start from that position.
 - Ambient movement uses native AC22:2
@@ -25,8 +46,11 @@
 - Defeated monsters stay still and respawn at their authored position, restarting
   their patrol after three seconds. Existing ground-item/chest ticks remain active.
 
-The server advances occupied, acknowledged public maps on the existing
-one-second process ticker. Events and battles reserve their actors. Packets go
+The server scans occupied, acknowledged public maps every half second and
+advances movement every second. Respawns, resting and gathering retain their
+one-second cadence. Indexed NPC definitions avoid repeated full-map scans;
+squared-distance rejection precedes visibility checks, and each movement packet
+is built once for all viewers. Events and battles reserve their actors. Packets go
 only to viewers who can see the actor and do not own it as a story companion.
 Private tent occupants and players on other maps receive no public-map movement.
 Failed recipients do not stop other viewers' updates.

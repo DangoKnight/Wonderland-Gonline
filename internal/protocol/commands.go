@@ -317,10 +317,10 @@ const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	SceneWireCode7 = 7
 	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode8 = 8
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode9     = 9
-	SceneActorHide     = 10 // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
+	SceneWireCode8     = 8
+	SceneActorPose     = 9              // Actor U16, animation U8, held frame U8 (255 animates).
+	SceneWireCode9     = SceneActorPose // Compatibility name for existing callers.
+	SceneActorHide     = 10             // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
 	SceneActorMovement = 11
 	SceneActorAction   = 12
 )

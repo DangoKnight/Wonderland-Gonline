@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 30
+const catalogSchemaVersion = 31
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -45,6 +45,11 @@ func migrateCatalog(tx *gorm.DB) error {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
 		}
 		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 31 {
+			if err := migrateEquipLevel(tx); err != nil {
+				return err
+			}
+		}
 		if schema.Version < 30 {
 			if err := migrateResourceRespawns(tx); err != nil {
 				return err

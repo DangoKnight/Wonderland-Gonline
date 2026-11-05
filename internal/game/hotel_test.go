@@ -24,3 +24,13 @@ func TestHotelRecordGolden(t *testing.T) {
 		t.Fatal("clone mutated original")
 	}
 }
+
+func TestHotelRecordPreservesNativePotentialAndAmity(t *testing.T) {
+	p := Pet{Slot: 1, ID: 17004, Name: "Fragrance", Level: 5, Potential: 9, Amity: 64}
+	packet := p.HotelRecord(protocol.Builder{}, PetTemplate{})
+	// FUN_003b377c maps byte 26 to +0x2a70 (potential) and the first
+	// post-equipment byte to +0x2a72; FUN_003b3cfc copies it to loyalty +0x1f99.
+	if packet[26] != 9 || packet[57+len(p.Name)] != 64 {
+		t.Fatal("hotel progression lost", packet)
+	}
+}

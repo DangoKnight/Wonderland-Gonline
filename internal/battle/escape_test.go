@@ -102,7 +102,7 @@ func TestEscapeFailureNativeFallRecord(t *testing.T) {
 	beforeSP := actor.SP
 	b.Pending[actor.key()] = Action{Actor: actor, Kind: "flee"}
 	steps, outcome := b.Round(lowest)
-	want := []byte{50, 1, 11, 0, 4, 2, 138, 234, 0, 1, 4, 2, 1, 0, 0}
+	want := []byte{50, 1, 11, 0, 4, 2, 142, 234, 0, 1, 4, 2, 1, 0, 0}
 	if outcome == Fled || actor.Withdrawn || actor.SP != beforeSP || len(steps) < 2 || !bytes.Equal(steps[0].Packets[1], want) || len(steps[0].SkillUses) != 0 {
 		t.Fatal("failed flee missing native trip or consumed resources", steps, outcome)
 	}

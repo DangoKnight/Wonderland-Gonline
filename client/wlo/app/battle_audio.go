@@ -140,13 +140,46 @@ func (c *Client) newBattlePlay(a clientbattle.Action, at time.Time, soundSource 
 	return p
 }
 
-// Compatibility selection for the fixed weapon table's five item families.
-// The native resolver is absent from the C output; preserve unsupported types
-// as group zero rather than guessing a blade/bow/staff conversion.
+// FUN_0037c660's weapon resolver, recovered from the original executable
+// at 0x37c878..0x37ccc1. The C decompiler incorrectly removed this block.
+func nativeWeaponSoundGroup(kind byte) byte {
+	switch kind {
+	case 1, 2, 3, 6, 8:
+		return 1
+	case 0, 7, 9:
+		return 2
+	case 5, 10:
+		return 3
+	case 4:
+		return 4
+	case 11:
+		return 5
+	default:
+		return 0 // Native unresolved/unsupported item category.
+	}
+}
+
 func (c *Client) battleWeaponSoundGroup(cell clientbattle.Cell) byte {
 	f := c.battle.state.At(cell)
-	if f == nil || f.Kind != clientbattle.Player {
+	if f == nil {
 		return 0
+	}
+	if f.Kind != clientbattle.Player {
+		t := c.npcTemplates[f.ID]
+		if t.MoveKind >= battleNativeHumanMoveLimit {
+			return 0
+		}
+		if t.MoveKind == 1 {
+			return nativeWeaponSoundGroup(t.BattleSoundWeapon)
+		}
+		if f.Kind == clientbattle.Pet && f.Owner == c.World.Player.ID {
+			for _, p := range c.InventoryState.Pets {
+				if uint32(p.ID) == f.ID {
+					return nativeWeaponSoundGroup(c.items[p.Equipment[battleWeaponEquipmentSlot-1].ID].Definition.Type)
+				}
+			}
+		}
+		return nativeWeaponSoundGroup(0)
 	}
 	p := c.World.Player
 	if f.ID != p.ID {
@@ -159,11 +192,11 @@ func (c *Client) battleWeaponSoundGroup(cell clientbattle.Cell) byte {
 		}
 	}
 	for _, id := range p.Items {
-		if it, ok := c.items[id]; ok && it.Definition.EquipSlot == battleWeaponEquipmentSlot && it.Definition.Type < clientbattle.WeaponSoundGroups {
-			return it.Definition.Type
+		if it, ok := c.items[id]; ok && it.Definition.EquipSlot == battleWeaponEquipmentSlot {
+			return nativeWeaponSoundGroup(it.Definition.Type)
 		}
 	}
-	return 0
+	return nativeWeaponSoundGroup(0)
 }
 
 func (c *Client) battleAudioActor(f clientbattle.Fighter) (body byte, prefix string, actor byte) {

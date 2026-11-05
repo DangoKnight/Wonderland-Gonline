@@ -495,14 +495,14 @@ func TestWorldSimulationBoundedAggressionScansAndContact(t *testing.T) {
 	if s.actorPursuits[30001][4].target != c.character.ID || c.battle != nil {
 		t.Fatal("target acquisition/contact", c.battle)
 	}
-	// A departed target is dropped immediately; reacquisition waits three seconds.
+	// A departed target is dropped immediately; reacquisition waits half a second.
 	c.character.X = 1400
 	s.simulateWorld(now.Add(time.Second))
 	if s.actorPursuits[30001][4].target != 0 {
 		t.Fatal("pursued outside bounds")
 	}
 	c.character.X, c.character.Y = 1050, 1000
-	s.simulateWorld(now.Add(2 * time.Second))
+	s.simulateWorld(now.Add(1250 * time.Millisecond))
 	if c.battle != nil || s.actorPursuits[30001][4].target != 0 {
 		t.Fatal("searched too frequently")
 	}
@@ -529,6 +529,31 @@ func TestWorldSimulationBoundedAggressionScansAndContact(t *testing.T) {
 	s.reviveMonsters(time.Now().Add(world.EncounterRespawn + time.Second))
 	if s.World.Defeated(30001, 4) || c.view.Hidden[4] {
 		t.Fatal("disconnect did not release short respawn")
+	}
+}
+
+func TestWorldSimulationHalfSecondScanDoesNotMove(t *testing.T) {
+	s, c, wire := boundedEncounterFixture(t)
+	now := time.Now()
+	c.invisible = true
+	s.simulateWorldTick(now, false)
+	c.invisible = false
+	s.simulateWorldTick(now.Add(499*time.Millisecond), false)
+	if s.actorPursuits[30001][4].target != 0 {
+		t.Fatal("target scanned before half-second deadline")
+	}
+	s.simulateWorldTick(now.Add(500*time.Millisecond), false)
+	if s.actorPursuits[30001][4].target != c.character.ID {
+		t.Fatal("target not acquired on half-second scan")
+	}
+	for _, p := range wire.packets(t) {
+		if len(p) >= 2 && p[0] == 22 && p[1] == 2 {
+			t.Fatal("scan-only tick emitted movement", p)
+		}
+	}
+	s.simulateWorld(now.Add(time.Second))
+	if !hasPacket(wire.packets(t), []byte{22, 2, 4, 0, 76, 4, 232, 3, 2}) {
+		t.Fatal("one-second movement tick did not pursue acquired target")
 	}
 }
 
@@ -745,16 +770,18 @@ func TestWorldSimulationRetainsPlayerTargetWhilePursuing(t *testing.T) {
 	if pursuit.target != c.character.ID || observer.battle != nil {
 		t.Fatal("closer observer stole moving monster")
 	}
+	// Keep the target ahead of the now faster pursuit, outside contact range.
+	c.character.X = 1300
 	s.simulateWorld(now.Add(6 * time.Second))
 	if pursuit.target != c.character.ID {
 		t.Fatal("retained target lost after arrival")
 	}
 	c.invisible = true
 	s.simulateWorld(now.Add(7 * time.Second))
-	if pursuit.target != 0 || !pursuit.nextScan.Equal(now.Add(10*time.Second)) {
+	if pursuit.target != 0 || !pursuit.nextScan.Equal(now.Add(7500*time.Millisecond)) {
 		t.Fatal("target loss did not reset search interval", pursuit)
 	}
-	s.simulateWorld(now.Add(8 * time.Second))
+	s.simulateWorld(now.Add(7250 * time.Millisecond))
 	if pursuit.target != 0 {
 		t.Fatal("searched again before cooldown/arrival")
 	}
@@ -781,9 +808,9 @@ func TestWorldSimulationAcquiresPlayerDuringPatrol(t *testing.T) {
 	}
 	c.invisible = false
 	c.character.X = 950
-	s.simulateWorld(now.Add(4 * time.Second))
+	s.simulateWorld(now.Add(3250 * time.Millisecond))
 	if s.actorPursuits[30001][4].target != 0 {
-		t.Fatal("searched before three-second deadline")
+		t.Fatal("searched before half-second deadline")
 	}
 	s.simulateWorld(now.Add(6 * time.Second))
 	if s.actorPursuits[30001][4].target != c.character.ID {

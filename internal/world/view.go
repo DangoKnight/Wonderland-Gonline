@@ -372,12 +372,13 @@ func (w *World) ActorPosePackets(v *View, mapID, click, animation uint16, facing
 	return [][]byte{protocol.Builder{protocol.CommandScene, protocol.SceneActorPosition}.Bytes(record), p}
 }
 
-// ActorPose is SendActorPose: AC22:9 actor, animation, facing; nil when out of range.
-func ActorPose(click, animation uint16, facing byte) []byte {
+// ActorPose is SendActorPose: AC22:9 actor, animation, held frame; nil when out
+// of range. FUN_004464dc passes the last byte to FUN_00430f90 as its frame.
+func ActorPose(click, animation uint16, frame byte) []byte {
 	if animation > 0xff {
 		return nil
 	}
-	return protocol.Builder{protocol.CommandScene, protocol.SceneWireCode9}.U16(click).U8(byte(animation)).U8(facing)
+	return protocol.Builder{protocol.CommandScene, protocol.SceneActorPose}.U16(click).U8(byte(animation)).U8(frame)
 }
 
 // Markers is SyncQuestMinimapMarkers: authored PreEvent icons, else a question mark

@@ -171,6 +171,7 @@ func TestMountedPetHotelAndDismissCleanup(t *testing.T) {
 	for _, hotel := range []bool{false, true} {
 		s, c, wires := mountFixture(t)
 		ctx := context.Background()
+		c.hotelMap = c.character.Map
 		if err := s.worldCommand(ctx, c, protocol.Builder{15, 11, 2}.U32(12032)); err != nil {
 			t.Fatal(err)
 		}

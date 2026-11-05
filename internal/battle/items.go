@@ -113,6 +113,9 @@ func (b *Battle) useItem(r Rules, a Action) []Step {
 		a.supporters = a.Actor.consumeSupport()
 	}
 	if hp < t.HP {
+		if r.ExperienceFormula == game.BattleEXPParticipation {
+			b.recordExperienceDamage(t, a.Actor, t.HP-hp)
+		}
 		t.hurt(-info.HP)
 	} else {
 		t.HP = hp

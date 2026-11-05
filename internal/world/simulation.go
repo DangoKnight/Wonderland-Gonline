@@ -42,11 +42,14 @@ const (
 	actorSpawnLeash                     = 150
 	actorInitialDelayMin                = time.Second
 	actorInitialDelayRange              = 7 * time.Second
+	monsterInitialDelayMin              = 100 * time.Millisecond
+	monsterInitialDelayRange            = 400 * time.Millisecond
 	actorRespawnDelay                   = 3 * time.Second
 	actorMovementDelayMin               = time.Second
 	actorMovementDelayRange             = 2*time.Second + time.Millisecond
 	actorMovementCandidates             = 4
 	actorPursuitStep                    = 100
+	actorPursuitDelay                   = 500 * time.Millisecond
 )
 
 type actorState struct {
@@ -261,12 +264,7 @@ func (w *World) ActorTargetArea(mapID, click uint16) (ActorBounds, bool) {
 	if !ok {
 		return ActorBounds{}, false
 	}
-	for _, def := range m.data.NPCs {
-		if def.ClickID == click {
-			return actorTargetArea(mapID, n, def)
-		}
-	}
-	return ActorBounds{}, false
+	return actorTargetArea(mapID, n, m.npcDefinition(click))
 }
 
 func (w *World) wanderPosition(mapID uint16, state *actorState, bounds ActorBounds, random func(int) int) (int, int) {
@@ -335,23 +333,23 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 	}
 	var moves []ActorMove
 	for _, n := range m.NPCs {
-		var def assets.MapNPC
-		for _, d := range m.data.NPCs {
-			if d.ClickID == n.ClickID {
-				def = d
-				break
-			}
-		}
+		def := m.npcDefinition(n.ClickID)
 		if def.WalkBehavior == walkStatic || w.staticActor(mapID, n) {
 			continue
 		}
 		state := w.actors.states[mapID][n.ClickID]
 		if state == nil {
+			initialMin := actorInitialDelayMin
 			initialRange := actorInitialDelayRange
 			if def.WalkBehavior >= walkPatrol && def.WalkBehavior <= walkPatrolAlternate {
 				initialRange = actorMovementDelayRange
 			}
-			state = &actorState{x: n.X, y: n.Y, next: now.Add(actorInitialDelayMin + time.Duration(random(int(initialRange/time.Millisecond)))*time.Millisecond)}
+			// Wake newly simulated enemies promptly. Do not reset an existing
+			// map's shared movement cycle when another player enters it.
+			if w.Wild(mapID, n) {
+				initialMin, initialRange = monsterInitialDelayMin, monsterInitialDelayRange
+			}
+			state = &actorState{x: n.X, y: n.Y, next: now.Add(initialMin + time.Duration(random(int(initialRange/time.Millisecond)))*time.Millisecond)}
 			w.actors.states[mapID][n.ClickID] = state
 		}
 		if paused[n.ClickID] || w.Defeated(mapID, n.ClickID) {
@@ -370,6 +368,7 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 		delay := actorMovementDelayMin + time.Duration(random(int(actorMovementDelayRange/time.Millisecond)))*time.Millisecond
 		switch {
 		case chasing:
+			delay = actorPursuitDelay
 			x, y = w.pursuitPosition(mapID, origin, target)
 		case def.WalkBehavior == walkBounds && len(def.WalkSteps) >= 2:
 			bounds, _ := boundedArea(n, def)

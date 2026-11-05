@@ -54,6 +54,20 @@ func TestCombatAndBonuses(t *testing.T) {
 	}
 }
 
+func TestWearMinimumEquipmentLevel(t *testing.T) {
+	items := map[uint16]ItemDefinition{34076: {ID: 34076, EquipSlot: 6, EquipLevel: 10}}
+	c := Character{Level: 9}
+	c.Bag[0] = Item{ID: 34076, Count: 1}
+	before := c.Bag
+	if err := c.Wear(1, items); err != ErrEquipLevel || c.Bag != before || c.Equipment[5].ID != 0 {
+		t.Fatal("under-level equip changed inventory", err)
+	}
+	c.Level = 10
+	if err := c.Wear(1, items); err != nil || c.Equipment[5].ID != 34076 {
+		t.Fatal("minimum level rejected", err)
+	}
+}
+
 func TestWearAndUnwear(t *testing.T) {
 	items := map[uint16]ItemDefinition{1: {ID: 1, EquipSlot: 3}, 2: {ID: 2, EquipSlot: 3}, 3: {ID: 3}}
 	var c Character

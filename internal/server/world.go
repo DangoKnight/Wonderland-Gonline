@@ -502,6 +502,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	c.info.Map = dst.Map
 	s.mu.Unlock()
 	c.restMap = 0
+	c.storageMap, c.hotelMap = 0, 0
 	c.ready, c.warped = false, true
 	c.arrived = true
 	c.restoreUIAfterMapLoad = c.restoreUIAfterMapLoad || c.event != nil
@@ -699,6 +700,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	if x != prevX || y != prevY {
 		// Moving away invalidates the NPC shop catalog and sale authority.
 		c.saleMode, c.saleMap = -1, 0
+		c.storageMap, c.hotelMap = 0, 0
 		if c.view != nil {
 			c.view.ShopItems = nil
 		}

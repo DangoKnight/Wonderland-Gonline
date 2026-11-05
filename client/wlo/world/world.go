@@ -262,7 +262,7 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		}
 	}
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			figures = append(figures, figure{n.SortY(), func() {
 				w.drawShadow(n, n.X-cx, n.Y-cy)
 				if l, ok := n.Painter.(interface{ SetLit(bool) }); ok {
@@ -341,7 +341,7 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 func (w *World) drawNames(cx, cy, px int) {
 	scr, txt := w.Env.Screen, w.Env.Text
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			w.drawName(n, n.X-cx, n.Y-cy)
 		}
 	}

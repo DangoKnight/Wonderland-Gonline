@@ -8,6 +8,12 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v31 adds the typed equipment minimum level (`EquipLevel`), projected once
+from retained decoded Item.dat byte 113. This differs from the legacy `Level`
+field. Player and pet equipment checks use this requirement; Radio Set requires
+level 10. Repeated upgrades preserve administrator edits. Stop the server and
+run the offline migration below before deploying this version.
+
 Assets v30 adds typed `ResourceRespawns` overrides for individual collection and
 ground-item cooldown durations. Gameplay v21 adds `resource_cooldowns`, keyed by
 resource kind, map and source ID. Each expiry is shared across players and commits
@@ -87,7 +93,7 @@ snapshots. Keep the backups until acceptance testing finishes.
 Gameplay schema v21 automatically upgrades older character storage transactionally
 when `store.Open` opens a database. The offline upgrade command is the recommended
 upgrade procedure because it leaves a complete original database available.
-Asset conversion is explicit: runtime requires `catalog_schema` version 30 and
+Asset conversion is explicit: runtime requires `catalog_schema` version 31 and
 never falls back to source documents. Repeating conversion preserves typed edits.
 The v1-to-v2 asset upgrade adds only `catalog_economy*` tables and source-derived
 initial rules; it preserves every existing typed content table. Gameplay v9 adds
@@ -236,7 +242,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v30. The upgrade procedure upgrades existing older installations
+Asset schema is now v31. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -280,7 +286,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v30. See
+before running the new server; runtime requires v31. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -318,7 +324,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v30 and reads only SQL definitions. The `Story` administration
+Runtime requires v31 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

@@ -94,11 +94,14 @@ type MainBtnForm struct {
 }
 
 const (
-	mainButtons     = 6
-	mainBackgroundX = 0x213
-	mainBackgroundY = 0x233
-	furnitureLeft   = 0x2fb
-	furnitureTop    = 0x1fb
+	mainButtons                = 6
+	mainBackgroundX            = 0x213
+	mainBackgroundY            = 0x233
+	furnitureLeft              = 0x2fb
+	furnitureTop               = 0x1fb
+	inventoryAttentionInterval = 100 * time.Millisecond
+	inventoryAttentionWidth    = 39
+	inventoryAttentionHeight   = 43
 )
 
 // mainPlaces are the buttons' corners from the constructor.
@@ -130,4 +133,22 @@ func NewMainBtnForm(env *seui.Env) *MainBtnForm {
 // Paint is FUN_002956ac's background (Btn_BackGround_2 at 0x213, 0x233).
 func (m *MainBtnForm) Paint() {
 	m.Env.Pics.Draw(m.Env.Screen, m.background, mainBackgroundX, mainBackgroundY, true)
+}
+
+// InventoryAttention follows FUN_002956e0, including the animated artwork's
+// different origin and 39x43 frames.
+func (m *MainBtnForm) InventoryAttention(on bool) {
+	b := m.Buttons[1]
+	if b.Animating == on {
+		return
+	}
+	p := mainPlaces[1]
+	if on {
+		b.SetPos(p.left+2, p.top+8)
+		b.SetAnimation("Btn_11_1", 0, 0, 0, inventoryAttentionInterval, inventoryAttentionHeight, inventoryAttentionWidth, 0)
+		b.StartAnimation()
+	} else {
+		b.SetPos(p.left, p.top)
+		b.StopAnimation()
+	}
 }

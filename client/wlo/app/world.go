@@ -66,6 +66,7 @@ func (c *Client) warp(p []byte) {
 		}
 		return
 	}
+	c.resetServices()
 	// Loading a map forgets the area last entered (FUN_00304898), and the
 	// map is not ready until 5/4.
 	c.areas.last = 0
@@ -132,7 +133,10 @@ const (
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
-	if c.World == nil || c.sceneFrozen() || c.settingsPromptForm != nil {
+	if c.Notices.dismissAt(c.Env, c.Now(), x, y) {
+		return
+	}
+	if c.World == nil || c.sceneFrozen() || !c.clinicUntil.IsZero() || c.Services != nil && c.Services.Visible || c.settingsPromptForm != nil {
 		return
 	}
 	if c.movie != nil {
