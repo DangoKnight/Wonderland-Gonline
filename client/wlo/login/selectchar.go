@@ -172,9 +172,18 @@ func NewSelectCharacter(env *seui.Env, g *Globals, n *Net, a Assets, status *Sta
 		m, _ := loadJPEG(a.SkinPicture("Menu", "Skins", "White", name))
 		return m
 	}
-	s.EmptyBack = load("Form_SelectRole_Empty" + side + ".jpg")
+	// The original install ships only the "_R" panels; "_L" is absent. With
+	// the jma size unknown (browser build) content is 0 and "_L" would leave
+	// the slot panels blank, so fall back to "_R".
+	loadSide := func(stem string) *surface.Surface {
+		if m := load(stem + side + ".jpg"); m != nil {
+			return m
+		}
+		return load(stem + "_R.jpg")
+	}
+	s.EmptyBack = loadSide("Form_SelectRole_Empty")
 	s.EmptyBack2 = load("Form_SelectRole_Empty_R.jpg")
-	s.InfoBack = load("Form_SelectRole_Info" + side + ".jpg")
+	s.InfoBack = loadSide("Form_SelectRole_Info")
 	s.InfoBack2 = load("Form_SelectRole_Info_R.jpg")
 	s.EmptyIcon = env.Pics.Find("Icon_Empty")
 	s.SelectIcon = -1

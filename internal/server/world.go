@@ -122,6 +122,13 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	if err := s.syncBazaars(context.Background(), c); err != nil {
 		return err
 	}
+	// Hidden NPCs are recorded per click ID without a map. Clear them when the
+	// session enters a different map, so an old map's hides cannot freeze the
+	// ambient movement of this map's NPCs. Quest state is left untouched.
+	if c.view != nil && c.view.HiddenMap != c.character.Map {
+		c.view.Hidden = map[uint16]bool{}
+		c.view.HiddenMap = c.character.Map
+	}
 	s.world[c.info.ID] = c
 	c.ready = true
 	s.Log.Info("map load acknowledged", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map)
