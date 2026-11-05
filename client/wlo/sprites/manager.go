@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/imagedecode"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -282,7 +283,7 @@ func (m *Manager) loadPage(p *page) (image.Image, error) {
 	if _, err = f.Seek(0, 0); err != nil {
 		return nil, err
 	}
-	img, err := png.Decode(f)
+	img, err := imagedecode.DecodePNG(f)
 	if err != nil {
 		return nil, err
 	}

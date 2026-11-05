@@ -394,6 +394,7 @@ func (c *Client) frame(draw bool) {
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Step(c.Now())
+		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
 		c.updateFloorHover()
@@ -865,4 +866,3 @@ func (c *Client) connectFailed() {
 }
 
 const statTargetOffset, statTargetEnd = 7, 11 // AC8:1 target after stat, kind and value; zero denotes self.
-
