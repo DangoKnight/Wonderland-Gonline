@@ -182,10 +182,13 @@ func TestBattleResultsDesertionAndReusedPetSlot(t *testing.T) {
 	c.npcTemplates[10501] = world.NPCTemplate{Name: "Slime"}
 	pet := game.NewPet(10501, "Slime", 1, game.PetTemplate{}, nil)
 	c.dispatch(pet.RecruitPacket(10001, game.PetTemplate{}))
+	if len(c.Notices.items) == 0 || string(c.Notices.items[len(c.Notices.items)-1].text) != "Slime joins the party" {
+		t.Fatal("missing immediate capture notification")
+	}
 	c.dispatch(game.PetStat(1, 36, 1000))
 	closeResultBattle(c)
 	showResultAfterFade(c, now)
-	if !reflect.DeepEqual(c.battleResults.lines, []string{"Roca Amity lost: 1", "Companion joined: Slime"}) {
+	if !reflect.DeepEqual(c.battleResults.lines, []string{"Roca Amity lost: 1"}) {
 		t.Fatal("replacement EXP assigned to departed pet", c.battleResults.lines)
 	}
 }
@@ -227,7 +230,7 @@ func TestBattleResultsLongListScrollAndExpiry(t *testing.T) {
 	}
 }
 
-func TestBattleResultsClicksPreserveNotice(t *testing.T) {
+func TestBattleResultsClicksDismissNoticeExceptScrollbar(t *testing.T) {
 	for _, target := range []string{"panel", "text", "scrollbar"} {
 		t.Run(target, func(t *testing.T) {
 			c, now := resultsClient(t)
@@ -253,12 +256,12 @@ func TestBattleResultsClicksPreserveNotice(t *testing.T) {
 				t.Fatal("results click passed through to the world")
 			}
 			c.UI.MouseUp(seui.ButtonLeft, 0, x, y)
-			if !f.Visible {
-				t.Fatal("click dismissed the timed result notice")
+			if f.Visible != (target == "scrollbar") {
+				t.Fatal("click did not dismiss results, or scrollbar dismissed them")
 			}
 			c.Frame()
-			if !f.Visible {
-				t.Fatal("result notice disappeared after click")
+			if f.Visible != (target == "scrollbar") {
+				t.Fatal("result visibility changed after click")
 			}
 		})
 	}

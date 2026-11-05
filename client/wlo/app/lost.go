@@ -113,6 +113,7 @@ func (c *Client) disconnected() {
 	}
 	if c.Trade != nil {
 		c.resetTrade()
+		c.resetServices()
 	}
 	if c.Compound != nil {
 		c.Compound.Reset()

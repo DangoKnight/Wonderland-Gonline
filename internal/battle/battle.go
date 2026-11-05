@@ -178,6 +178,7 @@ type Battle struct {
 	reviveSupport        map[experienceIdentity]map[*Fighter]bool
 	experience           map[experienceIdentity]uint64
 	experienceKills      map[*Fighter]bool
+	experienceDamage     map[*Fighter]map[experienceIdentity]*Fighter
 	Reinforcements       [MaxEnemies][]Enemy
 	defeatedDefenders    []*Fighter
 	Attackers, Defenders []*Fighter
@@ -1114,6 +1115,9 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				landed = append(landed, a)
 				guarded := defending[target.key()]
 				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
+				if r.ExperienceFormula == game.BattleEXPParticipation {
+					b.recordExperienceDamage(target, actor, dmg)
+				}
 				combo[i].SkillEXP = game.CombatSkillEXP(dmg, max(0, target.HP-total), target.MaxHP)
 				total = int(min(int64(total)+int64(dmg), int64(math.MaxInt32)))
 				received += uint64(dmg)

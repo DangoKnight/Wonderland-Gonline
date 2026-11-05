@@ -192,6 +192,10 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 }
 
 func (g *Game) leftPress(mouse byte, x, y int) {
+	if g.C.Notices.dismissAt(g.C.Env, g.C.Now(), x, y) {
+		g.lastDown = time.Time{}
+		return
+	}
 	now := g.C.Now()
 	ui := g.C.UI
 	// A second press within the interval is WM_LBUTTONDBLCLK: VCL

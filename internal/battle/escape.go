@@ -3,7 +3,7 @@ package battle
 import "wonderland-gonline/internal/protocol"
 
 const (
-	fleeFailureSkill          = 60042 // Native MBTM: run, trip (pose 64), then recover.
+	fleeFailureSkill          = 60046 // Native MBTM: run, trip (pose 26), then recover.
 	fleeBaseChancePercent     = 75
 	fleeEnemyLevelsPerPenalty = 6
 	fleeRollOutOf             = 100

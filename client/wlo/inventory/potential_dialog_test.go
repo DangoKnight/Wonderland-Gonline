@@ -11,6 +11,30 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
+func TestInventoryPotentialButtonOpensModuleWithoutPills(t *testing.T) {
+	env := &seui.Env{Pics: picdb.New()}
+	seui.NewManager(env, &seui.Input{})
+	f := NewForm(env, &State{}, &world.Stats{})
+	env.UI.Add(f)
+	f.Show()
+	f.Potential.OnClick()
+	if f.UseDialog == nil || !f.UseDialog.Visible || env.UI.Modal != f.UseDialog || f.UseDialog.Confirm.Visible {
+		t.Fatal("button must open potential with no pills and disable confirmation")
+	}
+	f.UseDialog.Hide()
+	f.State.Pets[0] = UsePet{ID: 17004}
+	f.Selected = 1
+	f.State.Bag[2] = game.Item{ID: game.ItemPotentialPill, Count: 2}
+	f.Potential.OnClick()
+	if f.UseDialog.target != 1 || !f.UseDialog.Confirm.Visible {
+		t.Fatal("selected pet or pills missing")
+	}
+	f.SetMode(2)
+	if f.Potential.Visible {
+		t.Fatal("potential button visible in bag-only layout")
+	}
+}
+
 func TestPotentialSkillWarningRequiresExplicitConfirmation(t *testing.T) {
 	f, sent := useFixture(game.ItemPotentialPill)
 	f.Env = &seui.Env{Pics: picdb.New()}

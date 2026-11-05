@@ -318,11 +318,11 @@ const (
 	SceneActorAnimation  = 8                    // Click UInt16, action UInt8, compatibility UInt8.
 	SceneWireCode7       = SceneActorExpression // Retained compatibility name.
 	SceneWireCode8       = SceneActorAnimation
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode9     = 9
-	SceneActorHide     = 10 // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
-	SceneActorMovement = 11
-	SceneActorAction   = 12
+	SceneActorPose       = 9              // Actor U16, animation U8, held frame U8 (255 animates).
+	SceneWireCode9       = SceneActorPose // Retained compatibility name.
+	SceneActorHide       = 10             // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
+	SceneActorMovement   = 11
+	SceneActorAction     = 12
 )
 
 // Inventory subcommands (AC23).

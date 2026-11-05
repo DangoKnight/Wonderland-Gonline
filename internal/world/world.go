@@ -30,14 +30,20 @@ type GroundItem struct {
 }
 
 type Map struct {
-	ID    uint16
-	NPCs  []NPC // Ascending click ID, the AC22:4 order.
-	Items []GroundItem
-	data  assets.Map
+	ID             uint16
+	NPCs           []NPC // Ascending click ID, the AC22:4 order.
+	Items          []GroundItem
+	data           assets.Map
+	npcDefinitions map[uint16]int
 }
 
 func newMap(m assets.Map) *Map {
-	out := &Map{ID: m.ID, data: m}
+	out := &Map{ID: m.ID, data: m, npcDefinitions: make(map[uint16]int, len(m.NPCs))}
+	for i, n := range m.NPCs {
+		if _, exists := out.npcDefinitions[n.ClickID]; !exists {
+			out.npcDefinitions[n.ClickID] = i
+		}
+	}
 	for _, n := range m.NPCs {
 		// Corrupted entries have no click ID or no position.
 		if n.ClickID == 0 || (n.X == 0 && n.Y == 0) {
@@ -81,12 +87,18 @@ func (m *Map) DoorPortal(click uint16) (uint16, bool) {
 }
 
 func (m *Map) npc(click uint16) (NPC, bool) {
-	for _, n := range m.NPCs {
-		if n.ClickID == click {
-			return n, true
-		}
+	i := sort.Search(len(m.NPCs), func(i int) bool { return m.NPCs[i].ClickID >= click })
+	if i < len(m.NPCs) && m.NPCs[i].ClickID == click {
+		return m.NPCs[i], true
 	}
 	return NPC{}, false
+}
+
+func (m *Map) npcDefinition(click uint16) assets.MapNPC {
+	if i, ok := m.npcDefinitions[click]; ok {
+		return m.data.NPCs[i]
+	}
+	return assets.MapNPC{}
 }
 
 // World is safe for concurrent use. Map definitions are immutable; ground state has its own lock.

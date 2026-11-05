@@ -10,11 +10,12 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 39
+const catalogSchemaVersion = 40
 
 // Branch compatibility: Client v30 introduced collection respawns while quest
 // v29 onward introduced independent content batches from the common v28 base.
 const clientCollectionSchemaVersion = 30
+const clientEquipmentSchemaVersion = 31
 const commonPreQuestSchemaVersion = 28
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
@@ -52,10 +53,15 @@ func migrateCatalog(tx *gorm.DB) error {
 		// Client v30 and quest v30 used the same version for different features.
 		// Detect the Client lineage before adding its collection projection.
 		questVersion := schema.Version
-		if schema.Version == clientCollectionSchemaVersion && tx.Migrator().HasColumn(&catalogPresence{}, "ResourceRespawns") {
+		if schema.Version >= clientCollectionSchemaVersion && schema.Version <= clientEquipmentSchemaVersion && tx.Migrator().HasColumn(&catalogPresence{}, "ResourceRespawns") {
 			questVersion = commonPreQuestSchemaVersion
 		}
 		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 40 {
+			if err := migrateEquipLevel(tx); err != nil {
+				return err
+			}
+		}
 		if schema.Version < 39 {
 			if err := migrateResourceRespawns(tx); err != nil {
 				return err

@@ -7859,6 +7859,7 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 
 type NativeItemsRow struct {
 	NativeItemsKey            uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
+	ValueDefinitionEquipLevel uint16
 	ValueDefinitionCellWidth  uint8
 	ValueDefinitionCellHeight uint8
 	ValueDefinitionID         uint16
@@ -7885,6 +7886,7 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	var rows []NativeItemsRow
 	for key, value := range values {
 		row := NativeItemsRow{NativeItemsKey: key}
+		row.ValueDefinitionEquipLevel = value.Definition.EquipLevel
 		row.ValueDefinitionCellWidth = value.Definition.CellWidth
 		row.ValueDefinitionCellHeight = value.Definition.CellHeight
 		row.ValueDefinitionID = value.Definition.ID
@@ -7922,6 +7924,7 @@ func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
 	}
 	for _, row := range rows {
 		var value assets.NativeItem
+		value.Definition.EquipLevel = row.ValueDefinitionEquipLevel
 		value.Definition.CellWidth = row.ValueDefinitionCellWidth
 		value.Definition.CellHeight = row.ValueDefinitionCellHeight
 		value.Definition.ID = row.ValueDefinitionID

@@ -94,6 +94,10 @@ type Client struct {
 	Business           *hud.Business
 	LuckyDraw          *lottery.Form
 	Trade              *inventory.TradeForm
+	Services           *inventory.ServiceForm
+	clinicPrompt       *clinicPrompt
+	clinicUntil        time.Time
+	clinicSleepGlyph   *surface.Surface
 	friendAsk          *friendAsk // the open friend question
 	remote             remoteRuntime
 	battle             battleView
@@ -104,13 +108,14 @@ type Client struct {
 	MainStatus         *hud.MainStatus  // the status panel over the world
 	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
 	MainButtons        *hud.MainBtnForm // the menu at the bottom right
-	HotKeys            *hud.HotKeyForm  // the F1–F8 bar
-	ChatBar            *hud.InputBar    // the chat bar
-	groundHeld         bool             // the left button went down on the ground
-	groundSince        time.Time        // when it went down
-	uiHovered          bool             // a control was under the pointer last frame
-	nextWalk           time.Time        // next re-plan while a button or arrow is held
-	Chat               *hud.ChatLog     // the chat log over the map
+	inventoryPoints    inventoryPointAlert
+	HotKeys            *hud.HotKeyForm // the F1–F8 bar
+	ChatBar            *hud.InputBar   // the chat bar
+	groundHeld         bool            // the left button went down on the ground
+	groundSince        time.Time       // when it went down
+	uiHovered          bool            // a control was under the pointer last frame
+	nextWalk           time.Time       // next re-plan while a button or arrow is held
+	Chat               *hud.ChatLog    // the chat log over the map
 	npcTemplates       map[uint32]world.NPCTemplate
 	Talk               *hud.Talk // the event talk window
 	MiniMap            *hud.MiniMap
@@ -346,6 +351,7 @@ func New(o Options) (*Client, error) {
 	c.initPetStatus()
 	c.initVehicleStatus()
 	c.initTrade()
+	c.initServices()
 	c.initLuckyDraw()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
@@ -371,6 +377,8 @@ func (c *Client) frame(draw bool) {
 	c.sceneFadeTick(c.Now())
 	c.friendAskTick(c.Now())
 	c.luckyDrawTick()
+	c.inventoryPointTick()
+	c.clinicTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
@@ -394,13 +402,19 @@ func (c *Client) frame(draw bool) {
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
 		fading := c.fade.step > 0
-		c.World.HideNames = c.Talk.Drawn() || fading
+		c.World.HideNames = c.Talk.Drawn() || fading || !c.clinicUntil.IsZero()
 		c.World.Cinematic = fading
 		if c.battleFrame(draw) {
 			// Battle owns the scene while the map and networking keep ticking.
 		} else if !c.movieFrame() && draw {
+			hide := c.World.HidePlayer
+			if !c.clinicUntil.IsZero() {
+				c.World.HidePlayer = true
+			}
 			c.World.DrawWithSprites(append(c.floorItemSprites(), c.placedVehicleSprites()...))
+			c.World.HidePlayer = hide
 			c.drawWorldItemGains(c.Now())
+			c.drawClinicRest()
 			c.drawVehicleEffects()
 			c.drawFloorItemName()
 			dialogueOverlay = true
@@ -411,6 +425,7 @@ func (c *Client) frame(draw bool) {
 	}
 	now := c.Now()
 	c.battleResultsTick(now)
+	c.layoutRewardNotices()
 	if draw {
 		c.drawSceneFade()
 	}
@@ -511,6 +526,9 @@ func (c *Client) dispatchNative(p []byte) {
 		return
 	}
 	if c.friendsPacket(p) {
+		return
+	}
+	if c.servicePacket(p) {
 		return
 	}
 	if c.tradePacket(p) {
@@ -722,6 +740,10 @@ func (c *Client) dispatchNative(p []byte) {
 		// AC22:4 (FUN_0038cf30) moves, shows and hides map NPCs.
 		if c.World != nil {
 			c.World.ApplyActorPositions(s[1:])
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPose:
+		if c.World != nil && !c.World.ApplyActorPose(s[1:]) && c.Unhandled != nil {
+			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionDelete:
 		// 35/2 (0x2eab55) reports a deletion.

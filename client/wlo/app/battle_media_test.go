@@ -18,7 +18,7 @@ func TestBattleAdditionalSoundChannels(t *testing.T) {
 	c.battleFrame(false)
 	m := clientbattle.Motion{Frames: []clientbattle.MotionFrame{{Action: 16, Hold: 600 * time.Millisecond}}, Sounds: []clientbattle.SoundCue{{ID: 10040, Trigger: 300}}}
 	body := c.World.Player.Body
-	m.WeaponSounds[0][1], m.WeaponSoundTriggers[1] = 10018, 0
+	m.WeaponSounds[2][1], m.WeaponSoundTriggers[1] = 10018, 0
 	m.BodySounds[body][1], m.BodySoundTriggers[1] = 10164, 150
 	c.battle.assets = &clientbattle.Assets{Motions: map[uint16]clientbattle.Motion{50000: m}}
 	var played []string
@@ -180,5 +180,42 @@ func TestBattleRevealQueuesActionsAndAudio(t *testing.T) {
 	c.Frame()
 	if c.sceneFade.mode != sceneFadeNone || len(c.battle.playing) == 0 || len(c.battle.state.Actions) != 0 {
 		t.Fatal("reveal did not release action")
+	}
+}
+
+// Unarmed strikes previously selected the reserved empty group zero. Use
+// the extracted motion and its real impact table, rather than a mocked cue.
+func TestBattleUnarmedImpactFromNativeMotion(t *testing.T) {
+	c, now, _ := enterBattle(t)
+	c.battleFrame(false)
+	c.World.Player.Items = nil
+	var impacts []string
+	c.Env.Sound = func(path string) {
+		if path == `sound\SEB0026.wav` {
+			impacts = append(impacts, path)
+		}
+	}
+	c.dispatch([]byte{50, 1, 17, 0, 4, 2, 17, 39, 0, 1, 2, 2, 1, 0, 1, 25, 25, 0, 0, 0, 1})
+	start := *now
+	for elapsed := time.Duration(0); elapsed < 4*time.Second; elapsed += 25 * time.Millisecond {
+		*now = start.Add(elapsed)
+		c.battleFrame(false)
+	}
+	if len(impacts) != 1 {
+		t.Fatalf("unarmed contact sounds %v", impacts)
+	}
+	sounds := &Sounds{Root: c.Assets.Media}
+	if len(sounds.PCM(impacts[0])) == 0 {
+		t.Fatal("native impact wave cannot be decoded")
+	}
+}
+
+func TestBattleNativeWeaponCategoryTable(t *testing.T) {
+	// Original ca19ee... executable jump tables at 0x37c8e8 and 0x37cc72.
+	want := []byte{2, 1, 1, 1, 4, 3, 1, 2, 1, 2, 3, 5, 0}
+	for kind, group := range want {
+		if got := nativeWeaponSoundGroup(byte(kind)); got != group {
+			t.Fatalf("category %d: %d, want %d", kind, got, group)
+		}
 	}
 }

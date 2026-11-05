@@ -473,6 +473,14 @@ func (t *Talk) Hide() {
 // Shown reports whether a line is open.
 func (t *Talk) Shown() bool { return t.shown }
 
+// Bounds reserves the full dialogue area while its opening animation plays.
+func (t *Talk) Bounds() image.Rectangle {
+	if !t.shown {
+		return image.Rectangle{}
+	}
+	return image.Rect(t.origin.X, t.origin.Y, t.origin.X+t.w, t.origin.Y+t.h)
+}
+
 // Lines is the wrapped text shown.
 func (t *Talk) Lines() [][]byte {
 	out := make([][]byte, len(t.lines))

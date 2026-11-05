@@ -181,6 +181,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.warped = false
 	c.storm, c.stormAck, c.beachPending, c.beach, c.battle = false, false, false, nil, nil
 	c.restMap, c.saleMode = 0, -1
+	c.storageMap, c.hotelMap = 0, 0
 	c.encounter = encounterState{next: firstEncounter}
 	c.encounter.enterMap()
 	c.slot = char.Slot

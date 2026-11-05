@@ -346,10 +346,13 @@ const (
 // ask is kind 6 (FUN_00304fd0 case 6): the question's prompt and options
 // in the talk window, spoken by an NPC or the player. Mode 0 marks the
 // step done as well, so the answer is followed by 20/6; mode 1 sends only
-// the answer. Questions for other forms (+0x42 1 or 3: the item and
-// trade pickers) are not ported and are closed.
+// the answer. Item-picker questions (+0x42 1 or 3) open the native shop form;
+// unsupported non-item pickers are closed explicitly.
 func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 	q, ok := c.World.Questions[id]
+	if ok && q.Mode != 0 && c.shopQuestion(q) {
+		return
+	}
 	if !ok || q.Mode != 0 {
 		log.Printf("event: question %d (form %d) not ported, closing", id, q.Mode)
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, eventChoiceCancel})
@@ -400,7 +403,10 @@ func (c *Client) answer(v byte) {
 	c.event.answers = nil
 	c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, v})
 	if v != eventChoiceCancel && c.event.ackAnswer {
-		c.event.done = true
+		// Send the question's ACK with its answer, before a new server frame
+		// can replace the step and erase or misattribute the pending ACK.
+		c.event.done = false
+		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
 	}
 }
 
@@ -440,6 +446,7 @@ func (c *Client) eventResume() {
 	c.stopConstellation()
 	for npc, action := range c.event.npcFacings {
 		npc.Action = action
+		npc.Conversation = false
 	}
 	c.event = eventState{}
 	c.held = false
@@ -474,6 +481,9 @@ func (c *Client) eventTick() {
 		c.petAnnouncement = true
 	}
 	// FUN_00307300 holds a finished step while route walkers are queued.
+	if !c.clinicUntil.IsZero() {
+		return
+	}
 	if c.event.done && c.World != nil && !c.World.RoutesDone() {
 		return
 	}
@@ -495,16 +505,15 @@ func (c *Client) faceConversation(subject byte, actor uint16, turn bool) {
 		return
 	}
 	p := &c.World.Player
+	if c.event.npcFacings == nil {
+		c.event.npcFacings = map[*world.NPC]int{}
+	}
+	n.BeginConversation(c.Now())
+	if _, saved := c.event.npcFacings[n]; !saved {
+		c.event.npcFacings[n] = n.Action
+	}
 	if turn {
-		original := n.Action
-		if n.FaceConversation(p.X, p.Y) {
-			if c.event.npcFacings == nil {
-				c.event.npcFacings = map[*world.NPC]int{}
-			}
-			if _, saved := c.event.npcFacings[n]; !saved {
-				c.event.npcFacings[n] = original
-			}
-		}
+		n.FaceConversation(p.X, p.Y)
 	}
 	// The player faces the speaker even when the speaker is exempt from turning.
 	c.World.StopWalk()

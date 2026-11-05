@@ -268,13 +268,20 @@ func (s *Server) respawnGround(now time.Time) {
 
 // runRespawns ticks like GameMap.Process for ground items.
 func (s *Server) runRespawns(ctx context.Context) {
-	t := time.NewTicker(time.Second)
+	t := time.NewTicker(actorSimulationInterval)
 	defer t.Stop()
+	var elapsed time.Duration
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case now := <-t.C:
+			elapsed += actorSimulationInterval
+			if elapsed < worldMaintenanceInterval {
+				s.simulateWorldTick(now, false)
+				continue
+			}
+			elapsed = 0
 			s.respawnGround(now)
 			s.respawnChests(now)
 			s.respawnMapProps(ctx, now)
@@ -300,6 +307,9 @@ func (s *Server) changeEquipment(ctx context.Context, c *Session, from, to byte,
 		e = next.Unwear(from, to, s.Assets.Items)
 	}
 	if e != nil {
+		if errors.Is(e, game.ErrEquipLevel) {
+			return c.send(serverwire.HeadBanner(game.ErrEquipLevel.Error()))
+		}
 		return nil
 	}
 	if e = s.Store.UpdateCharacter(ctx, c.account.ID, next.ID, func(char *game.Character) error {

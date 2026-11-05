@@ -145,7 +145,7 @@ func TestEscapeFailureNativeAndRoundChain(t *testing.T) {
 			}
 			packets = flat
 		}
-		want := []byte{50, 1, 11, 0, m.self.X, m.self.Y, 138, 234, 0, 1, m.self.X, m.self.Y, 1, 0, 0}
+		want := []byte{50, 1, 11, 0, m.self.X, m.self.Y, 142, 234, 0, 1, m.self.X, m.self.Y, 1, 0, 0}
 		if !contains(packets, want) || players[0].battle != run || players[1].battle != run || run.b.Finished || run.b.Processing {
 			t.Fatal("failure animation or next turn lost", bundled, packets)
 		}

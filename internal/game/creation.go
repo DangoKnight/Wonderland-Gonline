@@ -36,6 +36,7 @@ type Appearance struct {
 const ItemTypeExotic = 10
 
 type ItemDefinition struct {
+	EquipLevel uint16    `json:"equip_level"`
 	CellWidth  byte      `json:"cell_width"`
 	CellHeight byte      `json:"cell_height"`
 	ID         uint16    `json:"id"`

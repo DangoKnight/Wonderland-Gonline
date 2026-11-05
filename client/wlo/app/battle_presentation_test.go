@@ -105,12 +105,144 @@ func TestBattleCaptureAndMissAtContact(t *testing.T) {
 		}
 		*now = now.Add(150 * time.Millisecond)
 		c.battleFrame(false)
-		if c.battle.shown[cell].Removed != capture {
-			t.Fatal("capture/miss result not shown at contact")
+		if c.battle.shown[cell].Removed {
+			t.Fatal("capture removed target before its motion finished")
 		}
 		if !capture && c.battle.shown[cell].HP != 100 {
 			t.Fatal("miss changed HP")
 		}
+		*now = now.Add(2 * time.Second)
+		c.battleFrame(false)
+		if c.battle.shown[cell].Removed != capture {
+			t.Fatal("capture/miss final visibility")
+		}
+	}
+}
+
+func TestBananaCaptureRemainsVisibleDuringNativeDrag(t *testing.T) {
+	enemy := remoteRecord(5, 7, 2, 2, 17000, 0) // Extracted Banana Monster template.
+	enemy[2] = 2
+	c, now, _ := enterBattle(t, enemy)
+	c.battleFrame(false)
+	m := c.battle.assets.Motions[battleCatchSkill]
+	if m.Reaction != 60001 {
+		t.Fatal("native capture reaction changed", m.Reaction)
+	}
+	c.dispatch([]byte{50, 1, 17, 0, 4, 2, 24, 39, 0, 1, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1})
+	c.battleFrame(false)
+	start := *now
+	*now = start.Add(m.EventAt(clientbattle.MotionEvent{Trigger: capturePullFrameTrigger}) + 600*time.Millisecond)
+	c.battleFrame(true)
+	cell := clientbattle.Cell{X: 2, Y: 2}
+	if c.battle.shown[cell].Removed || !c.battle.state.At(cell).Removed {
+		t.Fatal("capture visibility/authority separated incorrectly")
+	}
+	found := false
+	for _, p := range c.battle.playing {
+		if !p.captureRemoval {
+			continue
+		}
+		found = true
+		if p.captureDrag == nil {
+			t.Fatal("drag not attached to capturer")
+		}
+		pull := p.captureDrag.pullStart()
+		for _, at := range []time.Time{start, start.Add(pull.Sub(start) / 2), pull} {
+			if p.captureDrag.position(cell, at) != cell.Position() {
+				t.Fatal("monster moved before capturer reached it")
+			}
+		}
+		if !p.at.Equal(pull) {
+			t.Fatal("capture reaction starts before physical contact")
+		}
+		contact := p.captureDrag.capturerPosition(pull)
+		spacing := cell.Position().Sub(contact)
+		if spacing.X < -40 || spacing.X > 40 || spacing.Y < -40 || spacing.Y > 40 {
+			t.Fatalf("capturer did not reach monster before pull: spacing %v", spacing)
+		}
+		for _, elapsed := range []time.Duration{100 * time.Millisecond, time.Second, 2 * time.Second} {
+			at := pull.Add(elapsed)
+			capturer := p.captureDrag.capturerPosition(at)
+			if p.captureDrag.position(cell, at).Sub(capturer) != spacing {
+				t.Fatal("captured monster fell behind capturer")
+			}
+		}
+		reaction := c.battle.assets.Motions[p.action.Skill].Departure()
+		elapsed := now.Sub(p.at)
+		if reaction.PositionAt(cell, clientbattle.Cell{}, elapsed) == cell.Position() {
+			t.Fatal("target not dragged")
+		}
+		body := c.battleBody(c.battle.shown[cell])
+		action, frame := reaction.PoseAt(cell, clientbattle.Cell{}, elapsed, body.moveKind)
+		if body.npc == nil {
+			t.Fatal("missing Banana sprite")
+		}
+		body.npc.Hold(frame, false)
+		if w, h := body.npc.FrameSize(action); w == 0 || h == 0 {
+			t.Fatalf("missing drag pose %d", action)
+		}
+	}
+	if !found {
+		t.Fatal("missing capture drag track")
+	}
+	*now = start.Add(20 * time.Second)
+	c.battleFrame(false)
+	if !c.battle.shown[cell].Removed {
+		t.Fatal("capture target not removed after drag")
+	}
+}
+
+func TestBattleCaptureFailureSharesPullAndReturnsMonster(t *testing.T) {
+	enemy := remoteRecord(5, 7, 2, 2, 17000, 0)
+	enemy[2] = 2
+	c, now, _ := enterBattle(t, enemy)
+	c.battleFrame(false)
+	start := *now
+	// Independent wire fixture: 10009 is failed capture, with a landed reaction.
+	c.dispatch([]byte{50, 1, 17, 0, 4, 2, 25, 39, 0, 1, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1})
+	c.battleFrame(false)
+	var drag *battleCaptureDrag
+	for _, p := range c.battle.playing {
+		if p.captureDrag != nil {
+			drag = p.captureDrag
+			if p.captureRemoval {
+				t.Fatal("failed capture removes monster")
+			}
+		}
+	}
+	if drag == nil {
+		t.Fatal("failed capture uses independent reaction path")
+	}
+	pull := drag.pullStart()
+	contact := drag.capturerPosition(pull)
+	spacing := drag.target.Position().Sub(contact)
+	facing := drag.target.Position().Sub(drag.actor.Position())
+	if spacing.X*facing.X+spacing.Y*facing.Y <= 0 {
+		t.Fatal("monster trails capturer instead of leading")
+	}
+	if spacing.X < -40 || spacing.X > 40 {
+		t.Fatalf("distant contact: %v", spacing)
+	}
+	for _, elapsed := range []time.Duration{0, 500 * time.Millisecond, time.Second, 2 * time.Second} {
+		at := pull.Add(elapsed)
+		*now = at
+		c.battleFrame(true)
+		actor := drag.capturerPosition(at)
+		if drag.position(drag.target, at).Sub(actor) != spacing {
+			t.Fatal("failed capture pull diverged")
+		}
+		if c.battle.shown[drag.target].Removed {
+			t.Fatal("monster hidden during failed capture")
+		}
+	}
+	end := start.Add(drag.motion.ReturnStart() + drag.returnDuration)
+	if drag.position(drag.target, end) != drag.target.Position() {
+		t.Fatal("monster did not return after failed capture")
+	}
+	*now = end.Add(time.Second)
+	c.battleFrame(true)
+	if c.battle.shown[drag.target].Removed || c.battle.state.At(drag.target).Removed {
+		t.Fatal("failed capture removed monster")
 	}
 }
 

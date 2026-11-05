@@ -98,6 +98,10 @@ func TestNPCConversationRewardsAndMarks(t *testing.T) {
 			t.Fatalf("reward packet %d: %v", i, got[i])
 		}
 	}
+	// The question's trailing ACK must not dismiss the newly published line.
+	if got = send(20, 6); len(got) != 0 || c.event == nil || c.event.onComplete == nil {
+		t.Fatal("question acknowledgment skipped reward dialogue", got)
+	}
 	got = send(20, 6)
 	if len(got) < 2 || !bytes.Equal(got[0], []byte{6, 2, 0}) || !bytes.Equal(got[1], []byte{20, 8}) || c.event != nil {
 		t.Fatal("finish", got)

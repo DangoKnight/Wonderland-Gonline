@@ -60,6 +60,7 @@ func (w *World) WalkRoute(click uint16, slot, mode byte, now time.Time) {
 	if len(pts) == 0 {
 		return
 	}
+	n.Conversation = false // Explicit event choreography overrides ambient pause.
 	switch mode {
 	case RouteWalk, RouteWalkHide:
 		n.stepWalk(now)

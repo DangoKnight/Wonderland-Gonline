@@ -44,7 +44,6 @@ type battleResultsRuntime struct {
 	active, closed bool
 	before, after  battleResultSnapshot
 	items          map[uint16]uint64
-	joined         map[uint16]string
 	form           *battleResultsForm
 	until          time.Time
 	lines          []string
@@ -71,7 +70,6 @@ func (c *Client) beginBattleResults() {
 	}
 	r.after = r.before
 	r.items = map[uint16]uint64{}
-	r.joined = map[uint16]string{}
 }
 
 func (c *Client) resetBattleResults() {
@@ -106,13 +104,6 @@ func (c *Client) recordBattleResultsPacket(p []byte) {
 	}
 	if p[0] == protocol.CommandStats && p[1] == protocol.StatsWireCode2 || p[0] == protocol.CommandPetControl {
 		for i, p := range c.InventoryState.Pets {
-			ownedBefore := false
-			for _, before := range r.before.pets {
-				ownedBefore = ownedBefore || before.id == p.ID
-			}
-			if p.ID != 0 && !ownedBefore {
-				r.joined[p.ID] = resultPet(p, i).name
-			}
 			// Retain the last confirmed progression when a dead pet deserts;
 			// never attribute a replacement's EXP to the former occupant.
 			if p.ID != 0 && (r.before.pets[i].id == 0 || p.ID == r.before.pets[i].id) {
@@ -179,14 +170,8 @@ func (c *Client) battleResultLines() []string {
 			actor(before, after, true)
 		}
 	}
-	joined := make([]int, 0, len(r.joined))
-	for id := range r.joined {
-		joined = append(joined, int(id))
-	}
-	sort.Ints(joined)
-	for _, id := range joined {
-		add("Companion joined: " + r.joined[uint16(id)])
-	}
+	// Recruitment is announced immediately during combat by announceNewPets;
+	// do not repeat captures in the post-battle reward summary.
 	add(resultDelta("Gold", "", r.before.gold, r.after.gold))
 	ids := make([]int, 0, len(r.items))
 	for id := range r.items {
@@ -314,3 +299,32 @@ func (f *battleResultsForm) setLines(lines []string) {
 
 func (f *battleResultsForm) WheelDown() { f.list.ScrollDown() }
 func (f *battleResultsForm) WheelUp()   { f.list.ScrollUp() }
+
+func (f *battleResultsForm) LeftUp(_ byte, x, y int) {
+	if f.HitTest(x, y) {
+		f.Hide()
+	}
+}
+func (l *battleResultsList) LeftUp(_ byte, x, y int) {
+	if l.HitTest(x, y) {
+		l.Parent.(*battleResultsForm).Hide()
+	}
+}
+
+const rewardNoticeGap = 6
+
+func (c *Client) layoutRewardNotices() {
+	top := noticeTop
+	if c.Talk != nil {
+		r := c.Talk.Bounds()
+		// Bottom-anchored player speech already leaves the top board clear.
+		if !r.Empty() && r.Min.Y < ScreenHeight/2 {
+			top = max(top, r.Max.Y+rewardNoticeGap)
+		}
+	}
+	if f := c.battleResults.form; f != nil && f.Visible {
+		f.Top = max(battleResultsTop, top)
+		top = f.Bottom() + rewardNoticeGap
+	}
+	c.Notices.top = max(noticeTop, top)
+}

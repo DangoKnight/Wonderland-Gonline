@@ -18,6 +18,48 @@ func simulationFixture() *World {
 	}}}, NPCs: map[uint16]assets.NPC{17001: {ID: 17001, Name: "Rabbit"}, 17002: {ID: 17002, Name: "Duck"}}}
 	return New(c)
 }
+
+func TestWorldSimulationPursuitResumesAfterHalfSecond(t *testing.T) {
+	w := simulationFixture()
+	now := time.Unix(1000, 0)
+	targets := map[uint16]ActorPosition{1: {X: 400, Y: 100}}
+	paused := map[uint16]bool{3: true}
+	random := func(int) int { return 0 }
+	if moves := w.AdvanceActorsToward(12000, now, paused, targets, random); len(moves) != 1 {
+		t.Fatal(moves)
+	}
+	// 100 pixels at native speed takes 2.5 seconds, then a 0.5-second pause.
+	if moves := w.AdvanceActorsToward(12000, now.Add(2999*time.Millisecond), paused, targets, random); len(moves) != 0 {
+		t.Fatal("pursuit resumed before arrival and pause", moves)
+	}
+	if moves := w.AdvanceActorsToward(12000, now.Add(3*time.Second), paused, targets, random); len(moves) != 1 || moves[0].X != 300 {
+		t.Fatal("pursuit did not resume promptly", moves)
+	}
+}
+
+func TestWorldSimulationMonsterStartsPromptlyWithoutResettingCycle(t *testing.T) {
+	w := simulationFixture()
+	now := time.Unix(1000, 0)
+	random := func(n int) int { return n - 1 }
+	if moves := w.AdvanceActors(12000, now, nil, random); len(moves) != 0 {
+		t.Fatal("initial stagger missing", moves)
+	}
+	if moves := w.AdvanceActors(12000, now.Add(99*time.Millisecond), nil, random); len(moves) != 0 {
+		t.Fatal("initial delay ignored", moves)
+	}
+	moves := w.AdvanceActors(12000, now.Add(500*time.Millisecond), map[uint16]bool{3: true}, random)
+	if len(moves) != 1 || moves[0].Click != 1 {
+		t.Fatal("enemy did not start within half a second", moves)
+	}
+	state := w.actors.states[12000][1]
+	next, arrives := state.next, state.arrives
+	if moves = w.AdvanceActors(12000, now.Add(time.Second), map[uint16]bool{3: true}, random); len(moves) != 0 {
+		t.Fatal("active patrol restarted", moves)
+	}
+	if state.next != next || state.arrives != arrives || next.Sub(arrives) != 3*time.Second {
+		t.Fatal("authored pause or travel changed")
+	}
+}
 func TestWorldSimulationPatrolVisibilityAndRespawn(t *testing.T) {
 	w := simulationFixture()
 	now := time.Unix(1000, 0)

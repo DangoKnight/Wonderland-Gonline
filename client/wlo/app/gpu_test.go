@@ -188,13 +188,13 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			at := c.Now().Add(time.Second)
 			c.Now = func() time.Time { return at }
 			c.battleFrame(false)
-			c.dispatch([]byte{50, 1, 11, 0, 4, 2, 138, 234, 0, 1, 4, 2, 1, 0, 0})
+			c.dispatch([]byte{50, 1, 11, 0, 4, 2, 142, 234, 0, 1, 4, 2, 1, 0, 0})
 		case 68:
 			cell := clientbattle.Cell{X: 4, Y: 2}
-			motion := c.battle.assets.Motions[60042]
+			motion := c.battle.assets.Motions[60046]
 			for elapsed := time.Duration(0); elapsed < motion.Duration(); elapsed += 10 * time.Millisecond {
 				pose, _ := motion.PoseAt(cell, clientbattle.Cell{}, elapsed, 0)
-				if pose == 64 || pose == 65 {
+				if pose == 26 || pose == 27 {
 					at := c.battle.playing[0].at.Add(elapsed)
 					c.Now = func() time.Time { return at }
 					break
