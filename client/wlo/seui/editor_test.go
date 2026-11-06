@@ -24,15 +24,15 @@ func TestEditorAccountField(t *testing.T) {
 	e.Name = "IDField"
 	e.Init("", 0, 0, 0, 0, 0, false, 12, 0x68, 0)
 	e.SetMaxLen(10)
-	typeText(e, "abc\tdefghijklm")
-	if string(e.Text) != "ABCDEFGHIJ" {
+	typeText(e, "aBc\tdEfGhIjklm")
+	if string(e.Text) != "aBcdEfGhIj" {
 		t.Fatalf("got %q", e.Text)
 	}
 	e.KeyDown(VKHome, 0)
 	e.KeyDown(VKDelete, 0)
 	e.KeyDown(VKEnd, 0)
 	e.KeyDown(VKBack, 0)
-	if string(e.Text) != "BCDEFGHI" || e.Caret != 8 {
+	if string(e.Text) != "BcdEfGhI" || e.Caret != 8 {
 		t.Fatalf("got %q caret %d", e.Text, e.Caret)
 	}
 }

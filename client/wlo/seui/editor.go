@@ -364,9 +364,6 @@ func (e *Editor) Char(c byte) {
 	if e.Filter == 2 && !isAlnum(c) {
 		return
 	}
-	if e.Name == "IDField" && isLower(c) {
-		c -= 0x20
-	}
 	if e.Name == "CreateRoleName" && c == ' ' {
 		return
 	}
