@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"image"
@@ -34,7 +36,7 @@ const (
 	signalTipFill = 0xf98b3d
 )
 
-var signalNames = [maxSignal + 1]string{"Offline", "Good", "Active", "Crowded"}
+var signalNames = [maxSignal + 1]string{localization.UI("ui.login.offline_a1794783"), localization.UI("ui.login.good_c939327c"), localization.UI("ui.login.active_92340695"), localization.UI("ui.login.crowded_0cfbcee3")}
 
 // Region colour tags in SERVER.INI ("<B>", "<G>", "<R>").
 const (
@@ -103,9 +105,7 @@ func NewSelectServer(env *seui.Env, g *Globals, n *Net, a Assets) *SelectServer 
 
 func (s *SelectServer) build() {
 	env := s.Env
-	if m, err := loadJPEG(s.Assets.SkinPicture("Menu", "Skins", "White", "Form_ServerList_1.jpg")); err == nil {
-		s.Background = m
-	}
+	bindSkinBackground(s, "background", s.Assets, "Form_ServerList_1.jpg", &s.Background)
 	s.SignalImg = env.Pics.Find("icon_ServerSignal")
 	s.Shown = false
 
@@ -303,7 +303,7 @@ func parseRegion(l []byte) (name []byte, color uint16, flag int) {
 func parseServer(l []byte) (name, addr []byte, ok bool) {
 	p := pos("*", l)
 	if p < 2 {
-		name = []byte("No Name")
+		name = []byte(localization.UI("ui.login.no_name_0cb7609b"))
 	} else {
 		name = copyStr(l, 1, p-1)
 	}
@@ -573,4 +573,10 @@ func loadJPEG(path string) (*surface.Surface, error) {
 		return nil, err
 	}
 	return surface.FromImage(m), nil
+}
+
+func init() {
+	localization.Register(func() {
+		signalNames = [maxSignal + 1]string{localization.UI("ui.login.offline_a1794783"), localization.UI("ui.login.good_c939327c"), localization.UI("ui.login.active_92340695"), localization.UI("ui.login.crowded_0cfbcee3")}
+	})
 }

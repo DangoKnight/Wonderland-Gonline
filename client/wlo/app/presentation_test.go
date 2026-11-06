@@ -69,7 +69,7 @@ func TestNativePresentationAndAllocation(t *testing.T) {
 	c.Inventory.Increase[0].OnClickTag(0)
 	c.Inventory.Increase[3].OnClickTag(3)
 	c.Inventory.SubmitAllocation()
-	if len(sent) != 1 || !bytes.Equal(sent[0], []byte{8, 1, 0, 2, 28, 1, 0, 33, 1, 0}) {
+	if len(sent) != 1 || !bytes.Equal(sent[0], []byte{8, 1, 0, 2, 28, 1, 0, 0, 0, 33, 1, 0, 0, 0}) {
 		t.Fatalf("allocation %x", sent)
 	}
 	c.dispatch([]byte{8, 1, 38, 1, 99, 0, 0, 0, 1, 0, 0, 0})

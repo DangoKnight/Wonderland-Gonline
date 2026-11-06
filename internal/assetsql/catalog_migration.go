@@ -10,7 +10,26 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 12
+const catalogSchemaVersion = 54
+const skillPowerSchemaVersion = 53
+const uniqueSkillPowerSchemaVersion = 54
+const nativeNoaConversationSchemaVersion = 52
+const nativeXaolanRecruitmentContinuationSchemaVersion = 51
+const nativeMapBackdropSchemaVersion = 50
+const nativeQuestPolicyRevisionSchemaVersion = 43
+const nativeQuestVisibilityRevisionSchemaVersion = 44
+const nativeQuestBackdropRevisionSchemaVersion = 45
+const nativeXaolanVisibilityRevisionSchemaVersion = 46
+const nativeXaolanBackdropRevisionSchemaVersion = 47
+const nativeEncounterBackdropRevisionSchemaVersion = 48
+const nativeSeaflowerBackdropRevisionSchemaVersion = 49
+
+// Branch compatibility: Client v30 introduced collection respawns while quest
+// v29 onward introduced independent content batches from the common v28 base.
+const clientCollectionSchemaVersion = 30
+const clientEquipmentSchemaVersion = 31
+const clientHoneycombSchemaVersion = 32
+const commonPreQuestSchemaVersion = 28
 const catalogWriteBatch = 10
 const catalogMetadataID = 1
 
@@ -43,6 +62,29 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		// Older migrations read complete skill rows through the generated model.
+		if schema.Version < skillPowerSchemaVersion {
+			if err := addSkillPowerColumns(tx); err != nil {
+				return err
+			}
+		}
+		// Client v30 and quest v30 used the same version for different features.
+		// Detect the Client lineage before adding its collection projection.
+		questVersion := schema.Version
+		if schema.Version >= clientCollectionSchemaVersion && schema.Version <= clientHoneycombSchemaVersion && tx.Migrator().HasColumn(&catalogPresence{}, "ResourceRespawns") {
+			questVersion = commonPreQuestSchemaVersion
+		}
+		// Earlier content migrations read the complete generated projection.
+		if schema.Version < 40 {
+			if err := migrateEquipLevel(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 39 {
+			if err := migrateResourceRespawns(tx); err != nil {
+				return err
+			}
 		}
 
 		// Add dimensions before older upgrades read the expanded typed item row.
@@ -355,13 +397,254 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < 13 {
+			// v13 adds the fruit machines' definitions beside existing,
+			// possibly edited, arcade machines.
+			if err := appendMissingArcades(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 14 {
+			for _, migrate := range []func(*gorm.DB) error{
+				migrateNPCRoutes, migrateMapTransitions, migrateTentToolHosts,
+				migrateTentSurfaces, migrateNPCShopDefaults, migrateNPCBuyPrices,
+				migrateTravel, migrateBoxedItems, migrateSkillEvolutions,
+				migrateEventGathering, migrateChestDefaults, migratePoisonDefaults,
+				migrateTentDefaults,
+			} {
+				if err := migrate(tx); err != nil {
+					return err
+				}
+			}
+		}
+		if schema.Version < 15 {
+			if err := migrateStory(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 16 {
+			if err := migrateRebornStoryCheckpoints(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 17 {
+			if err := migrateCaptureRestrictions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 18 {
+			if err := migratePetInitialStats(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 19 {
+			if err := migratePetFoods(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 20 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 21 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 22 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 23 {
+			if err := migrateItemNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 24 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 25 {
+			if err := migrateCollectionSpots(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 26 {
+			if err := migratePetSpecialEquipment(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 27 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 28 {
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 29 {
+			if err := migrateWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 29 {
+			if err := migrateAdditionalWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 30 {
+			if err := migrateRemainingWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 31 {
+			if err := migrateWikiQuestCompanions(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 32 {
+			if err := migrateEnabledWikiQuests(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 33 {
+			if err := migrateWikiQuestDisguises(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 34 {
+			if err := migrateWikiQuestActors(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 35 {
+			if err := migrateWikiQuestConstellations(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 36 {
+			if err := migrateWikiQuestBundles(tx); err != nil {
+				return err
+			}
+		}
+		if questVersion < 37 {
+			if err := migrateWikiQuestConditions(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 38 {
+			// Refresh reviewed names for development catalogs that already ran the
+			// original quest-only v28-v37 upgrades before the branch split.
+			if err := migrateNPCNames(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < 39 {
+			if err := migrateCollectionUsage(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestPolicyRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV43); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestVisibilityRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV44); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeQuestBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV45); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanVisibilityRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV46); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV47); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeEncounterBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV48); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeSeaflowerBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV49); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeMapBackdropSchemaVersion {
+			if err := migrateBattleBackdrops(tx); err != nil {
+				return err
+			}
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV50); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanRecruitmentContinuationSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV51); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeNoaConversationSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV52); err != nil {
+				return err
+			}
+		}
+		if schema.Version < uniqueSkillPowerSchemaVersion {
+			if err := migrateSkillPowers(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
 	if err != nil {
 		return err
 	}
+	c.Story = assets.DefaultStoryDefinitions()
+	if err := initializeEnabledWikiQuests(c); err != nil {
+		return err
+	}
+	c.Story.Rules, err = seedWikiQuests(c.Story.Rules, false)
+	if err != nil {
+		return err
+	}
+	c.Story.CompanionEquipment, err = seedPetSpecialEquipment(c.Story.CompanionEquipment, false)
+	if err != nil {
+		return err
+	}
+	c.CollectionSpots, err = defaultCollectionSpots(c)
+	if err != nil {
+		return err
+	}
+	if err := initializeItemNames(c); err != nil {
+		return err
+	}
+	if err := initializeNPCNames(c); err != nil {
+		return err
+	}
+	c.PetFoods = defaultPetFoods(c.NativeItems)
+	c.PetInitialStats, err = defaultPetInitialStats()
+	if err != nil {
+		return err
+	}
 	c.Terrains, err = importedTerrains(tx)
+	if err != nil {
+		return err
+	}
+	c.BattleBackdrops, err = importedBattleBackdrops(tx)
 	if err != nil {
 		return err
 	}
@@ -394,6 +677,54 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	if err = applyAuthoredSynthesis(tx, &c.Economy); err != nil {
+		return err
+	}
+	seedPoisonUpgrade(c)
+	c.MapTransitions, err = defaultMapTransitions()
+	if err != nil {
+		return err
+	}
+	c.TentToolHosts, err = defaultTentToolHosts()
+	if err != nil {
+		return err
+	}
+	c.ChestPropCategories, err = defaultChestPropCategories()
+	if err != nil {
+		return err
+	}
+	c.NPCShopDefaults, err = defaultNPCShopDefaults()
+	if err != nil {
+		return err
+	}
+	c.NPCBuyPrices, err = defaultNPCBuyPrices(c.NativeItems)
+	if err != nil {
+		return err
+	}
+	c.Travel, err = defaultTravel()
+	if err != nil {
+		return err
+	}
+	c.TentSurfaces, err = defaultTentSurfaces()
+	if err != nil {
+		return err
+	}
+	c.BoxedItems, err = defaultBoxedItems()
+	if err != nil {
+		return err
+	}
+	c.SkillEvolutions, err = defaultSkillEvolutions()
+	if err != nil {
+		return err
+	}
+	c.EventGathering, err = defaultEventGathering()
+	if err != nil {
+		return err
+	}
+	if err = seedNewChestDefaults(c); err != nil {
+		return err
+	}
+	initializeCollectionUsage(c)
+	if err := seedSkillPowers(c); err != nil {
 		return err
 	}
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
@@ -430,6 +761,28 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = validatePetInitialStats(c.PetInitialStats); err != nil {
+		return nil, err
+	}
+	if err = validatePetFoods(c.PetFoods); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps); err != nil {
+		return nil, err
+	}
+	for _, name := range []string{"Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "NPCShopDefaults", "NPCBuyPrices", "Travel", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering"} {
+		if err = validateDefinition(name, c); err != nil {
+			return nil, err
+		}
+	}
+	if len(c.ChestPools) > 0 {
+		if err = validateDefinition("ChestPools", c); err != nil {
+			return nil, err
+		}
+	}
 	if err = assets.ValidateInstances(c.Instances); err != nil {
 		return nil, err
 	}
@@ -437,6 +790,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = assets.ValidateTerrains(c.Terrains); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateBattleBackdrops(c.BattleBackdrops); err != nil {
 		return nil, err
 	}
 	if err = assets.ValidateArcades(c.Arcades, c.Items); err != nil {
@@ -480,3 +836,39 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 
 // SaveEditedCatalog commits the validated administrator candidate.
 func SaveEditedCatalog(tx *gorm.DB, c *assets.Catalog) error { return writeCatalog(tx, c) }
+
+// migrateCatalogDataset adds an owned root and its child tables in generated
+// parent-first order. Existing roots (including intentionally empty definitions)
+// retain their rows; defaults are written only when the root table is new.
+func migrateCatalogDataset(tx *gorm.DB, table, presence string, initialize func() error) error {
+	created := false
+	for _, model := range catalogTables() {
+		name := model.(interface{ TableName() string }).TableName()
+		if name != table && !strings.HasPrefix(name, table+"_") {
+			continue
+		}
+		if tx.Migrator().HasTable(model) {
+			continue
+		}
+		if err := tx.Migrator().CreateTable(model); err != nil {
+			return err
+		}
+		if name == table {
+			created = true
+		}
+	}
+	if created {
+		if err := initialize(); err != nil {
+			return err
+		}
+	}
+	if presence == "" {
+		return nil
+	}
+	if !tx.Migrator().HasColumn(&catalogPresence{}, presence) {
+		if err := tx.Migrator().AddColumn(&catalogPresence{}, presence); err != nil {
+			return err
+		}
+	}
+	return tx.Model(&catalogPresence{}).Where("id = ?", catalogMetadataID).Update(presence, true).Error
+}

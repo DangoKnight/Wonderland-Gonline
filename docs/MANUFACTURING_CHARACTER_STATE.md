@@ -2,34 +2,43 @@
 
 ## Native manufacturing
 
-AC64 start accepts `[64,1,bench:u8,formula:u16]`. Formula IDs retain original
-Compound2 ordinals. `Manufacturing` in assets.db supplies five ingredient pairs,
-output/count, plan, tool, duration in seconds and bag/tent destination. Invalid
-native header rows and recipes referencing absent WLRI items are filtered offline.
-Admin can edit these typed definitions. Runtime never reads Compound2 or JSON.
+Native AC64 start accepts `[64,1,bench:u16,formula:u16,batch:u8?]`.
+An absent or zero batch means one. The older five-byte start with a byte bench
+remains a compatibility adapter. Formula IDs retain Compound2 ordinals; typed
+`Manufacturing` definitions supply the five ingredient pairs, plan, tool, output
+and duration. Runtime reads SQL. Invalid header rows and unavailable item
+references are filtered offline.
 
-Start requires the character's own tent, the matching placed bench or owned bag
-tool, and any required plan. Plans/tools are retained. SQL debits all ingredients,
-including repeated IDs, and creates one durable job per character atomically.
-The transaction checks output capacity before accepting the job. Notifications
-follow the commit. Visitors cannot manufacture using another character's tent.
+Native starts require the owner's tent and the selected placed tool or attached
+appliance. Native bench indices are one-based; zero addresses the first bench for
+compatibility. The older adapter also permits its owned bag-tool workflow.
+Plans and tools are retained. Ingredient multiplication uses wide integers;
+output counts above 255 and total durations over seven days are rejected.
+Repeated ingredients, exact consumed instances and one job per character are
+stored atomically. Start replies describe the batch and remaining seconds.
 
-AC64 continue/stop accept the native header-only requests or the source layout
-with a bench byte. Stop pauses the job and retains spent materials as pending
-output; continue resumes the remaining time. Repeated start never spends twice,
-and repeated continue never extends an active timer. Active deadlines survive
-restart and elapsed offline time; delivery occurs when the character is connected
-and ready. Completion grants the bag output or places tent furniture, then removes
-the job in the same transaction. A container that fills during manufacture retains
-the output and pauses delivery: make space and continue. A failed SQL write retains
-the job for retry. There is no periodic whole-character save for these operations.
-Buffered walking is merged back into the session after resource transactions.
+Native stop cancels the job and refunds every consumed instance, preserving its
+damage and metadata. Cancellation rolls back if the whole refund cannot fit.
+The old five-byte workflow retains its pause/resume behavior. Native continue
+queries an active job or resumes retained output. Deadlines and material escrow
+survive restart; elapsed offline time counts toward completion. A full bag or
+occupied tent retains the job for retry, without spending ingredients again.
 
-The reference ignored build time. Imported `build_time` is interpreted as minutes
-and converted to seconds; the start reply sends remaining seconds. These units,
-the native timer animation and replay need aLogin acceptance. Portable tool
-exceptions follow the source. Weapons/consumables go to the bag; furniture goes
-to the tent. Floors remain governed by existing placement rules.
+Completion commits output and job removal together. Weapons, consumables and
+one-cell appliances go to the bag. Larger appliances/decorations find an available
+owned tent position. Wallpaper/floor recipes apply one surface and deliver spare
+copies to the bag. SQL failures retain the recoverable job. Buffered walking is
+merged back into the session after resource transactions.
+
+Furniture placement prefers the desktop port's (42,42) anchor, then searches
+every allowed cell on the selected floor, including enlarged/grand tent rows.
+Both native and older manufacturing requests use the same collision checks.
+Each batch piece reserves its footprint before the next piece is placed; if the
+whole batch cannot fit, all output inserts roll back and the job remains for
+retry. No overlapping fallback is used when the floor is full.
+
+Native formulas store build time in minutes; offline conversion produces seconds.
+Timer animation and native-client acceptance are tracked in [TESTING.md](TESTING.md).
 
 ## Two-input recipes and synthesis
 
@@ -39,10 +48,11 @@ workbench-name matching. `Economy.Manufacturing` recipes support optional
 attempt consumes the recipe materials and fee without an output. Successful
 output overflow, missing materials or insufficient gold rolls the transaction back.
 
-Offline conversion reads authored alchemy recipe chances/fees into
-`Economy.Synthesis.Rates`. Existing customized rates survive upgrades and repeat
-conversion. `/compound` debits fee and ingredients and grants the selected result
-or charcoal atomically. Native deterministic AC23/AC40 paths retain their rules.
+Offline conversion preserves authored alchemy recipe chances/fees in
+`Economy.Synthesis.Rates` for provenance. They no longer control gameplay.
+AC23:14/87/101, AC40 and `/compound` share the rank/base engine, including books,
+learned tiers, catastrophe outcomes and transactional proficiency. They do not
+charge the legacy synthesis fee. See [compounding](COMPOUNDING.md).
 
 AC37 socket requests return failure without consuming items. Reference ForgeGem
 never improves equipment, and its hardcoded gem IDs identify WLRI oil/fuel. Real
@@ -62,22 +72,28 @@ values; hotel record potential semantics remain pending native verification.
 Actual `Job` selects class growth. `RebornJob` remains distinct AC66 metadata.
 Native inventory potential use is AC23:126; free AC68:1 training remains rejected.
 See [Potential Pills](NATIVE_COMMANDS.md#potential-pills) for funded consumption,
-stat bonuses and the pending level-dependent normal/golden success rates.
+stat bonuses and the implemented level-dependent normal/golden success rates.
+Super Pills guarantee advancement below the potential cap.
 
-## GM rebirth
+## Character rebirth
 
-`/reborn <Killer|Warrior|Knight|Wit|Priest|Seer>` requires GM permission, idle
-ownership, level 100 or greater, and no previous rebirth. SQL grants the class cape,
-sets actual class/rebirth, resets level to 1 and EXP to zero, and refills vitals.
-Allocated attributes and stat points are retained as in the reference. A full
-bag rolls everything back. Repeated requests cannot grant another cape. Appearance,
-base stats, EXP, combat stats and the source aura are refreshed after commit.
+Native EVE service 10 opens AC79:1. The server accepts selection only after
+opening the form; level 100 and no prior rebirth are required. Rebirth deducts
+99 levels (100 → 1, 120 → 21, 199 → 100), switches to the reborn EXP curve,
+preserves allocated attributes/stat points and grants the class skill. Both
+progression curves cap at level 199. Stat 35 synchronizes the true level; the
+native displayed EXP is capped separately without reducing durable EXP.
 
-`RebornClasses` in assets.db controls enabled classes and cape mappings. Embedded
-initial defaults in `internal/assetsql/reborn_defaults.json` select the first
-WLRI cape variant per class (25231, 25281, 25331, 25381, 25431, 25481). These are
-authored defaults replacing the reference's incorrect glove IDs. They can be
-changed through Admin. No class skill is granted: the source implements none.
+GM `/reborn <Killer|Warrior|Knight|Wit|Priest|Seer|1-6> [force]` uses the same
+transaction; `force` skips only the level requirement. Rebirth no longer grants
+a cape or needs free bag space. Class skills are Murder 15241, Holy Shield 15240,
+Knight's Spirit 15242, Curse 15243, Rest 15244 and Foretell 15245.
+
+AC79:2 changes an existing reborn class using a Transfer Mirror (34018) and the
+selected class's configured cape. SQL validates both owned unlocked slots,
+consumes one mirror, retains the cape and learns the new skill atomically.
+`RebornClasses` in assets.db controls enabled classes and cape mappings. Existing
+cape mappings and administrator edits remain unchanged by the asset upgrade.
 
 Compiled class bonuses in `internal/game/reborn.go` multiply rounded innate
 stats by 1.1 before equipment: Killer ATK/SPD, Warrior ATK/DEF, Knight DEF/SPD,
@@ -89,10 +105,13 @@ and class display still need aLogin verification.
 ## Tent metadata and remaining limits
 
 Both floor/wallpaper pairs persist in wonderland.db. Tent snapshots replay each
-present peer's nonzero pose through AC32:2. Upper-floor access, upgrade purchases,
-funded training, verified sockets and class skills remain pending source systems.
+present peer's nonzero pose through AC32:2. Upgrade purchases and verified sockets remain pending. Class skills are learned
+from the selected rebirth class. Existing upgraded tents can use their second
+floor; this does not implement native AC61 upgrade operations. Funded Potential
+Pill training is implemented; native mercenary eligibility still needs verification.
 Optional legacy SQLite import still rejects unsupported metadata explicitly;
 these additions do not silently reinterpret old string-packed fields.
 
-Upgrade using [the verified database-copy procedure](ASSET_DATABASE.md). Gameplay
-schema v15 and asset schema v9 are required. Installation databases are not reset.
+Upgrade using [the verified database upgrade procedure](ASSET_DATABASE.md). Gameplay
+schema v18 and asset schema v16 are required by the current server; this subsystem
+was introduced in gameplay v14 and asset v9. Installation databases are not reset.

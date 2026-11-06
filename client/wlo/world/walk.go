@@ -231,6 +231,8 @@ func (s *Scene) search(start, goal image.Point) []image.Point {
 type Walker struct {
 	walk  *walkState
 	OnLeg func(facing, x, y int)
+	// NPC AC22:2 supplies a speed; players and followers use walkSpeed.
+	pixelsPerMillisecond float64
 }
 
 // Start begins a walk of p along path.
@@ -276,7 +278,11 @@ func (k *Walker) Step(p *Player, now time.Time) {
 	if ws == nil {
 		return
 	}
-	budget := walkSpeed * float64(now.Sub(ws.at).Milliseconds())
+	speed := k.pixelsPerMillisecond
+	if speed == 0 {
+		speed = walkSpeed
+	}
+	budget := speed * float64(now.Sub(ws.at).Milliseconds())
 	if budget <= 0 {
 		return
 	}
@@ -306,6 +312,9 @@ func (k *Walker) Step(p *Player, now time.Time) {
 // WalkTo starts the player walking toward a point on the scene (scene
 // coordinates). It reports whether a path was found.
 func (w *World) WalkTo(x, y int, now time.Time) bool {
+	if w.FollowingTeam() {
+		return false
+	}
 	path := w.Scene.Plan(w.Player.X, w.Player.Y, x, y)
 	if path == nil {
 		return false
@@ -321,17 +330,32 @@ func (w *World) StopWalk() { w.walker.Stop(&w.Player) }
 // Walking reports whether the player is moving.
 func (w *World) Walking() bool { return w.walker.Walking() }
 
-// Step moves the player and the peers.
+// Step moves all session-owned actors, including server-driven roaming NPCs.
 func (w *World) Step(now time.Time) {
+	if w.TeamFollowingPaused {
+		for _, id := range w.TeamMembers(w.Player.ID) {
+			w.stopTeamFollower(id)
+		}
+	}
 	w.walker.Step(&w.Player, now)
 	for _, p := range w.Peers {
 		p.Walker.Step(&p.Player, now)
 	}
+	for _, n := range w.NPCs {
+		n.stepWalk(now)
+	}
+	w.stepTeamFollowing(now)
 	for owner, companion := range w.Companions {
+		if w.inTeam(owner) {
+			companion.initialized = false
+			companion.walker.Stop(&companion.position)
+			continue
+		}
 		if p := w.companionOwner(owner); p != nil {
 			companion.step(p, now)
 		}
 	}
+	w.stepCamera(now)
 }
 
 // Water follows the native shore transition checks in FUN_0041897c.
@@ -386,6 +410,28 @@ func (s *Scene) WaterEdge(x, y int) bool {
 	_, ok := s.ShorePoint(x, y, true)
 	return ok
 }
+
+// DirectWaterEntry excludes the player's current land cell and checks every
+// subsequent cell on the click ray. Land or an obstruction keeps this a walk.
+func (s *Scene) DirectWaterEntry(fromX, fromY, toX, toY int) (image.Point, bool) {
+	start, goal := cellOf(fromX, fromY), cellOf(toX, toY)
+	dx, dy := goal.X-start.X, goal.Y-start.Y
+	n := max(abs(dx), abs(dy))
+	if n == 0 || n >= walkReach {
+		return image.Point{}, false
+	}
+	var entry image.Point
+	for i := 1; i <= n; i++ {
+		at := waypoint(image.Pt(start.X+roundDiv(dx*i, n), start.Y+roundDiv(dy*i, n)))
+		if !s.Water(at.X, at.Y) {
+			return image.Point{}, false
+		}
+		if i == 1 {
+			entry = at
+		}
+	}
+	return entry, true
+}
 func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
 	water := *s
 	water.WaterTravel = true
@@ -394,8 +440,11 @@ func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
 
 // Relocate resets interpolated walking before a native shore transition.
 func (w *World) Relocate(point image.Point) {
+	w.resetTeamTrail(w.Player.ID)
 	w.StopWalk()
+	w.Marker.Hide()
 	w.Player.X, w.Player.Y = point.X, point.Y
+	w.followCamera.ready = false
 }
 
 // SameCell compares points on the native walk grid.

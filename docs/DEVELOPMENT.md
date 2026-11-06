@@ -38,21 +38,37 @@ are outside this server persistence policy.
 
 Executable rules belong in code. Compiled growth formulas and their coefficients
 remain in `internal/game/growth_parameters.go`; changing them requires a rebuild.
+Players, pets and enemies share `game.InnateCombat` for derived combat stats;
+enemy HP/SP use stored NPC values, with explicit encounter HP overrides.
+Resolve NPC element and base attributes from the asset catalog rather than
+copying definitions into pet state.
+See [combat stats](COMBAT_STATS.md) for encounter overrides and fallbacks.
 Game content definitions belong in `assets.db`. Preserve the startup-only
-`pet_growth_formula` selector and `combo_damage_per_participant` switch as server
+`pet_growth_formula` and `battle_exp_formula` selectors, `battle_gold_enabled`
+switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Gameplay schema v17 stores character state in typed tables and owned child rows.
-v17 separates Party Invites from Joining Battle, preserving earlier invitation
-restrictions during upgrade. Structured asset schema v12 stores runtime definitions
+Gameplay schema v21 stores character state in typed tables and owned child rows.
+v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
+Claims and rewards commit together; keys identify the resource kind, map and source,
+independently of the character and native event timer ID. Per-source cooldown
+durations belong in the assets database's `ResourceRespawns` definitions.
+v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
+v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
+escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
+Battle while preserving earlier invitation restrictions. Structured asset schema v54 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
-runtime and administration must not consult them. Use the offline copy procedure
+runtime and administration must not consult them. Use the offline upgrade procedure
 in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
 Regenerate asset models after changing catalog types with
 `go run ./tools/asset-schema-generator`, bump the structured schema version and
 provide an explicit preserving migration for installations using earlier versions.
+Keep content definitions, default initialization, validation and migrations with
+the owning feature. Migration runners coordinate schema versions and transaction
+boundaries; feature names identify the individual steps. Record
+reference repository revisions and import evidence in documentation.
 
 ## Transaction boundaries and session checkpoints
 
@@ -98,23 +114,40 @@ before enabling buffered persistence. A global world lock must not be held throu
 an unbounded batch of SQL writes. Any asynchronous saver needs immutable snapshots,
 per-session ordering and protection against logout/reconnect races.
 
-**Current implementation:** ordinary walking changes the session in memory.
+**Current implementation:** ordinary walking and resting HP/SP recovery change
+the session in memory. See [resting recovery](ITEMS_PLAYER_STATE.md#resting-recovery).
 `character_save_seconds` selects the startup checkpoint interval (default 30,
-accepted 1–3600 seconds). Clean sessions skip SQL entirely. Dirty ordinary walking
-uses guarded X/Y updates without rewriting inventory/pet/quest child rows; other
-pending state retains full-checkpoint conflict validation. Purchases and other
+accepted 1–3600 seconds). Clean sessions skip SQL entirely. Walking and resting
+use narrow X/Y/HP/SP updates guarded by the saved map, position and vitals,
+without rewriting inventory/pet/quest child rows; other pending state retains
+full-checkpoint conflict validation. Purchases and other
 SQL-returned results preserve pending walking when the transaction leaves the
-saved position unchanged. Warps and recoverable tent returns remain immediate.
+saved position unchanged. Buffered recovery is retained per vital when the
+transaction leaves that vital unchanged, capped to the adopted maximum.
+The active following pet recovers on the same resting tick. Its HP/SP are also
+buffered: checkpoints update only those columns in the owned party-pet row,
+guarded by pet identity and checkpointed vitals, in the same transaction as
+the character state. Pet recovery survives unrelated SQL results per vital;
+explicit vital changes and pet removal/replacement take precedence.
+Warps and recoverable tent returns remain immediate.
 Disconnect and graceful shutdown attempt a final save; failures retain the
 checkpoint baseline and are logged. Gathering remains on the independent
 one-second world tick. Vehicle wear/consumption can commit during movement and
 is deliberately not deferred.
 
+Combat disconnects commit resolved player/pet vitals and active-pet knockout/amity
+consequences before the final session checkpoint. Both delivery modes use the
+whole calculated round, including animations not yet played. Withdrawn fighters
+cannot act, defend or be targeted in later rounds; disconnect is not escape.
+Already committed final results are not settled twice. Failed writes retain an
+immutable pending snapshot for the final-save retry and do not publish roster
+changes or advance the checkpoint. See [combat transport](COMBAT_TRANSPORT.md).
+
 The saver currently serializes checkpoints under `worldMu`, with a bounded
 five-second batch context. This reduces per-packet SQL work but does not remove
 the global world lock or establish load/soak acceptance. Under healthy saves,
-a crash can lose up to one interval of ordinary movement; failed saves can extend
-that window. Runtime interval changes require restart. Tests cover no per-packet
+a crash can lose up to one interval of movement and resting recovery; failed
+saves can extend that window. Runtime interval changes require restart. Tests cover no per-packet
 writes, transaction-result merging, narrow updates, failure/retry, stale warps,
 ownership/deletion, disconnects and concurrent sessions.
 
@@ -150,7 +183,7 @@ package. Reuse an existing definition when the meaning is the same.
 
 ### Naming and values
 
-1. Name the meaning and namespace: `CommandTrade`, `TradeConfirm`, `MaxGold`,
+1. Name the meaning and namespace: `CommandTrade`, `TradeDecision`, `MaxGold`,
    `SecondCharacterIDOffset`, `npcInteractionRangePixels`.
 2. Keep separate definitions for equal values with different meanings. A bag
    capacity and an item stack limit happen to both be 50. Incoming and outgoing
@@ -184,13 +217,11 @@ Explain semantic exceptions in nearby comments when their role is unclear.
 Prefer named packet builders when an entire layout is repeated or difficult to
 read. Avoid inventing wrappers for every one-line packet just to hide its bytes.
 
-During development, run only tests relevant to the modified modules and affected
-integrations. Use focused test selections within large packages; protocol or event
-changes should include their relevant native-data compatibility tests. Use the
-race detector when changing concurrent behavior. Reserve full test-suite runs for
-pre-commit validation. Run formatting, lint and build checks appropriate to the
-change. Review namespaces as well as values: byte-for-byte tests cannot detect a
-misleading name.
+Follow [test selection and correctness](TESTING.md#test-selection-and-correctness):
+use focused affected tests during development, the race detector for concurrency,
+and full server suites only before a push; commits use focused affected checks.
+Commands, required environments and recorded results belong in TESTING.md. Review namespaces as well as values:
+byte-for-byte tests cannot detect a misleading name.
 
 ## Editable sprite assets
 
@@ -221,12 +252,9 @@ which SQL fields are authoritative when adding a projection, and validate before
 publishing the startup snapshot. Keep file decoders for offline tools and
 independent compatibility tests.
 
-Run relevant gameplay tests against imported assets with
-`WONDERLAND_TEST_ASSETS_DB=var/assets.db go test ./internal/<package> -run <tests>`.
-Add `-race` for concurrent behavior. At pre-commit validation, run the full suite
-with `WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race ./...`. Reference native
-format tests still accept `WONDERLAND_TEST_DATA` and
-`WONDERLAND_TEST_CLIENT_DATA`.
+Use [test data and opt-ins](TESTING.md#test-data-and-opt-ins) for SQL/native inputs
+and absolute paths, and [pre-push server validation](TESTING.md#pre-push-server-validation)
+for the separate server/client suites and installed-data timeout.
 
 ## Migration source inventory
 
@@ -273,22 +301,27 @@ See [data/pictures/README.md](../data/pictures/README.md).
 ## Original asset inputs and decompiled outputs
 
 Original client assets come from the WLRI / Wonderland Rhode Island installation.
-The external-media regeneration/import procedure accepts
-`regenerate.py --client <installation-root>` and needs no private-server checkout. Static
-server-only tables already have tracked JSON exports; complete offline game-data
-regeneration remains `export.py --client <client-data> --server <private-server>`.
+The client table/media regeneration procedure accepts
+`regenerate.py --client <installation-root>` and needs no private-server checkout.
+Tracked server-only JSON exports supply the additional definitions for a complete
+SQL import tree. To re-export those from their original source too, use
+`export.py --client <client-data> --server <private-server>`.
 Keep original source assets, indexes and decryption inputs (including `aLogin.exe`)
 in their original projects. Exclude database-path overrides from asset export/import.
-Treat every asset and manifest in `data/` as a derived output. Never require
-existing `data/` assets or manifests to regenerate those outputs. Temporary
+Treat client assets and manifests in `data/` as derived outputs. Never require
+previously generated client data or manifests to regenerate those outputs.
+Retained `data/server/` definitions are versioned inputs and never supply native
+decryption keys. Temporary
 intermediates may be created during an export and must be cleaned up afterward.
 Do not retain decoded JMA files in `data/`. Preserve complete decoded bytes as
 zlib-compressed Base64 in `sprites.json` for palette indices and verification.
 PNG regeneration must start from fresh sibling-source decryption.
 
 Follow [ASSET_IMPORT.md](ASSET_IMPORT.md) to restore missing ignored payloads.
-Use `python3 tools/data_export/regenerate.py --output var/asset-import` for a fresh
+Use `python3 tools/data_export/regenerate.py --client <installation-root> --output var/asset-import` for a fresh
 source-only export of audio, sprites, pictures and remaining client media.
+Extraction instructions must use portable example paths and an explicit source;
+do not infer a developer's installation name or sibling-directory layout.
 Install the Python dependencies in `tools/data_export/requirements.txt` and make
 FFmpeg available. Media metadata documents unresolved source content;
 check it before claiming complete decryption. Run `verify_media.py` after a fresh
@@ -454,14 +487,12 @@ effects in order and validate the final list, including trigger consistency.
 Identifiers must be unique; missing or duplicate references fail startup. The
 SQL loader clones resolved effects so skills do not share mutable modifier lists.
 
-The current compatibility importer indexes definitions under
-`skill_effects.json/records`; the
-`asset_skill_effects` SQL view exposes IDs and names. Indexed SQL rows are
-authoritative for definitions and skill references. The server reads only SQL.
+Typed `catalog_skill_effects*` rows own definitions and `catalog_skills*` rows
+own skill references. Use the `SkillEffects` and `Skills` administration datasets;
+legacy `asset_skill_effects` views are provenance and may be stale after edits.
 Every SQL skill must explicitly provide `effects` or `effect_refs`, including an
-empty list when it has no effects. Missing metadata fails startup with a rebuild
-instruction; there is no native-code inference or embedded policy fallback in
-the runtime loader.
+empty list when it has no effects. The loader validates and resolves the typed
+metadata; it does not infer behavior from native codes or embedded policies.
 
 Ability-specific conversion mappings and tuning values live in
 `internal/assets/native_effect_rules.json`, outside the derived `data/` tree.
@@ -507,10 +538,12 @@ Messages allow up to 60 bytes of native encoded text; channel commands allow
 ASCII control-bearing messages. Public channel commands run before the GM
 authorization gate; existing administrative commands retain that gate.
 
-Additional channels and feedback use the verified AC2:16 native head-banner
-format with explicit channel/name text. Dedicated native channel receive layouts,
-guild membership and client channel controls require separate migration work.
-Keep their framing documented rather than inventing unverified wire codes.
+World, local, whisper and team chat use native AC2:1/2/3/5 layouts; guild
+membership is SQL-authoritative and AC2:6 or `/guild` reaches its online members.
+World/local exclude sender echo for native sends; team/guild and whispers include
+the appropriate sender copy. GM announcements use AC2:4. Feedback/errors use
+AC2:16 head banners. Go-client channel controls and colors are implemented;
+the separate guild-management UI remains pending.
 
 ## Pet rebirth
 
@@ -534,10 +567,11 @@ its own compatibility tests. Normalize current vitals without refilling, persist
 first, then emit progression and the success receipt. Invalid selectors and
 exhausted budgets receive failure receipts without spending points.
 
-Potential training remains unavailable until item consumption, combat behavior
-and native display are verified. The reference's free increment and stat-37
-level-minus-one display do not establish these semantics. Do not add a second
-point budget or invent pill IDs/costs to fill this gap.
+Funded potential training uses native AC23:126 for normal, golden and Super
+Potential Pills; see [Potential Pill consumption](#potential-pill-consumption).
+Keep it separate from manual stat allocation. The reference's free AC68 increment
+remains rejected, and stat37 must not encode potential. Player/pet potential is
+typed durable state, with compiled success rates and native attribute bonuses.
 
 ## Battle-pet feeding
 
@@ -552,7 +586,7 @@ zero counts and empty stacks before indexing or mutating state.
 
 ## Inbound command routing
 
-Register each inbound opcode once in `internal/server/command_registry.go`, with
+Register each inbound opcode once in `internal/server/commands.go`, with
 its handler and `protocol.CommandPolicy`. The zero policy grants no world or
 interaction exceptions. Use `IsWorldCommand` and `IsDeleteCharacter` for semantic
 classification; classification does not validate payloads, authorize accounts,
@@ -570,14 +604,20 @@ handler. Tests retain independent raw opcode tables to verify routing parity.
 
 Use the gameplay store's `SendTextMail` transaction for AC14:1 text mail. Verify
 sender account ownership and recipient existence before acknowledging acceptance.
-Persist native text bytes losslessly; deliveries have a one-byte string length,
-so reject content above 255 bytes. Line breaks and tabs are allowed. Preserve the
+Persist native text bytes losslessly and reject content above 255 bytes.
+Deliveries carry the text as the rest of the packet without a length byte:
+aLogin reads everything after the date as the letter (case 0xe/1 at 0x2e29cc). Line breaks and tabs are allowed. Preserve the
 ignored native type byte without assigning parcel or attachment semantics.
 Use UTC OLE Automation timestamps in delivery packets.
 
 Deliver pending messages only after the recipient's map snapshot is complete.
-Hold `worldMu` to serialize delivery with logout and map transitions. Mark each
-message delivered after its successful socket write; failed writes leave it queued.
+Hold `worldMu` to serialize queue admission with logout and map transitions.
+Mark each message delivered only after observing its successful socket-write
+receipt; queue acceptance is not delivery. Failed writes leave it queued. The
+mail receipt worker retries failed SQL markers without sending the same live
+notification twice, and continues subsequent batches only while the recipient
+is ready. Disconnect cleanup observes completed receipts before dropping the
+session. See [outgoing networking](#outgoing-networking).
 There is no native receipt acknowledgment, so delivery is at least once across a
 crash between writing and marking. Keep recipient failures isolated from senders.
 Foreign keys cascade mail when either character is deleted, preventing correspondence
@@ -602,21 +642,39 @@ acceptance separate from source and synthetic-packet verification.
 
 ## Bank currency
 
-Keep bank and carried gold separate in `game.Character`. Use
+Keep bank and carried gold separate in `game.Character`. Follow
 `DepositGoldToBank` and `WithdrawGoldFromBank` for currency movement: reject zero,
 insufficient funds, native uint32 bank overflow and transfers exceeding `MaxGold`.
 Reject before changing either balance so their combined total stays constant.
-The existing character transaction persists both balances; do not introduce a
-second bank table or a separate save. Older JSON states default to zero bank gold.
+Both counter and ATM transfers use `Store.TransferBankGold`: one conditional SQL
+update rechecks character ownership, durable funds and both caps, then reads back
+both balances in the same transaction. Update only those two state columns; do
+not checkpoint pending walking, recovery, pets or inventory. Refresh only those
+session/baseline currency fields after commit. Do not introduce a second bank
+table or a separate save. Older JSON states default to zero bank gold.
 
 Publish AC26:4 wallet refresh and native AC45 balances only after commit. Receipt
 write failures cannot undo a durable transfer. Keep bank operations inside the
 shared world/trade gates and scripted interaction ownership. PIN and character
 transfer reference handlers contain no working behavior; retain explicit
-unavailable responses until verified semantics exist. Do not infer an ATM NPC
-service operand from unused numeric slots or route deposits through AC29's unsafe
-legacy item-storage code. Keep actual-client activation and packet acceptance
-separate from synthetic protocol verification.
+unavailable responses until verified semantics exist. Keep actual-client
+activation and packet acceptance separate from synthetic protocol verification.
+
+The bank counter (event service 6) opens with AC29:5 followed by AC29:4 carrying
+the account balance. The native form then sends AC29:2 to deposit and AC29:1 to
+withdraw, both with the amount as a U32, and keeps an in-flight flag that only a
+completion clears: AC29:8 after a deposit and AC29:7 after a withdrawal. Answer
+an accepted operation with AC26:4, AC29:4 and that completion; answer a rejected
+amount with AC29:3, the unchanged AC29:4 and the same completion so the form
+unlocks. Clinics use event service 7. The AC45 subcommands remain the balance
+and ATM query/receipt layout, but the counter's own currency path is AC29.
+
+Queue a scripted bank opening on its owning event, with the character identity.
+`finishEvent` sends the movement release/resume before opening the bank; it must
+work without an extra acknowledgement of that resume. Cancellation, replacement,
+map changes and character handoff discard the old intent. With no active event,
+ignore trailing AC20:6 acknowledgements at any latency. Never answer an idle ACK
+with another resume or use a wall-clock debounce to hide that protocol loop.
 
 ## Native mall checkout
 
@@ -628,8 +686,10 @@ Use numeric fallback names for unresolved modes.
 
 This handshake must not refresh catalogs, mall settings or status, which can clear
 the selected cart. It spends no points and grants no inventory. Keep checkout in
-the shared world gates; trade may allow this read-only query while the eventual
-purchase retains its mutation gate. Balance read failures cannot publish success
+the shared world gates; trade and running minigames may allow this read-only
+query while the eventual purchase retains its mutation gate. The fruit machines
+(sport kinds 11, 12 and 14) send it from their constructor, so a minigame gate
+would leave them without a balance. Balance read failures cannot publish success
 or overwrite the session cache. Preserve independent raw resume bytes and tests
 that submit the existing cart after the query.
 
@@ -641,11 +701,14 @@ weights totaling 10,000 and quantities one to 255. Native pack IDs provide only
 fallback recognition of unavailable legacy packs. Lucky Pack 34333 remains
 withdrawn. The strict offline validator requires every item definition.
 
-Runtime loading validates structural correctness across the whole table first;
-malformed configuration fails startup. Missing item definitions disable the
-entire affected pool and produce an explicit diagnostic. Keep other complete
-pools available. Never drop unavailable rewards or redistribute their weights.
-Remember disabled configured pack IDs for item use and mall filtering.
+The offline compatibility importer validates the whole authored table before
+selecting available pools; malformed definitions fail import. Missing item
+definitions disable the entire affected pool with an explicit diagnostic while
+other complete pools remain available. The typed runtime catalog loads that
+projection, including unavailable pack IDs and diagnostics. The `GachaPacks`
+editor validates complete pools against the current item catalog. Never drop
+unavailable rewards or redistribute their weights; keep disabled configured IDs
+recognizable for item use and mall filtering.
 
 Runtime uses typed `catalog_gacha_packs` and ordered child reward rows.
 Use the `GachaPacks` administration dataset; legacy import views are provenance.
@@ -699,10 +762,11 @@ require separately verified semantics.
 
 ## Periodic character checkpoints
 
-Gameplay mutations must still commit before success packets. The one-second
-server autosave worker is an additional checkpoint for pending session changes,
-with a final checkpoint on disconnect. It uses a cloned baseline and the Store's
-transactional `AutosaveCharacter` comparison. Never replace this with an
+Gameplay mutations must still commit before success packets. The server autosave
+worker checkpoints dirty recoverable session fields at `character_save_seconds`
+(default 30 seconds), with final attempts on disconnect and graceful shutdown.
+The checkpoint uses a cloned baseline and the Store's transactional
+`AutosaveCharacter` comparison; the one-second world/gathering ticker is separate. Never replace this with an
 unconditional session snapshot write: stale caches could undo rewards or recreate
 state after deletion. A conflict leaves durable state and the baseline unchanged;
 resolve conflicting mutations through the subsystem that owns them. Already saved
@@ -819,14 +883,15 @@ must never select or authenticate a character. Do not introduce a
 socket transfer/token protocol without native evidence: the reference queues
 its existing authenticated connection into WorldServer.
 
-The current optional `quest_visibility.json` compatibility interface stores an
-authored SQL document with
-`schema_version: 1` and ordered `value` rows. Preserve reference registration
-order: completed quest despawns precede quest spawns; active-step despawns precede
-step spawns. Spawn lists own visibility even when inactive. Native story/party
-and explicit administrator visibility retain their earlier precedence. Rebuild
-or `/reload quests` publishes a fresh immutable collection; no runtime file
-fallback is allowed. The reference loader has no populated lists to extract.
+The optional `QuestVisibility` administration dataset stores ordered typed
+`catalog_quest_visibility*` rows. Definition API payloads contain the current
+version and a `value` array, not a filename-based JSON document. Preserve reference
+registration order: completed quest despawns precede quest spawns; active-step
+despawns precede step spawns. Spawn lists own visibility even when inactive.
+Native story/party and explicit administrator visibility retain their earlier
+precedence. Catalog publication or `/reload quests` loads a fresh immutable
+collection; no runtime file fallback is allowed. The reference loader has no
+populated lists to extract. See [quest actor visibility](ADMINISTRATION.md#optional-quest-actor-visibility).
 
 ## Combat sides, AI and trial content
 
@@ -841,8 +906,8 @@ fallback is allowed. The reference loader has no populated lists to extract.
   ability IDs/names out of buff/debuff decisions. Healing retains the existing
   name-based compatibility classification. No new ability-specific exception
   belongs in the AI.
-- Palace definitions currently use operator-authored SQL rows through the
-  `combat_trials.json` compatibility interface.
+- Palace definitions use operator-authored typed SQL rows through the
+  `CombatTrials` administration dataset.
   They are not decrypted external assets and must not be generated into `data/`.
   Validate all identities against the SQL catalog and freeze the definition for
   the battle. The C# stage placeholders are invalid for WLRI; do not restore
@@ -861,11 +926,15 @@ Terrain cells are server geometry stored as BLOBs, not image payloads. Schema v5
 projects imported Ground.MMG rows during explicit offline migration. Preserve
 existing typed edits and reject malformed geometry transactionally.
 
-AC6 announces a walking leg destination before animation completes; validate
-the straight cell segment without imposing a distance or elapsed-speed cap.
-Reject collisions before persistence, trade cancellation, encounter progress or
-vehicle wear; send the existing AC7 position correction instead of disconnecting.
-A blocked or out-of-bounds saved spawn may recover to a valid destination.
+Native 15-byte AC6 packets announce a destination before animation completes;
+validate that endpoint against terrain/bounds without treating the previous
+announced destination as the current rendered position. Rejected native endpoints
+are ignored, avoiding an AC7 teleport during a walk. Short compatibility packets
+retain straight-segment validation and AC7 correction. Rejection precedes dirty
+state, trade cancellation, encounter progress and vehicle wear. Impose no elapsed
+speed/distance cap. A blocked saved spawn may recover to a valid destination;
+AC6:2 stop reports update the stopped position without another encounter/wear step.
+The eight native movement-check bytes remain opaque.
 Validated active item vehicles retain native water/air travel within scene bounds;
 land collision bits are not a vehicle capability table. Missing grids preserve
 legacy movement, without falling back to files or fabricated geometry.
@@ -905,8 +974,12 @@ Hostile bounded, random roaming and patrol actors search for the nearest eligibl
 player every three seconds, within 200 pixels of their current position. Bounded
 and random roaming actors acquire and chase players only inside their fixed
 areas. Pathless patrols use the random roaming area; authored patrols may pursue
-nearby players throughout their scene. Existing town restrictions still prevent
-random roaming there. Cached targets are revalidated each tick and discarded as
+nearby players throughout their scene. Town restrictions prevent incidental
+random roaming but must not suppress explicitly authored mobile field enemies.
+Identify these by field flag 5, movement behaviors 2–5 and a linked native
+battle-start action, regardless of the event header or monster template range.
+Cache this derived classification with the immutable map and rebuild it on reload.
+Cached targets are revalidated each tick and discarded as
 soon as they become ineligible or leave the area or detection radius. Pursuit uses
 legs of at most 100 pixels. Patrol cursors pause while chasing and resume afterward.
 Keep the chosen player while eligible, even when a nearer player appears. A
@@ -1028,7 +1101,7 @@ with the rank/base model documented in [COMPOUNDING.md](COMPOUNDING.md).
 Its approved probability curves are compiled in `internal/game/compounding_policy.go`;
 all inventory consumption/output/proficiency must commit together from fresh SQL
 state. Invalidate the derived alchemy candidate index after catalog replacement.
-See [focused verification](PORTING.md#focused-migration-verification--2026-10-04).
+See [focused verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
 
 ## Inventory footprints
 
@@ -1050,7 +1123,7 @@ the typed sizes exclusively. See [Items and Player State](ITEMS_PLAYER_STATE.md)
 
 ## Live legacy-client acceptance fixtures
 
-Use [LIVE_TESTING.md](LIVE_TESTING.md) and `cmd/live-test` to prepare a fresh
+Use [native-client acceptance](TESTING.md#native-client-acceptance) and `cmd/live-test` to prepare a fresh
 isolated gameplay database with scenario-specific characters. Load assets
 read-only from SQL; never alter the regular gameplay database or active sessions
 for fixture setup. Generated credentials and startup config belong under ignored
@@ -1078,6 +1151,39 @@ unqualified stat-tree skills; a golden failure retains potential. Consume one
 pill on either outcome, but none on a rejected request or failed persistence. See [native Potential Pills](NATIVE_COMMANDS.md#potential-pills).
 
 ## Client build and session ownership
+
+Client-derived exports under `data/` and generated client resource manifests/
+dimension baselines remain local and ignored, including JSON and lossless
+sprite payloads. Retain `data/server/`, documentation, exporter code, authored
+compatibility policies and independent fixtures. Regeneration reads the supplied
+original client installation and combines it with tracked server-only exports;
+it must not depend on a previous checkout's generated data or overwrite local
+asset edits. See [ASSET_IMPORT.md](ASSET_IMPORT.md).
+
+The Gonline client must implement the same protocol contract as the legacy
+client. Fix missing client requests, replies and sequencing in the client;
+do not relax server validation or add client-specific exceptions to accommodate
+an incomplete client implementation. Preserve independent raw-byte fixtures
+and verify the client against the existing server handshake and interaction gates.
+
+Explicitly negotiated transport optimizations may run when both peers opt in,
+while preserving native fallback and the same gameplay rules and gates. Combat
+round chains and batched choices use the versioned capability exchange in
+[COMBAT_TRANSPORT.md](COMBAT_TRANSPORT.md); client brand or server display names
+must never select the alternate path.
+Offer this optimization only when the startup configuration's
+`combat_round_chain` switch is true (default false). Capture the switch in `New`;
+keep native delivery for unnegotiated clients even when it is enabled.
+
+Explicit escape results must remain separate from overkill and disconnect.
+Either owner or pet escaping removes that owner/pet pair; only a successful
+team-leader escape ends the remaining team's battle. Capture current leadership
+under `worldMu` before round calculation. Use the strongest living opponent for
+the reference level-based escape check. Keep withdrawal/timing state in memory,
+but commit departing vitals and pet results before native success packets or a
+round envelope. Truncate only that owner's chain; remaining participants keep
+the rest of the round. Failure uses native motion 60042 without damage, SP cost,
+defense or proficiency; retain 60041 as the repeatable request.
 
 Use `make build-client` to validate/recompile editable assets before building Go.
 `client/asset-contract.json` holds PNG dimension compatibility constraints;
@@ -1128,3 +1234,91 @@ until objectives and rewards are verified. Do not substitute guessed content.
 
 Native AC85 browser/create/detail requests and replies are separate from
 Gonline's explicit room-control extensions (200–203); see [Teams](TEAMS.md).
+
+## Private Server updates
+
+The separately pinned update ledger is [source-update-inventory.json](source-update-inventory.json).
+See [SOURCE_UPDATES.md](SOURCE_UPDATES.md) for imported behavior and explicit
+prototype/platform exclusions. Baseline source hashes remain unchanged. Asset v14
+adds the update's typed content and performs preserving migrations of exact old
+tent/poison defaults. Missing NPC route/sign/speed projections come from retained
+SQL map sections and preserve edited definitions. Poison compatibility is now 10% of maximum HP, minimum 15;
+customized effects remain authoritative. Native protocol goldens and compiled
+growth formulas retain their independent ownership.
+
+The story follow-up through `5c36839` adds forward-only Waterfall Grotto mirror
+continuations and nonholding Fairy Altar movies. Existing visit-local scripted
+actor visibility and map-entry reset remain authoritative. These fixes require
+no database migration; the ledger preserves the earlier snapshot hashes.
+
+## Story definitions and execution
+
+Story-specific identities, prerequisites, links, presentation modes, actor rules,
+script repairs, recruitment/conversion parameters and cinematic steps belong to
+the typed `Story` dataset in assets.db (asset schema v16). Use reusable engine
+capabilities rather than adding map/event/mark switches. See [STORY_SYSTEM.md](STORY_SYSTEM.md)
+for scopes, gates, operation patterns, ordered rules and administration.
+Keep imported EVE programs and independent raw packet fixtures intact. Apply
+repairs to execution copies. Runtime constructors must not load seed defaults;
+seeds are for explicit offline initialization and native compatibility fixtures.
+Versioned migrations must retain edited and intentionally empty story definitions.
+Recheck sensitive story actions against owned SQL state and commit delivery plus
+checkpoints together before receipts. Preserve buffered walking when adopting SQL
+results. Bound automatic chains and retain per-session completion tokens; story
+content must not create unbounded execution or bypass battle/interaction gates.
+
+## Server component layout
+
+Use the [server component guide](../internal/server/README.md) to locate handlers
+and their integration tests. Keep session ownership and checkpoint adoption in
+`internal/server/session.go`; command registration and interaction policies belong
+in `internal/server/commands.go`. Group small related adapters with their owning
+feature. Independent packet construction belongs in `internal/server/wire`, and
+administrative log capture/tracing in `internal/server/logging`. These components
+must not import `server` or acquire gameplay ownership. Extract further packages
+around narrow responsibilities without exposing mutable session fields merely
+to satisfy a directory boundary. Preserve raw goldens, authored tables and source
+inventory evidence when moving code. Include affected subpackages in focused
+tests and pre-push validation.
+
+## Outgoing networking
+
+All accepted login/gameplay sockets use the bounded queue and single writer in
+`internal/server/transport`. Construct them through `Server.networkSession`
+before publishing a session. Handlers may enqueue while holding `worldMu`, but
+must never wait for a socket or a write receipt under that lock. The transport
+writer performs no SQL or gameplay callbacks and never takes server locks.
+Socket-free administrator reply capture and deterministic fixtures retain direct
+output; launcher status is a separate unframed response outside gameplay locking.
+
+Each connection admits at most 4,096 frames and 2 MiB of encoded frame data,
+including its in-flight write. Queue storage grows lazily. Payloads are copied
+into owned encoded frames, so later caller mutations cannot alter queued data.
+Frames remain ordered across concurrent producers and partial socket writes.
+Overflow disconnects the congested recipient; never silently discard arbitrary
+gameplay packets. Each frame expires ten seconds after enqueue, including queue
+residence, so a backlog cannot renew its timeout on every write.
+
+Successful `Session.send` means accepted into the queue. Keep purchases, trades,
+rewards and gift claims committed before enqueueing success packets. A later
+write failure must not undo or repeat a resource transaction. Mail delivery uses
+a receipt on the final packet of each notification; only a complete successful
+write permits its SQL delivery marker. Claimed GM gifts retain their claim if
+notification fails. Receipt signals are coalesced; the worker visits only
+sessions with pending mail work, retains dirty markers for retry, and uses a
+five-second batch context under the existing world ownership. A one-second tick
+retries deferred work without polling healthy players' mailboxes.
+
+Connection close cancels queued output and interrupts the current write without
+waiting for the writer. Session teardown joins it outside gameplay locks before
+processing completed mail receipts and releasing presence. Explicit final
+notices, including GM kicks and duplicate-login reasons, drain existing frames
+under their original deadlines before closing. Server shutdown may abort that
+drain. Closing sessions must reject further gameplay after acquiring world
+ownership, including map acknowledgments and portals.
+
+The global lock still serializes gameplay mutations and SQL work. This transport
+change isolates slow sockets; it does not remove database contention or establish
+concurrent-player capacity. Queue limits are compiled transport policy, with no
+new configuration keys or database schema changes. Verification is recorded in
+[TESTING.md](TESTING.md#outgoing-network-isolation--2026-11-01).

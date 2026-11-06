@@ -3,10 +3,13 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
@@ -93,7 +96,7 @@ func (s *Server) createCharacter(ctx context.Context, c *Session, p []byte) erro
 		if e != nil {
 			return s.rejectCharacterCreation(c, "build_character", e)
 		}
-		char.UnlockQualifiedSkills(false, s.hasSkill)
+		s.unlockQualifiedSkills(&char, false)
 		view, pets := world.NewView(), newPetRoster()
 		packets, e := s.worldEntryPackets(char, view, pets)
 		if e != nil {
@@ -135,9 +138,13 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	packets := [][]byte{{protocol.CommandEvent, protocol.EventResume}, {protocol.CommandQuest, protocol.QuestFlag, 183, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 53, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 52, 0, 0}, {protocol.CommandQuest, protocol.QuestFlag, 54, 0, 0}, {protocol.CommandEvent, protocol.EventWireCode33, 0}, {protocol.CommandFriends, protocol.FriendsWireCode13, 3}, appearance, base}
 	packets = append(packets, s.monsterBookPackets(&char)...)
 	packets = append(packets, char.StatPackets(s.Assets.Items)...)
-	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
-	packets = append(packets, s.arrivalPackets(char, view, pets, 0)...)
-	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode15, 0}, []byte{protocol.CommandWire62, protocol.Wire62WireCode53, 2, 0}, recordPointStatus(char), []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode14, 2})
+	packets = append(packets, char.Bag.Packet(protocol.CommandInventory, protocol.InventoryItems), char.EquipmentPacket(), protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(char.Gold), char.Preferences().Packet(), []byte{protocol.CommandTrade, protocol.TradeOnlineTime, protocol.TradeOnlineTimeEnough}, []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
+	arrival, err := s.arrivalPackets(char, view, pets, 0)
+	if err != nil {
+		return nil, err
+	}
+	packets = append(packets, arrival...)
+	packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode15, 0}, []byte{protocol.CommandWire62, protocol.Wire62WireCode53, 2, 0}, serverwire.RecordPointStatus(char), []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode14, 2})
 	for slot := byte(1); slot <= 10; slot++ {
 		packets = append(packets, []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode24, slot, 0, 0})
 	}
@@ -147,28 +154,34 @@ func (s *Server) worldEntryPackets(char game.Character, view *world.View, pets *
 	if char.RebornJob != 0 {
 		packets = append(packets, []byte{protocol.CommandRebornJob, protocol.RebornJobMetadata, char.RebornJob, protocol.NativeActive})
 	}
-	packets = append(packets, storyConstellations(&char))
+	packets = append(packets, s.storyConstellations(&char))
 	packets = append(packets, []byte{protocol.CommandHandshake, protocol.HandshakeWorldReady}, []byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionReady}, protocol.Builder{protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint}.U32(char.ID).U8(0))
 	return packets, nil
 }
 
 func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, pets *petRoster, packets [][]byte) error {
+	points, err := s.Store.TeleportPoints(context.Background(), store.CharacterRef{Account: c.account.ID, ID: char.ID})
+	if err != nil {
+		return err
+	}
 	c.character = &char
+	c.shapeshift = 0
 	c.openTent, c.tentOwner = nil, 0
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
-	c.event = nil
-	c.arcade = nil
+	s.endEvent(c)
 	c.walkMode = 0
 	c.fishing = nil
 	c.manufacturing = nil
 	c.manufacturingLoaded = false
 	c.ready = false
+	c.restoreUIAfterMapLoad = false
 	c.motdSent = false
 	c.warped = false
-	c.storm, c.beachPending, c.beach, c.battle = false, false, nil, nil
+	c.storm, c.stormAck, c.beachPending, c.beach, c.battle = false, false, false, nil, nil
 	c.restMap, c.saleMode = 0, -1
+	c.storageMap, c.hotelMap = 0, 0
 	c.encounter = encounterState{next: firstEncounter}
 	c.encounter.enterMap()
 	c.slot = char.Slot
@@ -195,6 +208,13 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 		}
 	}
 	s.Log.Info("world entry sent", s.sessionLogAttrs(c)...)
+	for point := byte(1); point <= store.MaxTeleportPoints; point++ {
+		if location, ok := points[point]; ok {
+			if err := c.send(teleportPointPacket(point, location)); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -217,12 +237,15 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	// Published state can change from other sessions (GM summons), so check it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if err := c.outputError(); err != nil {
+		return err
+	}
 	if p[0] == protocol.CommandLuckyDraw {
 		s.Log.Debug("Lucky Draw dispatch state", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map, "map_ready", c.ready, "warped", c.warped, "battle", c.battle != nil, "trade", c.trade != nil, "minigame", c.event != nil && c.event.onMinigame != nil)
 	}
 	// An open sign cannot reserve an item across arbitrary inventory changes.
 	// Close it before other actions; chat and read-only login sync may continue.
-	if c.stall != nil && p[0] != protocol.CommandStall && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
+	if c.stall != nil && !stallPacket(p) && p[0] != protocol.CommandChat && !command.policy.BeforeWorldGates && !(command.beforeWorldGates != nil && command.beforeWorldGates(p)) {
 		s.closeStall(c)
 	}
 	// Settings and native login synchronization precede the interaction gates.
@@ -236,7 +259,7 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 			return command.handle(s, ctx, c, p)
 		}
 		if p[0] == protocol.CommandCharacterState && len(p) >= 2 && p[1] == protocol.CharacterStateTeleport {
-			return c.send(headBanner("Leave the battle before teleporting."))
+			return c.send(serverwire.HeadBanner("Leave the battle before teleporting."))
 		}
 		return nil
 	}
@@ -260,7 +283,7 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	// Offers reserve inventories; movement and lifecycle transitions cancel them.
 	if c.trade != nil && command.policy.BlockedDuringTrade {
-		return c.send(tradeMessage("Cancel the trade before changing items or interacting."))
+		return c.send(serverwire.TradeMessage("Cancel the trade before changing items or interacting."))
 	}
 	return command.handle(s, ctx, c, p)
 }
@@ -297,4 +320,156 @@ func (s *Server) deleteCharacter(ctx context.Context, c *Session, p []byte) erro
 		return e
 	}
 	return c.send([]byte{protocol.CommandCharacterSelection, protocol.CharacterSelectionDelete, 1, slot})
+}
+
+// The reference server's alternative AC63:3 creation layout shares its subcommand with the
+// native two-byte cancellation. Keep cancellation intact and validate the longer
+// authenticated request against the same allocation/name/ownership rules as AC9.
+func (s *Server) createCompactCharacter(ctx context.Context, c *Session, p []byte) error {
+	if c.account.ID == 0 || c.character != nil {
+		return protocol.ErrMalformed
+	}
+	r := protocol.NewReader(p[2:])
+	slot, name := r.U8(), r.String()
+	appearance := game.Appearance{Body: uint16(r.U8()), Element: r.U8()}
+	appearance.Base = game.Attributes{Strength: uint16(r.U8()), Constitution: uint16(r.U8()), Intelligence: uint16(r.U8()), Wisdom: uint16(r.U8()), Agility: uint16(r.U8())}
+	if r.Err() != nil || r.Remaining() != 0 || slot < 1 || slot > 2 {
+		return protocol.ErrMalformed
+	}
+	fail := func() error {
+		return c.send([]byte{protocol.CommandHandshake, protocol.HandshakeCompactCreationResult, protocol.CompactCreationFailed})
+	}
+	if game.ValidateCharacterName(name) != nil || appearance.Validate() != nil || appearance.ValidateCreationAllocation() != nil {
+		return fail()
+	}
+	s.catalogMu.RLock()
+	defer s.catalogMu.RUnlock()
+	if len(s.Assets.StarterItems) == 0 || len(s.Assets.Items) == 0 {
+		return fail()
+	}
+	c.slot = slot
+	available, err := s.reserveName(ctx, c, name)
+	if err != nil {
+		return err
+	}
+	if !available {
+		return fail()
+	}
+	defer s.releaseName(c)
+	char, err := game.NewCharacter(c.account.CharacterID(slot), slot, name, appearance, s.Assets.StarterItems, s.Assets.Items, time.Now())
+	if err != nil {
+		return fail()
+	}
+	s.unlockQualifiedSkills(&char, false)
+	view, pets := world.NewView(), newPetRoster()
+	packets, err := s.worldEntryPackets(char, view, pets)
+	if err != nil {
+		return fail()
+	}
+	if err = s.Store.CreateCharacterWithCode(ctx, c.account, char, ""); err != nil {
+		return fail()
+	}
+	if err = c.send([]byte{protocol.CommandHandshake, protocol.HandshakeCompactCreationResult, protocol.CompactCreationSucceeded}); err != nil {
+		return err
+	}
+	return s.enterWorld(c, char, view, pets, packets)
+}
+
+func (s *Server) grantStarterPack(ctx context.Context, ref store.CharacterRef, reservations ...game.Character) (game.Character, []game.Addition, error) {
+	return s.Store.GrantStarterPack(ctx, ref, s.Assets.StarterItems, s.Assets.Items, reservations...)
+}
+
+type StarterPackDelivery struct {
+	CharacterID uint32 `json:"character_id"`
+	Name        string `json:"name"`
+	Delivered   bool   `json:"delivered"`
+	Error       string `json:"error,omitempty"`
+}
+
+const adminStarterPackBatchTimeout = 5 * time.Second
+
+// AdminGiveStarterPacks targets loaded idle online characters. Each whole pack
+// commits before delivery packets; failed or busy recipients are reported.
+func (s *Server) AdminGiveStarterPacks(ctx context.Context) ([]StarterPackDelivery, error) {
+	s.catalogMu.RLock()
+	defer s.catalogMu.RUnlock()
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	if len(s.Assets.StarterItems) == 0 {
+		return nil, fmt.Errorf("starter pack is empty")
+	}
+	ctx, cancel := context.WithTimeout(ctx, adminStarterPackBatchTimeout)
+	defer cancel()
+	players := s.gmOnline()
+	sort.Slice(players, func(i, j int) bool { return players[i].character.ID < players[j].character.ID })
+	result := make([]StarterPackDelivery, 0, len(players))
+	for _, c := range players {
+		row := StarterPackDelivery{CharacterID: c.character.ID, Name: c.character.Name}
+		if !c.ready || !gmIdle(c) || c.stall != nil || c.trade != nil {
+			row.Error = ErrAdminPlayerUnavailable.Error()
+		} else {
+			next, adds, err := s.grantStarterPack(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, *c.character)
+			if err != nil {
+				row.Error = err.Error()
+			} else {
+				s.adoptSavedCharacter(c, next)
+				row.Delivered = true
+				s.sendOrClose(c, next.Bag.AdditionPacket(adds))
+			}
+		}
+		result = append(result, row)
+	}
+	s.Log.Info("administrator starter pack delivery", "recipients", result)
+	return result, nil
+}
+
+// Native AC5:3 overlays skill records (FUN_004381c4). Zero removed grades and
+// EXP in the wire snapshot only; removed records must not survive persistence.
+func skillSnapshotWithRemovals(previous, next game.Character) game.Character {
+	snapshot := next.Clone()
+	retained := map[uint16]bool{}
+	clientID := func(id uint16) uint16 {
+		if id == game.StarterStunt(next.Body, next.Head) {
+			return game.StarterStuntClientID
+		}
+		return id
+	}
+	for _, skill := range next.Skills {
+		retained[clientID(skill.ID)] = true
+	}
+	for _, skill := range previous.Skills {
+		id := clientID(skill.ID)
+		if !retained[id] {
+			snapshot.Skills = append(snapshot.Skills, game.LearnedSkill{ID: skill.ID})
+			retained[id] = true
+		}
+	}
+	return snapshot
+}
+
+// unlockQualifiedSkills applies SQL evolution definitions. The retained compiled
+// source table supports synthetic/older catalogs; a populated SQL dataset owns
+// evolution decisions and can disable individual links through administration.
+func (s *Server) unlockQualifiedSkills(c *game.Character, evolve bool) [][]byte {
+	packets := c.UnlockQualifiedSkills(evolve && s.Assets.SkillEvolutions == nil, s.hasSkill)
+	if evolve {
+		for _, e := range s.Assets.SkillEvolutions {
+			if !s.hasSkill(e.ToSkill) || e.RequiredGrade == 0 {
+				continue
+			}
+			for _, sk := range c.Skills {
+				if sk.ID == e.FromSkill && sk.Grade >= e.RequiredGrade {
+					packets = append(packets, c.LearnSkill(e.ToSkill)...)
+					break
+				}
+			}
+		}
+	}
+	if c.Reborn {
+		id := game.RebornJobSkill(c.Job)
+		if id != 0 && s.hasSkill(id) {
+			packets = append(packets, c.LearnSkill(id)...)
+		}
+	}
+	return packets
 }

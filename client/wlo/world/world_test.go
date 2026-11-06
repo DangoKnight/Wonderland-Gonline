@@ -1,6 +1,7 @@
 package world
 
 import (
+	"image"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +17,7 @@ func needAssets(t *testing.T) {
 	}
 }
 
-// TestShipDeck: map 10017 is scene 10001 "Ship Deck", a 2432×1792 scene
+// TestShipDeck: map 10017 is scene 10001 (IGG English "Deck"), a 2432×1792 scene
 // with one background picture.
 func TestShipDeck(t *testing.T) {
 	needAssets(t)
@@ -28,7 +29,7 @@ func TestShipDeck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if scene := maps[10017]; scene != 10001 || names[scene] != "Ship Deck" {
+	if scene := maps[10017]; scene != 10001 || names[scene] != "Deck" {
 		t.Fatalf("scene %d %q", scene, names[scene])
 	}
 	s, err := LoadScene(assets, 10017)
@@ -56,5 +57,38 @@ func TestCameraStaysOnMap(t *testing.T) {
 		if cx, cy := w.Camera(); cx != c.cx || cy != c.cy {
 			t.Errorf("player (%d, %d): camera (%d, %d), want (%d, %d)", c.x, c.y, cx, cy, c.cx, c.cy)
 		}
+	}
+}
+
+func TestCameraEdgesDoNotOvershootOrReverse(t *testing.T) {
+	for _, size := range []image.Point{{1664, 1280}, {810, 610}, {600, 400}} {
+		w := &World{Scene: &Scene{Width: size.X, Height: size.Y}}
+		previousX, previousY := 0, 0
+		for p := 0; p <= max(size.X, size.Y)+100; p++ {
+			w.Player.X, w.Player.Y = p, p
+			x, y := w.Camera()
+			if x < previousX || y < previousY || x > max(0, size.X-820) || y > max(0, size.Y-600) || x-previousX > 1 || y-previousY > 1 {
+				t.Fatalf("map %v player %d: camera %d,%d after %d,%d", size, p, x, y, previousX, previousY)
+			}
+			previousX, previousY = x, y
+		}
+	}
+}
+
+func TestZoomedCameraAndScenePoint(t *testing.T) {
+	w := &World{Scene: &Scene{Width: 3000, Height: 2000}, Player: Player{X: 1500, Y: 1000}, ViewWidth: 640, ViewHeight: 480}
+	if x, y := w.Camera(); x != 1180 || y != 760 {
+		t.Fatal("zoomed camera", x, y)
+	}
+	if x, y := w.ScenePoint(400, 300); x != 320 || y != 240 {
+		t.Fatal("zoomed pointer", x, y)
+	}
+	w.Player.X, w.Player.Y = 3000, 2000
+	if x, y := w.Camera(); x != 2340 || y != 1520 {
+		t.Fatal("zoomed edge clamp", x, y)
+	}
+	w.ViewWidth, w.ViewHeight = 0, 0
+	if x, y := w.ScenePoint(123, 234); x != 123 || y != 234 {
+		t.Fatal("native pointer changed")
 	}
 }

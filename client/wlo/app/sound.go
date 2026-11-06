@@ -1,42 +1,53 @@
 package app
 
 import (
-	"bytes"
 	"io"
-	"path/filepath"
 	"strings"
 	"sync"
 	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
-	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 
 	"wonderland-gonline/client/wlo/login"
 )
 
-// sampleRate is the mixing rate; wave files are resampled to it.
+// sampleRate is the mixing rate; Vorbis and legacy wave sources are resampled to it.
 const sampleRate = 44100
+const voicePendingLimit = 1 // Keep only the newest line behind the active decoder.
 
 // Sounds plays wave effects and extracted OGG voices (FUN_00404fa4),
 // given paths relative
 // to the client directory with backslashes.
 type Sounds struct {
-	Root       string
-	Shared     *SoundCache
-	mu         sync.Mutex
-	volume     float64
-	configured bool
-	voice      *audio.Player
+	Root            string
+	Shared          *SoundCache
+	mu              sync.Mutex
+	volume          float64
+	configured      bool
+	voice           *audio.Player
+	voiceRevision   uint64
+	voiceJobs       chan voiceRequest
+	voiceDone       chan struct{}
+	voiceWorkerDone chan struct{}
+	voiceClosed     bool
+	decodePCM       func(string) []byte // Optional decoder for deterministic lifecycle tests.
 }
 
-// SoundCache owns the workspace's one audio context and decoded effects.
+type voiceRequest struct {
+	path     string
+	revision uint64
+}
+
+// SoundCache owns a workspace's decoded effects. Ebitengine permits only one
+// audio context per process, shared by all workspaces and standalone Sounds.
 type SoundCache struct {
 	once  sync.Once
 	ctx   *audio.Context
 	mu    sync.Mutex
 	cache map[string][]byte
 }
+
+var audioContextMu sync.Mutex
 
 func (s *Sounds) Context() *audio.Context {
 	s.mu.Lock()
@@ -45,7 +56,15 @@ func (s *Sounds) Context() *audio.Context {
 	}
 	shared := s.Shared
 	s.mu.Unlock()
-	shared.once.Do(func() { shared.ctx = audio.NewContext(sampleRate); shared.cache = map[string][]byte{} })
+	shared.once.Do(func() {
+		audioContextMu.Lock()
+		defer audioContextMu.Unlock()
+		shared.ctx = audio.CurrentContext()
+		if shared.ctx == nil {
+			shared.ctx = audio.NewContext(sampleRate)
+		}
+		shared.cache = map[string][]byte{}
+	})
 	return shared.ctx
 }
 
@@ -72,24 +91,40 @@ func (s *Sounds) Play(path string) {
 func (s *Sounds) PCM(path string) []byte {
 	s.Context()
 	s.Shared.mu.Lock()
-	defer s.Shared.mu.Unlock()
 	key := login.Path(s.Root, strings.Split(path, `\`)...)
 	pcm, ok := s.Shared.cache[key]
-	if !ok {
-		raw, err := clientfs.ReadFile(login.Path(s.Root, strings.Split(path, `\`)...))
-		if err == nil {
-			var decoded io.Reader
-			if strings.EqualFold(filepath.Ext(path), ".ogg") {
-				decoded, err = vorbis.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
-			} else {
-				decoded, err = wav.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
-			}
-			if err == nil {
-				pcm, _ = io.ReadAll(decoded)
-			}
-		}
+	s.Shared.mu.Unlock()
+	if ok {
+		return pcm
+	}
+	// Disk access and decoding must not hold the shared cache lock: a voice
+	// decoding in the background must not stall cached effects on the UI thread.
+	if s.decodePCM != nil {
+		pcm = s.decodePCM(path)
+	} else {
+		pcm = decodeAudioPCM(key)
+	}
+	s.Shared.mu.Lock()
+	if existing, loaded := s.Shared.cache[key]; loaded {
+		pcm = existing
+	} else {
 		s.Shared.cache[key] = pcm
 	}
+	s.Shared.mu.Unlock()
+	return pcm
+}
+
+func decodeAudioPCM(path string) []byte {
+	path = audioAssetPath(path)
+	raw, err := clientfs.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	decoded, err := decodeAudioStream(raw, path, sampleRate)
+	if err != nil {
+		return nil
+	}
+	pcm, _ := io.ReadAll(decoded)
 	return pcm
 }
 
@@ -101,32 +136,93 @@ func (s *Sounds) SetVolume(v float64) {
 	s.configured = true
 }
 
-// PlayVoice replaces the preceding recorded line (FUN_004051fc).
-// Other effects, including dialogue sound tags, keep playing independently.
+// PlayVoice replaces the preceding recording without decoding on the UI thread.
+// One worker and a latest-only queue keep fast dialogue advancement bounded.
 func (s *Sounds) PlayVoice(path string) {
-	pcm := s.PCM(path)
+	s.Context()
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.voiceClosed {
+		return
+	}
+	s.voiceRevision++
 	if s.voice != nil {
 		s.voice.Close()
 		s.voice = nil
 	}
-	volume := 1.0
-	if s.configured {
-		volume = s.volume
-	}
-	if len(pcm) == 0 || volume == 0 {
+	if s.configured && s.volume == 0 {
 		return
 	}
-	// PCM initialized the shared audio context before taking this lock.
-	s.voice = s.Shared.ctx.NewPlayerFromBytes(pcm)
-	s.voice.SetVolume(volume)
-	s.voice.Play()
+	if s.voiceJobs == nil {
+		s.voiceJobs, s.voiceDone = make(chan voiceRequest, voicePendingLimit), make(chan struct{})
+		s.voiceWorkerDone = make(chan struct{})
+		go s.runVoices(s.voiceJobs, s.voiceDone)
+	}
+	request := voiceRequest{path, s.voiceRevision}
+	select {
+	case s.voiceJobs <- request:
+	default:
+		select {
+		case <-s.voiceJobs:
+		default:
+		}
+		s.voiceJobs <- request
+	}
+}
+
+func (s *Sounds) runVoices(jobs <-chan voiceRequest, done <-chan struct{}) {
+	defer close(s.voiceWorkerDone)
+	for {
+		select {
+		case <-done:
+			return
+		case request := <-jobs:
+			s.mu.Lock()
+			valid := !s.voiceClosed && request.revision == s.voiceRevision
+			s.mu.Unlock()
+			if !valid {
+				continue
+			}
+			pcm := s.PCM(request.path)
+			s.mu.Lock()
+			if !s.voiceClosed && request.revision == s.voiceRevision && len(pcm) > 0 {
+				volume := 1.0
+				if s.configured {
+					volume = s.volume
+				}
+				if volume > 0 {
+					s.voice = s.Shared.ctx.NewPlayerFromBytes(pcm)
+					s.voice.SetVolume(volume)
+					s.voice.Play()
+				}
+			}
+			s.mu.Unlock()
+		}
+	}
 }
 
 func (s *Sounds) StopVoice() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.voiceRevision++ // Also cancel queued/in-flight recordings.
+	if s.voice != nil {
+		s.voice.Close()
+		s.voice = nil
+	}
+}
+
+// Close stops this session's worker without closing the shared audio context.
+func (s *Sounds) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.voiceClosed {
+		return
+	}
+	s.voiceClosed = true
+	s.voiceRevision++
+	if s.voiceDone != nil {
+		close(s.voiceDone)
+	}
 	if s.voice != nil {
 		s.voice.Close()
 		s.voice = nil

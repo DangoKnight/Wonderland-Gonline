@@ -1,0 +1,28 @@
+{
+  "id": "verified_encounter_backdrops_v48",
+  "append": [
+    {
+      "rule": {
+        "id": "kelan_village_battle_background",
+        "kind": "battle_background",
+        "scope": {
+          "maps": [12000],
+          "allow_missing": true
+        },
+        "value": 130
+      }
+    },
+    {
+      "rule": {
+        "id": "north_island_lakeside_mushroom_battle_background",
+        "kind": "battle_background",
+        "scope": {
+          "maps": [60001],
+          "events": [65],
+          "allow_missing": true
+        },
+        "value": 91
+      }
+    }
+  ]
+}

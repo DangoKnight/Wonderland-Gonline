@@ -1,0 +1,115 @@
+[
+  {
+    "id": "dog_hidden",
+    "kind": "visibility",
+    "scope": {
+      "maps": [
+        12000
+      ],
+      "actors": [
+        28
+      ],
+      "allow_missing": true
+    },
+    "gates": [
+      {
+        "source": "mark_state",
+        "id": 13046,
+        "op": "eq",
+        "value": 2,
+        "group": 1
+      },
+      {
+        "source": "mark_state",
+        "id": 13046,
+        "op": "eq",
+        "value": 1,
+        "group": 2
+      },
+      {
+        "source": "mark_step",
+        "id": 13046,
+        "op": "lt",
+        "value": 2,
+        "group": 2
+      },
+      {
+        "source": "mark_state",
+        "id": 13047,
+        "op": "ne",
+        "value": 1,
+        "group": 2
+      }
+    ],
+    "pattern": {}
+  },
+  {
+    "id": "dog_visible",
+    "kind": "visibility",
+    "scope": {
+      "maps": [
+        12000
+      ],
+      "actors": [
+        28
+      ],
+      "allow_missing": true
+    },
+    "gates": [],
+    "pattern": {},
+    "value": 1
+  },
+  {
+    "id": "dog_owner_visible",
+    "kind": "visibility",
+    "scope": {
+      "maps": [
+        12000
+      ],
+      "actors": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "gates": [
+      {
+        "source": "mark_state",
+        "id": 13046,
+        "op": "eq",
+        "value": 1,
+        "group": 0
+      },
+      {
+        "source": "mark_step",
+        "id": 13046,
+        "op": "lt",
+        "value": 2,
+        "group": 0
+      },
+      {
+        "source": "mark_state",
+        "id": 13047,
+        "op": "ne",
+        "value": 1,
+        "group": 0
+      }
+    ],
+    "pattern": {},
+    "value": 1
+  },
+  {
+    "id": "dog_owner_hidden",
+    "kind": "visibility",
+    "scope": {
+      "maps": [
+        12000
+      ],
+      "actors": [
+        20
+      ],
+      "allow_missing": true
+    },
+    "gates": [],
+    "pattern": {}
+  }
+]

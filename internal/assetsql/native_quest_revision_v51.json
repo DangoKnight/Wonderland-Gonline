@@ -1,0 +1,27 @@
+{
+  "id": "xaolan_recruitment_question_v51",
+  "append": [
+    {
+      "when_any_present": ["fate_home_block"],
+      "rule": {
+        "id": "xaolan_recruitment_question_continuation",
+        "kind": "continue",
+        "scope": {
+          "maps": [
+            12002
+          ],
+          "events": [
+            9
+          ],
+          "branches": [
+            1
+          ],
+          "allow_missing": true
+        },
+        "gates": [],
+        "pattern": {},
+        "target_branch": 4
+      }
+    }
+  ]
+}

@@ -18,6 +18,9 @@ func TestTeamPetPortraitGPU(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
 		t.Skip("set WONDERLAND_TEST_GPU=1 for GPU portrait verification")
 	}
+	if isolateGPUFixture(t) {
+		return
+	}
 	c, _, _ := enteredClient(t)
 	if bundle := os.Getenv("WONDERLAND_TEST_CLIENT_BUNDLE"); bundle != "" {
 		useCompiledPetAssets(t, c, bundle)
@@ -84,6 +87,9 @@ func (g *petPortraitGPUCheck) Update() error {
 func TestMonkeyIllustrationGPU(t *testing.T) {
 	if os.Getenv("WONDERLAND_TEST_GPU") == "" {
 		t.Skip("set WONDERLAND_TEST_GPU=1")
+	}
+	if isolateGPUFixture(t) {
+		return
 	}
 	c, _, _ := enteredClient(t)
 	if bundle := os.Getenv("WONDERLAND_TEST_CLIENT_BUNDLE"); bundle != "" {

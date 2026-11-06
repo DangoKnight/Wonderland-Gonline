@@ -3,16 +3,18 @@ package battle
 import (
 	"math"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
 const (
 	effectPercentBase          = 100
-	effectNormalHitMode   byte = 1
-	effectCriticalHitMode byte = 2
+	effectNormalHitMode   byte = protocol.BattleStatDamage
+	effectCriticalHitMode byte = protocol.BattleStatCriticalDamage
 )
 
 type ActiveEffect struct {
+	caster     *Fighter // Transient effect provenance; never serialized.
 	Source     uint16
 	Index      int
 	Definition assets.SkillEffect
@@ -33,6 +35,7 @@ func (f *Fighter) ApplyEffect(source uint16, index int, e assets.SkillEffect) {
 	for i := range f.Effects {
 		if f.Effects[i].Source == source && f.Effects[i].Index == index {
 			f.Effects[i].Definition = e
+			f.Effects[i].caster = nil
 			f.Effects[i].Turns = max(f.Effects[i].Turns, e.Rounds)
 			return
 		}
@@ -154,13 +157,11 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 			return Step{}
 		}
 		if e.Target != assets.EffectSelf {
-			if shape, ok := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); ok {
-				side := allies
-				if e.Target == assets.EffectEnemy {
-					side = enemies
-				}
-				targets[i] = formationTargets(side, targets[i][0], shape, false)
+			side := allies
+			if e.Target == assets.EffectEnemy {
+				side = enemies
 			}
+			targets[i] = skillTargets(side, targets[i][0], r.Skills[a.Skill], skillGrade(a.Actor, a.Skill), false)
 		}
 	}
 	packets := [][]byte{r.spend(a.Actor, a.Skill), turnPacket(a.Actor)}
@@ -176,7 +177,7 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 				}
 			}
 			if !blocked {
-				target.ApplyEffect(a.Skill, indices[i], e)
+				target.applyEffectFrom(a.Actor, a.Skill, indices[i], e)
 			}
 			if emitted[target] {
 				continue
@@ -189,7 +190,8 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 			results = append(results, targetResult{target: target, result: outcome, mode: effectNormalHitMode})
 		}
 	}
-	if _, explicit := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill)); explicit {
+	_, explicit := r.Skills[a.Skill].TargetingAt(skillGrade(a.Actor, a.Skill))
+	if explicit || r.Skills[a.Skill].IsAreaAttack(skillGrade(a.Actor, a.Skill)) {
 		packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	} else {
 		// Preserve existing single-recipient animations for unconfigured skills.
@@ -198,6 +200,7 @@ func (r Rules) abilityEffect(b *Battle, a Action) Step {
 		}
 	}
 
+	a.SkillEXP = game.SupportSkillEXPPerUse + game.BuffSkillEXPBonus
 	return Step{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}
 }
 
@@ -269,7 +272,7 @@ func (r Rules) applyHitEffects(actor, target *Fighter, skill uint16) {
 			continue
 		}
 		if !recipient.Dead() {
-			recipient.ApplyEffect(skill, i, e)
+			recipient.applyEffectFrom(actor, skill, i, e)
 		}
 	}
 }

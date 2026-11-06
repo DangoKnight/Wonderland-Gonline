@@ -1,0 +1,460 @@
+[
+  {
+    "id": "quest_constellation_1",
+    "kind": "constellation",
+    "mark": 13087,
+    "value": 1,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_3",
+    "kind": "constellation",
+    "mark": 12011,
+    "value": 3,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_4",
+    "kind": "constellation",
+    "mark": 12011,
+    "value": 4,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_5",
+    "kind": "constellation",
+    "mark": 13071,
+    "value": 5,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_6",
+    "kind": "constellation",
+    "mark": 13173,
+    "value": 6,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_7",
+    "kind": "constellation",
+    "mark": 15145,
+    "value": 7,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_8",
+    "kind": "constellation",
+    "mark": 13203,
+    "value": 8,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_9",
+    "kind": "constellation",
+    "mark": 13099,
+    "value": 9,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_19",
+    "kind": "constellation",
+    "mark": 16045,
+    "value": 19,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "quest_constellation_20",
+    "kind": "constellation",
+    "mark": 13151,
+    "value": 20,
+    "scope": {
+      "allow_missing": true
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_11048_3_1_14",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        11048
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 1,
+      "d2": 11,
+      "d3": 1,
+      "value": 3
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_11048_3_1_15",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        11048
+      ],
+      "events": [
+        3
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 4,
+      "d2": 11,
+      "d3": 1,
+      "value": 4
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_11077_7_7_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        11077
+      ],
+      "events": [
+        7
+      ],
+      "branches": [
+        7
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 12,
+      "d2": 11,
+      "d3": 1,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_11077_12_1_3",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        11077
+      ],
+      "events": [
+        12
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 12,
+      "d2": 11,
+      "d3": 1,
+      "value": 1
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12055_6_1_9",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12055
+      ],
+      "events": [
+        6
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 6,
+      "d2": 11,
+      "d3": 1,
+      "value": 9
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12167_5_1_12",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12167
+      ],
+      "events": [
+        5
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 2,
+      "d2": 11,
+      "d3": 1,
+      "value": 5
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12765_13_25_5",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        13
+      ],
+      "branches": [
+        25
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 17,
+      "d2": 11,
+      "d3": 1,
+      "value": 7
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12765_15_25_6",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        15
+      ],
+      "branches": [
+        25
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 17,
+      "d2": 11,
+      "d3": 1,
+      "value": 7
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12765_22_4_4",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12765
+      ],
+      "events": [
+        22
+      ],
+      "branches": [
+        4
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 17,
+      "d2": 11,
+      "d3": 1,
+      "value": 7
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_40_1_4",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        40
+      ],
+      "branches": [
+        1
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_41_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        41
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_42_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        42
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_43_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        43
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_44_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        44
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_45_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        45
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  },
+  {
+    "id": "wiki_constellation_actor_12952_46_2_2",
+    "kind": "actor_capability",
+    "scope": {
+      "maps": [
+        12952
+      ],
+      "events": [
+        46
+      ],
+      "branches": [
+        2
+      ],
+      "allow_missing": true
+    },
+    "pattern": {
+      "code": 2,
+      "d1": 9,
+      "d2": 11,
+      "d3": 1,
+      "value": 19
+    }
+  }
+]

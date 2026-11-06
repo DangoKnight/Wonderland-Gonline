@@ -1,11 +1,10 @@
 package game
 
-// EquipmentRepairManager's native payment and effect references.
+// EquipmentRepairManager's native payment references.
 const (
-	RepairWrenchItemID   = 48050
-	RepairGoldFee        = 500
-	RepairHammerEffectID = 60015
-	RepairToolsPerItem   = 1
+	RepairWrenchItemID = 48050
+	RepairGoldFee      = 500
+	RepairToolsPerItem = 1
 )
 
 // RepairBagItem plans payment and restores the exact bag stack's damage. A

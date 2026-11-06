@@ -3,10 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
+	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
 
@@ -14,120 +17,86 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
-	chestReward  *assets.ChestReward
-	mapID, click uint16
-	ev           *assets.Event
-	branch       int
-	index        int
-	transition   bool
-	onComplete   func() error
-	onChoice     func(byte) error
-	onMinigame   func(byte) error
+	transitions        int
+	chestReward        *assets.ChestReward
+	mapID, click       uint16
+	ev                 *assets.Event
+	branch             int
+	index              int
+	transition         bool
+	cinematicPosture   bool
+	onComplete         func() error
+	onChoice           func(byte) error
+	onMinigame         func(byte) error
+	choiceAcknowledged bool // Mode-zero questions send AC20:6 after their answer.
+	ignoreChoiceAck    bool
+	shopCart           bool   // Native item-picker question owns a purchase.
+	bankOwner          uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
 
-// eventFrame is BuildEventFrame, the native AC20:1 layout: type, subject, actor, mode,
-// value, text or question, branch.
-func eventFrame(kind, subject byte, actor uint16, mode byte, value uint32, text uint16, step, branch byte) []byte {
-	return protocol.Builder{protocol.CommandEvent, protocol.EventFrame, 0, 0, 0, step, kind, subject}.U16(actor).U8(mode).U32(value).U16(text).U8(branch)
-}
-
-// dialogueFrame is the legacy single-line dialogue packet with a 24-bit talk ID.
-func dialogueFrame(step, portrait, speaker byte, talk uint32) []byte {
-	return []byte{protocol.CommandEvent, protocol.EventFrame, 0, 0, 0, step, 1, portrait, speaker, 0, 1, 0, 0, 0, 0, byte(talk), byte(talk >> 8), byte(talk >> 16)}
-}
-
-func recordPointStatus(char game.Character) []byte {
-	if char.RecordPoint != nil && char.RecordPoint.Map != 0 {
-		return []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode21, 1}
-	}
-	return []byte{protocol.CommandCharacterState, protocol.CharacterStateWireCode21, 2}
-}
-
-func (s *Server) sendAll(c *Session, packets [][]byte) error {
-	for _, p := range packets {
-		if e := c.send(p); e != nil {
-			return e
-		}
-	}
-	return nil
-}
-
-// commit persists a changed copy of the character, then adopts it in the session.
-func (s *Server) commit(ctx context.Context, c *Session, next game.Character) error {
-	old := *c.character
-	if err := s.commitState(ctx, c, next); err != nil {
-		return err
-	}
-	if old.ActiveVehicle != 0 && (old.ActiveVehicle != c.character.ActiveVehicle || old.VehicleSlot != c.character.VehicleSlot) {
-		return s.sendVehiclePackets(c, [][]byte{vehicleDismountPacket(&old)})
-	}
-	return nil
-}
-
-// commitState saves and adopts state without publishing packets. The raft wreck
-// path supplies its own break/dismount order. Callers hold worldMu.
-func (s *Server) commitState(ctx context.Context, c *Session, next game.Character) error {
-	if err := game.PreserveItemLocks(*c.character, &next); err != nil {
-		return err
-	}
-	next.NormalizeVehicle(s.Assets.Items)
-	if e := s.Store.UpdateCharacter(ctx, c.account.ID, next.ID, func(stored *game.Character) error {
-		*stored = next
-		return nil
-	}); e != nil {
-		return e
-	}
-	changedOfferState := c.character.Bag != next.Bag || c.character.Gold != next.Gold
-	// This transaction saved the complete supplied snapshot, including its
-	// position. Unlike a database result that retains the old position, an
-	// explicit full-state commit must adopt its destination exactly.
-	*c.character = next
-	baseline := next.Clone()
-	c.autosaveBaseline = &baseline
-	if changedOfferState {
-		s.closeStall(c)
-		s.cancelTrade(c)
-	}
-	return nil
-}
+const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 
 // endEvent is Player.ClearInteraction.
-func (s *Server) endEvent(c *Session) { c.event = nil; c.arcade = nil }
+func (s *Server) endEvent(c *Session) {
+	if c.event != nil {
+		c.event.bankOwner = 0
+	}
+	c.event = nil
+	c.arcade = nil
+}
 
 // cancelInteraction is Player.CancelInteraction: release movement and the dialogue lock.
 func (s *Server) cancelInteraction(c *Session) error {
+	posture := c.event != nil && c.event.cinematicPosture
 	s.endEvent(c)
 	c.resumeAt = time.Now().Add(clickResume)
+	if posture {
+		s.sendOrClose(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateWireCode30, 0}.U32(c.character.ID).U8(0), []byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
+	}
 	return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
 }
 
 func (s *Server) finishEvent(c *Session, es *eventSession) error {
-	if c.event != es {
+	if es == nil || c.event != es {
 		return nil
 	}
+	if c.character == nil {
+		s.endEvent(c)
+		return nil
+	}
+	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
+	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
 	if err := s.sendAll(c, s.World.Sync(c.character, c.view, false)); err != nil {
 		return err
 	}
-	return s.syncMapProps(context.Background(), c, time.Now())
+	if err := s.syncMapProps(context.Background(), c, time.Now()); err != nil {
+		return err
+	}
+	if openBank {
+		return s.openMoneyBank(c)
+	}
+	return nil
 }
 
 func (s *Server) rejectDisabled(c *Session) error {
 	if e := s.cancelInteraction(c); e != nil {
 		return e
 	}
-	return c.send(headBanner("This quest is disabled: required game data is unavailable."))
+	return c.send(serverwire.HeadBanner("This quest is disabled: required game data is unavailable."))
 }
 
-// eventCommand handles AC20:1 clicks, AC20:6 acknowledgments and AC20:9 choices.
+// eventCommand handles AC20:1 clicks, AC20:2 contacts, acknowledgments and choices.
 // The caller holds worldMu.
 func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 	switch p[1] {
-	case protocol.EventActorClick:
+	case protocol.EventStallOpen, protocol.EventStallClose, protocol.EventStallBrowse, protocol.EventStallBuy:
+		return s.eventStallCommand(ctx, c, p)
+	case protocol.EventActorClick, protocol.EventActorContact:
 		return s.npcClick(ctx, c, p[2:])
 	case protocol.EventAcknowledge:
 		if c.resultAck {
@@ -135,6 +104,9 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // The minigame result's own acknowledgment.
 		}
 		if c.storm {
+			if !c.stormAck {
+				return nil
+			}
 			return s.endStorm(ctx, c)
 		}
 		if c.beach != nil {
@@ -144,16 +116,24 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 			return nil // Acknowledgments before the wake-up animation are absorbed.
 		}
 		es := c.event
-		if es == nil {
-			return s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 0}, {protocol.CommandEvent, protocol.EventResume}})
+		if es != nil {
+			if es.ignoreChoiceAck {
+				es.ignoreChoiceAck = false
+				return nil
+			}
+			if es.onChoice != nil || es.onMinigame != nil {
+				return nil // The question stays open until AC20:9.
+			}
+			if next := es.onComplete; next != nil {
+				es.onComplete = nil
+				es.transitions = 0
+				return next()
+			}
+			return s.finishEvent(c, es)
 		}
-		if es.onChoice != nil || es.onMinigame != nil {
-			return nil // The question stays open until AC20:9.
-		}
-		if next := es.onComplete; next != nil {
-			es.onComplete = nil
-			return next()
-		}
+		// finishEvent already released this interaction. Ignore its trailing
+		// ACK at any latency: answering it with a resume creates an echo loop
+		// and can hide a service window opened after the dialogue.
 		return nil
 	case protocol.EventRegion:
 		return s.regionRequest(ctx, c, p[2:])
@@ -167,7 +147,12 @@ func (s *Server) eventCommand(ctx context.Context, c *Session, p []byte) error {
 		if es := c.event; es != nil && es.onChoice != nil {
 			choose := es.onChoice
 			es.onChoice = nil
-			return choose(p[2])
+			es.transitions = 0
+			err := choose(p[2])
+			if err == nil && es.choiceAcknowledged && c.event != nil {
+				c.event.ignoreChoiceAck = true
+			}
+			return err
 		}
 		return nil
 	}
@@ -197,6 +182,8 @@ func (s *Server) npcClick(ctx context.Context, c *Session, data []byte) error {
 	}
 	c.lastClick, c.lastClickMap = click, char.Map
 	c.restMap, c.saleMode = 0, -1
+	c.storageMap, c.hotelMap = 0, 0
+	c.view.ShopItems = nil
 	if c.view.Hidden[click] || !s.World.VisibleIn(char, c.view, char.Map, click) {
 		if e := c.send(s.World.HideActor(c.view, char.Map, click)); e != nil {
 			return e
@@ -241,7 +228,7 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 	if handled, err := s.storyClick(ctx, c, click); handled || err != nil {
 		return handled, err
 	}
-	events := s.robinsonRecoveryEvents(c.character, click, s.World.NPCEvents(mapID, click))
+	events := s.storyCandidates(c.character, click, s.World.NPCEvents(mapID, click))
 	if len(events) == 0 {
 		return false, nil
 	}
@@ -252,11 +239,15 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 	if disabled {
 		return true, s.rejectDisabled(c)
 	}
-	if n, ok := s.World.NPC(mapID, click); ok && (n.Template == monkeyTemplate || mapID == monkeyMap && click == monkeyActor) {
-		return true, s.startMonkey(ctx, c, click)
+	if _, ok := s.recruitmentPolicy(c, click); ok {
+		return true, s.startRecruitment(ctx, c, click)
 	}
 	for _, ev := range events {
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
+		i, err := s.findCollectionBranch(ctx, c, s.collectionNode(mapID, click, ev, nil), ev, time.Now())
+		if err != nil {
+			return true, err
+		}
+		if i >= 0 {
 			return true, s.startEvent(ctx, c, click, ev, i, true)
 		}
 	}
@@ -265,25 +256,34 @@ func (s *Server) runNPCEvent(ctx context.Context, c *Session, click uint16) (boo
 
 // startEvent is StartSession: refuse unsupported actions before any change, lock the
 // player, then run actions until one waits for the client.
-func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool) error {
+func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, transition bool, nodes ...store.ResourceKey) error {
 	mapID := c.character.Map
+	transitions := 1
+	if c.event != nil {
+		transitions = c.event.transitions + 1
+	}
+	if transitions > maxAutomaticStoryTransitions {
+		s.Log.Error("automatic story transition limit", "map", mapID, "event", ev.ClickID)
+		return s.finishEvent(c, c.event)
+	}
 	if s.World.Disabled(mapID, ev.ClickID) {
 		return s.rejectDisabled(c)
 	}
-	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now()); handled {
+	if handled, err := s.tryWaterGathering(ctx, c, click, ev, branch, time.Now(), nodes...); handled {
 		return err
 	}
-	ev = world.PrepareStory(mapID, world.PrepareBreillat(ev, branch), branch)
+	ev = s.World.PrepareStory(c.character, c.view, mapID, ev, branch)
+	s.Log.Debug("story event", "map", mapID, "event", ev.ClickID, "branch", ev.Branches[branch].Index, "actor", click)
 	s.endEvent(c)
-	es := &eventSession{mapID: mapID, click: click, ev: ev, branch: branch, transition: transition}
+	es := &eventSession{transitions: transitions, mapID: mapID, click: click, ev: ev, branch: branch, transition: transition}
 	c.event = es
 	if e := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); e != nil {
 		return e
 	}
-	for _, o := range ev.Branches[branch].Operations {
-		if op := world.DecodeOp(o); op.Unsupported() || (op.Code == world.ActionTransform && (!world.IsBreillat(ev) || ev.Branches[branch].Index != world.BreillatAcceptanceBranch)) || (op.Code == world.ActionLearnSkill && !s.hasSkill(op.D1)) {
+	for index, o := range ev.Branches[branch].Operations {
+		if op := world.DecodeOp(o); (op.Unsupported() && !s.World.QuestCompanionAction(mapID, ev, branch, index)) || (op.Code == world.ActionTransform && !s.transformationAllowed(mapID, ev, branch, op)) || (op.Code == world.ActionLearnSkill && !s.hasSkill(op.D1)) {
 			s.Log.Info("unsupported quest action", "map", mapID, "event", ev.ClickID, "branch", ev.Branches[branch].Index, "step", op.Index, "opcode", op.Code)
-			if e := c.send(headBanner("This quest action is not supported yet. Please report this quest.")); e != nil {
+			if e := c.send(serverwire.HeadBanner("This quest action is not supported yet. Please report this quest.")); e != nil {
 				return e
 			}
 			return s.finishEvent(c, es)
@@ -292,62 +292,30 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	return s.advance(ctx, c, es)
 }
 
-func singleChoiceAck(mapID, event uint16) bool {
-	switch mapID {
-	case game.MapID11005:
-		return event == 25 || event == 26
-	case game.MapID11040:
-		return event == 2 || event == 8 || event == 9
-	case game.MapID12211:
-		return event == 1
-	case game.MapID11149:
-		return event == 1 || event == 6
-	case game.MapID11075:
-		return event == 1 || event == 2
+// eventPolicy resolves the SQL snapshot; presentation values are bounded at load.
+func (s *Server) eventPolicy(kind string, c *Session, es *eventSession, op world.Op) (assets.StoryRule, bool) {
+	raw := op.Raw()
+	mapID := es.mapID
+	if mapID == 0 {
+		mapID = c.character.Map
 	}
-	return false
+	r, ok := s.World.StoryFirst(kind, c.character, c.view, world.StoryContext{Map: mapID, Event: es.ev.ClickID, Actor: es.click, Branch: es.ev.Branches[es.branch].Index, Raw: &raw})
+	if ok {
+		s.Log.Debug("story policy", "rule", r.ID, "kind", kind, "map", mapID, "event", es.ev.ClickID, "branch", es.ev.Branches[es.branch].Index)
+	}
+	return r, ok
 }
-
-// movieWithoutHold lists movies that must not hold rendering for a map load (mode 1).
-func movieWithoutHold(mapID, event uint16) bool {
-	switch mapID {
-	case game.MapID11039, game.MapID11052:
-		return true
-	case game.MapID60014:
-		return event == 54
-	case game.MapID11149:
-		return event == 1 || event == 2 || event == 5
-	case game.MapID11185:
-		return event == 4
-	case game.MapID11075:
-		return event == 1 || event == 2
-	}
-	return false
-}
-
-// cliveAction is IsCliveActorAction: verified actor animation, expression, path-wait and
-// constellation actions on specific story maps.
-func cliveAction(mapID uint16, op world.Op) bool {
-	switch {
-	case op.Code != world.ActionActor:
-		return false
-	case mapID == game.MapID11185 && op.D2 == 11 && op.D1 == 1 && op.D3 == 1 && op.Value() == 8:
-		return true
-	case mapID == game.MapID11149 && ((op.D2 == 11 && op.D1 == 3 && op.D3 == 1 && op.Value() == 6) || (op.D2 == 4 && op.D1 == 4 && op.D3 == 8)):
-		return true
-	case mapID == game.MapID11148 && op.D2 == 8 && (op.D1 == 1 || op.D1 == 2) && op.D3 == 7:
-		return true
-	}
-	switch mapID {
-	case game.MapID11039, game.MapID11049, game.MapID11050, game.MapID11052, game.MapID12211:
-		return op.D2 == 4 || op.D2 == 8 || op.D2 == 10 || (mapID == game.MapID12211 && op.D2 == 11 && op.D1 == 1 && op.D3 == 1 && op.Value() == 20)
-	}
-	return false
+func (s *Server) actorCapability(c *Session, es *eventSession, op world.Op) bool {
+	_, ok := s.eventPolicy(assets.StoryActorCapability, c, es, op)
+	return ok
 }
 
 // canDeliver is CanDeliverPendingRewards: every reward before the next client step must
 // fit before the first of them is given.
 func (s *Server) canDeliver(c *Session, es *eventSession) bool {
+	if plan, ok := s.World.QuestCompanion(es.mapID, es.ev, es.branch, es.index); ok {
+		return s.canChangeQuestCompanion(c.character, plan)
+	}
 	ops := es.ev.Branches[es.branch].Operations
 	gold := int64(c.character.Gold)
 	var changes []game.ItemChange
@@ -392,7 +360,7 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 							return false
 						}
 					}
-					if (game.SamePet(id, 14156) && xaolanInFate(c.character)) || len(party) >= game.MaxPets || !known {
+					if s.recruitBlocked(c.character, id) || len(party) >= game.MaxPets || !known {
 						return false
 					}
 					party = append(party, id)
@@ -434,6 +402,13 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 						reward := rollChestReward(*pool)
 						es.chestReward = &reward
 					}
+					if es.chestReward.Gold > 0 {
+						gold += int64(es.chestReward.Gold)
+						if gold > game.MaxGold {
+							return false
+						}
+						continue
+					}
 					op.D3, amount = es.chestReward.Item, int32(es.chestReward.Count)
 				}
 			}
@@ -441,13 +416,17 @@ func (s *Server) canDeliver(c *Session, es *eventSession) bool {
 				return false
 			}
 			if amount != 0 {
-				if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) && c.character.Quests[xaolanRobberyCompleted].State == game.Completed {
+				policy, checkpoint := s.storyReward(es.mapID, es.ev.Branches[es.branch], op)
+				if checkpoint && c.character.Quests[policy.CompletedMark].State == game.Completed {
 					continue
 				}
 				changes = append(changes, game.ItemChange{ID: op.D3, Count: int(amount)})
-				if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) {
-					changes = append(changes, game.ItemChange{ID: xaolanRobberyStar, Count: xaolanRobberyStarCount})
+				if checkpoint {
+					for _, item := range policy.ExtraItems {
+						changes = append(changes, game.ItemChange{ID: item.ItemID, Count: item.Count})
+					}
 				}
+
 			}
 		case op.D2 == 2 && op.D3 == 0:
 			gold += int64(amount)
@@ -476,7 +455,7 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 		return nil
 	}
 	if !s.canDeliver(c, es) {
-		if e := c.send(headBanner("Cannot receive reward. Check materials, bag space, gold, party slots and Pet Hotel.")); e != nil {
+		if e := c.send(serverwire.HeadBanner("Cannot receive reward. Check materials, bag space, gold, party slots and Pet Hotel.")); e != nil {
 			return e
 		}
 		return s.finishEvent(c, es)
@@ -484,16 +463,26 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 	br := es.ev.Branches[es.branch]
 	// The native exchange starts with dialogue; its remaining item operations
 	// must commit together after that dialogue is acknowledged.
-	if es.index == world.BreillatExchangeDialogueSteps {
-		if changes, ok := world.BreillatExchange(es.ev, es.branch); ok {
-			if err := s.redeemBreillat(ctx, c, es, changes); err != nil {
-				return err
-			}
-			return s.finishEvent(c, es)
+	if changes, ok := s.World.StoryExchange(es.mapID, es.ev, es.branch, es.index); ok {
+		if err := s.redeemStoryExchange(ctx, c, es, changes); err != nil {
+			return err
 		}
+		return s.finishEvent(c, es)
 	}
 	resume := func() error { return s.advance(ctx, c, es) }
 	for es.index < len(br.Operations) {
+		if plan, ok := s.World.QuestCompanion(es.mapID, es.ev, es.branch, es.index); ok {
+			if err := s.changeQuestCompanion(ctx, c, es, plan); err != nil {
+				return err
+			}
+			break
+		}
+		if plan, ok := s.World.QuestCompletion(es.mapID, es.ev, es.branch, es.index); ok {
+			if err := s.completeNativeQuest(ctx, c, es, plan); err != nil {
+				return err
+			}
+			break
+		}
 		op := world.DecodeOp(br.Operations[es.index])
 		es.index++
 		if op.Code == world.ActionMinigame {
@@ -514,23 +503,28 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 				}
 				next := s.World.FindBranch(c.character, c.view, es.mapID, es.ev, world.ConditionChoiceResult, question, uint16(choice), -1)
 				if next < 0 {
+					if handled, err := s.merchantChoice(c, es, uint16(choice)); handled {
+						return err
+					}
 					return s.finishEvent(c, es)
 				}
 				return s.startEvent(ctx, c, es.click, es.ev, next, true)
 			}
 			// Mode 0 also closes with AC20:6; mode 1 reports only the choice.
 			mode := byte(0)
-			if singleChoiceAck(es.mapID, es.ev.ClickID) {
-				mode = 1
+			if r, ok := s.eventPolicy(assets.StoryChoiceMode, c, es, op); ok {
+				mode = byte(r.Value)
 			}
-			return c.send(eventFrame(6, subject, actor, mode, 0, question, op.Index, br.Index))
+			s.authorizeShopQuestion(c, es, question)
+			es.choiceAcknowledged = mode == 0
+			return c.send(serverwire.EventFrame(6, subject, actor, mode, 0, question, op.Index, br.Index))
 		}
 		if op.NPCPath() {
 			es.onComplete = resume
 			return s.sendPathGroup(c, es, op)
 		}
 		speech := op.PlayerSpeech() || op.NPCSpeech()
-		path := op.Code == world.ActionActor && (op.D2 == 9 || (cliveAction(es.mapID, op) && (op.D2 == 10 || op.D2 == 11)))
+		path := op.Code == world.ActionActor && (op.D2 == world.ActorActionPath || (s.actorCapability(c, es, op) && (op.D2 == world.ActorActionTurn || op.D2 == world.ActorActionConstellation)))
 		movie := op.Code == world.ActionMovie && (op.D1 == 1 || op.D1 == 2)
 		music := op.Code == world.ActionEffect
 		effect := op.Code == world.ActionPlayer && (op.D1 == 6 || op.D1 == 7)
@@ -538,14 +532,23 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			es.onComplete = resume
 			switch {
 			case op.PlayerSpeech():
-				return c.send(eventFrame(1, 7, 0, 1, 0, op.D2, op.Index, br.Index))
+				return c.send(serverwire.SpeechFrame(7, 0, op.TalkID(), op.Index))
 			case op.NPCSpeech():
-				return c.send(eventFrame(1, 3, op.D1, 1, 0, op.D3, op.Index, br.Index))
-			case movie && es.mapID == 11005 && (es.ev.ClickID == 25 || es.ev.ClickID == 26) && op.Value() == 25010 && laterMovie(br.Operations[es.index:], 156):
-				// Holding the first of these movies would stop the second from playing.
-				return c.send(eventFrame(5, 0, 0, 1, 25010, 0, op.Index, br.Index))
-			case movie && movieWithoutHold(es.mapID, es.ev.ClickID):
-				return c.send(eventFrame(5, 0, 0, 1, op.Value(), 0, op.Index, br.Index))
+				mode := byte(op.DW2)
+				if mode == protocol.EventTalkCompatibilityDefault {
+					mode = protocol.EventTalkTurnToPlayer
+				}
+				return c.send(serverwire.SpeechFrameWithMode(3, op.D1, op.TalkID(), op.Index, mode))
+			}
+			if movie {
+				raw := op.Raw()
+				for r := range s.World.StoryRules(assets.StoryMovieMode, c.character, c.view, world.StoryContext{Map: es.mapID, Event: es.ev.ClickID, Branch: br.Index, Raw: &raw}) {
+					if r.LaterMovie != 0 && !laterMovie(br.Operations[es.index:], r.LaterMovie) {
+						continue
+					}
+					s.Log.Debug("story movie policy", "rule", r.ID, "map", es.mapID, "event", es.ev.ClickID, "movie", op.Value(), "mode", r.Value)
+					return c.send(serverwire.EventFrame(5, 0, 0, byte(r.Value), op.Value(), 0, op.Index, br.Index))
+				}
 			}
 			ok, e := s.execute(ctx, c, es, op)
 			if e != nil {
@@ -568,11 +571,6 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 		}
 		if c.event != es || es.onComplete != nil {
 			return nil // Teleported, cancelled, or waiting for the client.
-		}
-	}
-	if world.IsBreillat(es.ev) && (br.Index == world.BreillatInitialBranch || br.Index == world.BreillatGreetingBranch) {
-		if next := s.World.FindBranch(c.character, c.view, es.mapID, es.ev, world.TriggerEntry, 0, 0, -1); next >= 0 && es.ev.Branches[next].Index == world.BreillatOfferBranch {
-			return s.startEvent(ctx, c, es.click, es.ev, next, false)
 		}
 	}
 	if handled, err := s.storyContinuation(ctx, c, es); handled || err != nil {
@@ -614,7 +612,7 @@ func (s *Server) sendPathGroup(c *Session, es *eventSession, op world.Op) error 
 	var packets [][]byte
 	for {
 		actors[op.D1] = true
-		packets = append(packets, eventFrame(4, 3, op.D1, byte(op.D3), op.Value(), 0, op.Index, branch))
+		packets = append(packets, serverwire.EventFrame(4, 3, op.D1, byte(op.D3), op.Value(), 0, op.Index, branch))
 		if group == 0 || len(actors) == 10 || es.index == len(ops) {
 			break
 		}
@@ -654,25 +652,44 @@ func (s *Server) itemName(id uint16) string {
 	return fmt.Sprintf("Item #%d", id)
 }
 
-func freeSlots(c *game.Character) int {
+func (s *Server) freeBagCells(c *game.Character) int {
+	cells, err := c.Bag.Occupancy(s.Assets.Items)
+	if err != nil {
+		return 0
+	}
 	n := 0
-	for _, it := range c.Bag {
-		if it.ID == 0 {
+	for _, anchor := range cells {
+		if anchor == 0 {
 			n++
 		}
 	}
 	return n
 }
 
+func itemCapacityFailure(es *eventSession) bool {
+	if es == nil || es.ev == nil || es.branch < 0 || es.branch >= len(es.ev.Branches) {
+		return false
+	}
+	branches := es.ev.Branches
+	end := min(len(branches), es.branch+1+world.DecodeCond(branches[es.branch].Condition).ExtraConditions())
+	for _, branch := range branches[es.branch:end] {
+		condition := world.DecodeCond(branch.Condition)
+		if condition.Kind == world.ConditionFreeBagSlots && condition.W1 == world.BagCapacityCannotReceive {
+			return true
+		}
+	}
+	return false
+}
+
 // fallbackDialogue sends an untyped dialogue line; its acknowledgment ends the event.
 // C# only released the client there and left the event active, which blocked the next
 // click until a map change.
 func (s *Server) fallbackDialogue(c *Session, es *eventSession, step, portrait, speaker byte, talk uint32) (bool, error) {
-	if (talk == 11087 || talk == 50062 || talk == 30025) && freeSlots(c.character) >= 1 {
+	if slices.Contains(s.Assets.Story.FullBagWarnings, talk) && !itemCapacityFailure(es) && s.freeBagCells(c.character) >= 1 {
 		return true, nil // An inventory-full warning with space left.
 	}
 	es.onComplete = func() error { return s.finishEvent(c, es) }
-	return true, s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 1}, dialogueFrame(step, portrait, speaker, talk)})
+	return true, s.sendAll(c, [][]byte{{protocol.CommandMovement, protocol.MovementMovementLock, 1}, serverwire.DialogueFrame(step, portrait, speaker, talk)})
 }
 
 // execute is ExecuteOpcode for the supported actions. It returns false to end the event.
@@ -680,14 +697,28 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 	char := c.character
 	br := es.ev.Branches[es.branch]
 	switch op.Code {
+	case world.ActionMissionMarker:
+		return true, nil
+	case world.ActionMissionVariable:
+		if op.D2 != world.MissionVariableAdd {
+			return false, nil
+		}
+		c.view.MissionVariables[op.D1] += int32(op.Value())
+		return true, nil
 	case world.ActionTransform:
-		return s.convertBreillat(ctx, c, es, op)
+		return s.transformStoryCharacter(ctx, c, es, op)
 	case world.ActionPlayer:
 		switch {
 		case op.D1 == world.PlayerActionAnimation:
-			return true, c.send(eventFrame(14, byte(op.D2), op.D3, 0, 0, 0, op.Index, br.Index))
+			return true, c.send(serverwire.EventFrame(14, byte(op.D2), op.D3, 0, 0, 0, op.Index, br.Index))
 		case op.D1 == world.PlayerActionEffect:
-			return true, c.send(eventFrame(9, 1, 0, 1, uint32(op.D2), op.D3, op.Index, br.Index))
+			frame := serverwire.EventFrame(9, 1, 0, 1, uint32(op.D2), op.D3, op.Index, br.Index)
+			if op.D3 == world.PlayerEffectExpressionMode && op.D2 > 0 && op.D2 <= world.PlayerExpressionMaximumOperand {
+				p := protocol.Builder{protocol.CommandPose, protocol.PoseEmote}.U32(c.character.ID).U8(byte(world.PlayerExpressionOffset + op.D2))
+				s.broadcastWorld(c, p)
+				return true, s.sendAll(c, [][]byte{p, frame})
+			}
+			return true, c.send(frame)
 		case op.D1 == world.PlayerActionRecordPoint:
 			// A Record site saves the current position as the return point.
 			next := char.Clone()
@@ -695,14 +726,14 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 			if e := s.commit(ctx, c, next); e != nil {
 				return false, e
 			}
-			return true, c.send(recordPointStatus(next))
+			return true, c.send(serverwire.RecordPointStatus(next))
 		case op.D1 == world.PlayerActionSceneTransition:
 			// Only the deck's chapter transition starts the shipwreck rescue.
 			// Ordinary deck/cabin doors use their authored warp IDs, including the
 			// cabin exit whose ID is also 1. A map-wide override strands arcade visitors.
-			if char.Map == game.MapID10017 && op.D2 == starterShipwreckTransition {
+			if r, ok := s.eventPolicy(assets.StoryTransition, c, es, op); ok {
 				c.beachPending = true
-				return true, s.commandTeleport(ctx, c, beachDestination)
+				return true, s.commandTeleport(ctx, c, world.Destination{Map: r.Destination.Map, X: r.Destination.X, Y: r.Destination.Y})
 			}
 			dst, ok := s.World.WarpEntry(char.Map, op.D2)
 			if char.Map == carnie.Map {
@@ -784,7 +815,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 		if op.D1 == 0 {
 			return false, nil
 		}
-		if op.D1 < 1000 {
+		if op.D1 < world.ServiceTeleportMinimumMapID {
 			return true, s.openService(c, op.D1)
 		}
 		dst := world.Destination{Map: op.D1, X: op.D2, Y: op.D3}
@@ -796,11 +827,22 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 		}
 		return true, s.commandTeleport(ctx, c, dst)
 	case world.ActionMovie:
-		if op.D4 == stormMovieOp {
-			return true, s.playStorm(c)
+		for _, d := range s.Assets.Story.Cinematics {
+			if d.Role == "movie_handshake" && slices.Contains(d.Maps, c.character.Map) && d.Trigger.Matches(op.Raw()) {
+				if _, ok := s.cinematic(d.Role, c.character.Map); ok {
+					return true, s.playStorm(c)
+				}
+			}
 		}
 		if op.D1 == 1 || op.D1 == 2 {
-			return true, c.send(eventFrame(5, 0, 0, 2, op.Value(), 0, op.Index, br.Index))
+			mode := byte(protocol.EventMovieContinue)
+			for _, raw := range br.Operations[es.index:] {
+				if world.DecodeOp(raw).MapLoad() {
+					mode = protocol.EventMovieHoldForMapLoad
+					break
+				}
+			}
+			return true, c.send(serverwire.EventFrame(5, 0, 0, mode, op.Value(), 0, op.Index, br.Index))
 		}
 		return true, c.send([]byte{protocol.CommandEvent, protocol.EventStepComplete})
 	case world.ActionLearnSkill:
@@ -822,7 +864,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 		}
 		return true, nil
 	case world.ActionEffect:
-		return true, c.send(eventFrame(15, byte(op.D2), 0, 0, op.Value(), 0, op.Index, br.Index))
+		return true, c.send(serverwire.EventFrame(15, byte(op.D2), 0, 0, op.Value(), 0, op.Index, br.Index))
 	}
 	return false, nil
 }
@@ -835,8 +877,8 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	if amount == 0 {
 		return true, nil
 	}
-	if xaolanRobberyReward(es.mapID, es.ev.Branches[es.branch], op) {
-		return s.claimXaolanRobbery(ctx, c, es, op)
+	if policy, ok := s.storyReward(es.mapID, es.ev.Branches[es.branch], op); ok {
+		return s.claimStoryReward(ctx, c, es, op, policy)
 	}
 	chest := world.DecodeCond(es.ev.Branches[es.branch].Condition).Kind == 3 && amount > 0
 	pool := s.chestPool(es.mapID, es.click)
@@ -851,6 +893,9 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 			reward := rollChestReward(*pool)
 			es.chestReward = &reward
 		}
+		if es.chestReward.Gold > 0 {
+			return s.claimQuestChestGold(ctx, c, es, *pool, es.chestReward.Gold)
+		}
 		op.D3 = es.chestReward.Item
 		amount = int32(es.chestReward.Count)
 	}
@@ -858,7 +903,7 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	result, e := next.Bag.ApplyQuestItems([]game.ItemChange{{ID: op.D3, Count: int(amount)}}, s.stackLimit, s.Assets.Items)
 	if e != nil {
 		if amount > 0 {
-			return false, c.send(headBanner("Cannot receive reward. Check inventory space and item data."))
+			return false, c.send(serverwire.HeadBanner("Cannot receive reward. Check inventory space and item data."))
 		}
 		return false, nil
 	}
@@ -882,12 +927,12 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 		packets = append(packets, next.Bag.AdditionPacket(result.Added))
 	}
 	if amount < 0 {
-		packets = append(packets, headBanner(fmt.Sprintf("Lost %s x%d", s.itemName(op.D3), -int64(amount))))
+		packets = append(packets, serverwire.HeadBanner(fmt.Sprintf("Lost %s x%d", s.itemName(op.D3), -int64(amount))))
 		return true, s.sendAll(c, packets)
 	}
-	packets = append(packets, headBanner(fmt.Sprintf("Obtain %s x%d", s.itemName(op.D3), amount)), []byte{protocol.CommandEvent, protocol.EventStepComplete})
+	packets = append(packets, serverwire.HeadBanner(fmt.Sprintf("Obtain %s x%d", s.itemName(op.D3), amount)), []byte{protocol.CommandEvent, protocol.EventStepComplete})
 	if chest {
-		if c.view != nil && pool != nil {
+		if c.view != nil {
 			c.view.Props[es.ev.ClickID] = 1
 		}
 		packets = append(packets, protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(es.ev.ClickID).U8(1))
@@ -926,45 +971,53 @@ func (s *Server) questMark(ctx context.Context, c *Session, op world.Op) (bool, 
 	if e := s.commit(ctx, c, next); e != nil {
 		return false, e
 	}
+	return true, s.sendAll(c, s.questMarkPackets(c, id, q))
+}
+
+func (s *Server) questMarkPackets(c *Session, id uint32, q game.Quest) [][]byte {
 	packets := s.World.QuestUpdate(c.view, id, q)
-	for _, reward := range storyStars {
-		if id == reward.mark {
-			packets = append(packets, storyConstellations(c.character))
+	for reward := range s.World.StoryRules(assets.StoryConstellation, nil, nil, world.StoryContext{}) {
+		if id == reward.Mark {
+			packets = append(packets, s.storyConstellations(c.character))
 			break
 		}
 	}
-	return true, s.sendAll(c, packets)
+	return packets
 }
 
 // actorAction is opcode 2: animations, paths, prop frames, actor visibility and lines.
 func (s *Server) actorAction(ctx context.Context, c *Session, es *eventSession, op world.Op) (bool, error) {
 	br := es.ev.Branches[es.branch]
 	mapID := es.mapID
-	if cliveAction(mapID, op) {
+	if s.actorCapability(c, es, op) {
 		switch op.D2 {
 		case world.ActorActionAnimation, world.ActorActionAnimationAlternate:
 			if op.D3 > 0xff {
 				return false, nil
 			}
 			if op.D2 == world.ActorActionAnimation {
-				return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneWireCode8}.U16(op.D1).U8(byte(op.D3)).U8(byte(op.DW2)))
+				return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneActorAnimation}.U16(op.D1).U8(byte(op.D3)).U8(byte(op.DW2)))
 			}
-			return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneWireCode7}.U16(op.D1).U8(byte(op.D3)))
-		case world.ActorActionWireCode10:
-			return true, c.send(eventFrame(11, byte(op.D1), op.D2, byte(op.D3), op.DW2, 0, op.Index, br.Index))
+			return true, c.send(protocol.Builder{protocol.CommandScene, protocol.SceneActorExpression}.U16(op.D1).U8(byte(op.D3)))
+		case world.ActorActionTurn:
+			return true, c.send(serverwire.EventFrame(11, byte(op.D1), op.D2, byte(op.D3), op.DW2, 0, op.Index, br.Index))
 		}
 		star := byte(op.Value())
-		return true, s.sendAll(c, [][]byte{{protocol.CommandPetControl, protocol.PetControlWireCode20, star, byte(op.D1)}, eventFrame(13, byte(op.D3), op.D1, byte(op.DW2), uint32(star), 0, op.Index, br.Index)})
+		return true, s.sendAll(c, [][]byte{{protocol.CommandPetControl, protocol.PetControlWireCode20, star, byte(op.D1)}, serverwire.EventFrame(13, byte(op.D3), op.D1, byte(op.DW2), uint32(star), 0, op.Index, br.Index)})
 	}
 	switch op.D2 {
 	case world.ActorActionPose:
-		p := world.ActorPose(op.D1, op.D3, byte(op.Value()))
-		if p == nil {
+		facing := byte(op.Value())
+		if byte(op.DW2) != 0 {
+			facing = byte(op.DW2)
+		}
+		packets := s.World.ActorPosePackets(c.view, mapID, op.D1, op.D3, facing)
+		if len(packets) == 0 {
 			return false, nil
 		}
-		return true, c.send(p)
+		return true, s.sendAll(c, packets)
 	case world.ActorActionPath:
-		return true, c.send(eventFrame(4, 3, op.D1, byte(op.D3), op.Value(), 0, op.Index, br.Index))
+		return true, c.send(serverwire.EventFrame(4, 3, op.D1, byte(op.D3), op.Value(), 0, op.Index, br.Index))
 	case world.ActorActionPropState:
 		target := es.click
 		if op.D1 > 0 {
@@ -986,10 +1039,10 @@ func (s *Server) actorAction(ctx context.Context, c *Session, es *eventSession, 
 				return true, nil
 			}
 			// The source broadcasts an unknown target but has no actor to reset.
-			s.broadcastWorld(c, propFrame(target, byte(state)))
+			s.broadcastWorld(c, serverwire.PropFrame(target, byte(state)))
 		}
 		c.view.Props[target] = state
-		return true, c.send(propFrame(target, byte(state)))
+		return true, c.send(serverwire.PropFrame(target, byte(state)))
 
 	case world.ActorActionHide, world.ActorActionShow:
 		target := es.click
@@ -1059,8 +1112,13 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 		if !ok {
 			continue
 		}
-		if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-			return s.startEvent(ctx, c, 0, ev, i, true)
+		node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+		i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+		if err != nil {
+			return err
+		}
+		if i >= 0 {
+			return s.startEvent(ctx, c, 0, ev, i, true, node)
 		}
 	}
 	return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -1069,6 +1127,9 @@ func (s *Server) runArea(ctx context.Context, c *Session, area world.Area) error
 // tryRegion is TryExecuteRegion: a walk-in region containing the player (and, after a
 // move, not containing the previous position) runs its first eligible event.
 func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16, moved bool) (bool, error) {
+	if s.starterBeachQuestRaft(c) {
+		return false, nil
+	}
 	if c.event != nil {
 		return true, nil
 	}
@@ -1094,8 +1155,13 @@ func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16,
 			if !ok {
 				continue
 			}
-			if i := s.World.FindBranch(c.character, c.view, mapID, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
-				return true, s.startEvent(ctx, c, 0, ev, i, true)
+			node := store.ResourceKey{Kind: store.ResourceCollectionArea, MapID: mapID, NodeID: area.ClickID}
+			i, err := s.findCollectionBranch(ctx, c, node, ev, time.Now())
+			if err != nil {
+				return true, err
+			}
+			if i >= 0 {
+				return true, s.startEvent(ctx, c, 0, ev, i, true, node)
 			}
 		}
 	}
@@ -1103,7 +1169,9 @@ func (s *Server) tryRegion(ctx context.Context, c *Session, prevX, prevY uint16,
 }
 
 // tryEntry is TryExecuteEntry for the area ID an AC20:8 step reports. Doors accept a
-// one-cell margin because the request can precede the last movement update.
+// two-cell margin because the request can precede the last movement update.
+const nativeEntryMarginCells = 2
+
 func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, error) {
 	area, ok := s.World.Entry(c.character.Map, id)
 	if !ok {
@@ -1112,13 +1180,7 @@ func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, err
 	if c.event != nil {
 		return true, nil
 	}
-	margin := int32(1)
-	switch {
-	case c.character.Map == game.MapID11075 && id == 2:
-		margin = 2
-	case area.Kind == 1:
-		margin = 0
-	}
+	margin := int32(nativeEntryMarginCells)
 	if !area.Inside(c.character.X, c.character.Y, margin) {
 		return true, c.send([]byte{protocol.CommandEvent, protocol.EventResume})
 	}
@@ -1127,6 +1189,9 @@ func (s *Server) tryEntry(ctx context.Context, c *Session, id uint16) (bool, err
 
 // regionRequest is AC20:4 (ExecuteRegionRequest): the client names a region it entered.
 func (s *Server) regionRequest(ctx context.Context, c *Session, data []byte) error {
+	if s.starterBeachQuestRaft(c) {
+		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	}
 	if len(data) != 2 {
 		if c.event == nil {
 			return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -1139,8 +1204,8 @@ func (s *Server) regionRequest(ctx context.Context, c *Session, data []byte) err
 	id := uint16(data[0]) | uint16(data[1])<<8
 	area, ok := s.World.Entry(c.character.Map, id)
 	margin := int32(0)
-	if c.character.Map == game.MapID11162 && id == 2 {
-		margin = 2 // The well rope reports before its last movement update.
+	if r, ok := s.World.StoryFirst(assets.StoryRegionMargin, c.character, c.view, world.StoryContext{Map: c.character.Map, Actor: id}); ok {
+		margin = int32(r.Value)
 	}
 	if !ok || area.Kind != 1 || !area.Inside(c.character.X, c.character.Y, margin) {
 		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -1148,61 +1213,45 @@ func (s *Server) regionRequest(ctx context.Context, c *Session, data []byte) err
 	return s.runArea(ctx, c, area)
 }
 
-// storyArrival is TryExecuteStoryArrival: resume interrupted spider-story state,
-// then execute authored PreEvents on the other story maps.
+// storyArrival executes configured cleanup and authored PreEvent recovery routes.
 func (s *Server) storyArrival(ctx context.Context, c *Session) (bool, error) {
-	mapID := c.character.Map
 	if c.event != nil {
 		return true, nil
 	}
-	if fate, ok := c.character.Quests[13086]; mapID == game.MapID11077 && ok && fate.State == game.InProgress && fate.Step == 2 {
-		farewell, found := s.World.Event(mapID, 12)
-		if !found {
-			return false, nil
-		}
-		// The death flag precedes completion in the authored ending. A restart
-		// between those commits must finish cleanup without replaying the movie.
-		if done, ok := c.character.Quests[13087]; ok && done.State == game.InProgress && done.Step > 0 {
-			for _, br := range farewell.Branches {
-				if br.Index != 1 {
-					continue
-				}
-				for _, raw := range br.Operations {
-					op := world.DecodeOp(raw)
-					if op.Code == world.ActionQuestMark && op.D1 == 13086 && op.D2 == 2 {
-						_, err := s.questMark(ctx, c, op)
-						return false, err
+	x := world.StoryContext{Map: c.character.Map}
+	for r := range s.World.StoryRules(assets.StoryArrivalCleanup, c.character, c.view, x) {
+		if ev, ok := s.World.Event(x.Map, r.TargetEvent); ok {
+			for _, br := range ev.Branches {
+				if br.Index == r.TargetBranch {
+					for _, raw := range br.Operations {
+						if r.TargetPattern.Matches(raw.Data) {
+							_, err := s.questMark(ctx, c, world.DecodeOp(raw))
+							return false, err
+						}
 					}
 				}
 			}
-			return false, nil
 		}
-		i := s.World.FindBranch(c.character, c.view, mapID, farewell, world.TriggerEntry, 0, 0, -1)
-		if i < 0 {
-			return false, nil
-		}
-		return true, s.startEvent(ctx, c, 13, farewell, i, false)
-	}
-	if mapID != game.MapID12055 && mapID != game.MapID12000 && mapID != game.MapID11167 && mapID != game.MapID11039 {
 		return false, nil
 	}
-	for _, pre := range s.World.PreEvents(mapID) {
-		if mapID == game.MapID12000 {
-			if pre.ClickID != 10 && pre.ClickID != 12 {
-				continue
+	for r := range s.World.StoryRules(assets.StoryArrival, c.character, c.view, x) {
+		var ev *assets.Event
+		if r.UsePreEvent {
+			for _, pre := range s.World.PreEvents(x.Map) {
+				if pre.ClickID == r.TargetEvent {
+					ev = pre
+					break
+				}
 			}
-		} else if pre.ClickID != 1 {
+		} else {
+			ev, _ = s.World.Event(x.Map, r.TargetEvent)
+		}
+		if ev == nil {
 			continue
 		}
-		i := s.World.FindBranch(c.character, c.view, mapID, pre, world.TriggerEntry, 0, 0, -1)
-		if i < 0 {
-			continue
+		if i := s.World.FindBranch(c.character, c.view, x.Map, ev, world.TriggerEntry, 0, 0, -1); i >= 0 {
+			return true, s.startEvent(ctx, c, r.TargetActor, ev, i, false)
 		}
-		// The reunion cleanup is already durable after the first visit.
-		if q, ok := c.character.Quests[13052]; mapID == game.MapID12000 && pre.ClickID == 10 && ok && q.State == game.Completed {
-			continue
-		}
-		return true, s.startEvent(ctx, c, 0, pre, i, false)
 	}
 	return false, nil
 }

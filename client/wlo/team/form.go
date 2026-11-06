@@ -1,9 +1,12 @@
 package team
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"fmt"
 	"image"
+	"math"
 	"strconv"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/login"
@@ -15,29 +18,32 @@ import (
 )
 
 const (
-	formWidth                  = 356
-	formHeight                 = 539
-	petRowTop                  = 77
-	petRowStep                 = 34
-	memberRowTop               = 265
-	memberRowStep              = 75
-	textInk                    = 0x0841
-	petPortraitTop             = 69 // First cell interior in Form_Team_2, above the action buttons.
-	petIconSize                = 24
-	petIconInset               = (petRowStep - petIconSize) / 2
-	petNameLimit               = 14 // Native TSe_Editor limit in FUN_0026d6bc.
-	PetConfirmationAction      = 11 // FUN_0034c814: NPC body mode, fixed first frame.
-	confirmationBodyMargin     = 30
-	confirmationBodyTop        = 20
-	confirmationNameGap        = 16
-	confirmationBodyPadding    = 70
-	confirmationButtonRow      = 40
-	confirmationButtonsUp      = 45
-	confirmationLowBodyHeight  = 86
-	confirmationLowNamePadding = 68
-	modeRest                   = 0
-	modeBattle                 = 1
-	modeRide                   = 2
+	formWidth                   = 356
+	formHeight                  = 539
+	petRowTop                   = 77
+	petRowStep                  = 34
+	memberRowTop                = 265
+	memberRowStep               = 75
+	textInk                     = 0x0841
+	petPortraitTop              = 69 // First cell interior in Form_Team_2, above the action buttons.
+	petIconSize                 = 24
+	petIconInset                = (petRowStep - petIconSize) / 2
+	petNameLimit                = 14 // Native TSe_Editor limit in FUN_0026d6bc.
+	PetConfirmationAction       = 11 // FUN_0034c814: NPC body mode, fixed first frame.
+	ApplicantConfirmationAction = 13 // FUN_0034c814: human body mode, fixed first frame.
+	applicantPromptWidth        = 346
+	applicantPromptHeight       = 185
+	confirmationBodyMargin      = 30
+	confirmationBodyTop         = 20
+	confirmationNameGap         = 16
+	confirmationBodyPadding     = 70
+	confirmationButtonRow       = 40
+	confirmationButtonsUp       = 45
+	confirmationLowBodyHeight   = 86
+	confirmationLowNamePadding  = 68
+	modeRest                    = 0
+	modeBattle                  = 1
+	modeRide                    = 2
 )
 
 type Form struct {
@@ -47,6 +53,9 @@ type Form struct {
 	State              *State
 	Inventory          *inventory.Form
 	CanAct             func() bool
+	InBattle           func() bool
+	CanChangePet       func() bool
+	RidingVehicle      func() bool
 	Send               func([]byte) error
 	Notice             func(string)
 	NameOf             func(uint32) []byte
@@ -54,6 +63,7 @@ type Form struct {
 	DrawFace           func(uint32, image.Rectangle)
 	DrawPetFace        func(byte, image.Rectangle)
 	DrawPetBody        func(byte, int, int, int)
+	DrawPlayerBody     func(uint32, int, int, int)
 	PetPreviewSize     func(byte) (int, int)
 	PetPreviewTemplate func(byte) world.NPCTemplate
 	Modes              [game.MaxPets]*seui.FixedButton
@@ -81,12 +91,19 @@ func NewForm(env *seui.Env, state *State, bag *inventory.Form) *Form {
 		choice := mode
 		f.Options[mode] = f.button(asset, 247, 0, 44, 20, func() { f.SetMode(f.menuSlot, choice) })
 		f.Options[mode].Visible = false
-		f.Options[mode].SetHint([]byte([]string{"Rest the pet.", "Assign the pet to battle.", "Ride the pet."}[mode]))
+		f.Options[mode].BindLanguage("hint", func() {
+			f.Options[mode].SetHint([]byte([]string{localization.UI("ui.team.rest_the_pet_f44e6fe6"), localization.UI("ui.team.assign_the_pet_to_battle_b20cdde3"), localization.UI("ui.team.ride_the_pet_776b8962")}[mode]))
+		})
 	}
 	f.button("Btn_Close_s_1", 321, 24, 18, 18, f.Hide)
 	f.button("Btn_Close_1", 157, 500, 56, 20, f.Hide)
 	f.End = f.button("Btn_DismissTeam_1", 140, 235, 70, 20, func() {
-		f.Confirm("Leave the party?", 0, func() { f.send([]byte{protocol.CommandTeam, protocol.TeamLeave}) })
+		leader := f.State.Leader
+		f.Confirm(localization.UI("ui.team.leave_the_party_c2449ad7"), 0, func() {
+			if f.allowed() && f.State.InParty() && f.State.Leader == leader {
+				f.send(protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(leader))
+			}
+		})
 	})
 	for i := range f.Modes {
 		slot := byte(i + 1)
@@ -97,7 +114,7 @@ func NewForm(env *seui.Env, state *State, bag *inventory.Form) *Form {
 		e.Color = textInk
 		e.SetMaxLen(petNameLimit)
 		e.SetFilter(3)
-		e.SetHint([]byte("Change name"))
+		e.BindLanguage("hint", func() { e.SetHint([]byte(localization.UI("ui.team.change_name_e17a8484"))) })
 		e.OnClick = func() { f.editName(slot) }
 		e.OnEnter = f.finishName
 		e.OnBlur = f.finishName
@@ -219,9 +236,21 @@ func (f *Form) finishName() {
 	e.Caret, e.CaretCol = 0, 0
 }
 
-// FUN_0027758c/FUN_00277fc8: mode changes are requests, not optimistic roster edits.
+// FUN_00277728: battle-mode requests consume the player's command. Riding is
+// unavailable during combat. Roster changes wait for the server's reply.
 func (f *Form) SetMode(slot byte, mode int) {
-	if !f.allowed() || slot < 1 || slot > game.MaxPets {
+	inBattle := f.InBattle != nil && f.InBattle()
+	allowed := f.allowed()
+	if inBattle {
+		allowed = f.Visible && !f.Blocked() && f.CanChangePet != nil && f.CanChangePet() && mode != modeRide
+	}
+	if !allowed || slot < 1 || slot > game.MaxPets {
+		return
+	}
+	if mode == modeRide && f.RidingVehicle != nil && f.RidingVehicle() {
+		if f.Notice != nil {
+			f.Notice(localization.UI("ui.team.rest_the_vehicle_before_riding_a_pet_b2514be7"))
+		}
 		return
 	}
 	pet := f.Inventory.State.Pets[slot-1]
@@ -231,14 +260,23 @@ func (f *Form) SetMode(slot byte, mode int) {
 	f.menuSlot = 0
 	if mode != modeRest && pet.Stats.HP == 0 {
 		if f.Notice != nil {
-			f.Notice("Can't use a defeated pet.")
+			f.Notice(localization.UI("ui.team.can_t_use_a_defeated_pet_e77e446b"))
 		}
 		return
 	}
-	if mode == modeBattle && pet.Amity < 40 {
+	if mode == modeBattle && pet.Amity < game.BattlePetMinimumAmity {
 		if f.Notice != nil {
-			f.Notice("Can't use, Amity below 40")
+			f.Notice(localization.UI("ui.team.can_t_use_amity_below_40_9ecf830c"))
 		}
+		return
+	}
+	if inBattle {
+		if mode == modeRest && f.State.BattlePet == pet.ID {
+			f.send([]byte{protocol.CommandBattlePet, protocol.BattlePetRest})
+		} else if mode == modeBattle && f.State.BattlePet != pet.ID && f.State.MountPet != pet.ID {
+			f.send(protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(uint32(pet.ID)))
+		}
+		f.Refresh()
 		return
 	}
 	if f.State.MountPet == pet.ID && mode != modeRide {
@@ -266,7 +304,7 @@ func (f *Form) DismissPet(slot byte) {
 		return
 	}
 	f.Hide()
-	f.Confirm("Remove "+string(pet.Name)+"?", slot, func() {
+	f.Confirm(localization.UI("ui.team.remove_5948954e")+string(pet.Name)+"?", slot, func() {
 		if f.CanAct != nil && !f.CanAct() {
 			return
 		}
@@ -281,10 +319,10 @@ func (f *Form) memberAction(row int, leader bool) {
 		return
 	}
 	id := ids[row]
-	message := "Dismiss this teammate?"
+	message := localization.UI("ui.team.dismiss_this_teammate_0a7e3d28")
 	code := byte(protocol.TeamKick)
 	if leader {
-		message = "Appoint this teammate as leader?"
+		message = localization.UI("ui.team.appoint_this_teammate_as_leader_30ce278b")
 		code = protocol.TeamTransferLeadership
 	}
 	f.Confirm(message, 0, func() {
@@ -293,7 +331,11 @@ func (f *Form) memberAction(row int, leader bool) {
 		}
 		for _, member := range f.State.Others() {
 			if member == id {
-				f.send(protocol.Builder{protocol.CommandTeam, code}.U32(id))
+				packet := protocol.Builder{protocol.CommandTeam, code}
+				if leader {
+					packet = packet.U8(protocol.TeamTransferOffer)
+				}
+				f.send(packet.U32(id))
 				return
 			}
 		}
@@ -301,6 +343,10 @@ func (f *Form) memberAction(row int, leader bool) {
 }
 func (f *Form) Refresh() {
 	can := f.allowed()
+	changePet := can
+	if f.InBattle != nil && f.InBattle() {
+		changePet = f.Visible && !f.Blocked() && f.CanChangePet != nil && f.CanChangePet()
+	}
 	// FUN_0026dfc4 keeps the active tab pressed, like the Skills tabs.
 	for i, b := range f.Tabs {
 		b.Sticky = (i == 1) == f.Instances.Visible
@@ -324,7 +370,7 @@ func (f *Form) Refresh() {
 			e.Caret, e.CaretCol = 0, 0
 		}
 		f.Modes[i].Visible = have
-		f.Modes[i].Enabled = can
+		f.Modes[i].Enabled = changePet
 		f.Dismiss[i].Visible = have
 		f.Dismiss[i].Enabled = can
 		art := "Btn_AssignRest_1"
@@ -341,7 +387,7 @@ func (f *Form) Refresh() {
 	}
 	for i, b := range f.Options {
 		b.Visible = f.menuSlot != 0 && !f.Instances.Visible
-		b.Enabled = can
+		b.Enabled = changePet && (i != modeRide || (f.RidingVehicle == nil || !f.RidingVehicle()) && (f.InBattle == nil || !f.InBattle()))
 		b.Top = petRowTop + (int(f.menuSlot)-1)*petRowStep - 63 + i*20
 	}
 
@@ -399,21 +445,21 @@ func (f *Form) Paint() {
 		if f.DrawFace != nil {
 			f.DrawFace(id, image.Rect(a.X+25, a.Y+y-3, a.X+97, a.Y+y+69))
 		}
-		name := []byte("Player " + strconv.FormatUint(uint64(id), 10))
+		name := []byte(localization.UI("ui.team.player_2b656543") + strconv.FormatUint(uint64(id), 10))
 		if f.NameOf != nil && len(f.NameOf(id)) > 0 {
 			name = f.NameOf(id)
 		}
-		text(105, y+4, name)
+		text(105, y, name)
 		var stats *world.Stats
 		if f.StatsOf != nil {
 			stats = f.StatsOf(id)
 		}
 		if stats != nil {
-			f.status.Level(stats.Level, image.Pt(a.X+200, a.Y+y+18), true)
-			f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find("Word_Hp_2"), a.X+105, a.Y+y+18, true)
-			f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find("Word_Sp_2"), a.X+105, a.Y+y+33, true)
-			f.gauge(image.Rect(a.X+129, a.Y+y+19, a.X+193, a.Y+y+27), stats.HP, stats.MaxHP, 0xf800)
-			f.gauge(image.Rect(a.X+129, a.Y+y+34, a.X+193, a.Y+y+42), uint32(stats.SP), uint32(stats.MaxSP), 0x07ff)
+			f.status.Level(stats.Level, image.Pt(a.X+199, a.Y+y+16), true)
+			f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find("Word_Hp_2"), a.X+107, a.Y+y+17, true)
+			f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find("Word_Sp_2"), a.X+107, a.Y+y+31, true)
+			f.memberGauge(a.X+130, a.Y+y+19, stats.HP, stats.MaxHP, "Panel34_1", "Panel31_1")
+			f.memberGauge(a.X+130, a.Y+y+33, uint32(stats.SP), uint32(stats.MaxSP), "Panel35_1", "Panel32_1")
 			f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find(fmt.Sprintf("Icon_Element_%d_1", stats.Element)), a.X+205, a.Y+y+38, true)
 		}
 	}
@@ -447,14 +493,17 @@ func (f *Form) smallVitals(x, y int, s *world.Stats) {
 		}
 	}
 }
-func (f *Form) gauge(r image.Rectangle, value, maximum uint32, color uint16) {
-	f.Env.Screen.Fill(r, 0x4208)
-	inner := r.Inset(1)
-	f.Env.Screen.Fill(inner, 0x3186)
+
+// FUN_004794e0/00479600 draw independent frames and fills, inset by two pixels.
+func (f *Form) memberGauge(x, y int, value, maximum uint32, frame, fill string) {
+	f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find(frame), x, y, true)
+	bar := f.Env.Pics.Find(fill)
+	width, height := f.Env.Pics.Size(bar)
+	filled := 0
 	if maximum > 0 {
-		inner.Max.X = inner.Min.X + int(uint64(inner.Dx())*uint64(min(value, maximum))/uint64(maximum))
-		f.Env.Screen.Fill(inner, color)
+		filled = int(math.RoundToEven(float64(width) * float64(min(value, maximum)) / float64(maximum)))
 	}
+	f.Env.Pics.DrawRect(f.Env.Screen, bar, x+2, y+2, image.Rect(0, 0, filled, height), true)
 }
 
 // Retain the native shaded confirmation panel and explicit Confirm/Cancel controls.
@@ -466,17 +515,31 @@ type confirmation struct {
 	cancel                      func()
 	previewWidth, previewHeight int
 	previewTemplate             world.NPCTemplate
+	applicant                   uint32
+	applicantName               []byte
 }
 
-func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func()) {
+// Confirm shows the question; the returned function dismisses this
+// question, if it is still open, without calling either answer.
+func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func()) func() {
+	return f.confirm(message, slot, 0, nil, confirm, cancel...)
+}
+
+// ConfirmApplicant puts the applicant's body and name beside the request text.
+func (f *Form) ConfirmApplicant(id uint32, name []byte, message string, confirm func(), cancel ...func()) func() {
+	return f.confirm(message, 0, id, name, confirm, cancel...)
+}
+
+func (f *Form) confirm(message string, slot byte, applicant uint32, name []byte, confirm func(), cancel ...func()) func() {
 	if f.prompt != nil {
 		f.prompt.Hide()
 	}
-	d := &confirmation{owner: f, slot: slot}
+	d := &confirmation{owner: f, slot: slot, applicant: applicant, applicantName: append([]byte(nil), name...)}
 	if len(cancel) > 0 {
 		d.cancel = cancel[0]
 	}
 	d.InitForm(d, f.Env)
+	d.AnimateMessage(f.Inventory.Now)
 	d.Dockable = false
 	width, height := 280, 200
 	if slot != 0 && f.PetPreviewSize != nil {
@@ -494,6 +557,10 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 		}
 	}
 	left := 255
+	if applicant != 0 {
+		width, height = applicantPromptWidth, applicantPromptHeight
+		left = (800 - width) / 2
+	}
 	if slot != 0 {
 		left = (800 - width) / 2
 	}
@@ -502,6 +569,9 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 	d.Image = -1 // The cached panel is the sole confirmation background.
 	label := seui.NewEditor(f.Env, d)
 	textX, textWidth := 80, 185
+	if applicant != 0 {
+		textX, textWidth = 76, width-90
+	}
 	if slot != 0 {
 		textX, textWidth = 50, width-d.previewWidth-2*confirmationBodyMargin
 	}
@@ -516,7 +586,7 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 		ok := i == 0
 		b := seui.NewFixedButton(f.Env, d)
 		buttonX, buttonY := 70+i*96, 150
-		if slot != 0 {
+		if slot != 0 || applicant != 0 {
 			buttonX, buttonY = width/2-76+i*96, height-confirmationButtonsUp
 		}
 		b.Init(asset, buttonX, 20, 56, 0, 0, true, 20, 56, buttonY)
@@ -533,6 +603,11 @@ func (f *Form) Confirm(message string, slot byte, confirm func(), cancel ...func
 	f.Env.UI.Add(d)
 	d.Show()
 	f.Env.UI.SetModal(true, d)
+	return func() {
+		if f.prompt == d {
+			d.Hide()
+		}
+	}
 }
 func (d *confirmation) Hide() {
 	if d.Env.UI.Modal == d {
@@ -561,7 +636,14 @@ func (d *confirmation) Paint() {
 		d.background = seui.ConfirmationBackground(d.Env, d.Width, d.Height)
 	}
 	a := d.Abs()
-	d.Env.Screen.Draw(a.X, a.Y, d.background, true)
+	d.Env.Screen.DrawStretch(d.MessageRect(), d.background, true)
+	if d.applicant != 0 {
+		x, y := a.X+42, a.Y+100
+		if d.owner.DrawPlayerBody != nil {
+			d.owner.DrawPlayerBody(d.applicant, x, y, ApplicantConfirmationAction)
+		}
+		d.Env.Text.Draw(x-len(d.applicantName)*4, y+16, 0, false, true, d.Env.Screen, d.applicantName, 15, 110, 0, 0xffff, 0)
+	}
 	if d.slot != 0 && d.owner.DrawPetBody != nil {
 		x := a.X + d.Width - d.previewWidth/2 - confirmationBodyMargin
 		y := a.Y + d.previewHeight + confirmationBodyTop

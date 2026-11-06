@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 
 	"gorm.io/gorm"
 	"wonderland-gonline/internal/game"
@@ -12,7 +13,7 @@ import (
 var ErrAutosaveConflict = errors.New("autosave snapshot conflicts with durable character state")
 
 // AutosaveCharacter checkpoints pending session changes without overwriting
-// newer durable state. Same-map walking uses a guarded position-only update
+// newer durable state. Same-map walking/resting use guarded state/vital updates
 // when every other field matches SQL; other changes require the full previous
 // checkpoint to match. Already durable or unchanged snapshots need no write.
 func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baseline, next game.Character) (bool, error) {
@@ -37,20 +38,44 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		if reflect.DeepEqual(durable, after) || reflect.DeepEqual(before, after) {
 			return nil
 		}
-		// Merge only buffered same-map position when every other cached field
-		// agrees with authoritative SQL. Never rewrite owned child rows for walking.
+		// Merge only buffered same-map position and resting HP/SP when every
+		// other cached field agrees with authoritative SQL. Party pet recovery
+		// updates only HP/SP, without rewriting pets, equipment or skills.
 		afterState, durableState := after, durable
-		afterState.X, afterState.Y = 0, 0
-		durableState.X, durableState.Y = 0, 0
+		afterState.Pets, durableState.Pets = slices.Clone(after.Pets), slices.Clone(durable.Pets)
+		afterState.X, afterState.Y, afterState.HP, afterState.SP = 0, 0, 0, 0
+		durableState.X, durableState.Y, durableState.HP, durableState.SP = 0, 0, 0, 0
+		for i := range afterState.Pets {
+			afterState.Pets[i].HP, afterState.Pets[i].SP = 0, 0
+		}
+		for i := range durableState.Pets {
+			durableState.Pets[i].HP, durableState.Pets[i].SP = 0, 0
+		}
 		if before.Map == after.Map && durable.Map == before.Map &&
-			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y {
-			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ?", ref.ID, before.Map, before.X, before.Y).
-				Updates(map[string]any{"x": next.X, "y": next.Y})
+			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y &&
+			durable.HP == before.HP && durable.SP == before.SP && petVitalsMatch(before.Pets, durable.Pets) {
+			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ? AND hp = ? AND sp = ?", ref.ID, before.Map, before.X, before.Y, before.HP, before.SP).
+				Updates(map[string]any{"x": next.X, "y": next.Y, "hp": next.HP, "sp": next.SP})
 			if result.Error != nil {
 				return result.Error
 			}
 			if result.RowsAffected != 1 {
 				return ErrAutosaveConflict
+			}
+			for i, pet := range next.Pets {
+				prior := durable.Pets[i]
+				if pet.HP == prior.HP && pet.SP == prior.SP {
+					continue
+				}
+				result := tx.Model(&characterPetRow{}).
+					Where("character_id = ? AND location = ? AND ordinal = ? AND pet_id = ? AND hp = ? AND sp = ?", ref.ID, petParty, i, prior.ID, prior.HP, prior.SP).
+					Updates(map[string]any{"hp": pet.HP, "sp": pet.SP})
+				if result.Error != nil {
+					return result.Error
+				}
+				if result.RowsAffected != 1 {
+					return ErrAutosaveConflict
+				}
 			}
 			written = true
 			return nil
@@ -65,6 +90,18 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		return nil
 	})
 	return written && err == nil, err
+}
+
+func petVitalsMatch(before, current []game.Pet) bool {
+	if len(before) != len(current) {
+		return false
+	}
+	for i, pet := range before {
+		if pet.ID != current[i].ID || pet.Slot != current[i].Slot || pet.HP != current[i].HP || pet.SP != current[i].SP {
+			return false
+		}
+	}
+	return true
 }
 
 // Canonicalize representation details that JSON comparisons previously ignored.

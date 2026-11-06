@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
 )
 
 func TestInventoryPointDraftAndNativeRequest(t *testing.T) {
@@ -28,7 +29,7 @@ func TestInventoryPointDraftAndNativeRequest(t *testing.T) {
 	f.AddPoint(0)
 	f.AddPoint(4)
 	f.SubmitAllocation()
-	if len(sent) != 1 || !bytes.Equal(sent[0], []byte{8, 1, 0, 2, 28, 1, 0, 30, 1, 0}) {
+	if len(sent) != 1 || !bytes.Equal(sent[0], []byte{8, 1, 0, 2, 28, 1, 0, 0, 0, 30, 1, 0, 0, 0}) {
 		t.Fatalf("native allocation %x", sent)
 	}
 	f.SubmitAllocation()
@@ -43,6 +44,43 @@ func TestInventoryPointDraftAndNativeRequest(t *testing.T) {
 	f.AddPoint(1)
 	if f.AllocationWaiting || f.PendingPoints[1] != 1 {
 		t.Fatal("reply did not allow next allocation")
+	}
+}
+
+func TestInventoryPointBatchesReachServerParser(t *testing.T) {
+	// Every nonempty subset includes adjacent/nonadjacent attribute pairs and
+	// mixed amounts. Exercise the actual server decoder and allocation rules,
+	// rather than merely comparing a client packet against its own encoder.
+	for mask := 1; mask < 1<<allocationAttributes; mask++ {
+		f := &Form{Stats: &world.Stats{Points: 15}, Now: time.Now}
+		f.Visible = true
+		var packet []byte
+		f.Send = func(p []byte) { packet = append([]byte(nil), p...) }
+		var want [5]uint16
+		spent := uint16(0)
+		for i := range want {
+			if mask&(1<<i) == 0 {
+				continue
+			}
+			want[i] = uint16(i + 1)
+			spent += want[i]
+			for range want[i] {
+				f.AddPoint(i)
+			}
+		}
+		f.SubmitAllocation()
+		if len(packet) == 0 {
+			t.Fatal("missing allocation", mask)
+		}
+		target, requests := game.ParseStatAllocation(packet[1], packet[2:])
+		character := game.Character{StatPoints: 15}
+		if target != 0 || !character.Allocate(requests) {
+			t.Fatal("client allocation rejected by server", mask, requests)
+		}
+		got := [5]uint16{character.Base.Strength, character.Base.Constitution, character.Base.Intelligence, character.Base.Wisdom, character.Base.Agility}
+		if got != want || character.StatPoints != 15-spent {
+			t.Fatal("server misread client allocation", mask, requests, got, want, character.StatPoints)
+		}
 	}
 }
 

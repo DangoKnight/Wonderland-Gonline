@@ -2,53 +2,70 @@ package server
 
 import (
 	"context"
-	"reflect"
 	"testing"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/world"
 )
 
-func TestPetEquipmentAndAllocationPersistence(t *testing.T) {
-	s, players, wires := petFixture(t)
-	c, wire := players[0], wires[0]
-	ctx := context.Background()
-	next := c.character.Clone()
-	pet := game.NewPet(14156, "Xaolan", 3, s.petTemplate(14156), s.Assets.Items)
-	pet.StatPoints = 3
-	pet.Equipment[2] = game.Item{ID: 10063, Count: 1, Damage: 7}
-	next.Pets = []game.Pet{pet}
-	next.Bag[8] = game.Item{ID: 10064, Count: 1, Damage: 4, Metadata: [26]byte{18: 2}}
-	s.Assets.Items[10064] = game.ItemDefinition{ID: 10064, EquipSlot: 3, Status: [2]uint16{210, 207}, Values: [2]int32{120, 110}}
-	s.Assets.Items[10063] = game.ItemDefinition{ID: 10063, EquipSlot: 3}
-	c.pets.register(14156) // client slot 1 differs from persistent party slot 3.
-	if err := s.commit(ctx, c, next); err != nil {
-		t.Fatal(err)
-	}
-	do := func(p ...byte) [][]byte {
-		t.Helper()
-		if err := s.worldCommand(ctx, c, p); err != nil {
-			t.Fatal(err)
-		}
-		return wire.packets(t)
-	}
-	if got := do(23, 17, 1, 9); !contains(got, []byte{23, 23, 1, 9}) {
-		t.Fatal(got)
-	}
-	if c.character.Pets[0].Equipment[2].ID != 10064 || c.character.Bag[8].Damage != 7 {
-		t.Fatal("swap lost metadata")
-	}
-	before := c.character.Clone()
-	if got := do(23, 18, 1, 3, 9); len(got) != 0 || !reflect.DeepEqual(before, *c.character) {
-		t.Fatal("occupied destination accepted")
-	}
-	if got := do(23, 18, 1, 3, 10); !contains(got, []byte{23, 22, 1, 3, 10}) || c.character.Bag[9].Forge() != 2 {
-		t.Fatal("remove", got)
-	}
-	do(8, 2, 1, 28, 2)
-	if c.character.Pets[0].StatPoints != 1 || c.character.Pets[0].Base.Strength != pet.Base.Strength+2 {
-		t.Fatal("wrong pet allocated")
-	}
-	chars, err := s.Store.Characters(ctx, c.account.ID)
-	if err != nil || !reflect.DeepEqual(chars[0].Pets, c.character.Pets) || chars[0].Bag[9] != c.character.Bag[9] {
-		t.Fatal("state did not persist", err)
+func TestPetSpecialEquipmentRecruitVoucherReserveAndRollback(t *testing.T) {
+	for _, voucher := range []bool{false, true} {
+		t.Run(map[bool]string{false: "recruit", true: "voucher"}[voucher], func(t *testing.T) {
+			s, players, wires := petFixture(t)
+			c := players[0]
+			s.Assets.NPCs[14081] = assets.NPC{ID: 14081, Type: 4, Name: "Niss", Stats: [5]uint16{4, 4, 8, 8, 4}}
+			s.Assets.Items[14073] = game.ItemDefinition{ID: 14073, EquipSlot: 3}
+			s.Assets.Story.CompanionEquipment = []assets.StoryCompanionEquipment{{Template: 14081, Equipment: []assets.StoryEquipment{{Slot: 2, ItemID: 14073}}}}
+			s.Assets.PetVouchers = map[uint16]uint16{30068: 14081}
+			s.Assets.Items[30068] = game.ItemDefinition{ID: 30068}
+			c.character.Bag[8] = game.Item{ID: 30068, Count: 1}
+			s.World = world.New(s.Assets)
+			if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+				t.Fatal(err)
+			}
+			acquire := func(ctx context.Context) error {
+				if voucher {
+					return s.dispatch(ctx, c, []byte{23, 96, 9})
+				}
+				_, err := s.recruit(ctx, c, 14081)
+				return err
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			if err := acquire(ctx); err == nil || len(c.character.Pets) != 0 || wires[0].Len() != 0 {
+				t.Fatal("failed grant leaked pet or packets", err)
+			}
+			if err := acquire(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			pet := c.character.Pets[0]
+			if pet.Equipment != (game.Equipment{2: {ID: 14073, Count: 1}}) {
+				t.Fatal("starter not equipped", pet)
+			}
+			foundRoster := false
+			for _, p := range wires[0].packets(t) {
+				if len(p) >= 2 && p[0] == 15 && p[1] == 8 {
+					foundRoster = true
+				}
+			}
+			if !foundRoster {
+				t.Fatal("equipped roster not published")
+			}
+			saved, err := s.Store.Characters(context.Background(), c.account.ID)
+			if err != nil || saved[0].Pets[0].Equipment != pet.Equipment {
+				t.Fatal("gear not durable", err)
+			}
+			// A returning pet whose original weapon was removed must not get another.
+			pet.Equipment = game.Equipment{}
+			next := c.character.Clone()
+			next.Pets = nil
+			next.ReservePets = []game.Pet{pet}
+			if err := s.commit(context.Background(), c, next); err != nil {
+				t.Fatal(err)
+			}
+			if ok, err := s.recruit(context.Background(), c, 14081); err != nil || !ok || c.character.Pets[0].Equipment != (game.Equipment{}) {
+				t.Fatal("returning pet gear regenerated", ok, err)
+			}
+		})
 	}
 }

@@ -1,9 +1,11 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
-	"errors"
 	"image"
+	"math"
 	"slices"
 	"sort"
 	"strconv"
@@ -11,7 +13,9 @@ import (
 
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/weather"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Screen layout of the static view, measured from the original's capture
@@ -50,9 +54,13 @@ type Player struct {
 	Nickname    []byte
 	Presence    byte
 	Direction   int32
+	// The social profile after the nickname (AC3 → +0x20aa, +0x20ac..):
+	// blood type, birth year as an offset from 1900, month and day; 0 is
+	// unset.
+	Blood, BirthYear, BirthMonth, BirthDay byte
 }
 
-var errShort = errors.New("AC3: packet too short")
+var errShort = localization.Error("ui.world.ac3_packet_too_short_c3d6c6fb")
 
 // ParseSelf reads AC3 after its command byte.
 func ParseSelf(p []byte) (Player, error) {
@@ -72,6 +80,9 @@ func ParseSelf(p []byte) (Player, error) {
 	pl.Name = r.str()
 	if len(r.b) > 0 {
 		pl.Nickname = r.str()
+	}
+	if len(r.b) >= 4 {
+		pl.Blood, pl.BirthYear, pl.BirthMonth, pl.BirthDay = r.u8(), r.u8(), r.u8(), r.u8()
 	}
 	if r.bad {
 		return pl, errShort
@@ -101,33 +112,47 @@ func (r *reader) str() []byte { return append([]byte(nil), r.take(int(r.u8()))..
 
 // World is the in-game state.
 type World struct {
-	Env       *seui.Env
-	Scene     *Scene
-	SceneName string
-	Player    Player
-	Body      login.RoleView
+	// Logical scene viewport before scaling into the fixed 800x600 UI.
+	// Zero retains the native viewport, including cinematic views.
+	ViewWidth, ViewHeight int
+	Shapeshifts           map[uint32]PlayerShape
+	NPCExpressions        map[uint16]Expression
+	Env                   *seui.Env
+	Scene                 *Scene
+	SceneName             string
+	Player                Player
+	Body                  login.RoleView
 	// NPCs are the map's NPC objects by click ID (MapNPCs).
 	NPCs map[uint16]*NPC
 	// Questions are the map's event questions by click ID.
 	Questions map[uint16]Question
 	// Areas are the map's event areas (MapAreas); lightsFrom starts the
 	// door lights' frames.
-	Areas      []Area
-	lightsFrom time.Time
+	Areas []Area
+	// Mines are the map's mines (MapMines), for the minimap.
+	Mines         []Mine
+	lightsFrom    time.Time
+	exitIndicator *exitIndicator
+	gatewayLight  *gatewayLight
 	// OnLeg is called as each leg of a walk starts, with the facing and
 	// the waypoint (the client sends 6/1).
 	OnLeg  func(facing, x, y int)
 	walker Walker
 	// Peers are the other players on the map, by ID (peers.go).
-	Peers             map[uint32]*Peer
-	Companions        map[uint32]*Companion
-	Expressions       map[uint32]Expression
-	JoinTeamSelection bool
-	teamHover         teamTarget
-	hovered           *NPC
+	Peers               map[uint32]*Peer
+	Teams               map[uint32][]uint32
+	TeamFollowingPaused bool
+	teamTrails          map[uint32]*teamTrail
+	Companions          map[uint32]*Companion
+	Expressions         map[uint32]Expression
+	JoinTeamSelection   bool
+	teamHover           teamTarget
+	hovered             *NPC
 	// CameraAt, when set, is the camera's top-left instead of the
 	// player-centred one.
-	CameraAt *image.Point
+	CameraAt      *image.Point
+	followCamera  cameraFollow
+	DeferOverlays bool // Composite screen-space overlays after camera filtering.
 	// Cinematic leaves out the location line and the walk marker (a
 	// movie's view).
 	Cinematic bool
@@ -181,33 +206,38 @@ func (w *World) Camera() (int, int) {
 	if w.CameraAt != nil {
 		return w.CameraAt.X, w.CameraAt.Y
 	}
-	px, py := w.Player.X, w.Player.Y
-	cx, cy := px-screenW/2, py-screenH/2
+	if w.followCamera.ready {
+		return int(math.Round(w.followCamera.x)), int(math.Round(w.followCamera.y))
+	}
+	return w.cameraTarget()
+}
+
+func (w *World) cameraTarget() (int, int) {
 	mapW, mapH := w.Scene.Width, w.Scene.Height
-	switch {
-	case px <= screenW/2:
-		cx = 0
-	case mapW < screenW/2+px:
-		cx = 0
-		if screenW < mapW {
-			cx = mapW - screenW - cameraRightMargin
-		}
+	width, height := w.ViewWidth, w.ViewHeight
+	if width == 0 || height == 0 {
+		width, height = screenW, screenH
 	}
-	switch {
-	case py-screenH/2 < 1:
-		cy = 0
-	case mapH < screenH/2+py:
-		cy = 0
-		if screenH < mapH {
-			cy = mapH - screenH
-		}
-	}
+	// Apply the right-edge margin to the clamp itself, not only after the
+	// player crosses the unpadded map edge. Otherwise the camera travels
+	// twenty pixels past its resting limit before snapping back.
+	cx := max(0, min(w.Player.X-width/2, mapW-width-cameraRightMargin))
+	cy := max(0, min(w.Player.Y-height/2, mapH-height))
 	return cx, cy
 }
 
 // cameraRightMargin is FUN_003f94e8's 0x14 at the map's right edge.
 const cameraRightMargin = 0x14
 const nicknameRowSpacing = 20 // native name/nickname overlay row spacing
+
+// ScenePoint converts fixed-UI pointer coordinates into the zoomed map pass.
+// Scene picking and walking continue to operate in unscaled map pixels.
+func (w *World) ScenePoint(x, y int) (int, int) {
+	if w.ViewWidth == 0 || w.ViewHeight == 0 {
+		return x, y
+	}
+	return int(math.Floor(float64(x) * float64(w.ViewWidth) / screenW)), int(math.Floor(float64(y) * float64(w.ViewHeight) / screenH))
+}
 
 // NewView is a view of a map's scene with no player of its own, for a
 // movie: its actors are set as NPCs (and Player/Body when the player takes
@@ -220,14 +250,31 @@ func NewView(env *seui.Env, a login.Assets, mapID uint16) (*World, error) {
 	return &World{Env: env, Scene: s, Now: time.Now, Cinematic: true, HideNames: true, CameraAt: &image.Point{}}, nil
 }
 
+// SceneSprite is transient world artwork, such as a floor item. Y is its ground
+// anchor; Depth is an optional signed offset from the native item record.
+// It uses the same depth ordering as a player's feet. Draw receives
+// screen coordinates, including the current camera offset.
+type SceneSprite struct {
+	X, Y  int
+	Depth int
+	Draw  func(*surface.Surface, int, int)
+}
+
 // Draw draws the scene, the player and the texts.
-func (w *World) Draw() {
+func (w *World) Draw() { w.DrawWithSprites(nil) }
+
+func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	scr := w.Env.Screen
 	cx, cy := w.Camera()
 	if !w.HideScene {
 		w.Scene.Draw(scr, cx, cy)
 	}
 	now := w.Now()
+	for i := range w.Scene.Tiles {
+		if tile := &w.Scene.Tiles[i]; !tile.Sorted {
+			tile.Draw(scr, cx, cy)
+		}
+	}
 	// The weather's under pass (FUN_00334580) follows the ground.
 	if w.Weather != nil {
 		w.Weather.Under(scr, w.WeatherKind, image.Pt(cx, cy), now)
@@ -249,8 +296,18 @@ func (w *World) Draw() {
 		draw func()
 	}
 	var figures []figure
+	for i := range w.Scene.Tiles {
+		if tile := &w.Scene.Tiles[i]; tile.Sorted {
+			figures = append(figures, figure{tile.Depth, func() { tile.Draw(scr, cx, cy) }})
+		}
+	}
+	for _, sprite := range sprites {
+		if sprite.Draw != nil {
+			figures = append(figures, figure{sprite.Y + sprite.Depth, func() { sprite.Draw(scr, sprite.X-cx, sprite.Y-cy) }})
+		}
+	}
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			figures = append(figures, figure{n.SortY(), func() {
 				w.drawShadow(n, n.X-cx, n.Y-cy)
 				if l, ok := n.Painter.(interface{ SetLit(bool) }); ok {
@@ -268,7 +325,9 @@ func (w *World) Draw() {
 				if lit, ok := p.Role.(interface{ SetLit(bool) }); ok {
 					lit.SetLit(w.JoinTeamSelection && w.teamHover.owner == p.ID)
 				}
-				p.Role.DrawBody(scr, p.X-cx, p.Y-cy, p.Direction)
+				if !w.drawShapeshift(scr, p.ID, p.X-cx, p.Y-cy, p.Direction) {
+					p.Role.DrawBody(scr, p.X-cx, p.Y-cy, p.Direction)
+				}
 			}})
 		}
 	}
@@ -289,7 +348,9 @@ func (w *World) Draw() {
 		i := sort.Search(len(figures), func(i int) bool { return figures[i].y > w.Player.Y })
 		figures = slices.Insert(figures, i, figure{w.Player.Y, func() {
 			w.drawSmallShadow(px, py)
-			w.Body.DrawBody(scr, px, py, w.Player.Direction)
+			if !w.drawShapeshift(scr, w.Player.ID, px, py, w.Player.Direction) {
+				w.Body.DrawBody(scr, px, py, w.Player.Direction)
+			}
 		}})
 	}
 	for i := range objects {
@@ -319,9 +380,19 @@ func (w *World) Draw() {
 	if w.Weather != nil {
 		w.Weather.Over(scr, w.WeatherKind, image.Pt(cx, cy))
 	}
-	if !w.Cinematic {
-		w.drawMarker(cx, cy, now)
-		w.drawLocation()
+	if !w.DeferOverlays {
+		w.DrawOverlays()
+	}
+}
+
+func (w *World) DrawOverlays() {
+	if w.Cinematic {
+		return
+	}
+	cx, cy := w.Camera()
+	w.drawMarker(cx, cy, w.Now())
+	if w.ViewWidth == 0 {
+		w.DrawLocation()
 	}
 }
 
@@ -329,7 +400,7 @@ func (w *World) Draw() {
 func (w *World) drawNames(cx, cy, px int) {
 	scr, txt := w.Env.Screen, w.Env.Text
 	for _, n := range w.NPCs {
-		if n.Shown && n.Painter != nil {
+		if n.Visible() && n.Painter != nil {
 			w.drawName(n, n.X-cx, n.Y-cy)
 		}
 	}
@@ -360,10 +431,10 @@ func (w *World) drawNames(cx, cy, px int) {
 	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-lift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
 }
 
-// drawLocation draws the name, scene and position line.
-func (w *World) drawLocation() {
+// DrawLocation draws the name, scene and position line at the fixed UI size.
+func (w *World) DrawLocation() {
 	scr, txt := w.Env.Screen, w.Env.Text
-	loc := []byte(string(w.Player.Name) + " " + w.SceneName + " X:" + strconv.Itoa(w.Player.X) + " Y:" + strconv.Itoa(w.Player.Y))
+	loc := []byte(string(w.Player.Name) + " " + string(clientassets.Big5Text(w.SceneName)) + " X:" + strconv.Itoa(w.Player.X) + " Y:" + strconv.Itoa(w.Player.Y))
 	txt.Draw(locationRight-len(loc)*charW, locationY, 0, false, true, scr, loc, 0, len(loc)*charW+charW, 0, locationInk, textStyle)
 }
 
@@ -372,4 +443,10 @@ func mountedNameLift(body any) int {
 		return mounted.NameLift()
 	}
 	return 0
+}
+
+func init() {
+	localization.Register(func() {
+		errShort = localization.Error("ui.world.ac3_packet_too_short_c3d6c6fb")
+	})
 }

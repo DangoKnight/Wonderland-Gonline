@@ -92,7 +92,7 @@ func TestPetGrowthLevelsCanSelectLowestStat(t *testing.T) {
 		}
 		return total - 1
 	})
-	if gained != 2 || calls != 2 || p.Level != 3 || p.Exp != 0 || p.Base != (Attributes{Strength: 50, Constitution: 40, Intelligence: 30, Wisdom: 20, Agility: 3}) {
+	if gained != 2 || calls != 2 || p.Level != 3 || p.Exp != 0 || p.Base != (Attributes{Strength: 25, Constitution: 20, Intelligence: 15, Wisdom: 10, Agility: 2}) {
 		t.Fatal("lowest stat did not grow across levels", p, gained, calls)
 	}
 }

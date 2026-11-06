@@ -38,6 +38,20 @@ func (t Terrain) Walkable(x, y int) bool {
 	return at < len(t.Cells) && t.Cells[at]&TerrainBlockedMask == 0
 }
 
+// Land is clear ground used for vehicle landing. Water and blocked terrain
+// must not count as a landing even when a vehicle may traverse them.
+func (t Terrain) Land(x, y int) bool {
+	if !t.Contains(x, y) {
+		return false
+	}
+	cx, cy := x/TerrainCellSize, y/TerrainCellSize
+	if cx >= int(t.GridWidth) || cy >= int(t.GridHeight) {
+		return false
+	}
+	at := cx*int(t.GridHeight) + cy
+	return at < len(t.Cells) && t.Cells[at] == 0
+}
+
 // NearestWalkable finds the nearest interior land point to a water position.
 // Exhaustive cell search is used only for exceptional recovery transitions.
 func (t Terrain) NearestWalkable(x, y int) (uint16, uint16, bool) {

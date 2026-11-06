@@ -1,0 +1,267 @@
+page,section,heading_level,source_url,location,npc,prerequisites,required_items,rewards,status
+一般任務,克蘭村,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#克蘭村,,克蘭村村長房子的後面 --兔子,無,,10個大紅蘿蔔,source-facts-unmapped
+一般任務,迷失的小狗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#迷失的小狗,:克蘭村碎石堆旁,麗娜,無,,椰子*2,source-facts-unmapped
+一般任務,小豬散步,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#小豬散步,克蘭村豬圈,養豬的老婆婆,無,,細木棒(攻+1，防+3 限制等級:4)*1,source-facts-unmapped
+一般任務,愛蜜的年齡,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#愛蜜的年齡,克蘭村礦坑前,愛蜜,接下晚餐事件,,山椒,source-facts-unmapped
+一般任務,紅酒任務,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#紅酒任務,北島威靈村武器店旁的民宅,釀酒師父家的一個地上木桶,,,紅酒,source-facts-unmapped
+一般任務,送酒到基督村,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#送酒到基督村,北島威靈村武器店旁的民宅,釀酒師父,紅酒任務,,牙項鍊、玉戒指(2選1),source-facts-unmapped
+一般任務,松鼠任務,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#松鼠任務,北島威靈村,蒙特,無,,褐榛果＊12,source-facts-unmapped
+一般任務,相約好友喝酒的守衛,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#相約好友喝酒的守衛,北島威靈村右邊大門口,左手邊的守衛,無,,山豬肉＊8,source-facts-unmapped
+一般任務,老太太的釀酒,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#老太太的釀酒,北島威靈村的民宅,村民老太太,無,,萊姆酒,source-facts-unmapped
+一般任務,迪克的願望,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#迪克的願望,北島威靈村,迪克,無,,經驗值+30、龍蝦＊10,source-facts-unmapped
+一般任務,外星人休息區,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#外星人休息區,北島威靈村國會對面,,使用飛行工具,,遺忘捲軸*1.exp500,source-facts-unmapped
+一般任務,對牛彈琴,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#對牛彈琴,南島農莊,星星王子,無,,乘船卷*3、香草牛奶(hp+180 sp+40)*30,source-facts-unmapped
+一般任務,來買火柴吧！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#來買火柴吧！,南島基督城噴泉旁,賣火柴少女,,,經驗值+100,source-facts-unmapped
+一般任務,吟遊詩人的曲子,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#吟遊詩人的曲子,南島基督城武器店旁邊的椅子上,吟遊詩人,,,5%寵物經驗藥丸.耶誕糖果(hp+200 sp+200)*30,source-facts-unmapped
+一般任務,受困的白狼,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#受困的白狼,南島基督城,受傷的白狼,無,,經驗值+300，破損的血環*1,source-facts-unmapped
+一般任務,來玩捉迷藏,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#來玩捉迷藏,南島基督城村長家東南邊的樹林,孩子王,無,,經驗值100點、保齡球三顆,source-facts-unmapped
+一般任務,負責敲鐘的工人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#負責敲鐘的工人,南島基督城大教堂的右後方 / 南島基督城,敲鐘工人 / 村民,無,,5%經驗膠囊*1 / 夢守丹*3,source-facts-unmapped
+一般任務,修女的願望,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#修女的願望,南島基督城大教堂,米優娜,解過教堂的異教徒,,鑽石項鍊,source-facts-unmapped
+一般任務,鏡子的祕密,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#鏡子的祕密,南島基督城水井下,鏡子,需要解過水井下的秘密,,遺忘捲軸,source-facts-unmapped
+一般任務,是誰破壞巨石像,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#是誰破壞巨石像,復活島火山下,雕刻師,無,,隨機拿到道具,source-facts-unmapped
+一般任務,復活島生火記,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#復活島生火記,長耳部落村長家的左邊,女村民,無,,1個翠綠幸運草、5瓶奇異果汁,source-facts-unmapped
+一般任務,偷項鍊的烏鴉,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#偷項鍊的烏鴉,長耳部落後方民房內,女村民,飛行船,,500exp、30碗海鮮和平拉麵(效果同和平拉麵.不可轉移),source-facts-unmapped
+一般任務,我們一起打獵吧!,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#我們一起打獵吧!,"瑪雅叢林(火箭洞那地圖) X:422,Y:2075",獵人大叔,,,長鎗 / 獵槍 等級限制20 ATK+50,source-facts-unmapped
+一般任務,鑲牙技師任務,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#鑲牙技師任務,瑪雅部落武器店旁邊,鑲牙技師,,,5%經驗膠囊,source-facts-unmapped
+一般任務,幽會的外星人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#幽會的外星人,瑪雅部落,兩個外星人都可,無,,遺忘捲軸*1,source-facts-unmapped
+一般任務,歐帕茲,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#歐帕茲,瑪雅部落],祭司,身上要有水晶骷髏頭，進入密道後，隊伍中要有娜琪拉（解此任務等級須在30級以上）,,驚愕臂環*1、黑魔晶石*1,source-facts-unmapped
+一般任務,幫助村民製作壽司,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#幫助村民製作壽司,邪馬台左上那個房子裡,女村民,,,夢守丹x3,source-facts-unmapped
+一般任務,海底龍宮,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#海底龍宮,關西海邊沙灘上,加藤、志村,無,,經驗值＋２００ 回點寵卷＊１,source-facts-unmapped
+一般任務,打鬼的桃太郎,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#打鬼的桃太郎,關西,大桃子 / 河童媽媽,無,,桃太郎飯糰*1、15%經驗藥丸*1 / 河豚*5、經驗值+2000,source-facts-unmapped
+一般任務,公正的判決,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#公正的判決,京都奉行所,代官,無,,和平拉麵*5,source-facts-unmapped
+一般任務,浦島太郎,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#浦島太郎,京都,浦島太郎,需解過海底龍宮任務、並且有拿到遺忘卷軸,,5%經驗膠囊*1，不死鳥之羽*3,source-facts-unmapped
+一般任務,可憐的行乞老婆婆,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#可憐的行乞老婆婆,京都,行乞婆,無,,不死鳥之血*2,source-facts-unmapped
+一般任務,朝鮮,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#朝鮮,朝鮮,沒牙的象或朴友鑫,無,,,source-facts-unmapped
+一般任務,心誠則靈,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#心誠則靈,仁川,"座標(2222,495)踩到即觸發",無,,經驗值+1000,source-facts-unmapped
+一般任務,打開心鎖,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#打開心鎖,仁川,車善妍,解過[女神啟示錄]任務,,5%經驗膠囊*1,source-facts-unmapped
+一般任務,欠打的青蛙,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#欠打的青蛙,中國漁村碼頭邊,青蛙,無,,回點寵卷＊１,source-facts-unmapped
+一般任務,小至的荷包蛋,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#小至的荷包蛋,中國漁村,莊老太太,無,,白狐狸毛*1,source-facts-unmapped
+一般任務,書生的煩惱,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#書生的煩惱,中國漁村碼頭邊,苦讀書生,無,,經驗值+300 燈謎籤*15,source-facts-unmapped
+一般任務,懷念屈原,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#懷念屈原,中國漁村春水堂,,,,,source-facts-unmapped
+一般任務,三保大人你在哪！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#三保大人你在哪！,中國漁村碼頭邊,中國護衛,無,,東南亞霸者之證,source-facts-unmapped
+一般任務,龍來客棧的讀書人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#龍來客棧的讀書人,長安龍來客棧,書生,無,,1％經驗值藥丸2個,source-facts-unmapped
+一般任務,長安紙貴,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#長安紙貴,長安龍來客棧左邊的民宅內室,書生,無,,豬肉包子(hp225)*10 遺忘捲*1,source-facts-unmapped
+一般任務,小弟弟救同伴,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#小弟弟救同伴,長安武鬥場旁邊,司馬小弟弟,無,,翠綠幸運草*1,source-facts-unmapped
+一般任務,釀酒師的煩惱,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#釀酒師的煩惱,長安酒鋪,釀酒師,無,,陽春麵*4 hp+800 sp+400 清酒*3,source-facts-unmapped
+一般任務,無米之炊,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#無米之炊,"長安民宅X:2172,Y:670",村民,無,,乘船券x3,source-facts-unmapped
+一般任務,搶救來福,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#搶救來福,長安民宅前(Ｘ６２２ Ｙ１３１５),春麗,無,,10個狗不理包子、回點寵捲2張,source-facts-unmapped
+一般任務,字畫小販的情人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#字畫小販的情人,長安,字畫小販,解過沒有墨水啦任務，且身上備有5000元飄幣,,燈謎籤*20，遺忘捲軸*1,source-facts-unmapped
+一般任務,魯班的鎚子,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#魯班的鎚子,長安,魯班,無,,兇猛項圈*1,source-facts-unmapped
+一般任務,寶箱中的秘密,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#寶箱中的秘密,長安彎曲洞窟,寶箱,無,,夢守丹*2、經驗值+1100,source-facts-unmapped
+一般任務,遺失的水牛,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#遺失的水牛,長安龍來客棧門口邊,小狗子,無,,回點寵券*1,source-facts-unmapped
+一般任務,長城士兵的問題,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#長城士兵的問題,長城通道,,,,,source-facts-unmapped
+一般任務,長安東郊的地下墓穴,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#長安東郊的地下墓穴,長安,"龍魂神殿座標(2222,715)的龍柱",解過龍魂的考驗任務,,遺忘捲軸*1,source-facts-unmapped
+一般任務,指牛為馬,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#指牛為馬,曼谷王宮前,達瑞爾,,,回點寵捲x1,source-facts-unmapped
+一般任務,點石成金,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#點石成金,曼谷,國王,解過[指牛為馬]任務,,10％經驗膠囊*1,source-facts-unmapped
+一般任務,時髦的村民,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#時髦的村民,加爾喀達,村民,無,,3%經驗膠囊*1，束緊腰帶,source-facts-unmapped
+一般任務,好吃的咖哩,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#好吃的咖哩,加爾喀達,小男孩,無,,咖哩飯*30,source-facts-unmapped
+一般任務,海南雞飯,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#海南雞飯,崖州民房,珍,無,,海南雞飯(hp800 sp400)*20,source-facts-unmapped
+一般任務,我想要回家,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#我想要回家,埃及,火星人,解過[不吃不喝的陌生人]任務,,遺忘捲軸*1、滾燙山芋*1,source-facts-unmapped
+一般任務,真理之路,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#真理之路,埃及,考古學家,解過[蘿卡父親的死亡]任務,,5%經驗膠囊*1、冥界鑰匙*1,source-facts-unmapped
+一般任務,好夢別醒,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#好夢別醒,開羅,民宅內的小女孩,依娃在隊伍中,,5%經驗膠囊*1、夢守丹*8,source-facts-unmapped
+一般任務,受傷的海獅,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#受傷的海獅,開羅,海獅,無,,1%經驗藥丸*1,source-facts-unmapped
+一般任務,女神艾莉娜,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#女神艾莉娜,開羅,艾莉娜,解過[女神梅爾希莉絲的祝福]任務，且備有水上交通工具以便通過水道,,經驗值+3000，聖天神玉*1,source-facts-unmapped
+一般任務,圖坦法老的密室,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#圖坦法老的密室,開羅,"座標(1262,1255)的鑰匙孔",解過[埃及雜技團]任務，身上具有[火星隕石]道具,,15％經驗膠囊*1，圖坦王戟*1或圖坦法杖*1,source-facts-unmapped
+一般任務,潔莉的木偶,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#潔莉的木偶,空中花園,潔莉,無,,3%經驗膠囊*1,source-facts-unmapped
+一般任務,守護的寶物,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#守護的寶物,空中花園,"座標(2142,515)的珠子",無,,5%經驗膠囊*1,source-facts-unmapped
+一般任務,螞蟻的寶藏,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#螞蟻的寶藏,空中花園,"未知洞窟座標(2600,405)處的白骷髏堆",無,,大神秘蛋*1、粉嫩果凍*1、經驗值+5000,source-facts-unmapped
+一般任務,巴比倫之鑰,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#巴比倫之鑰,空中花園,"巨大大腳怪 / 空中花園(1644,1490)踩到即觸發",無 / 解過[月神之殿]任務，身上需有[耀月之玉]，娜琪拉需在隊伍中,,巴比倫之鑰*1、3%經驗膠囊*1 / 10%經驗膠囊*1,source-facts-unmapped
+一般任務,神奇的乳牛,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#神奇的乳牛,雅典城,乳牛,,,,source-facts-unmapped
+一般任務,消失的奧德賽,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#消失的奧德賽,雅典,行政院二樓的村民,無,,回點寵卷*1,source-facts-unmapped
+一般任務,圖書管理員的考驗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#圖書管理員的考驗,雅典,行政院二樓的村民,解過[消失的奧德賽]任務,,遺忘捲軸*1,source-facts-unmapped
+一般任務,釣魚的大叔,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#釣魚的大叔,在一進雅典的橋旁邊,,,,,source-facts-unmapped
+一般任務,幫一位村民看家,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%B8%80%E8%88%AC%E4%BB%BB%E5%8B%99&ss=113640#幫一位村民看家,雅典城民房 x232 y2513,,,,,source-facts-unmapped
+任務寵任務,小猴子事件,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#小猴子事件,,北島海岸邊--椰子樹上的小猴子,無,,小猴子(成為初期的寵),source-facts-unmapped
+任務寵任務,與父母相逢的小猴子,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#與父母相逢的小猴子,"威靈村森林的猩猩(1822,935)",,無,,得到香蕉皮3個，血牙項鍊一個,source-facts-unmapped
+任務寵任務,最初的試練,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#最初的試練,克蘭村村長家,克蘭村村長,無,,榮耀法杖or榮耀長戟(二選一)，同時蘿卡加入隊伍,source-facts-unmapped
+任務寵任務,蘿卡父親的死亡,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#蘿卡父親的死亡,連接北島和南島的山洞,蘿卡,完成最初的試練、蘿卡跟隨,,,source-facts-unmapped
+任務寵任務,與蘿卡的再出發,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#與蘿卡的再出發,克蘭村樹林區入口前會多出一座村長像 / 南島基督城,蘿卡 / 離基督村入口最近的房屋,"蘿卡父親的死亡 / 需解完最初的試練任務,並有蘿卡跟隨",,蘿卡友好度上升、並再次加入隊伍,source-facts-unmapped
+任務寵任務,消失的村民,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#消失的村民,司徒華島,司徒華島2F左邊傳點,1.最初的試練 2.威靈村的試練(不需要學魂閃) 3.蘿卡父親的死亡 4.與蘿卡的再出發,,能源石*5、琥珀魔晶石*1、蘿卡友好度+5,source-facts-unmapped
+任務寵任務,報仇的強盜,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#報仇的強盜,司徒華島,"強盜首領 / 座標(3300,400)說話石雕",先完成被搶劫的祖孫倆 / 小蘭在隊伍中,,小蘭加入 / 星星兩顆,source-facts-unmapped
+任務寵任務,謎樣的少女,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#謎樣的少女,,北島東海岸懸崖邊--少女,無,,妮絲加入,source-facts-unmapped
+任務寵任務,謎樣少女的劫運,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#謎樣少女的劫運,北島威靈村,"威靈村座標(500,200)踩到即觸發",妮絲在隊伍中,,光之指環(魔攻+2)*1、妮絲加入隊伍,source-facts-unmapped
+任務寵任務,神奇的魔杖,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#神奇的魔杖,北島卡瑪那瓦山洞3樓要到山頂小徑的樹上,魔杖,已解完謎樣的少女及妮絲跟隨,,妮絲的法杖,source-facts-unmapped
+任務寵任務,魔女帕蒂絲,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#魔女帕蒂絲,朝鮮仁川 / 冰山,一名女性村民 / 地面鐵門,妮絲跟隨 / 解過[魔女帕蒂絲]任務、且身上有封印天珠且妮絲在隊伍中,,妮絲的身世、解開妮絲記憶封印的方法 / 封印天珠*1、15%經驗膠囊*1,source-facts-unmapped
+任務寵任務,光與闇的雙子神,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#光與闇的雙子神,"瑪雅部落 / 航海大地圖(4465,10360)",瑪雅金字塔頂端入口 / 巴尼亞天空之城的城門,解過[鬥神的考驗]任務、身上有封印天珠兩顆以上且妮絲在隊伍中 / 解過[光與闇的雙子神]任務、且妮絲在隊伍中,,10％經驗膠囊*1、妮絲友好度+10 / 星星*1、達烈斯的聖諭*1、妮絲友好度+5,source-facts-unmapped
+任務寵任務,艾鳥的猜謎,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#艾鳥的猜謎,,北島威靈村民宅--艾烏,無,,小拉拉、波斯貓、柴犬、虎班貓寵物 任選一隻,source-facts-unmapped
+任務寵任務,改邪歸正的強盜,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#改邪歸正的強盜,南島禿鷹區下方海賊洞,海盜,,,,source-facts-unmapped
+任務寵任務,酒吧裡的硬漢,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#酒吧裡的硬漢,南島基督城,酒吧二樓硬漢,無,,世界霸者之證,source-facts-unmapped
+任務寵任務,危急！麥哲倫有難！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#危急！麥哲倫有難！,麥哲倫艦隊,,,,,source-facts-unmapped
+任務寵任務,與加奈子的邂逅,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#與加奈子的邂逅,關西,兔子,,,,source-facts-unmapped
+任務寵任務,千鈞一髮,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#千鈞一髮,關西 / 蝦夷,地藏王菩薩 / 蝦夷山頂座標(250.500)踩到觸發,加奈子在隊伍中 / 解過[女神啟示錄]任務，且加奈子在隊伍中,,星星*2、加奈子友好度+6或星星*1、加奈子友好度+2 / 加奈子友好度+8,source-facts-unmapped
+任務寵任務,恐龍博士,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#恐龍博士,恐龍到左邊第一個洞 / 澳斯利亞,恐龍蛋 / 闇神官,亞雷斯在隊伍中，且友好度大於70，需消費1顆星星,,鎮魂*1(亞雷斯專用配備),source-facts-unmapped
+任務寵任務,不要走，莎莎！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#不要走，莎莎！,瑪雅叢林,"石門(座標:X3700,Y3200)",莎莎需在隊伍中且友好度在70以上,,星星*3,source-facts-unmapped
+任務寵任務,兄妹情深,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#兄妹情深,馬丘比丘 / 月球 / 空中花園,"雕像 / 地窖入口 / 空中花園(1644,1490)踩到即觸發",解過[兄妹情深]任務且娜琪拉在隊伍中 / 解過[被遺忘的公主]任務且娜琪拉在隊伍中，身上有[希望之鍊]道具 / 解過[月神一族]任務且娜琪拉在隊伍中，還需搭乘太空登陸艇 / 解過[月神之殿]任務，身上需有[耀月之玉]，娜琪拉需在隊伍中,,希望之鍊*1，星星*1 / 5%經驗膠囊*1 / 5%經驗膠囊*1，耀月之玉*1 / 10%經驗膠囊*1,source-facts-unmapped
+任務寵任務,水井下的秘密,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#水井下的秘密,南島基督城,基督村老奶奶,無,,磁性鑰匙*1，2倍經驗聖水*1,source-facts-unmapped
+任務寵任務,終極兵器,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#終極兵器,南島基督城,基督村的水井下,身上具有[磁性鑰匙]道具，限制等級20級以上,,星星*1，經驗值+1000,source-facts-unmapped
+任務寵任務,等離子機鎗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#等離子機鎗,澳斯利亞,"火山迷宮座標(1300,1100)碰到即觸發 / 火山迷宮座標(1000,1300)踩到即觸發",解過[終極武器]任務，且艾琳在隊伍中 / 解過[等離子機鎗]任務，艾琳等級在40級(含)以上並在隊伍中,,等離子機鎗*1 / 等離子晶片*1,source-facts-unmapped
+任務寵任務,雪島的指路精靈,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#雪島的指路精靈,雪島,妖精雕像,無,,指路妖精加入隊伍,source-facts-unmapped
+任務寵任務,妖精的指引,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#妖精的指引,吳哥窟,"主城密道(622,675)踩到即觸發",[指路妖精]在隊伍中,,前置的關聯任務,source-facts-unmapped
+任務寵任務,艾爾夫峽谷,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#艾爾夫峽谷,曼谷,"山頂座標(564,525)踩到即觸發",解過[妖精的指引]任務,,經驗值+500,source-facts-unmapped
+任務寵任務,魔瑪之石,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#魔瑪之石,曼谷,精靈長老,解過[艾爾夫峽谷]任務,,魔瑪之石*1，夏綠蒂加入隊伍,source-facts-unmapped
+任務寵任務,精靈的遊戲,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#精靈的遊戲,曼谷,精靈,解過[魔瑪之石]任務,,精靈的手環*1,source-facts-unmapped
+任務寵任務,惡魔使者,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#惡魔使者,印加 / 曼谷,"座標(3040,715)石門 / 魔界女僕長",身上需有神秘之鑰 / 依娃在隊伍中，且友好度需達61以上,,依娃加入隊伍 / 3%經驗膠囊*1、依娃友好度+5,source-facts-unmapped
+任務寵任務,天使的考驗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#天使的考驗,澳斯利亞,不歸谷的老婆婆,解過[魔瑪之石]任務，身上具有玉兔的麻糬道具,,安琪拉加入隊伍,source-facts-unmapped
+任務寵任務,巴比倫之鑰,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#巴比倫之鑰 ,空中花園,"巨大大腳怪 / 空中花園伸展台(1582,915)處 / 秘密花園(1322,195)踩到即觸發",無 / 解過[巴比倫之鑰]任務 / 解過[空中花園的秘密]任務，且安琪拉在隊伍中,,巴比倫之鑰*1、3%經驗膠囊*1 / 小小愛心花束*1、遺忘捲軸*1 / 星星*1、安琪拉友好度+8,source-facts-unmapped
+任務寵任務,薩爾斯,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#薩爾斯,南島基督城,基督村受傷的白狼,無,,經驗值+300，破損的血環*1,source-facts-unmapped
+任務寵任務,南方盜賊的藏匿處,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#南方盜賊的藏匿處,南島基督城村長家,基督村長家二樓的守衛,身上需有[破損的血環],,金條*20、2倍經驗聖水*1、空間合約*1、薩爾斯加入隊伍,source-facts-unmapped
+任務寵任務,三保大人你在哪,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#三保大人你在哪 ,"中國漁村 / 航海大地圖(5991, 5147) / 雅典",中國護衛 / 鄭和 / 漁夫屋裡面的水手,無 / 解過[航海的樂趣]任務 / 玩家組隊小於四人,,東南亞霸者之證*1 / 黑岩臂環*1、琥珀魔晶石*1 / 燕玲加入隊伍 / 經驗值+2000、路易斯的懷錶*1,source-facts-unmapped
+任務寵任務,與路易斯再相遇,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E4%BB%BB%E5%8B%99%E5%AF%B5%E4%BB%BB%E5%8B%99&ss=113640#與路易斯再相遇,"雅典城X:1782,Y:2275",,酒吧的紛爭、身上需要有路易斯的懷錶,,,source-facts-unmapped
+友達任務,天真無邪的女孩,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8F%8B%E9%81%94%E4%BB%BB%E5%8B%99&ss=113640#天真無邪的女孩,卡瑪那瓦山頂,果樹,小蘭跟隨身邊,,,source-facts-unmapped
+友達任務,與蘿卡的再出發,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%8F%8B%E9%81%94%E4%BB%BB%E5%8B%99&ss=113640#與蘿卡的再出發,連接北島和南島的山洞,蘿卡,完成最初的試練、蘿卡跟隨,,,source-facts-unmapped
+女神技能,女神啟示錄,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640#女神啟示錄,南島－基督村大門前的瀑布,,,,,source-facts-unmapped
+女神技能,打開心鎖,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640#打開心鎖,朝鮮－仁川小販右邊的民宅內,,,,5%經驗膠囊,source-facts-unmapped
+女神技能,女神艾莉娜,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640#女神艾莉娜,開羅,,,,"經驗值3000點 , 聖天神玉",source-facts-unmapped
+女神技能,梅爾希莉絲的祝福,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640#梅爾希莉絲的祝福,朝鮮,,"女神啟示錄 , 打開心鎖",,女神技（需耗5顆星星）（會與人屬系習得後會有差別）,source-facts-unmapped
+女神技能,戰鬥女神瓦爾姬的考驗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%A5%B3%E7%A5%9E%E6%8A%80%E8%83%BD&ss=113640#戰鬥女神瓦爾姬的考驗,獅子島,,"梅爾希莉絲的祝福 , 女神艾莉娜",,"真˙女神技（需耗7顆星星）, 琉璃7顆",source-facts-unmapped
+寶箱鑰匙任務,請別想不開,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#請別想不開,南島基督城,基督村的村民,需花費遊戲幣兩萬元喔,,紅色寶箱鑰匙*1,source-facts-unmapped
+寶箱鑰匙任務,簡單任務??,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#簡單任務??,京都,村民,無,,紅色寶箱鑰匙*1、星星*1,source-facts-unmapped
+寶箱鑰匙任務,太陽神,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#太陽神,開羅,士兵,無,,紅色寶箱鑰匙*1、天青魔晶石*1,source-facts-unmapped
+寶箱鑰匙任務,仁川的小販,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#仁川的小販,仁川,小販,需花費遊戲幣兩萬元喔,,綠色寶箱鑰匙*1,source-facts-unmapped
+寶箱鑰匙任務,醫女長今,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#醫女長今,仁川,長今或生病男孩,需先解過-唉呀！原來是人蔘啊的任務,,5%經驗藥丸*1、綠色寶箱鑰匙*1,source-facts-unmapped
+寶箱鑰匙任務,祖傳的鑰匙,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#祖傳的鑰匙,開羅,村民,需花費遊戲幣兩萬元喔,,藍色寶箱鑰匙*1,source-facts-unmapped
+寶箱鑰匙任務,好想要螳螂喔,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E5%AF%B6%E7%AE%B1%E9%91%B0%E5%8C%99%E4%BB%BB%E5%8B%99&ss=113640#好想要螳螂喔,開羅,小男孩,無,,藍色寶箱鑰匙*1,source-facts-unmapped
+戰鬥任務,生重病的爺爺,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#生重病的爺爺,克蘭村大湯鍋旁的毛利屋,屋內的村民,無,,獸護腕(防+2 限制等級:4)*1,source-facts-unmapped
+戰鬥任務,被搶劫的祖孫倆,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#被搶劫的祖孫倆,,克蘭村中民宅--強盜,無,,經驗值2、頁岩x2、星星x1,source-facts-unmapped
+戰鬥任務,最初的試練,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#最初的試練,克蘭村村長家,克蘭村村長,,,榮耀法杖ＯＲ榮耀長戟（二選一）,source-facts-unmapped
+戰鬥任務,謎樣少女的劫運,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#謎樣少女的劫運,威靈村旅館2F,,謎樣般的少女,,光之指環(matk+2)x1,source-facts-unmapped
+戰鬥任務,小女孩的心願,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#小女孩的心願,北島威靈村旅館旁,小女孩,,,椰子*2 頁岩*2 經驗值+250,source-facts-unmapped
+戰鬥任務,小紅帽的故事,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#小紅帽的故事,北島-小紅帽{座標X:762 Y:2395},,,,,source-facts-unmapped
+戰鬥任務,啊!花瓶!,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#啊!花瓶!,馬丘比丘民房內,製陶師,,,滾燙山芋(消耗敵人全部SP),source-facts-unmapped
+戰鬥任務,墓碑下的密道,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#墓碑下的密道,南島基督城酒吧一樓,醉民,先拿到壁畫之刃才能繼續任務,,聖十字腰鍊*1,source-facts-unmapped
+戰鬥任務,酒吧裡的硬漢,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#酒吧裡的硬漢,南島基督城酒館二樓,硬漢,,,世界稱霸者之證,source-facts-unmapped
+戰鬥任務,學者薩爾的研究,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#學者薩爾的研究,南島基督城村長家的右方,薩爾,無,,回寵點卷一張,source-facts-unmapped
+戰鬥任務,海盜來襲,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#海盜來襲,北島,威靈村的守衛,玩家等級大於30級,,三樣臂環隨機取得,source-facts-unmapped
+戰鬥任務,穴熊任務,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#穴熊任務,南島珂克山洞山腳下,蜂蜜商人,無,,經驗值1000,source-facts-unmapped
+戰鬥任務,巨大食人花,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#巨大食人花,南島珂克山附近,"村民(1380,2335)",無,,15%經驗值膠囊,source-facts-unmapped
+戰鬥任務,決戰火山口,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#決戰火山口 ,長耳部落 / 復活島大地圖,村長 / 摩艾像上的鑰匙孔,無 / 必須完成決戰火山口的任務,,10%經驗膠囊*1、巨像之鑰*1 / 10%經驗膠囊*1,source-facts-unmapped
+戰鬥任務,水井下的秘密,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#水井下的秘密,,,,,２倍聖水＊１，磁性鑰匙＊１,source-facts-unmapped
+戰鬥任務,尋找雪橇狼,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#尋找雪橇狼,南極企鵝村,村民,無,,回點寵卷*1,source-facts-unmapped
+戰鬥任務,LV61-LV80,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#LV61-LV80,,,,,1顆星星、經驗+1000、人寵艾琳,source-facts-unmapped
+戰鬥任務,史前巨鱷來襲,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#史前巨鱷來襲,瑪雅叢林右方村民,村民,,,"遺忘卷軸,5%寵物經驗膠囊",source-facts-unmapped
+戰鬥任務,食人族,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#食人族,"瑪雅叢林(火箭洞那地圖) X:8152,Y:3375",自動觸發任務,,,不明槍枝設計圖、回寵點卷,source-facts-unmapped
+戰鬥任務,LV81-LV100,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#LV81-LV100,邪馬台,帶刀守衛,無,,遺忘捲軸*1,source-facts-unmapped
+戰鬥任務,可憐的行乞老婆婆,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#可憐的行乞老婆婆,京都大門前水井旁。,行乞婆,,,不死鳥之血*2(復活HP+300),source-facts-unmapped
+戰鬥任務,月下老人的紅線,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#月下老人的紅線,中國大地圖,"月下老人、座標(1400,5400)",無,,"月老的紅絲線*1，經驗值+2000 / 經驗值2000,月老的紅絲線*2",source-facts-unmapped
+戰鬥任務,侍道,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#侍道,京都,武士,無,,"不死鳥之羽*2,御守之戒*1",source-facts-unmapped
+戰鬥任務,犬神,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#犬神,"京都金閣寺的前面有一個""春日老爹""",,,,反光臂環+50MDEF 350HP 笑瞼泥菩薩*1,source-facts-unmapped
+戰鬥任務,先有雞還是先有蛋,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#先有雞還是先有蛋,中國大地圖,"青衣女子、座標(422,3875)",無,,若選先有雞、會得「珍命項鍊」，選先有蛋、得「銀白法珠」。另經驗值+3000,source-facts-unmapped
+戰鬥任務,背後的陰謀,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#背後的陰謀,"京都X:1542,Y:1735",,,,三倍經驗聖水,source-facts-unmapped
+戰鬥任務,幽靈船迷咒,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#幽靈船迷咒,基督城酒館,,,,15%膠囊*1.不死鳥之羽*5,source-facts-unmapped
+戰鬥任務,漁村後山的寶藏,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#漁村後山的寶藏,中國漁村後山山洞(傳點在美麗狐仙的右上方),,,,遺忘卷軸x1 10%經驗膠囊x1,source-facts-unmapped
+戰鬥任務,八岐大蛇,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#八岐大蛇,邪馬台,卑彌呼,無,,5%經驗膠囊*1、天叢雲劍*1,source-facts-unmapped
+戰鬥任務,野獸的氣息,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#野獸的氣息,邪馬台,旅館內的玉藻,解過[八歧大蛇]任務,,5%經驗膠囊*1、經驗值+10000,source-facts-unmapped
+戰鬥任務,被綁架的公主,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#被綁架的公主,關西,武吉,完成私奔的公主,,10%經驗膠囊*1,source-facts-unmapped
+戰鬥任務,龍魂的考驗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#龍魂的考驗,長安,兩根龍柱皆可,無,,15％經驗膠囊*1，龍魂劍*1或龍魂杖*1,source-facts-unmapped
+戰鬥任務,被開啟的封印,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#被開啟的封印,金字塔上方問號處,,,,5%經驗膠囊、月神之鑰,source-facts-unmapped
+戰鬥任務,沙漠強盜,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#沙漠強盜,埃及大草原左下角綠洲有一個傳點,歐洲商人,,,燙手山芋,source-facts-unmapped
+戰鬥任務,六冥將的野心,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#六冥將的野心,雅典,小神殿內的女祭司,解過[女神梅爾希莉絲的祝福]與[潘朵拉之盒]任務,,太陽神徽章*1、5%經驗藥丸*1、經驗值+3000,source-facts-unmapped
+戰鬥任務,幫桃太郎打鬼去,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E4%BB%BB%E5%8B%99&ss=113640#幫桃太郎打鬼去,鬼島,桃太郎,解過[打鬼的桃太郎]任務,,桃太郎飯糰*1、回點寵卷*1,source-facts-unmapped
+戰鬥技能任務,威靈村的試鍊,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%88%B0%E9%AC%A5%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#威靈村的試鍊,北島威靈村的村長家,威靈村村長,,,,source-facts-unmapped
+星星任務,【被搶劫的祖孫倆】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【被搶劫的祖孫倆】,北島-克蘭村-民宅,強盜(白色頭巾那隻),無,,頁岩＊２、星星＊１,source-facts-unmapped
+星星任務,【山豬入夢記】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【山豬入夢記】,北島-克蘭村-豬眷,"豬(X2462,Y1695)",無,,星星＊１,source-facts-unmapped
+星星任務,【小紅帽的故事】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【小紅帽的故事】,北島,"小紅帽(X:762,Y:2395)",無,,禾草鞋＊１、星星＊１,source-facts-unmapped
+星星任務,【是金斧還是鐵斧？】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【是金斧還是鐵斧？】,北島-威靈村,"伐木工人(X:1502,2075)",無,,柳安木＊5、仙女的金斧＊１、星星＊1,source-facts-unmapped
+星星任務,【綿羊入夢記】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【綿羊入夢記】,南島-農場,綿羊,無,,星星＊１、5%經驗膠囊＊１,source-facts-unmapped
+星星任務,【回家的記號】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【回家的記號】,南島,"高原(X:2600,Y:1000)的麵包",無,,星星＊１、乘船卷＊３、經驗值＋５００,source-facts-unmapped
+星星任務,【服務生】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【服務生】,南島-基督村-酒吧二樓,酒保,需解完【酒吧裡的硬漢 】,,星星＊１、經驗值＋６００,source-facts-unmapped
+星星任務,【用來釣魚的魚餌】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【用來釣魚的魚餌】,南島-基督村-港口,"特克(X:2600,Y:1300)",無,,放生＝釣魚術、星星＊１；犧牲＝釣魚術（※依玩家的選擇不同，獎勵會略有差異。）,source-facts-unmapped
+星星任務,【大教堂的異教徒】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【大教堂的異教徒】,南島-基督村-大教堂,神父,無,,星星＊２、帆船設計圖＊１,source-facts-unmapped
+星星任務,【尋找勇氣之石】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【尋找勇氣之石】,南島-基督城-道具店的後方觸發對象：神祕老人,,無,,星星＊２、貓眼石戒指＊１、15%經驗膠囊＊１,source-facts-unmapped
+星星任務,【死戰！強敵弗雷德！】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【死戰！強敵弗雷德！】,南島-基督城-酒吧觸發對象：村民,,需解完【與蘿卡的再出發】、【山洞的另一端】、【改邪歸正的強盜端】，羅卡、克里夫跟隨在身邊,,星星＊３、風敏項鍊＊１，克里夫死亡,source-facts-unmapped
+星星任務,【終極武器】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【終極武器】,南島-基督村-水井下,基督村的水井下,身上具有『磁性鑰匙』道具，限制等級20級以上,,星星＊１、經驗值＋１０００,source-facts-unmapped
+星星任務,【聖靈守護者】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【聖靈守護者】,司徒華島,石柱,無,,星星＊３，織夢魔杖、黃玉錫杖（隨機獲得其中一樣）,source-facts-unmapped
+星星任務,【小蘭的命運】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【小蘭的命運】,司徒華島,石柱,需解完【報仇的強盜】，小蘭跟隨在身邊。,,星星＊２，小蘭死亡,source-facts-unmapped
+星星任務,【賣火柴的女孩】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【賣火柴的女孩】,南極-企鵝村(右下角),賣火柴少女,需解完【來買火柴吧！】,,星星＊１,source-facts-unmapped
+星星任務,【被遺忘的公主】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【被遺忘的公主】,馬丘比丘宮殿(就是樓梯走到底),雕像,娜琪拉跟隨在身邊,,星星＊１、希望之鍊＊１,source-facts-unmapped
+星星任務,【瑪雅鬥球比賽】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【瑪雅鬥球比賽】,瑪雅叢林-瑪雅部落(右上方球場),戰士,無,,星星＊１,source-facts-unmapped
+星星任務,【瑪雅部落遇襲】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【瑪雅部落遇襲】,瑪雅叢林-瑪雅部落(上方傳點旁),守衛,無,,星星＊１,source-facts-unmapped
+星星任務,【不要走！莎莎！】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【不要走！莎莎！】,瑪雅叢林,守衛,莎莎的友好度70以上,,星星＊３、飛碟殘缺圖＊１，莎莎死亡,source-facts-unmapped
+星星任務,【夏威夷鬥球比賽】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【夏威夷鬥球比賽】,夏威夷-夏威夷大島(海灘),戰士,無,,星星＊１,source-facts-unmapped
+星星任務,【青蛙王子】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【青蛙王子】,澳斯利亞,青蛙,無,,星星＊１,source-facts-unmapped
+星星任務,【丈夫捕魚去】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【丈夫捕魚去】,崖州-西北方,大嬸,無,,星星＊１,source-facts-unmapped
+星星任務,【吹笛人的蛇笛】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【吹笛人的蛇笛】,加爾喀達,弄蛇人,無,,星星＊１、石球＊１,source-facts-unmapped
+星星任務,【陳年情書】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【陳年情書】,邪馬台-民宅,村民(老先生),無,,星星＊１、夢守丹＊３,source-facts-unmapped
+星星任務,【邪馬台的問題】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【邪馬台的問題】,邪馬台,村民(藍色和服女性),無,,星星＊１,source-facts-unmapped
+星星任務,【誤會一場】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【誤會一場】,邪馬台-主祭殿二樓,女忍者,無,,星星＊１、2倍經驗值聖水＊１,source-facts-unmapped
+星星任務,【美麗狐仙】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【美麗狐仙】,中國-民宅(左上方),"進入民宅(座標X:522,Y:635)即觸發任務",無,,星星＊１、白狐狸毛＊１,source-facts-unmapped
+星星任務,【用打獵來一決勝負吧！】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【用打獵來一決勝負吧！】,中國,"獵戶(X:4300,Y:4400)",無,,星星＊１,source-facts-unmapped
+星星任務,【幫幫嫦娥找玉兔】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【幫幫嫦娥找玉兔】,涼亭,嫦娥,無,,星星＊１、3倍經驗聖水＊１,source-facts-unmapped
+星星任務,【后羿事件】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【后羿事件】,中國,后羿,無,,星星＊２,source-facts-unmapped
+星星任務,【上京趕考的書生】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【上京趕考的書生】,中國-長安(龍來客棧二樓)觸發對象：苦讀書生,,需解完【書生的煩惱】,,星星＊１、遺忘捲軸＊１,source-facts-unmapped
+星星任務,【密探】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【密探】,中國-長城,將軍,無,,星星＊１、不死鳥之羽＊２,source-facts-unmapped
+星星任務,【懷念屈原】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【懷念屈原】,中國-中國漁村,春水堂內的神秘老人,無,,星星＊１、飽滿的肉粽＊１,source-facts-unmapped
+星星任務,【私奔的公主】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【私奔的公主】,關西-京都,佐野,無,,星星＊１、城主的夜明珠＊１,source-facts-unmapped
+星星任務,【簡單任務】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【簡單任務】,關西-京都,村民,無,,星星＊１、紅色寶箱鑰匙＊１,source-facts-unmapped
+星星任務,【心中的羈絆】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【心中的羈絆】,關西-京都,地藏王菩薩,加奈子在隊伍中,,星星＊２、加奈子友好度＋６或星星＊１、加奈子友好度＋２,source-facts-unmapped
+星星任務,【向菩薩祈禱】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【向菩薩祈禱】,關西-京都,地藏王菩薩,無,,星星＊１,source-facts-unmapped
+星星任務,【不吃不喝的陌生人】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【不吃不喝的陌生人】,埃及-開羅,村民,無,,星星＊１、3%經驗藥丸＊１,source-facts-unmapped
+星星任務,【埃及豔后】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【埃及豔后】,埃及-開羅,士兵,無,,星星＊１，3%經驗膠囊＊１,source-facts-unmapped
+星星任務,【埃及豔后】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【埃及豔后】,埃及-開羅,雜技團長觸發地點：曼谷 / 守衛兵,無,,2.5倍經驗聖水*1、星星*1,source-facts-unmapped
+星星任務,【潘朵拉之盒】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【潘朵拉之盒】,雪島,雪島洞窟第七層的雪人怪,無,,星星＊１、15%經驗膠囊＊１,source-facts-unmapped
+星星任務,【大毛與小曼】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【大毛與小曼】,曼谷,守衛兵,無,,2.5倍經驗聖水*1、星星*1,source-facts-unmapped
+星星任務,【火星歷險】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【火星歷險】,火星,兩顆火星頭都可,解過[我想要回家]任務且身上有太空登陸艇,,星星＊１、10%經驗膠囊＊１、火星隕石＊１,source-facts-unmapped
+星星任務,【純真的安琪拉】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【純真的安琪拉】,空中花園,"秘密花園(1322,195)踩到即觸發",解過[空中花園的秘密]任務，且安琪拉在隊伍中,,星星＊１、安琪拉友好度＋８,source-facts-unmapped
+星星任務,【神仙草】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【神仙草】,雅典,乳牛,無,,星星＊１、遺忘捲軸＊１,source-facts-unmapped
+星星任務,【小梅不要生氣了】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【小梅不要生氣了】,波斯,"一進民宅、座標(427,465)即觸發",無,,星星＊１、3%經驗藥丸＊１,source-facts-unmapped
+星星任務,【穆特的野心】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【穆特的野心】,鬼島,"座標(2000,900)踩到即觸發",解過[冥王霍爾特]、[遭冤獄的蘿卡]、[與蘿卡欣賞風景]等任務，弗雷德與蘿卡均在隊伍中,,星星＊１、琥珀耳環＊１,source-facts-unmapped
+星星任務,【麥哲倫有難】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【麥哲倫有難】,麥哲倫船隊,麥哲倫船隊上的水手隊長,需先解過酒吧裡的硬漢且克里夫在隊伍中,,星星＊１、10%經驗膠囊＊１，麥哲倫加入隊伍,source-facts-unmapped
+星星任務,【是誰偷走了徽章】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【是誰偷走了徽章】,庫克船隊-庫克船長船艙,庫克,無,,星星＊１、笑臉泥菩薩＊１,source-facts-unmapped
+星星任務,【巴尼亞天空之城的秘密】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【巴尼亞天空之城的秘密】,"天空之城(X:4465,Y:10360)",巴尼亞天空之城的城門,解過[光與闇的雙子神]任務、且妮絲在隊伍中,,星星＊１、達烈斯的聖諭＊１、妮絲友好度＋５,source-facts-unmapped
+星星任務,【黑海水怪】,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%98%9F%E6%98%9F%E4%BB%BB%E5%8B%99&ss=113640#【黑海水怪】,"航海大地圖(X:1382,Y:435)",點擊海面上不明物體,無,,星星＊１,source-facts-unmapped
+海洋之心任務,北島,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#北島,北島中央的湖,無,,,,source-facts-unmapped
+海洋之心任務,威靈村,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#威靈村,北島威靈村旅館2F / 卡瑪那瓦山山頂觸發人物：傑克 / 威靈村國會屋頂,傑克 / 無,,,,source-facts-unmapped
+海洋之心任務,南島,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#南島,南島南部,無,,,,source-facts-unmapped
+海洋之心任務,基督村,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#基督村,基督城教堂後方的海上,無,,,,source-facts-unmapped
+海洋之心任務,印加,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#印加,馬丘比丘,無,,,,source-facts-unmapped
+海洋之心任務,中國,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#中國,長安,無,,,,source-facts-unmapped
+海洋之心任務,棟雷米,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#棟雷米,棟雷米教堂上方,無,,,,source-facts-unmapped
+海洋之心任務,雅典,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E6%B5%B7%E6%B4%8B%E4%B9%8B%E5%BF%83%E4%BB%BB%E5%8B%99&ss=113640#雅典,雅典歌劇院屋頂,無,,,海洋之心碎片,source-facts-unmapped
+煉金術,初階鍊金術,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%85%89%E9%87%91%E8%A1%93&ss=113640#初階鍊金術,威靈村武器店,學徒,美人魚、是金斧還是鐵斧？（不須把鐵斧交給伐木工人也可解）,,初階鍊金術,source-facts-unmapped
+煉金術,中階鍊金術,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%85%89%E9%87%91%E8%A1%93&ss=113640#中階鍊金術,婆羅洲,席貝兒,傳說中的武器,,中階鍊金術,source-facts-unmapped
+煉金術,高階鍊金術,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%85%89%E9%87%91%E8%A1%93&ss=113640#高階鍊金術,婆羅洲,席貝兒,席貝兒的料理,,高階鍊金術,source-facts-unmapped
+生活技能,礦工事件,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              礦工事件,卡瑪那瓦洞1F,,,,習得挖礦術,source-facts-unmapped
+生活技能,用來釣魚的魚餌,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              用來釣魚的魚餌,"基督村港口(座標:X2600,Y1300)",,,,習得釣魚術,source-facts-unmapped
+生活技能,斧頭損壞的樵夫,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              斧頭損壞的樵夫,基督村民宅,樵夫,,,習得伐木術,source-facts-unmapped
+生活技能,忙碌的農夫,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              忙碌的農夫,南島(上半部)上方的農舍,,,,習得採集術,source-facts-unmapped
+生活技能,傳說中的武器,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              傳說中的武器,威靈村武器店,,,,習得初階鍊金術,source-facts-unmapped
+生活技能,席貝兒的料理,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              席貝兒的料理,婆羅洲,,,,習得中階鍊金術,source-facts-unmapped
+生活技能,高階鍊金術,3,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD&ss=113640#              高階鍊金術,婆羅洲,,,,習得高階鍊金術,source-facts-unmapped
+生活技能任務,美人魚,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#美人魚,北島,尼厄麗德,無,,巫女的匕首,source-facts-unmapped
+生活技能任務,傳說中的武器,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#傳說中的武器,北島威靈村武器店,學徒,身上有仙女的金斧(誠實的代價)、巫女的匕首(美人魚事件),,初級鍊金術,source-facts-unmapped
+生活技能任務,採礦術,1,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#採礦術,北島卡瑪那瓦山洞１Ｆ,卡瑪那瓦山洞１Ｆ的礦工,無,,採礦術,source-facts-unmapped
+生活技能任務,忙碌的老農夫,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#忙碌的老農夫,南島農場放羊的小孩旁邊的倉庫,,無,,採集術,source-facts-unmapped
+生活技能任務,斧頭損壞的樵夫,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#斧頭損壞的樵夫,南島基督城,樵夫,無,,伐木術,source-facts-unmapped
+生活技能任務,用來釣魚的魚餌,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%94%9F%E6%B4%BB%E6%8A%80%E8%83%BD%E4%BB%BB%E5%8B%99&ss=113640#用來釣魚的魚餌,南島基督城,基督村港口的特克,無,,初級釣魚術或初級釣魚術+星星1顆,source-facts-unmapped
+笑臉泥菩薩任務,農夫的耕作物,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AC%91%E8%87%89%E6%B3%A5%E8%8F%A9%E8%96%A9%E4%BB%BB%E5%8B%99&ss=113640#農夫的耕作物,長耳部落武器商店前,農夫,無,,笑臉泥菩薩*1(1.5倍經驗道具),source-facts-unmapped
+笑臉泥菩薩任務,守衛家書任務,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AC%91%E8%87%89%E6%B3%A5%E8%8F%A9%E8%96%A9%E4%BB%BB%E5%8B%99&ss=113640#守衛家書任務,邪馬台門口,守衛,,,海鮮和平拉麵5個、笑臉泥菩薩1個,source-facts-unmapped
+笑臉泥菩薩任務,唉呀！原來是人蔘啊！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AC%91%E8%87%89%E6%B3%A5%E8%8F%A9%E8%96%A9%E4%BB%BB%E5%8B%99&ss=113640#唉呀！原來是人蔘啊！,朝鮮木橋旁,老奶奶,無,,笑臉泥菩薩,source-facts-unmapped
+箭雨,神秘的印度老人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%AE%AD%E9%9B%A8&ss=113640#神秘的印度老人,加爾喀達--印度神僧,,,兩顆星星,戰鬥特技 -- 箭雨,source-facts-unmapped
+經驗聖水任務,傳遞遠方的思念,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#傳遞遠方的思念,南島基督城村長家後方大樹旁,女性村民,無,,1.5倍經驗聖水*1 翠綠幸運草*1,source-facts-unmapped
+經驗聖水任務,水井下的秘密,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#水井下的秘密,南島基督城水井,老奶奶,無,,２倍聖水＊１，磁性鑰匙＊１,source-facts-unmapped
+經驗聖水任務,修復巨石像,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#修復巨石像,長耳部落村長家右邊,修復工人,無,,2倍經驗聖水X1,source-facts-unmapped
+經驗聖水任務,可愛人蔘精,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#可愛人蔘精,長耳部落接近出口左邊,1株5葉小草,無,,３倍經驗聖水,source-facts-unmapped
+經驗聖水任務,吃飯啦,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#吃飯啦,馬丘比丘民房內,女村民,,,1.5倍經驗聖水,source-facts-unmapped
+經驗聖水任務,此地無銀三百兩,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#此地無銀三百兩,長城關道,老頭,,,1％經驗藥丸。２倍經驗聖水,source-facts-unmapped
+經驗聖水任務,暗殺者,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#暗殺者,長安的龍門客棧,2名劍客,追捕仙鶴,,1％經驗藥丸。２倍經驗聖水,source-facts-unmapped
+經驗聖水任務,中國武鬥賽,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#中國武鬥賽,長安的擂台,,,,3倍經驗聖水,source-facts-unmapped
+經驗聖水任務,南宮沖的夥伴,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#南宮沖的夥伴,長安,南宮沖,追捕仙鶴、暗殺者,,2倍經驗聖水 5%寵物經驗藥丸,source-facts-unmapped
+經驗聖水任務,沒有墨水啦！,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#沒有墨水啦！,長安 1022 855,字畫小販,,,2倍聖水和20個大饅頭,source-facts-unmapped
+經驗聖水任務,欺善怕惡的流氓,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#欺善怕惡的流氓,長安旅館外面的附近,茶舖老闆,遺失的水牛,,800點經驗 和1.5被經驗聖水,source-facts-unmapped
+經驗聖水任務,築長城的工人,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#築長城的工人,長安萬里長城,長城工人,,,3倍經驗聖水,source-facts-unmapped
+經驗聖水任務,抵禦蠻族入侵,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#抵禦蠻族入侵,長安萬里長城,將軍,密探,,"2倍聖水,1%藥丸",source-facts-unmapped
+經驗聖水任務,成年禮的考驗,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E7%B6%93%E9%A9%97%E8%81%96%E6%B0%B4%E4%BB%BB%E5%8B%99&ss=113640#成年禮的考驗,中國長安幽谷森林 x:1562 y:1075,成年禮考官,,,三倍水*1 鳳凰羽毛*3,source-facts-unmapped
+職業技能,職業技能,0,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E8%81%B7%E6%A5%AD%E6%8A%80%E8%83%BD&ss=113640,長安,"秦皇陵座標(562,455)的龍珠",解過[入職試煉]任務，需消費五顆星星,,習得職業專屬特技,source-facts-unmapped
+道具任務,未知的命運,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#未知的命運,,克蘭村民宅 / 占卜婆婆,無,,任務記事本(以後任務會自動登錄在裡面)、帳棚(隨身攜帶的家可以休息回血，還可以放交通工具在裡面）,source-facts-unmapped
+道具任務,晚餐事件,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#晚餐事件,,克蘭村大湯鍋旁--多爾,無,,小型無線電,source-facts-unmapped
+道具任務,大嬸的湯料理,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#大嬸的湯料理,北島威靈村武器店旁門口旁,大嬸,無,,遙控器,source-facts-unmapped
+道具任務,我們和好吧,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#我們和好吧,北島威靈村,艾力略,無,,簡易釣具,source-facts-unmapped
+道具任務,艾烏家的寶箱,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#艾烏家的寶箱,北島威靈村艾烏的家,艾烏身後的寶箱,無,,獨木舟設計圖,source-facts-unmapped
+道具任務,木筏的製作,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#木筏的製作,北島威靈村塔特的家,塔特,無,,木筏設計圖,source-facts-unmapped
+道具任務,精靈的眼淚,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#精靈的眼淚,基督城民宅,古物商人,,,,source-facts-unmapped
+道具任務,水之迷宮,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#水之迷宮,南島基督村上方的瀑布,,小蘭、羅卡跟隨,,精靈眼淚、神秘水晶(任務物品)、cg圖兩張= =,source-facts-unmapped
+道具任務,放羊的小孩,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#放羊的小孩,南島農場,,無,,未過戶地契,source-facts-unmapped
+道具任務,帳篷空間,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#帳篷空間,基督村國會-行政人員,,要有5顆星星、未過戶地契,,完整地契x1,source-facts-unmapped
+道具任務,再來玩捉迷藏,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%81%93%E5%85%B7%E4%BB%BB%E5%8B%99&ss=113640#再來玩捉迷藏,基督城學者薩爾旁邊的樹林裡,小妹妹,解過來玩捉迷藏,,脫逃綁腿,source-facts-unmapped
+魂閃,威靈村的試練,2,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%AD%82%E9%96%83&ss=113640#威靈村的試練,,威靈村村長房--威靈村村長,,三顆星星,戰鬥特技 -- 魂閃,source-facts-unmapped
+魯賓遜新手島,魯賓遜新手島,0,https://wiki2.gamer.com.tw/wiki.php?n=9045%3A%E9%AD%AF%E8%B3%93%E9%81%9C%E6%96%B0%E6%89%8B%E5%B3%B6&ss=113640,魯賓遜新手島,魯賓遜後的寶箱,無,,木筏,source-facts-unmapped

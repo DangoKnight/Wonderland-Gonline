@@ -51,3 +51,29 @@ func TestCompoundingExcludesExoticInputsAndOutputs(t *testing.T) {
 		t.Fatal("Exotic output selected instead of normal rank fallback", out, err)
 	}
 }
+
+func TestCompoundingExcludesPetFoodInputsAndOutputs(t *testing.T) {
+	c := Catalog{Items: map[uint16]game.ItemDefinition{}, NativeItems: map[uint16]NativeItem{}, PetFoods: map[uint16]PetFood{4: {}}}
+	for _, id := range []uint16{1, 2, 3, 4} {
+		it := NativeItem{Definition: game.ItemDefinition{ID: id, Type: 23}}
+		it.Record[45], it.Record[136], it.Record[406], it.Record[407] = 1, 1, 1, 1
+		if id == 3 {
+			it.Definition.Type = 20
+		}
+		if id >= 3 {
+			it.Record[45] = 5
+		}
+		c.Items[id], c.NativeItems[id] = it.Definition, it
+	}
+	catalog := c.CompoundingCatalog()
+	roll := func(n int) (int, error) { return n - 1, nil }
+	for _, food := range []uint16{3, 4} {
+		if _, err := catalog.Compound([]uint16{1, food}, game.AlchemyPrimary, 0, roll); !errors.Is(err, game.ErrAlchemyMaterial) {
+			t.Fatal("food accepted by standard alchemy", food, err)
+		}
+	}
+	out, err := catalog.Compound([]uint16{1, 2}, game.AlchemyPrimary, 0, roll)
+	if err != nil || out.ItemID >= 3 || out.ResultRank != 1 {
+		t.Fatal("food selected as ordinary result", out, err)
+	}
+}

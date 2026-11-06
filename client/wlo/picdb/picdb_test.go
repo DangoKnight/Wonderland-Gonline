@@ -1,15 +1,119 @@
 package picdb
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"wonderland-gonline/client/wlo/surface"
 )
+
+func TestLoadDirPrefersPNGAndRetainsDeferredFilename(t *testing.T) {
+	dir := t.TempDir()
+	for name, pixel := range map[string]color.NRGBA{"Button.BMP": {R: 255, A: 255}, "button.bmp.PNG": {B: 255, A: 255}} {
+		var raw bytes.Buffer
+		img := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+		img.SetNRGBA(0, 0, pixel)
+		if err := png.Encode(&raw, img); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), raw.Bytes(), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	db := New()
+	if err := db.LoadDir(dir, false, 0); err != nil {
+		t.Fatal(err)
+	}
+	if len(db.Entries) != 1 || db.Entries[0].Image != nil {
+		t.Fatal("deferred registration changed")
+	}
+	if got := db.image(db.Find("BUTTON")); got == nil || got.Pix[0] != surface.RGB565(0, 0, 255) {
+		t.Fatal("PNG precedence or case handling changed", got)
+	}
+}
+
+func TestRejectOversizedBitmapBeforeDecode(t *testing.T) {
+	var raw bytes.Buffer
+	if err := png.Encode(&raw, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
+	}
+	data := raw.Bytes()
+	// Valid IHDR checksum with an oversized canvas and tiny pixel payload.
+	// A dimension rejection must precede pixel decompression/allocation.
+	binary.BigEndian.PutUint32(data[16:20], 16384)
+	binary.BigEndian.PutUint32(data[20:24], 16384)
+	binary.BigEndian.PutUint32(data[29:33], crc32.ChecksumIEEE(data[12:29]))
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "huge.bmp.png"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, now := range []bool{false, true} {
+		if err := New().LoadDir(dir, now, 0); err == nil || !strings.Contains(err.Error(), "dimensions exceed") {
+			t.Fatal("oversized bitmap reached decoder", now, err)
+		}
+	}
+}
+
+func TestDeferredDecodeFailureIsNotRetriedEachFrame(t *testing.T) {
+	var raw bytes.Buffer
+	if err := png.Encode(&raw, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "broken.bmp.png")
+	if err := os.WriteFile(path, raw.Bytes(), 0600); err != nil {
+		t.Fatal(err)
+	}
+	db := New()
+	if err := db.LoadDir(dir, false, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("corrupt"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if db.image(0) != nil {
+		t.Fatal("corrupt image loaded")
+	}
+	if err := os.WriteFile(path, raw.Bytes(), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if db.image(0) != nil {
+		t.Fatal("failed asset was retried without resource reload")
+	}
+}
+
+func BenchmarkLoadDir(b *testing.B) {
+	var raw bytes.Buffer
+	if err := png.Encode(&raw, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		b.Fatal(err)
+	}
+	for _, count := range []int{100, 1000} {
+		b.Run(fmt.Sprint(count), func(b *testing.B) {
+			dir := b.TempDir()
+			for i := range count {
+				if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("skin_%04d.bmp.png", i)), raw.Bytes(), 0600); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.ResetTimer()
+			for range b.N {
+				db := New()
+				if err := db.LoadDir(dir, false, 0); err != nil || len(db.Entries) != count {
+					b.Fatal(err, len(db.Entries))
+				}
+			}
+		})
+	}
+}
 
 // FUN_0047b274's pixel rules.
 func TestConvertRules(t *testing.T) {

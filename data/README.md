@@ -1,7 +1,11 @@
 # Exported Wonderland data
 
+Compiled client language tables are tracked under
+[`runtime/locales`](runtime/locales/README.md). Other client-derived exports and
+media remain local. Regenerate the string tables after changing their sources.
+
 `item_data.json` contains every item record from
-`../Wonderland-Client/data/Item.dat`.
+the supplied WLRI installation's `data/Item.dat`.
 
 The export includes:
 
@@ -11,16 +15,17 @@ The export includes:
 - The plaintext header as `header_hex`, original record indexes and file offsets.
 - Format/schema versions, source size and source SHA-256 for provenance.
 
-The maintained export contains 7,312 item records. Source SHA-256:
-`f85cbee375e3918e337e6579b6731ba1396e16063b86a85cda9a86ffc5e826b0`.
-Re-encrypting the decoded records reproduces the complete 3,298,163-byte input
+The 2026-11-03 export contains 7,325 item records. Source SHA-256:
+`302b13d11c66602779ddfa5f19f103a836f38d71823f47c56a5bab1a166ac00e`.
+Re-encrypting the decoded records reproduces the complete 3,304,026-byte input
 file exactly. Client content patches are separate from decoding.
 
 Regenerate from the repository root:
 
 ```sh
+wlo_client_source="/absolute/path/to/WLRI-client"
 go run ./cmd/item-export \
-  -input ../Wonderland-Client/data/Item.dat \
+  -input "$wlo_client_source/data/Item.dat" \
   -output data/item_data.json
 ```
 
@@ -51,10 +56,9 @@ Regenerate and verify from the repository root using Python 3.10+ and Go:
 ```sh
 python3 tools/data_export/export.py
 python3 tools/data_export/verify.py
-python3 -m unittest discover -s tools/data_export -v
-WONDERLAND_TEST_CLIENT_DATA=../Wonderland-Client/data \
-  go test ./internal/assets ./cmd/item-export -count=1
 ```
+
+For exporter unit/native checks, see [Testing](../docs/TESTING.md#exporter-checks).
 
 The exporter accepts `--client`, `--server` and `--output` to select other source
 and destination directories. Source projects remain untouched. Unsupported files
@@ -65,7 +69,7 @@ reassembly reproduces every selected source file byte for byte.
 
 | Resources | Export | Retained content |
 | --- | --- | --- |
-| Item | `item_data.json` | 7,312 full decoded records and readable definitions |
+| Item | `item_data.json` | 7,325 full decoded records and readable definitions |
 | NPC | `npc_data.json` | 4,930 decoded records, names, stats, skills and drops |
 | Skill | `skill_data.json` | 953 decoded records, names, descriptions and coefficients |
 | Dialogue | `talk_data.json` | 17,493 decoded records and texts |
@@ -111,8 +115,8 @@ combined payloads created by the full data exporter.
 One main audio stream lacks its final end-of-stream flag in the source; that
 anomaly is recorded as `source_warnings` and the source bytes are preserved.
 
-The tracks total about 1.43 GB and remain local and ignored by Git. JSON indexes
-and the track manifest remain available for version control. Regeneration reads the original `odd.dat` / `odd_d01.dat` files directly
+The tracks total about 1.43 GB and remain local and ignored by Git. Their JSON
+indexes and track manifest are also generated locally. Regeneration reads the original `odd.dat` / `odd_d01.dat` files directly
 from the sibling client; saved indexes and combined exports are never inputs.
 Original account databases and their SQLite sidecars are excluded from the
 asset export. Accounts and characters belong exclusively to Go gameplay storage.
@@ -124,9 +128,10 @@ JSON or native files. Rebuild and restart to apply export changes.
 ## SQL access
 
 `go run ./cmd/data-rebuild` rebuilds `var/assets.db` from these exports using
-Go and GORM. All JSON content is preserved with indexed collection rows and SQL
-views for major gameplay tables. Audio indexes are included; audio bytes stay
-on disk. To reset gameplay storage at the same time, use the explicit
+Go and GORM. Runtime definitions use structured `catalog_*` tables with typed
+columns and owned child rows. Import documents, indexed records and legacy SQL
+views preserve source provenance; they are not live gameplay definitions.
+Audio metadata may be retained, while audio bytes stay on disk. To reset gameplay storage at the same time, use the explicit
 `-reset-gameplay` flag with the server configuration. Existing databases are
 backed up before replacement. See [the reset procedure and SQL examples](../docs/ASSET_DATABASE.md).
 
@@ -145,10 +150,12 @@ The manifest retains archive/resource identity, dimensions and source hashes.
 
 ## Git storage policy
 
-Generated PNG images, decoded native sprite payloads and audio files remain local
-and are ignored by Git. JSON data, manifests, editable metadata and documentation
-remain tracked. Regenerate or obtain the image/audio payloads separately for a
-fresh checkout. Assets committed previously remain in Git/LFS history; stopping
+All client-derived exports remain local and ignored by Git, including root JSON
+tables, manifests, editable metadata, lossless decoded sprite payloads and media.
+Documentation and `server/` definitions remain tracked because the latter cannot
+be regenerated from the original client. Regenerate the client-derived tree for
+a fresh checkout. Existing local copies and edits are preserved when untracking.
+Assets committed previously remain in Git/LFS history; stopping
 tracking does not purge that history or remote LFS storage.
 
 ### Individual OGG tracks
@@ -163,22 +170,23 @@ Individual OGG files are ignored by Git, like their source containers.
 
 ## Regenerate from original sibling sources
 
-All files and manifests here are derived outputs. To restore missing ignored
-images, audio and video after cloning, only the `Wonderland-Client` (WLRI /
+Client files and manifests here are derived outputs. To restore missing ignored
+tables, metadata, images, audio and video after cloning, only the original client (WLRI /
 Wonderland Rhode Island) installation is required. Decryption keys come from
 its matching executable. See [the asset import procedure](../docs/ASSET_IMPORT.md).
 
 ```sh
 python3 tools/data_export/regenerate.py \
-  --client ../Wonderland-Client \
+  --client /absolute/path/to/WLRI-client \
   --output var/asset-import
 ```
 
 This produces `audio/`, `sprites/`, `pictures/` and `media/`, including PNG
 atlases, individual Ogg tracks, PCM sounds/voices and the preserved intro movie.
-It does not regenerate the tracked root gameplay tables or `server/` definitions.
-The restore tool checks matching media metadata before copying missing ignored
-payloads into `data/`. No saved asset provides decryption inputs.
+It regenerates the root client tables and combines their inventory with copies
+of tracked `server/` definitions, without requiring the old Private Server.
+The restore tool copies missing ignored tables, metadata and media into `data/`
+and preserves existing local files. No saved asset provides decryption inputs.
 
 To regenerate the complete static game-data export, use the separate offline
 `export.py --client <WLRI-root>/data --server <private-server-root> --output <new-directory>`
@@ -199,6 +207,9 @@ Three sprite indexes have 18 records whose companion archives are missing from
 the supplied sibling client; their pixels cannot be recovered. Ten picture
 resources reference missing palette colors and document a black fallback.
 Windows `Thumbs.db` is excluded as a thumbnail cache, not game artwork.
+Four updated weapon archives contain 20 sprites without companion JXA action
+records. Their frames are preserved, with missing animation metadata recorded
+explicitly; see [sprite coverage](sprites/README.md).
 
 ## Remaining client media
 
@@ -209,7 +220,10 @@ GIFs and ANI cursors use PNG frames and JSON playback metadata. The intro
 movie remains whole at `media/sty/WLOnline.avi`, copied byte for byte with its
 embedded audio and timing. Video payloads are ignored by Git.
 ANI cursor manifests preserve hotspots, timings and framebuffer inversion pixels.
-Sound/voice WAV files are decoded to PCM16 without lossy audio encoding. Font
+Fresh extraction uses the `png-vorbis-v1` profile: standalone sound, voice and
+music files are Ogg Vorbis; images and animation frames are PNG. Existing Vorbis
+tracks are copied byte-for-byte. Other audio is encoded with libvorbis quality 6
+at 44.1 kHz stereo. Font
 atlases retain physical glyph indices; their manifests also retain all decrypted
 font bits. `media/sty/style_data.json` contains all 768 decoded styles, keyed by
 original filename. It preserves every operand, unknown field and source hash;
@@ -249,7 +263,8 @@ editing, SQL resolution and source-only regeneration instructions.
 `lucky_draw.json` projects daily Lucky Draw compatibility policy against freshly
 decrypted sibling Item.dat. It preserves source item names/hashes alongside
 announcement labels, quantities, relative weights and presentation slots. The
-14 default outcomes have equal weight 1; these are authored probabilities rather
+nine default outcomes have equal weight 1; these are authored probabilities rather
 than recovered official drop rates. Full source-only export includes it. Refresh
 with `python3 tools/data_export/lucky_draw.py --output data --overwrite` and
-rebuild the asset database. Runtime reads only indexed SQL rows.
+rebuild the asset database. Runtime reads typed `catalog_lucky_draw_rewards`
+rows; existing installation edits are not replaced on startup.

@@ -73,6 +73,29 @@ func TestMalformedSkillUpdatesPreserveState(t *testing.T) {
 		t.Fatal("truncation changed state")
 	}
 }
+
+func TestSnapshotZeroGradeRemovesForgottenSkills(t *testing.T) {
+	s := testState()
+	if !s.Snapshot(snapshot([]byte{94, 0, 2, 50, 0, 0, 0}, []byte{113, 0, 1, 0, 0, 0, 0})) {
+		t.Fatal("initial snapshot")
+	}
+	p := snapshot([]byte{94, 0, 0, 0, 0, 0, 0}, []byte{113, 0, 1, 0, 0, 0, 0})
+	if !s.Snapshot(p) {
+		t.Fatal("removal snapshot rejected")
+	}
+	if _, exists := s.Learned[11016]; exists {
+		t.Fatal("zero-grade removal retained as learned")
+	}
+	if len(s.Learned) != 1 || s.Learned[11166].Grade != 1 {
+		t.Fatal("retained skill changed", s.Learned)
+	}
+	if !s.Snapshot(p) || len(s.Learned) != 1 {
+		t.Fatal("repeated removal changed state")
+	}
+	if !s.Apply([]byte{5, 12, 8, 43, 1}) || s.Learned[11016].Grade != 1 {
+		t.Fatal("forgotten skill cannot be relearned")
+	}
+}
 func TestCatalogDecodedMetadata(t *testing.T) {
 	decoded := make([]byte, 148)
 	decoded[100], decoded[101], decoded[105] = 4, 0x12, 5
@@ -140,5 +163,28 @@ func TestAlchemyCumulativeExperienceSnapshotAndUpdates(t *testing.T) {
 	}
 	if !s.Apply([]byte{8, 1, 111, 1, 23, 0, 0, 0, 126, 62, 0, 0}) || s.Learned[id].EXP != 9 || s.Learned[id].Proficiency != 2571 {
 		t.Fatal("native EXP update", s.Learned[id])
+	}
+}
+
+// Real authored policies distinguish allies, self and allies other than self;
+// effect-layer inference cannot represent these restrictions.
+func TestNativeTargetPolicies(t *testing.T) {
+	c, err := Load(login.NewAssets("../../../data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		id                      uint16
+		sameSide, self, allowed bool
+	}{
+		{10001, false, false, true}, {10001, true, false, false},
+		{15190, true, true, true}, {15190, true, false, false},
+		{15075, true, true, false}, {15075, true, false, true}, {15075, false, false, false},
+		{65000, true, true, false},
+	} {
+		d := c.Definitions[tc.id]
+		if !d.TargetKnown || d.AllowsTarget(tc.sameSide, tc.self) != tc.allowed {
+			t.Fatalf("skill %d policy %d: side=%v self=%v", tc.id, d.NativeTarget, tc.sameSide, tc.self)
+		}
 	}
 }

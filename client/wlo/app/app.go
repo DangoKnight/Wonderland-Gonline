@@ -5,16 +5,19 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"image"
 	"os"
 	"path/filepath"
 	"time"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/lottery"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/settings"
@@ -44,9 +47,9 @@ const (
 )
 
 var (
-	noticeTimeout       = []byte("Can't reach login server") // 0x4a2e48
-	noticeWrongPassword = []byte("Password wrong")           // 0x2f02c8
-	noticeConnection    = []byte("Connection lost")          // 0x4988d4
+	noticeTimeout       = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e")) // 0x4a2e48
+	noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))           // 0x2f02c8
+	noticeConnection    = []byte(localization.UI("ui.app.connection_lost_6c44751e"))          // 0x4988d4
 )
 
 // Client is the running login phase.
@@ -76,45 +79,84 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World              *world.World
-	Settings           *settings.Form
-	SettingsState      *settings.State
-	settingsPromptForm *seui.Form
-	settingsPath       string
-	Inventory          *inventory.Form
-	Compound           *inventory.CompoundForm
-	Team               *team.Form
-	TeamState          *team.State
-	teamAppearances    map[uint32]*world.Peer
-	joinTeamTarget     bool
-	remote             remoteRuntime
-	InventoryState     *inventory.State
-	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
-	MainStatus         *hud.MainStatus  // the status panel over the world
-	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
-	MainButtons        *hud.MainBtnForm // the menu at the bottom right
-	HotKeys            *hud.HotKeyForm  // the F1–F8 bar
-	ChatBar            *hud.InputBar    // the chat bar
-	groundHeld         bool             // the left button went down on the ground
-	groundSince        time.Time        // when it went down
-	uiHovered          bool             // a control was under the pointer last frame
-	nextWalk           time.Time        // next re-plan while a button or arrow is held
-	Chat               *hud.ChatLog     // the chat log over the map
-	npcTemplates       map[uint32]world.NPCTemplate
-	Talk               *hud.Talk // the event talk window
-	Music              *Music    // background music, nil without audio
-	movie              *moviePlay
-	sport              *sportPlay // the running minigame
-	sceneMusic         map[uint16]string
-	talks              map[uint16]string
-	event              eventState
-	petAnnouncements   [][]byte
-	petAnnouncement    bool
-	pendingNPC         *world.NPC // clicked out of reach, sent on arrival
-	areas              areaWatch
-	sounds             []string // the sound table (soundtable.go)
-	sfx                *Sounds  // the effects player (set by Run)
-	ambient            ambience
+	World                *world.World
+	Settings             *settings.Form
+	SettingsState        *settings.State
+	settingsPromptForm   *seui.Form
+	settingsPath         string
+	Inventory            *inventory.Form
+	Compound             *inventory.CompoundForm
+	Team                 *team.Form
+	TeamState            *team.State
+	teamAppearances      map[uint32]*world.Peer
+	teamTransferLeader   uint32
+	teamTransferDeadline time.Time
+	teamTransferClose    func()
+	joinTeamTarget       bool
+	friendTarget         bool // Make Friends' target mode 5 (friends.go)
+	tradeTarget          bool // Trade Items' target mode 9 (trade.go)
+	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
+	Business             *hud.Business
+	LuckyDraw            *lottery.Form
+	Trade                *inventory.TradeForm
+	Services             *inventory.ServiceForm
+	clinicPrompt         *clinicPrompt
+	clinicUntil          time.Time
+	clinicSleepGlyph     *surface.Surface
+	friendAsk            *friendAsk // the open friend question
+	remote               remoteRuntime
+	battle               battleView
+	battleResults        battleResultsRuntime
+	combat               combatRuntime // Per-connection opt-in; never shared between sessions.
+	InventoryState       *inventory.State
+	Stats                *world.Stats     // the player's values (5/3, 8/1, 26/4)
+	MainStatus           *hud.MainStatus  // the status panel over the world
+	FuncButtons          *hud.FuncBtnForm // the toolbar at the top right
+	MainButtons          *hud.MainBtnForm // the menu at the bottom right
+	inventoryPoints      inventoryPointAlert
+	HotKeys              *hud.HotKeyForm // the F1–F8 bar
+	ChatBar              *hud.InputBar   // the chat bar
+	groundHeld           bool            // the left button went down on the ground
+	groundSince          time.Time       // when it went down
+	uiHovered            bool            // a control was under the pointer last frame
+	nextWalk             time.Time       // next re-plan while a button or arrow is held
+	Chat                 *hud.ChatLog    // the chat log over the map
+	npcTemplates         map[uint32]world.NPCTemplate
+	Talk                 *hud.Talk // the event talk window
+	MiniMap              *hud.MiniMap
+	Social               *hud.Social
+	MailSend             *hud.MailSend
+	Mailbox              *hud.Mailbox
+	MailRead             *hud.MailRead
+	MailCompose          *hud.MailCompose
+	talkConfirm          func()
+	gmFace               *role.NPC
+	friendFaces          map[uint32]*role.Human
+	Music                *Music // background music, nil without audio
+	movie                *moviePlay
+	sport                *sportPlay // the running minigame
+	sceneMusic           map[uint16]string
+	eventMusic           string // event kind 15's track (+0x732c)
+	constellation        *constellationRun
+	constellations       [constellationLimit]bool
+	talks                map[uint32]string
+	event                eventState
+	eventTimers          map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
+
+	vacuum                  vacuumRuntime
+	gonlineCollectionTiming bool // Per-connection capability, independent of combat mode.
+	backdrops               backdropRuntime
+	connection              connectionRuntime
+
+	petAnnouncements [][]byte
+	petAnnouncement  bool
+	pendingNPC       *world.NPC // clicked out of reach, sent on arrival
+	areas            areaWatch
+	sounds           []string // the sound table (soundtable.go)
+	sfx              *Sounds  // the effects player (set by Run)
+	ambient          ambience
+	// Independent of the server's next event step.
+	minigameResultAckPending bool
 	// mapReady is +0x133d0: cleared by the player's AC12, set by 5/4 after
 	// the map load is acknowledged. Until then prop sounds and area
 	// triggers stay silent, so the arrival's replay of opened props does
@@ -122,18 +164,29 @@ type Client struct {
 	mapReady bool
 	held     bool // 6/2: the server holds the player
 
-	lib            *role.Library
-	items          map[uint16]assets.NativeItem
-	Skills         *skills.Form
-	SkillState     *skills.State
-	hotbar         hotbarRuntime
-	waterTravel    waterTravelState
-	vehicleEffects vehicleEffectState
-	logoutPrompt   *logoutForm
+	lib                *role.Library
+	items              map[uint16]assets.NativeItem
+	Skills             *skills.Form
+	BattleSkills       *skills.BattleForm
+	floorItems         map[uint16]floorItem
+	floorMap           uint16
+	floorPendingPickup uint16
+	floorHovered       uint16
+	itemFlights        []battleItemFlight
+	worldItemFlights   []worldItemFlight
+	acquisitionActor   uint16
+	SkillState         *skills.State
+	hotbar             hotbarRuntime
+	waterTravel        waterTravelState
+	placedVehicles     map[vehicleKey]placedVehicle
+	vehicleEffects     vehicleEffectState
+	logoutPrompt       *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
 	// first entry.
 	sceneNames map[uint16]string
 	mapScenes  map[uint16]uint16
+	areaTitle  areaTitle
+	worldZoom  worldZoomState
 	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
 	// movies, and each scene's weather byte.
 	weather      *weather.Layer
@@ -153,12 +206,16 @@ type Client struct {
 	// freezes the scene behind it (lost.go).
 	Lost *LostForm
 	fade fadeState
+	// sceneFade is the battle entry/exit transition (transition.go).
+	sceneFade  sceneFade
+	mapLoading mapLoading
 	// Unhandled receives packets the login phase does not handle.
 	Unhandled func(p []byte)
 }
 
 // Options configure New.
 type Options struct {
+	Language string // en or zh-TW; empty uses the saved local preference.
 	Renderer string // auto (default), gpu rasterization, or cpu compatibility rendering
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
@@ -181,6 +238,28 @@ func New(o Options) (*Client, error) {
 	}
 	c := &Client{Root: o.Root, Assets: login.NewAssets(o.Root), Now: time.Now, resources: r, options: o}
 	c.Assets.UserRoot = o.UserRoot
+	language := o.Language
+	if language == "" {
+		if prefs, err := loadDisplaySettings(applicationSettingsPath(o, c.Assets)); err == nil {
+			language = prefs.Language
+		}
+		if r.ready {
+			language = r.language
+		}
+	}
+	language, err := localization.Normalize(language)
+	if err != nil {
+		return nil, err
+	}
+	if r.ready && r.language != language {
+		return nil, fmt.Errorf("%s", localization.UI("ui.app.shared_resources_cannot_mix_languages_92b353fe"))
+	}
+	catalog, err := localization.Load(o.Root, language)
+	if err != nil {
+		return nil, err
+	}
+	localization.Install(catalog)
+	r.language = language
 	a := c.Assets
 	if err := r.prepare(a, o.SpritesRoot); err != nil {
 		return nil, err
@@ -203,10 +282,20 @@ func New(o Options) (*Client, error) {
 	c.Servers.INI, c.Servers.FallbackINI = o.ServerINI, o.FallbackINI
 	c.Servers.OnExit = func() { c.Exit = true }
 	c.Lost = newLostForm(c.Env)
+	c.Notices.Now = func() time.Time { return c.Now() }
+	c.Lost.AnimateMessage(func() time.Time { return c.Now() })
 	c.UI.Add(c.Lost)
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
-	c.Servers.OnConnecting = func() { c.clearProfileAccount(); c.Net.Send(login.Discovery()) }
+	c.Servers.OnConnecting = func() {
+		c.combat = combatRuntime{}
+		c.vacuum = vacuumRuntime{}
+		c.gonlineCollectionTiming = false
+		c.backdrops = backdropRuntime{}
+		c.connection = connectionRuntime{}
+		c.clearProfileAccount()
+		c.Net.Send(login.Discovery())
+	}
 	c.UI.Add(c.Servers)
 	c.Login = login.NewIDPassword(c.Env, c.G, c.Net, a)
 	c.Login.Account.Clipboard = loginClipboardText
@@ -232,6 +321,8 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.MainButtons)
 	c.HotKeys = hud.NewHotKeyForm(c.Env, ScreenWidth, ScreenHeight)
 	c.UI.Add(c.HotKeys)
+	c.newMiniMap()
+	c.newSocial(formula)
 	c.ChatBar = hud.NewInputBar(c.Env)
 	c.UI.Add(c.ChatBar)
 	c.ChatBar.Message.OnEnter = c.sendChat
@@ -240,6 +331,8 @@ func New(o Options) (*Client, error) {
 	c.ChatBar.Whisper.OnBlur = c.whisperBlur
 	c.ChatBar.OnWhisperName = c.whisperEnter
 	c.ChatBar.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
+	c.ChatBar.Now = func() time.Time { return c.Now() }
+	c.ChatBar.OpenMailbox = c.Mailbox.Toggle
 	c.ChatBar.Focus = func(f seui.Control) { c.Input.Focused = f }
 	c.ChatBar.InTeam, c.ChatBar.InGuild = c.inTeam, c.inGuild
 	c.Chat = hud.NewChatLog(c.Env)
@@ -261,6 +354,11 @@ func New(o Options) (*Client, error) {
 	c.UI.Add(c.Chat)
 	c.Talk = hud.NewTalk(c.Env)
 	c.Talk.Now = func() time.Time { return c.Now() }
+	c.Talk.OnHide = func() {
+		if c.sfx != nil {
+			c.sfx.StopVoice()
+		}
+	}
 	c.Talk.Pointer = func() (int, int) { return c.Input.X, c.Input.Y }
 	c.Talk.Sound = func(path string) {
 		if c.Env.Sound != nil {
@@ -285,6 +383,11 @@ func New(o Options) (*Client, error) {
 	c.initCompound()
 	c.initSkills()
 	c.initTeam()
+	c.initPetStatus()
+	c.initVehicleStatus()
+	c.initTrade()
+	c.initServices()
+	c.initLuckyDraw()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -300,41 +403,76 @@ func (c *Client) Frame() { c.frame(true) }
 // frame always pumps networking, simulation and automation; background
 // thumbnails render at a lower rate. Movies/minigames retain their own clocks.
 func (c *Client) frame(draw bool) {
-	draw = draw || c.movie != nil || c.sport != nil || c.fade.step > 0
+	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
+	// Story cinematics take ownership immediately; do not play their opening
+	// seconds behind a decorative loading screen.
+	if c.mapLoading.active && c.movie != nil {
+		c.stopMapLoading()
+	}
 	if draw {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
 	}
 	c.Input.Hovered = nil // FUN_0040f97c
+	c.sceneFadeTick(c.Now())
+	c.friendAskTick(c.Now())
+	c.luckyDrawTick()
+	c.inventoryPointTick()
+	c.clinicTick()
+	c.teamTransferTick()
+	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
-		c.World.JoinTeamSelection = c.joinTeamTarget
+		c.syncWorldZoom()
+		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
-		if c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
+		c.updateFloorHover()
+		if c.floorHovered != 0 || c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
 		} else {
-			c.World.Hover(c.Input.X, c.Input.Y)
+			x, y := c.World.ScenePoint(c.Input.X, c.Input.Y)
+			c.World.Hover(x, y)
 		}
 		c.reachNPC()
+		c.reachFloorItem()
+		c.syncMiniMap()
+		c.constellationTick(c.Now())
 		c.eventTick()
+		c.vacuumTick()
 		c.areaTick()
+		c.areaTitleTick(c.Now())
 		c.ambientTick()
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
 		fading := c.fade.step > 0
-		c.World.HideNames = c.Talk.Drawn() || fading
+		c.World.HideNames = c.Talk.Drawn() || fading || !c.clinicUntil.IsZero()
 		c.World.Cinematic = fading
-		if !c.movieFrame() && draw {
-			c.World.Draw()
-			c.drawVehicleEffects()
-			c.Talk.Draw()
+		if c.battleFrame(draw) {
+			// Battle owns the scene while the map and networking keep ticking.
+		} else if !c.movieFrame() && draw {
+			hide := c.World.HidePlayer
+			if !c.clinicUntil.IsZero() {
+				c.World.HidePlayer = true
+			}
+			c.drawWorldScene()
+			c.World.HidePlayer = hide
+			c.drawClinicRest()
+			c.drawFloorItemName()
+			c.drawAreaTitle(c.Now())
+			dialogueOverlay = true
 		}
 		c.sportFrame()
 	} else if c.fade.frozen == nil && draw {
 		c.drawBackground()
 	}
 	now := c.Now()
+	c.battleResultsTick(now)
+	c.layoutRewardNotices()
+	if draw {
+		c.drawSceneFade()
+	}
 	c.drawFade(now)
 	if !c.Login.LoginTime.IsZero() && now.Sub(c.Login.LoginTime) > loginTimeout {
 		c.Notices.Show(noticeTimeout, timeoutNotice, now)
@@ -360,14 +498,34 @@ func (c *Client) frame(draw bool) {
 				c.Inventory.DrawDragged()
 				c.Compound.DrawDragged()
 				c.drawHotbarDrag()
+				c.Social.DrawDragged()
 			}
 		}
 	}
+	if draw && c.movie != nil {
+		c.UI.DrawMessageExits()
+	}
+	if dialogueOverlay {
+		// Dialogue and confirmations cover ordinary forms, including the
+		// window that opened them. Movie dialogue retains its zoomed scene pass.
+		c.Talk.Draw()
+		if c.Talk.Contains(c.Input.X, c.Input.Y) {
+			// Let the existing dialogue click handler receive the press instead
+			// of a panel control that was hit-tested underneath the overlay.
+			c.Input.Hovered = nil
+		}
+	}
 	if draw {
+		c.battleOverlay()
 		c.remoteInformation()
 		c.Notices.Draw(c.Env, now)
+		c.UI.DrawOverlayMessageExits()
 	}
 	c.uiHovered = c.Input.Hovered != nil
+	if draw {
+		c.drawConstellation(c.Now())
+		c.drawMapLoading(now)
+	}
 	c.updateCursor(now)
 }
 
@@ -404,8 +562,21 @@ func (c *Client) handleNet() {
 
 // dispatch is the part of the packet dispatcher (FUN_002dde1c) the login
 // phase reaches.
-func (c *Client) dispatch(p []byte) {
+func (c *Client) dispatchNative(p []byte) {
+	if c.deferBattleTransitionPacket(p) {
+		return
+	}
+	defer c.recordBattleResultsPacket(p)
 	if len(p) == 0 {
+		return
+	}
+	if c.friendsPacket(p) {
+		return
+	}
+	if c.servicePacket(p) {
+		return
+	}
+	if c.tradePacket(p) {
 		return
 	}
 	if c.teamPacket(p) {
@@ -426,6 +597,10 @@ func (c *Client) dispatch(p []byte) {
 		sub = s[0]
 	}
 	switch {
+	case p[0] == protocol.CommandEventTimers && sub == protocol.EventTimersUpdate:
+		c.eventTimerPacket(p)
+	case p[0] == protocol.CommandLuckyDraw:
+		c.luckyDrawPacket(p)
 	case p[0] == protocol.CommandDiscovery:
 		c.disconnectText = login.DisconnectReason(sub, 0)
 	case p[0] == protocol.CommandHandshake && sub == protocol.HandshakeServerDescription:
@@ -452,8 +627,17 @@ func (c *Client) dispatch(p []byte) {
 		}
 		c.Stats.ParseBaseStats(s)
 		c.Skills.Refresh()
+		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationList:
+		c.receiveConstellations(p)
+	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationAcquire:
+		c.startConstellation(p)
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehiclePlaced:
+		c.placeVehiclePacket(p)
+	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlVehicleProgress:
+		c.vehicleProgress(p)
 	case p[0] == protocol.CommandPetControl && (sub == protocol.PetControlVehicleMount || sub == protocol.PetControlWireCode11 || sub == protocol.PetControlRemoveVehicle || sub == protocol.PetControlVehiclePosition):
 		c.vehiclePacket(p)
 	case p[0] == protocol.CommandPetControl && sub == protocol.PetControlWireCode8:
@@ -463,6 +647,7 @@ func (c *Client) dispatch(p []byte) {
 				c.announceNewPets(before)
 				c.assignPetSkills()
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			} else if c.Unhandled != nil {
 				c.Unhandled(p)
 			}
@@ -471,6 +656,7 @@ func (c *Client) dispatch(p []byte) {
 		if c.World != nil && len(p) == 7 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID && p[6] >= 1 && p[6] <= game.MaxPets {
 			c.InventoryState.Pets[p[6]-1] = inventory.UsePet{}
 			c.Skills.Refresh()
+			c.BattleSkills.Refresh()
 		}
 	case p[0] == protocol.CommandInventory:
 		c.inventoryPacket(p)
@@ -478,6 +664,7 @@ func (c *Client) dispatch(p []byte) {
 		if c.World != nil {
 			if c.InventoryState.ApplyPetStat(p) {
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			} else if c.Unhandled != nil {
 				c.Unhandled(p)
 			}
@@ -496,11 +683,16 @@ func (c *Client) dispatch(p []byte) {
 		// 2/16 (0x2dfd44): an ID, then text for the notice board.
 		if len(s) > chatIDEnd {
 			c.Notices.Show(s[chatIDEnd:], chatNoticeFor, c.Now())
+			c.luckyDrawNotice(s[chatIDEnd:])
 		}
 	case p[0] == protocol.CommandPresence:
 		c.receivePresence(s)
 	case p[0] == protocol.CommandPose:
 		c.receivePose(s)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateModelTransform:
+		c.receiveModelTransform(p)
+	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateShapeshift:
+		c.receiveShapeshift(p)
 	case p[0] == protocol.CommandCharacterState && sub == protocol.CharacterStateEquipmentSnapshot:
 		if c.World != nil {
 			c.World.ApplyPeerEquipment(s[1:])
@@ -533,6 +725,10 @@ func (c *Client) dispatch(p []byte) {
 		// acknowledges it with 20/6, which moves server-driven sequences
 		// such as the beach rescue along.
 		c.event.done = true
+	case p[0] == protocol.CommandMovie:
+		if !c.moviePacket(p) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameStart:
 		c.startSport(s)
 	case p[0] == protocol.CommandArcadeGame:
@@ -543,13 +739,15 @@ func (c *Client) dispatch(p []byte) {
 		}
 	case p[0] == protocol.CommandMinigame && sub == protocol.MinigameEnd:
 		c.endSport()
+	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionMallBalance && c.sport != nil:
+		c.sportBalance(s)
 	case p[0] == protocol.CommandPosition:
 		if id, mapID, x, y, ok := world.ParsePlace(s); ok && c.World != nil {
 			if id == c.World.Player.ID && mapID == c.World.Player.Map {
 				c.rememberVehiclePosition(id)
 				c.waterTravel = waterTravelState{}
 				c.World.Relocate(image.Pt(x, y))
-				c.World.MarkWalk()
+				c.groundHeld, c.groundSince = false, time.Time{}
 			} else if id != c.World.Player.ID {
 				c.rememberVehiclePosition(id)
 				c.World.PlacePeer(id, x, y)
@@ -569,10 +767,28 @@ func (c *Client) dispatch(p []byte) {
 				c.Env.Sound(numberedSound(int(snd)))
 			}
 		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorWalk:
+		// Native AC22:2, dispatch 0x002e55fc -> FUN_0041869c.
+		if c.World != nil && !c.World.ApplyActorWalk(s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case p[0] == protocol.CommandScene && (sub == protocol.SceneActorExpression || sub == protocol.SceneActorAnimation):
+		if c.World != nil && !c.World.ApplyNPCPresentation(sub, s[1:], c.Now()) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorAction:
+		// AC22:12 (FUN_00459d88) sets a minimap sign.
+		if c.World != nil && !c.World.ApplySign(s[1:]) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPosition:
 		// AC22:4 (FUN_0038cf30) moves, shows and hides map NPCs.
 		if c.World != nil {
 			c.World.ApplyActorPositions(s[1:])
+		}
+	case p[0] == protocol.CommandScene && sub == protocol.SceneActorPose:
+		if c.World != nil && !c.World.ApplyActorPose(s[1:]) && c.Unhandled != nil {
+			c.Unhandled(p)
 		}
 	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionDelete:
 		// 35/2 (0x2eab55) reports a deletion.
@@ -592,6 +808,13 @@ func (c *Client) dispatch(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.mapReady = false
+	c.placedVehicles = nil
+	c.floorItems = nil
+	c.floorPendingPickup = 0
+	c.floorHovered = 0
+	c.worldItemFlights = nil
+	c.acquisitionActor = 0
 	c.vehicleEffects = vehicleEffectState{}
 	c.waterTravel = waterTravelState{}
 	pl, err := world.ParseSelf(p)
@@ -621,6 +844,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.UI.HideAll()
 	c.World = w
 	c.resetInventory(pl)
+	c.queueAreaTitle()
 	c.playMapMusic()
 	c.MainStatus.Show()
 	c.FuncButtons.Show()
@@ -628,6 +852,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.HotKeys.Show()
 	c.ChatBar.Show()
 	c.Chat.Show()
+	c.setupMiniMap()
 	c.welcome()
 }
 
@@ -657,6 +882,7 @@ func (c *Client) wrongPassword() {
 // roster is 63/1 (0x2ed7ec): the character selection opens
 // (FUN_00402468) and a remembered account is saved.
 func (c *Client) roster(s []byte) {
+	c.eventTimers = nil
 	c.rememberProfileAccount()
 	c.Chars.Roster(s)
 	if c.Login.Remember {
@@ -675,3 +901,11 @@ func (c *Client) connectFailed() {
 }
 
 const statTargetOffset, statTargetEnd = 7, 11 // AC8:1 target after stat, kind and value; zero denotes self.
+
+func init() {
+	localization.Register(func() {
+		noticeConnection = []byte(localization.UI("ui.app.connection_lost_6c44751e"))
+		noticeTimeout = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e"))
+		noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))
+	})
+}

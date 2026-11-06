@@ -157,6 +157,12 @@ func (g *parityGame) Draw(screen *ebiten.Image) {
 		if err := exerciseRaster(g.gpu.device); err != nil {
 			g.err = err
 		}
+		if err := exerciseFittedOutput(g.cpu, g.gpu); err != nil {
+			g.err = err
+		}
+		if err := exerciseScalingFilters(g.cpu, g.gpu); err != nil {
+			g.err = err
+		}
 	}
 	if g.drawn {
 		screen.DrawImage(g.target, nil)
@@ -170,4 +176,44 @@ func (g *parityGame) Draw(screen *ebiten.Image) {
 	g.cpu.Draw(g.reference, g.src)
 	screen.DrawImage(g.target, nil)
 	g.drawn = true
+}
+
+// Independent pixels verify CPU presentation, GPU conversion and an already
+// resident GPU surface into a larger, letterboxed output framebuffer.
+func exerciseFittedOutput(cpu, gpu *Presenter) error {
+	src := surface.New(2, 1)
+	src.Pix = []uint16{0xf800, 0x001f}
+	resident := gpu.device.NewSurface(2, 1)
+	defer resident.Close()
+	resident.Fill(image.Rect(0, 0, 1, 1), 0xf800)
+	resident.Fill(image.Rect(1, 0, 2, 1), 0x001f)
+	for _, tc := range []struct {
+		name   string
+		p      *Presenter
+		source *surface.Surface
+	}{{"CPU", cpu, src}, {"GPU conversion", gpu, src}, {"GPU resident", gpu, resident}} {
+		output := ebiten.NewImage(4, 4)
+		tc.p.DrawFit(output, tc.source)
+		got := make([]byte, 4*4*4)
+		output.ReadPixels(got)
+		output.Deallocate()
+		for y := 0; y < 4; y++ {
+			for x := 0; x < 4; x++ {
+				want := [4]byte{0, 0, 0, 255}
+				if y == 1 || y == 2 {
+					if x < 2 {
+						want[0] = 255
+					} else {
+						want[2] = 255
+					}
+				}
+				for c := 0; c < 4; c++ {
+					if v := got[(y*4+x)*4+c]; v != want[c] {
+						return fmt.Errorf("%s fitted output (%d,%d) channel %d=%d want %d", tc.name, x, y, c, v, want[c])
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

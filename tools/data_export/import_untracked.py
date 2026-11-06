@@ -3,7 +3,7 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import shutil
 import subprocess
 
@@ -11,7 +11,16 @@ REPO = Path(__file__).resolve().parents[2]
 EXCLUDED_ASSET_OUTPUTS = {'server/database_data.json', 'server/database-data.json',
                           'server/database.override.json'}
 EXTERNAL_ASSET_DIRECTORIES = ('audio', 'sprites', 'pictures', 'media')
+EXTERNAL_ASSET_FILES = (
+    'animation_data.json', 'asset_manifest.json', 'compound_data.json',
+    'compound2_data.json', 'eve_data.json', 'formula_data.json', 'ground_data.json',
+    'item_data.json', 'lbd_data.json', 'lucky_draw.json', 'mark_data.json',
+    'npc_data.json', 'player_titles.json', 'ride_pet_positions.json',
+    'scene_data.json', 'skill_data.json', 'skill_effects.json', 'talk_data.json',
+    'traffic_settings.json', 'wem_data.json', 'media_formats.json',
+)
 EXTERNAL_IMPORT_FORMAT = 'wlri-external-assets'
+LEGACY_EXTERNAL_ASSET_FILES = tuple(name for name in EXTERNAL_ASSET_FILES if name != 'media_formats.json')
 
 
 def checksum(path):
@@ -28,7 +37,7 @@ def portable_metadata(value):
     result = {}
     json_output = str(value.get('output', value.get('path', ''))).endswith('.json')
     for key, item in value.items():
-        if key in ('source', 'client_source', 'server_source', 'key_source') and isinstance(item, str) and Path(item).is_absolute():
+        if key in ('source', 'client_source', 'server_source', 'key_source') and isinstance(item, str) and (PurePosixPath(item).is_absolute() or PureWindowsPath(item).is_absolute()):
             continue
         if json_output and key in ('output_bytes', 'output_sha256', 'bytes', 'sha256'):
             continue
@@ -46,10 +55,14 @@ def restore(source, repo=REPO, dry_run=False):
         raise ValueError('source must be a separate, freshly regenerated asset directory')
     external = source / 'external_asset_import.json'
     scoped = external.is_file()
+    scoped_files = ()
     if scoped:
         scope = json.loads(external.read_text())
         if scope.get('schema_version') != 1 or scope.get('format') != EXTERNAL_IMPORT_FORMAT or scope.get('directories') != list(EXTERNAL_ASSET_DIRECTORIES):
             raise ValueError('invalid external asset import scope')
+        scoped_files = scope.get('files', [])
+        if scoped_files and scoped_files not in (list(EXTERNAL_ASSET_FILES), list(LEGACY_EXTERNAL_ASSET_FILES)):
+            raise ValueError('invalid external asset file scope')
         for directory in EXTERNAL_ASSET_DIRECTORIES:
             if not (source / directory).is_dir():
                 raise ValueError(f'missing external asset directory: {directory}')
@@ -59,7 +72,7 @@ def restore(source, repo=REPO, dry_run=False):
     for name in sorted(tracked):
         if not name.endswith('.json'):
             continue
-        if scoped and Path(name).parts[1] not in EXTERNAL_ASSET_DIRECTORIES:
+        if scoped and Path(name).parts[1] not in EXTERNAL_ASSET_DIRECTORIES and Path(name).relative_to('data').as_posix() not in scoped_files:
             continue
         current = repo / name
         generated = source / Path(name).relative_to('data')
@@ -77,7 +90,7 @@ def restore(source, repo=REPO, dry_run=False):
             relative = item.relative_to(source).as_posix()
             if relative in EXCLUDED_ASSET_OUTPUTS:
                 continue
-            if scoped and Path(relative).parts[0] not in EXTERNAL_ASSET_DIRECTORIES:
+            if scoped and Path(relative).parts[0] not in EXTERNAL_ASSET_DIRECTORIES and relative not in scoped_files:
                 continue
             name = 'data/' + relative
             if name not in tracked:

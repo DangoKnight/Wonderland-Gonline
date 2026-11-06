@@ -626,5 +626,362 @@
         ]
       }
     ]
+  },
+  {
+    "kind": 11,
+    "enabled": true,
+    "point_cost": 25,
+    "token_count": 0,
+    "cooldown_milliseconds": 3000,
+    "rewards": [
+      {
+        "index": 1,
+        "item_id": 34123,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "index": 2,
+        "item_id": 34116,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "index": 3,
+        "item_id": 34115,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "index": 4,
+        "item_id": 34114,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          4,
+          4,
+          4
+        ]
+      },
+      {
+        "index": 5,
+        "item_id": 34112,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "index": 6,
+        "item_id": 34111,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "index": 7,
+        "item_id": 34110,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "index": 8,
+        "item_id": 34109,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          8,
+          8,
+          8
+        ]
+      },
+      {
+        "index": 9,
+        "item_id": 34108,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          8,
+          5
+        ]
+      },
+      {
+        "index": 10,
+        "item_id": 34107,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          4,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "kind": 12,
+    "enabled": true,
+    "point_cost": 100,
+    "token_count": 20,
+    "cooldown_milliseconds": 3000,
+    "rewards": [
+      {
+        "index": 1,
+        "item_id": 61044,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "index": 2,
+        "item_id": 61039,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "index": 3,
+        "item_id": 61037,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "index": 4,
+        "item_id": 61035,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          4,
+          4,
+          4
+        ]
+      },
+      {
+        "index": 5,
+        "item_id": 61033,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "index": 6,
+        "item_id": 61032,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "index": 7,
+        "item_id": 61031,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "index": 8,
+        "item_id": 61030,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          8,
+          8,
+          8
+        ]
+      },
+      {
+        "index": 9,
+        "item_id": 61028,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          8,
+          5
+        ]
+      },
+      {
+        "index": 10,
+        "item_id": 61026,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          4,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "kind": 14,
+    "enabled": true,
+    "point_cost": 5,
+    "token_count": 1,
+    "cooldown_milliseconds": 3000,
+    "rewards": [
+      {
+        "index": 1,
+        "item_id": 62009,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "index": 2,
+        "item_id": 34152,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "index": 3,
+        "item_id": 21159,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "index": 4,
+        "item_id": 24125,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          4,
+          4,
+          4
+        ]
+      },
+      {
+        "index": 5,
+        "item_id": 23132,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "index": 6,
+        "item_id": 34020,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          6,
+          6,
+          6
+        ]
+      },
+      {
+        "index": 7,
+        "item_id": 34015,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "index": 8,
+        "item_id": 34016,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          8,
+          8,
+          8
+        ]
+      },
+      {
+        "index": 9,
+        "item_id": 32162,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          2,
+          8,
+          5
+        ]
+      },
+      {
+        "index": 10,
+        "item_id": 33019,
+        "quantity": 1,
+        "weight": 1,
+        "reels": [
+          1,
+          4,
+          6
+        ]
+      }
+    ]
   }
 ]

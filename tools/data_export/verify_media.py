@@ -6,6 +6,7 @@ from pathlib import Path
 import struct
 from export import REPO, require, sha256
 from media import MEDIA_DIRS, ROOT_RESOURCES
+from ui import verify_ui
 
 
 def reconstruct_style(doc):
@@ -41,7 +42,7 @@ def reconstruct_style(doc):
 
 
 def verify(directory):
-    manifest = json.loads((directory / 'media_manifest.json').read_text())
+    manifest = json.loads((directory / 'media_manifest.json').read_text(encoding='utf-8'))
     original = Path(manifest['source'])
     expected = {p.relative_to(original).as_posix() for name in MEDIA_DIRS for p in (original / name).rglob('*') if p.is_file()}
     expected.update(name for name in ROOT_RESOURCES if (original / name).is_file())
@@ -49,6 +50,10 @@ def verify(directory):
     expected_outputs = {r['path'] for r in manifest['outputs']}
     actual_outputs = {p.relative_to(directory).as_posix() for p in directory.rglob('*') if p.is_file() and p.name != 'media_manifest.json'}
     require(expected_outputs == actual_outputs, 'media output census mismatch')
+    for name in manifest.get('ui_manifests', []):
+        path = directory / name
+        require(path.is_relative_to(directory), 'UI manifest escapes media directory')
+        verify_ui(path)
     for row in manifest['outputs']:
         path = directory / row['path']
         require(path.is_relative_to(directory) and path.stat().st_size == row['bytes'] and sha256(path) == row['sha256'], f'media output mismatch: {path}')
@@ -66,7 +71,7 @@ def verify(directory):
         metadata = row['metadata']
         if 'record' in row:
             if metadata not in collections:
-                collection = json.loads((directory / metadata).read_text())
+                collection = json.loads((directory / metadata).read_text(encoding='utf-8'))
                 require(collection['format'] == 'style-collection', 'invalid style collection format')
                 keys = {entry['record'] for entry in manifest['files'] if entry.get('metadata') == metadata}
                 require(set(collection['styles']) == keys, 'style collection census mismatch')
@@ -74,7 +79,7 @@ def verify(directory):
             doc = collections[metadata][row['record']]
             require(doc['source'] == row['source'] and doc['source_sha256'] == row['source_sha256'], 'style collection provenance mismatch')
         else:
-            doc = json.loads((directory / metadata).read_text())
+            doc = json.loads((directory / metadata).read_text(encoding='utf-8'))
         raw = None
         if doc['format'] == 'style-animation':
             raw = reconstruct_style(doc)

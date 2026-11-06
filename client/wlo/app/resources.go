@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
+	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/picdb"
@@ -17,15 +18,19 @@ import (
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientimage"
+	"wonderland-gonline/internal/localization"
 )
 
 // Resources belongs to a workspace. Sessions use its immutable definitions and
 // shared decoded caches; all UI/state mutations run serially on the game thread.
 // Only the sprite manager's native decoder works asynchronously, under its lock.
 type Resources struct {
+	language                  string
 	root, spriteRoot          string
 	ready                     bool
+	battleAssets              *clientbattle.Assets
 	pics                      *picdb.DB
+	languageSkins             map[string]*picdb.DB
 	font                      *clientassets.Font
 	textRenderer              *text.Renderer
 	cursors                   map[cursor.Shape]*cursor.Animation
@@ -35,15 +40,21 @@ type Resources struct {
 	formula                   *login.Formula
 	skillCatalog              *skills.Catalog
 	background                *surface.Surface
+	loadingArtwork            *surface.Surface
 	audio                     *SoundCache
 	scenes                    bool
 	sceneNames                map[uint16]string
+	sceneTitleGroups          map[uint16]uint16
+	sceneCategories           map[uint16]byte
+	battleBackdrops           map[uint16]clientassets.GroundBackdrops
 	mapScenes                 map[uint16]uint16
 	sceneWeather              map[uint16]byte
 	sceneMusic                map[uint16]string
+	sceneMiniMaps             map[uint16]bool
 	npcTemplates              map[uint32]world.NPCTemplate
 	petPortraits              map[petPortraitKey]*surface.Surface
-	talks                     map[uint16]string
+	talks                     map[uint32]string
+	talkIDs                   map[uint32]uint32
 	instanceDefinitions       []assets.InstanceDefinition
 	instanceDefinitionsLoaded bool
 	mountPositions            map[uint16]role.MountPlacement
@@ -52,14 +63,20 @@ type Resources struct {
 func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 	if r.ready {
 		if r.root != a.Root || r.spriteRoot != spriteRoot {
-			return fmt.Errorf("shared resources cannot mix asset roots")
+			return fmt.Errorf("%s", localization.UI("ui.app.shared_resources_cannot_mix_asset_roots_317d451b"))
 		}
 		return nil
 	}
 	r.root, r.spriteRoot = a.Root, spriteRoot
 	r.pics = picdb.New()
-	r.pics.LoadDir(a.MediaPath("menu", "skins", "default"), false, 0)
-	r.pics.LoadDir(a.MediaPath("menu", "Skins", "white"), true, 0)
+	for _, root := range a.UISkinRoots(r.language) {
+		for _, skin := range []string{"default", "white"} {
+			if err := r.pics.LoadDir(login.Path(root, skin), skin == "white", 0); err != nil {
+				return err
+			}
+		}
+	}
+	r.languageSkins = map[string]*picdb.DB{r.language: r.pics.SkinRegistry()}
 	var err error
 	if r.font, err = clientassets.LoadFontAtlas(a.MediaPath("font", "TATPC1_TWN")); err != nil {
 		return err
@@ -70,7 +87,7 @@ func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 		return err
 	}
 	r.cursors = cursors.Shapes
-	for _, name := range []string{world.ShadowPicture, world.MonsterShadowPicture, world.DoorLightPicture, world.SmallDoorLightPicture} {
+	for _, name := range []string{world.ShadowPicture, world.MonsterShadowPicture} {
 		if compiled, err := a.CompiledPicture(shadowArchive, name); err == nil {
 			if err = r.pics.AddCompiled(name, compiled); err != nil {
 				return err
@@ -93,16 +110,25 @@ func (r *Resources) prepare(a login.Assets, spriteRoot string) error {
 	} else if m, err := a.LoadPicture("LogPic1"); err == nil {
 		r.background = surface.FromImage(m)
 	}
+	if compiled, err := a.CompiledPicture(mapLoadingPicture); err == nil {
+		bounds := compiled.Bounds()
+		if pixels, err := compiled.Pixels(bounds, clientimage.Plain); err == nil {
+			r.loadingArtwork = &surface.Surface{W: bounds.Dx(), H: bounds.Dy(), Pix: pixels}
+		}
+	} else if artwork, err := a.LoadPicture(mapLoadingPicture); err == nil {
+		r.loadingArtwork = surface.FromImage(artwork)
+	}
 	if r.formula, err = login.LoadFormula(a); err != nil {
 		return err
 	}
 	r.sprites = sprites.NewManager([]string{spriteRoot, filepath.Join(a.Data, "sprites")}, []string{spriteRoot, filepath.Join(a.Data, "sprites")})
 	r.library = role.NewLibraryWith(r.sprites)
-	if raw, err := clientfs.ReadFile(a.DataPath(itemExport)); err == nil {
+	if raw, err := localization.ReadAsset(a.DataPath(itemExport)); err == nil {
 		r.items, _ = assets.ParseItemCatalogJSON(raw)
 	}
 	r.skillCatalog, _ = skills.Load(a)
 	r.audio = &SoundCache{}
+	r.battleBackdrops, _ = world.BattleBackdrops(a)
 	r.ready = true
 	return nil
 }
@@ -112,6 +138,8 @@ func (r *Resources) loadScenes(a login.Assets) {
 	}
 	r.scenes = true
 	r.sceneNames, _ = world.SceneNames(a)
+	r.sceneTitleGroups, _ = world.SceneTitleGroups(a)
+	r.sceneCategories, _ = world.SceneCategories(a)
 	r.mapScenes, _ = world.MapScenes(a)
 	r.sceneWeather, _ = world.SceneWeather(a)
 	r.sceneMusic, _ = world.SceneMusic(a)
@@ -120,7 +148,6 @@ func (r *Resources) loadScenes(a login.Assets) {
 // Close is called once after every session has stopped using the workspace.
 func (r *Resources) Close() error {
 	if r.sprites != nil {
-		r.sprites.WaitNative()
 		return r.sprites.Close()
 	}
 	return nil
@@ -131,9 +158,9 @@ func (r *Resources) loadInstances(a login.Assets) {
 		return
 	}
 	r.instanceDefinitionsLoaded = true
-	if raw, err := clientfs.ReadFile(a.DataPath("scene_data.json")); err == nil {
+	if raw, err := localization.ReadAsset(a.DataPath("scene_data.json")); err == nil {
 		if defs, err := assets.ParseInstanceDefinitions(raw); err == nil {
-			if marks, err := clientfs.ReadFile(a.DataPath("mark_data.json")); err == nil {
+			if marks, err := localization.ReadAsset(a.DataPath("mark_data.json")); err == nil {
 				_ = assets.ApplyInstanceText(defs, marks)
 			}
 			r.instanceDefinitions = defs

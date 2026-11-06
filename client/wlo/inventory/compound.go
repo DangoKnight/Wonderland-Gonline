@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -134,7 +136,7 @@ func (f *CompoundForm) SelectIngredient(slot byte, index int) bool {
 	}
 	item := f.Inventory.State.Bag[slot-1]
 	if item.Empty() || item.Locked || f.CanSelect != nil && !f.CanSelect(slot) {
-		f.notice("This item cannot be selected for synthesis.")
+		f.notice(localization.UI("ui.inventory.this_item_cannot_be_selected_for_synthes_3610e0a6"))
 		return false
 	}
 	for _, s := range f.Selection {
@@ -152,7 +154,7 @@ func (f *CompoundForm) AddIngredient(slot byte) {
 			return
 		}
 	}
-	f.notice("All ingredient slots are occupied.")
+	f.notice(localization.UI("ui.inventory.all_ingredient_slots_are_occupied_464c8eeb"))
 }
 func (f *CompoundForm) Synthesize() {
 	if !f.allowed() {
@@ -165,14 +167,21 @@ func (f *CompoundForm) Synthesize() {
 			slots = append(slots, s)
 		}
 	}
-	materials := 0
+	materials, foods := 0, 0
 	for _, slot := range slots {
+		if f.Inventory.State.Items[f.Inventory.State.Bag[slot-1].ID].Definition.Type == game.ItemTypePetStatFood {
+			foods++
+		}
 		if game.AlchemyBookBonus(f.Inventory.State.Bag[slot-1].ID) == 0 {
 			materials++
 		}
 	}
+	if foods > 0 && (foods != game.AlchemyMinimumMaterials || len(slots) != game.AlchemyMinimumMaterials) {
+		f.notice(localization.UI("ui.inventory.combine_exactly_two_pet_foods_without_ot_1d477417"))
+		return
+	}
 	if len(slots) < protocol.CompoundIngredientSlots || len(slots) > protocol.CompoundMaximumIngredients || materials < game.AlchemyMinimumMaterials {
-		f.notice("Synthesis requires at least two materials; books do not count as materials.")
+		f.notice(localization.UI("ui.inventory.synthesis_requires_at_least_two_material_703dcd09"))
 		return
 	}
 	if f.Send == nil {
@@ -208,9 +217,9 @@ func (f *CompoundForm) Result(id uint16, count, target byte) {
 
 	name := f.Inventory.State.Items[id].Definition.Name
 	if name == "" {
-		name = "Item " + strconv.Itoa(int(id))
+		name = localization.UI("ui.inventory.item_24573557") + strconv.Itoa(int(id))
 	}
-	f.notice("Synthesis: " + name + " × " + strconv.Itoa(int(count)))
+	f.notice(localization.UI("ui.inventory.synthesis_3b1bd5dc") + name + " × " + strconv.Itoa(int(count)))
 }
 func (f *CompoundForm) Paint() {
 	if f.tierMenu && f.Env.UI.Input != nil {
@@ -223,7 +232,7 @@ func (f *CompoundForm) Paint() {
 	f.Refresh()
 	if f.pending && f.Now().Sub(f.sentAt) >= compoundReplyTimeout {
 		f.pending = false
-		f.notice("No synthesis result received. Check the ingredients and inventory space.")
+		f.notice(localization.UI("ui.inventory.no_synthesis_result_received_check_the_i_b67c9c66"))
 	}
 	f.Synthesis.Enabled = f.allowed()
 	f.Form.Paint()

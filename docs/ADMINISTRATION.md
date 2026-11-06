@@ -19,7 +19,7 @@ existing data and administrator edits. See the
 
 JSON is API transport for the editors. Character and definition edits persist
 in typed SQL tables. Content datasets use names such as `NPCs`, `Skills`, `Maps`,
-`Mall` and `LuckyDraw`; they do not use source filenames or virtual documents.
+`Mall`, `LuckyDraw` and `Story`; they do not use source filenames or virtual documents.
 The panel uses `/api/assets/definitions`. `/api/assets/documents` remains as a
 URL alias, with the same typed dataset payloads and record IDs. See
 [ASSET_DATABASE.md](ASSET_DATABASE.md) for upgrading an existing installation.
@@ -143,11 +143,11 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v15 and structured asset schema v10.
+Current startup requires gameplay schema v19 and structured asset schema v17.
 The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
-the preserving offline migration procedure for an existing installation. A headless Chromium smoke renders all 24 administration views and checks read-only
-inspectors, including the combined map/quest actor report. Interactive native aLogin acceptance still requires manual validation; the automated checks cover API access,
-transaction behavior, native packet layouts and affected gameplay paths.
+the preserving offline migration procedure for an existing installation. The
+[administration validation record](TESTING.md#administration-validation-history)
+describes the earlier smoke/API checks and their limits.
 
 
 ## Optional quest actor visibility
@@ -275,8 +275,8 @@ Fishing rules are available through the `Fishing` dataset; see [FISHING.md](FISH
 The definition editor also exposes `Manufacturing` (native formula IDs, five
 materials, plan/tool, duration and destination) and `RebornClasses` (enabled
 classes and WLRI cape mappings). Validate and save through the existing optimistic
-SQL edit flow. `/reborn <class>` requires GM authority and performs cape grant,
-class/level/EXP reset and vitals in one owned-state transaction. See
+SQL edit flow. `/reborn <class>` requires GM authority, learns the class skill,
+deducts 99 levels and recalculates EXP/vitals in one owned-state transaction. See
 [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 
@@ -355,3 +355,13 @@ Authenticated actor/report endpoints:
 - `PUT /api/characters/{id}`: optional `scope` (`inventory`, `stats`,
   `player_settings`, `quests`) with existing `version` and `state`; only that
   tab's fields are applied. Omit scope for complete state editing/reconnect.
+
+## Story policies
+
+The **Story** definition dataset edits the typed rules, scopes, predicates,
+continuation links, repairs, visibility, recruitment/conversion parameters and
+cinematic sequences and rebirth checkpoints in asset schema v16. Native EVE rows remain intact. Editing
+uses the normal optimistic version, active-interaction gates, transactional SQL
+publication and reconnect flow. `/reload quests` also refreshes the compiled
+story policy index. See [STORY_SYSTEM.md](STORY_SYSTEM.md) for authoring examples
+and [verification](TESTING.md#story-system-migration--2026-11-01).

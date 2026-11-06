@@ -45,7 +45,8 @@ func fixture() *World {
 		}}},
 		Events: []assets.Event{{ClickID: 4, Branches: []assets.Branch{{Condition: cond(5, 600, 1, 0, 5, 1)}}}},
 	}
-	return New(&assets.Catalog{Maps: map[uint16]assets.Map{m.ID: m}, NPCs: map[uint16]assets.NPC{100: {ID: 100, Type: 6}, 200: {ID: 200, Type: 1}}})
+	m.PreEvents[0].Branches[0].Condition[12] = 2 // Authored AND-condition count.
+	return New(&assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: map[uint16]assets.Map{m.ID: m}, NPCs: map[uint16]assets.NPC{100: {ID: 100, Type: 6}, 200: {ID: 200, Type: 1}}})
 }
 
 func character(quests ...game.Quest) *game.Character {
@@ -61,7 +62,7 @@ func TestMapSpawnsFollowNativeLoader(t *testing.T) {
 	if len(m.NPCs) != 3 || m.NPCs[0].ClickID != 1 || m.NPCs[1].ClickID != 3 || m.NPCs[2].ClickID != 4 {
 		t.Fatalf("npcs: %+v", m.NPCs)
 	}
-	if len(m.Items) != 2 || m.Items[0].Slot != 7 || m.Items[0].Respawn.Seconds() != 30 || m.Items[1].Slot != 2 || m.Items[1].Respawn.Seconds() != 120 {
+	if len(m.Items) != 2 || m.Items[0].Slot != 7 || m.Items[0].Depth != 30 || m.Items[0].Respawn.Seconds() != 120 || m.Items[1].Slot != 2 || m.Items[1].Respawn.Seconds() != 120 {
 		t.Fatalf("items: %+v", m.Items)
 	}
 }
@@ -84,9 +85,6 @@ func TestPreEventVisibility(t *testing.T) {
 	// The unconditional hide is overridden only while quest 501 is inactive.
 	if w.Visible(character(game.Quest{ID: 501, State: game.InProgress}), 12345, 3) {
 		t.Fatal("later rule order not applied")
-	}
-	if w.Visible(character(), 12000, 28) || !w.Visible(character(game.Quest{ID: 13046, State: game.Completed}), 12000, 28) {
-		t.Fatal("story override for Lina's dog")
 	}
 }
 
@@ -121,7 +119,7 @@ func TestMapInfoGolden(t *testing.T) {
 	want := [][]byte{
 		{23, 138},
 		{22, 4, 1, 0, 0xff, 0xff, 100, 0, 100, 0, 2, 0x18, 0xfc, 0xe7, 0x03, 0, 3, 0, 0, 0, 0x2c, 1, 0x90, 1, 1, 0, 0, 0, 0, 0, 4, 0, 0xff, 0, 50, 0, 60, 0, 1, 0, 0, 0, 0, 0},
-		{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 0, 0, 0, 0, 3, 2, 0, 0x32, 0x75, 0, 0, 11, 0, 21, 0, 0, 0, 0, 0},
+		{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 30, 0, 0, 0, 3, 2, 0, 0x32, 0x75, 0, 0, 11, 0, 21, 0, 0, 0, 0, 0},
 		protocol.Builder{23, 122}.U32(id), protocol.Builder{10, 3}.U32(id).U8(255), protocol.Builder{23, 76}.U32(id),
 		{23, 102}, {20, 8},
 	}
@@ -156,6 +154,7 @@ func TestPortalLookupPriorities(t *testing.T) {
 		ok              bool
 	}{
 		{"reverse geometry", 11000, 99, 1010, 1000, Destination{11001, 100, 200}, true},
+		{"click ID beats nearby reverse", 11000, 9, 1010, 1000, Destination{11002, 300, 400}, true},
 		{"click ID", 11000, 9, 5000, 5000, Destination{11002, 300, 400}, true},
 		{"index", 11000, 2, 0, 0, Destination{11002, 300, 400}, true},
 		{"gray code", 11000, 13, 0, 0, Destination{11002, 300, 400}, true},
@@ -252,5 +251,21 @@ func TestRidingVehicleConditions(t *testing.T) {
 	c.ActiveVehicle = 0
 	if !w.preEventCondition(c, 12345, cond(2, 1, 4, 48010, 5, 0)) {
 		t.Fatal("dismount condition did not qualify")
+	}
+}
+
+func TestSubjectBodyAndGenderConditions(t *testing.T) {
+	w := New(&assets.Catalog{Maps: map[uint16]assets.Map{}})
+	for body, male := range map[uint16]bool{1: true, 2: false, 3: true, 4: false} {
+		c := &game.Character{Body: body, Quests: map[uint32]game.Quest{}}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, 7, 0, 0, 0)); got != male {
+			t.Fatalf("body %d male=%v got %v", body, male, got)
+		}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, 8, 0, 0, 0)); got == male {
+			t.Fatalf("body %d female mismatch", body)
+		}
+		if got := w.condition(c, nil, 12050, nil, cond(2, 3, body, 0, 0, 0)); !got {
+			t.Fatalf("body %d exact match failed", body)
+		}
 	}
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"testing"
 	"wonderland-gonline/internal/assets"
@@ -9,9 +10,94 @@ import (
 	"wonderland-gonline/internal/protocol"
 )
 
+func TestTentToolAttachmentAndAtomicHostRefund(t *testing.T) {
+	s, players, wires := tentFixture(t)
+	c := players[0]
+	s.Assets.TentToolHosts = []uint16{38027}
+	s.Assets.Items[38058] = game.ItemDefinition{ID: 38058, Type: 29}
+	c.character.Bag[2] = game.Item{ID: 38058, Count: 2, Damage: 4, Metadata: [26]byte{9}}
+	if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	tradeDo(t, s, c, []byte{23, 96, 1})
+	enterTestTent(t, s, c, c.character.ID)
+	for _, w := range wires {
+		w.Reset()
+	}
+	tradeDo(t, s, c, []byte{62, 4, 3, 1, 0})
+	home, err := s.Store.Tent(context.Background(), c.character.ID)
+	if err != nil || len(home.Items[0].Tools) != 1 || home.Items[0].Tools[0].Damage != 4 || home.Items[0].Tools[0].Metadata[0] != 9 || c.character.Bag[2].Count != 1 {
+		t.Fatal("attachment", err)
+	}
+	if !contains(wires[0].packets(t), []byte{62, 5, 2, 0, 0xaa, 0x94, 1, 0}) {
+		t.Fatal("attachment acknowledgement")
+	}
+	tradeDo(t, s, c, []byte{62, 4, 3, 1, 0})
+	if c.character.Bag[2].Count != 1 {
+		t.Fatal("duplicate tool consumed")
+	}
+	for i, it := range c.character.Bag {
+		if it.Empty() {
+			c.character.Bag[i] = game.Item{ID: 32176, Count: 50}
+		}
+	}
+	if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	before := c.character.Bag
+	tradeDo(t, s, c, []byte{62, 2, 1, 0})
+	home, err = s.Store.Tent(context.Background(), c.character.ID)
+	if err != nil || len(home.Items) != 1 || len(home.Items[0].Tools) != 1 || c.character.Bag != before {
+		t.Fatal("partial refund", err)
+	}
+	c.character.Bag[1], c.character.Bag[3] = game.Item{}, game.Item{}
+	if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	tradeDo(t, s, c, []byte{62, 2, 1, 0})
+	home, err = s.Store.Tent(context.Background(), c.character.ID)
+	if err != nil || len(home.Items) != 0 || c.character.Bag[1].ID != 38027 || c.character.Bag[3].ID != 38058 || c.character.Bag[3].Metadata[0] != 9 {
+		t.Fatal("host/tool refund", err)
+	}
+}
+
+func TestTentNativePlacementLayoutAndCollision(t *testing.T) {
+	s, players, wires := tentFixture(t)
+	c := players[0]
+	s.Assets.Items[38049] = game.ItemDefinition{ID: 38049, Type: 29, CellWidth: 3, CellHeight: 2}
+	c.character.Bag[2] = game.Item{ID: 38049, Count: 1}
+	if err := s.commit(context.Background(), c, c.character.Clone()); err != nil {
+		t.Fatal(err)
+	}
+	tradeDo(t, s, c, []byte{23, 96, 1})
+	enterTestTent(t, s, c, c.character.ID)
+	place := func(x, y uint32) []byte { return protocol.Builder{62, 1, 3}.U32(x).U32(y).U32(1) }
+	tradeDo(t, s, c, place(43, 42))
+	if c.character.Bag[2].ID != 38049 {
+		t.Fatal("overlap consumed furniture")
+	}
+	wires[0].Reset()
+	tradeDo(t, s, c, place(29, 38))
+	home, err := s.Store.Tent(context.Background(), c.character.ID)
+	if err != nil || len(home.Items) != 2 || home.Items[1].X != 29 || home.Items[1].Y != 38 || !c.character.Bag[2].Empty() {
+		t.Fatal("native placement", err)
+	}
+	found := false
+	for _, p := range wires[0].packets(t) {
+		if len(p) == 61 && p[0] == 62 && p[1] == 1 && p[2] == 2 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("native placement record missing")
+	}
+}
+
 func tentFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	t.Helper()
 	s, players, wires := worldFixture(t)
+	s.Assets.Maps[12000] = assets.Map{ID: 12000}
+	s.World.ReloadCatalog(s.Assets)
 	s.Assets.Tents = assets.TentRules{SpawnX: 460, SpawnY: 700, Floor: 39062, Wallpaper: 39064, Furniture: []assets.TentFurnitureDefault{{ItemID: 38027, X: 43, Y: 42}}}
 	s.Assets.Items[36002] = game.ItemDefinition{ID: 36002, Type: 27, Name: "Tent"}
 	s.Assets.Items[38027] = game.ItemDefinition{ID: 38027, Type: 29, Name: "Workbench"}
@@ -50,7 +136,7 @@ func TestTentNativeOpenWarpPrivateScenesAndClose(t *testing.T) {
 	original := []game.Location{{Map: a.character.Map, X: a.character.X, Y: a.character.Y}, {Map: b.character.Map, X: b.character.X, Y: b.character.Y}, {Map: guest.character.Map, X: guest.character.X, Y: guest.character.Y}}
 	enterTestTent(t, s, a, a.character.ID)
 	warp := protocol.Builder{12}.U32(a.character.ID).U16(63507).U16(460).U16(700).U16(0).U8(0).U16(1).U8(1).U8(1)
-	furniture := protocol.Builder{23, 3}.U16(38027).U32(43).U32(42).U32(0).U8(1).U8(0).U16(0)
+	furniture := tentFurnitureGolden(a.character.ID, 38027, 43, 42, 0)
 	interior := wires[0].packets(t)
 	if !contains(interior, warp) || !contains(interior, furniture) {
 		t.Fatal("native interior packets missing")
@@ -105,7 +191,7 @@ func TestTentLocksFurniturePermissionsAndGuestLogout(t *testing.T) {
 	}
 	enterTestTent(t, s, owner, owner.character.ID)
 	enterTestTent(t, s, guest, owner.character.ID)
-	place := protocol.Builder{62, 1}.U8(0).U8(2).U32(40).U32(45).U32(0)
+	place := protocol.Builder{62, 1}.U8(0).U8(2).U32(50).U32(60).U32(0)
 	tradeDo(t, s, guest, place)
 	home, _ := s.Store.Tent(context.Background(), owner.character.ID)
 	if len(home.Items) != 1 {
@@ -116,10 +202,10 @@ func TestTentLocksFurniturePermissionsAndGuestLogout(t *testing.T) {
 	if len(home.Items) != 2 || home.Items[1].Metadata[0] != 9 || owner.character.Bag[1].Count != 1 || !owner.character.Bag[0].Locked {
 		t.Fatal("placement damaged state")
 	}
-	move := protocol.Builder{62, 3}.U16(1).U32(41).U32(46).U32(0).U8(2)
+	move := protocol.Builder{62, 3}.U16(2).U32(40).U32(45).U32(1).U8(2)
 	tradeDo(t, s, owner, move)
 	home, _ = s.Store.Tent(context.Background(), owner.character.ID)
-	if home.Items[1].X != 41 || home.Items[1].Rotation != 2 {
+	if home.Items[1].X != 40 || home.Items[1].Rotation != 2 {
 		t.Fatal("move failed")
 	}
 	wires[0].Reset()
@@ -180,9 +266,9 @@ func TestTentReadyResyncsFurnitureChangedDuringLoad(t *testing.T) {
 	enterTestTent(t, s, owner, owner.character.ID)
 	tradeDo(t, s, guest, protocol.Builder{65, 1}.U32(owner.character.ID))
 	wires[1].Reset()
-	tradeDo(t, s, owner, protocol.Builder{62, 3}.U16(0).U32(41).U32(46).U32(0).U8(3))
+	tradeDo(t, s, owner, protocol.Builder{62, 3}.U16(1).U32(39).U32(44).U32(1).U8(3))
 	tradeDo(t, s, guest, []byte{12, 1})
-	updated := protocol.Builder{23, 3}.U16(38027).U32(41).U32(46).U32(0).U8(1).U8(3).U16(0)
+	updated := tentFurnitureGolden(owner.character.ID, 38027, 39, 44, 3)
 	if !contains(wires[1].packets(t), updated) {
 		t.Fatal("ready snapshot missed changed furniture")
 	}
@@ -203,4 +289,18 @@ func TestTentSnapshotReplaysPeerPose(t *testing.T) {
 	if !contains(wires[2].packets(t), want) {
 		t.Fatal("missing native peer pose replay")
 	}
+}
+
+// Independent native AC62:4 byte layout: owner plus a client index and 57-byte item.
+func tentFurnitureGolden(owner uint32, item uint16, x, y uint32, rotation byte) []byte {
+	p := make([]byte, 65)
+	copy(p, []byte{62, 4})
+	binary.LittleEndian.PutUint32(p[2:6], owner)
+	p[6] = 1
+	binary.LittleEndian.PutUint16(p[8:10], item)
+	binary.LittleEndian.PutUint32(p[10:14], x)
+	binary.LittleEndian.PutUint32(p[14:18], y)
+	p[18] = 1
+	p[22] = rotation
+	return p
 }

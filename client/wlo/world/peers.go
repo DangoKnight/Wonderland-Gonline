@@ -1,9 +1,10 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"time"
 
 	"wonderland-gonline/client/wlo/login"
@@ -22,7 +23,10 @@ type Peer struct {
 	Walker         Walker
 }
 
-var errShortOther = errors.New("AC4: packet too short")
+// EffectiveLevel is FUN_00485490 on the peer's level and rebirth.
+func (p *Peer) EffectiveLevel() int { return int(p.Level) + int(p.Rebirth)*rebirthLevels }
+
+var errShortOther = localization.Error("ui.world.ac4_packet_too_short_4477210b")
 
 // ParseOther reads AC4 after its command byte: ID, body, element, level,
 // map, X, Y, a byte, head (a word), the colour values, the worn items, a
@@ -73,6 +77,10 @@ func (w *World) AddPeer(p *Peer, newBody func() login.RoleView) {
 		Dress(p.Role, p.Player)
 	}
 	w.Peers[p.ID] = p
+	if members := w.TeamMembers(w.Player.ID); len(members) > 1 && members[0] == p.ID {
+		w.StopWalk()
+		w.Marker.Hide()
+	}
 }
 
 // Dress fills a role from an appearance (FUN_004013d0's fields).
@@ -108,6 +116,7 @@ func (w *World) MovePeer(id uint32, x, y int, now time.Time) {
 
 // PlacePeer is AC7 for another player.
 func (w *World) PlacePeer(id uint32, x, y int) {
+	w.resetTeamTrail(id)
 	if p := w.Peers[id]; p != nil {
 		p.Walker.Stop(&p.Player)
 		p.X, p.Y = x, y
@@ -122,6 +131,7 @@ func (w *World) RemovePeer(id uint32) {
 	delete(w.Peers, id)
 	delete(w.Expressions, id)
 	delete(w.Companions, id)
+	delete(w.Shapeshifts, id)
 }
 
 // PeerName is the name of a player on the map, nil when unknown.
@@ -179,4 +189,10 @@ func (w *World) PeerByName(name []byte) (uint32, bool) {
 		}
 	}
 	return 0, false
+}
+
+func init() {
+	localization.Register(func() {
+		errShortOther = localization.Error("ui.world.ac4_packet_too_short_4477210b")
+	})
 }

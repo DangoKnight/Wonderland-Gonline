@@ -13,18 +13,21 @@ import (
 
 var le = binary.LittleEndian
 
+const nativeNPCNameBytes = 10
+
 type NPC struct {
-	ID        uint16    `json:"id"`
-	Name      string    `json:"name"`
-	Type      byte      `json:"type"`
-	Level     byte      `json:"level"`
-	HP        uint32    `json:"hp"`
-	SP        uint32    `json:"sp"`
-	Element   byte      `json:"element"`
-	Stats     [5]uint16 `json:"stats"`
-	Skills    [3]uint16 `json:"skills"`
-	BookIndex uint16    `json:"book_index"`
-	Drops     [5]uint16 `json:"drops"` // Native loot slots, most to least likely.
+	CaptureRestriction byte      `json:"unknown_u8_offset_34"` // Native Catchable: zero permits capture.
+	ID                 uint16    `json:"id"`
+	Name               string    `json:"name"`
+	Type               byte      `json:"type"`
+	Level              byte      `json:"level"`
+	HP                 uint32    `json:"hp"`
+	SP                 uint32    `json:"sp"`
+	Element            byte      `json:"element"`
+	Stats              [5]uint16 `json:"stats"`
+	Skills             [3]uint16 `json:"skills"`
+	BookIndex          uint16    `json:"book_index"`
+	Drops              [5]uint16 `json:"drops"` // Native loot slots, most to least likely.
 }
 
 func ParseNPCs(data []byte) (map[uint16]NPC, error) {
@@ -37,11 +40,12 @@ func ParseNPCs(data []byte) (map[uint16]NPC, error) {
 		b := data[off : off+138]
 		word := func(i int) uint16 { return (le.Uint16(b[i:]) ^ 0x5209) - 1 }
 		n := NPC{ID: word(12), Type: (b[11] ^ 0xc8) - 1, Level: (b[37] ^ 0xc8) - 1, HP: (le.Uint32(b[38:]) ^ 0x0baeb716) - 1, SP: (le.Uint32(b[42:]) ^ 0x0baeb716) - 1, Element: (b[57] ^ 0xc8) - 1, BookIndex: word(90)}
+		n.CaptureRestriction = (b[nativeNPCCaptureRestrictionOffset] ^ 0xc8) - 1
 		if n.ID == 0 {
 			continue
 		}
 		var name []byte
-		for i := 10; i >= 1; i-- {
+		for i := nativeNPCNameBytes; i >= 1; i-- {
 			if b[i] >= 32 && b[i] <= 126 {
 				name = append(name, b[i])
 			}
@@ -131,12 +135,24 @@ type MallItem struct {
 	Bonus         int    `json:"is_bonus"`
 }
 type Catalog struct {
-	Instances        []InstanceDefinition
-	QuestDefinitions map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
-	Manufacturing    map[uint16]ManufacturingFormula
-	RebornClasses    []RebornClass
-	Fishing          FishingRules
-	Terrains         map[uint16]Terrain
+	Story               StoryDefinitions `json:"story"`
+	MapTransitions      []MapTransition
+	TentToolHosts       []uint16
+	ChestPropCategories map[uint16]string
+	Travel              TravelRules
+	NPCShopDefaults     map[uint16][]uint16
+	TentSurfaces        map[uint16]byte
+	BoxedItems          map[uint16]BoxedItem
+	SkillEvolutions     []SkillEvolution
+	EventGathering      EventGatheringRules
+	NPCBuyPrices        map[uint16]uint32
+	Instances           []InstanceDefinition
+	QuestDefinitions    map[uint32]QuestDefinition `json:"quest_definitions,omitempty"`
+	Manufacturing       map[uint16]ManufacturingFormula
+	RebornClasses       []RebornClass
+	Fishing             FishingRules
+	Terrains            map[uint16]Terrain
+	BattleBackdrops     map[uint16]BattleBackdrop
 
 	Arcades               []ArcadeGame      `json:"arcades"`
 	Tents                 TentRules         `json:"tents"`
@@ -155,6 +171,10 @@ type Catalog struct {
 	SkillEffects          map[string]EffectDefinition
 	AnimationTiming       map[uint16]int
 	NPCs                  map[uint16]NPC
+	PetInitialStats       map[uint32]game.PetInitialStats
+	PetFoods              map[uint16]PetFood
+	CollectionSpots       map[uint16]CollectionSpot
+	ResourceRespawns      []ResourceRespawn
 	Talks                 Talks
 	Maps                  map[uint16]Map
 	Mall                  []MallItem
@@ -211,7 +231,7 @@ func (c *Catalog) Summary() Summary {
 // Load is the offline reference loader used by format and compatibility tests.
 // Server startup must use assetsql.LoadDatabase.
 func Load(dir, itemCatalog string) (*Catalog, error) {
-	c := &Catalog{Items: map[uint16]game.ItemDefinition{}, NPCs: map[uint16]NPC{}, Maps: map[uint16]Map{}, Warnings: []string{}, Mall: []MallItem{}, Marks: map[uint16]uint16{}, DisabledEvents: map[uint32]string{}}
+	c := &Catalog{Story: DefaultStoryDefinitions(), Items: map[uint16]game.ItemDefinition{}, NPCs: map[uint16]NPC{}, Maps: map[uint16]Map{}, Warnings: []string{}, Mall: []MallItem{}, Marks: map[uint16]uint16{}, DisabledEvents: map[uint32]string{}}
 	load := func(name string, fn func([]byte) error) {
 		b, e := os.ReadFile(filepath.Join(dir, name))
 		if e == nil {
@@ -288,6 +308,13 @@ func Load(dir, itemCatalog string) (*Catalog, error) {
 		v, e := ParseEVE(b)
 		if e == nil {
 			c.Maps = v
+		}
+		return e
+	})
+	load("Ground.MMG", func(b []byte) error {
+		v, e := ParseBattleBackdrops(b)
+		if e == nil {
+			c.BattleBackdrops = v
 		}
 		return e
 	})

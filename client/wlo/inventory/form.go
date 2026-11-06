@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -43,10 +45,15 @@ type Form struct {
 	Preview                                                         login.RoleView
 	Selected                                                        byte
 	DrawPet                                                         func(byte, int, int, int)
+	DrawPotentialPortrait                                           func(byte, image.Rectangle)
+	DrawPotentialPreview                                            func(byte, int, int)
+	LoadPotentialPictures                                           func()
+	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
 	Status                                                          *login.Status
 	Send                                                            func([]byte)
 	CanAct                                                          func() bool
+	BattleUse                                                       func(slot int, worn bool) bool
 	Notice                                                          func(string)
 	Warning                                                         func(string)
 	StartRemote                                                     func(RemoteOptions) bool
@@ -66,6 +73,9 @@ type Form struct {
 	Dialog                                                          *actionDialog
 	UseDialog                                                       *useDialog
 	potentialRequest                                                *potentialRequest
+	Potential                                                       *seui.FixedButton
+	pointAnimationAt                                                time.Time
+	destroyWarning                                                  *destroyWarning
 }
 type dragItem struct {
 	slot  int
@@ -94,6 +104,13 @@ func NewForm(env *seui.Env, state *State, stats *world.Stats) *Form {
 	f.Close.SetHint([]byte("[ESC]"))
 	f.RotateLeft = f.button("Btn_ArrowL_9", 40, 245, 20, 20, func() { f.SelectNext(-1) })
 	f.RotateRight = f.button("Btn_ArrowR_9", 139, 245, 20, 20, func() { f.SelectNext(1) })
+	f.Potential = f.button("Btn_Potential_1", 126, 88, 43, 20, func() {
+		if !f.allowed() {
+			return
+		}
+		f.openUse(0, game.Item{ID: game.ItemPotentialPill})
+		f.UseDialog.SelectTarget(f.Selected)
+	})
 	// Native callbacks select the previous/next party pet, keeping action 17;
 	// they do not rotate the player.
 	f.RotateLeft.Enabled, f.RotateRight.Enabled = false, false
@@ -162,11 +179,12 @@ func (f *Form) SetMode(mode byte) {
 	if mode == 2 {
 		f.StatusOnly.Left = 60
 	}
-	f.StatusOnly.SetHint([]byte("Status only / combined"))
-	f.BagOnly.SetHint([]byte("Inventory only / combined"))
+	f.StatusOnly.BindLanguage("hint", func() { f.StatusOnly.SetHint([]byte(localization.UI("ui.inventory.status_only_combined_192cb62b"))) })
+	f.BagOnly.BindLanguage("hint", func() { f.BagOnly.SetHint([]byte(localization.UI("ui.inventory.inventory_only_combined_5385dbb4"))) })
 	f.syncAllocationControls()
 	f.RotateLeft.SetVisible(mode != 2)
 	f.RotateRight.SetVisible(mode != 2)
+	f.Potential.SetVisible(mode != 2)
 	for i, c := range f.Slots {
 		c.SetVisible(mode != 1)
 		left := gridLeft
@@ -181,6 +199,9 @@ func (f *Form) SetMode(mode byte) {
 	}
 }
 func (f *Form) Hide() {
+	if f.destroyWarning != nil {
+		f.destroyWarning.Hide()
+	}
 	f.CancelPoints()
 	f.drag = nil
 	if f.Dialog != nil {
@@ -213,7 +234,6 @@ func (f *Form) Paint() {
 	f.Status.Level(stats.Level, at(20, 88), true)
 	element := f.Env.Pics.Find(fmt.Sprintf("Icon_Element_%d_1", stats.Element))
 	f.Env.Pics.Draw(f.Env.Screen, element, f.Left+19, f.Top+56, true)
-	f.Env.Pics.DrawRect(f.Env.Screen, f.Env.Pics.Find("Btn_Potential_1"), f.Left+126, f.Top+88, image.Rect(0, 0, 43, 20), true)
 	f.label(172, 90, strconv.Itoa(int(stats.Potential)))
 	if f.Selected != 0 && f.DrawPet != nil {
 		f.DrawPet(f.Selected, f.Left+previewX, f.Top+previewY, previewBattleReady)
@@ -232,6 +252,7 @@ func (f *Form) Paint() {
 	f.label(100, 301, fmt.Sprintf("%.0f%%", ratio*100))
 	f.label(45, 318, strconv.Itoa(int(f.Stats.Gold)))
 	f.label(160, 317, strconv.Itoa(int(uint32(stats.Points)-f.draftTotal())))
+	f.paintPointAnimation(stats.Points)
 	combat := stats.CombatValues()
 	for i, v := range combat {
 		f.label(44, 337+i*16, strconv.Itoa(int(v)))
@@ -265,6 +286,17 @@ func (c *slotControl) item() game.Item {
 	}
 	return c.form.State.Bag[c.slot-1]
 }
+
+func (c *slotControl) HitTest(x, y int) bool {
+	it := c.item()
+	if c.worn || it.Empty() {
+		return c.Component.HitTest(x, y)
+	}
+	w, h := c.form.State.Items[it.ID].Definition.Footprint()
+	a := c.Abs()
+	// Include grid seams so a large item's hint does not blink between cells.
+	return image.Pt(x, y).In(image.Rect(a.X, a.Y, a.X+w*cellStep-(cellStep-cellSize), a.Y+h*cellStep-(cellStep-cellSize)))
+}
 func (c *slotControl) Paint() {
 	it := c.item()
 	if it.Empty() {
@@ -279,6 +311,7 @@ func (f *Form) drawItem(it game.Item, x, y int, showCount bool) {
 	if icon >= 0 {
 		f.Env.Pics.Draw(f.Env.Screen, icon, x, y, true)
 	}
+	f.drawVehicleCondition(it, x, y)
 	if showCount && it.Count > 0 {
 		f.Env.Text.Draw(x, y+19, 0, false, true, f.Env.Screen, []byte(strconv.Itoa(int(it.Count))), 13, 32, inventoryTextPaper, inventoryTextInk, 0)
 	}
@@ -320,6 +353,9 @@ func (f *Form) send(p []byte) {
 	}
 }
 func (f *Form) Use(slot int, worn bool) {
+	if f.Visible && f.BattleUse != nil && f.BattleUse(slot, worn) {
+		return
+	}
 	if !f.allowed() {
 		return
 	}
@@ -329,7 +365,7 @@ func (f *Form) Use(slot int, worn bool) {
 		}
 		free := f.State.FirstFree()
 		if free == 0 {
-			f.notice("Your inventory is full.")
+			f.notice(localization.UI("ui.inventory.your_inventory_is_full_7d6760c2"))
 			return
 		}
 		if f.Selected == 0 {
@@ -386,7 +422,7 @@ func (f *Form) release(x, y int) {
 			bag := f.State.Bag
 			limit, err := bag.Move(byte(d.slot), byte(dst.slot), d.item.Count, f.State.Items[d.item.ID].Definition.StackLimit())
 			if err == nil {
-				f.quantity(moveQuantityTitle, limit, request)
+				f.quantity(localization.UI(moveQuantityTitle), limit, request)
 			}
 		} else {
 			request(1)
@@ -403,11 +439,23 @@ func (f *Form) release(x, y int) {
 		}
 	}
 	if !image.Pt(x, y).In(f.Rect()) && !d.worn && f.Env.UI.Input.Hovered == nil {
-		f.quantity("Drop how many?", d.item.Count, func(count byte) {
+		// Native non-droppable categories are destroyed, not placed on the
+		// ground. Warn before sending anything; keep the server's 23/212
+		// confirmation path for unknown definitions and server overrides.
+		request := func(count byte) {
 			if f.State.Bag[d.slot-1] == d.item {
+				if definition, known := f.State.Items[d.item.ID]; known && !definition.Definition.Droppable() {
+					f.ConfirmDestroy(byte(d.slot), d.item.ID, count)
+					return
+				}
 				f.send([]byte{protocol.CommandInventory, protocol.InventoryDrop, byte(d.slot), count, 0})
 			}
-		})
+		}
+		if d.split && d.item.Count > 1 {
+			f.quantity(localization.UI("ui.inventory.select_quantity_58aa4e3a"), d.item.Count, request)
+		} else {
+			request(1)
+		}
 	}
 }
 func (f *Form) DrawDragged() {
@@ -432,17 +480,19 @@ func (f *Form) notice(s string) {
 // No inventory mutation occurs until a server reply.
 type actionDialog struct {
 	seui.Form
-	owner  *Form
-	Count  *seui.Editor
-	prompt string
-	limit  byte
-	submit func(byte)
+	owner       *Form
+	Count       *seui.Editor
+	prompt      string
+	limit       byte
+	submit      func(byte)
+	returnModal seui.Control
 }
 
 func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 	if f.Dialog == nil {
 		d := &actionDialog{owner: f}
 		d.InitForm(d, f.Env)
+		d.AnimateMessage(f.Now)
 		d.Init("Form_ThrowThing", (800-209)/2, 0, 0, 0, 0, false, 87, 209, (600-87)/2)
 		d.Dockable = false
 		d.Count = seui.NewEditor(f.Env, d)
@@ -469,14 +519,15 @@ func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 		f.Dialog = d
 	}
 	d := f.Dialog
+	d.returnModal = f.Env.UI.Modal
 	d.prompt, d.limit, d.submit = prompt, limit, submit
 	d.Count.SetText([]byte(strconv.Itoa(int(limit))))
 	d.Show()
 	f.Env.UI.SetModal(true, d)
 }
 func (d *actionDialog) Paint() {
-	d.Env.Pics.Draw(d.Env.Screen, d.Image, d.Left, d.Top, true)
-	if d.prompt == moveQuantityTitle {
+	d.Env.Pics.DrawStretch(d.Env.Screen, d.Image, d.MessageRect(), true)
+	if d.prompt == localization.UI(moveQuantityTitle) {
 		return
 	}
 	// Replace the exported skin's baked "Moving quantity" title for drop and
@@ -491,7 +542,11 @@ func (d *actionDialog) adjust(delta int) {
 func (d *actionDialog) Hide() {
 	if d.Env.UI.Modal == d {
 		d.Env.UI.SetModal(false, d)
+		if d.returnModal != nil && d.returnModal != d && d.returnModal.Base().Visible {
+			d.Env.UI.SetModal(true, d.returnModal)
+		}
 	}
+	d.returnModal = nil
 	d.submit = nil
 	d.Form.Hide()
 }
@@ -520,9 +575,9 @@ func (f *Form) ConfirmDestroy(slot byte, id uint16, count byte) {
 	if !f.Visible {
 		f.Show()
 	}
-	f.quantity("Destroy how many?", count, func(n byte) {
+	f.showDestroyWarning(item, count, func() {
 		if f.State.Bag[slot-1] == item {
-			f.send([]byte{protocol.CommandInventory, protocol.InventoryDestroy, slot, n, 0})
+			f.send([]byte{protocol.CommandInventory, protocol.InventoryDestroy, slot, count, 0})
 		}
 	})
 }

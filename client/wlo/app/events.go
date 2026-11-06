@@ -1,7 +1,10 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"time"
 
@@ -24,9 +27,13 @@ import (
 //
 // Ported kinds: 1, a line of dialogue (FUN_00304fd0 case 1) spoken by a
 // map NPC (subject 3) or the player (subject 7), shown in the talk window
-// until clicked. Every other kind is acknowledged at once, as kind 2 is;
-// questions (kind 6, the map's question table at +0x5d9c) are cancelled
-// with 20/9 choice 40.
+// until clicked; 4, a map NPC walking one of its routes (world.WalkRoute),
+// acknowledged once every route walker has arrived; 5, movies; 6,
+// questions (the map's question table at +0x5d9c); 11 and 14, an NPC or
+// the player turning; and 15, the event's music. Kinds 7-10, 12 and 13
+// jump to the interpreter's end (table at 0x30502e) without finishing the
+// step, but this repository's server waits for 20/6 after kinds 9 and 13,
+// so they and every other kind are acknowledged at once, as kind 2 is.
 const (
 	// Frame layout after the command byte (0x2e3dc0).
 	eventFrameKind    = 5
@@ -39,11 +46,26 @@ const (
 	eventLastFrame = 6
 	// Kinds (+0x7113) and speakers (+0x7114).
 	eventKindTalk     = 1
-	eventKindQuestion = 6
+	eventKindRoute    = 4
 	eventKindMovie    = 5
-	npcTalkTurn       = 1
-	eventSpeakerNPC   = 3
-	eventSpeakerSelf  = 7
+	eventKindQuestion = 6
+	eventKindNPCTurn  = 11
+	eventKindTurn     = 14
+	eventKindMusic    = 15
+	// Kind 11 modes: toward the player, another NPC, or a direction.
+	npcTurnPlayer    = 1
+	npcTurnNPC       = 2
+	npcTurnDirection = 3
+	// Kind 14 subjects: toward an NPC, or a direction.
+	turnTowardNPC = 1
+	turnDirection = 2
+	// Kind 15 subjects: play a track, or return to the map's.
+	musicPlay    = 1
+	musicRestore = 2
+	// Speakers, and the talk mode that turns the NPC.
+	npcTalkTurn      = protocol.EventTalkTurnToPlayer
+	eventSpeakerNPC  = 3
+	eventSpeakerSelf = 7
 	// eventChoiceCancel closes a question (the server's cancel value).
 	eventChoiceCancel = 40
 	// talkBodyAction is the body-mode pose: standing, facing down-left.
@@ -69,14 +91,17 @@ type eventState struct {
 // clickNPC is a left click on a map NPC: within reach it sends 20/1,
 // otherwise it reports the range failure.
 func (c *Client) clickNPC(n *world.NPC) {
+	c.stopVacuum()
 	p := c.World.Player
 	if abs(p.X-n.X) <= npcReach && abs(p.Y-n.Y) <= npcReach {
 		c.World.StopWalk()
+		c.prepareVacuum(n.ClickID)
 		c.sendNPCClick(n.ClickID)
+		c.beginVacuum()
 		return
 	}
 	c.pendingNPC = nil
-	c.Notices.Show([]byte("Too far"), interactionNoticeDuration, c.Now())
+	c.Notices.Show([]byte(localization.UI("ui.app.too_far_0ef2cb2c")), interactionNoticeDuration, c.Now())
 }
 
 func abs(v int) int {
@@ -89,6 +114,7 @@ func abs(v int) int {
 // sendNPCClick is 20/1 with the NPC's click ID.
 func (c *Client) sendNPCClick(id uint16) {
 	c.pendingNPC = nil
+	c.acquisitionActor = id
 	c.event = eventState{active: true}
 	c.Net.Send(binary.LittleEndian.AppendUint16([]byte{protocol.CommandEvent, protocol.EventActorClick}, id))
 }
@@ -111,6 +137,12 @@ func (c *Client) eventFrame(s []byte) {
 	if len(s) < eventFrameBytes || c.World == nil {
 		return
 	}
+	// Server steps supersede local pet notices. A hidden/replaced notice must
+	// not cause the next NPC line's click to swallow its AC20:6 acknowledgement.
+	if c.petAnnouncement {
+		c.Talk.Hide()
+		c.petAnnouncement = false
+	}
 	c.event.active = true
 	kind, subject := s[eventFrameKind], s[eventFrameSubject]
 	actor := binary.LittleEndian.Uint16(s[eventFrameActor:])
@@ -119,22 +151,118 @@ func (c *Client) eventFrame(s []byte) {
 	case eventKindTalk:
 		c.faceConversation(subject, actor, s[eventFrameMode] == npcTalkTurn)
 		c.event.done = false
-		c.say(subject, actor, talk)
+		c.say(subject, actor, uint32(talk)|uint32(s[eventFrameText+2])<<16)
 	case eventKindQuestion:
 		c.faceConversation(subject, actor, true)
 		c.ask(subject, actor, talk, s[eventFrameMode])
 	case eventKindMovie:
 		c.startMovie(s)
+	case eventKindNPCTurn:
+		c.event.done = true
+		c.turnNPC(uint16(subject), s[eventFrameMode], int(binary.LittleEndian.Uint32(s[eventFrameValue:])))
+	case eventKindTurn:
+		c.event.done = true
+		c.turnPlayer(subject, actor)
+	case eventKindMusic:
+		c.event.done = true
+		c.eventTrack(subject, binary.LittleEndian.Uint32(s[eventFrameValue:]))
+	case eventKindRoute:
+		// Only map NPCs (subject 3) walk; the value is the route slot.
+		c.event.done = true
+		if subject == eventSpeakerNPC {
+			c.World.WalkRoute(actor, byte(binary.LittleEndian.Uint32(s[eventFrameValue:])), s[eventFrameMode], c.Now())
+		}
 	default:
 		c.event.done = true
 	}
 }
 
+// turnNPC is kind 11 (case 0xb): the NPC whose click ID is the subject
+// byte turns toward the player, another NPC, or a direction. The NPC's
+// +0x1efc check is not ported. A valid scripted turn releases the saved
+// conversation facing (FUN_0030a344).
+func (c *Client) turnNPC(click uint16, mode byte, value int) {
+	n := c.World.NPCs[click]
+	if n == nil {
+		return
+	}
+	var x, y int
+	switch mode {
+	case npcTurnPlayer:
+		x, y = c.World.Player.X, c.World.Player.Y
+	case npcTurnNPC:
+		o := c.World.NPCs[uint16(value)]
+		if o == nil {
+			return
+		}
+		x, y = o.X, o.Y
+	case npcTurnDirection:
+		var ok bool
+		if x, y, ok = world.DirectionPoint(n.X, n.Y, value); !ok {
+			return
+		}
+	default:
+		return
+	}
+	n.Conversation = false
+	n.Action = world.TurnAction(n.Action, n.X, n.Y, x, y)
+}
+
+// turnPlayer is kind 14 (case 0xe): the player turns toward a map NPC or
+// a direction (the actor field).
+func (c *Client) turnPlayer(subject byte, actor uint16) {
+	p := &c.World.Player
+	var x, y int
+	switch subject {
+	case turnTowardNPC:
+		n := c.World.NPCs[actor]
+		if n == nil {
+			return
+		}
+		x, y = n.X, n.Y
+	case turnDirection:
+		var ok bool
+		if x, y, ok = world.DirectionPoint(p.X, p.Y, int(actor)); !ok {
+			return
+		}
+	default:
+		return
+	}
+	p.Direction = int32(world.TurnAction(int(p.Direction), p.X, p.Y, x, y))
+}
+
+// eventTrack is kind 15 (case 0xf): subject 1 makes BGM plus the value
+// (at least four digits) the event's track (+0x732c), which the music
+// function (FUN_00307eb8) prefers to the map's; subject 2 clears it.
+func (c *Client) eventTrack(subject byte, value uint32) {
+	switch subject {
+	case musicPlay:
+		c.eventMusic = fmt.Sprintf("BGM%04d", value)
+	case musicRestore:
+		c.eventMusic = ""
+	default:
+		return
+	}
+	c.playMapMusic()
+}
+
 // say is kind 1: the line talk spoken by an NPC or the player.
-func (c *Client) say(subject byte, actor, talk uint16) {
+func (c *Client) say(subject byte, actor uint16, talk uint32) {
 	c.loadTalks()
+	// FUN_00304fd0 passes the UInt16 at +0x711c to both the text and voice
+	// lookups. The following event byte can be a flag, not part of the ID.
+	// Retain extended exported references only when no native ID exists.
+	nativeTalk := uint32(uint16(talk))
+	if nativeTalk != 0 {
+		if _, ok := c.talks[nativeTalk]; ok {
+			talk = nativeTalk
+		}
+	}
 	text := clientassets.Big5Text(c.talks[talk])
 	c.Talk.Say(text, c.speaker(subject, actor), c.World.Player.Name)
+	c.Talk.BindLanguage(func() {
+		c.Talk.Say(clientassets.Big5Text(c.talks[talk]), c.speaker(subject, actor), c.World.Player.Name)
+	})
 	if subject == eventSpeakerSelf {
 		c.playDialogueVoice(talk, movie.PlayerTemplate)
 	} else if n := c.World.NPCs[actor]; subject == eventSpeakerNPC && n != nil {
@@ -147,12 +275,12 @@ func (c *Client) loadTalks() {
 	if c.talks == nil {
 		var err error
 		if c.resources.talks == nil {
-			c.resources.talks, err = world.Talks(c.Assets)
+			c.resources.talks, c.resources.talkIDs, err = world.TalksWithReferences(c.Assets)
 		}
 		c.talks = c.resources.talks
 		if err != nil {
 			log.Printf("talk: %v", err)
-			c.talks = map[uint16]string{}
+			c.talks = map[uint32]string{}
 		}
 	}
 }
@@ -172,6 +300,12 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 			FaceWidth(int) int
 			BodyWidth(int) int
 		}); ok {
+			// Keep the compact portrait available for question layouts even
+			// when ordinary player dialogue uses the large character artwork.
+			who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
+				f.DrawFace(dst, x, y, role.PortraitAction, blinking)
+			}
+			who.FaceBodyW = f.BodyWidth(role.PortraitAction)
 			// The player speaks in the wide form with the large art
 			// (+0x2a8); the original also checks the worn look against
 			// a table (PTR_DAT_004ca774), which is not ported. Without
@@ -182,10 +316,6 @@ func (c *Client) speaker(subject byte, actor uint16) hud.Speaker {
 				who.ArtW = f.BodyWidth(role.TalkArtAction)
 				who.Art = func(dst *surface.Surface, x, y int, blinking bool) {
 					f.DrawFace(dst, x, y, role.TalkArtAction, blinking)
-				}
-			} else {
-				who.Face = func(dst *surface.Surface, x, y int, blinking bool) {
-					f.DrawFace(dst, x, y, role.PortraitAction, blinking)
 				}
 			}
 		}
@@ -225,10 +355,13 @@ const (
 // ask is kind 6 (FUN_00304fd0 case 6): the question's prompt and options
 // in the talk window, spoken by an NPC or the player. Mode 0 marks the
 // step done as well, so the answer is followed by 20/6; mode 1 sends only
-// the answer. Questions for other forms (+0x42 1 or 3: the item and
-// trade pickers) are not ported and are closed.
+// the answer. Item-picker questions (+0x42 1 or 3) open the native shop form;
+// unsupported non-item pickers are closed explicitly.
 func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 	q, ok := c.World.Questions[id]
+	if ok && q.Mode != 0 && c.shopQuestion(q) {
+		return
+	}
 	if !ok || q.Mode != 0 {
 		log.Printf("event: question %d (form %d) not ported, closing", id, q.Mode)
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, eventChoiceCancel})
@@ -257,6 +390,21 @@ func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 	c.event.done = false
 	c.event.answers, c.event.ackAnswer = answers, mode == 0
 	c.Talk.Ask(prompt, c.speaker(subject, actor), c.World.Player.Name, options, buttons)
+	c.Talk.BindLanguage(func() {
+		var translatedPrompt, translatedOptions [][]byte
+		for _, entry := range q.Entries {
+			switch entry.Type {
+			case world.QuestionPrompt:
+				translatedPrompt = append(translatedPrompt, c.questionText(entry))
+			case world.QuestionOption:
+				translatedOptions = append(translatedOptions, c.questionText(entry))
+			}
+		}
+		if buttons {
+			translatedOptions = [][]byte{nil, nil}
+		}
+		c.Talk.Ask(translatedPrompt, c.speaker(subject, actor), c.World.Player.Name, translatedOptions, buttons)
+	})
 }
 
 // questionText is an entry's text: a talk line, or an item's name.
@@ -264,7 +412,7 @@ func (c *Client) questionText(e world.QuestionEntry) []byte {
 	switch e.Kind {
 	case world.QuestionText:
 		c.loadTalks()
-		return clientassets.Big5Text(c.talks[e.Value])
+		return clientassets.Big5Text(c.talks[uint32(e.Value)])
 	case world.QuestionItem:
 		if it, ok := c.items[e.Value]; ok {
 			return clientassets.Big5Text(it.Definition.Name)
@@ -279,7 +427,10 @@ func (c *Client) answer(v byte) {
 	c.event.answers = nil
 	c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, v})
 	if v != eventChoiceCancel && c.event.ackAnswer {
-		c.event.done = true
+		// Send the question's ACK with its answer, before a new server frame
+		// can replace the step and erase or misattribute the pending ACK.
+		c.event.done = false
+		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
 	}
 }
 
@@ -316,12 +467,17 @@ func stepDone(sub byte) bool {
 // no longer holds the player (+0x2392 = 0), so a door event's 6/2 hold
 // ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
+	c.stopConstellation()
 	for npc, action := range c.event.npcFacings {
-		npc.Action = action
+		if npc.Conversation {
+			npc.Action = action
+		}
+		npc.Conversation = false
 	}
 	c.event = eventState{}
 	c.held = false
 	c.Talk.Hide()
+	c.petAnnouncement = false
 }
 
 // advanceTalk is a click while a line shows: the step is done.
@@ -336,11 +492,26 @@ func (c *Client) advanceTalk() {
 
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
+	// Native +0x732a holds AC20:6 until the entire constellation sequence ends.
+	if c.constellation != nil {
+		return
+	}
+	if c.minigameResultAckPending {
+		c.minigameResultAckPending = false
+		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventAcknowledge})
+	}
 	if !c.event.active && !c.held && c.movie == nil && !c.Talk.Shown() && len(c.petAnnouncements) > 0 {
 		c.World.StopWalk()
 		c.Talk.Say(c.petAnnouncements[0], hud.Speaker{}, c.World.Player.Name)
 		c.petAnnouncements = c.petAnnouncements[1:]
 		c.petAnnouncement = true
+	}
+	// FUN_00307300 holds a finished step while route walkers are queued.
+	if !c.clinicUntil.IsZero() {
+		return
+	}
+	if c.event.done && c.World != nil && !c.World.RoutesDone() {
+		return
 	}
 	if c.event.done {
 		c.event.done = false
@@ -360,16 +531,20 @@ func (c *Client) faceConversation(subject byte, actor uint16, turn bool) {
 		return
 	}
 	p := &c.World.Player
+	if c.event.npcFacings == nil {
+		c.event.npcFacings = map[*world.NPC]int{}
+	}
+	// A scripted animation, held pose or turn releases the earlier saved
+	// facing. A later line begins a new conversation from the authored pose.
+	if !n.Conversation {
+		delete(c.event.npcFacings, n)
+	}
+	n.BeginConversation(c.Now())
+	if _, saved := c.event.npcFacings[n]; !saved {
+		c.event.npcFacings[n] = n.Action
+	}
 	if turn {
-		original := n.Action
-		if n.FaceConversation(p.X, p.Y) {
-			if c.event.npcFacings == nil {
-				c.event.npcFacings = map[*world.NPC]int{}
-			}
-			if _, saved := c.event.npcFacings[n]; !saved {
-				c.event.npcFacings[n] = original
-			}
-		}
+		n.FaceConversation(p.X, p.Y)
 	}
 	// The player faces the speaker even when the speaker is exempt from turning.
 	c.World.StopWalk()

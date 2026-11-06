@@ -51,6 +51,17 @@ func writePlacementSprite(t *testing.T, root, family, name string, color color.N
 	}
 }
 
+func TestPlacedVehicleDrawAndOpaqueHit(t *testing.T) {
+	root := t.TempDir()
+	writePlacementSprite(t, root, "006", "6005.jmp", color.NRGBA{G: 255, A: 255})
+	v := &Vehicle{Lib: NewLibrary(root), Sprite: 6005, Water: true}
+	dst := surface.New(250, 250)
+	v.Draw(dst, 100, 100)
+	if dst.Pix[168*dst.W+100] != surface.RGB565(0, 255, 0) || !v.Hit(100, 100, 100, 168) || v.Hit(100, 100, 101, 168) {
+		t.Fatal("placed raft drawing and source-pixel selection disagree")
+	}
+}
+
 func TestNativeRaftAndWeaponPlacement(t *testing.T) {
 	root := t.TempDir()
 	writePlacementSprite(t, root, "002", "2000.jmp", color.NRGBA{R: 255, A: 255})

@@ -75,7 +75,7 @@ func TestWaterBoardingWaitsForNativeReceipt(t *testing.T) {
 	*now = now.Add(time.Second)
 	c.World.Step(*now)
 	c.waterTravelTick()
-	if len(*sent) != 4 || (*sent)[2][0] != 6 || (*sent)[2][1] != 2 || !bytes.Equal((*sent)[3], []byte{15, 10, 1, 0x90, 0xbb}) {
+	if len(*sent) != 4 || !bytes.Equal((*sent)[2], []byte{15, 10, 1, 0x90, 0xbb}) || (*sent)[3][0] != 6 || (*sent)[3][1] != 1 {
 		t.Fatal("landing did not request dismount", *sent)
 	}
 	if !c.World.Scene.Land(c.World.Player.X, c.World.Player.Y) {
@@ -93,6 +93,30 @@ func TestWaterBoardingWaitsForNativeReceipt(t *testing.T) {
 	}
 }
 
+func TestStarterBeachQuestRaftLandingReportsLandBeforeBreak(t *testing.T) {
+	c, now, sent := shoreClient(2)
+	c.World.Player.Map = 11016
+	c.World.Player.X = 62
+	c.World.Player.VehicleID, c.World.Player.VehicleSlot = 48016, 1
+	c.applyWaterVehicle()
+	c.walkWaterAware(22, 55, *now)
+	*now = now.Add(5 * time.Second)
+	c.World.Step(*now)
+	c.waterTravelTick()
+	if len(*sent) != 1 || len((*sent)[0]) != 15 || (*sent)[0][0] != 6 || (*sent)[0][1] != 1 {
+		t.Fatal("quest landing must report land without ordinary dismount", *sent)
+	}
+	if !c.World.Scene.Land(c.World.Player.X, c.World.Player.Y) || c.World.Walking() || c.World.Player.VehicleID != 48016 {
+		t.Fatal("landing moved inland or broke raft optimistically")
+	}
+	x, y := c.World.Player.X, c.World.Player.Y
+	c.vehiclePacket([]byte{15, 15, 101, 0, 0, 0, 144, 187})
+	c.vehiclePacket([]byte{15, 11, 1, 101, 0, 0, 0})
+	if c.World.Player.VehicleID != 0 || c.World.Scene.WaterTravel || c.World.Player.X != x || c.World.Player.Y != y || c.waterTravel.requestID != 0 {
+		t.Fatal("break did not finish at landing position")
+	}
+}
+
 func TestWaterBoardingApproachesShoreAndValidatesBag(t *testing.T) {
 	c, now, sent := shoreClient(5)
 	c.walkWaterAware(142, 55, *now)
@@ -102,8 +126,12 @@ func TestWaterBoardingApproachesShoreAndValidatesBag(t *testing.T) {
 	*now = now.Add(time.Second)
 	c.World.Step(*now)
 	c.waterTravelTick()
-	if len(*sent) != 1 || c.World.Scene.WaterTravel {
-		t.Fatal("shore arrival did not request boarding")
+	if len(*sent) != 0 || c.World.Scene.WaterTravel || c.World.Walking() {
+		t.Fatal("initial water click boarded automatically on shore arrival")
+	}
+	c.walkWaterAware(142, 55, *now)
+	if len(*sent) != 1 {
+		t.Fatal("fresh water click at shore did not request boarding")
 	}
 	for _, bad := range []game.Item{{ID: 48016, Count: 1, Locked: true}, {ID: 48016, Count: 1, Damage: 100}, {ID: 48016}, {ID: 48001, Count: 1}} {
 		c, now, sent = shoreClient(2)
@@ -144,7 +172,30 @@ func TestWaterTravelRejectsObstaclesAndNonWaterClicks(t *testing.T) {
 	}
 }
 
-func TestWaterLandingReportsPositionBeforeDismount(t *testing.T) {
+func TestWaterClickWalksToInterveningLandWithoutBoarding(t *testing.T) {
+	c, now, sent := shoreClient(2)
+	// A peninsula lies beyond an inlet, with a land route along the next row.
+	for x := 1; x <= 4; x++ {
+		c.World.Scene.Ground.Cells[x*10+3] = 0
+	}
+	c.World.Scene.Ground.Cells[4*10+2] = 0
+	c.walkWaterAware(142, 55, *now)
+	if !c.World.Walking() || len(*sent) != 0 || c.waterTravel.goal != nil {
+		t.Fatal("water click did not choose land approach")
+	}
+	*now = now.Add(5 * time.Second)
+	c.World.Step(*now)
+	c.waterTravelTick()
+	if len(*sent) != 0 || c.World.Player.X != 82 || c.World.Player.Y != 55 {
+		t.Fatal("approach boarded or missed intervening land", c.World.Player, *sent)
+	}
+	c.walkWaterAware(142, 55, *now)
+	if len(*sent) != 1 {
+		t.Fatal("fresh click from peninsula did not board")
+	}
+}
+
+func TestWaterLandingReportsPositionAfterDismount(t *testing.T) {
 	c, now, sent := shoreClient(2)
 	c.World.Player.X = 82
 	c.World.Player.VehicleID, c.World.Player.VehicleSlot = 48016, 1
@@ -160,15 +211,22 @@ func TestWaterLandingReportsPositionBeforeDismount(t *testing.T) {
 		t.Fatal("vehicle walked onto land")
 	}
 	c.waterTravelTick()
-	if len(*sent) != 3 || (*sent)[1][0] != 6 || (*sent)[1][1] != 2 || len((*sent)[1]) != 15 || (*sent)[2][0] != 15 || (*sent)[2][1] != 10 {
+	if len(*sent) != 3 || (*sent)[1][0] != 15 || (*sent)[1][1] != 10 || (*sent)[2][0] != 6 || (*sent)[2][1] != 1 || len((*sent)[2]) != 15 {
 		t.Fatal("landing order", *sent)
 	}
 	if !c.World.Scene.Land(c.World.Player.X, c.World.Player.Y) {
 		t.Fatal("no land relocation")
 	}
+	landingX, landingY := c.World.Player.X, c.World.Player.Y
 	c.vehiclePacket([]byte{15, 11, 1, 101, 0, 0, 0})
 	if c.World.Scene.WaterTravel || c.World.Player.VehicleID != 0 {
 		t.Fatal("landing retained water travel")
+	}
+	*now = now.Add(5 * time.Second)
+	c.World.Step(*now)
+	c.waterTravelTick()
+	if c.World.Walking() || c.World.Player.X != landingX || c.World.Player.Y != landingY || len(*sent) != 3 {
+		t.Fatal("dismount resumed the old land destination")
 	}
 }
 

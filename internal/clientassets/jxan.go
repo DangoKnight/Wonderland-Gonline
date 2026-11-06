@@ -2,6 +2,7 @@ package clientassets
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/subtle"
 	"debug/pe"
 	"encoding/binary"
@@ -11,17 +12,19 @@ import (
 )
 
 const (
-	jxanHeaderBytes         = 16
-	jxanRecordBytes         = 64
-	jxanNameBytes           = 17
-	jxanNonceOffset         = 17
-	jxanTagOffset           = 33
-	jxanOffsetOffset        = 49
-	jxanSizeOffset          = 53
-	jxanWholeSpriteFlag     = 1
-	jxanVersion             = 2
-	nativeKeyLiteralAddress = 0x1658d4
-	nativeKeyLengthOffset   = 4
+	jxanHeaderBytes                   = 16
+	jxanRecordBytes                   = 64
+	jxanNameBytes                     = 17
+	jxanNonceOffset                   = 17
+	jxanTagOffset                     = 33
+	jxanOffsetOffset                  = 49
+	jxanSizeOffset                    = 53
+	jxanWholeSpriteFlag               = 1
+	jxanVersion                       = 2
+	nativeKeyLiteralAddress           = 0x1658d4
+	nativeTranslatedKeyLiteralAddress = 0x4a51b0 // ca19ee...; authenticated against installed JXAN nonces.
+	nativeUpdatedKeyLiteralAddress    = 0x4a5b70 // 190dae...; authenticated against installed JXAN nonces.
+	nativeKeyLengthOffset             = 4
 )
 
 type JXANRecord struct {
@@ -78,6 +81,15 @@ func NativeSpriteKey(executable []byte) ([]byte, error) {
 		return nil, fmt.Errorf("expected native 32-bit client")
 	}
 	rva := uint32(nativeKeyLiteralAddress) - header.ImageBase
+	// These supported native builds relocate the Delphi key literal. Keep the
+	// earlier reference address as the compatibility fallback for other builds;
+	// ciphertext authentication remains independent of executable identification.
+	switch fmt.Sprintf("%x", sha256.Sum256(executable)) {
+	case "ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61":
+		rva = nativeTranslatedKeyLiteralAddress - header.ImageBase
+	case "190dae510151d80fdbc276f16dd9a33acb5dd9d7a2af3fe953343f8ac148c6cc":
+		rva = nativeUpdatedKeyLiteralAddress - header.ImageBase
+	}
 	for _, section := range file.Sections {
 		if rva < section.VirtualAddress || uint64(rva) >= uint64(section.VirtualAddress)+uint64(section.Size) {
 			continue

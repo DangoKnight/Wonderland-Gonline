@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -115,7 +117,7 @@ func readWorkspaceProfile(path string) (workspaceProfile, error) {
 		return p, err
 	}
 	if info.Size() > workspaceProfileMaximumBytes {
-		return p, fmt.Errorf("workspace profile exceeds size limit")
+		return p, fmt.Errorf("%s", localization.UI("ui.app.workspace_profile_exceeds_size_limit_13db6b9c"))
 	}
 	d := json.NewDecoder(io.LimitReader(f, workspaceProfileMaximumBytes+1))
 	if err = d.Decode(&p); err != nil {
@@ -123,29 +125,29 @@ func readWorkspaceProfile(path string) (workspaceProfile, error) {
 	}
 	var extra any
 	if err = d.Decode(&extra); err != io.EOF {
-		return p, fmt.Errorf("workspace profile has trailing data")
+		return p, fmt.Errorf("%s", localization.UI("ui.app.workspace_profile_has_trailing_data_2525863f"))
 	}
 	if p.Version != workspaceProfileVersion || len(p.Sessions) == 0 || len(p.Sessions) > workspaceProfileMaximumSessions {
-		return p, fmt.Errorf("unsupported workspace profile version or session count")
+		return p, fmt.Errorf("%s", localization.UI("ui.app.unsupported_workspace_profile_version_or_e831f0e4"))
 	}
 	if p.NextSessionID < 0 || p.NextSessionID >= int(^uint(0)>>1)-1 {
-		return p, fmt.Errorf("invalid next workspace session ID")
+		return p, fmt.Errorf("%s", localization.UI("ui.app.invalid_next_workspace_session_id_d4db9b91"))
 	}
 	ids := map[int]bool{}
 	for _, s := range p.Sessions {
 		if s.ID <= 0 || s.ID >= int(^uint(0)>>1)-1 || ids[s.ID] {
-			return p, fmt.Errorf("invalid workspace session ID")
+			return p, fmt.Errorf("%s", localization.UI("ui.app.invalid_workspace_session_id_183967aa"))
 		}
 		ids[s.ID] = true
 		if !validSessionTitle(s.Title) {
-			return p, fmt.Errorf("invalid session title")
+			return p, fmt.Errorf("%s", localization.UI("ui.app.invalid_session_title_9eeee0e4"))
 		}
 		if s.Account != nil && !login.ValidAccount([]byte(*s.Account)) {
-			return p, fmt.Errorf("invalid workspace account name")
+			return p, fmt.Errorf("%s", localization.UI("ui.app.invalid_workspace_account_name_cd83edbf"))
 		}
 	}
 	if !ids[p.ActiveSession] {
-		return p, fmt.Errorf("invalid active workspace session")
+		return p, fmt.Errorf("%s", localization.UI("ui.app.invalid_active_workspace_session_b3510dde"))
 	}
 	return p, nil
 }

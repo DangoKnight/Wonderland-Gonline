@@ -66,12 +66,14 @@ type Game struct {
 	C         *Client
 	Workspace *Workspace
 
-	presenter      *render.Presenter
-	lastDown       time.Time
-	lastPt         [2]int
-	cursors        map[*cursor.Frame]*ebiten.CursorImage
-	suppressedKeys map[ebiten.Key]bool
-	shown          *cursor.Frame // the frame the system is showing
+	presenter                 *render.Presenter
+	lastDown                  time.Time
+	lastPt                    [2]int
+	cursors                   map[*cursor.Frame]*ebiten.CursorImage
+	suppressedKeys            map[ebiten.Key]bool
+	shown                     *cursor.Frame // the frame the system is showing
+	display                   *displayControls
+	outputWidth, outputHeight int
 }
 
 func NewGame(c *Client) *Game { return &Game{C: c, Workspace: NewWorkspace(c)} }
@@ -91,6 +93,11 @@ func (g *Game) shift() byte {
 }
 
 func (g *Game) updateInput(pointerBlocked bool) error {
+	if g.C.mapLoading.active {
+		g.C.cancelSessionInput()
+		g.lastDown = time.Time{}
+		return nil
+	}
 	if g.Workspace.titleEditing != 0 {
 		for k, vk := range virtualKeys {
 			d := inpututil.KeyPressDuration(k)
@@ -106,7 +113,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		return nil
 	}
 	ui := g.C.UI
-	windowX, windowY := ebiten.CursorPosition()
+	windowX, windowY := g.workspaceCursor()
 	x, y, inside := g.Workspace.GamePoint(windowX, windowY)
 	pointerBlocked = pointerBlocked || !inside
 	held := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
@@ -122,28 +129,19 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 			ui.MouseMove(mouse, x, y, held)
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			now := g.C.Now()
-			// A second press within the interval is WM_LBUTTONDBLCLK: VCL
-			// raises OnDblClick, then OnMouseDown with ssDouble.
-			if now.Sub(g.lastDown) < doubleClickInterval && g.lastPt == [2]int{x, y} {
-				ui.DblClick()
-				ui.MouseDown(seui.ButtonLeft, mouse|shiftDouble, x, y)
-				g.lastDown = time.Time{}
-			} else {
-				// A press on a speaker's icon in the chat log whispers to them
-				// before the interface sees it (FUN_00496ca4).
-				if !g.C.SpeakerPress() && !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
-					g.C.GroundClick(x, y)
-				}
-				g.lastDown, g.lastPt = now, [2]int{x, y}
-			}
+			g.leftPress(mouse, x, y)
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-			ui.MouseDown(seui.ButtonRight, mouse, x, y)
+			if !ui.MouseDown(seui.ButtonRight, mouse, x, y) {
+				g.C.GroundRightClick(x, y)
+			}
 		}
 		g.C.GroundHold(held, x, y)
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-			if g.C.dropHotbar(x, y) {
+			if g.C.Social != nil && g.C.Social.Drop(x, y) {
+				g.C.Input.Pressed = nil
+				g.C.Input.Captured = nil
+			} else if g.C.dropHotbar(x, y) {
 				g.C.Input.Pressed = nil
 				g.C.Input.Captured = nil
 			} else {
@@ -155,10 +153,14 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		_, wheel := ebiten.Wheel()
 		for ; wheel >= 1; wheel-- {
-			g.C.scrollWheel(true)
+			if !g.C.scrollWheel(true) {
+				g.C.zoomWorld(true)
+			}
 		}
 		for ; wheel <= -1; wheel++ {
-			g.C.scrollWheel(false)
+			if !g.C.scrollWheel(false) {
+				g.C.zoomWorld(false)
+			}
 		}
 	} else {
 		g.C.GroundHold(false, x, y)
@@ -175,7 +177,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.TeamKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
+			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.TeamKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.LuckyDrawKey(vk) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
 				ui.KeyDown(vk, keys)
 			}
 		}
@@ -200,14 +202,74 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 	return nil
 }
 
+func (g *Game) leftPress(mouse byte, x, y int) {
+	if g.C.Notices.dismissAt(g.C.Env, g.C.Now(), x, y) {
+		g.lastDown = time.Time{}
+		return
+	}
+	now := g.C.Now()
+	ui := g.C.UI
+	// A second press within the interval is WM_LBUTTONDBLCLK: VCL
+	// raises OnDblClick, then OnMouseDown with ssDouble.
+	if now.Sub(g.lastDown) < doubleClickInterval && g.lastPt == [2]int{x, y} {
+		ui.DblClick()
+		if !ui.MouseDown(seui.ButtonLeft, mouse|shiftDouble, x, y) && g.C.battle.state.Active {
+			// Each battle-field press chooses a target, including a quick
+			// second press for the next controllable fighter.
+			g.C.GroundClick(x, y)
+		}
+		g.lastDown = time.Time{}
+	} else {
+		// A press on a speaker's icon in the chat log whispers to them
+		// before the interface sees it (FUN_00496ca4).
+		if !g.C.SpeakerPress() && !ui.MouseDown(seui.ButtonLeft, mouse, x, y) {
+			g.C.GroundClick(x, y)
+		}
+		g.lastDown, g.lastPt = now, [2]int{x, y}
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.display != nil {
+		g.display.pace()
+	}
 	s := g.Workspace.Compose()
+	g.drawDisplay(s)
 	if g.presenter == nil {
 		// NewGame remains usable by embedding callers without Run.
 		g.presenter, _ = render.New(render.CPU)
 	}
-	g.presenter.Draw(screen, s)
+	filter := ""
+	if g.display != nil {
+		filter = g.display.current().Scaling
+	}
+	if !displayResolutionPickingEnabled {
+		filter = ""
+	} // Filter during final window enlargement instead.
+	if err := g.presenter.DrawFitFiltered(screen, s, filter); err != nil {
+		if g.display == nil || g.display.error != err.Error() {
+			log.Printf("display scaling: %v", err)
+		}
+		if g.display != nil {
+			g.display.error = err.Error()
+		}
+	}
 	g.drawCursor(screen)
+}
+
+func (g *Game) DrawFinalScreen(screen ebiten.FinalScreen, offscreen *ebiten.Image, transform ebiten.GeoM) {
+	filter := ""
+	if !displayResolutionPickingEnabled && g.display != nil {
+		filter = g.display.current().Scaling
+	}
+	if err := g.presenter.DrawFinalFiltered(screen, offscreen, transform, filter); err != nil {
+		if g.display == nil || g.display.error != err.Error() {
+			log.Printf("display scaling: %v", err)
+		}
+		if g.display != nil {
+			g.display.error = err.Error()
+		}
+	}
 }
 
 // Update forwards input to the selected session and pumps every socket.
@@ -216,8 +278,21 @@ func (g *Game) Update() error {
 	if g.C == nil {
 		return ErrExit
 	}
+	if g.displayInput(time.Now()) {
+		if g.suppressedKeys == nil {
+			g.suppressedKeys = map[ebiten.Key]bool{}
+		}
+		for key := range virtualKeys {
+			if ebiten.IsKeyPressed(key) {
+				g.suppressedKeys[key] = true
+			}
+		}
+		g.lastDown = time.Time{}
+		g.Workspace.Tick()
+		return nil
+	}
 	previous := g.C
-	x, y := ebiten.CursorPosition()
+	x, y := g.workspaceCursor()
 	_, wheel := ebiten.Wheel()
 	consumed := g.Workspace.Pointer(x, y, inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft), ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft), wheel)
 	g.C = g.Workspace.Current()
@@ -255,9 +330,9 @@ func (g *Game) Update() error {
 // timings. Without a frame the system pointer shows.
 func (g *Game) drawCursor(*ebiten.Image) {
 	var f *cursor.Frame
-	x, y := ebiten.CursorPosition()
+	x, y := g.workspaceCursor()
 	_, _, inside := g.Workspace.GamePoint(x, y)
-	if g.C.Cursors != nil && inside {
+	if g.C.Cursors != nil && inside && (g.display == nil || !g.display.open) {
 		f = g.C.Cursors.Frame(g.C.Now())
 	}
 	if f == g.shown {
@@ -279,7 +354,33 @@ func (g *Game) drawCursor(*ebiten.Image) {
 	ebiten.SetCursorImage(c)
 }
 
-func (g *Game) Layout(int, int) (int, int) { return workspaceWidth, ScreenHeight }
+func (g *Game) renderSize() (int, int) {
+	if displayResolutionPickingEnabled && g.display != nil {
+		s := g.display.current()
+		return s.Width, s.Height
+	}
+	return workspaceWidth, ScreenHeight
+}
+
+// The OS window can change independently; Ebitengine allocates its output
+// framebuffer at this selected resolution and scales it into the window.
+func (g *Game) Layout(int, int) (int, int) {
+	g.outputWidth, g.outputHeight = g.renderSize()
+	return g.outputWidth, g.outputHeight
+}
+
+func (g *Game) workspaceCursor() (int, int) {
+	x, y := ebiten.CursorPosition()
+	w, h := g.outputWidth, g.outputHeight
+	if w == 0 || h == 0 {
+		w, h = g.renderSize()
+	}
+	x, y, inside := render.FitViewport(workspaceWidth, ScreenHeight, w, h).Point(x, y)
+	if !inside {
+		return -100, -100
+	}
+	return x, y
+}
 
 // Run opens the window and runs the client until Leave or the window
 // closes.
@@ -305,7 +406,14 @@ func Run(c *Client) error {
 	} else {
 		log.Printf("window icon: %v", err)
 	}
+	g.display = newDisplayControls(applicationSettingsPath(g.Workspace.options, c.Assets))
+	g.display.settings.Language = c.resources.language
+	g.display.draft = g.display.settings
+	g.display.apply = g.applyDisplay
+	g.display.prepareLanguage = g.Workspace.prepareLanguage
 	ebiten.SetWindowSize(workspaceWidth, ScreenHeight)
+	ebiten.SetWindowSizeLimits(displayMinimumWindowWidth, displayMinimumWindowHeight, -1, -1)
+	g.applyDisplay(g.display.settings)
 	ebiten.SetWindowTitle(WindowTitle)
 	ebiten.SetTPS(60)
 	ebiten.SetRunnableOnUnfocused(true)

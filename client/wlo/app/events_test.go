@@ -112,6 +112,19 @@ func TestNPCTalk(t *testing.T) {
 	if len(*legs) != 0 {
 		t.Fatal("walked during the event")
 	}
+	// FUN_00307300 acknowledges one completed step, then waits for the
+	// server. It must neither release the conversation nor re-click the actor
+	// to guess which EVE branch follows (including Noa's puzzle/result handoff).
+	for range 3 {
+		c.eventTick()
+	}
+	if !c.event.active || len(sent()) != 2 {
+		t.Fatal("completed line guessed a continuation or ended the interaction")
+	}
+	c.dispatch(talkFrame(n.ClickID, 10002))
+	if !c.Talk.Shown() || !c.event.active {
+		t.Fatal("server's next line did not retain the conversation")
+	}
 	c.dispatch([]byte{protocol.CommandEvent, protocol.EventResume})
 	c.GroundClick(300, 350)
 	if len(*legs) == 0 {
@@ -136,6 +149,8 @@ func TestTalkWrap(t *testing.T) {
 // effect and shows "Meow~".
 func TestCatTalk(t *testing.T) {
 	c, _, _ := enteredClient(t)
+	// Test native sound/body control markup independently of imported wording.
+	c.talks = map[uint32]string{30137: "#swav1541/#sMeow~"}
 	var played []string
 	c.Env.Sound = func(p string) { played = append(played, p) }
 	cat := c.World.NPCs[8]
@@ -219,5 +234,105 @@ func TestStepCompleteAcknowledged(t *testing.T) {
 	c.Frame()
 	if got := sent(); len(got) != 4 {
 		t.Fatalf("20/12 was acknowledged: %x", got)
+	}
+}
+
+// TestRouteEvent: a kind-4 frame walks the NPC along its route, and the
+// frame loop sends one 20/6 only after it arrives.
+func TestRouteEvent(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
+	n := &world.NPC{ClickID: 40, X: 1000, Y: 1000, Action: 8, Shown: true, Routes: map[byte][]image.Point{3: {{1100, 1000}}}}
+	c.World.NPCs[40] = n
+	p := []byte{protocol.CommandEvent, 1, 0, 0, 0, 1, eventKindRoute, eventSpeakerNPC}
+	p = binary.LittleEndian.AppendUint16(p, 40)
+	p = append(p, world.RouteWalk, 3, 0, 0, 0, 0, 0, 0)
+	c.dispatch(p)
+	c.eventTick()
+	if got := sent(); len(got) != 0 {
+		t.Fatalf("acknowledged before arrival: %x", got)
+	}
+	*now = now.Add(time.Second)
+	c.World.Step(*now)
+	c.eventTick()
+	c.eventTick()
+	ack := []byte{protocol.CommandEvent, protocol.EventAcknowledge}
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], ack) || n.X != 1100 {
+		t.Fatalf("sent %x, NPC at %d", got, n.X)
+	}
+}
+
+// eventFrameOf builds a frame of any kind (the server's BuildEventFrame).
+func eventFrameOf(kind, subject byte, actor uint16, mode byte, value uint32) []byte {
+	p := []byte{protocol.CommandEvent, 1, 0, 0, 0, 1, kind, subject}
+	p = binary.LittleEndian.AppendUint16(p, actor)
+	p = append(p, mode)
+	p = binary.LittleEndian.AppendUint32(p, value)
+	return append(p, 0, 0, 0)
+}
+
+// TestEventTurns: kind 14 turns the player toward an NPC or a direction,
+// and kind 11 turns an NPC toward the player, another NPC or a direction;
+// each is acknowledged at once.
+func TestEventTurns(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	sent := wire(t, c)
+	p := &c.World.Player
+	a := &world.NPC{ClickID: 41, X: p.X - 100, Y: p.Y, Action: 8, Shown: true}
+	b := &world.NPC{ClickID: 42, X: p.X - 100, Y: p.Y + 100, Action: 8, Shown: true}
+	c.World.NPCs[41], c.World.NPCs[42] = a, b
+	steps := []struct {
+		frame []byte
+		check func() bool
+	}{
+		{eventFrameOf(eventKindTurn, turnTowardNPC, 41, 0, 0), func() bool { return p.Direction == 8+world.FaceLeft }},
+		{eventFrameOf(eventKindTurn, turnDirection, 5, 0, 0), func() bool { return p.Direction == 8+world.FaceDown }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnPlayer, 0), func() bool { return a.Action == 8+world.FaceRight }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnNPC, 42), func() bool { return a.Action == 8+world.FaceDown }},
+		{eventFrameOf(eventKindNPCTurn, 41, 10, npcTurnDirection, 1), func() bool { return a.Action == 8+world.FaceUp }},
+	}
+	for i, s := range steps {
+		c.dispatch(s.frame)
+		c.eventTick()
+		if !s.check() {
+			t.Errorf("step %d: player %d, NPC %d", i, p.Direction, a.Action)
+		}
+	}
+	if got := sent(); len(got) != len(steps) {
+		t.Fatalf("%d acknowledgements, want %d", len(got), len(steps))
+	}
+}
+
+// TestEventMusic: kind 15 subject 1 sets the event's track, which the map
+// music prefers, and subject 2 clears it.
+func TestEventMusic(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.dispatch(eventFrameOf(eventKindMusic, musicPlay, 0, 0, 18))
+	if c.eventMusic != "BGM0018" {
+		t.Fatalf("track %q", c.eventMusic)
+	}
+	c.dispatch(eventFrameOf(eventKindMusic, musicRestore, 0, 0, 0))
+	if c.eventMusic != "" {
+		t.Fatalf("track %q after restore", c.eventMusic)
+	}
+}
+
+func TestDialoguePrefersNativeTalkID(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.talks = map[uint32]string{0x123456: "Extended dialogue", 0x3456: "Native dialogue"}
+	// Independent AC20:1 bytes: actor one, talk ID 0x3456 and trailing flag 0x12.
+	c.dispatch([]byte{20, 1, 0, 0, 0, 1, 1, 3, 1, 0, 1, 0, 0, 0, 0, 0x56, 0x34, 0x12})
+	if !c.Talk.Shown() || len(c.Talk.Lines()) != 1 || string(c.Talk.Lines()[0]) != "Native dialogue" {
+		t.Fatal(c.Talk.Lines())
+	}
+}
+
+func TestDialogueFallsBackToExtendedTalkReference(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.talks = map[uint32]string{0x123456: "Extended dialogue"}
+	// Extended export offsets remain supported when the native ID is absent.
+	c.dispatch([]byte{20, 1, 0, 0, 0, 1, 1, 3, 1, 0, 1, 0, 0, 0, 0, 0x56, 0x34, 0x12})
+	if !c.Talk.Shown() || len(c.Talk.Lines()) != 1 || string(c.Talk.Lines()[0]) != "Extended dialogue" {
+		t.Fatal(c.Talk.Lines())
 	}
 }

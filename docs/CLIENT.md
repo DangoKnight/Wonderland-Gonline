@@ -1,8 +1,11 @@
 # Native client replacement
 
 The Go/Ebitengine client recreates the original `aLogin.exe` front end and world
-from the decompile (`client/wlo`). Login, character and world code are present;
-rendering, interaction and gameplay support continue to be ported. `-legacy`
+from the decompile (`client/wlo`). Implemented flows include login/creation,
+world events and NPC movement, battle scenes and direct targeting, inventory,
+rank/base compounding, Skills and Teams, pet riding/following, Social/mail,
+item trades, the scene minimap and several local/paid minigames. Rendering and
+gameplay parity remain partial; subsystem details below identify the gaps. `-legacy`
 runs the earlier reference front end (`client/ui`), and `-workbench` opens artwork
 inspection. These modes do not represent complete original-game parity.
 
@@ -10,18 +13,113 @@ Start with [GETTING_STARTED.md](GETTING_STARTED.md) for WLRI extraction, server
 setup and compiling/running both programs. Use [CONFIGURATION.md](CONFIGURATION.md)
 for connection settings and client overrides.
 
+Verified [IGG English text overrides](IGG_TRANSLATIONS.md) are baked into compiled
+assets for matching NPCs, items, skills, scenes and dialogue. Verified IGG text
+takes first priority; existing name corrections supply fallbacks. Unmatched modern content keeps its current
+translation. Recompile assets after editing text sources and restart to remount
+rebuilt bundles. Selecting an installed language in Settings takes effect live.
+For loose exports, `go run ./cmd/asset-build -data data -text-only` generates
+pretranslated documents under `data/runtime/text`. The game reads final text and
+does not carry or search the override tables.
+
+The workspace's **Settings** button or **F10** opens window-wide settings,
+including display controls and language selection.
+The first implementation supports windowed mode, Ebitengine fullscreen, and a
+desktop-sized borderless window. Windowed mode supports edge resizing and the
+normal maximize/restore controls. Resolution picking is temporarily disabled:
+the internal framebuffer is fixed at 1020x600 (the original 800x600 game plus
+220 pixels for session management). Previously saved render resolutions are
+retained but ignored while disabled. The read-only resolution field shows this
+fixed size. The output scales into the physical window with a static aspect
+ratio and letterboxing. Existing bitmap assets retain their native detail.
+Pointer input follows the same transform and ignores the borders.
+Fullscreen modes occupy the current monitor at desktop resolution; exclusive
+fullscreen and monitor video-mode switching are not implemented. See
+[Ebitengine's fullscreen contract](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#SetFullscreen).
+Frame limits are VSync, 30, 60, 90, 120, 144, 165, 240 FPS or unlimited.
+Mode, frame-limit and scaling-filter controls open dropdown lists. Click an entry, or
+use Up/Down and Enter; Escape or an outside click dismisses the open list.
+These control presentation; simulation and input updates remain at 60 TPS.
+**Apply** previews changes for 15 seconds. **Keep** saves them to `display.json`
+beside `workspace.json`; **Revert**, Escape, or timeout restores the previous
+settings. Display changes apply to all sessions and do not require a reconnect.
+Scaling choices are Native (nearest), Bilinear, Bicubic (Catmull-Rom), Edge-aware
+(Scale2x neighbourhood rules followed by linear scaling), and Edge-aware + Sharpen
+(a mild unsharp pass). The filter applies to the composed output, including UI
+and text. Native remains the default. Filters sample decoded RGBA, never packed
+RGB565 words, and clamp source edges to avoid black fringes. Edge-aware modes
+compute their neighbourhood pass at 2x native resolution rather than repeating
+it at every output pixel. Intermediate targets stay on the GPU and are reused;
+no client assets need to be re-extracted. See the original
+[Scale2x algorithm](https://www.scale2x.it/algorithm).
+While resolution picking is disabled, filtering runs in Ebitengine's final-screen
+pass, where the fixed native framebuffer is enlarged into the OS window. Thus
+bilinear/bicubic options remain effective when resizing or maximizing; they are
+not applied prematurely to an unchanged 1x intermediate image.
+Windows resize/maximize/restore and independent framebuffer resolution have a
+native graphics-context test. CPU/GPU pixel tests cover scaled presentation and
+letterboxing; persistence, rollback, pointer mapping and panel rendering also
+have automated coverage. Multi-monitor/DPI behavior and frame pacing still need
+manual testing. No client asset rebuild or database migration is required.
+
+Wheel zoom is temporarily disabled (`worldZoomEnabled` in `world_zoom.go`), and
+the client resets any previous map-zoom state to the standard 1x viewport.
+UI wheel scrolling continues normally. The dormant 0.75x–1.25x map-camera
+implementation remains available for later re-enabling; its limit/picking
+tests are skipped while disabled, and a dedicated reset test covers 1x.
+
+Map changes show the existing `Anim_load0` illustration with short fades and
+a minimum visible duration of about 800 ms. Slow map readiness holds the
+illustration longer. Networking and the native map-loaded acknowledgement remain
+immediate; this is presentation timing, with no blocking sleep. Map clicks,
+gameplay controls and automation wait until the reveal finishes, and area titles
+start afterward. Same-map repositioning does not trigger it. Story cinematics
+take precedence so their opening is never hidden behind the loading screen.
+The session sidebar remains available. No asset rebuild is required.
+
+The loading illustration has a bottom progress bar and uses the mushroom cursor.
+Completion waits for the destination's rendered assets, pending editable sprite
+palette decoding and the native AC5:4 map-ready reply. Failed optional palette
+archives settle using their existing painted-frame fallback. The bar represents
+preparation stages rather than a byte-download percentage and never completes
+solely because the minimum display time elapsed. The initial Gonline connection
+hello negotiates complete-map-snapshot readiness: updated servers send AC5:4 only
+after peers, vehicles, props, tents and other snapshot state have been sent.
+Legacy connections retain their original packet order and AC5:4 readiness behavior.
+
+Eligible area changes display the English scene name at the center of the game view.
+The Legacy title-group identity comes from SceneData.dat offset 94
+(`FUN_003075f0`); its `t10002` Kelan artwork contains seven animation frames.
+Gonline renders a continuous 2200 ms ripple effect instead. Ripple travel runs
+for 2120 ms, so the last ring disappears just before the title. Text reveals
+behind the outer ring with opacity increasing through the intermediate rings
+to full opacity at the innermost ring, and fades over the final
+500 ms. The text gently waves
+horizontally throughout the effect, and the thicker ripples dissolve towards an elliptical
+boundary instead of clipping against the title canvas. It waits for map readiness
+and visible gameplay, respects shared area groups, and does not intercept input.
+Scenes with title group zero do not trigger the overlay. Returning from an
+interior (SceneData.dat disk offset 23, category 3) to a village (category 2)
+also suppresses it, matching Legacy. Kelan/North Island transitions show titles;
+Civilian House visits and Cabin/Ship Deck transitions do not.
+The small title canvas uses alpha-blended GPU-compatible drawing without scene
+readback. No asset rebuild or database migration is needed for this overlay.
+
 ## Direct decoded assets
 
-The login client can now run directly against repository `data/`:
+The game client can run directly against repository `data/`:
 
 ```sh
 cd client
 go run . -assets ../data
 ```
 
-Source runs load `data/` or `../data` directly.
+Explicit `-assets ../data` reads loose exports. Without an override, discovery
+prefers a compiled bundle beside the executable or under `bin/` before falling
+back to `data/` or `../data`. Rebuild packs or select loose data to see artwork edits.
 The UI uses `media/menu` PNG skins/backgrounds, `media/font/TATPC1_TWN` PNG
-font atlases and `media/sound` PCM WAV files. Maps use `pictures/` and decoded
+font atlases and `media/sound` Ogg Vorbis files. Native WAV references resolve to
+the standardized OGG outputs; older WAV-only extractions also work. Maps use `pictures/` and decoded
 JSON. Picture lookups resolve logical paths through `pictures/manifest.json`
 and crop atlas rectangles; patch priority remains intact. Sprites load editable
 `sprites/` atlases without decoded JMA files. Saved accounts/settings go to
@@ -364,14 +462,8 @@ Afterwards the password field is set to "12345678" and then cleared.
 
 #### Verification
 
-`client/wlo/app/reference_test.go` renders the empty server list, the server list with a region selected, and the account form. All three match the captures in `client/reference/screenshots/Login/` exactly.
-
-Other tests:
-
-- `flow_test.go` drives a connection to a fake server, checking action 0, the 1/9 reply, typing, Enter and the exact 63/4 bytes.
-- `server_test.go` runs the same flow against a live server, including a rejected and an accepted login. It is opt-in: set `WLO_SERVER_HOST`, `WLO_ACCOUNT` and `WLO_PASSWORD`. It passed against this repository's server.
-- `login_test.go` holds golden bytes for 63/4, plus tests for the validator, status records, reframing, SERVER.INI parsing and disconnect texts.
-- `seui/editor_test.go` covers the editor's filters, limits and double-byte editing, and the combo box's ordering.
+Login automation, live-server opt-ins and reference-frame evidence are described
+in [login checks](TESTING.md#login-checks).
 
 #### Approximations still in the port
 
@@ -432,19 +524,20 @@ The drawers show HP as the record's _second_ u32, then '/', then the first, and 
 
 - **Enter** sends 63/2 + slot (`FUN_00402274`). First `FUN_00401fd0` looks for `voice\<role>_nm01.wav` (`_nm02` or `_nm03` on a 1–55 % roll) and, only if the file exists, plays it and enters when it ends. No install has these files (the `voice` folders hold `am_`, `aw_`, `km_`, `kw_` … clips only), so the original always enters at once, as the port does.
 - **Create** on an empty slot sends 63/2 + slot; the server answers 1/3, which opens character creation (below).
-- **Delete** on an occupied slot hides the selection and opens the password dialog in mode 2 (`Form_InputPw_2`, OK at 0x402a0c, Cancel at `FUN_00402a78`). OK checks the fields like creation does, then sends **35/2**: slot, password and secret code, each string with a length byte (send case 0x2d1a8e). The server's 35/2 reply (0x2eab55): 1 "Delete success" (the slot is cleared), 2 and 3 "Wrong Del Pwd", 4 "Delete failed", 5 "Delete failed, error code: " and the next byte. `TestDeleteAgainstServer` (opt-in, `WLO_DELETE_CODE`) deletes slot 1 on a live server.
+- **Delete** on an occupied slot hides the selection and opens the password dialog in mode 2 (`Form_InputPw_2`, OK at 0x402a0c, Cancel at `FUN_00402a78`). OK checks the fields like creation does, then sends **35/2**: slot, password and secret code, each string with a length byte (send case 0x2d1a8e). The server's 35/2 reply (0x2eab55): 1 "Delete success" (the slot is cleared), 2 and 3 "Wrong Del Pwd", 4 "Delete failed", 5 "Delete failed, error code: " and the next byte. The [live deletion check](TESTING.md#login-checks) deletes slot 1 on an explicitly selected test account.
 - **Previous** sends 63/0 and reopens the account form.
 
 **`TSe_Button`** (`FUN_00467834`): a nine-slice panel whose image row is its own state (+0x118). It has a pressed flag and an optional icon of one or three rows. It is distinct from `TSe_FixedButton`.
 
-**Reference**: full-window screenshots of the original in `client/reference/screenshots/`: `Login/` holds the login phase (server list, account form, a forced error message, character selection and the creation steps) and `In-Game/` the first in-game screens (ship deck, cabin, inventory, chat, a teleport event and the mole minigame). The folder is not tracked. They guide layout only; the decompile decides. `selectchar_snapshot_test.go` (opt-in with `SNAPSHOT_DIR`) renders the selection screen for comparison, and the empty screen matches `select_character_empty.png` visually.
+**Reference**: full-window screenshots of the original in `client/reference/screenshots/`: `Login/` holds the login phase (server list, account form, a forced error message, character selection and the creation steps) and `In-Game/` the first in-game screens (ship deck, cabin, inventory, chat, a teleport event and the mole minigame). The folder is not tracked. They guide layout only; the decompile decides. See [character presentation checks](TESTING.md#character-presentation-checks) for the selection capture comparison.
 
 #### Server compatibility corrections
 
 The Go server now writes rebirth/job bytes before exactly six equipment IDs,
 matching `FUN_00402468`, and sends maximum HP/SP before current HP/SP so the
-selection drawer displays current/max. Rebirth and job remain unported and use
-zero placeholders. These corrections deliberately differ from the legacy C#
+selection drawer displays current/max. Saved rebirth and class/job values are
+transmitted and decoded, including job icons and reborn EXP progression.
+These corrections deliberately differ from the legacy C#
 serializer's misplaced equipment and reversed health pairs. Original-client
 packet captures remain pending.
 
@@ -518,14 +611,13 @@ an authentication factor.
 - **Drawing:** the shifted palette then goes through `FUN_00301118`'s rules into RGB565.
 - **Palette indices:** recolouring needs them. Built packs keep them; for the editable export read directly, the sprite manager derives them from each archive's `sprites.json` (see [Sprite packs](SPRITE_PACKS.md)). Frames edited away from their original pixels draw as painted.
 
-**Verification**:
-- `role_test.go` covers archive lookups against the installed archives, including the weapon order, and the palette rules.
-- The opt-in snapshot test renders two starter characters. With body 4/head 0 and body 1/head 0, the hair, hat, clothes, shoes and portraits all line up. One character has neutral colours (444444444 twice); the other has shifted hair and skin. A second frame dresses them in Knight's Cape and Angel Wings+5 (`select_character_costumes.png`); `role_test.go` checks the patch fallback.
-- `colors_test.go` covers the digit layout and the shift and clamp.
+Character layer/palette regression checks and capture results are in
+[character presentation checks](TESTING.md#character-presentation-checks).
 
 **Not ported yet**:
 - The visibility check `FUN_00442c58`.
-- Body type 0, vehicles and riding pets.
+- Body type 0 and native passengers. Item-vehicle and pet-riding composition
+  are implemented; see [riding](CLIENT_ARCHITECTURE.md).
 
 Sprites load through the sprite manager (`client/wlo/sprites`) from the editable data root. Optional packs built with `cmd/sprite-build` are selected explicitly with `-sprites`. The client no longer reads `jma/`. See [Sprite packs](SPRITE_PACKS.md).
 
@@ -545,10 +637,8 @@ OK on step 4 (accounts with a code) or the dialog's OK sends **9/1**: body, 0, h
 
 **Preview** (`TJK_RoleImage`, `FUN_002566bc`): base archives only (no patch lookup), the layer order from the slot-2 item's flag byte (tables at `DAT_004bd79d`), the head drawn with the hat or before the weapon, and the portrait (`FUN_002586c8`) with its blink timer (6–8 s, 50 ms).
 
-**Verification:**
-- `create_snapshot_test.go` (opt-in with `SNAPSHOT_DIR`) renders every step with the reference screenshots' character. Step 2 matches `create_character_stats.png` except 16 pixels in the window corners; steps 3 and 4 differ only in the body's idle frame; the password dialog sits one pixel left and one down of the capture.
-- `TestCreatePacket` checks 9/1's layout.
-- `TestCreateAgainstServer` (opt-in, with `WLO_SERVER_HOST`, `WLO_ACCOUNT`, `WLO_PASSWORD` and `WLO_CREATE_NAME`) creates a character on a live server and waits for the world-entry packets. Against this repository's server it passes, and the stored character has the chosen look, element, points, colours and starter outfit. The account needs no characters, and a password of at most 10 characters (the field's limit).
+Creation snapshot, packet and live-account checks are in
+[character creation checks](TESTING.md#character-creation-checks).
 
 **Not ported**: stopping voices after 9/1 (`FUN_00405138(0)`).
 
@@ -558,9 +648,17 @@ OK on step 4 (accounts with a code) or the dialog's OK sends **9/1**: body, 0, h
 
 **Scene** (`scene.go`, loader `FUN_003f830c`): `Data\Ground.MMG` is a named archive (`clientassets.ReadNamedArchive`, `FUN_0010f154`: payloads, then 29-byte index rows and a count). The record `<map>.map` begins with the scene size, its background layers and a 20-pixel walk grid (`FUN_004121a8`). The client reads it from the export (`ground_data.json`, its `terrain`). Each layer is `<resource>.jpg` from `pic\map_d01.JMg`, `map_c01.JMg` or `map.JMG`, read from their PNG exports (`pictures/map_d01`, `map_c01`, `map`). Map 10017 is the 2432×1792 Ship Deck with one layer, 10001.
 
+The final `optional_grid` is also retained in compiled map records. Mode 1 uses
+native isometric floor/wall resources from `images2.BMg` (`FUN_003fab58`,
+`FUN_003faa10`, `FUN_003fb2b4`), including Chicken Farm's cliffs. Wall pictures
+are depth-sorted using the authored signed 32-bit depth rather than their image
+top. This is independent of the WEM object list and applies across maps. Other
+grid modes retain their raw export data until their rendering semantics are ported.
+Rebuild previously compiled client bundles to retain this formerly discarded grid.
+
 **Names** (`names.go`): scene names come from the `SceneData.dat` export (`scene_data.json`), and each map's scene from the `eve.Emg` export (`eve_data.json`); map 10017 is scene 10001, "Ship Deck".
 
-**Drawing**: the camera keeps the player at the screen centre (the scene is drawn from X − 400, Y − 300; this matches `In-Game/Ship_Deck.png` exactly) but stays on the map (`FUN_003f94e8`, the map's +0xc/+0x10): within 400 pixels of the left edge (300 of the top) it is 0; when the screen would pass the right edge it stops at the map's width − 800 − 20 (the original's 0x14) and at the bottom edge at its height − 600 (0 when the map is narrower or shorter than the screen). Before this the port drew black past the map's edges (`Chat_02/Go_Beach_Camera_Black_Edge.png`); at Dango Beach X:1082 Y:1195 it now frames the scene as the original's `Chat_02/Beach_Camera_Clamped.png` does. The player's name follows the player instead of a fixed row. The player is drawn by the selection's layered renderer, with the name centred above (yellow) and the location line `<name> <scene> X:<x> Y:<y>` at the bottom right; both positions are measured from the capture. `world_snapshot_test.go` (opt-in) renders the capture's position.
+**Drawing**: the camera keeps the player at the screen centre (the scene is drawn from X − 400, Y − 300; this matches `In-Game/Ship_Deck.png` exactly) but stays on the map (`FUN_003f94e8`, the map's +0xc/+0x10): within 400 pixels of the left edge (300 of the top) it is 0; the horizontal camera clamps continuously at the map's width − 800 − 20 (the original's 0x14) and at the bottom edge at its height − 600 (0 when the map is narrower or shorter than the screen). Before this the port drew black past the map's edges (`Chat_02/Go_Beach_Camera_Black_Edge.png`); at Dango Beach X:1082 Y:1195 it now frames the scene as the original's `Chat_02/Beach_Camera_Clamped.png` does. The player's name follows the player instead of a fixed row. The player is drawn by the selection's layered renderer, with the name centred above (yellow) and the location line `<name> <scene> X:<x> Y:<y>` at the bottom right; both positions are measured from the capture. `world_snapshot_test.go` (opt-in) renders the capture's position.
 
 **NPCs** (`npcs.go`, `client/wlo/role/npc.go`): the map loader (`FUN_003030ec`) creates one character object per `eve.Emg` NPC record (parsed with `assets.ParseEVEMap` from `eve_data.json`'s `decoded_hex`; the record conversion is `FUN_00484a50`) and applies its `Npc.dat` template (`FUN_004265a4`):
 - the look is the record's word at disk offset 14, modulo 1000; an NPC keeps body type 0, so the draw (`FUN_00433318`) is one sprite of the `001` family, 1000 + look;
@@ -568,7 +666,7 @@ OK on step 4 (accounts with a code) or the dialog's OK sends **9/1**: body, 0, h
 - the record's facing r (1–8) becomes (9 − r) mod 8, and `FUN_00430474(…, 8)` stands the NPC: action 8 + facing (facing 6 is action 11, towards the camera);
 - flag bit 0 shows the NPC at load; otherwise it starts hidden.
 
-AC22:4 (`FUN_0038cf30`, 14-byte entries: click ID, state, X, Y, kind, duration, action) moves NPCs and shows (kind 1) or hides (kind 2) them. For props (Npc.dat kind 6, 9 or 10, `FUN_00482424`) the state's low byte fixes the drawn frame (+0x11f; 0xff animates), so a chest stays closed (0) or open (1); other NPCs animate their action. NPCs and the player are drawn back to front by Y; an NPC adds its eve record's depth (+0x1180, copied from the record's +0x6b4, the last trailing int), so the coconut up a palm on Newbie Island (depth 150) sorts in front of the palm. The name overlay (`FUN_004147f8`) skips kinds 6, 8 and 9. Templates on the tall name base (Npc.dat +0x57 = 1) draw their sprite 0x44 lower, 0x20 more on the doubled scale (`FUN_002fe8e8`); their name and shadow stay at the feet (Burke the tiger). The talk window's body mode draws through the same placement, so the drop applies there too (`In-Game/Burke_Talk.png`). Verified against `In-Game/Newbie_Island_Props.png` and `Newbie_Island_Coconut_Hover.png`. On Ship Deck the eleven NPCs stand where the capture shows them, and their colours match it exactly.
+AC22:4 (`FUN_0038cf30`, 14-byte entries: click ID, state, X, Y, kind, duration, action) moves NPCs and shows (kind 1) or hides (kind 2) them. For props (Npc.dat kind 6, 9 or 10, `FUN_00482424`) the state's low byte fixes the drawn frame (+0x11f; 0xff animates), so a chest stays closed (0) or open (1); other NPCs animate their action. NPCs and the player are drawn back to front by Y; an NPC adds its eve record's depth (+0x1180, copied from the record's +0x6b4, the last trailing int), so the coconut up a palm on Newbie Island (depth 150) sorts in front of the baked fruit. Floor item coordinates are icon centres (`FUN_003d78e4`, `FUN_003d7b80`), with both drawing and click bounds subtracting half the canvas size on each axis; this avoids the former 16-pixel upward displacement of normal 32-pixel icons. They join this same depth-sorted pass at their Y plus the signed offset in the final four bytes of each AC23:4 record. The server preserves the native EVE trailer on map entry and respawn; player drops use zero. This keeps elevated items such as Beach coconuts in front of the appropriate background palms while zero-depth items remain behind native foreground objects (including palm leaf picture 11016004). There are no item-specific masks or overrides; native source pictures and depth lines remain unchanged. Floor-item hover uses opaque source pixels and the same depth order as drawing, with native additive light level 15 and an outlined yellow item name near the pointer. Pickup owns the click: it stops existing movement, announces the current position before the native pickup request, and prevents held-ground input from restarting the route. Distant pickup arrival runs during simulation, including background sessions. The name overlay (`FUN_004147f8`) skips kinds 6, 8 and 9. Templates on the tall name base (Npc.dat +0x57 = 1) draw their sprite 0x44 lower, 0x20 more on the doubled scale (`FUN_002fe8e8`); their name and shadow stay at the feet (Burke the tiger). The talk window's body mode draws through the same placement, so the drop applies there too (`In-Game/Burke_Talk.png`). Verified against `In-Game/Newbie_Island_Props.png` and `Newbie_Island_Coconut_Hover.png`. On Ship Deck the eleven NPCs stand where the capture shows them, and their colours match it exactly.
 
 **AC12** (case 0x2e20cf: ID, map, X, Y, portal) places the player; the map reloads when it changes, then the client acknowledges with 12/1 as `FUN_002f2fd0` does. The server waits for that acknowledgment before publishing the character and accepting actions.
 
@@ -586,6 +684,15 @@ The background pictures already contain railings, masts and other scenery, but t
 
 `TestShipDeckObjects` checks the deck's counts. Not ported: the cull test (`FUN_003f5d70`), translucent objects (+0xd4 other than 0xff, or +0xe0 from the picture's first pixel), and the resources 11011–11015 and 11031 that the loader forces to kind 3. Compiled picture pages use a shared 64 MiB LRU cache; map backgrounds decode only visible tiles. The editable PNG atlas fallback also uses a separate 64 MiB LRU cache.
 
+Scenery shadow smoothing (`world/scenery_shadows.go`) reconstructs complete
+2-by-2 checkerboards of transparent key pixels and matching dark pixels as
+half-opacity shading. This reduces tree-shadow shimmer during fractional camera
+motion without filtering opaque foliage or characters. Detection is shared per
+unique scenery picture when loading a scene, respects animation frame boundaries,
+and retains the authored source. Both editable and bundled pictures use the same
+CPU/GPU alpha path; no extraction or bundle rebuild is needed. Tests cover camera
+phase stability, artwork preservation and Chicken Farm's actual scenery.
+
 ### Status panel (ported: `client/wlo/hud`, `client/wlo/world/stats.go`)
 
 The top-left panel is `TSe_MainStatus` (constructor `FUN_0025ff84`, painter `FUN_00260fac`), a fixed form shown when the world opens. From its corner at (2, 10) it draws `Main_Status_1`, the HP and SP gauges, the face, the level, the job icon, HP, SP, EXP and gold; the element icon (`Icon_Element_<e>_1` at +0x71, +7) and `Btn_Allrecovery_1` (0x27, 0x6a; hint "Restore HP/SP using Potions and Bottles", no action yet) are children. The value drawers are the ones the character selection already borrowed (`login.Status`).
@@ -596,18 +703,26 @@ The top-left panel is `TSe_MainStatus` (constructor `FUN_0025ff84`, painter `FUN
 
 On Ship Deck with the capture's values (level 1, 181/181, 100/100) the panel matches the capture apart from the character's own face and element.
 
-**Not yet**: the panel's slide-in (`FUN_00260b90`), the restore button's action, the discussion button's mode, the pet panel, VIP numbers and the save-lock icon.
+The active pet's compact HUD uses the native `007` portrait, white level digits,
+HP/SP bars and experience bar/percentage beside the player portrait
+(`FUN_0029d3a4`, `FUN_0029dbf0`). It reads the current party roster and active-pet
+selection, independently of Inventory's local selection. Native pet stat packets
+update it immediately; switching the pet to Rest or removing it hides the panel. Hovering the bars
+shows the corresponding numeric values. Portrait anchors, template colors and
+the original `Word_*`/`Pet_*` skin artwork are preserved.
+
+**Not yet**: the panel's slide-in (`FUN_00260b90`), the restore button's action, the discussion button's mode, VIP numbers and the save-lock icon.
 
 ### Button bars (ported: `client/wlo/hud/buttons.go`)
 
-- **Toolbar** (`TRE_FuncBtnForm`, constructor `FUN_00295fb8`, paint `FUN_00296744`): `Btn_BackGround_1` at (0x1b0, 0), then World PK (`Btn_PlayerBattle`), PK, Jump In, Spectate, Join Team, Make Friends, Trade (`Btn_1`–`Btn_6`) every 0x25 pixels from 0x1ae; Guild Invite (`Btn_7`) is hidden and Events and Lucky Draw (`Btn_8`, `Btn_9`) take the slots from it, with a 300 ms animation of their rows 2–3 that runs while an event or the lottery is open (not ported); Item Mall (`Btn_711`) at 0x2fb. The paint also rewrites a hint with the gold and starts or stops the lottery animation; neither is ported.
+- **Toolbar** (`TRE_FuncBtnForm`, constructor `FUN_00295fb8`, paint `FUN_00296744`): `Btn_BackGround_1` at (0x1b0, 0), then World PK (`Btn_PlayerBattle`), PK, Jump In, Spectate, Join Team, Make Friends, Trade (`Btn_1`–`Btn_6`) every 0x25 pixels from 0x1ae; Guild Invite (`Btn_7`) is hidden and Events and Lucky Draw (`Btn_8`, `Btn_9`) take the slots from it; Item Mall (`Btn_711`) sits at 0x2fb. Lucky Draw opens its native window, and its rows 2–3 animate every 300 ms while the server reports available rewards and remaining draws. Events and the gold-dependent hint remain unported.
 - **Menu** (`TRE_MainBtnForm`, constructor `FUN_002950b8`, paint `FUN_002956ac`): `Btn_BackGround_2` at (0x213, 0x233), then Inventory, Skills, Alchemy, Team, Social, Options (`Btn_11`–`Btn_16`) at their own corners; Pickup Furn (`Btn_BringUpFur_1`, 0x2fb, 0x1fb) stays hidden.
 
 Each button is its picture's width by a third of its height (three state rows). The bars match `Ship_Deck.png`; the buttons have no actions yet.
 
 ### Hot-key bar (ported: `client/wlo/hud/hotkey.go`)
 
-`TSe_HotKeyForm` (constructor `FUN_00266098`, layout `FUN_0028f55c`, paint `FUN_00296870`) is the F1–F8 bar: `Form_HotKey_V` (0x38 × 0x112) at the right edge, vertically centred, with eight 0x18 slots at (0x17, 0x1d + 0x1b·i), Toggle View (`Btn_Minimize_1`, 0x25, 0), page arrows (`Btn_ArrowL_3`/`Btn_ArrowR_3` at y 0xf8) that cycle pages 1–3 (`FUN_0028f2d8`, `FUN_0028f2b4`), and the page number `HotKeyPage_<n>` at (0x17, 0xf5). It can be dragged and stays within 800 × 0x226 (`FUN_002968e0`). It matches the capture. Not ported: the slots' icons (`FUN_002a3260`, from the hot-key table), the horizontal and minimised layouts (`FUN_0028f8ec`) and using a slot.
+`TSe_HotKeyForm` (constructor `FUN_00266098`, layout `FUN_0028f55c`, paint `FUN_00296870`) is the F1–F8 bar: `Form_HotKey_V` (0x38 × 0x112) at the right edge, vertically centred, with eight 0x18 slots at (0x17, 0x1d + 0x1b·i), Toggle View (`Btn_Minimize_1`, 0x25, 0), page arrows (`Btn_ArrowL_3`/`Btn_ArrowR_3` at y 0xf8) that cycle pages 1–3 (`FUN_0028f2d8`, `FUN_0028f2b4`), and the page number `HotKeyPage_<n>` at (0x17, 0xf5). It can be dragged and stays within 800 × 0x226 (`FUN_002968e0`). It matches the capture. Slot icons, per-character bindings, three pages, horizontal/vertical layouts and F1–F8/click activation are implemented. The fully minimised native layout remains separate work; see [hotbar controls](#hotbar-and-logout-confirmation).
 
 ### Chat bar (ported: `client/wlo/hud/inputbar.go`)
 
@@ -615,7 +730,7 @@ Each button is its picture's width by a third of its height (three state rows). 
 
 - **Channels** (+0x140): 1 World, 2 Local (the start, and again on each world entry, `FUN_00268980`), 3 Whisper, 4 Team, 5 Guild (6 Ally and 7 GM exist but have no button). The channel button shows the channel's name, `btn_channel_<n>_1` (40 × 60, three states; `FUN_00267db0`), with the hint "Switch Channel".
 - **Switching**: the paint (`FUN_00268194`, rectangles by `FUN_00020d08` = Bounds) opens the list while the pointer is over the button (0x1c, 0, 0x28 × 0x15 in the bar) and keeps it open while the pointer is over the list (the 0x7f pixels above): `icon_Channelframe_1` with a button for each other channel (`btn_channel_<n>_1`, 0x14 apart from 0x17 above the bar); a click on one picks it (`FUN_00267c5c`). The button's click (`FUN_00269b30`, World → Local → Whisper → Team) only acts while the list is closed, so with the pointer on the button a click changes nothing; its other handler (`FUN_0026527c`) toggles the list. Choosing Team or Guild without a team or guild adds "(System):You are not in a Team" or "(System):You are not in a Guild" and returns to Local, as `Team_Guild_Chat.png` shows. `TestChannelButtonOpensList`.
-- **Whisper field**: read-only outside Whisper, and emptied (with the target, +0x18c) when leaving it. It has no picture and keeps its pixel hit test, so it never takes a press itself: the bar's press (`FUN_002695d8`) inside (0x46, 0x240, 0x56 × 0x16) selects Whisper, which gives the field the keyboard (`TestWhisperAreaPress`); a press on the mail icon would open the mailbox (not ported). Enter in it (`FUN_00268a30`) looks the name up among the known players (letter case ignored): an empty field says "No target"; an unknown name says "<<No such person online>>" and empties the field; a known one becomes the target (`FUN_00269068`), adding "Whisp to <<name>>", joining the recent whisperers and moving the keyboard to the message field. Losing focus also validates a nonempty recipient: an unknown name clears the field and target and shows "<<No such person online>>" once; valid names resolve without taking focus away from the clicked control. Empty blur is silent (`Chat_03/Chat_Whisper.png`, `TestChatWhisperBlurValidation`).
+- **Whisper field**: read-only outside Whisper, and emptied (with the target, +0x18c) when leaving it. It has no picture and keeps its pixel hit test, so it never takes a press itself: the bar's press (`FUN_002695d8`) inside (0x46, 0x240, 0x56 × 0x16) selects Whisper, which gives the field the keyboard (`TestWhisperAreaPress`); a press on the mail icon opens the implemented mailbox. Enter in it (`FUN_00268a30`) looks the name up among the known players (letter case ignored): an empty field says "No target"; an unknown name says "<<No such person online>>" and empties the field; a known one becomes the target (`FUN_00269068`), adding "Whisp to <<name>>", joining the recent whisperers and moving the keyboard to the message field. Losing focus also validates a nonempty recipient: an unknown name clears the field and target and shows "<<No such person online>>" once; valid names resolve without taking focus away from the clicked control. Empty blur is silent (`Chat_03/Chat_Whisper.png`, `TestChatWhisperBlurValidation`).
 - **Recent whisperers** (+0x174 in the panel +0x178, `FUN_00268cdc`): another player's whisper puts its speaker before the last name; a chosen target moves to the end; at most ten. On the Whisper channel the list opens while the pointer is over the whisper field (0x46, 1, 0x56 × 0x16) or the list, 0x14 a row above the bar; a pick (`FUN_00268c38`) fills the field and runs its Enter. The panel is created without a picture, so only the names show. `TestWhisperers`.
 - **Known players** (`PTR_DAT_004c9788`): every AC4 record (`FUN_00429a38`) is kept, whatever its map, until the player leaves (AC12 to map 0), and names whisper targets and chat speakers beyond the map's players. This server sends AC4 only for players on the same map, so a player on another map can be whispered only once the client has seen them.
 - **Speaker icons as targets** (`FUN_00496ca4`, the main form's press): the list's paint records the speaker whose icon is under the pointer (+0x500, from the sprite's own pixel test); a press then, with the channel list closed, whispers to that speaker without the "Whisp to" line (+0x1b4) and takes the press. `TestSpeakerPortraitPress`.
@@ -635,8 +750,8 @@ movement, deletion and horizontal scrolling keep emoticon codes whole
 (`FUN_0045cbbc`). The picker tooltips retain the codes shown in
 `Chat_Tooltip_Emoji.png` and `Chat_Tooltip_Emoji_Go.png`.
 `TestChatEmoticonEditorPreview` and `TestChatEmoticonEditingAndHints` cover
-rendering, editing and hints. Character speech bubbles remain pending. Mail animation and the
-battle/viewer/auto-play buttons remain pending.
+rendering, editing and hints. The mail icon opens the mailbox and blinks for
+unread letters; the battle/viewer/auto-play buttons remain pending.
 
 ### Chat (ported: `client/wlo/hud/chatlog.go`, `client/wlo/app/chat.go`)
 
@@ -659,9 +774,11 @@ battle/viewer/auto-play buttons remain pending.
   - A refused message keeps its text; a sent one empties the field and joins the history.
 - **Tests**: `TestChatChannels` and `TestChatWhisperAndWorld` replay the Chat captures; `TestChatPrefixes` covers the channels.
 
-Server side (`internal/server/chat.go`, `chat_channels.go`): 2/1 goes to every player in the world except the sender (the sender's client logs it); 2/3 [target][text] goes to the target and back to the sender as 2/3 [sender][text]; 2/5 goes to the party, the sender included; 2/6 is ignored (no guilds). The `/world`, `/team` and `/whisper` commands send the same packets, `/world` echoed to the sender. GM broadcasts are 2/4, which the client shows as "(GM):" lines.
+Server side (`internal/server/chat.go`, `chat_channels.go`): 2/1 goes to every player in the world except the sender (the sender's client logs it); 2/3 [target][text] goes to the target and back to the sender as 2/3 [sender][text]; 2/5 goes to the party, the sender included; 2/6 reaches online SQL guild members, including the sender; the guild-management UI remains pending. The `/world`, `/team` and `/whisper` commands send the same packets, `/world` echoed to the sender. GM broadcasts are 2/4, which the client shows as "(GM):" lines.
 
-Not ported: the speech bubble over the speaker (`FUN_00428ed0`), GM bans, the radio's 5-second charge, the Loudspeaker's World-line variant, alternate backgrounds, links/VIP marks and the announcement banner (`FUN_0048d9b8`). Team and guild interfaces remain pending.
+This build never shows chat speech bubbles: `FUN_00428ed0` jumps past its own body (`jmp 0x428f6c` at 0x428f06), and nothing else sets the bubble text (+0x2318) that the role's bubble drawer reads.
+
+Not ported in the Go client: GM ban controls, the radio's 5-second charge, the Loudspeaker's World-line variant, alternate backgrounds, links/VIP marks and the announcement banner (`FUN_0048d9b8`). Server administration already supports account/IP bans. The Team window is covered in [CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md); the guild interface remains pending.
 
 ### Walking (ported: `client/wlo/world/walk.go`, `client/wlo/app/world.go`)
 
@@ -699,27 +816,35 @@ per frame. It leaves the held pose unchanged. Malformed record batches do not
 partially update the scene. See `TestNativePresentationAndAllocation` and
 `client/wlo/world/presentation_test.go`.
 
-Pending: the gesture selection interface, titles, speech bubbles, riding/pets,
-clicking a player and friend-list presence UI. Expressions and nicknames use the
-existing player name height; native body-height/ride adjustments remain pending.
+Expressions and held poses can be selected in the Social window's Emote tab;
+its Friend tab displays presence. Player target selection supports Join Team,
+Make Friends and Trade Items. Riding and following pets are covered in
+[CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md). Titles, passengers, additional
+vehicle classes and transforms remain pending.
 
 ### Talking to NPCs (ported: `client/wlo/app/events.go`, `client/wlo/hud/talk.go`)
 
 - **Clicking an NPC** (`FUN_00303b54`): the shown NPC under the pointer (the front one by feet Y; the hit box is its current frame) gets **20/1** with its click ID as a word. Within 0xa9 pixels on each axis it is sent at once; otherwise a two-second “Too far” notice appears without walking or sending a click.
-- **Event frames 20/1..6** (receive case 0x2e3dc0 → interpreter `FUN_00304fd0`): after the command byte, `[sub, byte, word, step, kind, subject, actor u16, mode, value u32, text u16, branch]`, matching the server's `eventFrame`. Kind 1 is a line of dialogue: subject 3 is a map NPC (the actor), subject 7 the player. The text is the talk ID's `Talk.dat` record (`data/talk_data.json`).
+- **Event frames 20/1..6** (receive case 0x2e3dc0 → interpreter `FUN_00304fd0`): after the command byte, `[sub, byte, word, step, kind, subject, actor u16, mode, value u32, text u16, branch]`, matching the server's `wire.EventFrame`. Kind 1 is a line of dialogue: subject 3 is a map NPC (the actor), subject 7 the player. The text is the talk ID's `Talk.dat` record (`data/talk_data.json`).
 - **Acknowledging**: a step the client has finished (+0x7108) is answered with **20/6** by the frame loop (`FUN_00307300`). A dialogue line is finished when clicked; 20/7 finishes the step as well; 20/10 (and the unnamed 11 and 13–17, receive cases at 0x2e3dc0) finishes the step too, so server-driven sequences such as the beach rescue advance at once; **20/8** ends the event and releases the server's hold (player +0x2392 = 0, receive case 8), which is how a door event's 6/2 hold ends after its teleport. While an event runs or the server holds the player (**6/2** with 1), clicks, held buttons and arrow keys do not walk.
 - **Talk window** (`TSe_TalkMsgFormPlus`, `PTR_DAT_004c9950`, constructor `FUN_0034bfa4`, face mode `FUN_0034d990`): `panel22` at the top centre, y 0x19, fitted to its content by `FUN_0034ba20`: the longest line × 8 + 110 wide and the lines × 18 + 66 tall; a face adds 0x78 and makes it at least 0x9c tall, a body (body mode, below) adds its frame width + 0x1e and makes it at least its height + 0x46 tall; then 5 more (the Visitor's line gives 0x21e × 0xa1, the cat's "Meow~" about 0xdc × 0x6e, both as captured); yellow lines centred and wrapped at word boundaries; an NPC's face (`Npc.dat` +0x58, a `008` sprite in action 0 with the NPC's colours, blinking every 6–8 s) with its feet at (right − 0x49, top + 0x46) and its name in white 0x24 below; the player's portrait (action 2) at the left instead; and `Icon_Nextone_1`'s two frames swapped every 250 ms at the bottom centre. `TestWorldSnapshot` renders `In-Game/Ship_Deck_Talking.png`'s line and the cat's (`Cat_Dialogue.png`): the text, speaker, name, frame and icon align with both captures. - **The player's lines** (`FUN_0046fe50`'s `Form_Talk` branch, +0x2a8): a wide form instead, `Form_Talk_1` (the blue skin, +0x38c = 1; `Form_Talk_2` is the pale one) at (0x23, 0x195), 0x300 × 0xa9, not fitted to the text; lines of 0x2d characters (+0x294, 0x28 in the normal window), left-aligned at 209 and 0x2e from its top; the next icon at its centre. The face sprite's large art (action 3) stands at x = half the **body** sprite's frame width in action 3 (`FUN_00437cd4` measures the body) + 0xa7, its feet 0x1e above the form's bottom (`FUN_0034d990`), without a name. In the game modes 1, 3 and 4 (`PTR_DAT_004ca2f8` +0x1d; the HUD is hidden then) the form sits 0x19 lower and the art 0x19 lower again (`Talk.Lowered`). `TestPlayerTalkSnapshot` renders `In-Game/Player_Dialogue.png` (body 4's art 5607, talk 20306): frame, text and art align with the capture. Not ported: the original's check that the worn look matches its table (`PTR_DAT_004ca774`) before choosing the wide form — the port uses it whenever the art exists — and the modes that hide the HUD.
 
 - **Speakers** (`FUN_0034c814`): an NPC whose template has a face sprite, and the player, use face mode. An NPC without one (the Persian Cat) uses body mode (`FUN_0034cb7c`): its whole sprite, standing facing down-left (action 0xb), with its feet at (right − width/2 − 0x1e, top + height + 0x14), its name 0x10 below; `Npc.dat` bytes 86 and 87 lower the sprite and the name.
 - **Markup** (`FUN_00478140`, scanner `FUN_00477e2c`, styles `FUN_00470f48`/`FUN_00471028`): an opener `#X` counts only when `/#X` follows; both are removed. `#R` is red (0xf800), `#W` white, `#B` bold, otherwise yellow; `#n` inserts the player's name, `#e` a line break, `#g` the castle owner ("No guild own Castle"); `#F1`–`#F3` (face expressions) and `#P` are removed; `#s` carries a seven-character sound name and plays `sound\<name>.wav` — the Persian Cat's `#swav1541/#sMeow~`. Sounds play when the line shows, since the typing that reaches them is not ported.
-- **Voices** (`FUN_0034d3e8`): the original also looks up a recorded line, `<talk ID>[_10|_20|_30<nn>].ogg`, in `Data\odd.dat` and `odd_d01.dat` (exported to `data/audio`). The port plays the extracted OGG recordings, selects the native speaker suffix, and replaces the preceding voice when another line begins.
+- **Voices** (`FUN_0034d3e8`): the original also looks up a recorded line, `<talk ID>[_10|_20|_30<nn>].ogg`, in `Data\odd.dat` and `odd_d01.dat` (exported to `data/audio`). Gonline selects the native speaker suffix and decodes recordings off the UI thread through one session worker with a latest-only pending queue. Dismissal/replacement cancels pending playback, and session shutdown stops the worker. The shared PCM cache holds its lock only for lookup/publication, so a recording cannot stall cached sound effects while decoding. Player portrait/large-art blinks draw the eyelid patch over the base art, preserving the character's full silhouette.
 
-- **Opening and closing** (`TSe_ShortMsgPanel`'s tick `FUN_00477810`, style 1 set by `FUN_00476bcc`): every line restarts the animation (`FUN_0046fe50` zeroes the steps and stamps the start with the frame clock, `timeGetTime()` taken once a frame). Opening (`FUN_00472664`) grows four column steps, then four row steps, at one step per millisecond (+0x140 = 1.0, default of `FUN_0046fcf4`), sized margins + steps × (text ÷ 3) + 0x14 wide and + 6 tall, centred on the final box; the text, speaker and next icon appear only when both are complete (+0x17a). A click on the window (`FUN_0034e2c4`) clears +0x196 and closing (`FUN_00472868`) runs the rows, then the columns, back down, then hides the window (`FUN_00470ee4`). Because a frame lasts far longer than 4 ms, at 60 frames a second this gives: opening, two frames at the bare margins (about 120 × 68), one at full width, then full with the content; closing, two frames at full width and three quarters of the height, one at the bare margins, then gone (`TestTalkAnimation`). The style-2 animation (`FUN_00476ae8`/`FUN_00476a1c`, width only, one step per interval) is not used by the talk window. The notice board shares this class but its port does not animate yet.
+- **Opening and closing:** Gonline deliberately improves the dialogue presentation while retaining the native protocol and fitted layouts. Text appears immediately. The panel grows by eight pixels per edge over 100 ms, using elapsed time and easing on both dimensions together. Logical dismissal is immediate. The complete message, including its text and portraits, closes over 50 ms on a transparent render target without receiving input. Hidden geometry remains available for up to 80 ms so a following line can take over smoothly; the new line cancels the preceding closing image. Repeated server close packets do not restart the timer. `TestTalkAnimation` and `TestTalkTransitionCanBeInterrupted` cover these rules for plain, portrait and wide player dialogues; `TestBreillatPlayerToNPCDialogue` replays the captured player-to-Breillat handoff. The Legacy reference (`FUN_00472664`, `FUN_00472868`) instead grows four column steps followed by four row steps and reverses the axes on close, withholding content until opening completes. That frame-dependent collapse is intentionally no longer used.
+- **Shared message presentation:** `seui/message.go` supplies the same opening curve to Talk, timed system notices, battle outcomes, connection messages, settings choices, logout, party/pet confirmations and inventory quantity/use prompts. `Form.AnimateMessage` opts message forms into decorative motion; child layout, hit boxes and text stay usable immediately. Module windows keep their existing behavior. Dismissal/expiry releases controls immediately and closes the complete message over 50 ms, without an empty-frame interlude. Battle outcomes retain their six-second timeout, ignore clicks and keep scrolling for long summaries; notice durations and confirmation callbacks are unchanged.
 
 - **Questions** (kind 6, `FUN_00304fd0` case 6): the frame's text field names one of the map's questions, EVE category 7 (copied to +0x5d9c by the map loader, 0x392fc0): a header whose last byte is the form (0 the talk window; 1 and 3 other pickers, not ported, which the client closes with 40) and 5-byte entries `[index, value u16, kind, type]`, kind 1 a talk text and 2 an item, type 1 the prompt, 2 a Yes/No button, 3 an option, 4 not shown (`client/wlo/world/questions.go`). With options (`FUN_0034d00c`) the window keeps the prompt's size and lists the options below it: the rows start 0x12 − 6 above the text's bottom, 0x14 apart, from 18 px inside the window's left to 23 px inside its right, in a 2-pixel frame of (140, 190, 247); a hovered row gets a bar of that colour behind its yellow text; options wrap within the row width. The window grows by the rows, 8, and 0x20 for the Close button (`Btn_Close_1`), placed 0x2d above the bottom. `TestQuestionSnapshot` renders Robinson's question (map 10003, `In-Game/Question_Robinson_Hover.png`): the prompt, face, rows, Close button and frame align with the capture. Two Yes/No entries and no options show OK and Cancel (`FUN_0034d150`, 0x14 either side of the centre in a 0x28 row). Replies go out as **20/9**: option row r sends 30 + r ("3" + the row, `FUN_00307ca4`; the events branch on 30, 31 …), OK 20 and Cancel 21 (`FUN_00307c4c`, `FUN_00307c78`), Close 40. In mode 0 the step is also done, so 20/6 follows; mode 1 sends only the answer. More than five options scroll in the original; the port lists them all. `TestQuestion` answers map 10005's question 1.
+- **Player questions** use the compact upper dialogue form with a small left portrait, even when ordinary player dialogue has large artwork. This applies to option lists and Yes/No questions (`FUN_0034d00c` / `FUN_0034d150`). The portrait anchor uses 45 pixels plus half the body sprite width in portrait action 2 (`FUN_0034d990`), preventing it from covering the prompt. Xaolan's map 12002, question 1 is covered by `TestXaolanPlayerQuestionShowsBothOptions`: both native choices render and send AC20:9 followed by AC20:6. Set `XAOLAN_QUESTION_SNAPSHOT` to render the reference layout.
 - **Names**: while the talk window is drawn the map leaves out the characters' names, as both talking captures show.
+- **NPC routes** (kind 4, `FUN_00304fd0` case 4; `client/wlo/world/npc_route.go`): each eve NPC record ends with up to ten routes ("ParaNode", read by `FUN_0047e5b4` into +0x2bc by their own slot byte): 0x5c bytes of slot, presence, an unused byte, a point count, then points 1..count at 4 + 8k. The frame's actor is the NPC, its value the slot and its mode: 1 walks from where the NPC stands through every point, 3 does the same and hides the NPC on arrival (`FUN_004187d8` with 0x3e7fc18), 2 stands it on the first point and walks the rest. Route walks use speed byte 10 (`FUN_00482980`: byte ÷ 8 × 0.16 = 0.2 px/ms); on arrival the NPC gets back its record speed (+0x46 → +0xd48, also its starting speed, `FUN_003030ec`). The interpreter queues the walkers (`FUN_0030a404`, at most ten) and the frame loop (`FUN_00307300`) holds the step's 20/6 until each stands on its route's last point, so the server's path groups (several frames, one acknowledgement) wait for the slowest walker. Every one of the 1,504 path operations in `eve.Emg` names a route its NPC has. `TestNPCRoutes`, `TestRouteWalk`, `TestRouteModes` and `TestRouteEvent` cover the record, the walk and the acknowledgement. Not ported: the walk grid's occupied cells (`FUN_004234f4`, `FUN_00418164`).
+- **Turning** (kinds 11 and 14, cases 0xb and 0xe): kind 14 turns the player toward the NPC in the actor field (subject 1) or toward direction 1..8 (subject 2: a point 10 pixels up, then clockwise, jump table at 0x306ec5). Kind 11 turns the NPC whose click ID is the subject byte toward the player (mode 1), the NPC named by the value (mode 2) or a direction (mode 3, table at 0x306c43). Both keep the action's family (`FUN_00432638` with `FUN_00427150`), so a standing character stays standing. Not ported: kind 11's +0x1efc check and the release in `FUN_0030a344`.
+- **Event music** (kind 15, case 0xf): subject 1 makes `BGM` plus the value padded to four digits the event's track (+0x732c), which the music function (`FUN_00307eb8`) plays instead of the scene's; subject 2 clears it and the scene's track returns; the player's map change (`FUN_002f2fd0`) clears it too.
+- **Other kinds**: kinds 7–10, 12 and 13 jump to the interpreter's end (table at 0x30502e) and do not finish the step, but this repository's server waits for 20/6 after kinds 9 (player effect) and 13 (Clive), so the port acknowledges them, and every remaining kind, at once.
 
-`TestNPCTalk` covers the click, the frame, the acknowledgement and the end; `TestCatTalk` the body mode and the sound; `TestParseTalk` the markup. Approximations: the wrap width (the capture allows 39 to 44 characters; 40 is used) and the player's face position (`0x2d` plus half a 128-pixel sprite). Not ported: the other kinds (each is acknowledged at once, as kind 2 is), the item and trade question forms, the window's OK-only mode (`FUN_0034cf44`), scroll bar and typing, the NPC turning to the player, and the talk cursor.
+`TestNPCTalk` covers the click, the frame, the acknowledgement and the end; `TestCatTalk` the body mode and the sound; `TestParseTalk` the markup. Approximations: the wrap width (the capture allows 39 to 44 characters; 40 is used) and the player's face position (`0x2d` plus half a 128-pixel sprite). Not ported: kinds 0 (counters, NPC states and messages) and 2 (a saved position), both acknowledged at once, the item and trade question forms, the window's OK-only mode (`FUN_0034cf44`), scroll bar and typing, and the talk cursor.
 
 ### Doors and areas (ported: `client/wlo/world/areas.go`, `client/wlo/app/areas.go`)
 
@@ -734,11 +859,20 @@ Not ported: the door transition helper `FUN_003ba9d8(…, 10)` and `FUN_00173774
 
 ### Movies (started: `client/wlo/movie`, `client/wlo/app/movie.go`)
 
+The client handles the server's AC186 compatibility exchange before movie
+completion: `[186,12,id:u16,opaque:3]` produces `[186,9,id:u16]`. It consumes the
+server's `[186,9,id:u16,status:u8,reserved:u32]` reply without echoing it or
+finishing the event. Playback ends separately with AC20:6. The identifier is
+echoed for any received ID, without map or story exceptions. The layouts follow
+the existing Go server and Private Server `AC186.Recv9`; the wider meaning of
+native AC186 (`FUN_002a84ec`) remains unresolved. Client support for these two
+layouts does not establish complete native AC186 behavior.
+
 Story scenes (the shipwreck storm, the beach rescue) are `.sty` movies that the client plays itself: event kind 5 names one by its value (`<value>.sty`), and its mode sets the game mode (1 or 4, `PTR_DAT_004ca2f8` +0x1d), which hides the HUD and lowers the wide talk form (`FUN_00304fd0` case 5). `TMovie` (loader `FUN_0033e18c`, update `FUN_003406c4`, draw `FUN_00340404`):
 
 - **Data**: `data/media/sty/style_data.json` (768 movies). The export's field split doesn't follow the records, so each section is joined back into bytes: an actor is four ints (template — 0xffff the player — start stage, keyframe count, initial direction) and count + 1 keyframes of 45 bytes (facing, x, y, a flag, speed class, pose, three ints, sound index, loop flag, channel), NPCs one more int; the camera ("Map10003": the map whose scene is drawn) and pictures use 33-byte keyframes (x, y, flag, speed …); lines are records 1…n of `[speaker, talk, stage, delay]` (+4, +8, +0xc, +0x10; the loader reads n + 1 records and record 0 is unused, so the export's rows start two ints into it); the timeline gives each stage a wait (ms) and operands (overlay, two flash tracks, music, four bytes). `TestAllMovies` decodes every movie.
 - **Playback**: a stage ends when its wait has passed and every active actor (start ≤ stage ≤ start + count) and the camera have reached their targets; then its line (if any) shows, at least for its delay and until the talk window closes; then every active actor takes its next keyframe (target, speed, pose, facing, sound) and the next stage begins; after the last stage the movie ends, the game mode returns, and the step is acknowledged with 20/6. Actors move at the speed class's rate (0.0008, 0.008, 0.08, 0.12, 0.4, 4, 40 px/ms; `FUN_00339598`) along the line to the target. The camera keeps its own keyframe counter and centres the screen on its keyframes (x − 400, y − 300).
-- **Drawing**: a separate view of the movie's map (`world.NewView`: the scene, objects and depth sorting, no names or location) with the movie's actors: the player (dressed as the player) and NPC templates. An actor's action is its pose plus its direction (`FUN_00339930`), the direction being the keyframe's facing or the movement's while moving (`FUN_00342948`), reduced to left/right for two-way pose groups (`FUN_00342af0`). The falling group (26/27) plays once and holds its last frame, lying (`FUN_004122ec`). Lines go to the talk window (the player's in the wide form); a click closes a line. Recorded voices use the original talk ID and speaker suffix (`FUN_0034d3e8`), looking in extracted `audio/odd` then `audio/odd_d01`; plain talk-ID recordings fall back to `odd`. Player voices follow `FUN_004855a8`, NPC/companion voices follow Npc.dat offset 104 (`FUN_00485688` / `FUN_004856cc`). OGG recordings replace the preceding voice without stopping sound effects. Optimized bundles include both extracted voice directories in their audio pack while omitting source indexes.
+- **Drawing**: a separate view of the movie's map (`world.NewView`: the scene, objects and depth sorting, no names or location) with the movie's actors: the player (dressed as the player) and NPC templates. An actor's action is its pose plus its direction (`FUN_00339930`), the direction being the keyframe's facing or the movement's while moving (`FUN_00342948`), reduced to left/right for two-way pose groups (`FUN_00342af0`). The falling group (26/27) plays once and holds its last frame, lying (`FUN_004122ec`). Lines go to the talk window (the player's in the wide form); a click closes a line. Recorded voices use the original talk ID and speaker suffix (`FUN_0034d3e8`), looking in extracted `audio/odd` then `audio/odd_d01`; plain talk-ID recordings search `odd` then `odd_d01`, including Noa's expansion recordings. Player voices follow `FUN_004855a8`, NPC/companion voices follow Npc.dat offset 104 (`FUN_00485688` / `FUN_004856cc`). OGG recordings replace the preceding voice without stopping sound effects. Optimized bundles include both extracted voice directories in their audio pack while omitting source indexes.
 - `TestBeachMovieEvent` plays 12008 through the event path (twelve lines, 20/6 at the end); the beach rescue matches the video `Screencast_20261002_224630.mp4` (Robinson kneeling by the lying player).
 
 - **Frames**: a keyframe's +0x19 fixes the actor's frame (n − 1, clamped to the action's last): Robinson kneels (1) while dragging the lying player (2). Otherwise the actor animates at its speed class's interval (500, 400, 300, 230, 100, 50, 1 ms; `FUN_00343068`, `FUN_0033984c`), wrapping.
@@ -778,7 +912,7 @@ The weather object (`PTR_DAT_004ca2b0`) keeps particle pools that maps and movie
 
 ### Minigames (started: `client/wlo/minigame`, `client/wlo/app/minigame.go`)
 
-The sport manager (TSportManage, `PTR_DAT_004c9994`) runs the games the server starts from events. The cabin's two arcade machines (`In-Game/Arcade_Machine_01.png`, `Arcade_Machine_02.png`; events 2 and 3 on every ship cabin map) start type 3, hitting moles, with parameter 11000, and type 4, hunting, with parameter 10000. Playable local games now include types 3, 4, 5, 13 and 15. Egg draws (6/22) and slot machines (8/10/19) have client controls, native AC71 requests and server reply presentation; the server now implements atomic purchases and weighted rewards for these five kinds. Native-client acceptance remains pending. [MINIGAMES.md](MINIGAMES.md) inventories all 22 kinds, references and remaining work. Unsupported types answer a loss so the server's event goes on.
+The sport manager (TSportManage, `PTR_DAT_004c9994`) runs the games the server starts from events. The cabin's two arcade machines (`In-Game/Arcade_Machine_01.png`, `Arcade_Machine_02.png`; events 2 and 3 on every ship cabin map) start type 3, hitting moles, with parameter 11000, and type 4, hunting, with parameter 10000. Playable local games now include types 1, 2, 3, 4, 5, 13, 15 and 17. Egg draws (6/22) and slot machines (8/10/19) have client controls, native AC71 requests and server reply presentation; the server now implements atomic purchases and weighted rewards for these five kinds. The three fruit machines (11/12/14) are ported natively: reels, lamps, price and payment prompts, the AC34:1 balance and AC71 replies, with server purchases. Native-client acceptance remains pending. [MINIGAMES.md](MINIGAMES.md) inventories all 22 kinds, references and remaining work. Unsupported types answer a loss so the server's event goes on.
 
 - **Start** (57/1, `FUN_003bd398`: type, u16 parameter, byte): the HUD's forms are hidden, the game object is created, and the start form (`CH_GameStartForm`, constructor `FUN_001b4d0c`, laid out by `FUN_001b5740`) shows the game's explanation picture with Start, Leave and a close button (tags 1–3, handler at 0x1b4f20). Start runs the game and shows its Exit (`CH_GameExplain`, `FUN_001b20c0`); Leave, close and Exit give up with a loss. The server's 20/9 hold follows.
 - **Frame**: the main loop updates the game (`FUN_003be358`) and draws it after the map (`FUN_003bdfc8`); the game's picture covers the screen. Ground clicks go to the game (slot +4, `FUN_003bd32c`) instead of walking.
@@ -795,12 +929,60 @@ The sport manager (TSportManage, `PTR_DAT_004c9994`) runs the games the server s
 
 The long-term plan is [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md), and [ALOGIN_CATALOG.md](ALOGIN_CATALOG.md) catalogs every region of the original with its port status. The items below are the short-term list.
 
-1. **The game world**: the remaining event kinds, speech bubbles, the HUD's actions, the remaining chat channels, then wandering NPCs.
-   - **NPCs turning to the player** when talked to (the original Burke faces the player in `In-Game/Burke_Talk.png`; ours keeps his facing).
-   - **Remaining chat presentation**: alternate backgrounds, VIP marks and character speech bubbles. Transparent mode now lets map clicks through; scroll arrows/thumb/wheel, lock, three modes, line/portrait whisper targets and the native emoticon picker, log rendering and animated editor preview work.
+1. **The game world**: event kinds 0 and 2, NPC walk-in areas and the remaining HUD actions/chat presentation. Server-driven NPC roaming and pursuit already animate through AC22:2; see [client roaming](CLIENT_ROAMING.md).
+   - **Remaining chat presentation**: alternate backgrounds and VIP marks (this build has no speech bubbles). Transparent mode now lets map clicks through; scroll arrows/thumb/wheel, lock, three modes, line/portrait whisper targets and the native emoticon picker, log rendering and animated editor preview work.
 2. **Remaining login-phase pieces**: the talk window's buttons and typing behind the notices.
 3. **Earlier startup**: the rest of FormCreate (`Transition`) and `Skins.Flst` parsing instead of the fixed white skin.
 4. **Remove the legacy front end**: drop `client/ui` and `client/frontend.go` once the port covers what they show.
+
+### Social window (ported in part: `client/wlo/hud/social*.go`, `client/wlo/app/social.go`, `client/wlo/app/emotes.go`)
+
+Ordinary dialogue and confirmations render above the window forms, including
+Social, Inventory and Settings. Covered controls do not intercept dialogue
+clicks. The dialogue skin remains translucent; movie dialogue retains its
+separate scene/zoom pass. See [layering verification](TESTING.md#client-dialogue-layering--2026-11-02).
+
+- **Opening**: the main menu's Social button (tag 5, `FUN_00295678` → `FUN_0027f8dc`) toggles the window held at `DAT_006c70d4` (constructor `FUN_0027c6a4`, class `TSe_EmotiomForm`, a `TSe_FixedForm`; paint `FUN_0027b41c`). It is 0x164 × 0x1ed and stands at (200, 31): the constructor centres it in the main form object's +0x2d0 → (+0x38, +0x3c) area, which every Social capture shows to be 756 × 555 (the fields are untraced). Tabs `Btn_FriendIcon_1`, `Btn_EmuationalIcon_1` and `Btn_setup_2` sit at y 0x2b from x 0x14, 0x55, 0x97; the selected one is drawn pressed (+0xf8). `Btn_Marry` (0xd9) shows only for a married player (+0x3ca4). Close buttons: `Btn_Close_1` at (0x98, 0x1ca) and `Btn_Close_s_1` at (0x130, 0x18).
+- **Friend tab** (`FUN_0027eeb4`, mode 2, picture `Form_Friend_2`; rows `FUN_0027b5e8`): five rows a page from the friend table (`DAT_0072a390`, 0x43-byte records). Labels, ticks and job icons step 0x41 down the rows; mail, element and presence icons step 0x42. Per row: the portrait at (0x38, 0x61 + row × 0x41) in action 1 (a player's face sprite; a body-0 entry draws face 0x1f94 of the `008` archive, the GM's cupid); the name at (0x57, 0x3d); "LV n" at (0xcd, 0x49) with `Num_White3_1` (`FUN_002627fc`); the element orb `Icon_Element_n_1` at 0x10e; presence at (0x104, 0x68): `Icon_online_1`, `Icon_Busy_1`, `Icon_inline_1` or `icon_offline_1`; the job icon at 0xb5 (`Icon_Asn` Killer … `Icon_Prophet` Prophet, with hints); nickname and guild values at x 0x84 (y 0x5f and 0x71); `icon_mail_1` over `icon_mailGary_1` at 0x131; a tick box at (0x131, 0x6b) for every friend but the GM. Page arrows `Btn_ArrowL_8`/`Btn_ArrowR_8` at y 0x188 and "page / pages" in `Num_MainInfo` at (0xa0, 400), the slash being its eleventh row.
+- **The table**: 14/5 (dispatcher case 0xe/5) carries records of ID, name, six bytes (level, job, +0x17, element, body, head), two colours, nickname, guild and a VIP byte. The client always keeps record 0 as ID 100, "GM中心" (`FUN_003c4130`); IDs 100 and 101 in the list restart the count. Presence comes from the known-player registry (+0x94) when the friend is a known player, otherwise offline.
+- **Buttons**: a tick box toggles `btn_Check_1`/`btn_UnCheck_1` and the record's +0x41. Del Friend (`FUN_0027ada0`) with no tick shows "Select friends to delete" on the notice board; one tick asks "Delete this friend?" with the name, several "Delete these friends?", in the talk window, and OK sends **14/4** with each ID (`FUN_00279230`). Send Mail with no tick shows "Select friends to mail".
+- `TestFriendList`, `TestFriendDelete` and the opt-in `TestSocialSnapshot` (against `Social/Social_Friend.png`: frame, tabs, rows, portrait and page numbers line up) cover it.
+- **Emote tab** (`LAB_0027e890`, mode 1, picture `Form_Emotion_1`; `client/wlo/hud/social_emote.go`, `client/wlo/app/emotes.go`): five Ctrl phrase editors at x 0x4d (y 74, 94, 114, 134, 154; 29 characters) with their `Btn_ctrlN_1` labels at 0x22; the emoticon grid (`TEmotionImage` `E101`…`E119`, four columns from (0x25, 0xb4), 0x22 apart) and the action grid (`TActionImage` `btn_Action_1`…15 from (0xb4, 0xb4)); eight Alt slots at y 0x194 (x 36, 71 … 281). Cells are `TAnimateImage`s (`FUN_00280b58`, `FUN_0028087c`): at rest they show their third frame, under the pointer a $F5BF89 highlight at alpha 0x50 and their frames every 200 ms. An emoticon plays expression 100 + n locally and sends **AC32:1** (`LAB_0027f1e4`); an action plays the pose the table at 0x4bd7bc names (1-based: 0, 8, 16, 26 … action 13 is 46, the kneeling sit, 46..53) turned to the current facing (`FUN_00430474`: an eight-facing family keeps the facing, a two-facing family the left/right half) and sends **AC32:2** with that action (`LAB_0027e814` → `FUN_00430f90`). Dragging a cell onto an Alt slot puts it there (`FUN_0027f44c`); Alt+N uses slot N (`FUN_0027f248`; Alt+1 defaults to action 13, which replaces the earlier 16/17 guess: those are a standing stance); a Ctrl label or Ctrl+N copies the phrase into the chat bar's message field (0x27f140). The original saves slots, phrases and the attractive switch in `user\<id>\hotkey` (`FUN_0027b254`, read by `FUN_00278b34`); the port keeps them in `emotes-<id>.json` beside the hotbar file.
+- **Set Up tab** (`LAB_0027eae4`, mode 3, picture `Form_setup_1`; `client/wlo/hud/social_setup.go`): the nickname (`Panel26` at (0x7d, 0x4b), 14 bytes), Online/Busy ticks (0x90 and 0xc7, 0x6b), the birthday (year at 0x46, month 0x83, day 0xad, y 0x88; digits; an unset year shows 1900), the sun sign `SunSign_N_1` in the panel at (0x24, 0xa8) (`FUN_00279c88`'s month table), blood types A/B/O/AB (y 0x146 from x 0x55, 0x32 apart, one choice), and the "physically attractive" `Btn_on_1`/`Btn_off_1` at (0x68, 0x162). The profile comes from AC3 after the nickname (blood type, year − 1900, month, day; `FUN_0027ab64`). Editing the date clamps it (`FUN_0027977c`: years past now become this year, 1000–1899 become 1900, months stop at 12, days at the month's length, a date this year stops at today) and makes the form dirty, which swaps Close for OK and Cancel. OK confirms "Ensure your data is correct. System will be sending bday gift on specified date. Log in game to receive it." and then (0x27a73c) sends **AC10:1** with a changed nickname, and with a full date and blood type **AC10:2** (social code, blood type, year − 1900, month, day) and **AC10:3**; otherwise "No blood type". The social code is ((year / (month + day + 2)) × sign × blood + ID mod 10 + name length) mod 10 from the profile stored *before* the save (`FUN_0027a304`). Cancel restores the saved values (`LAB_0027aa14`). Online/Busy set the local status (+0x3ca9) and send the bare 5/7 (`FUN_0027b188`).
+- `TestEmoteTab`, `TestSetUpSave`, `TestSunSign`, `TestClampDate` and the opt-in `TestSocialEmoteSnapshot`/`TestSocialSetUpSnapshot` (against `Social/Social_Emote.png` and `Social/Social_SetUp.png`, both matching) cover the two tabs.
+- **Mail** (`TSe_SendMailForm`, constructor `FUN_003bfdec`, paint `FUN_003c2288`; `client/wlo/hud/mailsend.go`, memo `client/wlo/seui/memo.go`): `Form_MailSend_1` at (10, 0x32) with a `TSe_Memo` (`FUN_0046c178`; bounds (0x1e, 0x5a), 200 × 0xbe, 152 bytes, wrapped at (width − 8) / 8 columns and height / 17 rows, the blinking `inputCursor2` caret), Old Mail (0x2a, 0x11a), clear (0x68, 0x11a), Send Mail (0xa7, 0x11a), Close (0x68, 0x13b) and a corner close (200, 0x17). A row's mail icon opens it for that friend (mode 0: the name at (0x32, 0x43), the face at (0xbc, 0xf4), action 2, or the GM's cupid), Send Mail with ticks for the ticked friends (mode 2, which clears the ticks). Send (0x3c03c4) does nothing without text and plays `wav0155`; it sends **14/1** (kind 1, the friend's ID, the text). The original sends mode 2 as one packet listing every ticked friend; the port sends one 14/1 each, since the server takes one recipient a packet. `TestMailSend` and the opt-in `TestMailSendSnapshot` (against `Social/Social_Mail.png`) cover it. The memo types and deletes only at the end of the text and has no scroll bar.
+- **14/9**: the original reads it as a list of (friend ID, status) pairs for the friend-status array (+0x4f4, `FUN_00280034`), not as the mail receipt the server sends under that number.
+- **Receiving letters** (14/1, dispatcher case 0xe/1 at 0x2e29cc → `FUN_003c2360` → `FUN_001d4f40` → `FUN_001d495c`; `client/wlo/app/mail.go`): the sender (u32), a TDateTime (f64) and the text, which is **the rest of the packet** (`copy(s, 14, len − 13)`). Senders 100 and 101 are filed as System and named after the GM entry, others as Friends, named from the friend list or a player in view. Letters file newest first; an identical letter is not filed twice; a full box (1000) drops its oldest, and past 900 it warns "Mailbox volume at 90%. When full, old letters get deleted". The arrival plays `wav0155` and sets the chat bar's unread flag (+0x155, `FUN_00267c4c`): its `Anim_GotMailS_1` icon swaps its two 0x15-pixel frames every 800 ms (`FUN_00268084`) until no letter is unread (`FUN_00267c54`). Pressing the 0x16-pixel square at (8, 1) of the bar (`FUN_002695d8`) shows the mailbox. The original saves the box in `user\Server<n>\MailBoxMsgLog<id ^ 0x79>\MailData.dat` (`FUN_001d36bc`); the port keeps `mail-<id>.json` beside the settings, saved on every change and read at world entry.
+- **Mailbox** (`Form_MailBox_1`, constructor `FUN_001d0ca8`, paint `FUN_001d1294`, `PTR_DAT_004ca0fc`; `client/wlo/hud/mailbox.go`): a `TSe_Form`, 0x25a × 0x187, centred in the main area, with `Icon_MailBoxTitleMash_1` at (0x11a, 0x46) on the inbox, the tabs `Btn_MailBoxTab_1`/`_2` (inbox and sent, `FUN_001d56ac`), Previous (0xb9, 0x140) and Next (0x16d, 0x140) pages ("At last page"), Send Mail (0xb9, 0x15e), Delete (0x113, 0x15e), Close (0x16d, 0x15e) and a corner close (0x22a, 0x19). Ten rows a page, 0x14 apart: the kind ("Friends", "Guild", "System", "Pet", "Normal ") at x 0x24, the first line of the text at 0x5a (cut below 18 bytes with "..." from 21), the name ("Unknown" when empty) at 0x10e and `yyyy/mm/dd hh:mm:ss` at 400, from y 0x62; unread rows yellow ($FFE0), read rows $AD60. The row under the pointer gets RGB(0x9e, 0xfa, 0xfe) at alpha 0x32, the selected one at 0x50. "page / pages" stands at x 0x12a, y 0x140, blue, red past 900 letters. Pressing and releasing a row (`FUN_001d4130`/`FUN_001d415c`) selects it and opens the letter (`FUN_001d41ac`: marked read; the open letter closes again). Delete (0x1d4760) asks for a selection ("No mail selected"), removes the letter ("Letter removed", "Mailbox emptied") and opens the one in its place. Sent letters (`FUN_001d5128`) are filed read: mode 0 with the recipient, mode 2 once without one.
+- **Letter** (`form_MailReceive_1`, constructor `FUN_003c0dc0`, paint `FUN_003c151c` and `FUN_003c4370`, load `FUN_003c58f4`, `PTR_DAT_004c9868`; `client/wlo/hud/mailread.go`): a `TSe_FixedForm` at (10, 0x32), 0xfd × 0x173: the date at (0x1d, 0x32), the name at (0x4c, 0x43), the sender's face at (0xbc, 0xf4) (the GM's cupid, or a friend's face), the text in a read-only green ($07E0) memo at (0x1c, 0x58), 200 × 0xbe; text starting `^inviation^` loses the marker and shows `form_invitation2` at (0x13, 0x38). Previous (0x24, 0x11d) and Next (0x24, 0x136) show only when there is a letter before or after; the grey panels beneath show otherwise. Reply (0x65, 0x11d, `FUN_003c12a4`) opens the send form where the letter stood, addressed to the sender; Delete (0xa4, 0x11d, 0x3c5a80) removes the letter and opens the one now in its place; Close (0x65, 0x14b). `TestLetterArrives`, `TestMailboxOrder`, `TestMailPreview` and the opt-in `TestMailboxSnapshot` cover them; no capture shows either form.
+- **Make Friends** (toolbar button 6; handler 0x295820 case 0x295e20; `client/wlo/app/friends.go`): the toolbar handler refuses maps 10085 and 12766 ("Not available here", 2 s) and, for Join Team and Make Friends, map 10701 ("Temporary unavailable", 1.2 s); Make Friends also refuses map 10072 ("Not available here", 1 s) and does nothing with 50 friends (not counting the GM entry). Otherwise it arms target mode 5 (`FUN_0049bbcc`) with cursor 5 (`cursor4.ani`); a click on a player (`FUN_004112f8` case 2 → `FUN_003c1628`) sends **14/2** with their ID, or for a friend shows "Already your friendW". The mode ends on a click on something (`FUN_00496ca4`), on Escape and at world entry, and lights hovered players as Join Team does. Not ported: the busy target ("Unable to apply, player is busy"), fishing ("Fishing, can't act"), the GM check ("Can't add to friends") and the interserver check.
+- **Friend questions** (14/2 received, `FUN_003bfb44`): "<name> wants to add you as a friend" in the question box (`FUN_0034d8d4`, ported as the Team confirmation), the name from the players in view. Yes (0x3bfc28) answers **14/3** [ID, 1], or with 50 friends shows "Too many friends in list" and refuses; No (`FUN_003bfcb4`) plays `wav0151` and answers [ID, 2]; after 10 s (`FUN_003c23e4`) the question closes and answers [ID, 3]. A minigame refuses at once (`PTR_DAT_004c9994` +4). **14/3** received [ID, result] notices "Player <name>" with " friend accepted" (and adds the friend from the player in view, `FUN_003c1d44`), " refused to add", " ignored" or "Player busy". `TestMakeFriends` and `TestFriendQuestion` cover them.
+- **Server**: 14/3's answer byte decides the request: only 1 forms the friendship (both players then receive 14/3 result 1); 2 and 3 are passed back to the asker, who sees " refused to add" or " ignored". `TestFriendRefusalAndIgnore` covers it.
+- **Server**: 14/1 deliveries carry the text as the rest of the packet with no length byte (`wire.TextMailPacket`), as the original reads them; the reference server's `PackString` prefix showed as the letter's first character.
+- **Old Mail** (`FUN_003c5b40`) shows the mailbox and closes the send form.
+- **Compose form** (`Form_MailBox`, constructor `FUN_001947d8`, send `FUN_00193430`, `PTR_DAT_004ca6c8`; `client/wlo/hud/mailcompose.go`): a `TSe_Form` at (0xe6, 0x1e), 0xfd × 0x173, with a blue name field at (0x33, 0x3d), 0xa0 × 0x19, 10 bytes, a memo at (0x1e, 0x5d), 200 × 200, 152 bytes, Old Mail (0x23, 0x12f), clear (0x61, 0x12f), Send Mail (0xa2, 0x12f), Close (0x61, 0x14d) and a corner close (0xcb, 0x19). The mailbox's Send Mail shows it empty; a Sent row opens its letter in it. Send asks for a name ("No target player") and text ("No mail content"); a friend's name sends through the send form (0x3c03c4 mode 0: 14/1, filed under Sent) and closes the form. Compatibility: the memo's ink is $0841, since the constructor's 0 equals the paper and vanishes here. Not ported: letters to other names (14/6 with a Mailbox item; the port answers "Need Mailbox to send", as the original does without one), the guild branch and "Can't send to GM". `TestMailCompose`.
+- Not ported: the guild letter form (`PTR_DAT_004ca8e8`), the blocked-sender check (`FUN_0024fd0c`), replies to non-friends through the compose form (the send form is used), VIP marks, the friend-status array used when `PTR_DAT_004ca5a4` is set, the nickname's illegal-word check (`FUN_004a6d00`), and the attractive switch's heart over a matching nearby player (`FUN_0027a304`).
+- **Server mismatches**: 5/7 is handled as a refresh request, so the Online/Busy choice is not stored or shown to others. The server's 14/5 records send the reborn byte where the client draws the job icon, then the job, and an empty guild followed by the online flag, which the client reads as the VIP byte.
+
+### Minimap (ported in part: `client/wlo/hud/minimap.go`, `client/wlo/world/minimap.go`, `client/wlo/app/minimap.go`)
+
+- **When it shows**: entering a map (`FUN_003f830c`) sets up the map frame's minimap (`CH_TMiniMapForm_World`, constructor `FUN_0030e100`, setup `FUN_0030e1b0`) when the map's SceneData record has +0x1d = 1 (the export's `unknown_u8_offset_23`; Newbie Island has it, Ship Deck does not). The form is a `TSe_Form` that cannot be dragged. The picture is `<map ID>_Mini_Form` from `pic\images.BMg`, loaded on first use; maps 10031–10040 use 10003's picture, and map 0xea6c never shows one. Without a picture the form hides. Battles, movies and minigames hide it with the HUD.
+- **Layout**: the picture at the right edge (800 − width), 0x26 from the top; Minimize (`Btn_Minimize_1`, "Minimize Map") at its top right and Reload (`Btn_Reload`, "Reload Mini-map") left of it. The scale (+0x140) is the map's width divided by the picture's. Minimize (`FUN_0030e5bc`) swaps in `Form_HotKey_Mini` (0x27 × 0x26), centred on the button, with `Btn_Window_1` ("Expand Map") at (10, 10); expanding puts the picture back so that the button keeps its place (the expand path maps 11031–11040 to 11031, unlike setup).
+- **Marks** (`FUN_0030e978` → `FUN_0030f27c`, `FUN_0030eb60`): every shown map NPC, door and mine with a sign gets the skin picture `Icon_Sign_<n>`, centred on its point: an NPC's feet, a door's light point (+0x28, +0x2a), a mine's rectangle centre. Signs start as the eve records' +0x3c (the NPC byte the parser used to skip, the areas' and mines' first tail byte; almost all are 0) and **AC22:12** (`FUN_00459d88`: kind 1 NPC, 2 door, 3 mine, the ID, the sign) replaces them; the server marks NPCs with unfinished quest branches with 7, the "?". Then the player's face: the face sprite (2601/3601/4601/5601 + head) in action 4, frame 0, drawn only for starter body and head pairs (`FUN_00484f20`). A map point (x, y) lands at (x / scale + left − 3, y / scale + top − (k − round(y / height × k))), with k 6, 8, 10, 16, 32 or 36 for y up to 1000, 2000, 3000, 4000, 5000 and beyond (`FUN_0030f008`, constants at 0x30f264).
+- `TestMiniMap` covers the layout, the signs and minimizing; `TestMiniMapSnapshot` (opt-in) renders `In-Game/Newbie_Island_Props.png`'s minimap: the picture, buttons, "?" marks and face line up with the capture.
+- Not ported: transformed looks for the face (+0x20b8), the tiled-map minimap (`CH_TMiniMapForm`, `FUN_0030add4`, built from Ground.MMG's trailing cell grid, `FUN_0030b36c`), the map frame and the world map.
+
+### Trade (ported in part: `client/wlo/inventory/trade.go`, `client/wlo/hud/business.go`, `client/wlo/app/trade.go`)
+
+- **Business menu** (`Form_Business_1`, constructor `FUN_0025b454`, paint `FUN_0025cfc0`, `PTR_DAT_004c9f14`): the toolbar's button 7 (handler 0x295820, case 0x295a25) shows and hides it after the toolbar's map checks, and refuses map 10072 ("Not available here", 1 s). A `TSe_Form` at the main area's right edge (756 − 0x104, 0xb4), 0x104 × 0xd9 (`FUN_00485774` returns 1, the tall layout), with the gold at (0x46, 0x46), Abandon (0xae, 0x44), Trade Items/Pet/Equipment (y 0x60) and Sell Items/Pet/Equipment (y 0x7c) at x 0x15, 0x5e, 0xa7, Close (0x66, 0xb6) and a corner close (0xd1, 0x18). Only Trade Items is ported; the other buttons and Abandon do nothing.
+- **Trade Items** (0x25bdf4) refuses below level 25 counting rebirths ("Requires player LV25!"), without the online-time flag ("Not enough online time to use!"; the player's +0x5791 starts clear and **25/44** 2 sets it), on maps 12064 and 11073 ("Can't trade here"), 10079, 10095, 10096, 10097 and 10099–10103 ("Not available here", `FUN_004851a4`/`FUN_00485160`) and 10701 ("Temporary unavailable"). Otherwise it arms target mode 9 with cursor 2 and hides the menu. A click on a player (`FUN_003c674c`) sends **25/1** with their ID; on maps 10079 and 10095 it shows "Can't trade here", during a minigame it closes the trade form, and a player below level 25 gets "Player is below LV25!". An empty click keeps the mode; Escape ends it.
+- **Trade form** (`TRe_TradeItemForm`, constructor `FUN_003658a8`, paint `FUN_003676cc`, `PTR_DAT_004ca040`): `Form_TradeItem_1`, a fixed form centred in the main area (0x191 × 0x1e1). **25/1** received (`FUN_003c6b18` → `FUN_00367d80`) opens it for a player in view, or during a minigame closes it. The bag's 50 cells start at (0xce, 0x44); the partner's 5 × 4 offer at (0x18, 0x45) with its gold at (0x5c, 0xd5); the player's own at (0x18, 0xfa) with the gold field at (0x5c, 0x186) (digits, 9 long; above 0x7fffffff "Can't give that much at once!"); the partner's name at (0x5c, 0x2b). Items cover their cell width × height (item table +0x19a/+0x19b) from the first anchor where they fit (`FUN_00366ee0`).
+  - A click on a bag item (press `FUN_003673d8`, release 0x366a94 → `FUN_00366d9c`) offers its whole stack. Locked items get "Item locked, can't use@". These are refused silently: non-tradeable items (record flag), instance +0x32/+0x34 set or +0x35 = 1 (item 34515 excepted), items larger than 5 × 4, and a full grid. Offered bag cells get the pink `<w>x<h>Grid_2` background. A click on an offered item takes it back (0x3671a8).
+  - **Confirm** (`FUN_003680f4`, (100, 0x1bd)) checks the gold ("Not enough Gold"), sends **25/2** [gold u32][bag slot per anchor] and locks the offer. **Trade** (0x368000, (0xae, 0x1bd)) shows once the partner's **25/3** has arrived and the offer is locked. It refuses during a minigame ("Feature disabled") or when the partner's items, by size, cannot fit around the whole bag ("Inventory full, can't trade", `FUN_00367aac`); otherwise it sends **25/3** 1. The paint shows it again every frame, as the original does. Cancel (0xfa, 0x1bd) and the corner close (`FUN_00367dfc`) reset the form and send **25/3** 2.
+  - **25/3** received (`FUN_003c704c`) is the partner's gold and 30-byte item records: ID, count, damage, then the bag record's metadata with bytes 2–7 ahead of bytes 0–1. The gold is coloured by its digits ($0540, $001F, $F81E, $F800 for 4–7). An item too large for the grid shows "Can't trade that much items" and closes the form. **25/2** received (`FUN_003c6bd0`) shows its result (0 "System busy, trade later" … 4 "Trade complete" … 9 "Other player canceled trade", 11 "Can't have few trades", 14 "Can't trade, pet is crafting", others "Interrupted") and closes the form, which sends 25/3 2 as the original does.
+- **Server** (`internal/server/trade.go`): AC25 follows aLogin. 25/1 opens both forms at once (the target's trade setting is the consent; failures answer 25/2 1, 2, 5, 8 or 11). 25/2 locks a side's offer of whole stacks and relays it as 25/3. 25/3 1 from both sides commits the exchange in one SQL transaction, then sends the inventory and gold updates and 25/2 4. 25/3 2 ends the trade with 25/2 9 to the partner; a disconnect sends 25/2 1, and other interruptions send 25/2 3 and 9. World entry sends 25/44 2.
+- `TestTradeRequest`, `TestTradeForm`, `TestTradeFits` and the opt-in `TestTradeSnapshot` cover the client; no capture shows either form.
+- Not ported: the Business menu's other buttons and Abandon, the busy, fishing, stall, spectating and GM-ID checks of the target, the trade lock (+0x20a), "Forbidden transact" (`FUN_00138ddc`), `FUN_0018b334`'s silent refusal, the VIP marks on the trade form, the instance check `FUN_003cf110`, and `DAT_0072a124`, which the form shows when it opens.
 
 ### Notices (ported: `client/wlo/app/notices.go`)
 
@@ -815,13 +997,14 @@ Only the notice use is ported. The layout was measured from `Login_Forced_Error_
 - **Sound zones**: after its walk grid a Ground.MMG record lists 6-byte zones (`FUN_003f830c` → +0xc6ab4/+0xc64b4; the export's `unknown_triples`): a centre cell, a sound number (low byte of the third word) and a radius in cells (high byte). Every 500 ms the frame (`FUN_00498aec`, not during movies) finds the first zone whose square holds the player's cell (`FUN_003f925c`) and plays `sound\wav####.wav` around its centre (`FUN_004054f0`): on one of six looping channels, starting within the radius (×20 px) measured vertically, the volume dropping 3 hundredths of a dB per pixel and the pan following the horizontal offset (×10). A channel stops when the player leaves its range (`FUN_004057c8`); a map load or a movie stops all. Newbie Island has 105 zones: the shore's wav0050/wav0052 and the trees' wav0030/wav0031.
 - **Props**: AC22:1 (`FUN_00408054`) sets an NPC's frame (+0x11f); once the map is ready, a prop going from 0 to 1 plays its template's `wav####` (Npc.dat +0x5c: wav9900 for chests, casks and the coconut, wav9902 for treasure chests).
 - **Map ready** (+0x133d0): the player's AC12 clears it and 5/4, sent after the 12/1 acknowledgement, sets it. Until then prop sounds and area triggers are off, so the arrival's AC22:1 replay of already opened props (the server's `Sync`) is silent.
-- Not ported: the sound options (+0x20c and the effects volume) and `FUN_004057c8`'s early return.
+- System settings control SFX on/off and volume, including ambient channels. `FUN_004057c8`'s native early-return detail remains unported.
 
 ### Background music (ported: `client/wlo/app/music.go`)
 
 - **Login**: FormCreate's timer (`CheckStartMusic`, `FUN_004a3c98`) plays `Sound\BGM0013.wav` through a media player and rewinds it at the end; the port loops it from startup, and again after a disconnect returns to the login screens.
 - **Maps**: entering a map (0x3bce95) plays `Sound\<track>.wav`, where the track is the scene record's second name at +0x1f (`SceneData.dat`; Ship Deck plays `BGM0007`). `FUN_004048b8` keeps a track that is already playing, so walking between maps of one scene doesn't restart it. All tracks the scenes name exist in `data/media/sound` (`TestSceneMusic`).
-- One audio context serves the sound effects and the music. Not ported: each map's saved position (+0x5706, +0x5710), the `musicOn`/`musicVolume` settings, the `BGM0028` override on some maps (+0x5768, `FUN_004533c0`), event music and the music player form.
+- One process-wide audio context serves sound effects and music across workspaces; initialization is synchronized while decoded caches remain workspace-owned. System settings apply music on/off and volume without restarting the track. Event kind 15 overrides/restores map music, and battle scenes select their own track before restoring the map/event track on exit.
+- Not ported: each map's saved position (+0x5706, +0x5710), the `BGM0028` override on some maps (+0x5768, `FUN_004533c0`) and the music player form.
 
 ### Cursor (ported: `client/wlo/cursor`)
 
@@ -829,7 +1012,7 @@ The original uses animated Windows cursors. At startup (0x3bb990) it loads `curs
 
 The client shows them as real system cursors too, so the system draws the pointer at the display's rate, outside the game's frames, as Windows did for the original. Ebitengine has no public API for custom cursors, so `client/third_party/ebiten` holds a copy of v2.10.0 (used through a `replace` in `client/go.mod`) with a small patch: `ebiten.NewCursorImage` and `ebiten.SetCursorImage`, over its bundled GLFW's `CreateCursor`, which works on Windows, macOS and Linux (X11, and Wayland through XWayland). `client/third_party/ebiten/PATCHES.md` lists the changes for future updates. Each exported ANI frame (`data/media/cursor/<name>/`) becomes a native cursor once, and the window swaps them on the ANI's jiffy timings (1/60 s; 10 jiffies a frame for all but `cursor18`, 6). An unregistered index shows the system pointer. The XOR (inverted) pixels of the ANI frames are not reproduced. The cursor isn't part of the 16-bit screen, so snapshots don't include it. The shape names describe the artwork, since most situations are still untraced.
 
-**Choosing the cursor** (`client/wlo/app/cursor.go`): the UI's update pass (`FUN_00467148`) asks for the hovered control's own state (+0xc5, `FUN_003ba9e8`), and the game's state applies otherwise (`FUN_003ba9d8`). `TSe_Component` sets 2, the pointing hand (`cursor4.ani`), so buttons, fields and panels (and the talk window) show it; `TSe_Form` and `TSe_FixedForm` set 0. State 0 is `cursor1.ani`, or `cursor2.ani` (the white arrow) once a held button has walked the player for a second (`DAT_00828ae0`); other states are their own index. The Login captures `Hand_Cursor.png` (hand over the password field) and `Regular_Cursor.png` (crystal over the form) and the in-game ones agree; `TestLoginCursor` and `TestNPCHover` check them. The game's other states (skills, trading …) are not ported. The field was called `Layer` in the port before.
+**Choosing the cursor** (`client/wlo/app/cursor.go`): the UI's update pass (`FUN_00467148`) asks for the hovered control's own state (+0xc5, `FUN_003ba9e8`), and the game's state applies otherwise (`FUN_003ba9d8`). `TSe_Component` sets 2, the pointing hand (`cursor4.ani`), so buttons, fields and panels (and the talk window) show it; `TSe_Form` and `TSe_FixedForm` set 0. State 0 is `cursor1.ani`, or `cursor2.ani` (the white arrow) once a held button has walked the player for a second (`DAT_00828ae0`); other states are their own index. The Login captures `Hand_Cursor.png` (hand over the password field) and `Regular_Cursor.png` (crystal over the form) and the in-game ones agree; `TestLoginCursor` and `TestNPCHover` check them. Battle skill targeting supplies sword/magic/capture cursors; Join Team, Make Friends, Trade Items and supported minigames also select their cursor states. The field was called `Layer` in the port before.
 
 **Hovering NPCs**: the original tests the pointer against each sprite's opaque pixels while drawing it (`FUN_002fe8e8` → `FUN_004106b0`; IDs 0x5dd–0x640 are map NPCs) and draws the hovered NPC lit; the cursor itself doesn't change. The port tests the frame's rectangle and lights the NPC by raising its colour groups four digit steps (+100 a channel), measured from `Highlight.png` against `Pre-Highlight.png`; the original's lighting code is not traced.
 
@@ -866,7 +1049,8 @@ Rendering reproduces the original's 16-bit pipeline:
 
 `client/ui/reference_test.go` compares rendered frames with captures of the original in `client/reference/screenshots/Login/`. The server list (empty and with a region selected) and the login form match exactly; only the window frame's rounded corners in the captures are masked.
 
-Not yet traced or recreated:
+The earlier `-legacy` front end has the following limitations; these do not
+describe the normal `client/wlo` login/creation implementation above:
 
 - the login form's −25 px origin and the two form background positions (both measured from captures);
 - the caret blink period and the caret position after text;
@@ -883,46 +1067,78 @@ BMg/JMg directories begin with a UInt16 count followed by 32-byte records: a one
 
 `font/TATPC1.TWN` is XORed with `0x58`. It holds 256 single-byte glyphs (8×15, one byte per row) followed by 13,910 Big5 glyphs (16×15, two bytes per row): A440–F9FE in code order, then the A140–A3BF symbols. `TATPC1.JPC` has the same layout for the Japanese build. The larger `TATPC2` fonts are not decoded yet.
 
-Ground.MMG prefix decoding follows sibling `decompiled/aLogin_decompiled.c`, function `FUN_004121a8`: UInt32 scene width/height, a byte layer count with three UInt16 operands per layer, UInt16 grid width/height, and X-major raw cell bytes. The first anonymous record has dimensions 1472×960, grid 74×49, and one layer reference to resource 10000. The verified prefix consumes 3,645 bytes. Remaining record fields and index/map associations are not decoded. Cell values are not assumed to be image IDs or a complete collision policy.
+Ground.MMG prefix decoding follows sibling `decompiled/aLogin_decompiled.c`, function `FUN_004121a8`: UInt32 scene width/height, a byte layer count with three UInt16 operands per layer, UInt16 grid width/height, and X-major raw cell bytes. The first anonymous record has dimensions 1472×960, grid 74×49, and one layer reference to resource 10000. The verified prefix consumes 3,645 bytes. That prefix-only path remains useful for native inspection. The normal client now resolves map/scene records from compiled runtime data or `ground_data.json`, including background layers, collision cells, sound zones and objects; unresolved trailing fields remain preserved. Runtime land traversal uses the native `0x17` blocked mask. See [client architecture](CLIENT_ARCHITECTURE.md).
+
+### Incoming handler details
+
+These addresses refer to the recorded `ca19ee087b60…` client build in
+`var/decompiled/aLogin_ca19ee087b60_full.c`. The dispatcher passes a buffer
+whose zero-based offset 0 is the subcommand; the action byte has already been
+removed. Delphi string-copy positions below are one-based.
+
+- `53/10` (`FUN_00445784`): the monster-book mask update. It reads
+  `(index, mask)` byte pairs at buffer offsets 1 and 2, then advances by two
+  while a complete pair remains. For each set mask bit, `FUN_00482abc` selects
+  a slot from 1 through 8 and the handler sets the discovery byte at
+  `*PTR_DAT_004caa18 + 0x3cac + (index - 1) * 8 + slot` to 1. It leaves other
+  discovery bytes unchanged, rebuilds the discovered-template list from the
+  marked entries, and sets the page count to integer `discovered / 10 + 1`.
+  The server currently sends individual template discoveries as `53/9`, also
+  an incoming client message (`FUN_0044566c`).
+- `184/2` (`FUN_00159bd0`): when the first buffer byte is `2`, the handler calls
+  `FUN_00159bfc` with a starting index of 2. That helper reads `(index, value)`
+  byte pairs at zero-based offsets 1 and 2, advancing by two until the buffer
+  ends or 1001 pairs have been processed. `FUN_00159c48` accepts indices 1
+  through 5 via `FUN_001599c0` and stores each value at object offset `5 + index`.
+- `199/14` (`FUN_00318ca4`): a system line. It obtains the buffer length through
+  `FUN_0001412c`, then copies `len - 1` bytes with `FUN_00014334` starting at
+  Delphi position 2 (zero-based offset 1), skipping the subcommand. It fills
+  the chat row through `FUN_001372ac` with `(System):` as the speaker.
+- `56`: the recorded native dispatcher's case body has no application action,
+  so that client ignores incoming AC56. The Go server uses `CommandStall` for
+  its additional stall messages. Native stalls use separate AC23 messages and
+  AC20 request adapters.
+
+## Daily Lucky Draw (ported: `client/wlo/lottery`, `client/wlo/app/lucky_draw.go`)
+
+The top toolbar's Lucky Draw chest opens the native `Form_LotteryOL` window
+(`FUN_0015aaec`), with its draw and close buttons, reward icon and remaining
+allowance. The window initially opens below the top-right toolbar and can be
+dragged; closing and reopening retains its position for the session.
+Clicking the icon opens the `Article` reward preview
+(`FUN_0015a3c0`, `FUN_0015aa00`): up to twenty server-ordered rewards in two
+columns of ten, with item icons, names and quantities. Escape closes the preview
+first, then the draw window.
+
+AC104:1:1 (`FUN_0015b398`) supplies cumulative usage and the ordered reward
+catalog. The client shows three minus usage and never loads rewards or odds
+from local seed files. A draw cycles preview icons, slows after 1600 ms and
+sends exactly `[104,1]` at 2800 ms (`FUN_0015af1c`, `FUN_0015b2c0`).
+AC104:1:2 (`FUN_0015b484`) selects the one-based winning slot and updates usage;
+the ordinary AC23:5 inventory receipt delivers the item. The animation itself
+does not grant items or consume allowance.
+
+Duplicate clicks remain blocked through the server reply, including after
+closing and reopening the window. Closing before the request cancels the
+animation. Existing server failure banners release a refused draw without
+changing usage; a missing reply times out without an automatic retry. Loading,
+trades, battles, scripted interactions, movies, minigames and modal dialogs
+block new draws. Character entry and disconnect reset presentation state;
+server catalog refreshes supply the current allowance, including at UTC midnight.
+This daily feature is separate from the Lucky sport and other lottery games.
 
 ## Verification and limitations
 
-- Local migration verification passes for all 4,070 files against the SHA-256 manifest. Staging/ZIP/checksum tests, client tests and vet/build pass; the base image census and a 11016.jpg PNG export pass using only local assets. Upload packages have been prepared locally, not published.
-- Directory and payload-signature checks pass for `map.JMG`, `images.BMg`, and `item.BMg` in all three client installations. These three base archives are byte-identical across the installations (SHA-256 comparison).
-- Full image decoding passes for 326 map images, 2,190 item icons and 268 of 269 base UI images. `HiTurtle_2.bmp` declares 255 palette entries but uses missing palette index 255. It is retained unchanged, reported explicitly by the test, and displayed as a decode error by the workbench.
-- A native 11016.jpg frame was rendered through Ebitengine and visually inspected. No player, NPC, UI composition or gameplay compatibility is implied by rendering a background.
-- Image payloads are capped at 64 MiB and decoded dimensions at 128 million pixels. Unsupported/corrupt resources display an error and remain browsable. Additional expansion archives have not yet received the same complete image census.
-- JMA/JXA and JXAN asset decoding is implemented in `internal/clientassets` and `cmd/sprite-export`. All selected client resources are exported under `data/sprites`; see [the sprite export documentation](../data/sprites/README.md). The native SHA padding and AES key expansion quirks are covered by independent golden vectors and authenticated native sprite tests. Three orphan JXAN files have no corresponding pixel archives in the source directory.
-
-Run resource checks from the repository root. Linux Bash:
-
-```bash
-export WONDERLAND_CLIENT_DATA="$(pwd)/../Wonderland-Client"
-export WONDERLAND_TEST_DATA="$(pwd)/../Wonderland-Client/data"
-go test ./internal/clientassets -count=1
-cd client
-go test ./... -count=1
-go vet ./...
-```
-
-Windows PowerShell:
-
-```powershell
-$env:WONDERLAND_CLIENT_DATA = (Resolve-Path ../Wonderland-Client).Path
-$env:WONDERLAND_TEST_DATA = (Resolve-Path ../Wonderland-Client/data).Path
-go test ./internal/clientassets -count=1
-cd client
-go test ./... -count=1
-go vet ./...
-```
-
-Next work: character selection and creation, the untraced login details listed above, the remaining archive variants and sprite animation records, and scene/terrain references. Original-client validation remains separate from testing this replacement.
+Native archive census results, resource-test environment variables and the
+scope of historical inspection evidence are recorded in
+[archive validation history](TESTING.md#archive-validation-history).
+Current gameplay gaps are tracked in [the roadmap](CLIENT_ROADMAP.md).
 
 ### Editable sprite assets
 
 The character renderer loads standard PNG sheets and JSON animation indexes
-from `sprites/` under the asset root (`data/sprites`), or the directory selected by `-sprites`. Editable
-archives take priority over native JMA/JXA files. All available sprites have
+from `sprites/` under the asset root (`data/sprites`), or the directory selected by `-sprites`. Explicit editable
+archives can override compiled sprite records; runtime does not read native JMA/JXA files. All available sprites have
 been converted under `data/sprites`. From `client/`, run `go run . -sprites
 ../data/sprites`; restart after painting PNGs or changing frame rectangles,
 anchors or animation sequences. See [Editing sprites](../data/sprites/EDITING.md).
@@ -952,7 +1168,8 @@ It also sends a sprite-refresh request (`5/7`) and requests the mall catalog
 (`75/2`) requests are also handled while loading.
 The server answers the list request with an empty list (`23/4/0`) and its
 completion marker (`23/102`), following the legacy `AC23.Recv77` handler.
-Player stalls are not implemented. Sprite refresh responds with `5/8`, character ID and a zero byte;
+The separate AC56 player-stall backend is implemented; this native browser remains
+an empty-list adapter, and the Go client has no stall/vendor form. Sprite refresh responds with `5/8`, character ID and a zero byte;
 `5/4` is a state ping requiring no reply. These read-only requests are accepted
 during map loading; inventory changes, mall purchases and teleports still
 require an acknowledged map.
@@ -971,7 +1188,9 @@ Start the server with command metadata tracing and a persistent log:
 ```
 
 `-debug` records packet direction, command codes and payload sizes. It never
-records packet bodies, passwords or deletion codes. `-log-file` appends JSON
+dumps credential packet bodies, passwords or deletion codes. Selected gameplay
+commands have bounded decoded traces, including AC6 movement, AC32 poses and
+Lucky Draw; these are additional to ordinary metadata logs. `-log-file` appends JSON
 logs to the given file and also writes them to stderr; new files use owner-only
 permissions. Omit `-debug` for normal operation.
 
@@ -994,7 +1213,7 @@ must not be redirected to the beach just because they originate on a ship map.
 
 ### Lost connection (ported: `client/wlo/app/lost.go`)
 
-`ClientSocket1Disconnect` (0x49871c) acts only when a login form is open or the player is in the game. It hides the login forms and shows the message form `PTR_DAT_004ca12c` (constructor `FUN_003a5184`): `panel15`, 200 × 150 at (300, 0x50) with 15-pixel margins, an `editorBG` field (10, 0x19, 0xb4 × 0x16) holding the reason ("Connection lost" unless an action-0 packet left one), and four `btn_module_1` buttons (0x38 × 0x14, top 0x6e): Leave (0x20) and Prev (0x66) are shown; Finish (0x3c) and Update (0x66) stay hidden. Then `FUN_0049a2e8(…, 1)` starts the screen transition: each game frame `FUN_0049a484` fills the screen with black at alpha 12 × step (steps 1 to 15) after the scene and before the forms; at step 15 `FUN_0049ba08` keeps the darkened frame and the scene is no longer drawn (+0x565), so the HUD and the form stay bright over a frozen, dark scene without names or the location line. Leave (0x3a54f0) closes the client; Prev (0x3a547c) hides the form, resets the game state (`FUN_00314bf4`) and returns to the server list. `TestLostConnection`; `Chat_02/Connection_Lost.png` is the original (left) beside the port before this (right, which showed the server list over the game).
+`ClientSocket1Disconnect` (0x49871c) acts only when a login form is open or the player is in the game. It hides the login forms and shows the message form `PTR_DAT_004ca12c` (constructor `FUN_003a5184`): `panel15`, 200 × 150 at (300, 0x50) with 15-pixel margins, an `editorBG` field (10, 0x19, 0xb4 × 0x16) holding the reason ("Connection lost" unless an action-0 packet left one), and four `btn_module_1` buttons (0x38 × 0x14, top 0x6e): Leave (0x20) and Prev (0x66) are shown; Finish (0x3c) and Update (0x66) stay hidden. Then `FUN_0049a2e8(…, 1)` starts the screen transition: each game frame `FUN_0049a484` fills the screen with black at alpha 12 × step (steps 1 to 15) after the scene and before the forms; at step 15 `FUN_0049ba08` keeps the darkened frame and the scene is no longer drawn (+0x565), so the HUD and the form stay bright over a frozen, dark scene without names or the location line. Leave (0x3a54f0) closes the client; Prev (0x3a547c) hides the form, resets the game state (`FUN_00314bf4`) and returns to the server list. Battles use the same routine's modes 1 (entering) and 2 (leaving); see BATTLE_CLIENT_PARITY.md. `TestLostConnection`; `Chat_02/Connection_Lost.png` is the original (left) beside the port before this (right, which showed the server list over the game).
 
 Button captions: `TSe_Button`'s centre-slice drawer (`FUN_004680d8`) ends by drawing the caption (+0x48), recentred by `FUN_004679bc`, in the button's colours and style; the port's buttons had no captions until this form needed them.
 
@@ -1056,14 +1275,28 @@ without sending a use request or consuming the item. A combined HP/SP item is
 still usable when either restored vital is below its maximum. Pet attribute allocation remains pending and its arrows
 are disabled; selecting a pet never spends the player's attribute points.
 
-Potential Pills retain their dedicated confirmation, initially targeting the
-inventory selection, with quantity fixed to one and confirmed potential shown.
+Potential Pills open the native 299 x 520 `Form_Potential_1`, initially with no
+target selected. Its five-row roster contains the player and owned pets, levels
+and confirmed potential. Selecting a row shows base attributes, cumulative red
+potential bonuses and a seated preview inside the animated twelve-mark ring.
+The player's roster portrait uses the dedicated small face (body-family base
+plus 641 plus head, action/frame zero) at its native 32-pixel canvas placement,
+as in `FUN_001cb9e8`; it does not shrink the large status portrait.
+Robinson's NPC ID resolves to his canonical pet appearance. Preview bodies use
+only available sitting actions; pets without sitting artwork retain their roster
+portrait without a standing-body substitute. Native Confirm/Cancel hover images
+and the Cancel `[ESC]` hint match the reference. Confirm is disabled before
+selection, without pills and while an attempt is pending.
 They send AC23:126 `[slot, target]`. AC23:213 distinguishes a rejected request
 from a processed attempt; processed attempts can still fail and reduce potential.
 Golden pills require potential 10 or higher; every pill respects the cap of 12.
-Pending pill attempts block another pill submission for five seconds, then allow
-a manual retry. There are no automatic retries or local consumption. Changed bag
-slots or pet identities invalidate an open pill confirmation.
+The form stays open after an attempt, counts usable pills of the selected type
+across bag stacks (up to the native display limit of 999), and chooses the first
+usable stack for each explicit attempt. Each request consumes exactly one pill
+only on the server. Replies update the ring, bonuses and count; pending requests
+block duplicates. Closing and reopening after the existing five-second timeout
+permits a manual retry; nothing retries automatically. A replacement or removed
+pet clears the selection. Inventory's separate player/pet selection is unchanged.
 
 AC15:8 restores the pet roster, vitals, attributes, equipment and potential;
 AC8:2 updates pet stats without overwriting player stats, and AC15:2 removes
@@ -1121,8 +1354,9 @@ Implemented main options:
 
 The runtime is transient and stops at disconnect/character entry or controller
 loss. Supply requests use the Go server's transactional AC23:15 path, rather than
-native AC23:82. Advanced Player/Pet skill assignment and battle scene/animation
-rendering remain pending; Auto Atk currently uses basic attacks only.
+native AC23:82. Advanced Remote skill assignment remains pending; Auto Atk uses
+basic attacks only. Native battle-scene rendering and manual direct targeting
+are implemented; see [battle parity](BATTLE_CLIENT_PARITY.md).
 
 AC23 replies alone update the bag and equipment. Addition records are additive,
 and move/removal/wear/unequip acknowledgments preserve item metadata. Malformed
@@ -1144,8 +1378,10 @@ Equipment bonus/socket/forge and metadata-dependent tradeability lines still
 need the remaining native item-info rules.
 
 The attribute arrows preview STR/CON/INT/WIS/AGI allocation using the available
-point budget (`FUN_00353ed4`). Confirm sends the native counted AC8:1 stat/word
-request (`FUN_003540c4`); Cancel or closing the form discards the draft. Player
+point budget (`FUN_00353ed4`). Confirm sends a counted AC8:1 request with a
+stat byte and four-byte amount per entry (`FUN_003540c4`'s allocation workflow).
+Four-byte amounts prevent the server's compatibility decoder from consuming the
+next stat ID as part of the preceding amount. Cancel or closing the form discards the draft. Player
 stats change only when the server replies. Pet-targeted stat replies no longer
 overwrite player values. Submission is disabled while awaiting confirmation;
 after five seconds without a reply it permits a manual retry with a notice.
@@ -1153,22 +1389,25 @@ Derived combat stats stay authoritative during the preview. Native rebirth/class
 allocation caps and pet allocation dialogs remain pending; the server validates
 the actual allocation. `TestInventoryPointDraftAndNativeRequest` and
 `TestNativePresentationAndAllocation` cover budget, packets, replies and resets.
+`TestInventoryPointBatchesReachServerParser` verifies all 31 nonempty attribute
+subsets against the actual server decoder and allocation rules.
 
-The item-use selector has a compact presentation with native controls. The full
-animated native PotentialForm presentation remains pending.
+The native Potential window follows `FUN_001cac48`, `FUN_001cb6f0`,
+`FUN_001cc3ac`, `FUN_001cc604` and `FUN_001cd574`; inventory requests retain
+`FUN_001cce98`'s target numbering. It uses the exported form and mark artwork,
+`PotentialFire1`/`PotentialFire2` strips and independent seated role previews.
+Normal pills require confirmation when failure would forget learned skills;
+the warning lists the affected skills using the server's qualification rules.
+Zero-grade removal records in native skill snapshots clear forgotten skills;
+the warning considers only skills with a learned grade.
+Potential results update the ring, bonuses and sounds without chat messages.
+Rejected attempts use a timed warning instead of chat.
 Remaining inventory work includes repair dialogs,
 pet attribute allocation and secondary container/crafting forms. These are separate native
 forms and are not implemented by the inventory toolbar window yet.
 
-Focused validation:
-
-```sh
-cd client
-go test ./wlo/inventory ./wlo/world ./wlo/login ./wlo/seui ./wlo/app -run 'TestInventory|TestFormula|TestEditor|TestCombo|Test.*BaseStats'
-INVENTORY_SNAPSHOT=/tmp/inventory.png go test ./wlo/app -run TestInventoryFlow -count=1
-INVENTORY_REFERENCE_SNAPSHOT=/tmp/inventory-reference.png go test ./wlo/app -run TestInventoryOriginalSampleSnapshot -count=1
-INVENTORY_INTERACTION_SNAPSHOT=/tmp/inventory-interactions go test ./wlo/app -run TestInventoryInteractionSamples -count=1
-```
+For focused checks and rendered samples, see
+[inventory checks](TESTING.md#inventory-checks).
 
 ## Settings UI
 
@@ -1191,9 +1430,9 @@ first, then System. Disconnects and character changes close all settings dialogs
   the selected colors. **Blacklist** adds/removes case-insensitive
   names and filters their incoming player messages; system/GM notices stay visible.
 - **Info Visibility** saves ten native display preferences. Other players' names
-  apply to the current world renderer. Pet labels, nicknames, guild names, tent
-  size and Adventure Level will use these preferences when their renderers are
-  ported; they are currently pending.
+  apply to the current world renderer, as do own/other nickname preferences.
+  Following pet labels render, but their visibility toggle is not wired yet;
+  guild-name, tent-size and Adventure Level presentation remain pending.
 - **Chat Box** toggles the log. **Spawn Point** offers Beach, Record and Carnie
   through AC5:17, with eligibility checked by the server. **Log Out** returns to
   server selection; **Exit** closes the client. Both ask for confirmation.
@@ -1203,7 +1442,8 @@ outside the generated assets. They apply to this client installation; server
 permissions are stored per character in `wonderland.db` and never loaded from
 that local file. `app.Options.SettingsPath` supplies a separate profile/test path.
 
-Pending: Zoom Mode rendering, title entitlement synchronization/selection,
+Zoom Mode now toggles the battle's distance-based zoom without scaling the HUD.
+Pending: title entitlement synchronization/selection,
 Security Lock, Change Login, Change Password, Official Site integration, Balance
 Inquiry, redemption, VIP and point-purchase dialogs. Their controls show an
 unavailable notice; the title list remains empty until authoritative entitlements
@@ -1236,13 +1476,18 @@ Escape and either Close button dismiss it. It follows `TRe_SkillForm`
 icons and maximum grades from `skill_data.json`; permitted weapon flags come
 from the fixed tail of `animation_data.json`. Stunt alias 15003 displays the
 avatar's actual skill. AC5:3 replaces learned skills; AC5:11/12 and AC8:1 update
-player progress, and AC15:8 plus AC8:2 update pets. Malformed updates are rejected
+player progress through compatibility layouts; native alchemy grade/EXP use
+AC8:1 stats 110/111. Native AC5:11 is a recent-skill list and AC5:12 changes the
+character model, so those compatibility layouts must not be used for alchemy.
+AC15:8 plus AC8:2 update pets. Malformed updates are rejected
 before mutation. Character changes and disconnects hide the window.
 
 Drag learned skills (including Basic Atk and Defense) onto a hotbar slot.
 Double-clicking a skill and activating its hotbar binding use the same battle
 action path. Browsing sends no gameplay requests or optimistic unlocks. The
-native battle skill menu and battle-scene rendering remain pending.
+dedicated native battle skill menu remains pending; the standalone Skills
+window supplies learned skills to the implemented battle scene and direct targeting.
+See [battle parity](BATTLE_CLIENT_PARITY.md).
 
 
 ## Hotbar and logout confirmation
@@ -1260,13 +1505,14 @@ and combat. Changing characters loads a separate bar. Pet skill bindings retain
 the selected pet's ID and slot and refuse to use a replacement/released pet.
 
 Click a slot or press **F1–F8** to activate it. During a ready battle turn,
-Basic Attack and offensive skills open a target chooser from the server fighter
-roster; Defense submits immediately. Other skills offer roster targets, with the
-server validating their effects. The client checks learned skills, ownership and
+Basic Attack and offensive skills arm direct targeting in the battle scene;
+Defense submits immediately. Support skills target eligible allies/enemies in
+the current formation, with the server validating their effects. The client checks learned skills, ownership and
 SP, rejects duplicate actions and revalidates pending choices when the turn or
 roster changes. Stop Remote auto-fight before choosing manual actions. Combat
-skills outside battle show a warning; overworld healing/casting and the native
-battle-scene targeting interface remain pending. Received item shortcuts use the
+skills outside battle show a warning; overworld healing/casting remains pending.
+Battle-scene targeting uses native cursors, allegiance, revival rules and
+current-roster checks. Received item shortcuts use the
 existing inventory-selected consumption checks and authoritative receipts.
 
 Settings **Log Out** and **Exit** now show the native gold frame, blue dither,
@@ -1297,3 +1543,19 @@ The two rescue `.sty` files were hash-checked against the original client under
 executable (`var/ghidra/aLogin.exe`, SHA-256 `ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`);
 the installation's current `aLogin.exe` has a different hash, so these addresses
 are not claimed as verified offsets in that executable.
+
+Gonline Server can negotiate local battle backdrop resolution independently of
+combat round chains. The client uses its native map regions at the shared battle
+entry location. Legacy servers retain control of their own backdrop selectors.
+Runtime bundles include `runtime/battle_backdrops.bin`; older bundles decline
+this capability until rebuilt. See [the backdrop protocol](BATTLE_BACKDROPS.md).
+
+### Client language
+
+Settings (sidebar or F10) → Language selects English or Traditional Chinese;
+Apply (and Keep when previewing display changes) updates all open sessions immediately.
+Connections, gameplay state and typed input are retained. `go run . -language en` or
+`go run . -language zh-TW` overrides that preference. Compile the language catalogs
+with `go run ./cmd/asset-build -data data -text-only` after editing translation
+tables, or rebuild the client bundle. See [text compilation and Chinese source
+import](IGG_TRANSLATIONS.md). Server messages remain as received.

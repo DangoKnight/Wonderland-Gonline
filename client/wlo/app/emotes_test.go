@@ -10,7 +10,7 @@ import (
 	"wonderland-gonline/internal/protocol"
 )
 
-func TestAltOneSitsAndSendsNativePose(t *testing.T) {
+func TestAltOneKneelsAndSendsNativePose(t *testing.T) {
 	c, _, _ := shoreClient(2)
 	c.Input = &seui.Input{}
 	c.Net = login.NewNet()
@@ -22,11 +22,13 @@ func TestAltOneSitsAndSendsNativePose(t *testing.T) {
 	// A queued send while connecting and a connected send use the same packet.
 	got := make(chan []byte, 1)
 	go func() { host.SetReadDeadline(time.Now().Add(5 * time.Second)); p, _ := protocol.Read(host); got <- p }()
+	// Alt+1 holds action 13 (0x4bd7bc → 46, the kneeling sit), turned to
+	// the standing facing 6: action 52.
 	c.World.Player.Direction = 14
 	if !c.EmoteKey('1', shiftAlt) {
 		t.Fatal("Alt+1 not handled")
 	}
-	if p := <-got; !bytes.Equal(p, []byte{32, 2, 17}) || c.World.Player.Direction != 17 {
+	if p := <-got; !bytes.Equal(p, []byte{32, 2, 52}) || c.World.Player.Direction != 52 {
 		t.Fatal("sit request", p, c.World.Player.Direction)
 	}
 	c.World.Player.VehicleID = 48016

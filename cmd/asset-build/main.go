@@ -1,4 +1,4 @@
-// Command asset-build verifies the decompiled data used directly by the client.
+// Command asset-build verifies extracted assets and compiles display text.
 // -copy creates a standalone distribution without repacking editable sprites.
 package main
 
@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"wonderland-gonline/internal/clienttext"
 )
 
 const manifestFile = "asset_manifest.json"
@@ -23,13 +24,27 @@ func main() {
 	data := flag.String("data", "data", "decompiled data directory")
 	output := flag.String("output", filepath.Join("var", "client-distribution"), "standalone distribution directory")
 	copyAssets := flag.Bool("copy", false, "copy all decompiled assets for a standalone distribution")
+	textOnly := flag.Bool("text-only", false, "compile display text only, without verifying unrelated extraction files")
 	flag.Parse()
+	if *textOnly {
+		if *copyAssets {
+			log.Fatal("-text-only cannot be combined with -copy")
+		}
+		if err := clienttext.CompileDirectory(*data); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("compiled client display text: %s", *data)
+		return
+	}
 	if err := verify(*data); err != nil {
+		log.Fatal(err)
+	}
+	if err := clienttext.CompileDirectory(*data); err != nil {
 		log.Fatal(err)
 	}
 	target := filepath.Join(*output, "data")
 	if !*copyAssets {
-		log.Printf("verified client data: %s (loaded directly)", *data)
+		log.Printf("verified client data and compiled display text: %s", *data)
 		return
 	}
 	if info, err := os.Lstat(target); err == nil && info.Mode()&os.ModeSymlink != 0 {

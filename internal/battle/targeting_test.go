@@ -15,6 +15,33 @@ func targetingRules() Rules {
 	r.Skills = map[uint16]assets.Skill{11001: s}
 	return r
 }
+
+func TestAreaAttackProtectsJoiningPetUntilNextRound(t *testing.T) {
+	for _, all := range []bool{false, true} {
+		r := targetingRules()
+		b, attacker := setup(10000)
+		owner := b.Defenders[0]
+		owner.Kind, owner.ID = Player, 999
+		next := &Fighter{Kind: Pet, ID: 102, Owner: owner.ID, HP: 1000, MaxHP: 1000}
+		b.ReplacePet(owner, nil, next)
+		shape := assets.SkillTargeting{MinGrade: 1, MaxGrade: 10, All: all, Offsets: []assets.FormationOffset{{}, {X: 1}}}
+		s := r.Skills[11001]
+		s.Targeting = []assets.SkillTargeting{shape}
+		r.Skills[11001] = s
+		if at(b.Defenders, next.X, next.Y, true) != nil || next.CanAct() {
+			t.Fatal("joining pet became a direct target or actor")
+		}
+		steps, _ := r.attack(b, []Action{{Actor: attacker, Kind: "attack", Skill: 11001, TX: owner.X, TY: owner.Y}}, nil)
+		if len(steps) == 0 || next.HP != 1000 || !next.Joining {
+			t.Fatal("area coverage hit joining pet or unlocked it", all, next, steps)
+		}
+		next.Joining = false
+		r.attack(b, []Action{{Actor: attacker, Kind: "attack", Skill: 11001, TX: owner.X, TY: owner.Y}}, nil)
+		if next.HP >= 1000 {
+			t.Fatal("area coverage failed to hit pet after switching protection ended", all, next)
+		}
+	}
+}
 func TestAreaAttackCostProtectionEffectsAndNativeRecord(t *testing.T) {
 	r := targetingRules()
 	b, actor := setup(1000)
@@ -141,5 +168,32 @@ func TestUnconfiguredMixedEffectsPreserveSingleRecipientAnimations(t *testing.T)
 		if len(p) != 21 || p[2] != 17 || p[9] != 1 {
 			t.Fatal("legacy single result layout changed", p)
 		}
+	}
+}
+
+// FUN_0039b558 negates modes 1/2; recovery must carry literal mode 3.
+func TestSupportNativeRecoveryModeAndActualAmount(t *testing.T) {
+	r := targetingRules()
+	s := r.Skills[11001]
+	s.Name = "Cure"
+	s.Targeting = nil
+	r.Skills[11001] = s
+	b, actor := setup(1000)
+	actor.HP = actor.MaxHP - 7
+	step := r.support(b, Action{Actor: actor, Skill: 11001, Kind: "heal", TX: actor.X, TY: actor.Y})
+	want := []byte{50, 1, 17, 0, 4, 2, 0xf9, 0x2a, 0, 1, 4, 2, 1, 0, 1, 25, 7, 0, 0, 0, 3}
+	if len(step.Packets) < 3 || !bytes.Equal(step.Packets[2], want) || actor.HP != actor.MaxHP {
+		t.Fatalf("recovery %x HP=%d", step.Packets, actor.HP)
+	}
+	s.Name = "Revival"
+	r.Skills[11001] = s
+	ally := *actor
+	ally.X = 3
+	ally.MaxHP = 20
+	ally.HP = 0
+	b.Attackers = append(b.Attackers, &ally)
+	step = r.support(b, Action{Actor: actor, Skill: 11001, Kind: "heal", TX: ally.X, TY: ally.Y})
+	if ally.HP != 20 || step.Packets[2][16] != 20 || step.Packets[2][20] != 3 {
+		t.Fatalf("revival overflow %x HP=%d", step.Packets, actor.HP)
 	}
 }

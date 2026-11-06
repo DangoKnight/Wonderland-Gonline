@@ -2,14 +2,19 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"math"
+	"math/big"
 	"sort"
+	"strconv"
 	"strings"
-
+	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
 )
 
@@ -94,24 +99,13 @@ func (s *Server) mallCatalogPacket(bonus bool) []byte {
 	return p
 }
 
-// mallWireBalance uses the native signed point range for every balance reply.
-func mallWireBalance(value int64) uint32 {
-	return uint32(max(0, min(value, int64(game.MaxMallPoints))))
-}
-
-func mallBalancePackets(balances store.MallBalances) [][]byte {
-	packet := func(sub byte, value int64) []byte {
-		return protocol.Builder{protocol.CommandMall, sub}.U32(mallWireBalance(value)).U32(0).U16(0).U8(0)
-	}
-	return [][]byte{packet(protocol.MallPointsBalance, balances.Points), packet(protocol.MallBonusBalance, balances.Bonus)}
-}
 func (s *Server) sendMallBalances(ctx context.Context, c *Session) error {
 	balances, err := s.Store.MallBalances(ctx, c.account.ID)
 	if err != nil {
 		return err
 	}
 	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
-	return s.sendAll(c, mallBalancePackets(balances))
+	return s.sendAll(c, serverwire.MallBalancePackets(balances))
 }
 func (s *Server) sendMallCatalogs(ctx context.Context, c *Session, initial bool) error {
 	packets := [][]byte{s.mallCatalogPacket(false), s.mallCatalogPacket(true)}
@@ -189,7 +183,7 @@ func (s *Server) legacyMallCommand(ctx context.Context, c *Session, p []byte) er
 				return s.purchaseMall(ctx, c, []mallCartRow{{item: item, category: mallCategory(entry), quantity: quantity, order: mallOrder(entry)}}, false, false)
 			}
 		}
-		return c.send(headBanner("Item Mall: this item is unavailable. No points deducted."))
+		return c.send(serverwire.HeadBanner("Item Mall: this item is unavailable. No points deducted."))
 	}
 	return ErrUnsupported
 }
@@ -207,7 +201,7 @@ func (s *Server) mallReceipts(c *Session, cart []mallCartRow, success bool) erro
 }
 func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRow, bonus, receipts bool) error {
 	reject := func(message string) error {
-		if err := c.send(headBanner(message)); err != nil {
+		if err := c.send(serverwire.HeadBanner(message)); err != nil {
 			return err
 		}
 		if receipts {
@@ -253,7 +247,7 @@ func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRo
 	})
 	switch {
 	case errors.Is(err, store.ErrMallFunds):
-		if err := c.send(headBanner("Item Mall: insufficient points. No points deducted.")); err != nil {
+		if err := c.send(serverwire.HeadBanner("Item Mall: insufficient points. No points deducted.")); err != nil {
 			return err
 		}
 		if err := s.sendMallBalances(ctx, c); err != nil {
@@ -273,14 +267,280 @@ func (s *Server) purchaseMall(ctx context.Context, c *Session, cart []mallCartRo
 	if err := c.send(next.Bag.AdditionPacket(adds)); err != nil {
 		return err
 	}
-	if err := s.sendAll(c, mallBalancePackets(balances)); err != nil {
+	if err := s.sendAll(c, serverwire.MallBalancePackets(balances)); err != nil {
 		return err
 	}
-	if err := c.send(headBanner("Item Mall: purchase successful.")); err != nil {
+	if err := c.send(serverwire.HeadBanner("Item Mall: purchase successful.")); err != nil {
 		return err
 	}
 	if receipts {
 		return s.mallReceipts(c, cart, true)
 	}
 	return nil
+}
+
+// AdjustMallBalance is the administrator operation. Exclude account deletion and
+// authentication publication, then order balance receipts against purchases.
+func (s *Server) AdjustMallBalance(ctx context.Context, account uint32, bonus bool, delta int64) (store.MallBalances, error) {
+	s.accountMu.Lock()
+	defer s.accountMu.Unlock()
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	return s.adjustMallBalance(ctx, account, bonus, delta, "administrator")
+}
+
+// Caller holds worldMu. A receipt failure closes that client; the committed
+// adjustment still succeeds so an administrator is not invited to retry a grant.
+func (s *Server) adjustMallBalance(ctx context.Context, account uint32, bonus bool, delta int64, actor string) (store.MallBalances, error) {
+	balances, err := s.Store.AdjustMallBalance(ctx, account, bonus, delta, actor)
+	if err != nil {
+		return store.MallBalances{}, err
+	}
+	for _, c := range s.world {
+		if c.account.ID != account || !c.ready {
+			continue
+		}
+		c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
+		for _, p := range serverwire.MallBalancePackets(balances) {
+			s.sendOrClose(c, p)
+		}
+	}
+	return balances, nil
+}
+
+// gmMallPoints ports AC02's :im/:points_im/:mallpoints and GmManager.AddMallPoints.
+// Missing explicit targets are refused, fixing the reference's self-grant fallback.
+func (s *Server) gmMallPoints(ctx context.Context, c *Session, words []string) error {
+	if len(words) < 2 {
+		return nil
+	}
+	delta, err := strconv.ParseInt(words[1], 10, 32)
+	if err != nil || delta == 0 {
+		return nil
+	}
+	target := c
+	if len(words) > 2 {
+		target = s.findOnline(words[2])
+		if target == nil {
+			return nil
+		}
+	}
+	_, err = s.adjustMallBalance(ctx, target.account.ID, false, delta, fmt.Sprintf("gm:%d/character:%d", c.account.ID, c.character.ID))
+	if errors.Is(err, store.ErrMallAdjustment) {
+		return nil
+	}
+	return err
+}
+
+// mallCheckoutCommand implements AC34:1 under worldMu. Catalog refreshes clear
+// the client's pending cart, so this request must emit only balance/resume packets.
+// The read-only query uses the registry's normal world interaction gates.
+func (s *Server) mallCheckoutCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.MallCheckoutRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.MallCheckoutBalanceRequest {
+		return ErrUnsupported
+	}
+	switch p[2] {
+	case protocol.MallCheckoutModeWireCode0, protocol.MallCheckoutModeWireCode1:
+	default:
+		return protocol.ErrMalformed
+	}
+	balances, err := s.Store.MallBalances(ctx, c.account.ID)
+	if err != nil {
+		return err
+	}
+	c.account.IM, c.account.IMBonus = balances.Points, balances.Bonus
+	return s.sendAll(c, serverwire.MallCheckoutPackets(balances))
+}
+
+// FUN_00175cf0 consumes used count, reward count, then UInt16 ID/byte quantity
+// rows. The client derives remaining draws as three minus used, not a balance.
+func (s *Server) luckyDrawCatalogPacket(c *game.Character, now time.Time) []byte {
+	pool := s.Assets.LuckyDraw
+	used := game.LuckyDrawsPerDay - c.LuckyDraw.Remaining(now)
+	p := protocol.Builder{protocol.CommandLuckyDraw, protocol.LuckyDrawMode, protocol.LuckyDrawCatalog, used, byte(len(pool.Rewards))}
+	for _, reward := range pool.Rewards {
+		p = p.U16(reward.ID).U8(byte(reward.Quantity))
+	}
+	return p
+}
+
+func (s *Server) luckyDrawCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.LuckyDrawRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.LuckyDrawSpin {
+		return ErrUnsupported
+	}
+	s.Log.Debug("Lucky Draw spin requested", "session", c.info.ID, "character", c.character.ID, "map", c.character.Map, "event_active", c.event != nil, "storm", c.storm, "beach", c.beach != nil)
+	return s.drawLucky(ctx, c, time.Now())
+}
+
+// Caller holds worldMu. Store rechecks durable allowance and inventory capacity.
+func (s *Server) drawLucky(ctx context.Context, c *Session, now time.Time) error {
+	if c.event != nil || c.storm || c.beach != nil {
+		s.Log.Debug("Lucky Draw ignored", "session", c.info.ID, "reason", "active interaction")
+		return nil
+	}
+	pool := s.Assets.LuckyDraw
+	if pool.TotalWeight <= 0 {
+		s.Log.Debug("Lucky Draw unavailable", "session", c.info.ID, "reason", "empty reward pool")
+		return c.send(serverwire.HeadBanner("Lucky Draw rewards are unavailable."))
+	}
+	roll, err := rand.Int(rand.Reader, big.NewInt(pool.TotalWeight))
+	if err != nil {
+		return err
+	}
+	reward, ok := pool.RewardForRoll(roll.Int64())
+	if !ok {
+		return errors.New("invalid Lucky Draw pool")
+	}
+	limit, known := s.stackLimit(reward.ID)
+	if !known {
+		return errors.New("unknown Lucky Draw reward")
+	}
+	next, adds, err := s.Store.DrawLucky(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, reward.ID, reward.Quantity, limit, now, s.Assets.Items, c.character.Clone())
+	if errors.Is(err, store.ErrLuckyDrawLimit) {
+		s.Log.Debug("Lucky Draw refused", "session", c.info.ID, "reason", "daily limit")
+		c.character.LuckyDraw = next.LuckyDraw
+		return s.sendAll(c, [][]byte{serverwire.HeadBanner("You have used all three Lucky Draws for today."), s.luckyDrawCatalogPacket(c.character, now)})
+	}
+	if errors.Is(err, game.ErrInventoryFull) {
+		s.Log.Debug("Lucky Draw refused", "session", c.info.ID, "reason", "inventory full")
+		return c.send(serverwire.HeadBanner("Please free an inventory slot. Lucky Draw retained."))
+	}
+	if err != nil {
+		return err
+	}
+	s.adoptSavedCharacter(c, next)
+	s.Log.Debug("Lucky Draw committed", "session", c.info.ID, "character", next.ID, "reward", reward.ID, "quantity", reward.Quantity, "result_slot", reward.Slot, "remaining", next.LuckyDraw.Remaining(now))
+	// Persist first. Failed receipts cannot restore a consumed draw or duplicate its reward.
+	return s.sendAll(c, [][]byte{
+		next.Bag.AdditionPacket(adds),
+		{protocol.CommandLuckyDraw, protocol.LuckyDrawMode, protocol.LuckyDrawResult, reward.Slot, game.LuckyDrawsPerDay - next.LuckyDraw.Remaining(now)},
+		serverwire.HeadBanner(fmt.Sprintf("Lucky Draw: received [%s] x%d.", s.itemName(reward.ID), reward.Quantity)),
+	})
+}
+
+// Refresh remaining allowance for ready characters at UTC midnight. No state is
+// saved until a draw succeeds; reset eligibility is derived from the saved day.
+func (s *Server) refreshLuckyDrawCatalog(now time.Time) {
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	if s.Assets.LuckyDraw.TotalWeight <= 0 {
+		return
+	}
+	for _, c := range s.world {
+		if !c.ready {
+			continue
+		}
+		if err := c.send(s.luckyDrawCatalogPacket(c.character, now)); err != nil {
+			c.conn.Close()
+		}
+	}
+}
+
+func (s *Server) runLuckyDrawResets(ctx context.Context) {
+	for {
+		now := time.Now().UTC()
+		next := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+		timer := time.NewTimer(time.Until(next))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case now := <-timer.C:
+			s.refreshLuckyDrawCatalog(now)
+		}
+	}
+}
+
+// packContentsCommand is native AC91:1. Preview is read-only, requires no owned
+// pack and always returns the current list rather than trusting the cache hint.
+func (s *Server) packContentsCommand(c *Session, p []byte) error {
+	if len(p) != protocol.PackContentsRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.PackContentsRequest {
+		return ErrUnsupported
+	}
+	id := protocol.NewReader(p[2:]).U16()
+	packet := protocol.Builder{protocol.CommandPackContents, protocol.PackContentsResponse}.U16(id).U8(protocol.PackContentsVersion)
+	for _, reward := range s.Assets.GachaPacks[id].Rewards {
+		packet = packet.U16(reward.ID).U8(byte(reward.Quantity))
+	}
+	return c.send(packet)
+}
+
+// openPackCommand ports native AC23:75/128. The operand is a full UInt16 slot;
+// truncating to a byte would turn malformed large slots into valid inventory IDs.
+func (s *Server) openPackCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.PackOpenRequestBytes {
+		return protocol.ErrMalformed
+	}
+	slot := protocol.NewReader(p[2:]).U16()
+	if slot < 1 || slot > game.BagSize {
+		return nil
+	}
+	handled, err := s.openGachaPack(ctx, c, byte(slot))
+	if err != nil || handled {
+		return err
+	}
+	if handled, err := s.openBoxedItem(ctx, c, byte(slot)); handled || err != nil {
+		return err
+	}
+	return c.send(serverwire.HeadBanner("This pack has no configured rewards. Item retained."))
+}
+
+// openGachaPack is GachaManager.TryOpen with commit-before-receipt ordering.
+// Caller holds worldMu. One draw consumes one pack; rewards use fresh metadata.
+func (s *Server) openGachaPack(ctx context.Context, c *Session, slot byte) (bool, error) {
+	if slot < 1 || slot > game.BagSize {
+		return false, nil
+	}
+	item := c.character.Bag[slot-1]
+	if !s.Assets.IsGachaPack(item.ID) {
+		return false, nil
+	}
+	if item.Locked {
+		return true, c.send(serverwire.HeadBanner(game.ErrItemLocked.Error()))
+	}
+	if item.Empty() || c.event != nil || c.battle != nil || c.storm || c.beach != nil || (c.character.ActiveVehicle != 0 && c.character.VehicleSlot == slot) {
+		return true, nil
+	}
+	if !s.Assets.GachaAvailable(item.ID) {
+		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+	}
+	// crypto/rand.Int uses rejection sampling: each weight slot is equally likely.
+	draw, err := rand.Int(rand.Reader, big.NewInt(game.GachaWeightTotal))
+	if err != nil {
+		return true, err
+	}
+	reward, ok := s.Assets.GachaPacks[item.ID].RewardForRoll(int(draw.Int64()))
+	if !ok {
+		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+	}
+	limit, known := s.stackLimit(reward.ID)
+	if !known || reward.Quantity <= 0 || reward.Quantity > game.GachaMaxRewardQuantity {
+		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+	}
+	next := c.character.Clone()
+	if err := next.Bag.Remove(slot, game.GachaPacksPerOpening); err != nil {
+		return true, err
+	}
+	adds, err := next.Bag.Grant(game.Item{ID: reward.ID}, reward.Quantity, limit, s.Assets.Items)
+	if err != nil {
+		return true, c.send(serverwire.HeadBanner("Please free an inventory slot. Pack retained."))
+	}
+	if err := s.commit(ctx, c, next); err != nil {
+		return true, err
+	}
+	return true, s.sendAll(c, [][]byte{
+		{protocol.CommandInventory, protocol.InventoryRemove, slot, game.GachaPacksPerOpening},
+		next.Bag.AdditionPacket(adds),
+		{protocol.CommandInventory, protocol.InventoryItemUse},
+		serverwire.HeadBanner(fmt.Sprintf("Gacha: received [%s] x%d.", s.itemName(reward.ID), reward.Quantity)),
+	})
 }

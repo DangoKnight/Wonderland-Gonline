@@ -16,6 +16,8 @@ const (
 	actorStationaryDelay      = 300 * time.Second
 	actorContainerTemplateMin = 12000
 	actorContainerTemplateMax = 12999
+	actorChestTemplateMin     = 16000
+	actorChestTemplateMax     = 16011
 	actorSceneryTemplateMin   = 19000
 	actorSceneryTemplateMax   = 19999
 	actorMechanismTemplateMin = 25000
@@ -40,11 +42,14 @@ const (
 	actorSpawnLeash                     = 150
 	actorInitialDelayMin                = time.Second
 	actorInitialDelayRange              = 7 * time.Second
+	monsterInitialDelayMin              = 100 * time.Millisecond
+	monsterInitialDelayRange            = 400 * time.Millisecond
 	actorRespawnDelay                   = 3 * time.Second
 	actorMovementDelayMin               = time.Second
 	actorMovementDelayRange             = 2*time.Second + time.Millisecond
 	actorMovementCandidates             = 4
 	actorPursuitStep                    = 100
+	actorPursuitDelay                   = 500 * time.Millisecond
 )
 
 type actorState struct {
@@ -178,7 +183,7 @@ func (w *World) staticActor(mapID uint16, n NPC) bool {
 			return false
 		}
 	}
-	if n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax || n.Template >= actorSceneryTemplateMin && n.Template <= actorSceneryTemplateMax || n.Template >= actorMechanismTemplateMin && n.Template <= actorMechanismTemplateMax {
+	if n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax || n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax || n.Template >= actorSceneryTemplateMin && n.Template <= actorSceneryTemplateMax || n.Template >= actorMechanismTemplateMin && n.Template <= actorMechanismTemplateMax {
 		return true
 	}
 	for _, word := range []string{"chest", "box", "crate", "barrel", "pot", "machine", "wood", "stone", "clay", "mine", "herb", "tree", "door", "switch", "lever", "cabinet", "desk", "bed", "chair", "stove", "grass", "flower", "shell", "mushroom", "ore", "statue", "fountain", "sign", "well", "grave", "cart", "boat", "wreck", "tent", "fence", "portal", "warp", "prop", "object", "coconut", "driftwood", "bamboo"} {
@@ -223,7 +228,7 @@ func boundedArea(n NPC, def assets.MapNPC) (ActorBounds, bool) {
 // actorTargetArea shares movement and acquisition boundaries. Patrollers with
 // authored paths can pursue nearby players throughout the scene; pathless patrols
 // use the same fixed spawn leash as random roamers.
-func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC) (ActorBounds, bool) {
+func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC, fieldBattle bool) (ActorBounds, bool) {
 	if bounds, ok := boundedArea(n, def); ok {
 		return bounds, true
 	}
@@ -236,7 +241,7 @@ func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC) (ActorBounds, bool)
 	default:
 		return ActorBounds{}, false
 	}
-	if RoamingTown(mapID) {
+	if RoamingTown(mapID) && !fieldBattle {
 		return ActorBounds{}, false
 	}
 	return roamArea(n), true
@@ -259,12 +264,7 @@ func (w *World) ActorTargetArea(mapID, click uint16) (ActorBounds, bool) {
 	if !ok {
 		return ActorBounds{}, false
 	}
-	for _, def := range m.data.NPCs {
-		if def.ClickID == click {
-			return actorTargetArea(mapID, n, def)
-		}
-	}
-	return ActorBounds{}, false
+	return actorTargetArea(mapID, n, m.npcDefinition(click), m.fieldBattles[click])
 }
 
 func (w *World) wanderPosition(mapID uint16, state *actorState, bounds ActorBounds, random func(int) int) (int, int) {
@@ -333,29 +333,29 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 	}
 	var moves []ActorMove
 	for _, n := range m.NPCs {
-		var def assets.MapNPC
-		for _, d := range m.data.NPCs {
-			if d.ClickID == n.ClickID {
-				def = d
-				break
-			}
-		}
+		def := m.npcDefinition(n.ClickID)
 		if def.WalkBehavior == walkStatic || w.staticActor(mapID, n) {
 			continue
 		}
 		state := w.actors.states[mapID][n.ClickID]
 		if state == nil {
+			initialMin := actorInitialDelayMin
 			initialRange := actorInitialDelayRange
 			if def.WalkBehavior >= walkPatrol && def.WalkBehavior <= walkPatrolAlternate {
 				initialRange = actorMovementDelayRange
 			}
-			state = &actorState{x: n.X, y: n.Y, next: now.Add(actorInitialDelayMin + time.Duration(random(int(initialRange/time.Millisecond)))*time.Millisecond)}
+			// Wake newly simulated enemies promptly. Do not reset an existing
+			// map's shared movement cycle when another player enters it.
+			if w.Wild(mapID, n) {
+				initialMin, initialRange = monsterInitialDelayMin, monsterInitialDelayRange
+			}
+			state = &actorState{x: n.X, y: n.Y, next: now.Add(initialMin + time.Duration(random(int(initialRange/time.Millisecond)))*time.Millisecond)}
 			w.actors.states[mapID][n.ClickID] = state
 		}
 		if paused[n.ClickID] || w.Defeated(mapID, n.ClickID) {
 			continue
 		}
-		area, mayPursue := actorTargetArea(mapID, n, def)
+		area, mayPursue := actorTargetArea(mapID, n, def, m.fieldBattles[n.ClickID])
 		target, hasTarget := targets[n.ClickID]
 		chasing := hasTarget && mayPursue && area.Contains(target.X, target.Y) && w.Wild(mapID, n)
 		interrupt := chasing && !state.pursuing && !now.Before(state.pursuitRetry)
@@ -368,6 +368,7 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 		delay := actorMovementDelayMin + time.Duration(random(int(actorMovementDelayRange/time.Millisecond)))*time.Millisecond
 		switch {
 		case chasing:
+			delay = actorPursuitDelay
 			x, y = w.pursuitPosition(mapID, origin, target)
 		case def.WalkBehavior == walkBounds && len(def.WalkSteps) >= 2:
 			bounds, _ := boundedArea(n, def)
@@ -384,7 +385,7 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 			} else {
 				state.step = (state.step + 1) % len(path)
 			}
-		case (w.Wild(mapID, n) || def.WalkBehavior == walkRoam) && !RoamingTown(mapID):
+		case (w.Wild(mapID, n) || def.WalkBehavior == walkRoam) && (!RoamingTown(mapID) || m.fieldBattles[n.ClickID]):
 			x, y = w.wanderPosition(mapID, origin, roamArea(n), random)
 		default:
 			state.next = now.Add(actorStationaryDelay)

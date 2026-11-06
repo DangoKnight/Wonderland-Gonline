@@ -24,6 +24,7 @@ type Skill struct {
 	Element            byte             `json:"element"`
 	Attack             uint16           `json:"attack_category"`
 	EffectLayer        byte             `json:"effect_layer"`
+	BasePower          *float64         `json:"base_power,omitempty"` // Authored skill power; nil means unresolved.
 	PowerPerLevel      float64          `json:"power_per_level"`
 	StatMultiplier     float64          `json:"stat_multiplier"`
 	AdditionalDamage   uint16           `json:"additional_damage"`
@@ -80,7 +81,7 @@ const (
 
 // IsAreaAttack reads native targeting patterns, not the attack_category (range).
 // The four patterns use compatibility grade bands 1–3, 4–6, 7–9 and 10.
-// Exact native band thresholds and shapes remain to be verified. SQL authors
+// Bands follow Private Server; official-client acceptance remains to be verified. SQL authors
 // may override classification explicitly without changing native provenance.
 func (s Skill) IsAreaAttack(grade int) bool {
 	if shape, ok := s.TargetingAt(grade); ok {
@@ -89,8 +90,18 @@ func (s Skill) IsAreaAttack(grade int) bool {
 	if s.AreaAttack != nil {
 		return *s.AreaAttack
 	}
-	patterns := [4]byte{s.NativePattern109, s.NativePattern110, s.NativePattern111, s.NativePattern112}
-	index := min((max(1, grade)-1)/compatibilityPatternGradeBand, len(patterns)-1)
-	pattern := patterns[index]
+	pattern := s.NativePatternAt(grade)
 	return pattern > nativeSingleTargetPattern && pattern <= nativeLastAreaPattern
+}
+
+// NativePatternAt follows Private Server SkillManager.GetPatternForGrade:
+// grades 1-3, 4-6, 7-9 and 10, falling back to the previous nonzero band.
+func (s Skill) NativePatternAt(grade int) byte {
+	patterns := [4]byte{s.NativePattern109, s.NativePattern110, s.NativePattern111, s.NativePattern112}
+	for i := min((max(1, grade)-1)/compatibilityPatternGradeBand, len(patterns)-1); i >= 0; i-- {
+		if patterns[i] != 0 {
+			return patterns[i]
+		}
+	}
+	return nativeSingleTargetPattern
 }

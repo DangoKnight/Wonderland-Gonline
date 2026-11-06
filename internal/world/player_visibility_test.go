@@ -22,7 +22,7 @@ func TestStarterScenePlayerVisibility(t *testing.T) {
 	for _, id := range []uint16{11016, 11050, 11113, 11115, 60000} {
 		maps[id] = assets.Map{ID: id, Scene: id}
 	}
-	w := New(&assets.Catalog{Maps: maps})
+	w := New(&assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: maps})
 	for _, id := range []uint16{10001, 10002, 10003} {
 		if !w.HideOtherPlayers(id) {
 			t.Fatalf("starter base map %d exposes players", id)

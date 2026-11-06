@@ -1,5 +1,7 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -28,13 +30,17 @@ const (
 	facingCount    = 8
 	standingAction = 8
 	// Record flag bit 0: shown at load (+0x139), otherwise hidden (+0x138).
-	npcFlagShown = 1 << 0
+	npcFlagShown                 = 1 << 0
+	legacyKelanMap               = 12000
+	legacyKelanExchangerTemplate = 14157
 	// AC22:4 visibility kinds (+0x1eec).
 	actorShown  = 1
 	actorHidden = 2
 	// AC22:4 entries: click ID, state, X, Y, kind, duration, action.
-	actorRecordBytes = 14
-	actorStateOffset = 2
+	actorRecordBytes  = 14
+	actorStateOffset  = 2
+	actorActionOffset = 13
+	actorPoseBytes    = 4
 	// frameFree is the state that animates a prop (+0x11f = 0xff).
 	frameFree = 0xff
 )
@@ -92,6 +98,7 @@ type NPCTemplate struct {
 	Name         string
 	Kind         byte
 	Look         uint16
+	WeaponSprite uint16 // Npc.dat disk +84: default battle weapon, not an item ID.
 	Face         uint16
 	Icon         uint16 // Npc.dat +0x10: 007-family small companion portrait
 	TalkLow      byte   // +0x5a: 1 stands the talk window's body lower
@@ -99,10 +106,23 @@ type NPCTemplate struct {
 	Shadow       byte
 	HeightScale  byte
 	HeightPreset byte
+	// MoveKind (+0x57, disk offset 83) picks a battle role's run action:
+	// 1 walks (actions 2/6 and 0x10/0x11 leaps), others run (0x40/0x41,
+	// 0x24/0x25); FUN_003747f4, FUN_003753ac.
+	MoveKind byte
 	// Sound is the wav#### a prop plays as it opens (+0x60, FUN_00408054).
-	Sound uint16
-	Voice byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
+	Sound             uint16
+	Voice             byte // Npc.dat +0x68: FUN_00485688 / FUN_004856cc voice family.
+	BattleSoundBody   byte // Npc.dat +0x27 including prefix: actor audio group.
+	BattleSoundWeapon byte // +0x28 (disk 36): native weapon category for movement kind 1.
 }
+
+// These native movement categories use the NPC template's default weapon in
+// combat (FUN_00433318). Their broader movement semantics remain unresolved.
+const (
+	MoveKindDefaultWeapon          = 0
+	MoveKindAlternateDefaultWeapon = 2
+)
 
 // NPCPainter draws an NPC's sprite at its feet.
 type NPCPainter interface {
@@ -146,6 +166,19 @@ func nameHeight(t NPCTemplate, anchorY int) int {
 	return h
 }
 
+// DefaultBattleHeight is +0x20b2 for players and for templates whose sprite
+// leaves it unset (FUN_00423d98, FUN_0042a4d8, FUN_00458814).
+const DefaultBattleHeight = 0x50
+
+// BattleHeight is a battle role's +0x20b2 (FUN_004265a4): the name height
+// rule, from which battle names and health bars are lifted.
+func BattleHeight(t NPCTemplate, anchorY int) int {
+	if h := nameHeight(t, anchorY); h > 0 {
+		return h
+	}
+	return DefaultBattleHeight
+}
+
 // nameTop is the name's Y relative to the feet (0x41489e, 0x415fca).
 func nameTop(height int) int {
 	if height < nameHeightTallLimit {
@@ -157,7 +190,7 @@ func nameTop(height int) int {
 // Ground shadows (FUN_0030120c, 0x301d97): the template's shadow kind
 // picks a cut of the Shadow picture or the whole Monster_Shadow picture.
 const (
-	shadowSmall   = 0
+	shadowSmall   = ShadowSmall
 	shadowMonster = 1
 	// ShadowPicture and MonsterShadowPicture name the pictures in pic\images.BMg.
 	ShadowPicture        = "Shadow"
@@ -173,24 +206,37 @@ var (
 
 // NPC is one map NPC object.
 type NPC struct {
-	ClickID  uint16
-	Template uint32
-	Info     NPCTemplate
-	X, Y     int
-	Action   int
-	Shown    bool
-	Painter  NPCPainter
+	ClickID          uint16
+	Template         uint32
+	Info             NPCTemplate
+	X, Y             int
+	Action           int
+	Shown            bool
+	legacySuppressed bool // Native client visibility override, independent of server state.
+	Painter          NPCPainter
 	// Fixed holds a prop on Frame (+0x11f); otherwise the sprite animates.
 	// With Wrap, Frame is a movie actor's animation counter.
 	Fixed, Wrap bool
 	Frame       int
 	// Depth moves the NPC's place among the depth-sorted figures (record
-	// +0x1180): a coconut up a palm sorts in front of the palm.
+	// +0x1180). Scene picture layers participate in the same sort as every actor.
 	Depth int
+	// Sign is the record's minimap icon (+0x3c, minimap.go).
+	Sign byte
+	// Routes are the record's event routes by slot (npc_route.go).
+	Routes map[byte][]image.Point
+	// speed is the record's speed byte (+0x46 → +0xd48).
+	speed        byte
+	route        npcRoute
+	Conversation bool // Suppress ambient movement until the owning dialogue ends.
+	walker       Walker
 }
 
 // SortY is the NPC's key in the depth-sorted list (FUN_0041d13c).
 func (n *NPC) SortY() int { return n.Y + n.Depth }
+
+// Visible includes the native client's map-specific suppression rules.
+func (n *NPC) Visible() bool { return n.Shown && !n.legacySuppressed }
 
 // recordDepth is the eve record's sort offset, the int the loader
 // (FUN_00484a50) copies from +0x6b4 to +0x1180: the last two of the
@@ -214,7 +260,23 @@ func (n *NPC) FaceConversation(x, y int) bool {
 	if n.Info.Kind == kindProp || n.Action < 0 || n.Action >= standingAction+facingCount {
 		return false
 	}
-	n.Action = standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
+	action := standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
+	if painter, ok := n.Painter.(interface{ FrameSize(int) (int, int) }); ok {
+		// FUN_002fe570 indexes packed frames by the sum of preceding action
+		// counts. An empty facing therefore uses the next stored artwork.
+		// Resolve within the standing group; preserve the current pose when
+		// the sprite has no following standing artwork.
+		for ; action < standingAction+facingCount; action++ {
+			w, h := painter.FrameSize(action)
+			if w > 0 && h > 0 {
+				break
+			}
+		}
+		if action == standingAction+facingCount {
+			return false
+		}
+	}
+	n.Action = action
 	return true
 }
 
@@ -244,7 +306,8 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	npcData.Lock()
 	defer npcData.Unlock()
 	path := a.DataPath(npcExport)
-	if npcData.path == path {
+	cacheKey := path + "|" + localization.CurrentLanguage()
+	if npcData.path == cacheKey {
 		return npcData.templates, nil
 	}
 	var doc struct {
@@ -253,25 +316,29 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 				Text string `json:"text"`
 			} `json:"name"`
 			Fields struct {
-				ID           uint32 `json:"id"`
-				Element      byte   `json:"element"`
-				Skill1       uint16 `json:"skill_1"`
-				Skill2       uint16 `json:"skill_2"`
-				Skill3       uint16 `json:"skill_3"`
-				Kind         byte   `json:"type"`
-				Look         uint16 `json:"unknown_u16_offset_14"`
-				Color1       uint32 `json:"unknown_u32_offset_18"`
-				Color2       uint32 `json:"unknown_u32_offset_22"`
-				Color3       uint32 `json:"unknown_u32_offset_26"`
-				Color4       uint32 `json:"unknown_u32_offset_30"`
-				HeightScale  byte   `json:"unknown_u8_offset_56"`
-				Shadow       byte   `json:"unknown_u8_offset_74"`
-				HeightPreset byte   `json:"unknown_u8_offset_87"`
-				Face         uint16 `json:"unknown_u16_offset_88"`
-				Icon         uint16 `json:"unknown_u16_offset_16"`
-				TalkLow      byte   `json:"unknown_u8_offset_86"`
-				Sound        uint16 `json:"unknown_u16_offset_92"`
-				Voice        byte   `json:"unknown_u8_offset_104"`
+				ID                uint32 `json:"id"`
+				Element           byte   `json:"element"`
+				Skill1            uint16 `json:"skill_1"`
+				Skill2            uint16 `json:"skill_2"`
+				Skill3            uint16 `json:"skill_3"`
+				Kind              byte   `json:"type"`
+				Look              uint16 `json:"unknown_u16_offset_14"`
+				WeaponSprite      uint16 `json:"unknown_u16_offset_84"`
+				Color1            uint32 `json:"unknown_u32_offset_18"`
+				Color2            uint32 `json:"unknown_u32_offset_22"`
+				Color3            uint32 `json:"unknown_u32_offset_26"`
+				Color4            uint32 `json:"unknown_u32_offset_30"`
+				HeightScale       byte   `json:"unknown_u8_offset_56"`
+				Shadow            byte   `json:"unknown_u8_offset_74"`
+				HeightPreset      byte   `json:"unknown_u8_offset_87"`
+				MoveKind          byte   `json:"unknown_u8_offset_83"`
+				Face              uint16 `json:"unknown_u16_offset_88"`
+				Icon              uint16 `json:"unknown_u16_offset_16"`
+				TalkLow           byte   `json:"unknown_u8_offset_86"`
+				Sound             uint16 `json:"unknown_u16_offset_92"`
+				Voice             byte   `json:"unknown_u8_offset_104"`
+				BattleSoundBody   byte   `json:"unknown_u8_offset_35"`
+				BattleSoundWeapon byte   `json:"unknown_u8_offset_36"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
@@ -282,9 +349,9 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	for _, r := range doc.Records {
 		f := r.Fields
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
-			Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset}
+			WeaponSprite: f.WeaponSprite, Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody, BattleSoundWeapon: f.BattleSoundWeapon}
 	}
-	npcData.path, npcData.templates = path, out
+	npcData.path, npcData.templates = cacheKey, out
 	return out, nil
 }
 
@@ -324,7 +391,7 @@ func MapRecord(a login.Assets, mapID uint16) (native.Map, error) {
 	m, ok := npcData.maps[mapID]
 	npcData.Unlock()
 	if !ok {
-		return native.Map{}, fmt.Errorf("map %d has no event record", mapID)
+		return native.Map{}, fmt.Errorf(localization.UI("ui.world.map_d_has_no_event_record_582b161f"), mapID)
 	}
 	raw, err := hex.DecodeString(m.hex)
 	if err != nil {
@@ -341,7 +408,12 @@ func MapNPCs(rec native.Map, templates map[uint32]NPCTemplate, newPainter func(N
 	for _, r := range rec.NPCs {
 		n := &NPC{ClickID: r.ClickID, Template: r.Template, X: int(r.X), Y: int(r.Y),
 			Action: standFacing(r.Rotation), Shown: r.Flags&npcFlagShown != 0,
-			Depth: recordDepth(r.UnknownWords)}
+			Depth: recordDepth(r.UnknownWords), Routes: routePoints(r.Routes), speed: r.Speed, Sign: r.Sign}
+		// FUN_004235d8 unconditionally hides the Kelan Exchanger; the
+		// actor update reapplies this even after a server show packet.
+		n.legacySuppressed = rec.ID == legacyKelanMap && r.Template == legacyKelanExchangerTemplate
+		// FUN_003030ec starts it at its record speed (+0x1ee0).
+		n.walker.pixelsPerMillisecond = actorSpeed(r.Speed)
 		if t, ok := templates[r.Template]; ok {
 			n.Info = t
 			if newPainter != nil {
@@ -354,20 +426,22 @@ func MapNPCs(rec native.Map, templates map[uint32]NPCTemplate, newPainter func(N
 }
 
 // ApplyActorPositions is AC22:4 (FUN_0038cf30) for map NPCs: each entry
-// moves an NPC and sets its visibility. p is the packet after its command
-// and subcommand bytes. A prop takes the state as its frame; the duration
-// and the other NPCs' action fields drive animations that are not ported
-// yet.
+// moves an NPC and sets its visibility. Props take state as their frame;
+// actors with a nonzero action also apply the requested pose and held frame.
+// p is the packet after its command and subcommand bytes.
 func (w *World) ApplyActorPositions(p []byte) {
 	for ; len(p) >= actorRecordBytes; p = p[actorRecordBytes:] {
 		n := w.NPCs[binary.LittleEndian.Uint16(p)]
 		if n == nil {
 			continue
 		}
+		n.stopWalk()
 		n.X, n.Y = int(binary.LittleEndian.Uint16(p[4:])), int(binary.LittleEndian.Uint16(p[6:]))
 		if n.Info.Prop() {
 			f := p[actorStateOffset]
 			n.Fixed, n.Frame = f != frameFree, int(f)
+		} else if p[actorActionOffset] != 0 {
+			n.applyPose(p[actorActionOffset], p[actorStateOffset])
 		}
 		switch p[8] {
 		case actorShown:
@@ -376,6 +450,34 @@ func (w *World) ApplyActorPositions(p []byte) {
 			n.Shown = false
 		}
 	}
+}
+
+// ApplyActorPose is AC22:9 (FUN_004464dc -> FUN_00430f90). The last
+// byte is a held frame, not a direction; 255 releases the animation.
+func (w *World) ApplyActorPose(p []byte) bool {
+	if len(p) != actorPoseBytes {
+		return false
+	}
+	if n := w.NPCs[binary.LittleEndian.Uint16(p)]; n != nil {
+		if n.applyPose(p[2], p[3]) {
+			// FUN_004464dc releases saved conversation facing via FUN_0030a344.
+			n.Conversation = false
+		}
+	}
+	return true
+}
+
+func (n *NPC) applyPose(pose, frame byte) bool {
+	action := PoseAction(int(pose), n.Action)
+	if painter, ok := n.Painter.(interface{ FrameSize(int) (int, int) }); ok {
+		if width, height := painter.FrameSize(action); width == 0 || height == 0 {
+			return false
+		}
+	}
+	n.stopWalk()
+	n.Action = action
+	n.Fixed, n.Wrap, n.Frame = frame != frameFree, false, int(frame)
+	return true
 }
 
 // Hover marks the NPC under a screen point as hovered (drawn lit, as the
@@ -402,7 +504,7 @@ func (w *World) NPCAt(x, y int) *NPC {
 	cx, cy := w.Camera()
 	var hit *NPC
 	for _, n := range w.NPCs {
-		if !n.Shown || n.Painter == nil || (hit != nil && n.SortY() < hit.SortY()) {
+		if !n.Visible() || n.Painter == nil || (hit != nil && n.SortY() < hit.SortY()) {
 			continue
 		}
 		n.paint()
@@ -423,6 +525,9 @@ func (w *World) drawSmallShadow(sx, sy int) {
 func (w *World) drawShadow(n *NPC, sx, sy int) {
 	DrawShadow(w.Env.Screen, w.Env.Pics, n.Info.Shadow, sx, sy)
 }
+
+// ShadowSmall is the Shadow cut drawn under players and shadow kind 0.
+const ShadowSmall = 0
 
 // DrawShadow is FUN_0030120c's ground shadow of a template's shadow kind
 // (Npc.dat offset 74) at feet (sx, sy).

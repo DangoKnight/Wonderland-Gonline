@@ -1,0 +1,268 @@
+[
+  {
+    "category": "beach_crate",
+    "respawn_seconds": 60,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "name": "Ordinary Wood",
+        "count": 2,
+        "weight": 35
+      },
+      {
+        "item_id": 45005,
+        "name": "Wood",
+        "count": 2,
+        "weight": 25
+      },
+      {
+        "item_id": 45002,
+        "name": "Oak wood",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 41028,
+        "name": "Melon",
+        "count": 1,
+        "weight": 30
+      },
+      {
+        "item_id": 41047,
+        "name": "Watermelon",
+        "count": 1,
+        "weight": 25
+      },
+      {
+        "item_id": 41053,
+        "name": "Muskmelon",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 41066,
+        "name": "Coconut",
+        "count": 2,
+        "weight": 30
+      },
+      {
+        "item_id": 32011,
+        "name": "Bread",
+        "count": 2,
+        "weight": 25
+      },
+      {
+        "item_id": 34014,
+        "name": "Tao Rice Ball",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 33019,
+        "name": "Recovery Potion",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 33046,
+        "name": "Recovery Medicine",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 30259,
+        "name": "Black Medicine",
+        "count": 1,
+        "weight": 10
+      }
+    ]
+  },
+  {
+    "category": "beach_chest",
+    "respawn_seconds": 60,
+    "rewards": [
+      {
+        "item_id": 10031,
+        "name": "Copper Knife",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 10032,
+        "name": "Bronze Knife",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 11031,
+        "name": "Copper Sword",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 11032,
+        "name": "Bronze Sword",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 13066,
+        "name": "Wooden Bow",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 14093,
+        "name": "Wooden Wand",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 22061,
+        "name": "Headband",
+        "count": 1,
+        "weight": 25
+      },
+      {
+        "item_id": 21073,
+        "name": "Cotton Clothes",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 23064,
+        "name": "Wooden Bracers",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 24013,
+        "name": "Wooden Shoes",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "gold": 100,
+        "count": 1,
+        "weight": 35
+      },
+      {
+        "gold": 250,
+        "count": 1,
+        "weight": 25
+      },
+      {
+        "gold": 500,
+        "count": 1,
+        "weight": 15
+      }
+    ]
+  },
+  {
+    "category": "default_chest",
+    "respawn_seconds": 60,
+    "rewards": [
+      {
+        "item_id": 28014,
+        "name": "Fresh Fruit",
+        "count": 1,
+        "weight": 35
+      },
+      {
+        "item_id": 30001,
+        "name": "Herb Potion",
+        "count": 1,
+        "weight": 25
+      },
+      {
+        "item_id": 45001,
+        "name": "Ordinary Wood",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "gold": 100,
+        "count": 1,
+        "weight": 20
+      }
+    ]
+  },
+  {
+    "category": "default_crate",
+    "respawn_seconds": 60,
+    "rewards": [
+      {
+        "item_id": 45001,
+        "name": "Ordinary Wood",
+        "count": 2,
+        "weight": 35
+      },
+      {
+        "item_id": 45005,
+        "name": "Wood",
+        "count": 2,
+        "weight": 25
+      },
+      {
+        "item_id": 45002,
+        "name": "Oak wood",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 41028,
+        "name": "Melon",
+        "count": 1,
+        "weight": 30
+      },
+      {
+        "item_id": 41047,
+        "name": "Watermelon",
+        "count": 1,
+        "weight": 25
+      },
+      {
+        "item_id": 41053,
+        "name": "Muskmelon",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 41066,
+        "name": "Coconut",
+        "count": 2,
+        "weight": 30
+      },
+      {
+        "item_id": 32011,
+        "name": "Bread",
+        "count": 2,
+        "weight": 25
+      },
+      {
+        "item_id": 34014,
+        "name": "Tao Rice Ball",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 33019,
+        "name": "Recovery Potion",
+        "count": 1,
+        "weight": 20
+      },
+      {
+        "item_id": 33046,
+        "name": "Recovery Medicine",
+        "count": 1,
+        "weight": 15
+      },
+      {
+        "item_id": 30259,
+        "name": "Black Medicine",
+        "count": 1,
+        "weight": 10
+      }
+    ]
+  }
+]

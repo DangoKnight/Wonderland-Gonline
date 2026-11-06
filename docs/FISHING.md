@@ -129,7 +129,7 @@ These addresses refer to the recovered WLRI build with SHA-256
 `ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`.
 Focused packet tests pass. On 2026-10-04, the tester reported Fishing Skilled
 02 working properly; the first run was blocked by external conditions. See
-[recorded live outcomes](LIVE_TESTING.md#recorded-live-outcomes). Individual rod,
+[recorded live outcomes](TESTING.md#recorded-live-outcomes). Individual rod,
 flight, notification and overlay checklist observations were not supplied.
 The subsequent Fishing Unskilled, Full Bag and Advancement runs were reported
 with all checks passing. Advancement played the native level-up animation and
@@ -147,13 +147,12 @@ before a catch commits. Offline time does not generate rewards.
 
 ## Upgrading
 
-Stop the server, then follow [the database copy procedure](ASSET_DATABASE.md).
-`go run ./cmd/database-migrate -config config.local.json -output-dir <new-directory>`
-creates upgraded copies without replacing the source databases. The v7 → v8
+Stop the server, then follow [the database upgrade procedure](ASSET_DATABASE.md).
+`go run ./cmd/database-migrate -config config.local.json` upgrades the configured
+databases in place and keeps the originals in `backups/`. The v7 → v8
 upgrade changes fish weights only where both grade and weight still match the
 old defaults. Custom weights/grades, removed rewards and other rules are preserved.
-Repeating migration never reapplies the multiplier. Point the startup
-configuration at those copies before starting the updated binary. The gameplay
+Repeating migration never reapplies the multiplier. The gameplay
 upgrade is additive; no reset or loss of accounts is required.
 
 Focused verification covers weight boundaries, shoreline/bounds, native start/

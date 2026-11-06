@@ -140,12 +140,7 @@ func TestTeamInvitationResponse(t *testing.T) {
 		c.Frame()
 		savePNG(t, path, c)
 	}
-	for _, child := range c.UI.Modal.Base().Children {
-		if child.Base().Left == 70 {
-			child.(*seui.FixedButton).Click()
-			break
-		}
-	}
+	acceptTeamPrompt(t, c)
 	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{13, 3, 1, 34, 78, 0, 0}) {
 		t.Fatal("invite acceptance", got)
 	}
@@ -246,9 +241,10 @@ func TestJoinTeamToolbarSelection(t *testing.T) {
 		t.Fatal("missing selection cursor")
 	}
 	c.GroundClick(10, 400)
-	if !c.joinTeamTarget || len(capture()) != 0 || c.World.Walking() {
-		t.Fatal("empty selection should wait without walking")
+	if c.joinTeamTarget || button.IconDown || c.World.JoinTeamSelection || len(capture()) != 0 || c.World.Walking() {
+		t.Fatal("empty selection must cancel without sending or walking")
 	}
+	button.Click()
 	if !c.TeamKey(escapeKey, 0) || c.joinTeamTarget || button.IconDown {
 		t.Fatal("escape did not cancel")
 	}
@@ -528,8 +524,13 @@ func TestTeamDismissMatchesLogoutBackground(t *testing.T) {
 	want := append([]uint16(nil), c.Screen.Pix...)
 	c.UI.Modal.KeyDown(seui.VKEscape, 0)
 	c.logoutConfirmation(false)
+	// Paint now includes the logout portrait/name so close animations retain
+	// them. This comparison checks decoration, independently of those contents.
+	preview, name := c.logoutPrompt.preview, c.World.Player.Name
+	c.logoutPrompt.preview, c.World.Player.Name = nil, nil
 	c.Screen.Fill(image.Rect(0, 0, 800, 600), 0)
 	c.logoutPrompt.Paint()
+	c.logoutPrompt.preview, c.World.Player.Name = preview, name
 	if !slices.Equal(want, c.Screen.Pix) {
 		t.Fatal("Teams confirmation background differs from logout")
 	}
@@ -592,6 +593,8 @@ func TestLogoutConfirmationStaticNativePose(t *testing.T) {
 	if f.preview == c.Inventory.Preview {
 		t.Fatal("logout preview must have independent animation state")
 	}
+	// Opening changes the panel, not the preview's native fixed pose.
+	*now = now.Add(seui.MessageOpenDuration)
 	paint := func() { c.Screen.Fill(image.Rect(0, 0, 800, 600), 0); f.Update(c.Input) }
 	paint()
 	before := append([]uint16(nil), c.Screen.Pix...)

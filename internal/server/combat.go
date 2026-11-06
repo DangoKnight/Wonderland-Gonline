@@ -3,20 +3,30 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"sort"
-	"strings"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/battle"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/world"
 )
 
+// turnGrace is a compatibility margin over the native countdown: the client
+// accepts commands until its counter passes 0 (FUN_0039800c reaches -1 one
+// second later), and the command still has to cross the network.
+const turnGrace = 2 * time.Second
+
+// defaultTurnTimeout is the native countdown of the kind this server
+// announces, plus the grace.
+var defaultTurnTimeout = battle.TurnLimit(battle.KindStandard) + turnGrace
+
 // Battle timing; variables so tests need not wait.
 var (
-	turnTimeout = 30 * time.Second
+	turnTimeout = defaultTurnTimeout
 	battleSleep = time.Sleep
 )
 
@@ -24,25 +34,34 @@ var (
 // (GetTeamMembers). Its quest event stays suspended until the outcome callback
 // resumes or releases it. Reference: PvEBattleManager.
 type battleRun struct {
-	b       *battle.Battle
-	members []*battleMember // members[0] started the battle and owns its event and loot.
-	event   *eventSession   // The suspended event, if a quest action started the battle.
-	source  uint16          // The battle action's d1: the callback branch's source.
-	flee    bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
-	timer   *time.Timer
-	turn    int // Increments per round so a stale timer cannot fire into a new round.
+	backdropLocation protocol.BattleBackdropLocation
+	rewardError      error
+	rewarded         map[*battle.Fighter]bool
+	b                *battle.Battle
+	members          []*battleMember // members[0] started the battle and owns its event and loot.
+	event            *eventSession   // The suspended event, if a quest action started the battle.
+	source           uint16          // The battle action's d1: the callback branch's source.
+	flee             bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
+	timer            *time.Timer
+	turn             int // Increments per round so a stale timer cannot fire into a new round.
 	// encounter is the visible overworld actor reserved for this battle.
 	encounter    uint16
 	encounterMap uint16
 	wild         bool
 	trial        *assets.CombatTrial
+	petChanges   []battle.Step                // Native exit/join steps before the next round's actions.
+	items        map[uint16]assets.BattleItem // Immutable definition snapshot for this encounter.
+	withdrawals  [][]byte                     // Forced removals published after the already-calculated round's playback.
 }
 
 // battleMember is one participant: its character fighter and battle pet, if any.
 type battleMember struct {
-	c    *Session
-	self *battle.Fighter
-	pet  *battle.Fighter
+	c            *Session
+	self         *battle.Fighter
+	pet          *battle.Fighter
+	choiceToken  uint32
+	roundBundled bool // This recipient already has this round's native steps.
+	resultSaved  bool // Final vitals/pet consequences committed; do not settle twice on disconnect.
 }
 
 func (run *battleRun) member(c *Session) *battleMember {
@@ -67,7 +86,9 @@ func (run *battleRun) active() []*battleMember {
 
 func (s *Server) rules() battle.Rules {
 	return battle.Rules{ComboDamagePerParticipant: s.comboDamagePerParticipant, Skills: s.Assets.Skills, Timing: s.Assets.AnimationTiming, Critical: s.Assets.Critical,
-		Next: func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
+		ExperienceFormula: s.battleEXPFormula,
+		NPCs:              s.Assets.NPCs,
+		Next:              func(lo, hi int) int { return lo + rand.IntN(hi-lo) }, Float: rand.Float64}
 }
 
 // fleeContinues lists the story battles whose flee resumes the event (OnFlee in C#).
@@ -91,8 +112,12 @@ func fleeContinues(mapID, event uint16) bool {
 // the enemies. It returns false when no battle can be built. Caller holds worldMu.
 func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, error) {
 	var formation []uint32
+	var members []world.FormationMember
 	if op.Code == world.ActionBattle {
-		formation = s.World.Formation(es.mapID, op.D2)
+		members = s.World.FormationMembers(es.mapID, op.D2)
+		for _, member := range members {
+			formation = append(formation, member.Template)
+		}
 	}
 	id := uint32(0)
 	switch {
@@ -108,7 +133,7 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		return false, nil
 	}
 	level := max(5, int(op.D3))
-	hp := level*35 + 200
+	hp := 0 // A positive event HP value overrides the stored NPC HP.
 	if op.DW1 > 0 {
 		hp = int(op.DW1)
 	}
@@ -117,11 +142,14 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 		templates = []uint32{id}
 	}
 	var enemies []battle.Enemy
-	for _, t := range templates {
+	for index, t := range templates {
 		e := battle.Enemy{Template: t, Name: s.npcName(t), Level: level, HP: hp, ClickID: es.click}
-		// A formation enemy uses its own Npc.dat level, HP and element.
+		if index < len(members) {
+			e.FormationSlot = members[index].Slot
+		}
+		// A formation enemy uses its own Npc.dat level and element.
 		if npc, ok := s.Assets.NPCs[uint16(t)]; ok && len(formation) > 0 && t <= 0xffff {
-			e.Level, e.HP, e.Element = max(1, int(npc.Level)), max(1, int(npc.HP)), npc.Element
+			e.Level, e.Element = max(1, int(npc.Level)), npc.Element
 		}
 		enemies = append(enemies, e)
 	}
@@ -167,17 +195,37 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	s.cancelPartyLeadership(c.party, protocol.TeamLeadershipBusy)
+	for i := range enemies {
+		e := &enemies[i]
+		if e.Template <= math.MaxUint16 {
+			if npc, ok := s.Assets.NPCs[uint16(e.Template)]; ok {
+				e.Base = game.Attributes{Strength: npc.Stats[0], Constitution: npc.Stats[1], Intelligence: npc.Stats[2], Wisdom: npc.Stats[3], Agility: npc.Stats[4]}
+				e.Element = npc.Element
+				if e.HP <= 0 {
+					e.HP = int(npc.HP)
+				}
+				e.SP = int(npc.SP)
+			}
+		}
+	}
 	var fighters []*battle.Fighter
 	for i, m := range s.battleTeam(c) {
+		// Native cells follow party order, even when an enemy contacts a
+		// follower first. Keep run.members[0] as the event/loot initiator.
+		slot := i
+		if c.party != nil && c.party.index(m) >= 0 {
+			slot = c.party.index(m)
+		}
 		s.cancelTrade(m)
-		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, i)}
+		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, slot)}
 		fighters = append(fighters, member.self)
 		if pet := m.character.BattlePet(); pet != nil {
 			copy := *pet
 			copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
-			copy.Normalize(s.Assets.Items, false)
+			copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 			copy.Name = s.companionName(copy.ID, copy.Name)
-			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i)
+			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, slot, s.petTemplate(copy.ID))
 			fighters = append(fighters, member.pet)
 		}
 		run.members = append(run.members, member)
@@ -188,16 +236,15 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 	}
 	run.b = battle.New(fighters, enemies)
-	background := uint16(1)
-	if c.character.Map < game.MapID10000 {
-		background = c.character.Map
-	}
+	run.backdropLocation = battleBackdropLocation(c, run)
+	background := s.legacyBattleBackground(c, run)
 	for _, m := range run.members {
 		for _, p := range m.c.character.Pets {
 			run.b.Roster[m.c.character.ID] = append(run.b.Roster[m.c.character.ID], p.ID)
 		}
 		m.c.battle = run
 	}
+	s.captureEscapeLeaders(run)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			if m.c == c {
@@ -222,10 +269,16 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 	return nil
 }
 
-func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16) error {
+func (s *Server) battleIntro(run *battleRun, m *battleMember, background byte) error {
+	if m.c.clientBackdrops {
+		if err := m.c.send(run.backdropLocation.Packet()); err != nil {
+			return err
+		}
+		background = compatibilityBattleBackground
+	}
 	if i := battlePetIndex(*m.c.character, m); i >= 0 {
 		pet := m.c.character.Pets[i]
-		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items)); err != nil {
+		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))); err != nil {
 			return err
 		}
 	}
@@ -233,6 +286,13 @@ func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16)
 		s.partyUpdate(m.c.party)
 	}
 	intro := run.b.Intro(m.self, background)
+	if m.c.combatCapabilities&protocol.CombatCapabilityRoundChain != 0 {
+		prompt, err := s.combatPrompt(m, intro[len(intro)-2:])
+		if err != nil {
+			return err
+		}
+		intro = append(intro[:len(intro)-2], prompt...)
+	}
 	if e := s.sendAll(m.c, intro[:2]); e != nil {
 		return e
 	}
@@ -266,7 +326,7 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		if len(p) < 2 {
 			return protocol.ErrMalformed
 		}
-		ack := run.b.Submit(s.rules(), c.character.ID, p[1], p[2:])
+		ack := run.b.Submit(s.combatRules(run), c.character.ID, p[1], p[2:])
 		if ack == nil {
 			return nil
 		}
@@ -275,9 +335,19 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		}
 		s.tryRound(run)
 	case protocol.CommandBattleState:
-		if len(p) >= 3 && p[1] == protocol.BattleStateExit && p[2] == 3 {
-			// Any member's escape ends the battle for the whole team.
-			s.endBattle(run, battle.Fled)
+		if len(p) == 3 && p[1] == protocol.BattleStateExit && p[2] == protocol.BattleExitRequest {
+			m := run.member(c)
+			if m == nil {
+				return nil
+			}
+			actor := m.self
+			if actor.Dead() {
+				actor = m.pet
+			}
+			if actor == nil {
+				return nil
+			}
+			return s.battleCommand(c, []byte{protocol.CommandBattleAction, protocol.BattleActionFleeRequest, actor.X, actor.Y, actor.X, actor.Y})
 		}
 	}
 	return nil
@@ -294,14 +364,33 @@ func (s *Server) tryRound(run *battleRun) {
 		run.timer.Stop()
 	}
 	run.turn++
-	steps, outcome := run.b.Round(s.rules())
+	s.captureEscapeLeaders(run)
+	steps, outcome := run.b.Round(s.combatRules(run))
+	if run.rewardError != nil {
+		s.Log.Warn("combat acquisition not committed", "error", run.rewardError)
+		for _, m := range run.active() {
+			s.abandonBattle(m.c)
+			m.c.conn.Close()
+		}
+		return
+	}
+	steps = append(run.petChanges, steps...)
+	run.petChanges = nil
 	go s.playRound(run, steps, outcome)
 }
 
 // play sends each step to every member and waits for its animation without
 // holding worldMu. It stops when no member remains.
 func (s *Server) play(run *battleRun, steps []battle.Step) bool {
-	for _, step := range steps {
+	s.worldMu.Lock()
+	if run.b.Finished {
+		s.worldMu.Unlock()
+		return false
+	}
+	escapes := s.prepareEscapingMembers(run, steps)
+	prepared := s.prepareCombatRounds(run, steps)
+	s.worldMu.Unlock()
+	for index, step := range steps {
 		s.worldMu.Lock()
 		if run.b.Finished {
 			s.worldMu.Unlock()
@@ -309,14 +398,25 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 		}
 		members := run.active()
 		for _, m := range members {
-			progress, err := s.commitSkillUses(m.c, run, step.SkillUses)
+			if m.roundBundled {
+				continue
+			}
+			var progress [][]byte
+			var err error
+			if saved, ok := prepared[m.c]; ok {
+				if index < len(saved) {
+					progress = saved[index]
+				}
+			} else {
+				progress, err = s.commitSkillUses(m.c, run, step.SkillUses)
+			}
 			if err != nil {
 				s.Log.Warn("battle skill progress not committed", "character", m.c.character.ID, "error", err)
 				s.abandonBattle(m.c)
 				m.c.conn.Close()
 				continue
 			}
-			if s.sendAll(m.c, append(progress, step.Packets...)) != nil {
+			if s.sendAll(m.c, append(progress, step.PacketsFor(m.c.character.ID)...)) != nil {
 				m.c.conn.Close()
 			}
 		}
@@ -327,6 +427,56 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 		}
 		if step.Delay > 0 {
 			battleSleep(step.Delay)
+		}
+		if len(step.Escapes) > 0 {
+			s.worldMu.Lock()
+			for _, owner := range step.Escapes {
+				if result, ok := escapes[owner]; ok {
+					s.completeMemberEscape(run, result)
+				}
+			}
+			if s.finishEmptyEscapeBattle(run) {
+				s.worldMu.Unlock()
+				return false
+			}
+			s.worldMu.Unlock()
+		}
+		if len(step.Overkills) > 0 {
+			s.worldMu.Lock()
+			if run.b.Finished {
+				s.worldMu.Unlock()
+				return false
+			}
+			for _, f := range step.Overkills {
+				if f.Kind != battle.Player {
+					continue
+				}
+				for _, m := range run.active() {
+					if m.self != f {
+						continue
+					}
+					if err := s.returnOverkilledPlayer(run, m, true); err != nil {
+						s.Log.Warn("overkill return failed", "character", m.c.character.ID, "error", err)
+						m.c.battle = nil
+						run.b.Leave(m.c.character.ID)
+						m.c.conn.Close()
+					}
+				}
+			}
+			alive := len(run.active()) > 0
+			if !alive {
+				run.b.Finished = true
+				if run.timer != nil {
+					run.timer.Stop()
+				}
+				if run.encounter != 0 {
+					s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
+				}
+			}
+			s.worldMu.Unlock()
+			if !alive {
+				return false
+			}
 		}
 	}
 	return true
@@ -343,14 +493,19 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 	var packets [][]byte
 	changed := false
 	for _, use := range uses {
+		gain := use.SkillEXP
+		if gain == 0 {
+			gain = game.CombatSkillEXPPerUse
+		}
+		gain = uint32(ScaleExperience(uint64(gain), s.expRateMultiplier))
 		if use.Actor == m.self {
 			before := append([]game.LearnedSkill(nil), next.Skills...)
-			updates := next.AddSkillEXP(use.Skill, 1)
+			updates := next.AddSkillEXP(use.Skill, gain)
 			changed = changed || len(updates) > 0
 			packets = append(packets, updates...)
 			for i, skill := range next.Skills {
 				if skill.Grade > before[i].Grade {
-					packets = append(packets, next.UnlockQualifiedSkills(true, s.hasSkill)...)
+					packets = append(packets, s.unlockQualifiedSkills(&next, true)...)
 					break
 				}
 			}
@@ -361,7 +516,7 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 						changed = true
 					}
 				}
-				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, 1, c.pets.slot(next.Pets[i].ID))...)
+				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, gain, c.pets.slot(next.Pets[i].ID))...)
 			}
 		}
 	}
@@ -384,8 +539,12 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	s.flushBattleDisconnects(run)
 	if len(run.active()) == 0 || run.b.Finished {
 		return
+	}
+	if outcome == battle.Continue {
+		outcome = run.b.Forfeit()
 	}
 	if outcome != battle.Continue {
 		s.endBattle(run, outcome)
@@ -393,7 +552,8 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 	}
 	run.b.Processing = false
 	for _, m := range run.active() {
-		if s.sendAll(m.c, run.b.NextRound(m.c.character.ID)) != nil {
+		prompt, err := s.combatPrompt(m, run.b.NextRound(m.c.character.ID))
+		if err != nil || s.sendAll(m.c, prompt) != nil {
 			m.c.conn.Close()
 		}
 	}
@@ -414,6 +574,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	if run.b.Finished {
 		return
 	}
+	s.flushBattleDisconnects(run)
 	run.b.Finished = true
 	if run.timer != nil {
 		run.timer.Stop()
@@ -456,30 +617,42 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			if run.trial != nil {
 				first = append(first, s.trialReward(&next, run.trial)...)
 			}
-			if next.Gold < game.MaxGold {
+			if s.battleGoldEnabled && next.Gold < game.MaxGold {
 				next.Gold = uint32(min(uint64(next.Gold)+gold, uint64(game.MaxGold)))
 			}
-			var adds []game.Addition
-			if m == run.members[0] {
-				var dropped []string
-				adds, dropped = s.rollLoot(run, &next)
-				if len(dropped) > 0 {
-					last = append(last, headBanner("Obtain "+strings.Join(dropped, ", ")))
-				}
+			playerEXP := exp
+			if s.battleEXPFormula == game.BattleEXPParticipation {
+				playerEXP = ScaleExperience(run.b.ParticipantEXP(m.self), s.expRateMultiplier)
 			}
-			levels := next.AddExp(exp)
+			levels := next.AddExp(playerEXP)
 			if levels > 0 {
 				next.Refill(s.Assets.Items)
 			}
 			if j := battlePetIndex(next, m); j >= 0 {
-				// The pet receives the same once-scaled reward as its owner.
+				// Simple mode shares the owner's reward. Participation mode grants
+				// each owned pet's accumulated kill share separately below.
 				pet := &next.Pets[j]
 				pet.HP = int32(max(1, m.pet.HP))
-				grown := s.gainPetExp(pet, uint32(min(exp, 1<<31-1)), petGrowth)
-				pet.Normalize(s.Assets.Items, grown > 0)
+				petEXP := exp
+				if s.battleEXPFormula == game.BattleEXPParticipation {
+					petEXP = 0
+				}
+				grown := s.gainPetExp(pet, uint32(min(petEXP, 1<<31-1)), petGrowth)
+				pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 			}
-			if len(adds) > 0 {
-				first = append(first, next.Bag.AdditionPacket(adds))
+			if s.battleEXPFormula == game.BattleEXPParticipation {
+				for i := range next.Pets {
+					pet := &next.Pets[i]
+					share := run.b.PetParticipantEXP(next.ID, pet.ID)
+					if share == 0 {
+						continue
+					}
+					grown := s.gainPetExp(pet, uint32(ScaleExperience(share, s.expRateMultiplier)), petGrowth)
+					pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
+					if slot := c.pets.slot(pet.ID); slot != 0 && (m.pet == nil || !game.SamePet(m.pet.ID, pet.ID)) {
+						first = append(first, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+					}
+				}
 			}
 			first = append(first, next.ExpPacket())
 			if levels > 0 {
@@ -511,6 +684,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			c.conn.Close()
 			continue
 		}
+		m.resultSaved = true
 		var completed []uint32
 		for id, q := range next.Quests {
 			if before, exists := previousQuests[id]; !exists || before.State != q.State || before.Step != q.Step || before.Kills != q.Kills {
@@ -533,31 +707,6 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	if len(results) > 0 {
 		go s.finishBattle(run, outcome, results, delay)
 	}
-}
-
-// rollLoot rolls every uncaptured monster's drops into next's bag.
-func (s *Server) rollLoot(run *battleRun, next *game.Character) ([]game.Addition, []string) {
-	var adds []game.Addition
-	var dropped []string
-	r := s.rules()
-	r.DropRateMultiplier = s.dropRateMultiplier
-	for _, m := range run.b.Defenders {
-		if m.Captured || m.Kind != battle.Monster || run.b.PvP {
-			continue
-		}
-		var native [5]uint16
-		if npc, ok := s.Assets.NPCs[uint16(m.Template)]; ok && m.Template <= 0xffff {
-			native = npc.Drops
-		}
-		for _, d := range r.RollDrops(s.Assets.Drops[m.Template], native, func(id uint16) bool { _, ok := s.Assets.Items[id]; return ok }) {
-			limit, _ := s.stackLimit(d.Item)
-			if a, e := next.Bag.Grant(game.Item{ID: d.Item}, int(d.Count), limit, s.Assets.Items); e == nil {
-				adds = append(adds, a...)
-				dropped = append(dropped, fmt.Sprintf("%s x%d", s.itemName(d.Item), d.Count))
-			}
-		}
-	}
-	return adds, dropped
 }
 
 // finishBattle plays the departure, then returns every member to the map. Only
@@ -622,21 +771,46 @@ func (s *Server) finishBattle(run *battleRun, outcome battle.Outcome, results []
 	// RunOutcome: the battle callback branch (trigger 4) continues the event.
 	next := s.World.OutcomeBranch(c.character, c.view, es.mapID, es.ev, run.source, result, es.branch)
 	if next < 0 || c.character.Map != es.mapID {
+		if next < 0 && outcome == battle.Victory && c.character.Map == es.mapID && es.click > 0 {
+			s.sendOrClose(c, s.World.HideActor(c.view, es.mapID, es.click))
+		}
 		_ = s.cancelInteraction(c)
+		s.sendOrClose(c, s.World.Sync(c.character, c.view, false)...)
 		return
 	}
 	_ = s.startEvent(context.Background(), c, es.click, es.ev, next, true)
 }
 
-// abandonBattle is OnPlayerDisconnect: the member leaves; its fighters stay and
-// defend. The battle ends when no member remains. Caller holds worldMu.
+// abandonBattle saves the resolved state and withdraws this owner and pet.
+// The battle ends when no member remains. Caller holds worldMu.
 func (s *Server) abandonBattle(c *Session) {
 	run := c.battle
 	if run == nil {
 		return
 	}
+	m := run.member(c)
+	if m != nil && m.self.Overkilled {
+		// A disconnect during the flight must not bypass the saved return.
+		// The round has already resolved; omit writes to the closing owner.
+		if err := s.returnOverkilledPlayer(run, m, false); err != nil {
+			s.Log.Warn("disconnected overkill return failed", "character", c.character.ID, "error", err)
+		}
+	} else if m != nil && !m.resultSaved {
+		s.stageBattleDisconnect(run, m)
+		ctx, cancel := context.WithTimeout(context.Background(), autosaveTimeout)
+		if err := s.saveBattleDisconnect(ctx, c); err != nil {
+			s.Log.Error("battle disconnect state not committed", "character", c.character.ID, "error", err)
+		}
+		cancel()
+	}
+	// The overkill path already publishes removal after committing its return.
+	removed := c.battle != run
 	c.battle = nil
 	run.b.Leave(c.character.ID)
+	c.encounter.battleOver()
+	if m != nil && !removed {
+		s.publishBattleDisconnect(run, m)
+	}
 	if len(run.active()) == 0 {
 		if run.encounter != 0 {
 			s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
@@ -648,6 +822,11 @@ func (s *Server) abandonBattle(c *Session) {
 		return
 	}
 	if !run.b.Finished {
+		// A submitted round is immutable. In particular, an escaping teammate
+		// must complete its departure before withdrawal-based endings are tested.
+		if run.b.Processing {
+			return
+		}
 		if outcome := run.b.Forfeit(); outcome != battle.Continue {
 			s.endBattle(run, outcome)
 			return
@@ -669,6 +848,37 @@ func battlePetIndex(char game.Character, m *battleMember) int {
 // the owner's packets and deferred peer broadcasts. Only the staged roster is
 // changed here; the caller adopts it and publishes packets after a durable save.
 func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
+	packets, peerPackets := s.activePetResults(run, m, next, outcome, roster)
+	for _, catch := range run.b.Captures {
+		if catch.Committed {
+			continue
+		}
+		if catch.Owner != next.ID {
+			continue
+		}
+		slot := next.FreePetSlot()
+		if slot == 0 {
+			continue
+		}
+		t := s.petTemplate(catch.Template)
+		pet := game.NewCapturedPet(catch.Template, catch.Name, slot, t, s.Assets.Items, petGrowth, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
+		pet.EnsureSkills(t, s.hasSkill)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
+		next.Pets = append(next.Pets, pet)
+		if roster.register(pet.ID) {
+			packets = append(packets, pet.RecruitPacket(next.ID, t))
+		}
+		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))...)
+		if pet.Equipment != (game.Equipment{}) {
+			packets = append(packets, s.petListPacket(next, roster))
+		}
+		packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
+	}
+	return packets, peerPackets
+}
+
+// activePetResults checkpoints only the outgoing pet; captures settle once at battle end.
+func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
 	var packets, peerPackets [][]byte
 	if i := battlePetIndex(*next, m); i >= 0 {
 		pet := &next.Pets[i]
@@ -683,15 +893,15 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 		}
 		pet.Amity = byte(max(0, int(pet.Amity)-deaths))
 		if deaths > 0 && slot != 0 {
-			packets = append(packets, game.PetStat(slot, 64, int64(pet.Amity)))
+			packets = append(packets, game.PetStat(slot, game.PetStatAmity, int64(pet.Amity)))
 		}
-		if pet.Amity < 20 && deaths > 0 {
+		if pet.Amity < game.PetDesertMinimumAmity && deaths > 0 {
 			// The pet deserts the party.
 			id := pet.ID
 			if next.ActiveMount != 0 && game.SamePet(next.ActiveMount, id) {
 				next.ActiveMount = 0
-				packets = append(packets, unmountPackets(next.ID)...)
-				peerPackets = append(peerPackets, unmountPackets(next.ID)...)
+				packets = append(packets, serverwire.UnmountPackets(next.ID)...)
+				peerPackets = append(peerPackets, serverwire.UnmountPackets(next.ID)...)
 			}
 			if next.ActivePet != 0 && game.SamePet(next.ActivePet, id) {
 				next.ActivePet = 0
@@ -710,29 +920,89 @@ func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Characte
 				peerPackets = append(peerPackets, removed)
 			}
 		} else if slot != 0 {
-			pet.Normalize(s.Assets.Items, false)
-			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
+			pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+			packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
 		}
-	}
-	for _, catch := range run.b.Captures {
-		if catch.Owner != next.ID {
-			continue
-		}
-		slot := next.FreePetSlot()
-		if slot == 0 {
-			continue
-		}
-		t := s.petTemplate(catch.Template)
-		pet := game.NewPet(catch.Template, catch.Name, slot, t, s.Assets.Items)
-		pet.Level = byte(max(1, min(catch.Level, game.MaxLevel)))
-		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
-		next.Pets = append(next.Pets, pet)
-		if roster.register(pet.ID) {
-			packets = append(packets, pet.RecruitPacket(next.ID, t))
-		}
-		packets = append(packets, pet.ProgressionPackets(roster.slot(pet.ID), s.Assets.Items)...)
-		packets = append(packets, systemLine(fmt.Sprintf("Successfully captured %s into Pet Slot #%d!", catch.Name, slot)))
 	}
 	return packets, peerPackets
+}
+
+// battleStateCommand decodes the native AC11:2 player PK request before changing
+// either party. raw character ID is authoritative; the trailing click ID is NPC-only.
+func (s *Server) battleStateCommand(c *Session, p []byte) error {
+	if len(p) < 2 {
+		return ErrUnsupported
+	}
+	if c.battle != nil {
+		return s.battleCommand(c, p)
+	}
+	if p[1] != protocol.BattleStateChallenge {
+		return nil
+	}
+	if len(p) != 9 {
+		return protocol.ErrMalformed
+	}
+	if p[2] != protocol.BattleChallengePlayer {
+		return nil
+	}
+	targetID := uint32(p[3]) | uint32(p[4])<<8 | uint32(p[5])<<16 | uint32(p[6])<<24
+	target := s.friendSessions[targetID]
+	if target == nil || target == c || target.character == nil || !s.samePlayerScene(target, c) || c.tentOwner != 0 ||
+		!c.character.Preferences().PKAllowed || !target.character.Preferences().PKAllowed ||
+		!gmIdle(c) || !gmIdle(target) || (c.party != nil && c.party == target.party) {
+		return c.send(serverwire.HeadBanner("The player is unavailable for PK."))
+	}
+	return s.startPvP(c, target)
+}
+
+// startPvP initializes two parties through the same turn/persistence pipeline as PvE.
+// Caller holds worldMu, so no participant can join two battles during setup.
+func (s *Server) startPvP(attacker, defender *Session) error {
+	run := &battleRun{}
+	teams := [][]*Session{s.battleTeam(attacker), s.battleTeam(defender)}
+	seen := map[*Session]bool{}
+	for _, team := range teams {
+		for _, c := range team {
+			if seen[c] || !gmIdle(c) || !c.character.Preferences().PKAllowed {
+				return attacker.send(serverwire.HeadBanner("A party member is unavailable for PK."))
+			}
+			seen[c] = true
+		}
+	}
+	var fighters [2][]*battle.Fighter
+	for side, team := range teams {
+		for i, c := range team {
+			m := &battleMember{c: c, self: battle.PlayerFighter(c.character, s.Assets.Items, i)}
+			battle.Place(m.self, battle.Side(side+1), i)
+			fighters[side] = append(fighters[side], m.self)
+			if pet := c.character.BattlePet(); pet != nil {
+				copy := *pet
+				copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
+				copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
+				copy.Name = s.companionName(copy.ID, copy.Name)
+				m.pet = battle.PetFighter(copy, c.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
+				battle.Place(m.pet, battle.Side(side+1), i)
+				fighters[side] = append(fighters[side], m.pet)
+			}
+			run.members = append(run.members, m)
+		}
+	}
+	run.b = battle.NewPvP(fighters[0], fighters[1])
+	for _, m := range run.members {
+		m.c.battle = run
+	}
+	run.backdropLocation = battleBackdropLocation(attacker, run)
+	background := s.legacyBattleBackground(attacker, run)
+	for _, m := range run.members {
+		if err := s.battleIntro(run, m, background); err != nil {
+			run.b.Finished = true
+			for _, member := range run.members {
+				member.c.battle = nil
+				member.c.conn.Close()
+			}
+			return err
+		}
+	}
+	s.armTurnTimer(run)
+	return nil
 }

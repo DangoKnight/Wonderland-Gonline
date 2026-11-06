@@ -144,6 +144,7 @@ func (e *Editor) SetMaxLen(n int) {
 // SetText is FUN_00468de8: the text is replaced and an End key press moves
 // the caret after it.
 func (e *Editor) SetText(s []byte) {
+	e.ClearLanguage("text")
 	e.Text = append([]byte(nil), s...)
 	e.self.KeyDown(VKEnd, 0)
 }
@@ -363,9 +364,6 @@ func (e *Editor) Char(c byte) {
 	}
 	if e.Filter == 2 && !isAlnum(c) {
 		return
-	}
-	if e.Name == "IDField" && isLower(c) {
-		c -= 0x20
 	}
 	if e.Name == "CreateRoleName" && c == ' ' {
 		return

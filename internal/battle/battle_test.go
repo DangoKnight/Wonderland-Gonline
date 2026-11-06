@@ -18,7 +18,7 @@ func hero() *game.Character {
 
 func setup(hp int) (*Battle, *Fighter) {
 	self := PlayerFighter(hero(), nil, 0)
-	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, ClickID: 3}}), self
+	return New([]*Fighter{self}, []Enemy{{Template: 10500, Name: "Slime", Level: 5, HP: hp, SP: 99, ClickID: 3}}), self
 }
 
 func TestIntroAndSubmit(t *testing.T) {
@@ -48,18 +48,49 @@ func TestIntroAndSubmit(t *testing.T) {
 	}
 }
 
+func TestSubmitNativeTrailerAndUnsupportedRequests(t *testing.T) {
+	// The native AC50:1 builder appends opaque compatibility bytes after the
+	// skill. They must not affect ownership, skill selection or replay checks.
+	b, _ := setup(50)
+	data := []byte{4, 2, 2, 2, 0xf9, 0x2a, 0xdc, 0xcd, 2}
+	if ack := b.Submit(lowest, 7, 1, data); !bytes.Equal(ack, []byte{53, 5, 4, 2}) {
+		t.Fatalf("native extended attack: %x", ack)
+	}
+	if a := b.Pending[4<<8|2]; a.Kind != "attack" || a.Skill != 11001 {
+		t.Fatal("trailer changed action", a)
+	}
+	if ack := b.Submit(lowest, 7, 1, data); ack != nil || len(b.Pending) != 1 {
+		t.Fatal("duplicate native request accepted", ack, b.Pending)
+	}
+	for _, request := range []struct {
+		sub  byte
+		data []byte
+	}{
+		{2, []byte{4, 2, 2, 2, 0xf9, 0x2a, 0xdc, 0xcd, 1, 0}},
+		{0, []byte{4, 2, 2, 2, 0xf9, 0x2a}},
+		{255, []byte{4, 2, 2, 2, 0xf9, 0x2a}},
+		{1, []byte{4, 2, 2}},
+		{1, []byte{4, 2, 2, 2, 0xf9}},
+	} {
+		b, _ := setup(50)
+		if ack := b.Submit(lowest, 7, request.sub, request.data); ack != nil || len(b.Pending) != 0 {
+			t.Fatalf("unsupported/malformed request %d/%x consumed turn: %x", request.sub, request.data, ack)
+		}
+	}
+}
+
 func TestRoundDamageAndOutcomes(t *testing.T) {
 	b, self := setup(1000)
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2})
 	steps, outcome := b.Round(lowest)
 	m := b.Defenders[0]
-	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*1.2+3) = 9.
-	// Basic damage = 12*2 - 9 + roll 1 = 16; slime ATK 12 hits for max(5, 14 - DEF 11) = 5.
-	if outcome != Continue || m.HP != 1000-16 || self.HP != 95 || len(steps) != 2 {
+	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*2 + 0*2) = 10.
+	// floor((1.4*12 - .98*10)*1.3) + 1 = 10; the slime deals 3.
+	if outcome != Continue || m.HP != 1000-10 || self.HP != 97 || len(steps) != 2 {
 		t.Fatal(outcome, m.HP, self.HP, len(steps))
 	}
 	hit := steps[0].Packets[1]
-	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 16 || hit[20] != 1 {
+	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 10 || hit[20] != 1 {
 		t.Fatalf("hit record %v", hit)
 	}
 	// A magic skill spends SP and uses MAT against MDF.
@@ -82,20 +113,21 @@ func TestRoundDamageAndOutcomes(t *testing.T) {
 	if _, outcome := lost.Round(lowest); outcome != Defeat {
 		t.Fatal("defeat", outcome)
 	}
-	run, _ := setup(1000)
+	run, runner := setup(1000)
+	runner.Level = run.Defenders[0].Level // Successful escape fixture; lower-level attempts can fail.
 	run.Submit(lowest, 7, 5, []byte{4, 2, 0, 0})
 	if _, outcome := run.Round(lowest); outcome != Fled {
 		t.Fatal("flee", outcome)
 	}
 }
 
-func TestTimeoutDefends(t *testing.T) {
+func TestTimeoutIdles(t *testing.T) {
 	b, _ := setup(100)
 	if b.Ready() {
 		t.Fatal("ready without commands")
 	}
 	b.Timeout()
-	if !b.Ready() || b.Pending[4<<8|2].Kind != "defend" {
+	if !b.Ready() || b.Pending[4<<8|2].Kind != ActionIdle {
 		t.Fatal(b.Pending)
 	}
 }
@@ -110,7 +142,7 @@ func TestDropsAndElements(t *testing.T) {
 	if got := never.RollDrops(table, [5]uint16{1, 2}, known); len(got) != 0 {
 		t.Fatal("rate ignored", got)
 	}
-	if Elemental(3, 4) != 1.5 || Elemental(4, 3) != 0.6 || Elemental(2, 3) != 1.7 || Elemental(0, 3) != 1 {
+	if Elemental(3, 4) != 1.6 || Elemental(4, 3) != 0.7 || Elemental(2, 3) != 1.4 || Elemental(0, 3) != 1 {
 		t.Fatal("elements")
 	}
 }
@@ -128,6 +160,7 @@ func TestPetFighterAndCapture(t *testing.T) {
 		t.Fatal("pet record", intro[4])
 	}
 	// The pet's command comes from its owner; the round waits for both.
+	b.Defenders[0].HP--                                    // Capture requires a weakened target.
 	b.Submit(lowest, 7, 1, []byte{4, 2, 2, 2, 0x18, 0x27}) // Capture (10008) by the player.
 	if b.Ready() {
 		t.Fatal("round ran without the pet's command")

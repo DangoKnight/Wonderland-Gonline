@@ -121,8 +121,8 @@ func TestEnemyAbilitiesResolveSidesAndProtection(t *testing.T) {
 	f.ApplyEffect(50003, 0, effect(assets.EffectDamageTaken, 0, -50, 2, ""))
 	m.ApplyEffect(50004, 0, effect(assets.EffectDamageDealt, 0, 100, 2, ""))
 	r.monster(b, m, map[int]bool{})
-	// Base 110 damage, +100% outgoing and -50% incoming = 110.
-	if f.HP != 390 {
+	// floor(140 - 9.8) * 2 * .5 + random 1 = 131.
+	if f.HP != 369 {
 		t.Fatal("monster damage did not aggregate modifiers", f.HP)
 	}
 }

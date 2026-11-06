@@ -2,6 +2,18 @@ package assets
 
 import "testing"
 
+func TestVehicleLandingRequiresClearLand(t *testing.T) {
+	terrain := Terrain{Width: 100, Height: 20, GridWidth: 5, GridHeight: 1, Cells: []byte{0, 2, 8, 1, 16}}
+	for _, tc := range []struct {
+		x, y int
+		land bool
+	}{{1, 1, true}, {21, 1, false}, {41, 1, false}, {61, 1, false}, {81, 1, false}, {-1, 1, false}, {100, 1, false}, {1, 20, false}} {
+		if got := terrain.Land(tc.x, tc.y); got != tc.land {
+			t.Fatalf("land at %d,%d = %v", tc.x, tc.y, got)
+		}
+	}
+}
+
 func TestNearestWalkableTerrain(t *testing.T) {
 	t0 := Terrain{Width: 100, Height: 100, GridWidth: 5, GridHeight: 5, Cells: make([]byte, 25)}
 	for i := range t0.Cells {

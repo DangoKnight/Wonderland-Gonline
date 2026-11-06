@@ -13,6 +13,7 @@ import (
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/assetsql"
+	"wonderland-gonline/internal/battle"
 	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -42,7 +43,7 @@ func (c *captureConn) packets(t *testing.T) [][]byte {
 }
 
 func creationCatalog() *assets.Catalog {
-	return &assets.Catalog{Maps: map[uint16]assets.Map{10017: {ID: 10017}}, Items: map[uint16]game.ItemDefinition{21001: {ID: 21001, EquipSlot: 2}, 24001: {ID: 24001, EquipSlot: 5}, 32176: {ID: 32176, Type: 23}}, StarterItems: []game.StarterGrant{{ID: 32176, Count: 50}}, Skills: map[uint16]assets.Skill{15003: {TableOrder: 188}, 11016: {TableOrder: 1}, 11166: {TableOrder: 2}, 11056: {TableOrder: 3}}}
+	return &assets.Catalog{Story: assets.DefaultStoryDefinitions(), Maps: map[uint16]assets.Map{10017: {ID: 10017}}, Items: map[uint16]game.ItemDefinition{21001: {ID: 21001, EquipSlot: 2}, 24001: {ID: 24001, EquipSlot: 5}, 32176: {ID: 32176, Type: 23}}, StarterItems: []game.StarterGrant{{ID: 32176, Count: 50}}, Skills: map[uint16]assets.Skill{15003: {TableOrder: 188}, 11016: {TableOrder: 1}, 11166: {TableOrder: 2}, 11056: {TableOrder: 3}}}
 }
 func loginPayload(name string) []byte {
 	p, _ := protocol.Builder{63, 4}.String(name)
@@ -103,7 +104,7 @@ func TestCreateEnterAcknowledgeAndReconnect(t *testing.T) {
 		t.Fatal("movement accepted before map acknowledgment")
 	}
 	dispatch([]byte{12, 1})
-	if p := wire.packets(t); len(p) != 1 || !bytes.Equal(p[0], []byte{5, 4}) {
+	if p := wire.packets(t); len(p) != 2 || !bytes.Equal(p[0], []byte{5, 4}) || !bytes.Equal(p[1], []byte{56, 30, 0}) {
 		t.Fatal(p)
 	}
 	dispatch([]byte{12, 1})
@@ -588,5 +589,294 @@ func TestCharacterCreationPersistsQualifiedStarterSkills(t *testing.T) {
 				t.Fatal("missing initial skill snapshot")
 			}
 		})
+	}
+}
+
+func TestCompactCreationAuthenticatedOwnedSlotAndAllocation(t *testing.T) {
+	s, c, wire, _ := mallFixture(t)
+	ctx := context.Background()
+	account := c.account
+	c.character = nil
+	c.slot = 0
+	c.ready = false
+	payload := []byte{63, 3, 2, 6, 'S', 'e', 'c', 'o', 'n', 'd', 1, 3, 1, 1, 1, 1, 1}
+	invalid := append([]byte(nil), payload...)
+	invalid[len(invalid)-1] = 99
+	if err := s.dispatch(ctx, c, invalid); err != nil || c.character != nil {
+		t.Fatal("invalid allocation", err)
+	}
+	if got := wire.packets(t); len(got) != 1 || !bytes.Equal(got[0], []byte{1, 3, 1}) {
+		t.Fatal(got)
+	}
+	if err := s.dispatch(ctx, c, payload); err != nil || c.character == nil || c.character.Slot != 2 || c.character.Name != "Second" {
+		t.Fatal(c.character, err)
+	}
+	if got := wire.packets(t); len(got) == 0 || !bytes.Equal(got[0], []byte{1, 3, 0}) {
+		t.Fatal("compact creation ACK", got)
+	}
+	chars, err := s.Store.Characters(ctx, account.ID)
+	if err != nil || len(chars) != 2 {
+		t.Fatal("owned character not committed", err)
+	}
+	if err = s.dispatch(ctx, c, payload); err == nil {
+		t.Fatal("live session recreated character")
+	}
+}
+
+func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
+	catalog, err := installedCatalog(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []uint16{15188, 15189} {
+		name := "Shrink"
+		if id == 15189 {
+			name = "Hot Fire Attack"
+		}
+		t.Run(name, func(t *testing.T) {
+			s, c, wire := battleFixture(t, 1000)
+			defer s.abandonBattle(c)
+			skill, ok := catalog.Skills[id]
+			if !ok || skill.Name != name {
+				t.Fatal("native Goddess skill missing", skill)
+			}
+			s.Assets.Skills = catalog.Skills
+			c.character.Skills = append(c.character.Skills, game.LearnedSkill{ID: id, Grade: 1})
+			run := c.battle
+			actor := run.members[0].self
+			actor.Char = c.character
+			actor.SP = 120
+			tx := byte(2)
+			if id == 15189 {
+				tx = 4
+			}
+			wire.Reset()
+			if err := s.worldCommand(context.Background(), c, []byte{50, 1, 4, 2, tx, 2, byte(id), byte(id >> 8)}); err != nil {
+				t.Fatal(err)
+			}
+			settle(t, s, c)
+			s.worldMu.Lock()
+			shrunk, hot := run.b.Defenders[0].HasEffect(15188), actor.HasEffect(15189)
+			hp, sp := run.b.Defenders[0].HP, actor.SP
+			s.worldMu.Unlock()
+			if hp != 1000 || sp != 120-int(skill.SP) || id == 15188 && !shrunk || id == 15189 && !hot {
+				t.Fatal("Goddess became damage or missed its target", hp, sp, shrunk, hot)
+			}
+			stored, err := s.Store.Characters(context.Background(), c.account.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, sk := range stored[0].Skills {
+				if sk.ID == id {
+					// A successful status cast awards 15 support EXP plus 25 buff EXP.
+					found = sk.EXP == 40
+				}
+			}
+			if !found {
+				t.Fatal("successful Goddess cast did not save proficiency")
+			}
+			want := []byte{50, 1, 17, 0, 4, 2, byte(id), byte(id >> 8), 0, 1, tx, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1}
+			if !contains(wire.packets(t), want) {
+				t.Fatal("non-HP Goddess animation missing")
+			}
+		})
+	}
+}
+
+func TestBattleSkillProgressIsDurable(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	c.character.Skills = []game.LearnedSkill{{ID: 11001, Grade: 1, EXP: 99}}
+	run := c.battle
+	packets, err := s.commitSkillUses(c, run, []battle.Action{{Actor: run.members[0].self, Skill: 11001}})
+	if err != nil || !contains(packets, protocol.Builder{8, 1, 110, 1}.U32(2).U32(11001)) {
+		t.Fatal(packets, err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(stored) == 0 || stored[0].Skills[0].Grade != 2 || stored[0].Skills[0].EXP != 9 {
+		t.Fatal(stored, err)
+	}
+	packets, err = s.commitSkillUses(c, run, []battle.Action{{Actor: run.members[0].self, Skill: 65535}})
+	if err != nil || len(packets) != 0 {
+		t.Fatal("unlearned action progressed", packets, err)
+	}
+}
+
+func TestBattleSkillSaveFailurePreservesSession(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	c.character.Skills = []game.LearnedSkill{{ID: 11001, Grade: 1, EXP: 99}}
+	s.Store.Close()
+	packets, err := s.commitSkillUses(c, c.battle, []battle.Action{{Actor: c.battle.members[0].self, Skill: 11001}})
+	if err == nil || len(packets) != 0 || c.character.Skills[0].Grade != 1 || c.character.Skills[0].EXP != 99 {
+		t.Fatal(packets, err, c.character.Skills)
+	}
+}
+
+func TestBattlePetSkillProgressWithoutClientSlot(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	pet := game.Pet{ID: 10501, Skills: []game.PetSkill{{ID: 11001, Grade: 9, Exp: 899}}}
+	c.character.Pets = []game.Pet{pet}
+	run := c.battle
+	run.members[0].pet = battle.PetFighter(pet, c.character.ID, nil, 0)
+	packets, err := s.commitSkillUses(c, run, []battle.Action{{Actor: run.members[0].pet, Skill: 11001}})
+	if err != nil || len(packets) != 0 || c.character.Pets[0].Skills[0].Grade != 10 || run.members[0].pet.Pet.Skills[0].Grade != 10 {
+		t.Fatal(packets, err, c.character.Pets)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || stored[0].Pets[0].Skills[0].Grade != 10 || stored[0].Pets[0].Skills[0].Exp != 0 {
+		t.Fatal(stored, err)
+	}
+}
+
+func TestEventSkillRewardPersistenceAndUnknownPreflight(t *testing.T) {
+	for _, known := range []bool{true, false} {
+		t.Run(map[bool]string{true: "learn", false: "unknown"}[known], func(t *testing.T) {
+			s, c, wire := eventFixture(t)
+			ctx := context.Background()
+			if known {
+				s.Assets.Skills[15101] = assets.Skill{ID: 15101}
+			}
+			ev := assets.Event{ClickID: 77, Branches: []assets.Branch{{Index: 1, Operations: []assets.Operation{
+				evOp(1, 1, 1, 2, 0, 10), // No gold is delivered if the later skill is unknown.
+				evOp(2, 11, 15101, 1, 0, 1),
+			}}}}
+			before := c.character.Gold
+			if err := s.startEvent(ctx, c, 5, &ev, 0, false); err != nil {
+				t.Fatal(err)
+			}
+			got := wire.packets(t)
+			chars, err := s.Store.Characters(ctx, c.account.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, skill := range chars[0].Skills {
+				found = found || skill.ID == 15101
+			}
+			if found != known {
+				t.Fatal("skill persistence", chars[0].Skills)
+			}
+			if known {
+				if chars[0].Gold != before+10 || !contains(got, []byte{5, 16, 0, 0xfd, 0x3a, 1}) {
+					t.Fatal("skill reward", got)
+				}
+			} else if chars[0].Gold != before {
+				t.Fatal("unknown skill allowed earlier reward")
+			}
+		})
+	}
+}
+
+func TestAllocationUnlockCommitsWithStats(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	if err := s.worldCommand(ctx, c, []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	s.Assets.Skills[15101] = assets.Skill{ID: 15101}
+	c.character.StatPoints = 1
+	c.character.Base.Strength = 15 - game.CharacterBonuses(c.character.Body, c.character.Head).Strength
+	beforeHP, beforeSP := c.character.HP, c.character.SP
+	if err := s.worldCommand(ctx, c, []byte{8, game.StatSTR, 1, 0}); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil || stored[0].StatPoints != 0 {
+		t.Fatal(stored, err)
+	}
+	found := false
+	for _, sk := range stored[0].Skills {
+		if sk.ID == 15101 && sk.Grade == 1 {
+			found = true
+		}
+	}
+	if !found || !contains(wires[0].packets(t), protocol.Builder{5, 12}.U16(15101).U8(1)) {
+		t.Fatal("unlock not persisted/sent")
+	}
+	if c.character.HP != beforeHP || c.character.SP != beforeSP {
+		t.Fatal("allocation refilled HP/SP")
+	}
+}
+
+func TestCombatEvolutionCommitsWithGrade(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	s.Assets.Skills[15104] = assets.Skill{ID: 15104}
+	c.character.Skills = []game.LearnedSkill{{ID: 11166, Grade: 9, EXP: 899}}
+	packets, err := s.commitSkillUses(c, c.battle, []battle.Action{{Actor: c.battle.members[0].self, Skill: 11166}})
+	if err != nil || !contains(packets, protocol.Builder{5, 12}.U16(15104).U8(1)) {
+		t.Fatal(packets, err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, sk := range stored[0].Skills {
+		if sk.ID == 15104 && sk.Grade == 1 {
+			found = true
+		}
+	}
+	if stored[0].Skills[0].Grade != 10 || !found {
+		t.Fatal(stored[0].Skills)
+	}
+}
+
+func TestLoginUnlockIsPersistedBeforeSnapshot(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	next := c.character.Clone()
+	next.Base.Strength = 16 - game.CharacterBonuses(next.Body, next.Head).Strength
+	if err := s.commit(ctx, c, next); err != nil {
+		t.Fatal(err)
+	}
+	s.Assets.Skills[15101] = assets.Skill{ID: 15101, TableOrder: 900}
+	c.character = nil
+	wires[0].Reset()
+	if err := s.dispatch(ctx, c, []byte{63, 2, 1}); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.Store.Characters(ctx, c.account.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, sk := range stored[0].Skills {
+		if sk.ID == 15101 {
+			found = true
+		}
+	}
+	if !found || c.character == nil {
+		t.Fatal("login unlock missing")
+	}
+	// Snapshot only: no allocation packets are allowed to overwrite login stats.
+	if contains(wires[0].packets(t), protocol.Builder{8, 1, 110, 1}.U32(1).U32(15101)) {
+		t.Fatal("incremental unlock sent during login")
+	}
+}
+
+func TestAllocationUnlockSaveFailureHasNoSuccess(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	c := players[0]
+	ctx := context.Background()
+	if err := s.worldCommand(ctx, c, []byte{12, 1}); err != nil {
+		t.Fatal(err)
+	}
+	wires[0].Reset()
+	s.Assets.Skills[15101] = assets.Skill{ID: 15101}
+	c.character.StatPoints = 1
+	c.character.Base.Strength = 15 - game.CharacterBonuses(c.character.Body, c.character.Head).Strength
+	before := c.character.Base.Strength
+	s.Store.Close()
+	if err := s.worldCommand(ctx, c, []byte{8, game.StatSTR, 1, 0}); err == nil {
+		t.Fatal("save failure ignored")
+	}
+	if c.character.Base.Strength != before || c.character.StatPoints != 1 || wires[0].Len() != 0 {
+		t.Fatal("failed allocation changed state or sent success")
 	}
 }

@@ -1,0 +1,3115 @@
+{
+  "rules": [
+    {
+      "id": "forward_11157",
+      "kind": "forward_only",
+      "scope": {
+        "maps": [
+          11157
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "forward_12464",
+      "kind": "forward_only",
+      "scope": {
+        "maps": [
+          12464
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "forward_11013",
+      "kind": "forward_only",
+      "scope": {
+        "maps": [
+          11013
+        ],
+        "events": [
+          11
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "forward_12211",
+      "kind": "forward_only",
+      "scope": {
+        "maps": [
+          12211
+        ],
+        "events": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "forward_11149",
+      "kind": "forward_only",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "events": [
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "priority_10071",
+      "kind": "branch_priority",
+      "scope": {
+        "maps": [
+          10071
+        ],
+        "events": [
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 6
+    },
+    {
+      "id": "priority_11148",
+      "kind": "branch_priority",
+      "scope": {
+        "maps": [
+          11148
+        ],
+        "events": [
+          2,
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 2
+    },
+    {
+      "id": "fate_home_block",
+      "kind": "block_event",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "events": [
+          8,
+          9
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "ge",
+          "value": 2,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13087,
+          "op": "gt",
+          "value": 0,
+          "group": 2
+        }
+      ],
+      "pattern": {}
+    },
+    {
+      "id": "continue_10035_8",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          10035
+        ],
+        "events": [
+          8
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_10039_9",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          10039
+        ],
+        "events": [
+          8
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_11077_10",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "events": [
+          7
+        ],
+        "branches": [
+          5
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 12,
+      "target_actor": 13
+    },
+    {
+      "id": "continue_12052_11",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12052
+        ],
+        "events": [
+          6
+        ],
+        "branches": [
+          1,
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_12052_12",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12052
+        ],
+        "events": [
+          6
+        ],
+        "branches": [
+          14
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 9
+    },
+    {
+      "id": "continue_11013_13",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          11013
+        ],
+        "events": [
+          11
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_12211_14",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12211
+        ],
+        "events": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_11149_15",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "events": [
+          2
+        ],
+        "branches": [
+          10
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_11159_16",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          11159
+        ],
+        "events": [
+          1
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_11157_17",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          11157
+        ],
+        "events": [
+          1,
+          2,
+          5,
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_12464_18",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12464
+        ],
+        "events": [
+          1,
+          2,
+          3,
+          5
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_10035_19",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          10035
+        ],
+        "events": [
+          19
+        ],
+        "branches": [
+          1,
+          3
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "continue_10039_20",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          10039
+        ],
+        "events": [
+          19
+        ],
+        "branches": [
+          1,
+          3
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "choice_11005",
+      "kind": "choice_mode",
+      "scope": {
+        "maps": [
+          11005
+        ],
+        "events": [
+          25,
+          26
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "choice_11040",
+      "kind": "choice_mode",
+      "scope": {
+        "maps": [
+          11040
+        ],
+        "events": [
+          2,
+          8,
+          9
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "choice_12211",
+      "kind": "choice_mode",
+      "scope": {
+        "maps": [
+          12211
+        ],
+        "events": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "choice_11149",
+      "kind": "choice_mode",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "events": [
+          1,
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "choice_11075",
+      "kind": "choice_mode",
+      "scope": {
+        "maps": [
+          11075
+        ],
+        "events": [
+          1,
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_11039",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11039
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_11052",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11052
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_60014",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          60014
+        ],
+        "events": [
+          54
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_11149",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "events": [
+          1,
+          2,
+          5
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_11185",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11185
+        ],
+        "events": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_11075",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11075
+        ],
+        "events": [
+          1,
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "movie_12465",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          12465
+        ],
+        "events": [
+          2,
+          3
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "consecutive_movie",
+      "kind": "movie_mode",
+      "scope": {
+        "maps": [
+          11005
+        ],
+        "events": [
+          25,
+          26
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 8,
+        "value": 25010
+      },
+      "value": 1,
+      "later_movie": 156
+    },
+    {
+      "id": "actor_special_34",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11185
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 1,
+        "d2": 11,
+        "d3": 1,
+        "value": 8
+      }
+    },
+    {
+      "id": "actor_special_35",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 3,
+        "d2": 11,
+        "d3": 1,
+        "value": 6
+      }
+    },
+    {
+      "id": "actor_special_36",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 4,
+        "d2": 4,
+        "d3": 8
+      }
+    },
+    {
+      "id": "actor_special_37",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11148
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 1,
+        "d2": 8,
+        "d3": 7
+      }
+    },
+    {
+      "id": "actor_special_38",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11148
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 2,
+        "d2": 8,
+        "d3": 7
+      }
+    },
+    {
+      "id": "actor_special_39",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          12211
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d1": 1,
+        "d2": 11,
+        "d3": 1,
+        "value": 20
+      }
+    },
+    {
+      "id": "actor_generic_4",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11039,
+          11049,
+          11050,
+          11052,
+          12211
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d2": 4
+      }
+    },
+    {
+      "id": "actor_generic_8",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11039,
+          11049,
+          11050,
+          11052,
+          12211
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d2": 8
+      }
+    },
+    {
+      "id": "actor_generic_10",
+      "kind": "actor_capability",
+      "scope": {
+        "maps": [
+          11039,
+          11049,
+          11050,
+          11052,
+          12211
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 2,
+        "d2": 10
+      }
+    },
+    {
+      "id": "outcome_12380",
+      "kind": "outcome",
+      "scope": {
+        "maps": [
+          12380
+        ],
+        "events": [
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 2
+    },
+    {
+      "id": "outcome_12523",
+      "kind": "outcome",
+      "scope": {
+        "maps": [
+          12523
+        ],
+        "events": [
+          12
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 2
+    },
+    {
+      "id": "outcome_11149",
+      "kind": "outcome",
+      "scope": {
+        "maps": [
+          11149
+        ],
+        "events": [
+          5
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "clive_offer",
+      "kind": "click_route",
+      "scope": {
+        "maps": [
+          11040
+        ],
+        "actors": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13102,
+          "op": "eq",
+          "value": 4,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13103,
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 2
+    },
+    {
+      "id": "spring_return",
+      "kind": "click_route",
+      "scope": {
+        "maps": [
+          60002
+        ],
+        "actors": [
+          43,
+          44
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 50042,
+          "op": "gt",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 50047,
+          "op": "gt",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 51,
+      "text": "Please leave two free companion slots for Roca and Xaolan."
+    },
+    {
+      "id": "dinner_checkpoint",
+      "kind": "click_mark",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 12018,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 12043,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 12019,
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        },
+        {
+          "source": "npc_template",
+          "id": 0,
+          "op": "eq",
+          "value": 14140,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "mark": 12018,
+      "value": 2
+    },
+    {
+      "id": "robinson_recovery",
+      "kind": "candidate",
+      "scope": {
+        "maps": [
+          10035,
+          10039
+        ],
+        "actors": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 12047,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "party",
+          "id": 12178,
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 19
+    },
+    {
+      "id": "spider_recovery_cleanup",
+      "kind": "arrival_cleanup",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "eq",
+          "value": 2,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13087,
+          "op": "gt",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 12,
+      "target_branch": 1,
+      "target_pattern": {
+        "code": 5,
+        "d1": 13086,
+        "d2": 2
+      }
+    },
+    {
+      "id": "spider_recovery",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "eq",
+          "value": 2,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 12,
+      "target_actor": 13
+    },
+    {
+      "id": "arrival_12055_1",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          12055
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 1,
+      "use_pre_event": true
+    },
+    {
+      "id": "arrival_12000_10",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 13052,
+          "op": "ne",
+          "value": 3,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "target_event": 10,
+      "use_pre_event": true
+    },
+    {
+      "id": "arrival_12000_12",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 12,
+      "use_pre_event": true
+    },
+    {
+      "id": "arrival_11167_1",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          11167
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 1,
+      "use_pre_event": true
+    },
+    {
+      "id": "arrival_11039_1",
+      "kind": "arrival",
+      "scope": {
+        "maps": [
+          11039
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_event": 1,
+      "use_pre_event": true
+    },
+    {
+      "id": "arrival_regions",
+      "kind": "arrival_region",
+      "scope": {
+        "maps": [
+          12001,
+          12050,
+          12052,
+          12055,
+          60001,
+          11032,
+          60002
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "well_rope_margin",
+      "kind": "region_margin",
+      "scope": {
+        "maps": [
+          11162
+        ],
+        "actors": [
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 2
+    },
+    {
+      "id": "deck_shipwreck",
+      "kind": "transition",
+      "scope": {
+        "maps": [
+          10017
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 1,
+        "d1": 3,
+        "d2": 1
+      },
+      "destination": {
+        "map": 10035,
+        "x": 1038,
+        "y": 2235
+      }
+    },
+    {
+      "id": "niss_keep_party",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          12052
+        ],
+        "events": [
+          6
+        ],
+        "branches": [
+          1,
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "remove",
+          "match": {
+            "code": 3,
+            "d1": 2,
+            "d2": 14081
+          }
+        }
+      ]
+    },
+    {
+      "id": "niss_remove_marker",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          12052
+        ],
+        "events": [
+          6
+        ],
+        "branches": [
+          12,
+          14
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "remove",
+          "match": {
+            "code": 10,
+            "d1": 1,
+            "d2": 0,
+            "d3": 0,
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "niss_dismiss_checkpoint",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          12052
+        ],
+        "events": [
+          6
+        ],
+        "branches": [
+          12
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "prepend",
+          "operations": [
+            {
+              "code": 3,
+              "d1": 2,
+              "d2": 14081
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fate_checkpoint",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "events": [
+          7
+        ],
+        "branches": [
+          5
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "move_before",
+          "match": {
+            "code": 5,
+            "d1": 13086
+          },
+          "before": {
+            "code": 3,
+            "d1": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "farewell_repair_7",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "events": [
+          7
+        ],
+        "branches": [
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "replace_first",
+          "match": {
+            "code": 2,
+            "d2": 11
+          },
+          "operations": [
+            {
+              "code": 2,
+              "d1": 12,
+              "d2": 2,
+              "d3": 1,
+              "d4": 65280,
+              "value": 65535
+            },
+            {
+              "code": 2,
+              "d1": 13,
+              "d2": 2,
+              "d3": 1,
+              "d4": 65280,
+              "value": 65535
+            }
+          ]
+        },
+        {
+          "kind": "move_before",
+          "match": {
+            "code": 5,
+            "d1": 13087
+          },
+          "before": {
+            "code": 5,
+            "d1": 13086
+          }
+        }
+      ]
+    },
+    {
+      "id": "farewell_repair_12",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          11077
+        ],
+        "events": [
+          12
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "replace_first",
+          "match": {
+            "code": 2,
+            "d2": 11
+          },
+          "operations": [
+            {
+              "code": 2,
+              "d1": 12,
+              "d2": 2,
+              "d3": 1,
+              "d4": 65280,
+              "value": 65535
+            },
+            {
+              "code": 2,
+              "d1": 13,
+              "d2": 2,
+              "d3": 1,
+              "d4": 65280,
+              "value": 65535
+            }
+          ]
+        },
+        {
+          "kind": "move_before",
+          "match": {
+            "code": 5,
+            "d1": 13087
+          },
+          "before": {
+            "code": 5,
+            "d1": 13086
+          }
+        }
+      ]
+    },
+    {
+      "id": "always_visible_kelan",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          10,
+          31,
+          29
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "clive_offer_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          11040
+        ],
+        "actors": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13102,
+          "op": "eq",
+          "value": 4,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13103,
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "monkey_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          11016
+        ],
+        "actors": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "party",
+          "id": 17162,
+          "op": "eq",
+          "value": 1,
+          "group": 1
+        },
+        {
+          "source": "active_pet_exact",
+          "id": 0,
+          "op": "eq",
+          "value": 17162,
+          "group": 2
+        },
+        {
+          "source": "active_pet_exact",
+          "id": 0,
+          "op": "eq",
+          "value": 10727,
+          "group": 3
+        },
+        {
+          "source": "mark_state",
+          "id": 12002,
+          "op": "eq",
+          "value": 3,
+          "group": 4
+        }
+      ],
+      "pattern": {}
+    },
+    {
+      "id": "monkey_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          11016
+        ],
+        "actors": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "kelan_32_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          32
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "dinner_actor_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          14
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 12020,
+          "op": "eq",
+          "value": 1,
+          "group": 1
+        },
+        {
+          "source": "mark_step",
+          "id": 12020,
+          "op": "ge",
+          "value": 2,
+          "group": 1
+        },
+        {
+          "source": "mark_state",
+          "id": 12020,
+          "op": "eq",
+          "value": 3,
+          "group": 2
+        },
+        {
+          "source": "mark_state",
+          "id": 12021,
+          "op": "eq",
+          "value": 1,
+          "group": 3
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "dinner_actor_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          14
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "dinner_15_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          15
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 12020,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        },
+        {
+          "source": "mark_step",
+          "id": 12020,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "dinner_15_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          15
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "kelan_16_hidden",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          16
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_state",
+          "id": 13020,
+          "op": "eq",
+          "value": 2,
+          "group": 1
+        },
+        {
+          "source": "mark_state",
+          "id": 13021,
+          "op": "eq",
+          "value": 1,
+          "group": 2
+        }
+      ],
+      "pattern": {}
+    },
+    {
+      "id": "kelan_16_visible",
+      "kind": "visibility",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          16
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "spring_actors",
+      "kind": "final_visibility",
+      "scope": {
+        "maps": [
+          60002
+        ],
+        "actors": [
+          43,
+          44
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 50042,
+          "op": "eq",
+          "value": 1,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 50042,
+          "op": "gt",
+          "value": 1,
+          "group": 2
+        },
+        {
+          "source": "mark_state",
+          "id": 50047,
+          "op": "eq",
+          "value": 1,
+          "group": 2
+        }
+      ],
+      "pattern": {},
+      "value": 1
+    },
+    {
+      "id": "fate_actors",
+      "kind": "final_visibility",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "actors": [
+          2,
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13087,
+          "op": "gt",
+          "value": 0,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "ge",
+          "value": 2,
+          "group": 2
+        }
+      ],
+      "pattern": {}
+    },
+    {
+      "id": "wine_active_gate",
+      "kind": "precondition",
+      "scope": {
+        "maps": [
+          11013
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13056,
+          "op": "gt",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {
+        "code": 5,
+        "d1": 13056,
+        "d2": 1,
+        "d3": 1,
+        "d4": 769,
+        "d5": 0,
+        "d6_low": 0
+      },
+      "value": 1
+    },
+    {
+      "id": "wine_active_reject",
+      "kind": "precondition",
+      "scope": {
+        "maps": [
+          11013
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 5,
+        "d1": 13056,
+        "d2": 1,
+        "d3": 1,
+        "d4": 769,
+        "d5": 0,
+        "d6_low": 0
+      }
+    },
+    {
+      "id": "clive_prison_subject",
+      "kind": "condition",
+      "scope": {
+        "maps": [
+          11050
+        ],
+        "events": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "party",
+          "id": 14175,
+          "op": "eq",
+          "value": 1,
+          "group": 0
+        }
+      ],
+      "pattern": {
+        "code": 2,
+        "d1": 2,
+        "d2": 3,
+        "d3": 14175
+      },
+      "value": 1
+    },
+    {
+      "id": "elin_equipment_4",
+      "kind": "equipment_gate",
+      "scope": {
+        "maps": [
+          11167
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 17,
+        "d1": 14230,
+        "d2": 4,
+        "d3": 20044
+      },
+      "value": 2
+    },
+    {
+      "id": "elin_equipment_1",
+      "kind": "equipment_gate",
+      "scope": {
+        "maps": [
+          11167
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "code": 17,
+        "d1": 14230,
+        "d2": 1,
+        "d3": 20045
+      },
+      "value": 2
+    },
+    {
+      "id": "sealed_bead_fallback",
+      "kind": "pre_fallback",
+      "scope": {
+        "maps": [
+          12508
+        ],
+        "events": [
+          2
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 6
+    },
+    {
+      "id": "door_open_11036",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11036
+        ],
+        "actors": [
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 10024,
+          "op": "ge",
+          "value": 1,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 10025,
+          "op": "eq",
+          "value": 1,
+          "group": 2
+        }
+      ],
+      "pattern": {
+        "d2": 3
+      },
+      "value": 1
+    },
+    {
+      "id": "door_closed_11036",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11036
+        ],
+        "actors": [
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "d2": 3
+      }
+    },
+    {
+      "id": "door_open_11037",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11037
+        ],
+        "actors": [
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "gt",
+          "value": 0,
+          "group": 0
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13087,
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "pattern": {
+        "d2": 3
+      },
+      "value": 1
+    },
+    {
+      "id": "door_closed_11037",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11037
+        ],
+        "actors": [
+          7
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "d2": 3
+      }
+    },
+    {
+      "id": "door_open_11015",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11015
+        ],
+        "actors": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13024,
+          "op": "ge",
+          "value": 7,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13025,
+          "op": "gt",
+          "value": 0,
+          "group": 2
+        }
+      ],
+      "pattern": {
+        "d2": 3
+      },
+      "value": 1
+    },
+    {
+      "id": "door_closed_11015",
+      "kind": "prop_condition",
+      "scope": {
+        "maps": [
+          11015
+        ],
+        "actors": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {
+        "d2": 3
+      }
+    },
+    {
+      "id": "ship_priority_5",
+      "kind": "branch_priority",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 5
+    },
+    {
+      "id": "ship_priority_6",
+      "kind": "branch_priority",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 6
+    },
+    {
+      "id": "ship_priority_7",
+      "kind": "branch_priority",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 7
+    },
+    {
+      "id": "ship_exchange",
+      "kind": "item_exchange",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "branches": [
+          5,
+          6
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "value": 1,
+      "target_actor": 5,
+      "text": "Cannot exchange vouchers. Check materials and inventory space."
+    },
+    {
+      "id": "ship_offer_continue",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "branches": [
+          1,
+          3
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_branch": 7
+    },
+    {
+      "id": "ship_greeting",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "copy_speech",
+          "source_branch": 3
+        }
+      ]
+    },
+    {
+      "id": "ship_acceptance",
+      "kind": "repair",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "branches": [
+          9
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "edits": [
+        {
+          "kind": "remove",
+          "match": {
+            "code": 5,
+            "d1": 50030
+          }
+        },
+        {
+          "kind": "remove",
+          "match": {
+            "code": 5,
+            "d1": 50031
+          }
+        },
+        {
+          "kind": "remove",
+          "match": {
+            "code": 2,
+            "d1": 5,
+            "d2": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "companion_fate_block",
+      "kind": "recruit_block",
+      "scope": {
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 13086,
+          "op": "ge",
+          "value": 2,
+          "group": 1
+        },
+        {
+          "source": "active_mark_step",
+          "id": 13087,
+          "op": "gt",
+          "value": 0,
+          "group": 2
+        }
+      ],
+      "pattern": {},
+      "template": 14156
+    },
+    {
+      "id": "kelan_sync_actors",
+      "kind": "sync_actors",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_actors": [
+        10,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        28,
+        29,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "id": "kelan_home_sync",
+      "kind": "sync_actors",
+      "scope": {
+        "maps": [
+          12001
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_actors": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "kelan_scenery",
+      "kind": "preserve_actor",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "actors": [
+          10,
+          31
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {}
+    },
+    {
+      "id": "spring_territory",
+      "kind": "arrival_packets",
+      "scope": {
+        "maps": [
+          60002
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "cues": [
+        {
+          "kind": "territory_empty",
+          "data": [
+            23
+          ],
+          "self": true
+        }
+      ]
+    },
+    {
+      "id": "scripted_raft_landing",
+      "kind": "portal_consume_vehicle",
+      "scope": {
+        "maps": [
+          11016
+        ],
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "active_vehicle",
+          "op": "eq",
+          "value": 48016
+        }
+      ],
+      "pattern": {}
+    },
+    {
+      "id": "job_palace_rebirth_checkpoint",
+      "kind": "reborn_checkpoint",
+      "scope": {
+        "allow_missing": true
+      },
+      "gates": [
+        {
+          "source": "mark_exists",
+          "id": 15091,
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "marks": [
+        {
+          "id": 15090,
+          "mode": "complete",
+          "value": 1,
+          "preserve_step": true
+        },
+        {
+          "id": 15091,
+          "mode": "ensure_active",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "quest_constellation_1",
+      "kind": "constellation",
+      "mark": 13087,
+      "value": 1,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_6",
+      "kind": "constellation",
+      "mark": 13173,
+      "value": 6,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_8",
+      "kind": "constellation",
+      "mark": 13203,
+      "value": 8,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "quest_constellation_20",
+      "kind": "constellation",
+      "mark": 13151,
+      "value": 20,
+      "scope": {
+        "allow_missing": true
+      }
+    },
+    {
+      "id": "honeycomb_start_bee_battle",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "events": [
+          25
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "target_branch": 4,
+      "pattern": {}
+    },
+    {
+      "id": "robbery_show_actors",
+      "kind": "visit_visibility",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "actors": [
+          2,
+          3
+        ],
+        "allow_missing": true
+      },
+      "pattern": {}
+    },
+    {
+      "id": "noa_quiz_result_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [15, 16], "allow_missing": true},
+      "pattern": {}
+    },
+    {
+      "id": "noa_quiz_retry_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [1, 17], "allow_missing": true},
+      "pattern": {},
+      "target_branch": 3
+    },
+    {
+      "id": "noa_recruitment_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [19], "allow_missing": true},
+      "pattern": {},
+      "target_branch": 21
+    },
+    {
+      "id": "xaolan_recruitment_question_continuation",
+      "kind": "continue",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "events": [
+          9
+        ],
+        "branches": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "gates": [],
+      "pattern": {},
+      "target_branch": 4
+    }
+  ],
+  "recruitments": [
+    {
+      "id": "rescue_companion",
+      "scope": {
+        "maps": [
+          11016
+        ],
+        "actors": [
+          1
+        ],
+        "allow_missing": true
+      },
+      "template": 17162,
+      "name": "S.Monkey",
+      "completed_mark": 12002,
+      "marks": [
+        {
+          "id": 12002,
+          "mode": "complete",
+          "value": 1
+        },
+        {
+          "id": 12003,
+          "mode": "ensure_active",
+          "value": 1
+        }
+      ],
+      "lines": [
+        {
+          "talk": 20038,
+          "portrait": 7
+        },
+        {
+          "talk": 20039,
+          "portrait": 3
+        },
+        {
+          "talk": 20040,
+          "portrait": 7
+        },
+        {
+          "talk": 20041,
+          "portrait": 7
+        },
+        {
+          "talk": 20042,
+          "portrait": 3
+        },
+        {
+          "talk": 20043,
+          "portrait": 7
+        },
+        {
+          "talk": 20044,
+          "portrait": 7
+        },
+        {
+          "talk": 20045,
+          "portrait": 3
+        },
+        {
+          "talk": 20046,
+          "portrait": 7
+        },
+        {
+          "talk": 20047,
+          "portrait": 7
+        },
+        {
+          "talk": 20048,
+          "portrait": 3
+        },
+        {
+          "talk": 20049,
+          "portrait": 7
+        },
+        {
+          "talk": 20050,
+          "portrait": 3
+        },
+        {
+          "talk": 20051,
+          "portrait": 7
+        },
+        {
+          "talk": 20052,
+          "portrait": 7
+        },
+        {
+          "talk": 20053,
+          "portrait": 3
+        }
+      ],
+      "repeat_lines": [
+        {
+          "talk": 20042,
+          "portrait": 3
+        }
+      ],
+      "full_party_lines": [
+        {
+          "talk": 31146,
+          "portrait": 7
+        },
+        {
+          "talk": 20048,
+          "portrait": 3
+        }
+      ],
+      "full_party_prefix": 11,
+      "posture_movie": 12000,
+      "movie_mode": 1,
+      "unavailable_text": "Make room in your party and retrieve S.Monkey from Pet Hotel before continuing.",
+      "joined_text": "S.Monkey has joined your party!"
+    }
+  ],
+  "transformations": [
+    {
+      "id": "permanent_model_conversion",
+      "scope": {
+        "maps": [
+          10002,
+          10021,
+          10022,
+          10023,
+          10024,
+          10025,
+          10026,
+          10027,
+          10028,
+          10029,
+          10030
+        ],
+        "events": [
+          4
+        ],
+        "branches": [
+          9
+        ],
+        "allow_missing": true
+      },
+      "pattern": {
+        "code": 12,
+        "d1": 1,
+        "d2": 13,
+        "d3": 0,
+        "value": 0
+      },
+      "gates": [
+        {
+          "source": "active_mark_step",
+          "id": 50030,
+          "op": "ge",
+          "value": 10,
+          "group": 0
+        },
+        {
+          "source": "mark_state",
+          "id": 50031,
+          "op": "ne",
+          "value": 3,
+          "group": 0
+        },
+        {
+          "source": "mark_step",
+          "id": 50031,
+          "op": "le",
+          "value": 0,
+          "group": 0
+        }
+      ],
+      "marks": [
+        {
+          "id": 50030,
+          "mode": "complete",
+          "value": 0
+        },
+        {
+          "id": 50031,
+          "mode": "set",
+          "value": 1
+        }
+      ],
+      "body": 4,
+      "head": 3,
+      "model": 13,
+      "hide_actor": 5,
+      "program": [
+        {
+          "index": 1,
+          "condition": {
+            "d1": 50030
+          },
+          "extra_conditions": -1
+        },
+        {
+          "index": 3,
+          "condition": {
+            "d1": 50030
+          },
+          "extra_conditions": -1
+        },
+        {
+          "index": 7,
+          "condition": {
+            "code": 5,
+            "d1": 50030,
+            "d2": 1,
+            "d4": 2306,
+            "d5": 0
+          },
+          "extra_conditions": 1
+        },
+        {
+          "index": 8,
+          "condition": {
+            "code": 5,
+            "d1": 50031,
+            "d2": 1,
+            "d4": 5,
+            "d5": 0
+          },
+          "extra_conditions": 0
+        },
+        {
+          "index": 9,
+          "condition": {
+            "code": 7,
+            "d1": 1,
+            "d2": 30
+          },
+          "extra_conditions": -1
+        }
+      ],
+      "unavailable_text": "Breillat's transformation is no longer available."
+    }
+  ],
+  "rewards": [
+    {
+      "id": "rescue_reward_checkpoint",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "allow_missing": true
+      },
+      "condition": {
+        "code": 4,
+        "d1": 1
+      },
+      "pattern": {
+        "code": 1,
+        "d1": 1,
+        "d3": 43002
+      },
+      "extra_items": [
+        {
+          "item_id": 30025,
+          "count": 1
+        }
+      ],
+      "marks": [
+        {
+          "id": 13032,
+          "mode": "complete",
+          "value": 0,
+          "preserve_step": true
+        },
+        {
+          "id": 13033,
+          "mode": "advance",
+          "value": 1
+        }
+      ],
+      "tail": [
+        {
+          "code": 5,
+          "d1": 13032,
+          "d2": 2,
+          "d3": 1
+        },
+        {
+          "code": 5,
+          "d1": 13033,
+          "d2": 1,
+          "value": 1,
+          "d3": 1
+        }
+      ],
+      "completed_mark": 13032,
+      "message": "Received Shale x{quantity} and Star x1",
+      "full_text": "Cannot receive reward. Make room for Shale and Star."
+    }
+  ],
+  "battle_rewards": [
+    {
+      "quest": 1005,
+      "monsters": [
+        11066
+      ],
+      "companion": 14081,
+      "gold": 0,
+      "start": false,
+      "aliases": [
+        "wolf guard"
+      ],
+      "equipment": [],
+      "allow_missing": true
+    },
+    {
+      "quest": 1010,
+      "monsters": [
+        14155,
+        12049,
+        12050
+      ],
+      "companion": 14156,
+      "gold": 0,
+      "start": true,
+      "aliases": [
+        "pirate lea",
+        "hijacker"
+      ],
+      "equipment": [
+        {
+          "slot": 5,
+          "item_id": 25028
+        }
+      ],
+      "allow_missing": true
+    },
+    {
+      "quest": 1012,
+      "monsters": [
+        17437
+      ],
+      "companion": 0,
+      "gold": 400,
+      "start": false,
+      "aliases": [
+        "wild wolf"
+      ],
+      "equipment": [],
+      "allow_missing": true
+    }
+  ],
+  "cinematics": [
+    {
+      "id": "storm",
+      "maps": [
+        10017
+      ],
+      "completion_mark": 12040,
+      "trigger": {
+        "code": 8,
+        "d4": 31488
+      },
+      "destination_map": 10035,
+      "destination_x": 1038,
+      "destination_y": 2235,
+      "steps": [
+        {
+          "cues": [
+            {
+              "kind": "movie",
+              "data": [
+                2,
+                123,
+                3,
+                0
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "movie_handshake",
+              "data": [
+                1,
+                0,
+                0,
+                0,
+                0
+              ],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        }
+      ],
+      "finish": [
+        {
+          "kind": "event_resume",
+          "data": [],
+          "broadcast": false,
+          "self": true
+        },
+        {
+          "kind": "event_close",
+          "data": [],
+          "broadcast": false,
+          "self": true
+        }
+      ],
+      "role": "movie_handshake",
+      "allow_missing": true
+    },
+    {
+      "id": "arrival",
+      "maps": [
+        10035,
+        10039
+      ],
+      "completion_mark": 12040,
+      "trigger": {},
+      "destination_map": 10035,
+      "destination_x": 1038,
+      "destination_y": 2235,
+      "steps": [
+        {
+          "cues": [
+            {
+              "kind": "pose",
+              "data": [
+                9
+              ],
+              "broadcast": true,
+              "self": true
+            },
+            {
+              "kind": "character_state",
+              "data": [
+                1,
+                0
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "event_resume",
+              "data": [],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "actor_movement",
+              "data": [
+                6,
+                65535
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "movement_lock",
+              "data": [
+                1
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "actor_action",
+              "data": [
+                1,
+                11,
+                0,
+                5
+              ],
+              "broadcast": true,
+              "self": true
+            },
+            {
+              "kind": "movie",
+              "data": [
+                1,
+                12008,
+                1,
+                1
+              ],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        },
+        {
+          "cues": [
+            {
+              "kind": "quest_state",
+              "data": [
+                12040,
+                1
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "step_complete",
+              "data": [],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        },
+        {
+          "cues": [
+            {
+              "kind": "step_complete",
+              "data": [],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        },
+        {
+          "cues": [
+            {
+              "kind": "quest_flag",
+              "data": [
+                97,
+                1
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "step_complete",
+              "data": [],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        },
+        {
+          "cues": [
+            {
+              "kind": "actor_action",
+              "data": [
+                1,
+                1,
+                0,
+                6
+              ],
+              "broadcast": false,
+              "self": true
+            },
+            {
+              "kind": "step_complete",
+              "data": [],
+              "broadcast": false,
+              "self": true
+            }
+          ]
+        }
+      ],
+      "finish": [
+        {
+          "kind": "pose",
+          "data": [
+            0
+          ],
+          "broadcast": true,
+          "self": false
+        },
+        {
+          "kind": "character_state",
+          "data": [
+            0,
+            0
+          ],
+          "broadcast": false,
+          "self": true
+        },
+        {
+          "kind": "event_resume",
+          "data": [],
+          "broadcast": false,
+          "self": true
+        },
+        {
+          "kind": "movement_lock",
+          "data": [
+            0
+          ],
+          "broadcast": false,
+          "self": true
+        },
+        {
+          "kind": "character_refresh",
+          "data": [],
+          "broadcast": false,
+          "self": true
+        }
+      ],
+      "role": "arrival",
+      "allow_missing": true
+    }
+  ],
+  "companion_aliases": {
+    "12178": 12032
+  },
+  "companion_equipment": [
+    {
+      "template": 14161,
+      "equipment": [
+        {
+          "slot": 2,
+          "item_id": 10063
+        }
+      ],
+      "allow_missing": true
+    },
+    {
+      "template": 14162,
+      "equipment": [
+        {
+          "slot": 2,
+          "item_id": 10063
+        }
+      ],
+      "allow_missing": true
+    },
+    {
+      "template": 14156,
+      "equipment": [
+        {
+          "slot": 5,
+          "item_id": 25028
+        }
+      ],
+      "allow_missing": true
+    }
+  ],
+  "private_scenes": [
+    10001,
+    10002,
+    10003
+  ],
+  "full_bag_warnings": [
+    11087,
+    50062,
+    30025
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "pages": [
+    {
+      "file": "固有スキル - Wonderland ONLINE Wiki_.htm",
+      "sha256": "4445e0734e2abc947eae61ce971df97dbebdc75a5a66321483abd7cd1abf555f",
+      "bytes": 364777
+    },
+    {
+      "file": "土属性 - Wonderland ONLINE Wiki_.htm",
+      "sha256": "27cdc43a6aa9d71fc8f8c4b1ed0e4c9bbcfa3ae81e8a950c64d6806cf4e73bf5",
+      "bytes": 227718
+    },
+    {
+      "file": "水属性 - Wonderland ONLINE Wiki_.htm",
+      "sha256": "e81469d9cab1bbaa07457bddf42be27cebc47c9728e476b3b589dcd580e54510",
+      "bytes": 231584
+    },
+    {
+      "file": "火属性 - Wonderland ONLINE Wiki_.htm",
+      "sha256": "b6efbde3235b81f3369bb997f3989c25bb0afa9b81dc0dfbf9769c7c5ab07672",
+      "bytes": 227560
+    },
+    {
+      "file": "風属性 - Wonderland ONLINE Wiki_.htm",
+      "sha256": "906c0096cc420118e2cbbc63de5c5099e3269f71c666ccad268442ce56284bd0",
+      "bytes": 238069
+    }
+  ],
+  "skills": 224,
+  "native_sha256": "06b3761139b40d24875a1b1a74510708f9d95dd4d8af38cc1513b91c40711626",
+  "npc_sha256": "73a318f601e612479e1799f4432d9d0c2c70b0ca18730100738d8ed0eb645bf1",
+  "bindings_sha256": "0131388b69011701ee14c779afc70383dfd6b72b0af927a2b0138b55144eddd2",
+  "unique_bindings": 78,
+  "unique_imported": 71,
+  "scope": "Explicit elemental and verified unique powers; approximate and grade-conditional powers remain review-only."
+}

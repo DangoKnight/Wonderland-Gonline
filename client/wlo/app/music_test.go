@@ -1,12 +1,12 @@
 package app
 
 import (
-	"os"
 	"strings"
 	"testing"
 
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientfs"
 )
 
 // TestSceneMusic: Ship Deck's scene plays BGM0007, and every track the
@@ -22,7 +22,8 @@ func TestSceneMusic(t *testing.T) {
 		t.Fatalf("Ship Deck plays %q", got)
 	}
 	exists := func(path string) error {
-		_, err := os.Stat(login.Path(c.Assets.Media, strings.Split(path, `\`)...))
+		resolved := audioAssetPath(login.Path(c.Assets.Media, strings.Split(path, `\`)...))
+		_, err := clientfs.Stat(resolved)
 		return err
 	}
 	missing := map[string]bool{}

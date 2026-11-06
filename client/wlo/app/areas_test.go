@@ -10,8 +10,35 @@ import (
 	"time"
 
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
+
+func TestNewbieIslandRaftEdgeUsesAuthoredExit(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.dispatch(selfPacket(10001, 2, 10003, 4510, 2080, 0, 444444444, 444444444, nil, "Dango"))
+	c.mapReady = true
+	c.World.Player.VehicleID, c.World.Player.VehicleSlot = game.DisposableRaftItemID, 1
+	c.applyWaterVehicle()
+	// Authored right-edge area three is the same area requested in the
+	// legacy raft-to-Beach trace; no synthetic map-edge teleport is needed.
+	var edge world.Area
+	for _, a := range c.World.Areas {
+		if a.ID == 3 {
+			edge = a
+		}
+	}
+	if edge.Events == 0 || !image.Pt(4510, 2080).In(edge.Rect) {
+		t.Fatal("missing authored Newbie Island edge")
+	}
+	sent := wire(t, c)
+	*now = now.Add(time.Second)
+	c.areaTick()
+	packets := sent()
+	if len(packets) != 1 || !bytes.Equal(packets[0], []byte{20, 8, 3, 0}) {
+		t.Fatal("raft edge did not request authored exit", packets)
+	}
+}
 
 // TestDeckDoor: Ship Deck's cabin door is area 1, cells (93, 41) to
 // (96, 45) with the small door light 37, 57 pixels from its corner.
@@ -64,7 +91,7 @@ func TestDeckDoor(t *testing.T) {
 // teleports; the arrival's closing 20/8 releases the hold, so the player
 // walks on the new map.
 func TestDoorTeleportWalks(t *testing.T) {
-	c, _, legs := enteredClient(t)
+	c, now, legs := enteredClient(t)
 	c.enterArea(1)
 	c.dispatch([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1})
 	c.dispatch([]byte{protocol.CommandEvent, protocol.EventClose})
@@ -79,6 +106,18 @@ func TestDoorTeleportWalks(t *testing.T) {
 	}
 	c.World.OnLeg = func(f, x, y int) { *legs = append(*legs, nil) }
 	c.dispatch([]byte{protocol.CommandEvent, protocol.EventResume})
+	c.GroundClick(400+60, 300)
+	if len(*legs) != 0 {
+		t.Fatal("walk began before the destination map finished loading")
+	}
+	c.dispatch([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh})
+	c.Frame()
+	c.Sprites.WaitNative()
+	c.Frame()
+	*now = now.Add(mapLoadingMinimum)
+	c.Frame()
+	*now = now.Add(mapLoadingHide + mapLoadingReveal)
+	c.Frame()
 	c.GroundClick(400+60, 300)
 	if c.held || c.event.active || len(*legs) == 0 {
 		t.Fatalf("after the teleport: held %v, event %v, legs %d", c.held, c.event.active, len(*legs))

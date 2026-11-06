@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/binary"
+	"image"
+	"maps"
 	"time"
 
 	"wonderland-gonline/client/wlo/login"
@@ -24,6 +26,7 @@ func (c *Client) loadNPCs(w *world.World) {
 	if c.npcTemplates == nil {
 		if c.resources.npcTemplates == nil {
 			c.resources.npcTemplates, _ = world.NPCTemplates(c.Assets)
+			c.resources.npcTemplates = maps.Clone(c.resources.npcTemplates)
 		}
 		c.npcTemplates = c.resources.npcTemplates
 	}
@@ -43,6 +46,7 @@ func (c *Client) loadNPCs(w *world.World) {
 	w.NPCs = world.MapNPCs(rec, c.npcTemplates, paint)
 	w.Questions = world.MapQuestions(rec)
 	w.Areas = world.MapAreas(rec)
+	w.Mines = world.MapMines(rec)
 }
 
 // warp is AC12 for the player: the map loads (again, when it changed) at
@@ -65,16 +69,33 @@ func (c *Client) warp(p []byte) {
 		}
 		return
 	}
+	c.resetServices()
+	c.groundHeld, c.groundSince = false, time.Time{}
+	c.World.StopWalk()
+	c.World.Marker.Hide()
 	// Loading a map forgets the area last entered (FUN_00304898), and the
 	// map is not ready until 5/4.
 	c.areas.last = 0
+	c.vacuum = vacuumRuntime{}
+	c.floorPendingPickup, c.floorHovered = 0, 0
+	c.worldItemFlights = nil
+	c.acquisitionActor = 0
 	c.mapReady = false
+	if c.LuckyDraw != nil {
+		c.LuckyDraw.Hide()
+	}
 	if c.Settings != nil {
 		c.Settings.Hide()
 	}
 	c.waterTravel = waterTravelState{}
+	c.placedVehicles = nil
 	c.vehicleEffects = vehicleEffectState{}
 	pl := c.World.Player
+	mapChanged := binary.LittleEndian.Uint16(p[4:]) != pl.Map
+	if mapChanged {
+		c.closeTeamTransfer()
+		c.startMapLoading()
+	}
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
 	if pl.Map != c.World.Player.Map {
@@ -85,6 +106,7 @@ func (c *Client) warp(p []byte) {
 		}
 		w, err := world.New(c.Env, c.Assets, pl, body, c.sceneNames, func(m uint16) uint16 { return c.mapScenes[m] })
 		if err != nil {
+			c.stopMapLoading()
 			c.Notices.Show([]byte(err.Error()), 3*time.Second, c.Now())
 			return
 		}
@@ -93,12 +115,21 @@ func (c *Client) warp(p []byte) {
 		w.OnLeg = c.sendLeg
 		w.Now = func() time.Time { return c.Now() }
 		c.World = w
+		if c.TeamState != nil && len(c.TeamState.Members) > 1 {
+			w.SetTeamRoster(c.TeamState.Members)
+		}
 		c.applyWaterVehicle()
 		c.applyLocalSettings()
+		c.eventMusic = "" // FUN_002f2fd0 clears the event's track
 		c.playMapMusic()
+		c.setupMiniMap()
 		c.MainStatus.Portrait = w.Body
 	} else {
 		c.World.Player = pl
+		c.World.Relocate(image.Pt(pl.X, pl.Y))
+	}
+	if mapChanged {
+		c.queueAreaTitle()
 	}
 	c.Net.Send([]byte{protocol.CommandMapAcknowledgment, protocol.MapAcknowledgmentMapLoaded})
 }
@@ -113,15 +144,19 @@ const movementCheckBytes = 8
 // (FUN_004a4248's FUN_00403954(400)); an arrow key aims 0x50 pixels away
 // on its axis.
 const (
-	walkRepeat   = 400 * time.Millisecond
-	walkKeyReach = 0x50
+	walkRepeat     = 400 * time.Millisecond
+	walkHoldRepeat = 100 * time.Millisecond
+	walkKeyReach   = 0x50
 )
 
 // GroundClick is a left click that no control took: on the map it starts
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
-	if c.World == nil || c.sceneFrozen() || c.settingsPromptForm != nil {
+	if c.Notices.dismissAt(c.Env, c.Now(), x, y) {
+		return
+	}
+	if c.World == nil || c.sceneFrozen() || !c.clinicUntil.IsZero() || c.Services != nil && c.Services.Visible || c.settingsPromptForm != nil {
 		return
 	}
 	if c.movie != nil {
@@ -131,7 +166,13 @@ func (c *Client) GroundClick(x, y int) {
 		}
 		return
 	}
+	if c.battleClick(x, y) {
+		return
+	}
 	if c.sportClick(x, y) {
+		return
+	}
+	if c.Talk.Choosing() && c.pickConfirm(x, y) {
 		return
 	}
 	if c.Talk.Choosing() {
@@ -145,7 +186,15 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
-	if c.teamTargetAt(x, y) {
+	x, y = c.World.ScenePoint(x, y)
+	if c.boardPlacedVehicle(x, y) {
+		return
+	}
+	if c.pickupFloorItem(x, y) {
+		return
+	}
+	c.floorPendingPickup = 0
+	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}
 	if n := c.World.NPCAt(x, y); n != nil {
@@ -166,24 +215,40 @@ func (c *Client) walkTo(x, y int) {
 // walkToward plans the walk; mouse walks show the walk marker at its
 // destination (0x4a1d60), arrow-key walks don't.
 func (c *Client) walkToward(x, y int, marked bool) {
-	cx, cy := c.World.Camera()
 	now := c.Now()
+	// Consume elapsed movement before replacing its route. Otherwise every
+	// held replan discards one update's travel and produces a periodic hitch.
+	c.World.Step(now)
+	cx, cy := c.World.Camera()
 	c.nextWalk = now.Add(walkRepeat)
+	if c.groundHeld {
+		c.nextWalk = now.Add(walkHoldRepeat)
+	}
 	c.walkWaterAware(x+cx, y+cy, now)
 	if marked {
 		c.World.MarkWalk()
+		c.World.Marker.SetHeld(c.groundHeld, now)
 	}
 }
 
 // GroundHold is called while the left button stays down: a press that
-// started a walk re-aims it at the pointer every 400 ms. Release ends it.
+// started a walk re-aims it at the pointer every 100 ms. Release ends it.
 func (c *Client) GroundHold(held bool, x, y int) {
-	if !held || c.sport != nil || c.settingsPromptForm != nil {
+	c.sportRelease(held, x, y)
+	if !held || c.mapLoading.active || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil {
+		if c.World != nil {
+			c.World.SyncHeldMarker()
+			c.World.Marker.SetHeld(false, c.Now())
+		}
 		c.groundHeld, c.groundSince = false, time.Time{}
 		return
 	}
-	if c.groundHeld && c.World != nil && !c.held && !c.event.active && !c.Now().Before(c.nextWalk) {
-		c.walkTo(x, y)
+	if c.groundHeld && c.World != nil && !c.held && !c.event.active {
+		x, y = c.World.ScenePoint(x, y)
+		if !c.Now().Before(c.nextWalk) {
+			c.walkTo(x, y)
+		}
+		c.World.TrackHeldMarker(x, y)
 	}
 }
 
@@ -191,12 +256,13 @@ func (c *Client) GroundHold(held bool, x, y int) {
 // focused, the player walks 0x50 pixels from its position on each held
 // axis, re-planned every 400 ms.
 func (c *Client) WalkKeys(left, up, right, down bool) {
-	if c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
+	if c.mapLoading.active || c.battle.state.Active || c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
 		return
 	}
 	if _, typing := c.Input.Focused.(*seui.Editor); typing {
 		return
 	}
+	c.floorPendingPickup = 0
 	cx, cy := c.World.Camera()
 	x, y := c.World.Player.X-cx, c.World.Player.Y-cy
 	if left {
@@ -216,6 +282,10 @@ func (c *Client) WalkKeys(left, up, right, down bool) {
 
 // sendLeg is 6/1 for a leg of the player's walk.
 func (c *Client) sendLeg(facing, x, y int) {
+	if c.World != nil && c.World.FollowingTeam() {
+		return
+	}
+	c.stopVacuum()
 	p := []byte{protocol.CommandMovement, protocol.MovementMove, byte(facing)}
 	p = binary.LittleEndian.AppendUint16(p, uint16(x))
 	p = binary.LittleEndian.AppendUint16(p, uint16(y))

@@ -15,6 +15,7 @@ import (
 	"wonderland-gonline/client/wlo/weather"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/protocol"
 )
 
 // Movies (event kind 5, FUN_00304fd0 case 5): the frame's value names the
@@ -40,7 +41,38 @@ const (
 	// both hide the HUD and lower the wide talk form.
 	movieModeNormal = 1
 	movieModeWide   = 4
+	// AC186 layouts include command and subcommand. MovieWireCode12's
+	// remaining three bytes are opaque; only its identifier is echoed.
+	movieHandshakePacketBytes = 7
+	moviePlaybackReplyBytes   = 9
+	movieIdentifierOffset     = 2
 )
+
+// moviePacket implements the server's existing AC186 compatibility exchange:
+// [186,12,id:u16,opaque:3] -> [186,9,id:u16], followed by the server's
+// [186,9,id:u16,status:u8,reserved:u32] reply (Private Server AC186.Recv9).
+// This does not complete an event: the movie still finishes with AC20:6.
+// The native receive route is FUN_002a84ec; its wider AC186 semantics remain
+// unresolved, so this only handles the layouts supported by the server.
+func (c *Client) moviePacket(p []byte) bool {
+	if len(p) < movieIdentifierOffset {
+		return false
+	}
+	switch p[1] {
+	case protocol.MovieWireCode12:
+		if len(p) != movieHandshakePacketBytes {
+			return false
+		}
+		id := binary.LittleEndian.Uint16(p[movieIdentifierOffset:])
+		c.Net.Send(protocol.Builder{protocol.CommandMovie, protocol.MoviePlaybackAcknowledgment}.U16(id))
+		return true
+	case protocol.MoviePlaybackAcknowledgment:
+		// Consuming the server reply must not echo another request or
+		// release the current movie/dialogue's interaction lock.
+		return len(p) == moviePlaybackReplyBytes
+	}
+	return false
+}
 
 // moviePlay is a running movie.
 type moviePlay struct {
@@ -49,7 +81,7 @@ type moviePlay struct {
 	npcs       []*world.NPC // the actors after the player, in order
 	mode       byte
 	pics       map[string]*surface.Surface // the pictures' images, keyed
-	background *surface.Surface            // JRP-registered JPEG illustration, drawn opaque.
+	background *surface.Surface            // Registered JPEG illustration, drawn opaque.
 }
 
 // pictureArchives are the image archives (pic\*.BMg) a picture's name is
@@ -123,8 +155,7 @@ func (c *Client) startMovie(s []byte) {
 		return
 	}
 	mp := &moviePlay{view: view, mode: movieModeNormal, pics: map[string]*surface.Surface{}}
-	if strings.HasPrefix(m.Camera.Scene, "JRP") {
-		name := strings.TrimPrefix(m.Camera.Scene, "JRP")
+	if name, illustration := movieIllustrationName(m.Camera.Scene); illustration {
 		for _, archive := range []string{"JRole_c01", "jRole", "Jpeg"} {
 			if im, err := c.Assets.LoadPicture(archive, name); err == nil {
 				mp.background = surface.FromImage(im)
@@ -173,9 +204,21 @@ func (c *Client) startMovie(s []byte) {
 	c.sync(mp)
 }
 
-// movieView is the view of the movie's background map ("Map10001").
+// movieIllustrationName follows TMovie's map/registered-picture distinction
+// (FUN_00358028). JPEG backgrounds can be named directly, e.g. JRole_5_80;
+// JRP is an optional registration prefix, not a requirement for an illustration.
+func movieIllustrationName(scene string) (string, bool) {
+	if scene == "" || strings.HasPrefix(scene, movieScenePrefix) {
+		return "", false
+	}
+	name := strings.TrimPrefix(scene, "JRP")
+	return name, name != ""
+}
+
+// movieView is the view of a background map ("Map10001") or an empty world
+// for registered illustrations. Never draw the current map behind such artwork.
 func (c *Client) movieView(m *movie.Movie) (*world.World, error) {
-	if strings.HasPrefix(m.Camera.Scene, "JRP") {
+	if _, illustration := movieIllustrationName(m.Camera.Scene); illustration {
 		return &world.World{Env: c.Env, Scene: &world.Scene{}, Now: c.Now, Cinematic: true, HideNames: true, CameraAt: &image.Point{}}, nil
 	}
 	id, err := strconv.Atoi(strings.TrimPrefix(m.Camera.Scene, movieScenePrefix))
@@ -189,8 +232,9 @@ func (c *Client) movieView(m *movie.Movie) (*world.World, error) {
 // player (the wide form) or an NPC template (its face or body).
 func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 	c.loadTalks()
-	text := clientassets.Big5Text(c.talks[l.Talk])
+	text := clientassets.Big5Text(c.talks[uint32(l.Talk)])
 	var who hud.Speaker
+	namedPet := false
 	if l.Speaker == movie.PlayerTemplate {
 		who = c.speaker(eventSpeakerSelf, 0)
 	} else if t, ok := c.npcTemplates[l.Speaker]; ok {
@@ -208,12 +252,20 @@ func (c *Client) movieSay(mp *moviePlay, l movie.Line) {
 		for _, pet := range c.InventoryState.Pets {
 			if uint32(pet.ID) == l.Speaker && len(pet.Name) != 0 {
 				who.Name = pet.Name
+				namedPet = true
 				break
 			}
 		}
 	}
 	c.Talk.Say(text, who, c.World.Player.Name)
-	c.playDialogueVoice(l.Talk, l.Speaker)
+	c.Talk.BindLanguage(func() {
+		speaker := who
+		if l.Speaker != movie.PlayerTemplate && !namedPet {
+			speaker.Name = clientassets.Big5Text(c.npcTemplates[l.Speaker].Name)
+		}
+		c.Talk.Say(clientassets.Big5Text(c.talks[uint32(l.Talk)]), speaker, c.World.Player.Name)
+	})
+	c.playDialogueVoice(uint32(l.Talk), l.Speaker)
 }
 
 // sync copies the movie's actors and camera into its view.

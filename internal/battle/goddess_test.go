@@ -40,15 +40,15 @@ func TestShrinkIsNonDamagingDebuff(t *testing.T) {
 	if [4]int{m.Atk, m.Matk, m.Def, m.Mdef} != original {
 		t.Fatal("base battle snapshot was mutated")
 	}
-	if m.attack() != 6 || m.magicAttack() != 6 || m.defense() != 4 || m.magicDefense() != 4 {
+	if m.attack() != 3 || m.magicAttack() != 3 || m.defense() != 5 || m.magicDefense() != 5 {
 		t.Fatal("combat reductions incorrect")
 	}
 	want := []byte{50, 1, 17, 0, 4, 2, 84, 59, 0, 1, 2, 2, 1, 0, 1, 0, 0, 0, 0, 0, 1}
 	if len(steps[0].SkillUses) != 1 || !bytes.Equal(steps[0].Packets[2], want) {
 		t.Fatal("native non-HP effect or proficiency missing", steps[0])
 	}
-	// Enemy acts later in the same round with reduced attack: damage floor five.
-	if f.HP != 95 {
+	// Enemy acts later in the same round with reduced attack.
+	if f.HP != 98 {
 		t.Fatal("enemy used unreduced attack", f.HP)
 	}
 	for i := 0; i < 3; i++ {
@@ -70,16 +70,16 @@ func TestShrinkRefreshAndDamagePaths(t *testing.T) {
 		t.Fatal("refresh compounded reductions")
 	}
 	f.Atk, f.Matk = 100, 90
-	if got := r.baseDamage(f, m, 10001, 1); got != 171 {
+	if got := r.baseDamage(f, m, 10001, 1); got != 111 {
 		t.Fatal("physical defense ignored", got)
 	}
 	f.Weapon = 5
-	if got := r.baseDamage(f, m, 10001, 1); got != 161 {
+	if got := r.baseDamage(f, m, 10001, 1); got != 107 {
 		t.Fatal("staff magic defense ignored", got)
 	}
 	f.Weapon = 0
 	r.Skills[20001] = assets.Skill{ID: 20001, EffectLayer: 2, StatMultiplier: 2}
-	if got := r.baseDamage(f, m, 20001, 1); got != 170 {
+	if got := r.baseDamage(f, m, 20001, 1); got != 107 {
 		t.Fatal("magic skill defense ignored", got)
 	}
 	m.RemoveEffects(15188)
@@ -98,12 +98,12 @@ func TestHotFireTargetsAllyAndDoesNotStackWithFiery(t *testing.T) {
 	if !f.HasEffect(15189) || f.SP != 218 || b.Defenders[0].HP != 1000 || len(steps[0].SkillUses) != 1 {
 		t.Fatal("Hot Fire failed to buff ally")
 	}
-	// The base physical damage is 16; Goddess multiplier is three even when
+	// Goddess multiplier is three even when
 	// the weaker generic Fiery status is present.
 	f.ApplyEffect(11072, 0, assets.SkillEffect{Target: assets.EffectAlly, Rounds: 3, StackGroup: "attack_damage_buff", Modifiers: []assets.StatModifier{{Stat: assets.EffectDamageDealt, Percent: 100}}})
 	b.Submit(r, 7, 1, []byte{4, 2, 2, 2})
 	b.Round(r)
-	if b.Defenders[0].HP != 952 {
+	if b.Defenders[0].HP != 972 {
 		t.Fatal("Hot Fire damage or buff precedence", b.Defenders[0].HP)
 	}
 	b.Timeout()
@@ -174,7 +174,7 @@ func TestShrunkMonsterDamageUsesEffectiveAttack(t *testing.T) {
 	m.Atk = 100
 	m.ApplyEffect(15188, 0, r.Skills[15188].Effects[0])
 	r.monster(b, m, map[int]bool{})
-	if f.HP != 450 {
+	if f.HP != 439 {
 		t.Fatal("normal monster damage ignored Shrink", f.HP)
 	}
 	// Confused monsters use the same effective combat stats against an ally.
@@ -182,7 +182,7 @@ func TestShrunkMonsterDamageUsesEffectiveAttack(t *testing.T) {
 	b.Defenders = append(b.Defenders, ally)
 	m.ApplyEffect(50010, 0, assets.SkillEffect{Target: assets.EffectSelf, Rounds: 2, AllyAttackChancePercent: 50})
 	r.monster(b, m, map[int]bool{})
-	if ally.HP != 450 {
+	if ally.HP != 439 {
 		t.Fatal("confused monster damage ignored Shrink", ally.HP)
 	}
 }
@@ -198,8 +198,8 @@ func TestHotFireBuffsPetAttacks(t *testing.T) {
 	b.Submit(r, 7, 4, []byte{4, 2, 0, 0})
 	b.Submit(r, 7, 1, []byte{3, 2, 2, 2})
 	b.Round(r)
-	// Pet's basic attack: (100*2 - 9 + 1) * 3 = 576.
-	if b.Defenders[0].HP != 424 {
+	// floor(100*1.4 - .98*10) * 3 + random 1 = 391.
+	if b.Defenders[0].HP != 609 {
 		t.Fatal("pet damage ignored Hot Fire", b.Defenders[0].HP)
 	}
 }

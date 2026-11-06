@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -17,7 +19,7 @@ func (s *Session) DisplayTitle() string {
 	if s.Title != "" {
 		return s.Title
 	}
-	return fmt.Sprintf("Session %d", s.ID)
+	return fmt.Sprintf(localization.Text("ui.app.session_d_5b56e49c"), s.ID)
 }
 func validSessionTitle(title string) bool {
 	if !utf8.ValidString(title) || utf8.RuneCountInString(title) > sessionTitleMaximumRunes {
@@ -46,7 +48,7 @@ func (w *Workspace) finishTitle(save bool) {
 		for _, s := range w.Sessions {
 			if s.ID == w.titleEditing {
 				s.Title = strings.TrimSpace(w.titleDraft)
-				if s.Title == fmt.Sprintf("Session %d", s.ID) {
+				if s.Title == fmt.Sprintf(localization.Text("ui.app.session_d_5b56e49c"), s.ID) {
 					s.Title = ""
 				}
 				break

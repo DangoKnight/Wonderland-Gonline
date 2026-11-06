@@ -84,8 +84,8 @@ func TestLoginFlow(t *testing.T) {
 		t.Fatalf("after 1/9: servers %v, word %d, flag %v, text %q", c.Servers.Visible, c.G.ServerWord, c.G.ServerFlag, c.G.ServerText)
 	}
 
-	// The account field upper-cases letters; Enter moves to the password.
-	for _, b := range []byte("tester") {
+	// Account input preserves case; Enter moves to the password.
+	for _, b := range []byte("tEsTeR") {
 		c.UI.Char(b)
 	}
 	c.UI.KeyDown(0x0d, 0)
@@ -97,7 +97,7 @@ func TestLoginFlow(t *testing.T) {
 	}
 	c.UI.KeyDown(0x0d, 0)
 	p := receive(t, got, "the login packet")
-	want := []byte{63, 4, 0xbb, 0x04, 6, 'T', 'E', 'S', 'T', 'E', 'R', 6, 's', 'e', 'c', 'r', 'e', 't'}
+	want := []byte{63, 4, 0xbb, 0x04, 6, 't', 'E', 's', 'T', 'e', 'R', 6, 's', 'e', 'c', 'r', 'e', 't'}
 	if !bytes.HasPrefix(p, want) {
 		t.Fatalf("login packet % x", p)
 	}

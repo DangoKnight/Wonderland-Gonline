@@ -1,0 +1,13 @@
+{
+  "monsters": 387,
+  "monster_unique_extensions": 62,
+  "items": 307,
+  "item_unique_extensions": 9,
+  "input_sha256": {
+    "npc_export": "73a318f601e612479e1799f4432d9d0c2c70b0ca18730100738d8ed0eb645bf1",
+    "item_export": "fcfd5b8ed6133d25ba612b754728e35042a110c8e084afb620aa41ecbffc1a6a",
+    "monster_reference": "61fcaa160fa905a56fa13aff631dfc8583e9855ceb523ef9660332a3d50995fd",
+    "item_reference": "febe4a4ac97d8d44888c6016722443da8241bf344d168512d00fd441dded8fa1",
+    "npc_patch": "6c009884499af72c4146fd6df0a083b69019adae076aef4ebd2601ca12495cd9"
+  }
+}

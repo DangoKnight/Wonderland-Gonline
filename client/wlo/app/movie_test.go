@@ -67,12 +67,23 @@ func TestBeachMovieEvent(t *testing.T) {
 // and shows the "?" over the captain (S10238) in stage 2.
 func TestStormMovieEffects(t *testing.T) {
 	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
 	var music []int
 	c.dispatch(movieFrameFor(123, 1))
 	if !c.MoviePlaying() {
 		t.Fatal("no movie")
 	}
-	p := c.movie.p
+	mp := c.movie
+	p := mp.p
+	// Match the server's legacy exchange before the AC20:6 completion.
+	c.dispatch([]byte{186, 12, 1, 0, 0, 0, 0})
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{186, 9, 1, 0}) {
+		t.Fatalf("movie handshake: %v", got)
+	}
+	c.dispatch([]byte{186, 9, 1, 0, 1, 0, 0, 0, 0})
+	if c.movie != mp || c.event.done {
+		t.Fatal("handshake reply completed the movie early")
+	}
 	p.Music = func(i int) { music = append(music, i) }
 	red := map[int]bool{}
 	var passengers []int // NPCs present only in stages 17..18
@@ -122,6 +133,10 @@ func TestStormMovieEffects(t *testing.T) {
 	}
 	if c.MoviePlaying() {
 		t.Fatalf("movie still at stage %d", p.Stage)
+	}
+	c.Frame()
+	if got := sent(); len(got) != 2 || !bytes.Equal(got[0], []byte{186, 9, 1, 0}) || !bytes.Equal(got[1], []byte{20, 6}) {
+		t.Fatalf("movie wire sequence: %v, want handshake then completion", got)
 	}
 	if fmt.Sprint(lineStages) != "[2 4 5 14]" {
 		t.Errorf("lines shown in stages %v, want [2 4 5 14]", lineStages)
@@ -210,6 +225,46 @@ func TestMonkeyMovieDepthAndIllustration(t *testing.T) {
 		}
 	}
 	if path := os.Getenv("MONKEY_ILLUSTRATION_SNAPSHOT"); path != "" {
+		savePNG(t, path, c)
+	}
+}
+
+func TestMovieBackgroundClassification(t *testing.T) {
+	for _, tc := range []struct {
+		scene, name  string
+		illustration bool
+	}{
+		{"Map12000", "", false},
+		{"", "", false},
+		{"JRPJRole_5_3", "JRole_5_3", true},
+		{"JRole_5_80", "JRole_5_80", true},
+	} {
+		name, illustration := movieIllustrationName(tc.scene)
+		if name != tc.name || illustration != tc.illustration {
+			t.Fatal("incorrect native background classification", tc.scene, name, illustration)
+		}
+	}
+}
+
+func TestNoaMovieUsesDirectIllustrationBackground(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	// Native Noa introduction, not a replacement map or a hand-authored movie.
+	c.dispatch(movieFrameFor(26005, 2))
+	mp := c.movie
+	if mp == nil || mp.p.M.Camera.Scene != "JRole_5_80" || mp.background == nil {
+		t.Fatal("Noa's direct JPEG background was not resolved")
+	}
+	if mp.background.W != 832 || mp.background.H != 640 || len(mp.view.Scene.Layers) != 0 || len(mp.view.Scene.Objects) != 0 {
+		t.Fatal("Noa introduction retained the map behind its illustration")
+	}
+	*now = now.Add(100 * time.Millisecond)
+	c.Frame()
+	for _, at := range []image.Point{{50, 300}, {740, 350}, {80, 500}} {
+		if got, want := c.Screen.Pix[at.Y*c.Screen.W+at.X], mp.background.Pix[at.Y*mp.background.W+at.X]; got != want {
+			t.Fatalf("Noa illustration at %v: got %x want %x", at, got, want)
+		}
+	}
+	if path := os.Getenv("NOA_ILLUSTRATION_SNAPSHOT"); path != "" {
 		savePNG(t, path, c)
 	}
 }

@@ -17,6 +17,14 @@ type Attributes struct {
 	Agility      uint16 `json:"agility"`
 }
 
+// Body styles are the native CharEnums.BodyStyle compatibility values.
+const (
+	BodySmallMale   uint16 = 1
+	BodySmallFemale uint16 = 2
+	BodyBigMale     uint16 = 3
+	BodyBigFemale   uint16 = 4
+)
+
 type Appearance struct {
 	Body, Head                 uint16
 	Hair, Skin, Clothing, Eyes uint16
@@ -28,6 +36,7 @@ type Appearance struct {
 const ItemTypeExotic = 10
 
 type ItemDefinition struct {
+	EquipLevel uint16    `json:"equip_level"`
 	CellWidth  byte      `json:"cell_width"`
 	CellHeight byte      `json:"cell_height"`
 	ID         uint16    `json:"id"`

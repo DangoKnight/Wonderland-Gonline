@@ -21,10 +21,11 @@ const (
 // request never changes it. FUN_003dc9d0 adds 31-byte records; FUN_003da044
 // removes counts; FUN_003dce4c moves stacks; FUN_003fc308 restores worn items.
 type State struct {
-	Bag       game.Inventory
-	Equipment game.Equipment
-	Items     map[uint16]assets.NativeItem
-	Pets      [game.MaxPets]UsePet
+	Bag        game.Inventory
+	Equipment  game.Equipment
+	Items      map[uint16]assets.NativeItem
+	Pets       [game.MaxPets]UsePet
+	PetElement func(uint16) byte // NPC asset lookup; definitions are not owned pet state.
 }
 
 func (s *State) Reset(worn []uint16) {
@@ -52,6 +53,28 @@ func (s *State) FirstFree() byte {
 	return 0
 }
 
+// BagAnchor resolves a covered cell without duplicating the server's item record.
+func (s *State) BagAnchor(slot int) int {
+	if slot < 1 || slot > game.BagSize {
+		return 0
+	}
+	if !s.Bag[slot-1].Empty() {
+		return slot
+	}
+	x, y := (slot-1)%BagColumns, (slot-1)/BagColumns
+	for i, item := range s.Bag {
+		if item.Empty() {
+			continue
+		}
+		w, h := s.Items[item.ID].Definition.Footprint()
+		ax, ay := i%BagColumns, i/BagColumns
+		if x >= ax && x < ax+w && y >= ay && y < ay+h {
+			return i + 1
+		}
+	}
+	return 0
+}
+
 // Apply validates the whole packet before publishing any changes. Unsupported
 // commands return handled=false; malformed known layouts return valid=false.
 func (s *State) Apply(p []byte) (handled, valid bool) {
@@ -60,6 +83,23 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 	}
 	bag, eq := s.Bag, s.Equipment
 	switch p[1] {
+	case protocol.InventoryAcquire:
+		if len(p) != protocol.InventoryAcquisitionBytes || p[4] == 0 || p[4] > game.MaxItemStack {
+			return true, false
+		}
+		item := game.Item{ID: binary.LittleEndian.Uint16(p[2:]), Count: p[4], Damage: p[5]}
+		copy(item.Metadata[:], p[6:6+game.ItemMetadataBytes])
+		definition, known := s.Items[item.ID]
+		if !known {
+			return true, false
+		}
+		definitions := map[uint16]game.ItemDefinition{}
+		for id, d := range s.Items {
+			definitions[id] = d.Definition
+		}
+		if _, err := bag.Grant(item, int(item.Count), definition.Definition.StackLimit(), definitions); err != nil {
+			return true, false
+		}
 	case protocol.InventoryItems:
 		if (len(p)-2)%bagRecordBytes != 0 {
 			return true, false

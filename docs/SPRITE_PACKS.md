@@ -1,6 +1,10 @@
 # Sprite packs
 
-Sprite packs are the client's runtime sprite format. Each pack is an ordinary directory of RGBA PNG atlas pages with one JSON index, named after the original archive (`002c`, `001_c01`, …):
+This page documents optional palette-indexed directory packs and loose editable
+sprite loading. Normal distributions use `make build-client` to compile assets
+into split ZIP64 runtime packs; see [client architecture](CLIENT_ARCHITECTURE.md).
+The optional directory format contains RGBA PNG atlas pages and one JSON index
+per original archive (`002c`, `001_c01`, …):
 
 ```text
 var/client-spritepacks/
@@ -13,10 +17,11 @@ var/client-spritepacks/
 
 ## Build
 
-The normal client reads the editable atlases directly. `cmd/asset-build` verifies that data tree; `-copy` creates a distribution
-copy without generating another set of packs. Optional packs
-can be built for palette-index rendering or format inspection; select them with
-the client's `-sprites var/client-spritepacks` override. To build from the editable export in `data/sprites` (see `data/sprites/EDITING.md`), from the repository root:
+Select `-assets data` to read editable atlases directly. `cmd/asset-build`
+verifies/copies that loose tree; `cmd/client-bundle` builds the normal compiled
+distribution. Optional directory packs can be built for inspection or an
+explicit sprite override with `-sprites var/client-spritepacks`. To build from
+`data/sprites` (see `data/sprites/EDITING.md`), from the repository root:
 
 ```sh
 go run ./cmd/sprite-build -editable data/sprites -output var/client-spritepacks
@@ -73,7 +78,8 @@ Packs are validated on load: page paths must stay inside the pack directory, and
 
 ## Client
 
-`client/wlo/sprites.Manager` loads archives on demand and searches, in order:
+`client/wlo/sprites.Manager` loads archives on demand. Compiled asset roots supply
+runtime sprite records; loose/override lookup searches:
 1. the `-sprites` directory (either packs or the editable export);
 2. `sprites/` under the asset root (`data/sprites`, the editable export).
 

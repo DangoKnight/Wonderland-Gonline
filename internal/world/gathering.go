@@ -23,6 +23,20 @@ const (
 
 type WaterGatheringPlan struct{ Timer, Item uint16 }
 
+type EventGatheringPlan = assets.EventGatheringPlan
+
+// PlanEventGathering recognizes an entire atomic reward/respawn branch.
+func (w *World) PlanEventGathering(mapID uint16, ev *assets.Event, branch int) (EventGatheringPlan, bool) {
+	if w.catalog.EventGathering.Timers == nil {
+		old, involved := WaterGathering(mapID, ev, branch)
+		if old.Timer == 0 {
+			return EventGatheringPlan{}, involved
+		}
+		return EventGatheringPlan{Timer: old.Timer, Pools: [][]uint16{{old.Item}}, Cooldown: game.WaterGatheringCooldown}, true
+	}
+	return w.catalog.PlanEventGathering(ev, branch)
+}
+
 func waterReward(op Op) bool {
 	return op.Code == ActionPlayer && op.D1 == PlayerActionReward && op.D2 == waterRewardKind && op.D3 == waterRewardPool && (op.Value() == seaWaterVariant || op.Value() == freshWaterVariant)
 }

@@ -53,7 +53,7 @@ func Copy(source, destination string, assets bool) (err error) {
 			os.Remove(destination + "-shm")
 		}
 	}()
-	address := url.URL{Scheme: "file", Path: filepath.ToSlash(source)}
+	address := databaseURL(source)
 	q := address.Query()
 	q.Set("mode", "ro")
 	q.Set("_busy_timeout", "5000")
@@ -91,7 +91,7 @@ func Check(path string) error {
 	if err != nil {
 		return err
 	}
-	address := url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}
+	address := databaseURL(abs)
 	q := address.Query()
 	q.Set("mode", "ro")
 	address.RawQuery = q.Encode()
@@ -129,4 +129,14 @@ func Check(path string) error {
 		return fmt.Errorf("SQLite foreign key check failed")
 	}
 	return rows.Err()
+}
+
+// databaseURL accepts an absolute path. Windows drive letters belong in the
+// file URI path (file:///C:/...), never its authority (file://C:/...).
+func databaseURL(path string) url.URL {
+	slash := filepath.ToSlash(path)
+	if !strings.HasPrefix(slash, "/") {
+		slash = "/" + slash
+	}
+	return url.URL{Scheme: "file", Path: slash}
 }

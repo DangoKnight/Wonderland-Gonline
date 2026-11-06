@@ -1,0 +1,94 @@
+package assets
+
+import (
+	_ "embed"
+	"encoding/csv"
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+// NPCNamePatch is an ID-specific display-name restoration from the saved
+// WLOHub reference or owner visual review. OriginalName protects administrator edits.
+type NPCNamePatch struct {
+	OriginalName string
+	Name         string
+	PreviousName string // Earlier WLOHub display name, before removing Quest annotations.
+}
+
+//go:embed npc_names.csv
+var npcNamePatchCSV string
+
+//go:embed npc_name_reviews.csv
+var npcNameReviewCSV string
+
+const ownerReviewedNPCNameSource = "owner-review"
+
+func reviewedNPCNames() (map[uint16]NPCNamePatch, error) {
+	rows, err := csv.NewReader(strings.NewReader(npcNameReviewCSV)).ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 || strings.Join(rows[0], ",") != "id,original_name,name,certain,sprite" {
+		return nil, fmt.Errorf("invalid owner NPC review header")
+	}
+	result, seen := map[uint16]NPCNamePatch{}, map[uint16]bool{}
+	for _, row := range rows[1:] {
+		id, err := strconv.ParseUint(row[0], 10, 16)
+		if err != nil || id == 0 || seen[uint16(id)] || row[1] == "" || (row[3] != "true" && row[3] != "false") {
+			return nil, fmt.Errorf("invalid owner NPC review %q", row)
+		}
+		seen[uint16(id)] = true
+		if row[3] != "true" {
+			continue
+		}
+		if strings.TrimSpace(row[2]) != row[2] || row[2] == "" || strings.ContainsAny(row[2], "\r\n\x00") {
+			return nil, fmt.Errorf("invalid reviewed NPC name %q", row)
+		}
+		result[uint16(id)] = NPCNamePatch{OriginalName: row[1], Name: row[2]}
+	}
+	return result, nil
+}
+
+// NPCNamePatches supplies offline SQL initialization and client asset compilation.
+// Runtime gameplay uses the resulting definitions, without applying name patches.
+func NPCNamePatches() (map[uint16]NPCNamePatch, error) {
+	reviewed, err := reviewedNPCNames()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := csv.NewReader(strings.NewReader(npcNamePatchCSV)).ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 || strings.Join(rows[0], ",") != "id,original_name,name,source_ids,previous_name" {
+		return nil, fmt.Errorf("invalid NPC name patch header")
+	}
+	patches := make(map[uint16]NPCNamePatch, len(rows)-1)
+	for _, row := range rows[1:] {
+		id, err := strconv.ParseUint(row[0], 10, 16)
+		// Reviewed corrections can restore missing leading/middle words, such as
+		// Snake -> Poisonous Snake. The native ID and original name guard each edit.
+		owner, ownerKnown := reviewed[uint16(id)]
+		ownerApproved := row[3] == ownerReviewedNPCNameSource && ownerKnown && owner.Name == row[2] && owner.OriginalName == row[1]
+		if err != nil || id == 0 || len(row[1]) == 0 || len(row[1]) > nativeNPCNameBytes || (len(row[2]) < len(row[1]) && !ownerApproved) || row[3] == "" {
+			return nil, fmt.Errorf("invalid NPC name patch %q", row)
+		}
+		if _, exists := patches[uint16(id)]; exists {
+			return nil, fmt.Errorf("duplicate NPC name patch %d", id)
+		}
+		patches[uint16(id)] = NPCNamePatch{OriginalName: row[1], Name: row[2], PreviousName: row[4]}
+	}
+	for id, patch := range reviewed {
+		patches[id] = patch
+	}
+	return patches, nil
+}
+
+// Apply preserves custom names and changes only a verified source name.
+func (p NPCNamePatch) Apply(current string) string {
+	if current == p.OriginalName || p.PreviousName != "" && current == p.PreviousName {
+		return p.Name
+	}
+	return current
+}

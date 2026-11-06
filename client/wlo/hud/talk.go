@@ -41,7 +41,8 @@ type Talk struct {
 	Env *seui.Env
 	Now func() time.Time
 	// Sound plays a client sound path.
-	Sound func(path string)
+	Sound  func(path string)
+	OnHide func() // Cancel an unfinished recording when its line is dismissed.
 
 	panel *seui.Panel
 	next  int
@@ -70,14 +71,16 @@ type Talk struct {
 	close   int
 	ok      int
 	cancel  int
-	// The open and close animation (FUN_00472664, FUN_00472868).
-	visible    bool      // +0x14: drawn, opening, open or closing
-	textOn     bool      // +0x17a: the content is drawn
-	cols, rows int       // +0x168, +0x16c
-	start      time.Time // +0x130
-	cw, ch     int       // the current size
-	blinkAt    time.Time
-	blinkTo    time.Time
+	// Short elapsed-time transitions. Closing geometry remains available for
+	// the next line, but a dismissed line never draws an empty panel.
+	visible      bool      // +0x14: drawn, opening, open or closing
+	textOn       bool      // +0x17a: the content is drawn
+	start        time.Time // +0x130
+	cw, ch       int       // the current size
+	fromW, fromH int       // size at the start of this transition
+	blinkAt      time.Time
+	blinkTo      time.Time
+	language     func()
 }
 
 // Face draws a speaker's face with its feet (anchor) at (x, y).
@@ -90,6 +93,9 @@ type Speaker struct {
 	// player).
 	Face Face
 	Left bool
+	// FaceBodyW is the body sprite width in the portrait action. Native
+	// player-face placement uses half this width, not half the face artwork.
+	FaceBodyW int
 	// Body draws the whole NPC in body mode, its feet at (x, y); BodyW and
 	// BodyH are its frame's size (the library's +8, +0xc).
 	Body         func(dst *surface.Surface, x, y int)
@@ -106,6 +112,7 @@ type Speaker struct {
 
 const (
 	talkScreenW   = 800
+	talkScreenH   = 600
 	talkTop       = 0x19 // FUN_0034bfa4's Init
 	talkMarginX   = 0x32
 	talkMarginY   = 0x1f
@@ -139,16 +146,14 @@ const (
 	talkListGap      = 8
 	talkButtonStates = 3 // normal, hovered, pressed, stacked
 	talkOptionInk    = 0xffe0
-	// FUN_0046fcf4: four column and four row steps, one step per
-	// millisecond of the frame clock (+0x140 = 1.0); the in-between sizes
-	// are the margins plus 0x14 wide and 6 tall.
-	talkSteps     = 4
-	talkStepEvery = time.Millisecond
-	talkGrowW     = 0x14
-	talkGrowH     = 6
-	talkLineH     = 18
-	talkCharW     = 8
-	talkWrapChars = 0x28 // +0x294, the characters a line holds
+	// Gonline presentation: a small simultaneous size change replaces the
+	// native two-axis collapse. Timing is independent of rendering frequency.
+	talkOpenDuration  = seui.MessageOpenDuration
+	talkCloseDuration = seui.MessageHandoffDuration
+	talkMotionInset   = seui.MessageMotionInset
+	talkLineH         = 18
+	talkCharW         = 8
+	talkWrapChars     = 0x28 // +0x294, the characters a line holds
 	// The wide form (FUN_0046fe50): Form_Talk_1 at (0x23, 0x195), 0x300 ×
 	// 0xa9, margins 200 and 0x2d, lines of 0x2d characters, left-aligned;
 	// the art's feet at (its width / 2 + 0xa7, bottom − 0x1e)
@@ -169,20 +174,21 @@ const (
 	talkStyle       = 2
 	talkNPCFaceX    = -0x49 // from the right edge
 	talkFaceY       = 0x46
-	talkPlayerFaceX = 0x2d + 0x40 // 0x2d plus half the face sprite (+8), taken as 128 wide
+	talkPlayerFaceX = 0x2d // plus half the body sprite width in the portrait action
 	talkNameY       = 0x24
 	talkNameInk     = 0xffff
 	// Body mode (FUN_0034cb7c): the feet at (right − width/2 − 0x1e,
 	// top + height + 0x14); +0x5a moves them to top + 0x56 + 0x14, +0x5b
 	// moves the name 0x28 down; the name is 0x10 below.
-	talkBodyX      = 0x1e
-	talkBodyY      = 0x14
-	talkBodyLowY   = 0x56
-	talkBodyNameY  = 0x10
-	talkNameLowY   = 0x28
-	talkNextBottom = 0x19
-	talkNextFrames = 2
-	talkNextEvery  = 250 * time.Millisecond
+	talkBodyX       = 0x1e
+	talkBodyY       = 0x14
+	talkBodyLowY    = 0x56
+	talkBodyNameY   = 0x10
+	talkNameLowY    = 0x28
+	talkNextBottom  = 0x19
+	talkNextFrames  = 2
+	talkNextEvery   = 250 * time.Millisecond
+	talkNextTextGap = 6 // Keep the click indicator below the final text line.
 	// The face blinks for 50 ms every 6 to 8 seconds (+0x320, +0x330).
 	talkBlinkEvery  = 6000 * time.Millisecond
 	talkBlinkSpread = 2000
@@ -209,6 +215,13 @@ func NewTalk(env *seui.Env) *Talk {
 // Say shows one line, its markup applied with player as #n, and plays its
 // sound tags.
 func (t *Talk) Say(text []byte, who Speaker, player []byte) {
+	t.language = nil
+	if t.Env != nil && t.Env.UI != nil {
+		t.Env.UI.CancelMessageExit(t)
+	}
+	now := t.Now()
+	t.tick(now)
+	wasVisible := t.visible
 	t.text = parseTalk(text, player)
 	t.big = who.Art != nil
 	if t.big {
@@ -218,13 +231,31 @@ func (t *Talk) Say(text []byte, who Speaker, player []byte) {
 	}
 	t.who, t.shown, t.options, t.yesNo = who, true, nil, false
 	t.fit()
-	// FUN_0046fe50 restarts the animation for every line.
-	t.visible, t.textOn, t.cols, t.rows, t.start = true, false, 0, 0, t.Now()
+	t.fromW, t.fromH = t.cw, t.ch
+	if !wasVisible {
+		t.fromW, t.fromH = max(1, t.w-2*talkMotionInset), max(1, t.h-2*talkMotionInset)
+	}
+	t.visible, t.textOn, t.start = true, true, now
+	t.cw, t.ch = t.fromW, t.fromH
 	for _, s := range t.text.sounds {
 		if t.Sound != nil {
 			t.Sound(soundDir + s + soundExt)
 		}
 	}
+}
+
+// BindLanguage carries presentation identity only; it cannot advance an event.
+func (t *Talk) BindLanguage(update func()) { t.language = update }
+func (t *Talk) RefreshLanguage() {
+	if !t.shown || t.language == nil {
+		return
+	}
+	update, sound, start := t.language, t.Sound, t.start
+	t.Sound = nil // Relayout must not replay dialogue sound tags.
+	update()
+	t.Sound, t.start, t.language = sound, start, update
+	t.cw, t.ch = t.w, t.h
+	t.fromW, t.fromH = t.w, t.h
 }
 
 // fit is FUN_0034ba20's size; the wide form keeps its own.
@@ -234,6 +265,8 @@ func (t *Talk) fit() {
 		if t.Lowered {
 			t.origin.Y += talkLowered
 		}
+		t.reserveNextSpace(talkBigTextY)
+		t.origin.Y = min(t.origin.Y, talkScreenH-t.h)
 		return
 	}
 	defer func() { t.origin = image.Pt((talkScreenW-t.w)/2, talkTop) }()
@@ -282,11 +315,28 @@ func (t *Talk) fit() {
 		t.buttonsY = t.h - talkButtonsUp
 	}
 	t.h += talkExtraH
+	if len(t.options) == 0 && !t.yesNo {
+		t.reserveNextSpace(talkTextY)
+	}
+}
+
+func (t *Talk) reserveNextSpace(textY int) {
+	height := talkLineH
+	if t.Env != nil && t.Env.Pics != nil && t.next >= 0 {
+		_, sheetHeight := t.Env.Pics.Size(t.next)
+		height = sheetHeight / talkNextFrames
+	}
+	textBottom := textY + len(t.lines)*talkLineH
+	t.h = max(t.h, textBottom+talkNextTextGap+height+talkNextBottom)
 }
 
 // Ask shows a question: its prompt as the line and its options, which
 // Pick reports; yesNo shows OK and Cancel buttons for two options instead.
 func (t *Talk) Ask(prompt [][]byte, who Speaker, player []byte, options [][]byte, yesNo bool) {
+	// FUN_0034d00c / FUN_0034d150 use the compact question form. Large
+	// player artwork belongs to ordinary dialogue and its fixed wide form
+	// bypasses the option-list sizing below.
+	who.Art, who.ArtW = nil, 0
 	t.Say(bytes.Join(prompt, []byte{'\r'}), who, player)
 	t.yesNo = yesNo
 	t.options = make([][]byte, len(options))
@@ -381,7 +431,8 @@ func (t *Talk) closeRect(r image.Rectangle) image.Rectangle {
 
 // Contains reports whether a screen point is on the drawn window.
 func (t *Talk) Contains(x, y int) bool {
-	if !t.visible {
+	t.tick(t.Now())
+	if !t.visible || !t.shown {
 		return false
 	}
 	r := t.rect()
@@ -396,94 +447,62 @@ func (t *Talk) rect() image.Rectangle {
 	return image.Rect(left, top, left+t.cw, top+t.ch)
 }
 
-// steps is the size of one column and one row step (FUN_0034ba20: the
-// text's width and height over steps − 1).
-func (t *Talk) steps() (colW, rowH int) {
-	longest := 0
-	for _, r := range t.lines {
-		longest = max(longest, r[1]-r[0])
-	}
-	return longest * talkCharW / (talkSteps - 1), len(t.lines) * talkLineH / (talkSteps - 1)
-}
-
-// elapsed is the whole steps since start, plus extra (the close adds one).
-func (t *Talk) elapsed(now time.Time, extra int) int {
-	return int(now.Sub(t.start)/talkStepEvery) + extra
-}
-
-// tick is the panel's tick (FUN_00477810) in style 1: opening while a line
-// is open, closing otherwise.
+// tick advances directly to the current clock position, including when a
+// background client skips drawing. A new line can reverse an unfinished close.
 func (t *Talk) tick(now time.Time) {
-	colW, rowH := t.steps()
-	baseW, baseH := 2*talkMarginX+talkGrowW, 2*talkMarginY+talkGrowH
-	if t.shown {
-		// FUN_00472664: the columns grow first, then the rows.
-		if t.cols < talkSteps {
-			t.cw, t.ch = t.cols*colW+baseW, baseH
-		} else {
-			t.cw = t.w
-		}
-		if t.cols == talkSteps {
-			if t.rows < talkSteps {
-				t.ch = t.rows*rowH + baseH
-			} else {
-				t.ch = t.h
-			}
-		}
-		if t.cols == talkSteps && t.rows == talkSteps {
-			t.textOn = true
-			return
-		}
-		if t.cols < talkSteps {
-			t.cols = t.elapsed(now, 0)
-		} else {
-			t.cols = talkSteps
-		}
-		if t.cols == talkSteps && t.rows < talkSteps {
-			t.rows = t.elapsed(now, 0)
-		} else {
-			t.rows = talkSteps
-		}
+	if !t.visible {
 		return
 	}
-	// FUN_00472868: the rows shrink first, then the columns; at nothing
-	// the window hides (FUN_00470ee4).
-	t.textOn = false
-	if t.cols == 0 && t.rows == 0 {
+	duration := talkOpenDuration
+	toW, toH := t.w, t.h
+	if !t.shown {
+		duration = talkCloseDuration
+		toW, toH = min(t.fromW, max(1, t.w-2*talkMotionInset)), min(t.fromH, max(1, t.h-2*talkMotionInset))
+	}
+	elapsed := max(0, now.Sub(t.start))
+	if !t.shown && elapsed >= duration {
 		t.visible = false
+		t.cw, t.ch = 0, 0
 		return
 	}
-	if t.rows == talkSteps {
-		t.start = now
-	}
-	if t.rows < 1 {
-		t.rows = 0
-	} else {
-		t.rows = talkSteps - t.elapsed(now, 1)
-	}
-	if t.rows == 0 {
-		t.cols = talkSteps - t.elapsed(now, 1)
-	}
-	t.cols = max(t.cols, 0)
-	if t.rows == 0 {
-		t.cw = t.cols*colW + baseW
-	}
-	if t.rows >= 0 {
-		t.ch = t.rows*rowH + baseH
-	}
+	size := seui.MessageTransitionSize(image.Pt(t.fromW, t.fromH), image.Pt(toW, toH), elapsed, duration)
+	t.cw, t.ch = size.X, size.Y
 }
 
-// Drawn reports whether the window is on screen, animating or not.
-func (t *Talk) Drawn() bool { return t.visible }
+// Drawn reports whether a live line is on screen, including its opening.
+func (t *Talk) Drawn() bool { t.tick(t.Now()); return t.visible && t.shown }
 
 // Size is the window's fitted size.
 func (t *Talk) Size() (w, h int) { return t.w, t.h }
 
-// Hide closes the line; the window shrinks away over the next frames.
-func (t *Talk) Hide() { t.shown = false }
+// Hide removes the line and panel together. The hidden closing geometry lets
+// a following line take over smoothly without an empty box between packets.
+func (t *Talk) Hide() {
+	if !t.shown {
+		return
+	}
+	if t.OnHide != nil {
+		t.OnHide()
+	}
+	if t.Env != nil && t.Env.UI != nil {
+		t.Env.UI.CloseOverlayMessage(t, t.Now, t.Draw)
+	}
+	now := t.Now()
+	t.tick(now)
+	t.fromW, t.fromH = t.cw, t.ch
+	t.shown, t.textOn, t.start = false, false, now
+}
 
 // Shown reports whether a line is open.
 func (t *Talk) Shown() bool { return t.shown }
+
+// Bounds reserves the full dialogue area while its opening animation plays.
+func (t *Talk) Bounds() image.Rectangle {
+	if !t.shown {
+		return image.Rectangle{}
+	}
+	return image.Rect(t.origin.X, t.origin.Y, t.origin.X+t.w, t.origin.Y+t.h)
+}
 
 // Lines is the wrapped text shown.
 func (t *Talk) Lines() [][]byte {
@@ -561,7 +580,7 @@ func (t *Talk) Draw() {
 	}
 	env, now := t.Env, t.Now()
 	t.tick(now)
-	if !t.visible {
+	if !t.visible || !t.shown {
 		return
 	}
 	r := t.rect()
@@ -676,7 +695,7 @@ func (t *Talk) drawSpeaker(left int, now time.Time) {
 	case who.Face != nil:
 		x = left + t.w + talkNPCFaceX
 		if who.Left {
-			x = left + talkPlayerFaceX
+			x = left + talkPlayerFaceX + who.FaceBodyW/2
 		}
 		y := talkTop + talkFaceY
 		who.Face(env.Screen, x, y, t.blinking(now))

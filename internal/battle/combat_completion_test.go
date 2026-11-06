@@ -70,8 +70,8 @@ func TestPvPDefenderVictoryTimeoutAndForfeit(t *testing.T) {
 	d.Spd = 1000
 	b.Submit(lowest, d.ID, 1, []byte{1, 2, 4, 2})
 	b.Timeout()
-	if len(b.Pending) != 2 || !b.Ready() {
-		t.Fatal("timeout did not defend both sides")
+	if len(b.Pending) != 2 || !b.Ready() || b.Pending[a.key()].Kind != ActionIdle || b.Pending[d.key()].Kind != "attack" {
+		t.Fatal("timeout did not preserve attack and idle the missing actor")
 	}
 	_, outcome := b.Round(lowest)
 	if outcome != Defeat {

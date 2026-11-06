@@ -1,14 +1,21 @@
 package seui
 
+import (
+	"image"
+	"time"
+)
+
 // Form is TSe_Form (constructor FUN_004687e8): a draggable panel kept on
 // screen, registered with the manager.
 type Form struct {
 	Panel
-	DragX, DragY int  // +0x118, +0x11c pointer offset while dragging
-	Draggable    bool // +0x120
-	Docked       bool // +0x128
-	Dockable     bool // +0x129 right-click docks the form at the bottom
-	TitleIcon    int  // +0x12c
+	DragX, DragY   int  // +0x118, +0x11c pointer offset while dragging
+	Draggable      bool // +0x120
+	Docked         bool // +0x128
+	Dockable       bool // +0x129 right-click docks the form at the bottom
+	TitleIcon      int  // +0x12c
+	messageClock   func() time.Time
+	messageStarted time.Time
 }
 
 func NewForm(env *Env) *Form {
@@ -32,13 +39,46 @@ func (f *Form) isForm() {}
 
 // Show is slot +0x20 (FUN_004687cc): visible and brought to the front.
 func (f *Form) Show() {
+	if f.messageClock != nil {
+		f.Env.UI.CancelMessageExit(f.self)
+	}
+	if !f.Visible && f.messageClock != nil {
+		f.messageStarted = f.messageClock()
+	}
 	f.Visible = true
 	f.Env.UI.Front(f.self, true)
+}
+
+// AnimateMessage opts a message/confirmation into the shared presentation.
+// Ordinary module windows retain their existing behavior.
+func (f *Form) AnimateMessage(now func() time.Time) {
+	if now == nil {
+		now = time.Now
+	}
+	f.messageClock = now
+}
+
+func (f *Form) MessageRect() image.Rectangle {
+	if f.messageClock == nil {
+		return f.Rect()
+	}
+	return MessageOpeningRect(f.Rect(), f.messageStarted, f.messageClock())
+}
+
+func (f *Form) Paint() {
+	if f.messageClock == nil {
+		f.Panel.Paint()
+		return
+	}
+	f.Panel.PaintMessage(f.messageStarted, f.messageClock())
 }
 
 // Hide is slot +0x24 (FUN_0046887c): hidden, and the form behind takes the
 // front if this one had it.
 func (f *Form) Hide() {
+	if f.Visible && f.messageClock != nil {
+		f.Env.UI.CloseMessage(f.self, f.messageClock, func() { paintMessageTree(f.self) })
+	}
 	f.Visible = false
 	f.Env.UI.Front(f.self, false)
 }

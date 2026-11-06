@@ -13,11 +13,22 @@ var carnieFallback = Destination{11016, 1181, 243}
 // map 11094 branch of GameMap.Teleport. Tent exits and the database portal table (empty
 // by default) are not ported.
 func (w *World) Portal(mapID, portal, x, y uint16) (Destination, bool) {
+	for _, rule := range w.catalog.MapTransitions {
+		if rule.FromMap == mapID && rule.Entry == portal {
+			d := rule.Destination
+			return Destination{d.Map, d.X, d.Y}, true
+		}
+	}
 	if mapID == game.MapID11094 {
 		return carnieFallback, true
 	}
 	if m, ok := w.maps[mapID]; ok && len(m.data.Warps) > 0 {
 		warps := m.data.Warps
+		for _, warp := range warps {
+			if warp.ClickID == portal && warp.MapID > 0 {
+				return destination(warp.MapID, warp.X, warp.Y), true
+			}
+		}
 		// Geometric reverse match: the destination whose return warp is nearest the player.
 		if x > 0 && y > 0 {
 			best, bestDist := -1, math.MaxFloat64
@@ -39,11 +50,7 @@ func (w *World) Portal(mapID, portal, x, y uint16) (Destination, bool) {
 				return destination(warps[best].MapID, warps[best].X, warps[best].Y), true
 			}
 		}
-		for _, warp := range warps {
-			if warp.ClickID == portal && warp.MapID > 0 {
-				return destination(warp.MapID, warp.X, warp.Y), true
-			}
-		}
+
 		if portal >= 1 && int(portal) <= len(warps) && warps[portal-1].MapID > 0 {
 			warp := warps[portal-1]
 			return destination(warp.MapID, warp.X, warp.Y), true

@@ -1,6 +1,10 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
+	"time"
+
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/seui"
@@ -28,13 +32,19 @@ func (f *logoutForm) Update(in *seui.Input) {
 		return
 	}
 	f.Form.Update(in)
+}
+
+func (f *logoutForm) drawContent() {
 	a := f.Abs()
 	c := f.c
+	if c.World == nil {
+		return
+	}
 	if f.preview != nil {
-		f.preview.DrawBody(c.Screen, a.X+40, a.Y+110, logoutPreviewAction)
+		f.preview.DrawBody(f.Env.Screen, a.X+40, a.Y+110, logoutPreviewAction)
 	}
 	name := c.World.Player.Name
-	c.Env.Text.Draw(a.X+40-len(name)*4, a.Y+123, 0, false, true, c.Screen, name, 15, 160, 0, logoutNameInk, 0)
+	c.Env.Text.Draw(a.X+40-len(name)*4, a.Y+123, 0, false, true, f.Env.Screen, name, 15, 160, 0, logoutNameInk, 0)
 }
 func (c *Client) logoutConfirmation(exit bool) {
 	c.closeSettingsPrompt()
@@ -45,19 +55,26 @@ func (c *Client) logoutConfirmation(exit bool) {
 		f.preview = &preview
 	}
 	f.InitForm(f, c.Env)
+	f.AnimateMessage(func() time.Time { return c.Now() })
 	f.Dockable = false
-	f.Name = "Logout confirmation"
+	f.Name = localization.UI("ui.app.logout_confirmation_d9d7f0c2")
 	f.Init("panel22", 255, 168, 324, 0, 0, true, logoutHeight, logoutWidth, 30)
 	f.SetMargins(50, 32, 32, 60)
 	text := seui.NewEditor(c.Env, f)
 	text.Init("", 80, 0, 0, 0, 0, false, 30, 185, 30)
 	text.ReadOnly = true
 	text.Color = logoutPromptInk
-	message := "Want to log out?"
+	message := localization.UI("ui.app.want_to_log_out_ad0a6cfa")
 	if exit {
-		message = "Want to exit?"
+		message = localization.UI("ui.app.want_to_exit_79bf8048")
 	}
-	text.SetText([]byte(message))
+	text.BindLanguage("text", func() {
+		message = localization.UI("ui.app.want_to_log_out_ad0a6cfa")
+		if exit {
+			message = localization.UI("ui.app.want_to_exit_79bf8048")
+		}
+		text.SetText([]byte(message))
+	})
 	for i := range 2 {
 		confirm := i == 0
 		b := seui.NewFixedButton(c.Env, f)
@@ -96,6 +113,6 @@ func (f *logoutForm) Paint() {
 	if f.background == nil {
 		f.background = seui.ConfirmationBackground(f.Env, logoutWidth, logoutHeight)
 	}
-	a := f.Abs()
-	f.Env.Screen.Draw(a.X, a.Y, f.background, true)
+	f.Env.Screen.DrawStretch(f.MessageRect(), f.background, true)
+	f.drawContent()
 }

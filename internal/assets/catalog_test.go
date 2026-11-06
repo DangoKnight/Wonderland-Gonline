@@ -85,7 +85,8 @@ func TestNativeAssets(t *testing.T) {
 	}
 	s := c.Summary()
 	t.Logf("%+v", s)
-	if len(s.Warnings) != 1 || s.Warnings[0] != "gacha_packs.json: unknown gacha pack 34381" || s.Items != 7312 {
+	// The authored item catalog includes 13 additions beyond the native 7,312.
+	if len(s.Warnings) != 1 || s.Warnings[0] != "gacha_packs.json: unknown gacha pack 34381" || s.Items != 7325 {
 		t.Fatal(s.Warnings)
 	}
 	if s.NPCs < 4000 || s.Dialogues < 15000 || s.Maps < 1000 || s.MapNPCs < 8000 || s.Events < 10000 || s.Warps < 2000 {

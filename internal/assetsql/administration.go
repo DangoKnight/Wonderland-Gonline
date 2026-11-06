@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
+var DefinitionNames = []string{"ResourceRespawns", "CollectionSpots", "Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "BattleBackdrops", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -125,6 +125,9 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 	if err = validateFishingCatalog(c); err != nil {
 		return nil, err
 	}
+	if err = assets.ValidateStoryCatalog(c); err != nil {
+		return nil, err
+	}
 	if err = assets.ValidateQuestDefinitions(c); err != nil {
 		return nil, err
 	}
@@ -136,6 +139,28 @@ func DefinitionCandidate(tx *gorm.DB, name string, raw []byte, recordID *int) (*
 func validateDefinition(name string, c *assets.Catalog) error {
 	marshal := func(v any) []byte { raw, _ := json.Marshal(v); return raw }
 	switch name {
+	case "Story":
+		return assets.ValidateStoryCatalog(c)
+	case "MapTransitions":
+		return validateMapTransitions(c.MapTransitions)
+	case "TentToolHosts":
+		return validateTentToolHosts(c.TentToolHosts)
+	case "ChestPropCategories":
+		return validateChestPropCategories(c.ChestPropCategories)
+	case "NPCShopDefaults":
+		return validateNPCShopDefaults(c.NPCShopDefaults)
+	case "NPCBuyPrices":
+		return validateNPCBuyPrices(c.NPCBuyPrices)
+	case "Travel":
+		return validateTravel(c.Travel)
+	case "TentSurfaces":
+		return validateTentSurfaces(c.TentSurfaces)
+	case "BoxedItems":
+		return validateBoxedItems(c.BoxedItems)
+	case "SkillEvolutions":
+		return validateSkillEvolutions(c.SkillEvolutions)
+	case "EventGathering":
+		return validateEventGathering(c.EventGathering)
 	case "QuestDefinitions":
 		return assets.ValidateQuestDefinitions(c)
 	case "Manufacturing":
@@ -158,6 +183,8 @@ func validateDefinition(name string, c *assets.Catalog) error {
 		return validateFishingCatalog(c)
 	case "Terrains":
 		return assets.ValidateTerrains(c.Terrains)
+	case "BattleBackdrops":
+		return assets.ValidateBattleBackdrops(c.BattleBackdrops)
 	case "Tents":
 		return validateTents(c.Tents)
 	case "Economy":
@@ -177,6 +204,14 @@ func validateDefinition(name string, c *assets.Catalog) error {
 				return fmt.Errorf("NPC identity mismatch %d", id)
 			}
 		}
+	case "PetInitialStats":
+		return validatePetInitialStats(c.PetInitialStats)
+	case "PetFoods":
+		return validatePetFoods(c.PetFoods)
+	case "CollectionSpots":
+		return assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps)
+	case "ResourceRespawns":
+		return assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps)
 	case "Skills", "SkillEffects":
 		for id, e := range c.SkillEffects {
 			if id != e.ID || id == "" {
@@ -187,6 +222,9 @@ func validateDefinition(name string, c *assets.Catalog) error {
 			}
 		}
 		for id, s := range c.Skills {
+			if s.BasePower != nil && (math.IsNaN(*s.BasePower) || math.IsInf(*s.BasePower, 0) || *s.BasePower < 0) {
+				return fmt.Errorf("skill %d: invalid base power", id)
+			}
 			if id == 0 || id != s.ID || math.IsNaN(s.PowerPerLevel) || math.IsInf(s.PowerPerLevel, 0) || math.IsNaN(s.StatMultiplier) || math.IsInf(s.StatMultiplier, 0) {
 				return fmt.Errorf("invalid skill %d", id)
 			}

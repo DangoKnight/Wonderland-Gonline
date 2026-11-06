@@ -1,13 +1,17 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/json"
 	"errors"
 	"image"
 	"path/filepath"
+	"strings"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientimage"
+	"wonderland-gonline/internal/clientruntime"
 )
 
 // Assets locates the decompiled data root directly.
@@ -34,11 +38,45 @@ func (a Assets) UserPath(name string) string {
 func (a Assets) SkinPicture(parts ...string) string {
 	path := append([]string(nil), parts...)
 	path[len(path)-1] += ".png"
+	if len(path) >= 3 && strings.EqualFold(path[0], "menu") && strings.EqualFold(path[1], "skins") {
+		for _, root := range a.UISkinRoots(localization.CurrentLanguage()) {
+			candidate := Path(root, path[2:]...)
+			if _, err := clientfs.Stat(candidate); err == nil {
+				return candidate
+			}
+			if _, err := clientfs.Stat(candidate + clientimage.DescriptorSuffix); err == nil {
+				return candidate
+			}
+		}
+	}
 	return a.MediaPath(path...)
 }
 
+// UI artwork availability is independent of the selected text catalog. Common
+// skins are the legacy English layout; either locale can stand alone.
+func (a Assets) UISkinRoots(language string) []string {
+	en := a.MediaPath("locales", localization.English, "menu", "Skins")
+	zh := a.MediaPath("locales", localization.Chinese, "menu", "Skins")
+	common := a.MediaPath("menu", "Skins")
+	code, _ := localization.Normalize(language)
+	if code == localization.Chinese {
+		return []string{zh, en, common}
+	}
+	return []string{en, common, zh}
+}
+
 // DataPath is a file of the extracted data.
-func (a Assets) DataPath(parts ...string) string { return Path(a.Data, parts...) }
+func (a Assets) DataPath(parts ...string) string {
+	if len(parts) == 1 {
+		if compiled, ok := clientruntime.TextPath(parts[0]); ok {
+			path := Path(a.Data, compiled)
+			if _, err := clientfs.Stat(path); err == nil {
+				return path
+			}
+		}
+	}
+	return Path(a.Data, parts...)
+}
 
 // Picture returns a logical PNG path for compatibility. Use LoadPicture to
 // resolve images that now occupy rectangles on shared atlas pages.
@@ -80,7 +118,7 @@ func readExportHeader(path string, stop string) (exportHeader, error) {
 	defer f.Close()
 	d := json.NewDecoder(f)
 	if t, err := d.Token(); err != nil || t != json.Delim('{') {
-		return h, errors.New(path + ": not an object")
+		return h, errors.New(path + localization.UI("ui.login.not_an_object_e42945a8"))
 	}
 	for d.More() {
 		t, err := d.Token()

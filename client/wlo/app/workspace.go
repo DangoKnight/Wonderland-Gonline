@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"errors"
 	"fmt"
@@ -115,7 +117,7 @@ func (w *Workspace) sessionOptions(id int) Options {
 }
 func (w *Workspace) Add() error {
 	if len(w.Sessions) >= workspaceProfileMaximumSessions {
-		return fmt.Errorf("workspace supports at most %d sessions", workspaceProfileMaximumSessions)
+		return fmt.Errorf(localization.UI("ui.app.workspace_supports_at_most_d_sessions_14588560"), workspaceProfileMaximumSessions)
 	}
 	c, err := w.factory(w.sessionOptions(w.nextID))
 	if err != nil {
@@ -150,6 +152,9 @@ func (w *Workspace) Switch(index int) {
 	current.Frame()
 }
 func (c *Client) cancelSessionInput() {
+	if c.HotKeys != nil {
+		c.HotKeys.CancelDrag()
+	}
 	c.Input.X, c.Input.Y = -100, -100
 	c.Input.Pressed, c.Input.Captured, c.Input.Hovered = nil, nil, nil
 	c.hotbar.drag = nil
@@ -164,8 +169,12 @@ func (c *Client) cancelSessionInput() {
 	c.WalkKeys(false, false, false, false)
 }
 func (c *Client) closeSession() {
+	c.stopMapLoading()
+	c.closeWorldZoom()
+	c.UI.HideAll() // Release transient closing images before render resources.
+	c.closeBattleView()
 	if c.sfx != nil {
-		c.sfx.StopVoice()
+		c.sfx.Close()
 	}
 	c.stopRemote()
 	c.stopAmbience()
@@ -336,7 +345,7 @@ func (w *Workspace) panelClick(x, y int) {
 	}
 	if w.addVisible() && point.In(w.addRect()) {
 		if err := w.Add(); err != nil {
-			w.Current().Chat.Notice("Could not open session: " + err.Error())
+			w.Current().Chat.Notice(localization.UI("ui.app.could_not_open_session_86b9752b") + err.Error())
 		}
 		return
 	}
@@ -390,14 +399,14 @@ func (w *Workspace) Compose() *surface.Surface {
 			w.Current().Env.Text.Draw(r.Min.X+9, r.Min.Y+3, 0, false, true, w.screen, clientassets.Big5Text(name), 15, r.Dx()-sessionCloseWidth-18, 0, sessionPanelInk, 0)
 			w.label(w.closeRect(row).Min.X+8, r.Min.Y+3, "X")
 			if w.PendingRemove == s.ID {
-				w.label(r.Min.X+22, r.Min.Y+34, "Close instance?")
+				w.label(r.Min.X+22, r.Min.Y+34, localization.UI("ui.app.close_instance_306c2fae"))
 				for _, confirm := range []bool{true, false} {
 					button := w.confirmRect(row, confirm)
 					ink := uint16(sessionBorderInk)
-					caption := "Cancel"
+					caption := localization.UI("ui.app.cancel_19766ed6")
 					if confirm {
 						ink = sessionAccentInk
-						caption = "Close"
+						caption = localization.UI("ui.app.close_7d9eb7ac")
 					}
 					w.screen.Fill(button, sessionRowFill)
 					w.screen.Frame(button, ink)

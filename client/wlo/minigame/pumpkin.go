@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -179,15 +181,15 @@ func (p *Pumpkin) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	if p.DrawPlayer != nil {
 		p.DrawPlayer(dst, pumpkinOriginX, pumpkinOriginY, 12)
 	} else {
-		arcadeText(dst, pumpkinOriginX-15, pumpkinOriginY, "Aim")
+		arcadeText(dst, pumpkinOriginX-15, pumpkinOriginY, localization.UI("ui.minigame.aim_28427fa7"))
 	}
 	if p.shot.active {
 		dst.Fill(image.Rect(int(p.shot.x)-4, int(p.shot.y)-4, int(p.shot.x)+4, int(p.shot.y)+4), 0xffe0)
 	}
 	seconds := max(0, int(p.deadline.Sub(now)/time.Second))
-	arcadeText(dst, 50, 15, fmt.Sprintf("Lives %d   Hits %d/%d   Time %d", p.Lives, p.Score, pumpkinWinScore, seconds))
+	arcadeText(dst, 50, 15, fmt.Sprintf(localization.UI("ui.minigame.lives_d_hits_d_d_time_d_32a03ffc"), p.Lives, p.Score, pumpkinWinScore, seconds))
 	if p.Started && now.Before(p.startedAt.Add(arcadeCountdown)) {
-		arcadeText(dst, 350, 280, "Get ready")
+		arcadeText(dst, 350, 280, localization.UI("ui.minigame.get_ready_0b5f4af0"))
 	}
 	p.outcome(dst)
 }

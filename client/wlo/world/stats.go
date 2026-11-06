@@ -1,8 +1,9 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
-	"errors"
 	"wonderland-gonline/internal/game"
 
 	"wonderland-gonline/client/wlo/login"
@@ -89,7 +90,7 @@ const (
 	compatibilityFooterBytes = 6
 )
 
-var errBaseStats = errors.New("5/3: packet too short")
+var errBaseStats = localization.Error("ui.world.5_3_packet_too_short_e30e703f")
 
 // ParseBaseStats reads 5/3 after its command byte.
 func (s *Stats) ParseBaseStats(p []byte) error {
@@ -183,3 +184,9 @@ func (s *Stats) recomputeSP() {
 // CombatValues are the cached words read by FUN_0035172c, not the derived
 // battle getter FUN_004166e4. AC8 supplies their displayed values directly.
 func (s *Stats) CombatValues() [5]uint16 { return s.Combat }
+
+func init() {
+	localization.Register(func() {
+		errBaseStats = localization.Error("ui.world.5_3_packet_too_short_e30e703f")
+	})
+}

@@ -29,13 +29,12 @@ const (
 	doorKindLarge = 3
 )
 
-// Door lights: the pictures of pic\images.BMg, their frame counts (stacked
-// vertically), frame time and light level (FUN_003030ec's arguments).
+// Legacy reference metadata from pic\images.BMg (FUN_003030ec's arguments).
+// Runtime gateway and exit rendering no longer loads these sprite sheets.
 const (
 	DoorLightPicture      = "DoorLight"
 	SmallDoorLightPicture = "SmallDoorLight"
 	doorLightFrames       = 13
-	smallDoorLightFrames  = 4
 	doorLightInterval     = 300 * time.Millisecond
 	doorLightLevel        = 0x18
 )
@@ -58,6 +57,8 @@ type Area struct {
 	// LightAt is the light's point: its picture is centred on it and its
 	// bottom sits a quarter of a frame below it.
 	LightAt image.Point
+	// Sign is the record's minimap icon (+0x3c, minimap.go).
+	Sign byte
 }
 
 // MapAreas reads the map's areas from its event record (FUN_003090f4).
@@ -72,7 +73,7 @@ func MapAreas(rec native.Map) []Area {
 		x2 := int(int32(binary.LittleEndian.Uint32(t[areaX2Offset:])))
 		y2 := int(int32(binary.LittleEndian.Uint32(t[areaY2Offset:])))
 		x, y := (x1-1)*cellSize, (y1-1)*cellSize
-		a := Area{ID: e.ClickID, Events: len(e.Events),
+		a := Area{ID: e.ClickID, Events: len(e.Events), Sign: t[areaSign],
 			Rect: image.Rect(x, y, x+(abs(x2-x1)+1)*cellSize, y+(abs(y2-y1)+1)*cellSize)}
 		switch t[areaDoor] {
 		case doorKindSmall:
@@ -88,17 +89,13 @@ func MapAreas(rec native.Map) []Area {
 	return out
 }
 
-// drawLights is FUN_00403b8c: each door light whose point is on screen,
-// added to the picture under it, one frame every 300 ms.
+// drawLights preserves EVE positions, drawing both gateway and small exit
+// indicators procedurally. Each animation is generated once per world frame.
 func (w *World) drawLights(cx, cy int, now time.Time) {
-	pics := w.Env.Pics
+	var pointerDrawn, gatewayDrawn bool
 	for _, a := range w.Areas {
-		name, frames := DoorLightPicture, doorLightFrames
-		switch a.Light {
-		case NoLight:
+		if a.Light == NoLight {
 			continue
-		case SmallLight:
-			name, frames = SmallDoorLightPicture, smallDoorLightFrames
 		}
 		if a.LightAt.X == 0 && a.LightAt.Y == 0 {
 			continue
@@ -107,13 +104,24 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 		if sx < 0 || sx > w.Env.Screen.W || sy < 0 || sy > w.Env.Screen.H {
 			continue
 		}
-		i := pics.Find(name)
-		pw, ph := pics.Size(i)
-		if i < 0 || ph < frames {
+		if a.Light == SmallLight {
+			if w.exitIndicator == nil {
+				w.exitIndicator = newExitIndicator()
+			}
+			if !pointerDrawn {
+				w.exitIndicator.render(now.Sub(w.lightsFrom))
+				pointerDrawn = true
+			}
+			w.exitIndicator.draw(w.Env.Screen, sx, sy)
 			continue
 		}
-		fh := ph / frames
-		frame := int(now.Sub(w.lightsFrom)/doorLightInterval) % frames
-		pics.DrawLight(w.Env.Screen, i, sx-pw/2, sy-fh+fh/4, image.Rect(0, frame*fh, pw, (frame+1)*fh), doorLightLevel)
+		if w.gatewayLight == nil {
+			w.gatewayLight = newGatewayLight()
+		}
+		if !gatewayDrawn {
+			w.gatewayLight.render(now.Sub(w.lightsFrom))
+			gatewayDrawn = true
+		}
+		w.gatewayLight.draw(w.Env.Screen, sx, sy)
 	}
 }

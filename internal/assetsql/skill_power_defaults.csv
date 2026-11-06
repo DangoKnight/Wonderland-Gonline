@@ -1,0 +1,225 @@
+skill_id,power,element,effect_layer,sp,native_name,source,source_name
+11001,45,2,1,11,Icicle Attack,水属性 - Wonderland ONLINE Wiki_.htm,氷柱撃
+11004,125,2,1,20,Water Hit,水属性 - Wonderland ONLINE Wiki_.htm,水の刃・改
+11005,45,3,2,15,Fire Blast Attack,火属性 - Wonderland ONLINE Wiki_.htm,爆炎陣
+11007,20,4,1,9,Wind Attack,風属性 - Wonderland ONLINE Wiki_.htm,風撃
+11010,230,2,1,38,Frost Hit,水属性 - Wonderland ONLINE Wiki_.htm,凍気爆・改
+11012,500,4,1,69,Afterimage Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・分身斬り
+11014,45,4,1,10,Wind Hit,風属性 - Wonderland ONLINE Wiki_.htm,風撃・改
+11015,40,4,2,11,Wind Cut Attack,風属性 - Wonderland ONLINE Wiki_.htm,風切り
+11016,20,3,1,6,Flame Attack,火属性 - Wonderland ONLINE Wiki_.htm,紅焔
+11017,45,1,1,9,Earth Attack,土属性 - Wonderland ONLINE Wiki_.htm,大地重撃
+11019,70,1,2,16,Rock Blast Attack,土属性 - Wonderland ONLINE Wiki_.htm,石凝呪
+11022,95,2,2,13,Chill Hit,水属性 - Wonderland ONLINE Wiki_.htm,水流弾・改
+11024,135,2,2,34,Thunder Attack,水属性 - Wonderland ONLINE Wiki_.htm,狂雷招来
+11025,77,3,1,10,Flame Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・紅焔
+11029,47,3,1,7,Flame Hit,火属性 - Wonderland ONLINE Wiki_.htm,紅焔・改
+11031,100,1,2,23,Rock Ball Attack,土属性 - Wonderland ONLINE Wiki_.htm,爆岩弾
+11034,75,3,2,16,Fire Ball Attack,火属性 - Wonderland ONLINE Wiki_.htm,ブレイズ
+11035,175,3,2,54,Fire Stone Attack,火属性 - Wonderland ONLINE Wiki_.htm,コメット
+11040,45,2,2,11,Chill Attack,水属性 - Wonderland ONLINE Wiki_.htm,水流弾
+11044,75,2,1,17,Water Attack,水属性 - Wonderland ONLINE Wiki_.htm,水の刃
+11045,175,4,1,21,Instant Hit,風属性 - Wonderland ONLINE Wiki_.htm,瞬殺・改
+11046,130,4,1,25,Wind Stress Attack,風属性 - Wonderland ONLINE Wiki_.htm,風塵
+11050,90,4,2,19,Wind Blade Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・裂空術
+11058,310,2,2,41,Ice Elf Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・無双弾
+11059,200,3,2,88,Fire Stone Bead,火属性 - Wonderland ONLINE Wiki_.htm,真・コメット
+11061,380,1,2,85,Aerolite Hit,土属性 - Wonderland ONLINE Wiki_.htm,メテオ・改
+11065,130,1,1,17,Earth Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・大地重撃
+11071,120,1,1,16,Rupture Hit,土属性 - Wonderland ONLINE Wiki_.htm,地裂撃・改
+11075,70,1,1,18,Summon Dogs Groups,固有スキル - Wonderland ONLINE Wiki_.htm,わんおーわん
+11076,53,3,1,9,Combo x3 Attack,固有スキル - Wonderland ONLINE Wiki_.htm,トリプルブロウ
+11078,89,4,1,20,Bomber Attack,固有スキル - Wonderland ONLINE Wiki_.htm,機銃掃射
+11085,45,1,1,8,Rock Hit,土属性 - Wonderland ONLINE Wiki_.htm,ブレイク改
+11086,85,1,1,11,Earth Hit,土属性 - Wonderland ONLINE Wiki_.htm,大地重撃・改
+11087,70,1,1,13,Rupture Attack,土属性 - Wonderland ONLINE Wiki_.htm,地裂撃
+11088,175,1,1,23,Rupture Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・地裂撃
+11090,80,1,2,13,Rockfall Hit,土属性 - Wonderland ONLINE Wiki_.htm,落石術・改
+11091,75,1,2,22,Rockfall Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・落石術
+11092,95,1,2,30,Rock Blast Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・石凝呪
+11093,110,1,2,21,Rock Blast Hit,土属性 - Wonderland ONLINE Wiki_.htm,石凝呪・改
+11094,190,1,2,28,Rock Ball Hit,土属性 - Wonderland ONLINE Wiki_.htm,爆岩弾・改
+11096,180,2,1,27,Water Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・水の刃
+11098,210,4,1,29,Wind Stress Hit,風属性 - Wonderland ONLINE Wiki_.htm,風塵・改
+11100,145,2,2,21,Chill Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・水流弾
+11105,305,1,2,41,Rock Ball Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・爆岩弾
+11107,165,1,2,52,Megalith Attack,土属性 - Wonderland ONLINE Wiki_.htm,巨石陣
+11110,65,2,2,16,Ice Ball Attack,水属性 - Wonderland ONLINE Wiki_.htm,凍気砲
+11113,110,2,2,23,Ice Elf Attack,水属性 - Wonderland ONLINE Wiki_.htm,無双弾
+11114,75,3,1,12,Turning Fire Attack,火属性 - Wonderland ONLINE Wiki_.htm,火旋殺
+11115,130,3,1,15,Turning Fire Hit,火属性 - Wonderland ONLINE Wiki_.htm,火旋殺・改
+11117,150,3,2,20,Fire Ball Hit,火属性 - Wonderland ONLINE Wiki_.htm,ブレイズ・改
+11166,20,3,2,9,Blast Attack,火属性 - Wonderland ONLINE Wiki_.htm,ファイア
+11170,500,3,2,66,Blowout,固有スキル - Wonderland ONLINE Wiki_.htm,雷神招来
+11182,75,3,1,9,Ghost Hammer,固有スキル - Wonderland ONLINE Wiki_.htm,大工ハンマー
+11183,35,4,1,7,Deacon Attack,固有スキル - Wonderland ONLINE Wiki_.htm,仰せのままに
+12002,195,2,2,28,Ice Elf Hit,水属性 - Wonderland ONLINE Wiki_.htm,無双弾・改
+12006,20,1,2,9,Rock Elf Attack,土属性 - Wonderland ONLINE Wiki_.htm,石霊突き
+12007,140,2,1,32,Frost Attack,水属性 - Wonderland ONLINE Wiki_.htm,凍気爆
+12009,120,4,1,16,Cyclone Hit,風属性 - Wonderland ONLINE Wiki_.htm,トルネード・改
+12018,220,1,2,69,Acrolith Attack,土属性 - Wonderland ONLINE Wiki_.htm,メテオ
+12021,255,3,2,43,Fire Combo Hit,火属性 - Wonderland ONLINE Wiki_.htm,火連弾・改
+12022,199,3,1,23,Turning Fire Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・火旋殺
+12023,155,4,2,34,Wind Shadow,固有スキル - Wonderland ONLINE Wiki_.htm,影鎌
+12024,405,3,2,60,Fire Combo Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・火連弾
+12025,175,1,1,23,Boulder Hit,土属性 - Wonderland ONLINE Wiki_.htm,狂岩撃・改
+12027,15,1,1,8,Head Attack,固有スキル - Wonderland ONLINE Wiki_.htm,石頭アタック
+12032,295,4,1,36,Wind Stress Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・風塵
+12034,175,3,1,22,Fire Wave Hit,火属性 - Wonderland ONLINE Wiki_.htm,狂連撃・改
+12036,53,3,1,9,Leap,固有スキル - Wonderland ONLINE Wiki_.htm,トリックタップ
+12038,245,3,1,33,Fire Wave Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・狂連撃
+12039,110,3,1,18,Fire Wave Attack,火属性 - Wonderland ONLINE Wiki_.htm,狂連撃
+12049,70,3,2,15,Fire Dance,固有スキル - Wonderland ONLINE Wiki_.htm,焔舞
+12051,55,1,2,9,Note,固有スキル - Wonderland ONLINE Wiki_.htm,グラーヴェ
+12053,69,2,1,35,Gallop,固有スキル - Wonderland ONLINE Wiki_.htm,ライドアタック
+15000,140,4,2,20,Whirlwind Hit,風属性 - Wonderland ONLINE Wiki_.htm,旋風術・改
+15002,105,4,1,18,Instant Attack,風属性 - Wonderland ONLINE Wiki_.htm,瞬殺
+15009,95,4,2,13,Wind Cut Hit,風属性 - Wonderland ONLINE Wiki_.htm,風切り・改
+15010,255,2,2,41,Thunder Hit,水属性 - Wonderland ONLINE Wiki_.htm,狂雷招来・改
+15011,275,2,2,57,Thunder Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・狂雷招来
+15015,230,3,1,37,Five Star Hit,火属性 - Wonderland ONLINE Wiki_.htm,五芒星斬り・改
+15017,300,3,1,49,Hagendis Hit,火属性 - Wonderland ONLINE Wiki_.htm,瞬炎斬・改
+15018,170,4,2,21,Wind Cut Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・風切り
+15019,110,2,1,23,Turning Ice Attack,水属性 - Wonderland ONLINE Wiki_.htm,旋氷殺
+15020,220,1,1,38,Jump Hit,土属性 - Wonderland ONLINE Wiki_.htm,地竜撃・改
+15025,65,0,1,30,Bloodsuck Attack,固有スキル - Wonderland ONLINE Wiki_.htm,ブラッドバイト
+15038,49,1,1,8,Overarm Stumble,固有スキル - Wonderland ONLINE Wiki_.htm,当て身投げ
+15039,55,3,2,9,Wine Flame,固有スキル - Wonderland ONLINE Wiki_.htm,スピリタス
+15040,39,4,1,7,Palm,固有スキル - Wonderland ONLINE Wiki_.htm,往復ビンタ
+15041,34,3,2,10,Love Wish,固有スキル - Wonderland ONLINE Wiki_.htm,ラブリィキッス
+15043,330,1,1,52,Jump Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・地竜撃
+15044,150,3,1,41,Hagendis Attack,火属性 - Wonderland ONLINE Wiki_.htm,瞬炎斬
+15045,250,3,1,67,Hagendis Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・瞬炎斬
+15048,130,4,2,36,Sky Attack,風属性 - Wonderland ONLINE Wiki_.htm,空殺
+15049,150,1,1,31,Jump Attack,土属性 - Wonderland ONLINE Wiki_.htm,地竜撃
+15050,250,4,2,43,Sky Hit,風属性 - Wonderland ONLINE Wiki_.htm,空殺・改
+15051,390,4,2,60,Sky Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・空殺
+15056,50,1,2,11,Rockfall Attack,土属性 - Wonderland ONLINE Wiki_.htm,落石術
+15059,175,2,1,27,Turning Ice Hit,水属性 - Wonderland ONLINE Wiki_.htm,旋氷殺・改
+15060,30,4,1,6,Throw Dish,固有スキル - Wonderland ONLINE Wiki_.htm,エアソーサー
+15061,245,4,1,30,Instant Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・瞬殺
+15062,85,2,1,13,Icicle Hit,水属性 - Wonderland ONLINE Wiki_.htm,氷柱撃・改
+15063,130,2,1,18,Icicle Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・氷柱撃
+15066,210,1,2,91,Summon Mosquito,土属性 - Wonderland ONLINE Wiki_.htm,蛟召喚
+15071,195,3,2,55,Star,固有スキル - Wonderland ONLINE Wiki_.htm,孤星
+15072,145,0,1,18,Tulwar,固有スキル - Wonderland ONLINE Wiki_.htm,羅刹･大車輪
+15073,255,2,1,38,Turning Ice Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・旋氷殺
+15074,75,1,1,11,Rock Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・ブレイク
+15079,50,4,1,11,Air Attack,風属性 - Wonderland ONLINE Wiki_.htm,空打
+15080,85,4,1,13,Air Hit,風属性 - Wonderland ONLINE Wiki_.htm,空打・改
+15081,130,4,1,16,Air Bead,風属性 - Wonderland ONLINE Wiki_.htm,真・空打
+15083,110,1,1,19,Boulder Attack,土属性 - Wonderland ONLINE Wiki_.htm,狂岩撃
+15084,250,1,1,30,Boulder Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・狂岩撃
+15085,20,1,1,7,Rock Attack,土属性 - Wonderland ONLINE Wiki_.htm,ブレイク
+15086,135,1,2,34,Stress Attack,土属性 - Wonderland ONLINE Wiki_.htm,岩石変化
+15087,255,1,2,41,Stress Hit,土属性 - Wonderland ONLINE Wiki_.htm,岩石変化・改
+15088,410,1,2,57,Stress Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・岩石変化
+15089,72,3,1,16,Sword Awn Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・剣芒斬
+15091,25,2,1,9,Ice Attack,水属性 - Wonderland ONLINE Wiki_.htm,氷刃
+15092,50,2,1,10,Ice Hit,水属性 - Wonderland ONLINE Wiki_.htm,氷刃・改
+15093,75,2,1,15,Ice Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・氷刃
+15094,35,1,2,14,Rock Elf Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・石霊突き
+15095,90,2,2,15,Water Pole Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・水柱術
+15096,55,2,2,12,Water Pole Hit,水属性 - Wonderland ONLINE Wiki_.htm,水柱術・改
+15097,20,2,2,11,Water Pole Attack,水属性 - Wonderland ONLINE Wiki_.htm,水柱術
+15098,135,2,2,20,Ice Ball Hit,水属性 - Wonderland ONLINE Wiki_.htm,凍気砲・改
+15099,225,2,2,30,Ice Ball Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・凍気砲
+15101,45,3,1,8,Sword Awn Attack,火属性 - Wonderland ONLINE Wiki_.htm,剣芒斬
+15102,150,3,1,30,Five Star Attack,火属性 - Wonderland ONLINE Wiki_.htm,五芒星斬り
+15103,215,3,1,52,Five Star Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・五芒星斬り
+15104,50,3,2,10,Blast Hit,火属性 - Wonderland ONLINE Wiki_.htm,ファイア・改
+15105,65,3,2,14,Blast Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・ファイア
+15106,155,3,2,30,Fire Ball Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・ブレイズ
+15107,130,3,2,29,Blaze Hit,火属性 - Wonderland ONLINE Wiki_.htm,烈火陣・改
+15108,160,3,2,48,Blaze Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・烈火陣
+15109,100,3,2,23,Blaze Attack,火属性 - Wonderland ONLINE Wiki_.htm,烈火陣
+15110,115,3,2,26,Fire Blast Beating,火属性 - Wonderland ONLINE Wiki_.htm,真・爆炎陣
+15111,175,3,2,36,Fire Combo Attack,火属性 - Wonderland ONLINE Wiki_.htm,火連弾
+15112,325,3,2,64,Fire Stone Hit,火属性 - Wonderland ONLINE Wiki_.htm,コメット・改
+15113,75,4,1,15,Wind Bead,風属性 - Wonderland ONLINE Wiki_.htm,真・風撃
+15114,185,4,1,32,Dead Wind Attack,風属性 - Wonderland ONLINE Wiki_.htm,逆風撃
+15115,295,4,1,36,Dead Wind Hit,風属性 - Wonderland ONLINE Wiki_.htm,逆風撃・改
+15116,385,4,1,45,Dead Wind Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・逆風撃
+15117,70,4,1,14,Cyclone Attack,風属性 - Wonderland ONLINE Wiki_.htm,トルネード
+15122,45,4,2,14,Wind Blade Hit,風属性 - Wonderland ONLINE Wiki_.htm,裂空術・改
+15123,70,4,2,16,Whirlwind Attack,風属性 - Wonderland ONLINE Wiki_.htm,旋風術
+15124,215,4,2,28,Whirlwind Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・旋風術
+15125,100,4,2,24,Space Attack,風属性 - Wonderland ONLINE Wiki_.htm,次元の刃
+15126,195,4,2,29,Space Hit,風属性 - Wonderland ONLINE Wiki_.htm,次元の刃・改
+15127,315,4,2,45,Space Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・次元の刃
+15128,225,4,1,39,Shadow Attack,風属性 - Wonderland ONLINE Wiki_.htm,影殺し
+15129,110,4,1,22,Cyclone Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・トルネード
+15130,340,4,1,44,Shadow Hit,風属性 - Wonderland ONLINE Wiki_.htm,影殺し・改
+15131,470,4,1,55,Shadow Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・影殺し
+15144,290,1,1,51,Scurry Hit,土属性 - Wonderland ONLINE Wiki_.htm,地遁殺・改
+15146,185,1,1,43,Scurry Attack,土属性 - Wonderland ONLINE Wiki_.htm,地遁殺
+15147,375,1,1,70,Scurry Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・地遁殺
+15152,310,1,2,57,Megalith Hit,土属性 - Wonderland ONLINE Wiki_.htm,巨石陣・改
+15153,475,1,2,77,Megalith Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・巨石陣
+15154,600,1,2,110,Aerolite Beating,土属性 - Wonderland ONLINE Wiki_.htm,真・メテオ
+15155,290,2,1,50,Eddy Hit,水属性 - Wonderland ONLINE Wiki_.htm,逆流撃・改
+15156,190,2,1,42,Eddy Attack,水属性 - Wonderland ONLINE Wiki_.htm,逆流撃
+15157,380,2,1,70,Eddy Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・逆流撃
+15158,175,2,2,52,Water Thunder Attack,水属性 - Wonderland ONLINE Wiki_.htm,水雷閃
+15159,320,2,2,61,Water Thunder Hit,水属性 - Wonderland ONLINE Wiki_.htm,水雷閃・改
+15160,470,2,2,82,Water Thunder Beatin,水属性 - Wonderland ONLINE Wiki_.htm,真・水雷閃
+15161,175,4,2,50,Air Stress Attack,風属性 - Wonderland ONLINE Wiki_.htm,断空砲
+15162,325,4,2,57,Air Stress Hit,風属性 - Wonderland ONLINE Wiki_.htm,断空砲・改
+15163,485,4,2,77,Air Stress Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・断空砲
+15168,113,2,2,20,Ice Claw,固有スキル - Wonderland ONLINE Wiki_.htm,氷の爪
+15197,100,0,1,22,Knock head,固有スキル - Wonderland ONLINE Wiki_.htm,ヘヴィ頭突き
+15203,95,1,1,22,Double Hit,固有スキル - Wonderland ONLINE Wiki_.htm,弐連撃
+15212,113,7,1,17,Chaw Throw,固有スキル - Wonderland ONLINE Wiki_.htm,懇蝕転
+15228,124,7,1,22,Leap Kick,固有スキル - Wonderland ONLINE Wiki_.htm,連続飛蹴
+15230,160,3,1,30,Rage Roar,固有スキル - Wonderland ONLINE Wiki_.htm,怒号炎撃
+15241,232,0,1,132,Murder,固有スキル - Wonderland ONLINE Wiki_.htm,暗殺
+15249,185,2,1,30,Fury Strike,固有スキル - Wonderland ONLINE Wiki_.htm,白狼抜刀斬
+18007,115,7,1,26,Body Bump,固有スキル - Wonderland ONLINE Wiki_.htm,体当たり
+20001,600,4,1,85,Storm Beating,風属性 - Wonderland ONLINE Wiki_.htm,真・暴風斬り
+20003,95,3,1,11,Sword Awn Hit,火属性 - Wonderland ONLINE Wiki_.htm,剣芒斬・改
+21201,305,2,1,52,Frost Beating,水属性 - Wonderland ONLINE Wiki_.htm,真・凍気爆
+21301,45,1,2,10,Rock Elf Hit,土属性 - Wonderland ONLINE Wiki_.htm,石霊突き・改
+25005,89,0,1,19,Horse Kick,固有スキル - Wonderland ONLINE Wiki_.htm,連続後ろ蹴り
+25008,160,2,1,32,Ice Arrow,固有スキル - Wonderland ONLINE Wiki_.htm,神楽
+25033,110,0,1,26,Chaotic Attack,固有スキル - Wonderland ONLINE Wiki_.htm,狂乱撃
+25038,120,0,2,28,Bat Wind,固有スキル - Wonderland ONLINE Wiki_.htm,コウモリ旋風
+25052,93,7,1,20,Heavy Kick,固有スキル - Wonderland ONLINE Wiki_.htm,重蹄蹴
+25055,120,7,1,21,Turtle Palm,固有スキル - Wonderland ONLINE Wiki_.htm,甲籠張手
+25064,270,4,2,50,Thunder Ball,固有スキル - Wonderland ONLINE Wiki_.htm,雷球閃電
+25072,150,3,1,28,Fire Strike,固有スキル - Wonderland ONLINE Wiki_.htm,火燐斬
+25135,300,3,1,95,Red Dragon Blitz,固有スキル - Wonderland ONLINE Wiki_.htm,紅炎狂龍破
+25153,220,3,1,80,X Blast,固有スキル - Wonderland ONLINE Wiki_.htm,黒獄エックス斬
+25155,330,1,2,66,Force Spall,固有スキル - Wonderland ONLINE Wiki_.htm,獄蝕浄裂
+25157,435,2,2,88,Frozen Ball,固有スキル - Wonderland ONLINE Wiki_.htm,凍弾術
+25162,660,3,2,133,Goddess' Anger,固有スキル - Wonderland ONLINE Wiki_.htm,女神の炎翔
+30000,100,3,2,17,Fire Blast Hit,火属性 - Wonderland ONLINE Wiki_.htm,爆炎陣・改
+30002,20,4,2,13,Wind Blade Attack,風属性 - Wonderland ONLINE Wiki_.htm,裂空術
+30003,250,0,2,45,Red Ray,固有スキル - Wonderland ONLINE Wiki_.htm,熱視線
+30009,90,0,2,11,Fart,固有スキル - Wonderland ONLINE Wiki_.htm,放屁
+30010,53,0,1,12,Tail Attack,固有スキル - Wonderland ONLINE Wiki_.htm,スイングテイル
+30011,69,0,1,16,Tail Hit,固有スキル - Wonderland ONLINE Wiki_.htm,連撃乱舞
+30016,120,3,2,50,Fox's Fire Ball,固有スキル - Wonderland ONLINE Wiki_.htm,キツネ火
+30023,52,0,1,11,Ant Attack,固有スキル - Wonderland ONLINE Wiki_.htm,噛み付き
+30024,35,0,1,8,Frog Licking,固有スキル - Wonderland ONLINE Wiki_.htm,舌アタック
+30027,40,0,1,8,Bee Swirl,固有スキル - Wonderland ONLINE Wiki_.htm,蜂の一刺し
+30028,15,0,1,2,Double Kick,固有スキル - Wonderland ONLINE Wiki_.htm,双竜脚
+30033,10,0,1,1,Bee Attack,固有スキル - Wonderland ONLINE Wiki_.htm,ハチの一撃
+30034,30,0,2,5,Air Cut,固有スキル - Wonderland ONLINE Wiki_.htm,気刃
+30035,60,0,2,7,Electricity,固有スキル - Wonderland ONLINE Wiki_.htm,電撃
+30037,41,0,1,8,Combo Stab,固有スキル - Wonderland ONLINE Wiki_.htm,刺棘の園
+30038,118,0,1,19,Falling,固有スキル - Wonderland ONLINE Wiki_.htm,掴み去り
+30040,20,0,1,8,Horn Rising,固有スキル - Wonderland ONLINE Wiki_.htm,ジャッキアップ
+30041,35,0,1,9,Horn Rising,固有スキル - Wonderland ONLINE Wiki_.htm,ジャッキアップ
+30043,80,0,2,20,Wing Wind,固有スキル - Wonderland ONLINE Wiki_.htm,上昇気流
+30044,90,0,1,20,Tail Stabbing,固有スキル - Wonderland ONLINE Wiki_.htm,刺尾重撃
+30056,85,0,1,19,Whirly,固有スキル - Wonderland ONLINE Wiki_.htm,小旋風
+30063,110,7,1,24,Scud Crash,固有スキル - Wonderland ONLINE Wiki_.htm,飛奔衝撞
+30065,80,7,2,17,Scatter powder,固有スキル - Wonderland ONLINE Wiki_.htm,窒息毒粉
+30072,120,3,2,23,Summon Eagle,固有スキル - Wonderland ONLINE Wiki_.htm,炎鳥召喚の術
+30083,118,1,1,28,Stone Strike,固有スキル - Wonderland ONLINE Wiki_.htm,巨石突撃
+30103,83,7,2,47,Sound Wave,固有スキル - Wonderland ONLINE Wiki_.htm,爆裂メロディ
+30106,155,7,1,38,Brute Bite,固有スキル - Wonderland ONLINE Wiki_.htm,凶牙殺生
+30133,205,3,2,158,Goddess' Anger,固有スキル - Wonderland ONLINE Wiki_.htm,女神の炎弾
+30139,195,4,1,40,Hand Sword,固有スキル - Wonderland ONLINE Wiki_.htm,疾風手裏剣
+30141,450,2,2,135,Lightening Ice,固有スキル - Wonderland ONLINE Wiki_.htm,神の怒槌
+30148,350,4,2,74,Air Ball,固有スキル - Wonderland ONLINE Wiki_.htm,サモンフラカン

@@ -1,0 +1,25 @@
+{
+  "id": "north_island_xaolan_backdrop_v47",
+  "append": [
+    {
+      "when_any_present": [
+        "robbery_show_actors"
+      ],
+      "rule": {
+        "id": "north_island_xaolan_battle_background",
+        "kind": "battle_background",
+        "scope": {
+          "maps": [
+            60001
+          ],
+          "events": [
+            44,
+            83
+          ],
+          "allow_missing": true
+        },
+        "value": 90
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "source": "https://wlohub.com/collections",
+  "pages": [
+    {
+      "file": "Wonderland Online Gathering & Collections - 01.htm",
+      "page": 1,
+      "records": 100,
+      "sha256": "2b12a35afe8f399ae8da6039b2d78a72cbb1ec4adb044036ef0b40f9750ca0a5"
+    },
+    {
+      "file": "Wonderland Online Gathering & Collections - 02.htm",
+      "page": 2,
+      "records": 60,
+      "sha256": "fdf96d16771526073ade0e7c6e1d4eee962bd57a112497daf2bbd257dacd459a"
+    }
+  ],
+  "reference_spots": 160,
+  "spots": 162,
+  "vacuum_spots": 30,
+  "rewards": 251,
+  "distinct_items": 82,
+  "resolved_items": 82,
+  "resolved_locations": 107,
+  "tool_requirements": "not specified",
+  "intervals_and_probabilities": "not specified",
+  "terrain_bounds_sha256": "b7ba8aea06ad362885b4ab89b2e66cfba73e60a1fbd203346c52ee267c3b5409",
+  "item_export_sha256": "fcfd5b8ed6133d25ba612b754728e35042a110c8e084afb620aa41ecbffc1a6a",
+  "scene_export_sha256": "00fba27a2b0b0634ba505d69ba0dc50356abfcff589e7d09e3c26421f7ed4f47",
+  "item_reference_sha256": "febe4a4ac97d8d44888c6016722443da8241bf344d168512d00fd441dded8fa1",
+  "item_choices_sha256": "a4c7a31c8f406f31b755a00aab1fb33062358d5b31b69c14ef3d28ba44a16724",
+  "location_aliases_sha256": "d9f33b30deda48dd41aaf3b3f98c40416da3ba5089b6dfcf7849e35039ff2720",
+  "supplemental_spots_sha256": "b0136e7879e74415cb2d80852ae7d89b689201794323cade2641170619ca2502"
+}

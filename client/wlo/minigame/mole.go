@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"time"
 
@@ -109,7 +111,7 @@ const (
 	MoleScoreLabel  = "MiniGame_Score_1"
 	MoleDigits      = "Num_White5_1"
 	MoleCountDigits = "Num_YellowRed10_2"
-	MoleGo          = "Go"
+	MoleGo          = "ui.minigame.go_6cc8519b"
 )
 
 // variantPictures are each variant's rising, hit and bomb pictures.
@@ -477,7 +479,7 @@ func (m *Mole) Draw(dst *surface.Surface, now time.Time) {
 	if m.state == moleStateCountdown {
 		switch {
 		case m.count == 0:
-			DrawWord(dst, pics, centreX, centreY, MoleGo, true, goAdvance, 0, FontRed)
+			DrawWord(dst, pics, centreX, centreY, localization.UI(MoleGo), true, goAdvance, 0, FontRed)
 		case m.count >= 1 && m.count <= 3:
 			DrawNumber(dst, pics, centreX, centreY, m.count, true, NumberLarge, MoleCountDigits)
 		}

@@ -2,6 +2,10 @@
 
 Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 
+The [2026-11-06 Legacy team capture](TEAM_PROTOCOL.md) records native join,
+following, leadership transfer, battle formation and disband exchanges, and
+documents the compatibility fixes and their native decompilation references.
+
 - Pet rows do not select pets or change the selection in Inventory and Skills.
   Following pets use their roster nickname when assigned; rename replies update
   the active follower immediately. Template names are only a fallback.
@@ -15,6 +19,15 @@ Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 - The 24×24 small pet icon is centered within its 34×34 portrait cell.
 - Click its mode button to choose **Rest**, **Battle**, or **Ride**. Changes take
   effect after the server reply. Battle pets require sufficient amity and HP.
+- Teams can open during combat. Before choosing the player's command, **Rest**
+  withdraws the active pet and **Battle** switches to an eligible owned pet.
+  The switch consumes the player and pet commands for that round, with no attack
+  or defense; incoming pets retain saved HP/SP and cannot act or be targeted
+  until the next round, including by area attacks. Gonline shows
+  the new pet walking in while the old pet walks out, independently of the
+  AC11:5 waiting flag. AC52:1 unlocks commands without replaying entry.
+  **Ride**, rename, permanent dismissal and party changes remain unavailable during battle. This follows
+  native `FUN_00277728` and uses the same AC19 requests with both transports.
 - **Dismiss** opens a confirmation. Confirming permanently releases the pet;
   Cancel or Escape keeps it. The pet ID is rechecked before sending the request.
 - Use the bottom toolbar's party invitation tool, then click a player to request
@@ -28,6 +41,13 @@ Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 - Teammate rows show name, portrait, level, element and HP/SP gauges. Leaders can
   transfer leadership or dismiss a member. End Party/Leave uses confirmation.
 - Team chat checks actual party membership.
+
+During combat, either a player's or pet's successful **Flee** withdraws that
+player and pet together. Other participants keep fighting unless the team leader
+successfully flees. Overkill and logout do not count as leader escapes. An attempt
+at equal/higher level than the strongest living enemy always succeeds; otherwise
+its chance is `75 - floor(enemy level / 6)` percent. Failed attempts play the
+legacy falling animation and leave the actor in combat without a defense bonus.
 
 The server's native teammate stats now send HP and level in their correct fields.
 Private Server's previous mapping displayed a level-1 teammate with 181 HP as
@@ -46,6 +66,19 @@ Pets keep their own facing and walking/standing animation, including other
 players’ pets. AC7 relocation resets the trail; large discontinuities beyond
 the local walk range also reset it as a recovery fallback. Switching pets
 starts a fresh trail; name updates preserve the current walk.
+
+Following pets mirror their owner's held emote poses, for both the local player
+and peers, when their sprite contains that animation. MoveKind 0 pets use the
+native four-facing sitting conversion (`FUN_00430680`): player actions 46-53
+map to 47, 47, 49, 49, 51, 51, 51, 53. Missing animations keep the pet visible
+in its ordinary follow/stand state. Posing stops the pet's walk at its current
+trail position; standing or moving resumes following. The ordinary owner AC32
+packets drive this presentation, without an additional pet protocol.
+
+When the owner rests, the active following/battle pet shares the server's 2%
+HP/SP recovery every three seconds, capped to its own equipped maxima. A full
+owner does not prevent pet recovery. See [resting recovery](ITEMS_PLAYER_STATE.md#resting-recovery)
+for native vital reports and guarded buffered persistence.
 
 Pet riders use directional riding poses (18–25) while the mount walks.
 AdjustRidePetPos.txt may instead request standing or seated poses (46–53).
@@ -93,21 +126,32 @@ native controls. Private Server contains no working instance backend.
 
 ## Verification
 
-Focused automated tests cover pet mode/release requests and authoritative replies,
-recruitment validation, invitation acceptance/decline, teammate level versus HP,
-SQL instance migration/authority, malformed packets, room capacity, minimum levels,
-leadership, disconnect cleanup and unavailable starts. Server tests run under the
-race detector. Rendered Teams and Instance windows are compared with the supplied
-screenshots.
+See [Teams and instance checks](TESTING.md#teams-and-instance-checks) for automated
+coverage, graphics parity and the two-client acceptance checklist.
 
-Manual acceptance: log in with two clients, form a party, confirm both level/HP
-rows, transfer leadership, leave, then select/rest/ride/dismiss a disposable pet.
-Create a room on an eligible character, join on a second character, refresh the
-browser, leave and disconnect the leader. Start must display the pending message
-without changing maps or granting rewards.
+Joining snaps the new follower to the leader's current position, as in native
+`FUN_00406e0c`, and then follows the normal walking trail. Replayed roster messages
+do not repeatedly teleport existing followers. Pets belonging to the leader and
+followers are hidden in the world while their owners are in the party. Their
+battle selection and combat participation remain active; leaving or disbanding
+makes them visible again beside their owner (`FUN_004274cc`).
 
-Remaining presentation work includes native party walking formations. Dungeon
-objectives and rewards require verified source rules.
+Party walking now follows the native leader trail, including local followers and
+other visible teams, without separate follower walk requests. Leadership changes
+require the candidate's five-second confirmation. Regular portals and scripted
+exits carry followers to the leader's destination. Membership survives asynchronous
+map loading; a failed transfer, independent follower warp or other split across
+maps disbands the entire team. The world scan also repairs unexpected split teams.
+leader departure clears the corresponding formation. The updated behavior still
+needs a repeated two-client live acceptance run. Dungeon objectives and rewards
+require verified source rules.
+
+Join Team selection ends after an empty world click. Incoming requests show the
+applicant's independent standing body preview (action 13) and name at the left of
+the confirmation panel, following `FUN_0025a8f8` / `FUN_0034c814`. Teammate HP/SP
+use the native `Panel34_1` / `Panel35_1` frames and `Panel31_1` / `Panel32_1` fills,
+with the two-pixel inset and 14-pixel row spacing from `FUN_0027580c` and
+`FUN_004794e0` / `FUN_00479600`.
 
 ## Native window presentation
 
@@ -129,8 +173,8 @@ dungeon objectives and rewards remain pending as documented above.
 
 Pet portraits are rasterized once as immutable artwork shared by sessions, then
 uploaded through the normal GPU asset cache. They do not allocate a disposable
-GPU render target on every frame. Focused tests exercise editable and compiled
-assets, plus CPU/GPU portrait parity (`WONDERLAND_TEST_GPU=1`).
+GPU render target on every frame. Editable/compiled portrait checks are covered
+in [GPU parity](TESTING.md#gpu-parity-and-snapshots).
 
 ## Native pet raster and name placement
 

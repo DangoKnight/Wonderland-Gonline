@@ -15,6 +15,14 @@ import (
 	"wonderland-gonline/internal/clientfs"
 )
 
+// Verification payloads are local editable assets, but their size declarations
+// are untrusted. Bound both JSON allocation and decompression/temp-disk work.
+// The largest shipped archive expands to about 198 MiB.
+const (
+	maxSpriteJSONBytes        = 128 << 20
+	maxDecodedSpriteJSONBytes = 512 << 20
+)
+
 // SpriteJSON opens the lossless verification bytes embedded in sprites.json.
 // Temporary decoded storage is removed on Close; no native payload is kept in data.
 type SpriteJSON struct {
@@ -39,18 +47,28 @@ func OpenSpriteJSON(path string) (*SpriteJSON, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if info.Size() > maxSpriteJSONBytes {
+		return nil, fmt.Errorf("%s: sprite JSON exceeds size limit", path)
+	}
 	var doc struct {
 		Data   string `json:"decoded_archive_zlib_base64"`
 		Bytes  int64  `json:"decoded_archive_bytes"`
 		SHA256 string `json:"payload_sha256"`
 	}
-	err = json.NewDecoder(f).Decode(&doc)
-	f.Close()
+	err = json.NewDecoder(io.LimitReader(f, maxSpriteJSONBytes+1)).Decode(&doc)
 	if err != nil {
 		return nil, err
 	}
 	if doc.Data == "" || doc.Bytes <= 0 {
 		return nil, fmt.Errorf("%s: missing lossless sprite data", path)
+	}
+	if doc.Bytes > maxDecodedSpriteJSONBytes {
+		return nil, fmt.Errorf("%s: decoded sprite archive exceeds size limit", path)
 	}
 	reader, err := zlib.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(doc.Data)))
 	if err != nil {

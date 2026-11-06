@@ -2,9 +2,8 @@ package game
 
 import "math"
 
-// MaxRequestedGMLevel is AC02's command cap. Equip.GetLevelProgress still caps
-// non-reborn characters at MaxLevel (199), even when SetLevel requests 200.
-const MaxRequestedGMLevel = 200
+// MaxRequestedGMLevel matches both the command and progression cap upstream.
+const MaxRequestedGMLevel = 199
 
 // SetLevel ports Equip.SetLevel. Points follow the requested level as in C#;
 // the displayed level is derived from the threshold EXP. Lowering a level

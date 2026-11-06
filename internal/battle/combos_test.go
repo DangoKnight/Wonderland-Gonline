@@ -163,7 +163,7 @@ func TestFullPartyComboPacketDamageAndSkillUses(t *testing.T) {
 			t.Fatalf("record %d: %v", i, animation[off:off+19])
 		}
 		damage := int(animation[off+14]) | int(animation[off+15])<<8
-		if damage != int(float64(r.baseDamage(a.Actor, b.Defenders[0], 11001, 1))*1.3) {
+		if damage != 29 {
 			t.Fatalf("actor %d damage %d", i, damage)
 		}
 		total += damage
@@ -207,8 +207,15 @@ func TestComboKnockoutDoesNotRetargetRemainingParticipants(t *testing.T) {
 	b.Defenders[0].HP = 1
 	b.Defenders = append(b.Defenders, &Fighter{Side: Defender, Kind: Monster, X: 2, Y: 3, HP: 100, MaxHP: 100})
 	steps, _ := r.attack(b, b.order(r, actions)[0], map[int]bool{})
-	if len(steps) != 2 || len(steps[0].SkillUses) != 3 || !bytes.Equal(steps[1].Packets[0], []byte{53, 3, 2, 2}) {
+	if len(steps) != 1 || len(steps[0].SkillUses) != 3 {
 		t.Fatal("combo knockout packets", steps)
+	}
+	for _, step := range steps {
+		for _, p := range step.Packets {
+			if bytes.Equal(p, []byte{53, 3, 2, 2}) {
+				t.Fatal("ordinary knockout sent overkill")
+			}
+		}
 	}
 	if b.Defenders[0].HP != 0 || b.Defenders[0].Deaths != 1 || b.Defenders[1].HP != 100 {
 		t.Fatal("combo split across enemies")

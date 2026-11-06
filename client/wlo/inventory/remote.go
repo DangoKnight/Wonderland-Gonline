@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -57,7 +59,9 @@ func (f *Form) openRemote(slot byte) {
 		remoteButton(f.Env, d, "Btn_Close_s_1", 152, 24, 18, 18, d.Hide).Hide()
 		remoteButton(f.Env, d, "Btn_Close_2", 132, 463, 39, 20, d.Hide)
 		d.Start = remoteButton(f.Env, d, "Btn_OK_2", 34, 463, 39, 20, d.start)
-		d.Start.SetHint([]byte("Apply Remote settings and start automation"))
+		d.Start.BindLanguage("hint", func() {
+			d.Start.SetHint([]byte(localization.UI("ui.inventory.apply_remote_settings_and_start_automati_d09aa404")))
+		})
 		d.Stop = remoteButton(f.Env, d, "Btn_Stop_2", 83, 463, 39, 20, d.stop)
 		d.Settings = remoteButton(f.Env, d, "Btn_PlusSet", 115, 46, 61, 20, d.openSettings)
 		// Native checkbox order: fight, move, supply, no supplies, player
@@ -157,7 +161,7 @@ func (d *remoteForm) openSettings() {
 			p.Tabs[i] = remoteButton(d.Env, p, fmt.Sprintf("Icon_AutoTab_%d", i+1), 19+i*66, 41, 66, 21, func() { p.selectTab(tab) })
 		}
 		remoteButton(d.Env, p, "Btn_OK_2", 51, 453, 39, 20, func() {
-			d.owner.notice("Advanced skill assignment is not implemented yet. Auto Atk uses basic attacks.")
+			d.owner.notice(localization.UI("ui.inventory.advanced_skill_assignment_is_not_impleme_60124be1"))
 		})
 		d.Env.UI.Add(p)
 		d.Plus = p

@@ -322,9 +322,10 @@ func (h *Human) typeOf(id uint16) byte {
 // face (TSe_MainStatus sets +0x121 to 0), action 2 the selection's boxed
 // portrait. Frame 1 has the eyes closed.
 const (
-	portraitSpriteOffset = 601
-	portraitAction       = 2
-	FaceAction           = 0
+	portraitSpriteOffset       = 601
+	rosterPortraitSpriteOffset = 641 // FUN_001cb9e8: 2641/3641/4641/5641 + head.
+	portraitAction             = 2
+	FaceAction                 = 0
 	// PortraitAction is the face action the talk window and character
 	// selection use (+0x121 = 2).
 	PortraitAction = portraitAction
@@ -387,11 +388,17 @@ func (h *Human) DrawFace(dst *surface.Surface, x, y, action int, blinking bool) 
 	if h.body == 0 || h.body > 4 {
 		return
 	}
-	frame := 0
+	// Blink artwork is a small eyelid overlay, not a replacement portrait.
+	// Keep the base art, including the large dialogue body, underneath it.
+	h.DrawFaceFrame(dst, x, y, action, 0)
 	if blinking {
-		frame = 1
+		arc, key := h.Lib.lookup(familyName(h.body)+"f", baseID(h.body)+portraitSpriteOffset+int(h.head))
+		if arc != nil {
+			if s := arc.sprite(key); s != nil && s.frameCount(action) > 1 {
+				h.DrawFaceFrame(dst, x, y, action, 1)
+			}
+		}
 	}
-	h.DrawFaceFrame(dst, x, y, action, frame)
 }
 
 // DrawFaceFrame draws one frame of the face sprite's action (+0x121, the
@@ -402,6 +409,15 @@ func (h *Human) DrawFaceFrame(dst *surface.Surface, x, y, action, frame int) {
 		return
 	}
 	h.layerSprite(dst, familyName(h.body)+"f", baseID(h.body)+portraitSpriteOffset+int(h.head), action, frame, x, y)
+}
+
+// DrawRosterPortrait is FUN_001cb9e8's dedicated small face, action/frame zero.
+// Preserve its 32-pixel canvas anchors instead of shrinking the status portrait.
+func (h *Human) DrawRosterPortrait(dst *surface.Surface, x, y int) {
+	if h.body == 0 || h.body > 4 {
+		return
+	}
+	h.layerSprite(dst, familyName(h.body)+"f", baseID(h.body)+rosterPortraitSpriteOffset+int(h.head), 0, 0, x, y)
 }
 
 // FaceHit reports whether (px, py) falls on an opaque pixel of the face

@@ -2,6 +2,7 @@ package assets
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"wonderland-gonline/internal/game"
 )
@@ -33,6 +34,8 @@ const (
 	nativeItemDescriptionLengthOffset = 146
 	nativeItemDescriptionOffset       = 147
 	nativeItemDescriptionBytes        = 254
+	nativeItemBuyPriceOffset          = 114
+	nativeItemEquipLevelOffset        = 113 // Decoded Item.dat wearer minimum level (player and pet).
 )
 
 // Disk offsets traced from aLogin's FUN_003cdfa4. Its in-memory object has a
@@ -61,6 +64,40 @@ type NativeItem struct {
 	LargeIcon   uint16
 	Sprites     [nativeItemSpriteCount]uint16
 	Record      [nativeItemRecordBytes]byte
+}
+
+const vehicleCapacityRankOffset = 45 // Native Item.dat +0x31, excluding its four-byte prefix.
+const vehicleCapacityUnitsPerRank = 1800
+const vehicleCapacityRankPower = 1.3
+
+// VehicleCapacity follows FUN_00262974/FUN_0044d5d0: round(rank^1.3)*1800.
+func (i NativeItem) VehicleCapacity() uint32 {
+	if i.Definition.Type != game.VehicleType {
+		return 0
+	}
+	return uint32(math.RoundToEven(math.Pow(float64(i.Record[vehicleCapacityRankOffset]), vehicleCapacityRankPower))) * vehicleCapacityUnitsPerRank
+}
+
+// VehicleCondition is shared by inventory and the mounted-vehicle HUD.
+type VehicleCondition struct{ Health, Maximum, Fuel uint32 }
+
+func (i NativeItem) VehicleCondition(item game.Item) VehicleCondition {
+	if i.Definition.Type != game.VehicleType || item.Empty() {
+		return VehicleCondition{}
+	}
+	capacity := i.VehicleCapacity()
+	fuel := uint32(item.VehicleFuel())
+	if capacity == 0 {
+		capacity, fuel = game.VehicleWreckDamage, 0
+	}
+	health := capacity - min(capacity, item.VehicleWear())
+	// Precise native wear and the existing server damage percentage both
+	// constrain remaining health; neither display may restore spent health.
+	health = min(health, uint32(uint64(capacity)*uint64(game.VehicleWreckDamage-min(item.Damage, game.VehicleWreckDamage))/game.VehicleWreckDamage))
+	if item.ID == game.DisposableRaftItemID {
+		health = capacity
+	}
+	return VehicleCondition{Health: health, Maximum: capacity, Fuel: min(fuel, capacity)}
 }
 
 // ParseNativeItems reads version-nine Item.dat: one plaintext 451-byte header,
@@ -107,6 +144,7 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		}
 		item.Definition = game.ItemDefinition{CellWidth: b[nativeItemCellWidthOffset], CellHeight: b[nativeItemCellHeightOffset], ID: id, Name: name, Type: b[nativeItemTypeOffset], EquipSlot: uint16(b[nativeItemEquipSlotOffset]), Level: uint16(b[nativeItemLegacyLevelOffset]), Status: [2]uint16{le.Uint16(b[nativeItemStatusOffset:]), le.Uint16(b[nativeItemStatusOffset+2:])}, Values: [2]int32{int32(le.Uint32(b[nativeItemValueOffset:])), int32(le.Uint32(b[nativeItemValueOffset+4:]))}}
 		item.Description = description
+		item.InitializeEquipLevel()
 		item.Icon = le.Uint16(b[nativeItemIconOffset:])
 		item.LargeIcon = le.Uint16(b[nativeItemLargeIconOffset:])
 		for i := range item.Sprites {
@@ -120,6 +158,17 @@ func ParseNativeItems(data []byte) (map[uint16]NativeItem, error) {
 		return nil, fmt.Errorf("native item catalog: no item definitions")
 	}
 	return out, nil
+}
+
+// InitializeEquipLevel projects the native equipment requirement at import or
+// explicit database migration time. It is distinct from the legacy Level field.
+func (item *NativeItem) InitializeEquipLevel() {
+	item.Definition.EquipLevel = uint16(item.Record[nativeItemEquipLevelOffset])
+}
+
+// BuyPrice is the native shop price stored at Item.dat +0x72.
+func (item *NativeItem) BuyPrice() uint32 {
+	return le.Uint32(item.Record[nativeItemBuyPriceOffset:])
 }
 
 // InitializeInventoryDimensions seeds projections made before dimensions were

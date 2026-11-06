@@ -28,6 +28,7 @@ type NPC struct {
 	Now func() time.Time
 
 	sprite int
+	weapon uint16
 	colors Colors
 	// Lit draws the NPC highlighted, as while the pointer is over it.
 	Lit         bool
@@ -36,6 +37,8 @@ type NPC struct {
 	frameAt     time.Time
 	hold        int  // the fixed frame, < 0 to animate
 	wrap        bool // hold counts frames that wrap at the action's count
+	// lastAction restarts the animation when the action changes.
+	lastAction int
 }
 
 // Hold fixes the drawn frame: a prop's +0x11f or a movie keyframe's frame
@@ -57,7 +60,7 @@ func (n *NPC) shown(count int) int {
 // NewNPC is FUN_004265a4's appearance part: the template's look and its
 // four colour values over a neutral block.
 func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
-	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors(), hold: -1}
+	n := &NPC{Lib: lib, Now: time.Now, sprite: npcSpriteBase + int(look)%npcLookRange, colors: NeutralColors(), hold: -1, lastAction: -1}
 	for i, v := range colors {
 		n.colors.Set(int32(v), allParts, i+1)
 	}
@@ -67,6 +70,17 @@ func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
 
 // SetLit turns the hover highlight on or off.
 func (n *NPC) SetLit(on bool) { n.Lit = on }
+
+// SetBattleWeapon supplies the NPC's separate native weapon sprite. Combat
+// actors enable this layer (+0x1f81); ordinary map NPCs keep it hidden.
+func (n *NPC) SetBattleWeapon(sprite uint16) { n.weapon = sprite }
+
+// RestartAnimation is an authoritative scene action, even when its action
+// number matches the previously playing animation.
+func (n *NPC) RestartAnimation() {
+	n.frame, n.lastAction = 0, -1
+	n.frameAt = n.Now()
+}
 
 // Sprite is the drawn sprite ID.
 func (n *NPC) Sprite() int { return n.sprite }
@@ -87,9 +101,17 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 	if count == 0 {
 		return
 	}
+	if action != n.lastAction {
+		n.lastAction, n.frame, n.frameAt = action, 0, n.Now()
+	}
 	if now := n.Now(); now.Sub(n.frameAt) > intervalFor(action) {
 		n.frameAt = now
 		n.frame++
+	}
+	// The falling group (26, 27) plays once and holds its last frame, as
+	// for players (FUN_004122ec): a defeated monster lies flattened.
+	if fallAction(action) {
+		n.frame = min(n.frame, count-1)
 	}
 	n.frame %= count
 	if f := s.frame(action, n.shown(count)); f != nil {
@@ -99,6 +121,27 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 			colors = &lit
 		}
 		s.drawColoredScaled(dst, f, x, y, n.sprite, colors, n.rasterScale())
+		n.drawWeapon(dst, x, y, action, n.shown(count), colors)
+	}
+}
+
+// FUN_00433318 draws the default NPC weapon after the body, using the same
+// action/frame. Weapon archive canvases have FUN_002fe8e8's +68 ground offset.
+func (n *NPC) drawWeapon(dst *surface.Surface, x, y, action, frame int, colors *Colors) {
+	if n.weapon <= idsPerFamily*2 || n.weapon >= idsPerFamily*6 {
+		return
+	}
+	family := familyName(byte(int(n.weapon)/idsPerFamily-1)) + "w"
+	arc, key := n.Lib.lookup(family, int(n.weapon))
+	if arc == nil {
+		return
+	}
+	s := arc.sprite(key)
+	if s == nil || s.frameCount(action) == 0 {
+		return
+	}
+	if f := s.frame(action, frame%s.frameCount(action)); f != nil {
+		s.drawColoredScaled(dst, f, x, y+weaponGroundOffset*n.rasterScale(), int(n.weapon), colors, n.rasterScale())
 	}
 }
 
@@ -215,19 +258,33 @@ func (n *NPC) rasterScale() int {
 // copied to +0xb2 by FUN_004265a4. It is 007-family artwork, separate from
 // the 008-family dialogue portrait. (x,y) is the icon's top-left corner.
 func (n *NPC) DrawIcon(dst *surface.Surface, x, y int, icon uint16) {
+	s, frame := n.iconFrame(icon)
+	if frame != nil {
+		s.drawColored(dst, frame, x-frame.OffsetX, y-frame.OffsetY, int(icon), &n.colors)
+	}
+}
+
+// DrawIconAtAnchor preserves the small portrait's native canvas and anchor.
+// The compact HUD places this drawing point through FUN_0029dbf0.
+func (n *NPC) DrawIconAtAnchor(dst *surface.Surface, x, y int, icon uint16) {
+	s, frame := n.iconFrame(icon)
+	if frame != nil {
+		s.drawColored(dst, frame, x, y, int(icon), &n.colors)
+	}
+}
+
+func (n *NPC) iconFrame(icon uint16) (*sprite, *sprites.Frame) {
 	if icon == 0 {
-		return
+		return nil, nil
 	}
 	const smallPortraitFamily = "007"
 	arc, key := n.Lib.lookup(smallPortraitFamily, int(icon))
 	if arc == nil {
-		return
+		return nil, nil
 	}
 	s := arc.sprite(key)
 	if s == nil || s.frameCount(0) == 0 {
-		return
+		return nil, nil
 	}
-	if frame := s.frame(0, 0); frame != nil {
-		s.drawColored(dst, frame, x-frame.OffsetX, y-frame.OffsetY, int(icon), &n.colors)
-	}
+	return s, s.frame(0, 0)
 }

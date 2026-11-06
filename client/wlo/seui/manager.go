@@ -2,14 +2,15 @@ package seui
 
 // Manager is the form manager (PTR_DAT_004ca108, constructor 0x466f00).
 type Manager struct {
-	Env     *Env
-	Forms   []Control // +0x04 draw order; the last is in front
-	Others  []Control // +0x08
-	Modal   Control   // +0x10
-	Active  Control   // +0x14
-	OnlyTop bool      // +0x18 draw only controls marked OnTop
-	Input   *Input    // +0x1c
-	Color   uint16    // +0x26 skin colour applied to every form
+	Env          *Env
+	Forms        []Control // +0x04 draw order; the last is in front
+	Others       []Control // +0x08
+	Modal        Control   // +0x10
+	Active       Control   // +0x14
+	OnlyTop      bool      // +0x18 draw only controls marked OnTop
+	Input        *Input    // +0x1c
+	Color        uint16    // +0x26 skin colour applied to every form
+	messageExits []messageExit
 }
 
 func NewManager(env *Env, in *Input) *Manager {
@@ -101,6 +102,7 @@ func (m *Manager) SetModal(on bool, f Control) {
 
 // Tick is FUN_0046753c: every form's slot +0x14.
 func (m *Manager) Tick() {
+	m.updateMessageExits()
 	for _, f := range m.Forms {
 		f.Tick()
 	}
@@ -108,6 +110,7 @@ func (m *Manager) Tick() {
 
 // HideAll is FUN_004675ec.
 func (m *Manager) HideAll() {
+	m.CancelMessageExit(nil)
 	for _, f := range m.Forms {
 		f.Base().Visible = false
 	}
@@ -120,6 +123,7 @@ type stayOnTop interface{ onTopLayer() bool }
 // panels after the others, then the hovered control's hint. The cursor
 // image selection that follows in the original is not ported.
 func (m *Manager) Draw() {
+	m.DrawMessageExits()
 	in := m.Input
 	for _, f := range m.Forms {
 		if t, ok := f.(stayOnTop); ok && t.onTopLayer() {
@@ -191,6 +195,10 @@ func (c *Component) isComponent() {}
 func (m *Manager) MouseMove(shift byte, x, y int, held bool) {
 	in := m.Input
 	in.X, in.Y = x, y
+	if c := in.Captured; exclusivePointer(c) {
+		c.CapturedMove(shift, x, y)
+		return
+	}
 	if h := in.Hovered; h != nil {
 		h.MouseMove(shift, x, y)
 	}
@@ -205,6 +213,13 @@ func (m *Manager) MouseMove(shift byte, x, y int, held bool) {
 // MouseUp is FUN_0040f7e4.
 func (m *Manager) MouseUp(button, shift byte, x, y int) {
 	in := m.Input
+	if c := in.Captured; button == ButtonLeft && exclusivePointer(c) {
+		// This gesture belongs to the captured control, including its release.
+		// A newly hovered child or a control behind it must not receive a click.
+		c.LeftUpOutside(shift, x, y)
+		in.Pressed, in.Captured = nil, nil
+		return
+	}
 	if button == ButtonLeft && in.Pressed != nil {
 		in.Pressed.LeftUp(shift, x, y)
 	}
@@ -225,6 +240,12 @@ func (m *Manager) MouseUp(button, shift byte, x, y int) {
 		}
 	}
 	in.Captured = nil
+}
+
+// Opt-in capture for gestures that must not dispatch to whatever is underneath.
+func exclusivePointer(c Control) bool {
+	owner, ok := c.(interface{ ExclusivePointerCapture() bool })
+	return ok && owner.ExclusivePointerCapture()
 }
 
 // DblClick is FUN_0040f4f4's first part: the hovered control's slot +0x2c.

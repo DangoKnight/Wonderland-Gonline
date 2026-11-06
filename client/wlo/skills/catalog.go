@@ -8,6 +8,7 @@ import (
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/clientfs"
+	"wonderland-gonline/internal/localization"
 )
 
 const (
@@ -15,7 +16,9 @@ const (
 	Defense                       = 60021
 	LifeLayer                     = 13
 	nativeIconField               = 100
+	nativeTargetField             = 99 // FUN_00481640: TSkillDat +0x67, after four-byte prefix.
 	nativeMaximumGradeField       = 105
+	nativeBattleVoiceField        = 118 // Skill.dat +0x7a including the four-byte prefix.
 	nativeAnimationFixedTailBytes = 198 // FUN_00377060: 72+24+6+6+60+24+6.
 	nativeWeaponFlagsFromEnd      = 95  // Record +0x131..135, within that fixed tail.
 	WeaponKinds                   = 5
@@ -27,6 +30,34 @@ type Definition struct {
 	Icon         uint16
 	MaximumGrade byte
 	Weapons      [WeaponKinds]bool
+	NativeTarget byte
+	TargetKnown  bool
+	BattleVoice  uint16
+}
+
+// Target policies returned by FUN_00481640 and checked in FUN_0038972c.
+const (
+	TargetEnemy     = 0
+	TargetAlly      = 1
+	TargetEither    = 2
+	TargetSelf      = 3
+	TargetOtherAlly = 5
+)
+
+func (d Definition) AllowsTarget(sameSide, self bool) bool {
+	switch d.NativeTarget {
+	case TargetEnemy:
+		return !sameSide
+	case TargetAlly:
+		return sameSide
+	case TargetEither:
+		return true
+	case TargetSelf:
+		return self
+	case TargetOtherAlly:
+		return sameSide && !self
+	}
+	return false
 }
 
 func (d Definition) IconName() string { return fmt.Sprintf("Icon_sk%ds", d.Icon) }
@@ -39,7 +70,7 @@ type Catalog struct {
 // Load uses complete exported client records. Skill.dat's effect_layer is the
 // native UI category; its type field is a separate domain, often the element.
 func Load(a login.Assets) (*Catalog, error) {
-	raw, err := clientfs.ReadFile(a.DataPath("skill_data.json"))
+	raw, err := localization.ReadAsset(a.DataPath("skill_data.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -76,20 +107,24 @@ func Parse(raw []byte) (*Catalog, error) {
 	for _, r := range doc.Records {
 		b, err := hex.DecodeString(r.DecodedHex)
 		if err != nil || len(b) <= nativeMaximumGradeField {
-			return nil, fmt.Errorf("invalid skill record %d", r.Fields.ID)
+			return nil, fmt.Errorf(localization.UI("ui.skills.invalid_skill_record_d_048dd0bf"), r.Fields.ID)
 		}
 		if r.Fields.ID == 0 {
 			continue
 		}
 		if _, exists := c.Definitions[r.Fields.ID]; exists {
-			return nil, fmt.Errorf("duplicate skill %d", r.Fields.ID)
+			return nil, fmt.Errorf(localization.UI("ui.skills.duplicate_skill_d_feaf3561"), r.Fields.ID)
 		}
 		d := Definition{Skill: r.Fields, Description: r.Description.Text, Icon: uint16(b[nativeIconField]) | uint16(b[nativeIconField+1])<<8, MaximumGrade: b[nativeMaximumGradeField]}
+		d.NativeTarget, d.TargetKnown = b[nativeTargetField], true
+		if len(b) >= nativeBattleVoiceField+2 {
+			d.BattleVoice = uint16(b[nativeBattleVoiceField]) | uint16(b[nativeBattleVoiceField+1])<<8
+		}
 		d.Name = r.Name.Text
 		c.Definitions[d.ID] = d
 		if d.TableOrder != 0 {
 			if _, exists := c.Orders[d.TableOrder]; exists {
-				return nil, fmt.Errorf("duplicate skill order %d", d.TableOrder)
+				return nil, fmt.Errorf(localization.UI("ui.skills.duplicate_skill_order_d_66fe2000"), d.TableOrder)
 			}
 			c.Orders[d.TableOrder] = d.ID
 		}
@@ -113,13 +148,13 @@ func (c *Catalog) ApplyWeapons(raw []byte) error {
 	for _, r := range doc.Records {
 		b, err := hex.DecodeString(r.DecodedHex)
 		if err != nil || len(b) < nativeAnimationFixedTailBytes {
-			return fmt.Errorf("invalid skill animation %d", r.ID)
+			return fmt.Errorf(localization.UI("ui.skills.invalid_skill_animation_d_8b161429"), r.ID)
 		}
 		var flags [WeaponKinds]bool
 		for i := range flags {
 			v := b[len(b)-nativeWeaponFlagsFromEnd+i]
 			if v > 1 {
-				return fmt.Errorf("invalid weapon flag for %d", r.ID)
+				return fmt.Errorf(localization.UI("ui.skills.invalid_weapon_flag_for_d_078e193e"), r.ID)
 			}
 			flags[i] = v == 1
 		}

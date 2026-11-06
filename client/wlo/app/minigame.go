@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"log"
@@ -8,6 +10,7 @@ import (
 	"time"
 
 	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/minigame"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/role"
@@ -87,6 +90,11 @@ type sportPlay struct {
 	start *sportStartForm
 	exit  *sportExitForm
 	hud   []seui.Control // the forms hidden for the game
+	// The game's prompts (a talk window like PTR_DAT_004c9ce4) and the
+	// handler of the shown one.
+	talk   *hud.Talk
+	answer func(row int)
+	held   bool // the left button is down for the game
 }
 
 // sportStartForm is CH_GameStartForm (constructor FUN_001b4d0c) laid out by
@@ -96,6 +104,7 @@ type sportStartForm struct {
 	Start, Leave, Close *seui.FixedButton
 	extra               int // a picture drawn on the form, -1 for none
 	extraX, extraY      int
+	price               []byte // the fruit machines' price, nil for none
 }
 
 // Start form tags (the buttons' +0xb0, handled at 0x1b4f20).
@@ -161,13 +170,13 @@ func newSportStartForm(env *seui.Env, l sportLayout, click func(tag int)) *sport
 		b.SetHint([]byte(hint))
 		return b
 	}
-	f.Start = button("btn_Start_1", l.startLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagStart, "Start")
-	f.Leave = button("btn_Leave_1", l.leaveLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagLeave, "Leave")
+	f.Start = button("btn_Start_1", l.startLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagStart, localization.UI("ui.app.start_e4bb9f1e"))
+	f.Leave = button("btn_Leave_1", l.leaveLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagLeave, localization.UI("ui.app.leave_fc6e4a40"))
 	closeName := "btn_close_s_1"
 	if l.form == "MemGame_Exp" {
 		closeName = "btn_close_s_3"
 	}
-	f.Close = button(closeName, l.closeLeft, sportCloseSide, sportCloseSide, sportCloseTop, sportTagClose, "Leave")
+	f.Close = button(closeName, l.closeLeft, sportCloseSide, sportCloseSide, sportCloseTop, sportTagClose, localization.UI("ui.app.leave_fc6e4a40"))
 	if l.extra != "" {
 		f.extra, f.extraX, f.extraY = env.Pics.Find(l.extra), l.extraX, l.extraY
 	}
@@ -180,6 +189,9 @@ func (f *sportStartForm) Paint() {
 	if f.extra >= 0 {
 		a := f.Abs()
 		f.Env.Pics.Draw(f.Env.Screen, f.extra, a.X+f.extraX, a.Y+f.extraY, true)
+	}
+	if f.price != nil && f.Env.Text != nil {
+		f.Env.Text.Draw(marioPriceX, marioPriceY, 0, false, true, f.Env.Screen, f.price, marioPriceLine, marioPriceWidth, 0, marioPriceInk, 0)
 	}
 }
 
@@ -261,7 +273,7 @@ func (c *Client) startSport(s []byte) {
 		g.Rand, g.Sound, g.Music, g.Result = rand.IntN, c.playSound, c.playMusic, result
 		sp.game = g
 		layout = sheepLayout
-		if g.Variant != 1 {
+		if g.Variant != minigame.DreamSheepVariant {
 			layout.form = "Pig_Exp_Form"
 		}
 		exit, exitLeft, exitTop = "MiniGame_Exit_Btn", 720, 520
@@ -300,6 +312,13 @@ func (c *Client) startSport(s []byte) {
 			layout.form = "TrunEgg_Exp_Form"
 		}
 		exit, exitLeft, exitTop = "MiniGame_Exit_Btn", 720, 520
+	case minigame.ThrowKind:
+		sp.game = c.newThrow(s, uint16(param), result)
+		layout, exit, exitLeft, exitTop = throwLayout, minigame.ThrowExitButton, throwExitLeft, throwExitTop
+	case minigame.MarioKind, minigame.Mario2Kind, minigame.Mario3Kind:
+		g := c.newMario(sp, kind, result)
+		sp.game, layout = g, marioLayout
+		exit, exitLeft, exitTop = marioExitButton, marioExitLeft, marioExitTop
 	case SportMemory:
 		g := minigame.NewMemory(c.Pics)
 		g.Rand, g.Sound, g.Music, g.Result = rand.IntN, c.playSound, c.playMusic, result
@@ -314,6 +333,11 @@ func (c *Client) startSport(s []byte) {
 	c.loadPictures(layout.form, layout.extra, exit, "btn_Start_1", "btn_Leave_1", "btn_close_s_1", "btn_close_s_3")
 	sp.start = newSportStartForm(c.Env, layout, func(tag int) { c.sportStartClick(sp, tag) })
 	sp.exit = newSportExitForm(c.Env, exit, exitLeft, exitTop, func() { sp.game.End(false) })
+	if g, ok := sp.game.(*minigame.Mario); ok {
+		c.marioForm(sp, g)
+		sp.start.price = []byte(strconv.Itoa(minigame.MarioPrice(kind)))
+		defer g.Query() // once c.sport is this game, so the send goes out
+	}
 	c.UI.Add(sp.start)
 	c.UI.Add(sp.exit)
 	c.hideHUD(sp)
@@ -370,15 +394,16 @@ func (c *Client) sportStartClick(sp *sportPlay, tag int) {
 	}
 }
 
-// sendSportResult is FUN_003bdfa4: 57/1 with the result, and the event
-// step is done.
+// sendSportResult is FUN_003bdfa4: 57/1 followed by an event acknowledgement.
 func (c *Client) sendSportResult(win bool) {
 	r := byte(0)
 	if win {
 		r = 1
 	}
 	c.Net.Send([]byte{protocol.CommandMinigame, protocol.MinigameResult, r})
-	c.event.done = true
+	// Server replies can replace eventState before eventTick runs. Keep the
+	// result acknowledgement independent of the next dialogue or event end.
+	c.minigameResultAckPending = true
 }
 
 // endSport is 57/2 (FUN_003bc120).
@@ -429,6 +454,9 @@ func (c *Client) sportFrame() {
 	}
 	sp.game.Update(now)
 	sp.game.Draw(c.Screen, c.Input.X, c.Input.Y, now)
+	if sp.talk != nil && sp.talk.Shown() {
+		sp.talk.Draw()
+	}
 }
 
 // sportClick passes a ground click to the game; it reports whether a game
@@ -437,7 +465,9 @@ func (c *Client) sportClick(x, y int) bool {
 	if c.sport == nil {
 		return false
 	}
-	c.sport.game.Click(x, y, c.Now())
+	if !c.sportAnswer(c.sport, x, y) {
+		c.sport.game.Click(x, y, c.Now())
+	}
 	return true
 }
 

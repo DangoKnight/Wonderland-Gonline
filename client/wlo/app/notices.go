@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"image"
 	"time"
 
 	"wonderland-gonline/client/wlo/seui"
@@ -49,14 +50,21 @@ type notice struct {
 }
 
 type Notices struct {
-	items []notice
-	shown bool      // +0x196, the talk window's timer is running
-	until time.Time // its end; zero for no timeout
-	panel *seui.Panel
+	Now    func() time.Time
+	items  []notice
+	shown  bool      // +0x196, the talk window's timer is running
+	until  time.Time // its end; zero for no timeout
+	panel  *seui.Panel
+	opened time.Time
+	top    int
 }
 
 // Show is FUN_0034e70c with a duration of d (0 or less never times out).
 func (n *Notices) Show(text []byte, d time.Duration, now time.Time) {
+	if n.panel != nil && n.panel.Env.UI != nil {
+		n.panel.Env.UI.CancelMessageExit(n)
+	}
+	n.opened = now
 	parts := bytes.Split(text, []byte{noticeBreak})
 	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
 		parts = parts[:len(parts)-1]
@@ -133,7 +141,18 @@ func wrap(text []byte) [][]byte {
 
 // Draw updates and draws the board.
 func (n *Notices) Draw(env *seui.Env, now time.Time) {
+	if n.shown && len(n.items) > 0 && !n.until.IsZero() && !now.Before(n.until) && env.UI != nil {
+		clock := n.Now
+		if clock == nil {
+			clock = time.Now
+		}
+		env.UI.CloseOverlayMessage(n, clock, func() { n.paint(env, now) })
+	}
 	n.update(now)
+	n.paint(env, now)
+}
+
+func (n *Notices) paint(env *seui.Env, now time.Time) {
 	if len(n.items) == 0 {
 		return
 	}
@@ -155,11 +174,22 @@ func (n *Notices) Draw(env *seui.Env, now time.Time) {
 		n.panel.Hover = false
 	}
 	p := n.panel
-	p.Left, p.Top, p.Width, p.Height = (ScreenWidth-w)/2, noticeTop, w, h
-	p.Paint()
+	p.Left, p.Top, p.Width, p.Height = (ScreenWidth-w)/2, max(noticeTop, n.top), w, h
+	p.PaintMessage(n.opened, now)
 	for i, l := range lines {
 		x := (ScreenWidth-len(l)*noticeCharW)/2 + noticeTextShift
-		y := noticeTop + noticeTextY + i*noticeLineH
+		y := p.Top + noticeTextY + i*noticeLineH
 		env.Text.Draw(x, y, 0, false, true, env.Screen, l, noticeLineH, len(l)*noticeCharW+noticeCharW, 0, noticeInk, noticeStyle)
 	}
+}
+
+func (n *Notices) dismissAt(env *seui.Env, now time.Time, x, y int) bool {
+	if !n.shown || n.panel == nil || !image.Pt(x, y).In(n.panel.Rect()) {
+		return false
+	}
+	env.UI.CloseOverlayMessage(n, n.Now, func() { n.paint(env, now) })
+	n.shown = false
+	n.items = nil
+	n.until = time.Time{}
+	return true
 }

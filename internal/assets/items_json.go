@@ -61,6 +61,7 @@ func ParseItemCatalogJSON(data []byte) (map[uint16]NativeItem, error) {
 		item := NativeItem{Definition: row.Definition, Description: row.Description, Icon: row.Icon, LargeIcon: row.LargeIcon, Sprites: row.Sprites}
 		copy(item.Record[:], decoded)
 		item.InitializeInventoryDimensions()
+		item.InitializeEquipLevel()
 		items[id] = item
 	}
 	return items, nil

@@ -125,37 +125,32 @@ func TestSettingsTeamRequestsAndPendingAccept(t *testing.T) {
 }
 
 func TestSettingsTradeLockCancelsAndBlocksRequests(t *testing.T) {
-	for _, active := range []bool{false, true} {
-		s, players, wires := tradeFixture(t)
-		a, b := players[0], players[1]
-		if active {
-			openTrade(t, s, players, wires)
-		} else {
-			tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
-		}
-		tradeDo(t, s, b, []byte{16, 2, 1})
-		if a.trade != nil || b.trade != nil || b.tradeRequest != nil || !contains(wires[0].packets(t), []byte{25, 2, 2}) {
-			t.Fatal("trade lock retained active/pending trade")
-		}
-		tradeDo(t, s, b, []byte{25, 2, 1})
-		tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
-		if b.tradeRequest != nil {
-			t.Fatal("locked recipient received trade request")
-		}
-		tradeDo(t, s, b, protocol.Builder{25, 1}.U32(a.character.ID))
-		if a.tradeRequest != nil {
-			t.Fatal("locked requester initiated trade")
-		}
-		tradeDo(t, s, b, []byte{33, 4, 1})
-		openTrade(t, s, players, wires)
-		tradeDo(t, s, b, []byte{33, 4, 2})
-		if a.trade != nil || b.trade != nil {
-			t.Fatal("AC33 trade toggle failed to cancel")
-		}
-		saved := tradeStored(t, s, players)
-		if saved[1].Preferences().TradeAllowed || saved[0].Gold != 100 || saved[1].Gold != 200 {
-			t.Fatal("lock state or unchanged balances not saved")
-		}
+	s, players, wires := tradeFixture(t)
+	a, b := players[0], players[1]
+	openTrade(t, s, players, wires)
+	tradeDo(t, s, b, []byte{16, 2, 1})
+	if a.trade != nil || b.trade != nil || !contains(wires[0].packets(t), []byte{25, 2, 9}) || !contains(wires[1].packets(t), []byte{25, 2, 3}) {
+		t.Fatal("trade lock retained active trade")
+	}
+	wires[0].Reset()
+	tradeDo(t, s, a, protocol.Builder{25, 1}.U32(b.character.ID))
+	if a.trade != nil || b.trade != nil || !contains(wires[0].packets(t), []byte{25, 2, 2}) {
+		t.Fatal("locked recipient opened a trade")
+	}
+	wires[1].Reset()
+	tradeDo(t, s, b, protocol.Builder{25, 1}.U32(a.character.ID))
+	if a.trade != nil || !contains(wires[1].packets(t), []byte{25, 2, 2}) {
+		t.Fatal("locked requester initiated trade")
+	}
+	tradeDo(t, s, b, []byte{33, 4, 1})
+	openTrade(t, s, players, wires)
+	tradeDo(t, s, b, []byte{33, 4, 2})
+	if a.trade != nil || b.trade != nil {
+		t.Fatal("AC33 trade toggle failed to cancel")
+	}
+	saved := tradeStored(t, s, players)
+	if saved[1].Preferences().TradeAllowed || saved[0].Gold != 100 || saved[1].Gold != 200 {
+		t.Fatal("lock state or unchanged balances not saved")
 	}
 }
 

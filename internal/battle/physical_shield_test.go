@@ -34,7 +34,7 @@ func TestPhysicalShieldProtectsAgainstMonsterAndRedirectedMonster(t *testing.T) 
 	monster.Atk = 100
 	f.ApplyEffect(50000, 0, assets.SkillEffect{Target: assets.EffectAlly, Rounds: 2, Modifiers: []assets.StatModifier{{Stat: assets.EffectPhysicalDamageTaken, Percent: -50}}})
 	r.monster(b, monster, map[int]bool{})
-	if f.HP != 950 {
+	if f.HP != 939 {
 		t.Fatal("physical shield did not reduce monster strike", f.HP)
 	}
 	ally := &Fighter{Side: Defender, HP: 1000, MaxHP: 1000, Def: 20, X: 2, Y: 3}
@@ -42,7 +42,7 @@ func TestPhysicalShieldProtectsAgainstMonsterAndRedirectedMonster(t *testing.T) 
 	b.Defenders = append(b.Defenders, ally)
 	monster.ApplyEffect(50001, 0, assets.SkillEffect{Target: assets.EffectSelf, Rounds: 2, AllyAttackChancePercent: 100})
 	r.monster(b, monster, map[int]bool{})
-	if ally.HP != 950 || f.HP != 950 {
+	if ally.HP != 939 || f.HP != 939 {
 		t.Fatal("redirected monster ignored physical shield", ally.HP, f.HP)
 	}
 }
@@ -64,11 +64,11 @@ func TestPhysicalShieldReducesOnlyPhysicalRecordInPlayerPetCombo(t *testing.T) {
 	target.Def, target.Mdef = 20, 20
 	target.ApplyEffect(50002, 0, assets.SkillEffect{Target: assets.EffectAlly, Rounds: 2, Modifiers: []assets.StatModifier{{Stat: assets.EffectPhysicalDamageTaken, Percent: -50}}})
 	steps, _ := r.attack(b, b.order(r, actions)[0], map[int]bool{})
-	if len(steps) != 1 || len(steps[0].SkillUses) != 2 || target.HP != 9630 {
+	if len(steps) != 1 || len(steps[0].SkillUses) != 2 || target.HP != 9710 {
 		t.Fatal("mixed combo damage", target.HP, steps)
 	}
 	animation := steps[0].Packets[len(steps[0].Packets)-1]
-	if len(animation) != 40 || animation[16] != 123 || animation[35] != 247 {
+	if len(animation) != 40 || animation[16] != 97 || animation[35] != 193 {
 		t.Fatal("physical/magical native combo records", animation)
 	}
 }

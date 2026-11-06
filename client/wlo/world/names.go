@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/login"
 )
@@ -20,25 +20,44 @@ const (
 
 // Talks maps talk IDs to their text (Talk.dat, looked up by FUN_00332eac;
 // the text is the record's +6).
-func Talks(a login.Assets) (map[uint16]string, error) {
+func Talks(a login.Assets) (map[uint32]string, error) {
+	texts, _, err := TalksWithReferences(a)
+	return texts, err
+}
+
+// TalksWithReferences retains canonical IDs for native file-offset aliases.
+// Presentation can change language without reopening the export or guessing
+// identity from a translated string shared by several dialogue records.
+func TalksWithReferences(a login.Assets) (map[uint32]string, map[uint32]uint32, error) {
 	var doc struct {
 		Records []struct {
-			Text struct {
+			FileOffset uint32 `json:"file_offset"`
+			Text       struct {
 				Text string `json:"text"`
 			} `json:"text"`
 			Fields struct {
-				ID uint16 `json:"id"`
+				ID uint32 `json:"id"`
 			} `json:"fields"`
 		} `json:"records"`
 	}
 	if err := readJSON(a.DataPath(talkExport), &doc); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	out := make(map[uint16]string, len(doc.Records))
+	out := make(map[uint32]string, len(doc.Records))
+	ids := make(map[uint32]uint32, len(doc.Records))
+	// Extended event operands can refer to original record offsets. Preserve the
+	// server's ID-first lookup precedence when an offset overlaps a real ID.
+	for _, r := range doc.Records {
+		if r.FileOffset != 0 {
+			out[r.FileOffset] = r.Text.Text
+			ids[r.FileOffset] = r.Fields.ID
+		}
+	}
 	for _, r := range doc.Records {
 		out[r.Fields.ID] = r.Text.Text
+		ids[r.Fields.ID] = r.Fields.ID
 	}
-	return out, nil
+	return out, ids, nil
 }
 
 // SceneNames maps scene IDs to their names.
@@ -59,6 +78,53 @@ func SceneNames(a login.Assets) (map[uint16]string, error) {
 	out := map[uint16]string{}
 	for _, r := range doc.Records {
 		out[r.Fields.ID] = r.Name.Text
+	}
+	return out, nil
+}
+
+// SceneTitleGroups is FUN_003075f0's title identity at SceneData runtime +100
+// (disk offset 94). Equal groups suppress repeated area titles across maps.
+func SceneTitleGroups(a login.Assets) (map[uint16]uint16, error) {
+	var doc struct {
+		Records []struct {
+			Fields struct {
+				ID    uint16 `json:"id"`
+				Title uint16 `json:"unknown_u16_offset_94"`
+			} `json:"fields"`
+		} `json:"records"`
+	}
+	if err := readJSON(a.DataPath(sceneExport), &doc); err != nil {
+		return nil, err
+	}
+	out := make(map[uint16]uint16, len(doc.Records))
+	for _, r := range doc.Records {
+		out[r.Fields.ID] = r.Fields.Title
+	}
+	return out, nil
+}
+
+// Scene categories used by FUN_003075f0 to suppress village titles when
+// returning from interiors. Values are SceneData runtime +0x1d (disk 23).
+const (
+	SceneCategoryVillage  = 2
+	SceneCategoryInterior = 3
+)
+
+func SceneCategories(a login.Assets) (map[uint16]byte, error) {
+	var doc struct {
+		Records []struct {
+			Fields struct {
+				ID       uint16 `json:"id"`
+				Category byte   `json:"unknown_u8_offset_23"`
+			} `json:"fields"`
+		} `json:"records"`
+	}
+	if err := readJSON(a.DataPath(sceneExport), &doc); err != nil {
+		return nil, err
+	}
+	out := make(map[uint16]byte, len(doc.Records))
+	for _, r := range doc.Records {
+		out[r.Fields.ID] = r.Fields.Category
 	}
 	return out, nil
 }
@@ -139,7 +205,7 @@ func MapScenes(a login.Assets) (map[uint16]uint16, error) {
 }
 
 func readJSON(path string, v any) error {
-	raw, err := clientfs.ReadFile(path)
+	raw, err := localization.ReadAsset(path)
 	if err != nil {
 		return err
 	}

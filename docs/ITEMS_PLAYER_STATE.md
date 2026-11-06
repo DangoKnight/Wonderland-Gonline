@@ -2,11 +2,11 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v15** and structured assets
-schema **v11**. Tents were introduced in earlier schema versions.
-Follow the preserving copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
-before deploying against older databases. Upgrade copies, then select their
-paths in the startup configuration. Source databases remain available for rollback.
+Current server startup requires gameplay schema **v18** and structured assets
+schema **v16**. Tents were introduced in earlier schema versions.
+Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
+before deploying against older databases. The upgrade replaces the configured
+databases in place; the originals remain in `backups/` for rollback.
 
 `assets.db` owns the `Tents` dataset: interior spawn coordinates, initial floor
 and wallpaper references, and ordered default furniture. Offline initialization
@@ -19,6 +19,33 @@ Furniture retains item identity, count, damage and all 26 metadata bytes. Typed
 character state stores each visitor's overworld return map and coordinates.
 Deletion cascades through owned home/furniture records.
 
+## Using items in battle
+
+Open Items or Inventory, double-click a usable supply, then click its target on
+the battlefield. Item shortcuts also enter target selection; Escape cancels.
+The currently selected player or pet spends its action. HP/SP supplies restore
+living allies, including teammates and their pets; native revival items can
+restore defeated allies. Effects appear at the animation's contact cue.
+Target selection uses the native magic cursor. Full HP/SP does not prevent
+selecting a teammate: recovery uses the target's vitals when the action executes.
+The native client click path (`FUN_0038972c`, including `FUN_0018ccfc`,
+`FUN_0018ce54` and `FUN_0018cef8`) contains no full-vitals rejection.
+Damaging supplies include Bomb (33012), Darts (33013), Strong Bomb (33014),
+4-Way Shuriken (33015) and 8-Way Shuriken (33016); their native linked skills
+select enemy targets. This evidence comes from the decompilation and item data,
+not a live legacy-server capture.
+
+Selection does not consume inventory. The server validates the selected bag
+slot at execution, then commits consumption and player/pet target vitals together
+before publishing the effect. Special items use their native linked skill where
+an executable effect rule exists; unresolved specials remain unsupported and
+are not consumed. See [battle item behavior](BATTLE_CLIENT_PARITY.md) and
+[native/complete-round transport](COMBAT_TRANSPORT.md).
+
+The native client appends a 40-byte compatibility trailer to the 12-byte item
+request; the server accepts both verified forms without trusting the trailer.
+See [live capture and regression evidence](BATTLE_ITEM_CAPTURE.md).
+
 ## Using a tent
 
 Use Tent item 36002 with native AC23:96, or AC23:15 with count one and target zero.
@@ -26,12 +53,31 @@ Opening displays the native sign and reserves that bag slot. Native AC65:1 enter
 an open home by owner character ID, :2 packs up the caller's home, and :3 exits.
 The client sees native map 63507; server scene identity also includes its owner.
 Different owners' homes cannot share local player visibility or interactions.
+Exit uses each visitor's saved overworld return point. If that point is missing,
+unknown or refers to the tent interior, the host's open sign supplies the fallback.
+The destination commits before departure; with neither usable point, exit reports
+an error rather than silently leaving an occupant stranded. Interior map identity
+determines validity, so an outdoor position coinciding with the interior spawn's
+coordinates is still a valid return.
 
-The owner may place furniture, workbenches and decorations with AC62:1 and move
-or rotate them with AC62:3. Only floor zero is implemented. Movement uses the
-zero-based index in the current ordered furniture list, including after pickup.
-Only the owner can edit. Bag debit and insertion commit together; recovery leaves
-furniture intact if the bag is full. Metadata is preserved in both directions.
+The owner can place furniture with native AC62:1 (`slot:u8`, X/Y/Z UInt32,
+optional floor byte), pick it up with AC62:2 and move/rotate it with AC62:3.
+Native indices are one-based in the ordered root list; zero addresses the first
+root for compatibility. X/Y are tent-grid coordinates; Z is not a floor selector.
+The older zero-prefixed placement adapter remains available. Bounds and rotated
+footprints prevent overlapping native placements. An existing upgraded tent
+(type 2+) can place on floor one; new house upgrades remain pending.
+
+AC62:4 attaches an owned appliance to a configured host. The Work Platform
+(38049) accepts up to ten distinct tools, retaining each full item instance.
+Native AC62:4 tree snapshots include root/child indices and are sent after map
+acknowledgment, before releasing the scene gate. Pickup refunds the host and all
+its tools together; a full bag leaves the whole tree intact. SQL owns furniture,
+tool attachments, surfaces and access policy.
+
+New tents use Resource Recycling (38055) at (34,42) and the Work Platform at
+(37,42). Migration updates only the exact previous shared defaults; owned tents
+and edited defaults retain their content.
 
 Public chat commands provide workflows whose native requests are unimplemented
 in the reference:
@@ -89,6 +135,39 @@ Regression coverage includes fragmented space, grid boundaries, partial capacity
 reservations, metadata, multi-cell moves/transfers, whole quest rewards, draw
 rollback, native ground pickup retry and preserving SQL migration.
 
+## Resting recovery
+
+Sitting or lying down heals slowly. This is a server rule of this port; neither
+aLogin nor the reference server defines one. A ready character holding a
+sitting pose (AC32:2 actions 46–53, the Emote grid's action 13) or lying pose
+(actions 26–27, grid action 4) outside a battle or event recovers 2% of their
+equipped maximum HP and SP, at least one point each, every three seconds
+(`restRecoveryPercent`, `restRecoveryInterval` in `internal/server/simulation.go`),
+on the one-second world ticker. Each recovery sends AC8 absolute updates for
+current HP (25) and SP (26) only. The active following/battle pet recovers by the
+same percentage of its own equipped maxima, even when the player's vitals are
+already full. Inactive party, reserve and hotel pets do not recover. Pet updates
+use native AC8:2 with the pet's per-login client slot. Pet recovery depends on the
+owner resting, not on the pet having a matching sprite animation.
+Native clients end a held pose by walking
+without an AC32 report, so a position change clears the server's held pose;
+this also lets a player sit again after walking.
+
+Resting HP/SP are buffered session fields like walking: they update memory and
+mark the session dirty. The checkpoint writes them with X/Y in the guarded
+state-row update (matching the checkpointed X, Y, HP and SP), and adopting a
+committed SQL result keeps buffered recovery unless that transaction changed
+the vital, capped to the adopted maximum. Under healthy saves, a crash can lose
+up to one checkpoint interval of recovery; failed saves can extend that window.
+Disconnect and graceful shutdown attempt a final checkpoint.
+
+Pet HP/SP share this buffered policy. Checkpoints update just the owned party
+pet's vital columns, alongside the character state in one SQL transaction; they
+do not rewrite pet equipment, skills or inventory. Pet identity and previous
+HP/SP guard stale checkpoints. Unrelated SQL results preserve pending recovery,
+capped to the adopted pet maxima; explicit vital updates and removal/replacement
+take precedence.
+
 ## Item use and reservations
 
 Native item use supports the reference's equipment, recovery, pet voucher, gacha,
@@ -110,27 +189,34 @@ Persist the gameplay result required for recovery, never the process lock.
 
 ## Verification and unresolved reference behavior
 
-Tests cover native envelopes, independent scenes, admission/ownership, complete
-metadata, stale/full-bag rollback, ordinal indices, loading/logout/crash recovery,
-reservations, and preserving gameplay v9 and asset v2 upgrades. Live aLogin tent
+Coverage is centralized in [inventory and recovery checks](TESTING.md#inventory-and-recovery-checks). Live aLogin tent
 and furniture synchronization acceptance remains pending.
 
-AC60 decoration purchases, AC61 upstairs operations and AC62:4 special placement
-are empty or success-only source handlers. Their costs, unlock and transaction
-rules remain pending; they are not implemented as false successes. Initial floor
-and wallpaper references persist, but native decoration editing and house upgrades
-remain unresolved. Manufacturing currently retains reference workbench-name
-selection; binding recipes to verified physical furniture identities remains pending.
+AC60 decoration purchases and AC61 upstairs operations remain empty or
+success-only source handlers. Their costs and unlock rules remain pending. Wallpaper and floor application now consume the selected item with the
+metadata update in one transaction. Arriving occupants receive the saved surfaces;
+house upgrades remain unresolved. AC59 and `/manufacture` retain workbench-name recipe matching;
+native AC64 validates placed owned benches, bag tools and plans. See
+[manufacturing](MANUFACTURING_CHARACTER_STATE.md#native-manufacturing).
 
 ## Remaining state and native compatibility
 
 Character title, nickname, actual class, potential and separate AC66 metadata
 persist in typed SQL, along with pet potential. GM rebirth, all six class stat
-modifiers and normalized rebirth progression are implemented. Funded potential
-training remains pending; AC66 changes its metadata without granting advancement.
+modifiers and normalized rebirth progression are implemented. AC23:126 consumes
+normal, golden and Super Potential Pills transactionally for players and owned
+party pets. Failure/bonus rules are in [Potential Pills](NATIVE_COMMANDS.md#potential-pills).
+Potential changes apply the signed change of each maximum to current HP/SP,
+clamped between zero and the new maximum. For example, losing 40 maximum HP also
+subtracts 40 current HP. This preserves the missing amount for injured players
+and pets unless the result reaches zero. Unchanged maxima do not change current
+vitals. Vital changes commit with pill consumption and potential, before replies.
+AC66 changes separate metadata without granting advancement.
 
-Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Furniture
-placement stays floor zero; occupant poses replay through AC32:2. Configured
+Home Locked/Enlarged/Type and both floor/wallpaper pairs persist. Native furniture
+placement accepts floor one for existing tents of type two or greater; the legacy
+placement adapter uses floor zero. Upgrade purchases and upstairs access remain
+unresolved. Occupant poses replay through AC32:2. Configured
 starters are granted and persisted at creation, without automatic login
 redelivery. Admin offers explicit mass online delivery.
 See [world/combat parity](WORLD_COMBAT_PARITY.md).
@@ -139,12 +225,29 @@ The source Tradeable property and use-type metadata have no restriction callers
 in trade/wear, so they do not impose additional rules. Unverified special item
 effects remain on hold. AC8 allocation rejects invalid/overflowing entries without
 spending points; pet overflow matches the reference guard, and character overflow
-is deliberately rejected too. See [verification](PORTING.md#focused-migration-verification--2026-10-04).
+is deliberately rejected too. See [verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
 
 Routine walking follows the buffered session policy in DEVELOPMENT.md.
 Furniture transfers, purchases, claims, item wear/consumption and inventory
 mutations retain immediate SQL transactions.
 
+
+## Boxes, saved travel points and companion altar
+
+`BoxedItems` contains deterministic box contents. Opening exchanges one owned box
+for its item in SQL before sending receipts. Missing definitions, locked boxes and
+failed delivery retain the box. Weighted gacha packs remain separate.
+
+AC74 records up to three Teleport Scroll points according to the scroll definition.
+Owned saved points persist in gameplay SQL and replay on login. AC23:89 uses the
+40 imported Bamboo Dragonfly destinations. Travel commits consumption and the
+recovery destination together. These requests currently require an ordinary world
+scene; unavailable destinations do not consume items.
+
+Native altar service 27 opens AC44:2; AC44:1 selects a client pet slot. It requires
+level 100, amity 60, no previous rebirth and no equipment. The transaction preserves
+allocated points, skills and amity and resets level/EXP. It grants no bonus points;
+AC69 ascension retains its separate amity-100/50-point policy.
 
 ## Manufacturing and extended character state
 
@@ -153,4 +256,19 @@ five materials. Character nickname/class/potential, pet potential and both tent
 decoration pairs live in typed gameplay v14 rows. GM rebirth, class bonuses and
 tent peer pose replay are implemented. See [manufacturing and character
 state](MANUFACTURING_CHARACTER_STATE.md) for packet layouts, SQL upgrade steps,
-recovery and explicitly pending socket/training/upstairs rules.
+recovery, funded potential training and the pending socket/upstairs rules.
+
+## Utility item use
+
+Notepad 34038 is obtained from the Astrology lady (native map 12003, event 4),
+not from the starter pack, and opens the SQL-backed quest journal. Existing
+asset databases can apply `tools/sql/remove-starter-notepad.sql` after backup;
+restart the server afterward to reload the catalog. This content patch preserves
+other starter grants and does not remove notepads from existing characters.
+The starter seed's raw source fields retain the original import for provenance;
+its parsed `value` contains the corrected grants. Remote Control 34058 opens its
+native control form. Kelan Scroll 30001 consumes one item with its SQL-defined
+return destination in the same transaction. These use real WLRI definitions;
+legacy Chocolate/White Rice IDs are not reinterpreted as utility items. Short
+AC23:15 self-use requests and normal AC23:96 share the same dispatcher. Owned
+vehicles use the existing validated mount/dismount workflow.

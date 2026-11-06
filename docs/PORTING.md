@@ -29,6 +29,34 @@ native function; binaries were not fully disassembled and every authored data
 value was not reverified. This was static review, not runtime or aLogin acceptance.
 Historical verification reports are not evidence that current tests passed.
 
+## Combat support and targeting follow-up — 2026-11-03
+
+SP restoration, selective/general status cleansing and automatic native area
+targeting now follow the pinned `0cb6915` battle implementation. Existing SQL
+grade shapes override automatic patterns. See [combat targeting](COMBAT_TARGETING.md)
+for formulas, precedence and remaining official-client verification. Existing HP
+healing formulas and other combat parity gaps are outside this follow-up.
+
+## Story architecture
+
+Existing native story exceptions now use the typed SQL `Story` dataset (asset
+v16): selection/continuation, visibility, script repairs, recovery, recruitment,
+conversion, reward checkpoints, rebirth checkpoints and starter cinematics. Go owns reusable execution
+and transaction primitives. See [story authoring](STORY_SYSTEM.md). The custom
+registry's dormant acceptance/completion integration remains separate from this
+behavior-preserving migration.
+
+## Current source update — 2026-11-01
+
+The latest pinned source is `0cb6915d38982391fcf62fb0509da0b0966269ce`: 41 commits
+and 431 distinct changed files after the reviewed `e63e9fe` revision. The three
+commits after `1ff5bba` add mirror continuation, movie playback, actor contact,
+event-warp UI restoration and data-driven rebirth checkpoint fixes; existing
+visit-local actor visibility and area-entry precedence are retained. See
+[imported behavior and explicit exclusions](SOURCE_UPDATES.md)
+and the separate [per-file update ledger](source-update-inventory.json). The
+566-file baseline counts below remain historical evidence.
+
 ## Upstream follow-up — 2026-10-04
 
 Reviewed both new `Develop` commits, `63d8c421` and `e63e9fea`, through
@@ -69,7 +97,7 @@ were unchanged.
 | Events and quests       | Native EVE branches, callbacks, choices, marks, journal, atomic rewards, story continuations, minigames, companion identity and visibility                             | Typed custom quest definitions/editor and transactional kill counters implemented; dormant progression is additional integration. Shared prop reset/replay and generic NPC greeting implemented; native acceptance pending |
 | Combat                  | PvE/PvP formations, action ownership, turns/timeouts, capture, damage/elements/criticals, effects, shields, combos, loot/progression and authored continuations        | ACK broadcast and owner/party entry refresh implemented; PvP rewards deliberately omitted; native animation/area acceptance remains pending                                                                                |
 | Companions and vehicles | Party/hotel/reserve rosters, vouchers, skills, gear, feeding/amity, pet rebirth, mounts, vehicle ownership/wear and travel                                             | Character/pet potential metadata and GM rebirth/classes implemented; clinic heals accompanying pets; funded normal/golden/Super pill training implemented; mercenary eligibility and native acceptance pending             |
-| Items and tents         | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Reachable type restrictions are verified; unverified special effects remain on hold; two-floor decoration metadata persisted; placement remains floor zero; upstairs access pending                                        |
+| Items and tents         | Bag/equipment/storage, metadata-preserving moves/grants, recovery/repair, transient reservations, isolated homes, furniture placement/recovery and saved return points | Reachable type restrictions are verified; unverified special effects remain on hold; two-floor decoration metadata persisted; native floor-one placement accepts existing upgraded tents; upgrade purchases/upstairs access pending                                        |
 | Economy                 | Atomic mall/forging/gacha/Lucky Draw, bank balances, trades, stalls, synthesis, two-input manufacture, gathering and parcel escrow                                     | AC59 and timed AC64 implemented; AC37 socket effects remain unfinished in the reference; some legacy aliases absent                                                                                                        |
 | Social                  | Chat/preferences, friendships, parties, guild membership/ranks/insignia/rosters, marriage, mail and SQL administration                                                 | Job/nickname presentation implemented; Cupid model is absent but reference excludes it from transmitted lists; success-only guild/mail/alliance aliases remain on hold                                                     |
 | Administration          | Accounts/security, sessions/bans, mall balances, character editors, GM studio, content editors, logs/audit, guilds/marriages/mail, operations/config editing           | Offline status, native announcement channels, live tab refresh, scoped actors, linked quest edits, combined reports and SQL quest registry implemented; MySQL workflows replaced by SQLite                                 |
@@ -91,45 +119,24 @@ below is complete; unfinished source systems and native acceptance remain on hol
 
 ## Focused migration verification — 2026-10-04
 
-Compared current handlers and their callers with the recorded reference revision;
-25 reviewed source hashes match after CRLF normalization. Ran **175 unique
-top-level tests** with the race detector across game, assets, assetsql, protocol,
-world, server and store. A stale AC37/AC64 dispatch test matrix was corrected and
-its affected checks rerun successfully. This was a focused battery, not the full suite.
+The [recorded migration verification](TESTING.md#migration-verification-recorded-on-2026-10-04)
+contains the 175-test battery, source-hash checks, SQL census, historical schema
+versions and reproduction command. Those results are historical, not a current
+full-suite pass. Current behavior and outstanding work are summarized here.
 
-| Area                    | Verified outcome                                                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Allocation              | Direct/header/target/batch formats preserve greedy 4/2/1-byte amounts, missing/zero defaults and partial-batch behavior. Invalid/overflowing entries retain points; pet overflow now matches the reference guard. Character overflow is deliberately rejected as well. HP/SP remain unchanged apart from clamping to maxima; skill unlocks and allocations commit before snapshots. |
-| Generic replies         | All handshake/entity subcommands keep their owning layouts. Unknown bank subcommands now return the private AC45:8 balance snapshot without mutation. No global ACK fallback is invented.                                                                                                                                                                                           |
-| Native scene readiness  | Source AC3 short ACK/map broadcast conflicts with native AC3 character/map snapshots (receive address 0x2dfdb3); it remains unsupported. AC12/89/92 synchronization, replay and loading gates are tested independently.                                                                                                                                                             |
-| Guild journal           | AC39:1 works without guild membership; repeated requests clear old AC24:4 entries, replace active marks and send completion flags without leaking to peers.                                                                                                                                                                                                                         |
-| Inventory rules         | All 256 stack/drop type values match source. Wear guards, metadata, locks, whole grants and full-container rollback pass. Source Tradeable and use-type metadata have no reachable restriction callers; no new trade/body/level restriction is imposed.                                                                                                                             |
-| Pet outcomes            | Feeding, alias/capacity/initialization checks for vouchers, sparse client slots, rebirth eligibility/reset/bonus and desertion below 20 pass. Failed saves do not consume vouchers or change published rosters. An unrelated mount survives desertion.                                                                                                                              |
-| Recipe order            | Historical first-match alchemy tables preserve authored → Compound2 → Compound order through typed SQL reload. Gameplay now intentionally uses the owner-approved [rank/base model](COMPOUNDING.md) instead. Two-input manufacturing retains first workbench match and atomic costs/output.                                                                                                                                                                |
-| Persistence and stories | Restart, rollback, duplicate requests, ownership, receipt failures and full containers are covered; native ship/storm/Monkey/Xaolan/Niss/Fred/Elin scenarios run against imported SQL assets. Buffered walking survives committed resource operations.                                                                                                                              |
+## Native trade and social compatibility follow-up
 
-The SQL census covered 1,119 maps, 8,181 NPCs, 209 ground items, 2,790 resolvable
-warps and 786 manufacturing formulas. Of 7,313 NPCs with events, fresh-character
-branch selection found 4,872 runnable branches, 30 with unsupported operations,
-and 2,411 with no matching branch for that state. Unsupported here means the
-ordinary opcode executor refuses the shape; complete water-gathering branches
-have a separate validated controller. The reference also rejects unresolved
-reward kinds. This census is selection/decoding coverage, not execution of every
-story or proof that every state has been ported. Unresolved shapes remain pending.
+The current AC25 handler deliberately replaces the Private Server's incremental
+trade protocol with aLogin's immediate form opening, locked whole-stack/gold
+offers and bilateral acceptance. Metadata and both players' durable state commit
+atomically. Legacy offer revisions and the no-op lock request are no longer
+supported. See [item trades](ECONOMY_SOCIAL.md#player-item-trades).
 
-Regression entry points are `migration_verification_test.go` in game, server and
-assetsql, alongside the affected existing suites. To repeat the new checks:
-
-```sh
-WONDERLAND_TEST_ASSETS_DB=var/assets.db go test -race \
-  ./internal/game ./internal/assetsql ./internal/server \
-  -run 'Test(Migration.*|CommandRegistry.*|AllocationUnlock.*|Bank.*|PetAllocation.*)' -count=1
-```
-
-Use migrated asset schema v10 with gameplay schema v15. Verification used
-disposable fixtures and asset database copies; installed databases were unchanged.
-Interactive aLogin captures, multiplayer acceptance and load/soak/crash testing
-remain separate work below.
+Native AC14:3 refusal/ignore answers no longer create friendships, and AC14:1
+delivery uses trailing text without the reference's string-length prefix.
+Client Social, mailbox and trade forms are documented in [CLIENT.md](CLIENT.md),
+including remaining wire mismatches. Source inventory notes record these
+compatibility replacements; automated fixtures do not establish live acceptance.
 
 ## On hold: unfinished source and further development
 
@@ -146,7 +153,7 @@ These do not block porting reachable implemented reference behavior:
   The AC6:2 stopped-position handler still needs live verification.
   Exact original probabilities and remaining live-client checks remain research; see
   [fishing](FISHING.md) and
-  [native commands](NATIVE_COMMANDS.md). The [live-test framework](LIVE_TESTING.md)
+  [native commands](NATIVE_COMMANDS.md). The [live-test framework](TESTING.md#native-client-acceptance)
   prepares isolated characters, credentials and manual acceptance checklists;
   preparation does not establish live acceptance.
 
@@ -156,10 +163,9 @@ These do not block porting reachable implemented reference behavior:
   remains authoritative. Mark metadata seeds use actual native IDs and text, without
   guessed rewards, map/NPC mappings or objectives from English titles.
   Wiring the dormant engine into gameplay is new integration work.
-- **Laura exit fallback:** source gift IDs identify missing/food WLRI items and
-  no matching reward was found in the inspected map 10000/10001 operations.
-  Keep the fallback pending verified tent/remote/cutscene/mark data; see
-  [world/combat parity](WORLD_COMBAT_PARITY.md).
+- **Laura exit gift:** the new source corrects the tent/remote IDs. Asset v14
+  imports the route and one-time transactional reward; see
+  [world/combat parity](WORLD_COMBAT_PARITY.md#laura-exit-gift).
 - **Combat research:** verified native area/grade patterns, hit/resistance rules
   beyond compatibility formulas and multi-target/status animation acceptance.
   The source resolves one target; explicit SQL area execution is a Go addition.
@@ -177,10 +183,10 @@ These do not block porting reachable implemented reference behavior:
 - **Manufacturing and rebirth acceptance:** timer units and native HUD class
   contributions require aLogin verification. AC37 has no implemented socket
   effect in the reference and its gem IDs identify WLRI oil; reject without
-  consuming items. Reborn class skills are absent from the source; default cape
-  variants are authored WLRI mappings. See [details](MANUFACTURING_CHARACTER_STATE.md).
-- **Housing:** source AC60 decoration purchase, AC61 upstairs and AC62:4 special
-  placement are empty/success-only. Garage/team/pet/RiceBall blocks are commented
+  consuming items. Reborn class skills are now imported; cape
+  mappings support Transfer Mirror class changes. See [details](MANUFACTURING_CHARACTER_STATE.md).
+- **Housing:** source AC60 decoration purchase and AC61 upstairs remain
+  empty/success-only. AC62:4 now attaches configured appliances to work platforms. Garage/team/pet/RiceBall blocks are commented
   or incomplete. Verified upgrade/purchase rules require further work.
 - **Compatibility:** optional MySQL provider and real source cross-backend
   migration, forum password conversion and unsupported import metadata. These

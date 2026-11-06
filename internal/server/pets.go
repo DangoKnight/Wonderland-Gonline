@@ -2,11 +2,17 @@ package server
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"strings"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
+	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
 
@@ -70,10 +76,6 @@ func (s *Server) petTemplate(id uint32) game.PetTemplate {
 	return t
 }
 
-func petNamePacket(owner uint32, slot byte, name string) []byte {
-	return protocol.Builder{protocol.CommandPetControl, protocol.PetControlBoardVehicleAlternate}.U32(owner).U8(slot).Bytes([]byte(name))
-}
-
 // petListPacket is CreatePetListPacket (AC15:8) for every registered pet.
 func (s *Server) petListPacket(char *game.Character, roster *petRoster) []byte {
 	pets := slices.Clone(char.Pets)
@@ -85,7 +87,7 @@ func (s *Server) petListPacket(char *game.Character, roster *petRoster) []byte {
 		if slot == 0 {
 			continue
 		}
-		pet.Normalize(s.Assets.Items, false)
+		pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
 		p = pet.ListRecord(p, slot, s.companionName(pet.ID, pet.Name), s.petTemplate(pet.ID))
 		n++
 	}
@@ -95,28 +97,22 @@ func (s *Server) petListPacket(char *game.Character, roster *petRoster) []byte {
 	return p
 }
 
-// petMapPacket is CreatePetMapPacket (AC15:4), the pet another player sees beside its owner.
-func petMapPacket(owner, pet uint32, name string) []byte {
-	p, _ := protocol.Builder{protocol.CommandPetControl, protocol.PetControlWireCode4}.U32(owner).U32(pet).U8(0).U8(1).String(name)
-	return p.U16(0).U16(0).U8(0).U8(0).U16(0)
-}
-
 // peerPetPackets is SendPeerCompanionAndVehicle for pets and companion mounts.
 // Item vehicles precede companion appearance, as in the native map snapshot.
 func (s *Server) peerPetPackets(char *game.Character) [][]byte {
 	var packets [][]byte
 	if _, ok := char.Vehicle(char.VehicleSlot, char.ActiveVehicle, s.Assets.Items); ok {
-		packets = append(packets, vehicleMountPacket(char))
+		packets = append(packets, serverwire.VehicleMountPacket(char))
 	}
 	if pet := mountedPet(char); pet != nil {
-		packets = append(packets, mountPacket(char.ID, game.BroadcastID(pet.ID), 1))
+		packets = append(packets, serverwire.MountPacket(char.ID, game.BroadcastID(pet.ID), 1))
 	}
 	pet := char.BattlePet()
 	if pet == nil {
 		return packets
 	}
 	id := game.BroadcastID(pet.ID)
-	return append(packets, petMapPacket(char.ID, id, s.companionName(pet.ID, pet.Name)), protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(char.ID).U32(id), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
+	return append(packets, serverwire.PetMapPacket(char.ID, id, s.companionName(pet.ID, pet.Name)), protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(char.ID).U32(id), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
 }
 
 // rosterPackets is Warp_In's owner-side pet synchronization: the first entry of a login
@@ -140,16 +136,16 @@ func (s *Server) rosterPackets(char *game.Character, roster *petRoster) [][]byte
 		if slot == 0 {
 			continue
 		}
-		pet.Normalize(s.Assets.Items, false)
-		out = append(out, pet.ProgressionPackets(slot, s.Assets.Items)...)
-		out = append(out, petNamePacket(char.ID, slot, s.companionName(pet.ID, pet.Name)))
+		pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+		out = append(out, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+		out = append(out, serverwire.PetNamePacket(char.ID, slot, s.companionName(pet.ID, pet.Name)))
 		if battle := char.BattlePet(); battle != nil && game.SamePet(battle.ID, pet.ID) {
 			id := game.BroadcastID(pet.ID)
 			out = append(out, protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(id), protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(char.ID).U32(id), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
 		}
 	}
 	if pet := mountedPet(char); pet != nil {
-		out = append(out, mountPacket(char.ID, game.BroadcastID(pet.ID), pet.Slot), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
+		out = append(out, serverwire.MountPacket(char.ID, game.BroadcastID(pet.ID), pet.Slot), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
 	}
 	return out
 }
@@ -159,6 +155,9 @@ func (s *Server) rosterPackets(char *game.Character, roster *petRoster) [][]byte
 func (s *Server) petCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
+	}
+	if c.battle != nil {
+		return s.battlePetCommand(ctx, c, p)
 	}
 	switch p[1] {
 	case protocol.BattlePetSelect, protocol.BattlePetSelectAlternate:
@@ -195,11 +194,11 @@ func (s *Server) petCommand(ctx context.Context, c *Session, p []byte) error {
 			return e
 		}
 		name := s.companionName(pet.ID, pet.Name)
-		s.broadcastWorld(c, petMapPacket(next.ID, next.ActivePet, name))
+		s.broadcastWorld(c, serverwire.PetMapPacket(next.ID, next.ActivePet, name))
 		slot := c.pets.slot(pet.ID)
-		packets := [][]byte{protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(next.ActivePet), petNamePacket(next.ID, slot, name)}
-		packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items)...)
-		return s.sendAll(c, append(packets, systemLine(name+" is now in Battle Mode!")))
+		packets := [][]byte{protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetSelect}.U32(next.ActivePet), serverwire.PetNamePacket(next.ID, slot, name)}
+		packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+		return s.sendAll(c, append(packets, serverwire.SystemLine(name+" is now in Battle Mode!")))
 	case protocol.BattlePetRest, protocol.BattlePetRestAlternate:
 		next := c.character.Clone()
 		next.ActivePet = 0
@@ -228,13 +227,16 @@ func (s *Server) canRecruit(char *game.Character, id uint32) bool {
 	if _, owned := char.Pet(id); owned {
 		return true
 	}
-	return !(game.SamePet(id, 14156) && xaolanInFate(char)) && len(char.Pets) < game.MaxPets
+	return !s.recruitBlocked(char, id) && len(char.Pets) < game.MaxPets
 }
 
-func xaolanInFate(c *game.Character) bool {
-	q13087, ok1 := c.Quests[13087]
-	q13086, ok2 := c.Quests[13086]
-	return (ok1 && q13087.State == game.InProgress && q13087.Step > 0) || (ok2 && q13086.State == game.InProgress && q13086.Step >= 2)
+func (s *Server) recruitBlocked(c *game.Character, id uint32) bool {
+	for r := range s.World.StoryRules(assets.StoryRecruitBlock, c, nil, world.StoryContext{Map: c.Map}) {
+		if game.SamePet(id, r.Template) {
+			return true
+		}
+	}
+	return false
 }
 
 // companionAction is ExecuteCompanionAction (EVE opcode 3): 1 recruits, 2 sends a
@@ -267,13 +269,13 @@ func (s *Server) companionAction(ctx context.Context, c *Session, op world.Op) (
 // recruit is SendCompanionReward without battle selection.
 func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, error) {
 	if slices.ContainsFunc(c.character.HotelPets, func(p game.Pet) bool { return game.SamePet(p.ID, id) }) {
-		return false, c.send(headBanner("This companion is in Pet Hotel. Retrieve it before continuing."))
+		return false, c.send(serverwire.HeadBanner("This companion is in Pet Hotel. Retrieve it before continuing."))
 	}
-	if _, known := s.World.Template(game.BroadcastID(id)); !known || (game.SamePet(id, 14156) && xaolanInFate(c.character)) {
+	if _, known := s.World.Template(game.BroadcastID(id)); !known || s.recruitBlocked(c.character, id) {
 		return false, nil
 	}
-	if id == 12178 {
-		id = 12032
+	if alias, ok := s.Assets.Story.CompanionAliases[id]; ok {
+		id = alias
 	}
 	if _, owned := c.character.Pet(id); owned {
 		return true, nil
@@ -281,7 +283,7 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 	next := c.character.Clone()
 	slot := next.FreePetSlot()
 	if slot == 0 {
-		return false, c.send(headBanner("No free companion slot available."))
+		return false, c.send(serverwire.HeadBanner("No free companion slot available."))
 	}
 	first := true
 	var pet game.Pet
@@ -292,15 +294,8 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 	} else {
 		t := s.petTemplate(id)
 		pet = game.NewPet(id, s.companionName(id, ""), slot, t, s.Assets.Items)
-		// A new quest companion arrives with its starter equipment.
-		switch {
-		case (id == 14161 || id == 14162) && s.hasItem(10063):
-			pet.Equipment[2] = game.Item{ID: 10063, Count: 1} // Roca's machete.
-		case id == 14156 && s.hasItem(25028):
-			pet.Equipment[5] = game.Item{ID: 25028, Count: 1} // Xaolan's jade.
-		}
 		pet.EnsureSkills(t, s.hasSkill)
-		pet.Normalize(s.Assets.Items, true)
+		pet.Normalize(s.Assets.Items, true, s.petTemplate(pet.ID))
 	}
 	next.Pets = append(next.Pets, pet)
 	if e := s.commit(ctx, c, next); e != nil {
@@ -319,10 +314,10 @@ func (s *Server) recruit(ctx context.Context, c *Session, id uint32) (bool, erro
 		packets = append(packets, pet.RecruitPacket(next.ID, s.petTemplate(pet.ID)))
 	}
 	cs := c.pets.slot(pet.ID)
-	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items)...)
-	packets = append(packets, petNamePacket(next.ID, cs, s.companionName(pet.ID, pet.Name)))
+	packets = append(packets, pet.ProgressionPackets(cs, s.Assets.Items, s.petTemplate(pet.ID))...)
+	packets = append(packets, serverwire.PetNamePacket(next.ID, cs, s.companionName(pet.ID, pet.Name)))
 	// AC15:1 has no equipment; AC15:8 restores a returning or equipped companion.
-	if !first || pet.Equipment[2].ID != 0 || pet.Equipment[5].ID != 0 {
+	if !first || pet.Equipment != (game.Equipment{}) {
 		if p := s.petListPacket(c.character, c.pets); p != nil {
 			packets = append(packets, p)
 		}
@@ -369,8 +364,8 @@ func (s *Server) dismiss(ctx context.Context, c *Session, id uint32) (bool, erro
 	}
 	var packets [][]byte
 	if wasMounted {
-		packets = append(packets, unmountPackets(next.ID)...)
-		for _, packet := range unmountPackets(next.ID) {
+		packets = append(packets, serverwire.UnmountPackets(next.ID)...)
+		for _, packet := range serverwire.UnmountPackets(next.ID) {
 			s.broadcastWorld(c, packet)
 		}
 	}
@@ -398,4 +393,460 @@ func petGrowth(n int) int { return rand.IntN(n) }
 func (s *Server) gainPetExp(pet *game.Pet, amount uint32, roll func(int) int) int {
 	template, known := s.World.Template(game.BroadcastID(pet.ID))
 	return pet.GainExp(amount, template, known, roll, game.PetGrowthOptions{Formula: s.petGrowthFormula, Items: s.Assets.Items})
+}
+
+func (s *Server) petControlCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 2 {
+		return protocol.ErrMalformed
+	}
+	switch p[1] {
+	case protocol.PetControlBoardVehicle, protocol.PetControlPlaceVehicleManual, protocol.PetControlDismountVehicle, protocol.PetControlVehicleNoOp, protocol.PetControlPlaceVehicle:
+		return s.vehicleCommand(ctx, c, p)
+	case protocol.PetControlPetSlot:
+		return s.releasePet(ctx, c, p)
+	case protocol.PetControlRename:
+		return s.renamePet(ctx, c, p)
+	default:
+		return s.mountCommand(ctx, c, p)
+	}
+}
+
+// renamePet is AC15:6: client slot followed by raw ASCII bytes (not a
+// length-prefixed string). Match .NET ASCII replacement, trimming and 16-byte cap.
+func (s *Server) renamePet(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 4 {
+		return protocol.ErrMalformed
+	}
+	slot := p[2]
+	i := slices.IndexFunc(c.character.Pets, func(p game.Pet) bool { return slot != 0 && c.pets.slot(p.ID) == slot })
+	if i < 0 {
+		return nil
+	}
+	raw := append([]byte(nil), p[3:]...)
+	for i, b := range raw {
+		if b >= 128 {
+			raw[i] = '?'
+		}
+	}
+	name := strings.TrimSpace(strings.TrimRight(string(raw), "\x00"))
+	name = name[:min(16, len(name))]
+	if name == "" {
+		return nil
+	}
+	for _, b := range []byte(name) {
+		if b < 32 || b == 127 {
+			return nil
+		}
+	}
+	if name == c.character.Pets[i].Name {
+		return nil
+	}
+	next := c.character.Clone()
+	next.Pets[i].Name = name
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	pet := next.Pets[i]
+	if pet.Battle || (next.ActivePet != 0 && game.SamePet(next.ActivePet, pet.ID)) {
+		s.broadcastWorld(c, serverwire.PetMapPacket(next.ID, game.BroadcastID(pet.ID), name))
+	}
+	return c.send(serverwire.PetNamePacket(next.ID, slot, name))
+}
+
+// releasePet permanently releases the client-selected party pet. EVE dismiss
+// remains separate: story companions temporarily dismissed there enter reserve.
+func (s *Server) releasePet(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != 3 {
+		return protocol.ErrMalformed
+	}
+	slot := p[2]
+	i := slices.IndexFunc(c.character.Pets, func(p game.Pet) bool { return slot != 0 && c.pets.slot(p.ID) == slot })
+	if i < 0 {
+		return nil
+	}
+	next := c.character.Clone()
+	pet := next.Pets[i]
+	var packets, peers [][]byte
+	if next.ActiveMount != 0 && game.SamePet(next.ActiveMount, pet.ID) {
+		next.ActiveMount = 0
+		packets = append(packets, serverwire.UnmountPackets(next.ID)...)
+		peers = append(peers, serverwire.UnmountPackets(next.ID)...)
+	}
+	if pet.Battle || (next.ActivePet != 0 && game.SamePet(next.ActivePet, pet.ID)) {
+		next.ActivePet = 0
+		packets = append(packets, []byte{protocol.CommandBattlePet, protocol.BattlePetRest})
+		peers = append(peers, protocol.Builder{protocol.CommandBattlePet, protocol.BattlePetWireCode7}.U32(next.ID))
+		if next.ActiveMount == 0 {
+			despawn := protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(next.ID).U32(0)
+			packets = append(packets, despawn)
+			peers = append(peers, despawn)
+		}
+	}
+	next.Pets = slices.Delete(next.Pets, i, i+1)
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	c.pets.release(pet.ID)
+	removed := protocol.Builder{protocol.CommandPetControl, protocol.PetControlPetSlot}.U32(next.ID).U8(slot)
+	packets = append(packets, removed)
+	peers = append(peers, removed)
+	for _, packet := range peers {
+		s.broadcastWorld(c, packet)
+	}
+	packets = append(packets, serverwire.SystemLine(fmt.Sprintf("Released companion pet %s (Slot %d).", pet.Name, slot)))
+	return s.sendAll(c, packets)
+}
+
+// changePetEquipment is AC23:17/18 and Inventory.TryEquipPet/TryUnequipPet.
+// The shared equipment rules retain all item metadata during swaps.
+func (s *Server) changePetEquipment(ctx context.Context, c *Session, slot, from, to byte, wear bool) error {
+	if c.battle != nil {
+		return nil
+	}
+	i := s.clientPet(c, slot)
+	if i < 0 {
+		return nil
+	}
+	next := c.character.Clone()
+	pet := &next.Pets[i]
+	before := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
+	transfer := game.Character{Level: pet.Level, Bag: next.Bag, Equipment: pet.Equipment}
+	var err error
+	packet := []byte{protocol.CommandInventory, protocol.InventoryWireCode23, slot, from}
+	if wear {
+		if from < 1 || from > game.BagSize {
+			return nil
+		}
+		equipSlot := s.Assets.Items[next.Bag[from-1].ID].EquipSlot
+		if equipSlot >= 1 && equipSlot <= 6 {
+			previous := pet.Equipment[equipSlot-1]
+			if previous.ID != 0 && !s.hasItem(previous.ID) {
+				return nil
+			}
+		}
+		err = transfer.Wear(from, s.Assets.Items)
+	} else {
+		if from < 1 || from > 6 || !s.hasItem(pet.Equipment[from-1].ID) {
+			return nil
+		}
+		err = transfer.Unwear(from, to, s.Assets.Items)
+		packet = []byte{protocol.CommandInventory, protocol.InventoryWireCode22, slot, from, to}
+	}
+	if err != nil {
+		if errors.Is(err, game.ErrEquipLevel) {
+			return c.send(serverwire.HeadBanner(game.ErrEquipLevel.Error()))
+		}
+		return nil
+	}
+	next.Bag, pet.Equipment = transfer.Bag, transfer.Equipment
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+	after := pet.Combat(s.Assets.Items, s.petTemplate(pet.ID))
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	packets := append([][]byte{packet}, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+	if text := game.ChangeBanner(pet.Name+" equipment: ", before, after); text != "" {
+		packets = append(packets, serverwire.HeadBanner(text))
+	}
+	return s.sendAll(c, packets)
+}
+
+const (
+	petFeedingItemsPerRequest   = 1
+	petFeedingAmityCap          = 100
+	petFeedingAmityStatus       = 64
+	petFeedingNativeValueOffset = 100
+)
+
+// petFeedingCommand ports AC67 and PetAmityManager.FeedPet. The request names
+// an item ID, not a bag slot. Only a registered party pet marked for battle is
+// eligible; TryFeedPet's shared consumption policy owns the durable transition.
+func (s *Server) petFeedingCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.PetFeedingRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.PetFeedingFeed {
+		return ErrUnsupported
+	}
+	if c.event != nil || c.storm || c.beach != nil {
+		return nil
+	}
+	r := protocol.NewReader(p[2:])
+	food := r.U16()
+	reply := protocol.Builder{protocol.CommandPetFeeding, protocol.PetFeedingFeed}.U16(food)
+	var target byte
+	if c.pets != nil {
+		for _, pet := range c.character.Pets {
+			if pet.ID != 0 && pet.Battle && c.pets.slot(pet.ID) != 0 {
+				target = c.pets.slot(pet.ID)
+				break
+			}
+		}
+	}
+	if target != 0 && food != 0 {
+		for index, item := range c.character.Bag {
+			if item.ID != food || item.Empty() {
+				continue
+			}
+			if _, statFood := s.Assets.PetFoods[food]; statFood {
+				before := c.character.Pets[s.clientPet(c, target)].StatFoodUses
+				_, err := s.usePetStatFood(ctx, c, byte(index+1), petFeedingItemsPerRequest, target)
+				if err != nil {
+					return err
+				}
+				if c.character.Pets[s.clientPet(c, target)].StatFoodUses > before {
+					return c.send(reply.U8(protocol.PetFeedingSucceeded))
+				}
+				return c.send(reply.U8(protocol.PetFeedingFailed))
+			}
+			ok, err := s.feedPet(ctx, c, byte(index+1), petFeedingItemsPerRequest, target)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return c.send(reply.U8(protocol.PetFeedingSucceeded))
+			}
+		}
+	}
+	return s.sendAll(c, [][]byte{serverwire.HeadBanner("Select a battle pet and use an available amity item."), reply.U8(protocol.PetFeedingFailed)})
+}
+
+// petTrainingCommand ports AC68:2. Caller holds worldMu and enforces world
+// loading/battle/trade gates. Potential pills use the separate native AC23:126 handler.
+func (s *Server) petTrainingCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.PetTrainingRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.PetTrainingAllocate && p[1] != protocol.PetTrainingPotential {
+		return ErrUnsupported
+	}
+	if c.event != nil || c.storm || c.beach != nil {
+		return nil
+	}
+	slot, selector := p[2], p[3]
+	reply := []byte{protocol.CommandPetTraining, p[1], slot, selector, protocol.PetTrainingFailed}
+	if c.pets == nil {
+		return c.send(reply)
+	}
+	i := s.clientPet(c, slot)
+	if i < 0 || c.character.Pets[i].ID == 0 {
+		return c.send(reply)
+	}
+	if p[1] == protocol.PetTrainingPotential {
+		return s.sendAll(c, [][]byte{reply, serverwire.SystemLine("Use a Potential Pill from inventory; free potential training is disabled.")})
+	}
+	var stat byte
+	switch selector {
+	case protocol.PetTrainingStrength:
+		stat = game.StatSTR
+	case protocol.PetTrainingConstitution:
+		stat = game.StatCON
+	case protocol.PetTrainingIntelligence:
+		stat = game.StatINT
+	case protocol.PetTrainingWisdom:
+		stat = game.StatWIS
+	case protocol.PetTrainingAgility:
+		stat = game.StatAGI
+	default:
+		return c.send(reply)
+	}
+	next := c.character.Clone()
+	pet := &next.Pets[i]
+	if !pet.AllocatePoint(stat) {
+		return c.send(reply)
+	}
+	pet.Normalize(s.Assets.Items, false, s.petTemplate(pet.ID))
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	packets := pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))
+	reply[4] = protocol.PetTrainingSucceeded
+	return s.sendAll(c, append(packets, reply))
+}
+
+// petRebirthCommand ports AC69. The dispatcher holds worldMu and guards loading,
+// battle and trade. Ascension is selected by the session's native client slot.
+func (s *Server) petRebirthCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) != protocol.PetRebirthRequestBytes {
+		return protocol.ErrMalformed
+	}
+	if p[1] != protocol.PetRebirthAscend {
+		return ErrUnsupported
+	}
+	if c.event != nil || c.storm || c.beach != nil {
+		return nil
+	}
+	slot := p[2]
+	reply := []byte{protocol.CommandPetRebirth, protocol.PetRebirthAscend, slot, protocol.PetRebirthFailed}
+	if c.pets == nil || slot == 0 {
+		return c.send(reply)
+	}
+	i := slices.IndexFunc(c.character.Pets, func(pet game.Pet) bool { return pet.ID != 0 && c.pets.slot(pet.ID) == slot })
+	if i < 0 {
+		return c.send(reply)
+	}
+	next := c.character.Clone()
+	pet := &next.Pets[i]
+	if !pet.Rebirth(s.Assets.Items, s.petTemplate(pet.ID)) {
+		message := fmt.Sprintf("[Rebirth] %s requires level %d and amity %d.", pet.Name, game.PetRebirthRequiredLevel, game.PetRebirthRequiredAmity)
+		if pet.Reborn {
+			message = fmt.Sprintf("[Rebirth] %s has already undergone Rebirth ascension.", pet.Name)
+		} else if pet.StatPoints > math.MaxUint16-game.PetRebirthBonusStatPoints {
+			message = "[Rebirth] Spend some pet stat points before receiving the rebirth bonus."
+		}
+		return s.sendAll(c, [][]byte{reply, serverwire.SystemLine(message)})
+	}
+	// Normalize before saving so reconnect sees the exact same full vitals.
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	reply[3] = protocol.PetRebirthSucceeded
+	packets := [][]byte{reply, s.petListPacket(c.character, c.pets)}
+	packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+	packets = append(packets, serverwire.SystemLine(fmt.Sprintf("[Rebirth] %s has attained Rebirth Ascension!", pet.Name)))
+	return s.sendAll(c, packets)
+}
+
+// companionRebirthCommand is the native altar operation. Opening its authored
+// service authorizes one successful request during this map visit. Commit before
+// replying and keep the form usable after a rejected selection or failed save.
+func (s *Server) companionRebirthCommand(ctx context.Context, c *Session, slot byte) error {
+	reply := func(code byte) error {
+		return c.send([]byte{protocol.CommandCompanionRebirth, protocol.CompanionRebirthRequest, code})
+	}
+	if c.view == nil || !c.view.CompanionRebirthOpen || c.event != nil || c.storm || c.beach != nil {
+		return reply(protocol.CompanionRebirthUnavailable)
+	}
+	if c.pets == nil || slot == 0 {
+		return reply(protocol.CompanionRebirthNoPet)
+	}
+	i := slices.IndexFunc(c.character.Pets, func(p game.Pet) bool { return p.ID != 0 && c.pets.slot(p.ID) == slot })
+	if i < 0 {
+		return reply(protocol.CompanionRebirthNoPet)
+	}
+	next := c.character.Clone()
+	p := &next.Pets[i]
+	if p.Reborn {
+		return reply(protocol.CompanionRebirthAlready)
+	}
+	if p.Level < game.PetRebirthRequiredLevel {
+		return reply(protocol.CompanionRebirthLevel)
+	}
+	if p.Amity < game.CompanionRebirthRequiredAmity {
+		return reply(protocol.CompanionRebirthAmity)
+	}
+	for _, item := range p.Equipment {
+		if item.ID != 0 {
+			return reply(protocol.CompanionRebirthEquipment)
+		}
+	}
+	if !p.RebirthAtAltar(s.Assets.Items, s.petTemplate(p.ID)) {
+		return reply(protocol.CompanionRebirthUnavailable)
+	}
+	id := p.ID
+	denied := errors.New("companion rebirth eligibility changed")
+	code := byte(protocol.CompanionRebirthUnavailable)
+	next, err := s.Store.MutateOwnedCharacter(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, func(stored *game.Character) error {
+		index := slices.IndexFunc(stored.Pets, func(p game.Pet) bool { return p.ID == id })
+		if index < 0 {
+			code = protocol.CompanionRebirthNoPet
+			return denied
+		}
+		pet := &stored.Pets[index]
+		if pet.Reborn {
+			code = protocol.CompanionRebirthAlready
+			return denied
+		}
+		if pet.Level < game.PetRebirthRequiredLevel {
+			code = protocol.CompanionRebirthLevel
+			return denied
+		}
+		if pet.Amity < game.CompanionRebirthRequiredAmity {
+			code = protocol.CompanionRebirthAmity
+			return denied
+		}
+		for _, item := range pet.Equipment {
+			if item.ID != 0 {
+				code = protocol.CompanionRebirthEquipment
+				return denied
+			}
+		}
+		if !pet.RebirthAtAltar(s.Assets.Items, s.petTemplate(pet.ID)) {
+			return denied
+		}
+		i = index
+		return nil
+	}, *c.character)
+	if errors.Is(err, denied) {
+		return reply(code)
+	}
+	if err != nil {
+		return err
+	}
+	s.adoptSavedCharacter(c, next)
+	p = &next.Pets[i]
+	c.view.CompanionRebirthOpen = false
+	packets := [][]byte{{protocol.CommandCompanionRebirth, protocol.CompanionRebirthRequest, protocol.CompanionRebirthSuccess}, s.petListPacket(c.character, c.pets)}
+	packets = append(packets, p.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(p.ID))...)
+	return s.sendAll(c, packets)
+}
+
+func mountedPet(c *game.Character) *game.Pet {
+	if c.ActiveMount == 0 {
+		return nil
+	}
+	if i, ok := c.Pet(c.ActiveMount); ok {
+		return &c.Pets[i]
+	}
+	return nil
+}
+
+// mountCommand is AC15:11/12. Caller holds worldMu and has checked readiness and
+// battle state. Unlike the legacy handler, stale client slot/ID pairs are ignored.
+func (s *Server) mountCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) < 2 {
+		return protocol.ErrMalformed
+	}
+	if p[1] != 11 && p[1] != 12 {
+		return ErrUnsupported
+	}
+	if len(p) != 7 {
+		return protocol.ErrMalformed
+	}
+	r := protocol.NewReader(p[2:])
+	slot, id := r.U8(), r.U32()
+	if r.Err() != nil {
+		return r.Err()
+	}
+	i, ok := c.character.Pet(id)
+	if !ok || slot == 0 || c.pets.slot(c.character.Pets[i].ID) != slot {
+		return nil
+	}
+	pet := c.character.Pets[i]
+	next := c.character.Clone()
+	var packets [][]byte
+	if p[1] == 11 {
+		if c.character.ActiveVehicle != 0 {
+			return nil
+		}
+		next.ActiveVehicle, next.VehicleSlot = 0, 0
+		next.ActiveMount = game.BroadcastID(pet.ID)
+		if next.ActiveMount == c.character.ActiveMount {
+			return nil
+		}
+		packets = [][]byte{serverwire.MountPacket(next.ID, next.ActiveMount, pet.Slot), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(next.ID).U8(0)}
+	} else {
+		if next.ActiveMount == 0 || !game.SamePet(next.ActiveMount, pet.ID) {
+			return nil
+		}
+		next.ActiveMount = 0
+		packets = serverwire.UnmountPackets(next.ID)
+	}
+	if err := s.commit(ctx, c, next); err != nil {
+		return err
+	}
+	for _, packet := range packets {
+		s.broadcastWorld(c, packet)
+	}
+	return s.sendAll(c, packets)
 }

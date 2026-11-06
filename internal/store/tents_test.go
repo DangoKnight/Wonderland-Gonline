@@ -16,14 +16,14 @@ func TestTentFurnitureAtomicOwnershipMetadataAndOrdinalIndex(t *testing.T) {
 	}
 	chars, _ := s.Characters(ctx, refs[0].Account)
 	expected := chars[0].Bag[0]
-	if _, err = s.PlaceTentItem(ctx, refs[1], 1, 40, 45, expected, items); err == nil {
+	if _, err = s.PlaceTentItem(ctx, refs[1], 1, 50, 60, expected); err == nil {
 		t.Fatal("another owner wrote furniture")
 	}
-	next, err := s.PlaceTentItem(ctx, refs[0], 1, 40, 45, expected, items)
+	next, err := s.PlaceTentItem(ctx, refs[0], 1, 50, 60, expected)
 	if err != nil || next.Bag[0].Count != 9 {
 		t.Fatal(next, err)
 	}
-	if _, err = s.PlaceTentItem(ctx, refs[0], 1, 40, 45, expected, items); !errors.Is(err, game.ErrTradeChanged) {
+	if _, err = s.PlaceTentItem(ctx, refs[0], 1, 50, 60, expected); !errors.Is(err, game.ErrTradeChanged) {
 		t.Fatal("stale placement accepted", err)
 	}
 	_, _, err = s.PickUpTentItem(ctx, refs[0], 0, items)
@@ -31,11 +31,11 @@ func TestTentFurnitureAtomicOwnershipMetadataAndOrdinalIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The remaining furniture is stored at PK slot 1, but its wire index is 0.
-	if err = s.MoveTentItem(ctx, refs[0], 0, 41, 46, 0, 2, items); err != nil {
+	if err = s.MoveTentItem(ctx, refs[0], 0, 99, 88, 0, 2); err != nil {
 		t.Fatal(err)
 	}
 	home, err = s.Tent(ctx, refs[0].ID)
-	if err != nil || len(home.Items) != 1 || home.Items[0].Slot != 1 || home.Items[0].X != 41 || home.Items[0].Rotation != 2 || home.Items[0].Damage != 3 || home.Items[0].Metadata[4] != 99 {
+	if err != nil || len(home.Items) != 1 || home.Items[0].Slot != 1 || home.Items[0].X != 99 || home.Items[0].Rotation != 2 || home.Items[0].Damage != 3 || home.Items[0].Metadata[4] != 99 {
 		t.Fatal(home, err)
 	}
 	if err = s.UpdateCharacter(ctx, refs[0].Account, refs[0].ID, func(c *game.Character) error {

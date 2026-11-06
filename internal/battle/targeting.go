@@ -1,7 +1,6 @@
 package battle
 
 import (
-	"math"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -35,7 +34,7 @@ func formationTargets(side []*Fighter, selected *Fighter, shape assets.SkillTarg
 	var result []*Fighter
 	seen := map[*Fighter]bool{}
 	add := func(f *Fighter) {
-		if f != nil && !f.Captured && !seen[f] && (includeDead || !f.Dead()) && len(result) < assets.MaxBattleSideTargets {
+		if f != nil && !f.Joining && !f.Captured && !f.Withdrawn && !f.Overkilled && !seen[f] && (includeDead || !f.Dead()) && len(result) < assets.MaxBattleSideTargets {
 			seen[f] = true
 			result = append(result, f)
 		}
@@ -79,7 +78,7 @@ func areaRecord(p protocol.Builder, actor *Fighter, skill uint16, results []targ
 	}
 	return p
 }
-func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defending map[int]bool) []Step {
+func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 	if a.Actor == nil || a.Actor.Absent || !r.CanUse(a.Actor, a.Skill) {
 		return nil
 	}
@@ -97,40 +96,50 @@ func (r Rules) areaAttack(b *Battle, a Action, shape assets.SkillTargeting, defe
 	if selected == nil {
 		return nil
 	}
-	targets := formationTargets(enemies, selected, shape, false)
+	targets := skillTargets(enemies, selected, r.Skills[a.Skill], skillGrade(a.Actor, a.Skill), false)
 	packets := [][]byte{turnPacket(a.Actor), r.spend(a.Actor, a.Skill)}
+	a.supporters = a.Actor.consumeSupport()
 	var results []targetResult
-	var defeated [][]byte
+	var overkills []*Fighter
+	a.SkillEXP = game.CombatSkillEXPPerUse
 	for _, target := range targets {
 		result := targetResult{target: target, result: protocol.BattleHitMiss, stat: game.StatCurrentHP, mode: effectNormalHitMode}
 		if !r.attackMisses(a.Actor, target, a.Skill) {
 			result.result = protocol.BattleHitLanded
 			result.defended = defending[target.key()]
 			result.amount, result.mode = r.strikeDamage(a, target, result.defended, 1)
+			if target == selected {
+				a.SkillEXP = game.CombatSkillEXP(result.amount, target.HP, target.MaxHP)
+			}
+			if r.ExperienceFormula == game.BattleEXPParticipation {
+				b.recordExperienceDamage(target, a.Actor, result.amount)
+			}
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
-			if target.Dead() {
-				defeated = append(defeated, []byte{protocol.CommandBattleEffect, protocol.BattleEffectDefeated, target.X, target.Y})
+			if target.Overkilled {
+				overkills = append(overkills, target)
 			}
 		}
 		results = append(results, result)
 	}
 	packets = append(packets, areaRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, a.Actor, a.Skill, results))
 	steps := []Step{{Packets: packets, Delay: r.Delay(a.Skill, a.Kind), SkillUses: []Action{a}}}
-	if len(defeated) > 0 {
-		steps = append(steps, Step{Packets: defeated})
+	if r.RewardKill != nil || r.ExperienceFormula == game.BattleEXPParticipation {
+		for _, result := range results {
+			if result.result == protocol.BattleHitLanded && result.target.Dead() {
+				steps = r.appendKillReward(b, steps, result.target, []Action{a})
+			}
+		}
 	}
+	steps = b.appendOverkills(steps, overkills...)
 	return steps
 }
 
 func (r Rules) strikeDamage(a Action, target *Fighter, defending bool, participants int) (int, byte) {
 	actor := a.Actor
-	dmg := r.baseDamage(actor, target, a.Skill, r.Next(1, 6))
-	dmg = max(1, int(min(float64(dmg)*Elemental(actor.Element, target.Element), math.MaxInt32)))
+	roll := r.Next(1, 6)
+	dmg := clampDamage(r.damageBase(actor, target, a.Skill) * r.damageElement(actor, target, a.Skill, defending, participants))
 	dmg = max(1, actor.modified(assets.EffectDamageDealt, dmg))
-	if participants > 1 {
-		dmg = int(min(float64(dmg)*r.comboDamageMultiplier(participants), math.MaxInt32))
-	}
 	// Players and pets use their own equipment's critical chance.
 	crit := false
 	var equipment *game.Equipment
@@ -144,11 +153,8 @@ func (r Rules) strikeDamage(a Action, target *Fighter, defending bool, participa
 		d, crit = r.Critical.Damage(int32(dmg), equipment.IDs(), a.Kind, r.Next(0, 100))
 		dmg = int(d)
 	}
-	guarded := defending
 	dmg = max(1, r.incomingDamage(target, a.Skill, dmg))
-	if guarded {
-		dmg = max(1, dmg/2)
-	}
+	dmg = clampDamage(float64(dmg) + float64(roll))
 	mode := byte(effectNormalHitMode)
 	if crit {
 		mode = effectCriticalHitMode // Enlarged critical digits.

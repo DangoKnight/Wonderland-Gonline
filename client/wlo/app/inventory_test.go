@@ -128,10 +128,10 @@ func TestInventoryDragAndEquipment(t *testing.T) {
 	c.dispatch([]byte{23, 16, 1, 1})
 	c.dispatch([]byte{23, 212, 255, 1, 100, 0, 1})
 	before := len(sent)
-	if !c.Inventory.Dialog.Visible || len(sent) != before {
+	if c.UI.Modal == nil || len(sent) != before {
 		t.Fatal("destroy was not confirmed")
 	}
-	c.Inventory.Dialog.Count.OnEnter()
+	c.UI.Modal.Base().Children[0].(*seui.FixedButton).OnClick()
 	if len(sent) != before+1 || !bytes.Equal(sent[len(sent)-1], []byte{23, 124, 1, 1, 0}) {
 		t.Fatal("destroy confirmation", sent)
 	}
@@ -155,7 +155,7 @@ func TestInventoryDisconnectClosesQuantity(t *testing.T) {
 		t.Fatal("no confirmation")
 	}
 	c.disconnected()
-	if c.Inventory.Visible || c.UI.Modal != nil || c.Inventory.Dialog.Visible {
+	if c.Inventory.Visible || c.UI.Modal != nil || (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) {
 		t.Fatal("inventory modal blocked reconnect")
 	}
 }
@@ -168,11 +168,11 @@ func TestInventoryQuantityDoesNotBlockMinigame(t *testing.T) {
 	c.InventoryState.Bag[0] = game.Item{ID: 100, Count: 1}
 	c.dispatch([]byte{23, 212, 255, 1, 100, 0, 1})
 	c.dispatch(moleStart)
-	if c.Inventory.Dialog.Visible || c.UI.Modal != nil || c.Inventory.Visible {
+	if (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) || c.UI.Modal != nil || c.Inventory.Visible {
 		t.Fatal("inventory confirmation blocks game")
 	}
 	c.dispatch([]byte{57, 2})
-	if !c.Inventory.Visible || c.Inventory.Dialog.Visible {
+	if !c.Inventory.Visible || (c.Inventory.Dialog != nil && c.Inventory.Dialog.Visible) {
 		t.Fatal("stale confirmation restored with HUD")
 	}
 }
@@ -279,6 +279,31 @@ func TestInventoryNativePresentation(t *testing.T) {
 	}
 }
 
+func TestInventoryMultiSlotHoverThroughUI(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.mapReady = true
+	c.Inventory.Show()
+	c.InventoryState.Bag = game.Inventory{{ID: 48016, Count: 1}}
+	c.inventoryPacket([]byte{23, 5}) // Load the confirmed bag's native item pictures.
+	if w, h := c.items[48016].Definition.Footprint(); w != 4 || h != 3 {
+		t.Fatal("raft asset footprint", w, h)
+	}
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 4; col++ {
+			slot := c.Inventory.Slots[row*game.BagColumns+col]
+			a := slot.Abs()
+			c.Input.X, c.Input.Y, c.Input.Hovered = a.X+10, a.Y+10, nil
+			c.Frame()
+			if c.Input.Hovered != c.Inventory.Slots[0] || string(c.Inventory.Slots[0].HintText) != c.items[48016].Definition.Name {
+				t.Fatal("raft cell did not resolve to shared item details", row, col)
+			}
+		}
+	}
+	if out := os.Getenv("INVENTORY_HOVER_SNAPSHOT"); out != "" {
+		savePNG(t, out, c)
+	}
+}
+
 func TestInventoryOriginalSampleSnapshot(t *testing.T) {
 	out := os.Getenv("INVENTORY_REFERENCE_SNAPSHOT")
 	if out == "" {
@@ -313,7 +338,7 @@ func TestInventoryOriginalSampleSnapshot(t *testing.T) {
 
 // Move quantities follow confirmed source counts and remaining stack space.
 func TestInventoryInteractionSamples(t *testing.T) {
-	c, _, _ := enteredClient(t)
+	c, now, _ := enteredClient(t)
 	c.mapReady = true
 	c.Inventory.Show()
 	f := c.Inventory
@@ -328,6 +353,8 @@ func TestInventoryInteractionSamples(t *testing.T) {
 	if c.Input.Focused == f.Dialog.Count {
 		t.Fatal("quantity editor acquired unsolicited focus")
 	}
+	// Compare the authored skin once its decorative opening has completed.
+	*now = now.Add(seui.MessageOpenDuration)
 	c.Pics.Draw(c.Screen, f.Dialog.Image, f.Dialog.Left, f.Dialog.Top, true)
 	before := append([]uint16(nil), c.Screen.Pix...)
 	f.Dialog.Paint()
@@ -434,8 +461,9 @@ func TestInventorySelectedConsumableAndReplies(t *testing.T) {
 	if c.Inventory.UseDialog == nil || !c.Inventory.UseDialog.Visible {
 		t.Fatal("Potential Pill must retain its own confirmation")
 	}
+	c.Inventory.UseDialog.SelectTarget(0)
 	for _, child := range c.Inventory.UseDialog.Children {
-		if b, ok := child.(*seui.FixedButton); ok && b.Image == c.Pics.Find("Btn_OK_1") {
+		if b, ok := child.(*seui.FixedButton); ok && b.Image == c.Pics.Find("Btn_confirm_1") {
 			inventoryClick(t, c, b)
 			break
 		}

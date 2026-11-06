@@ -1,0 +1,202 @@
+[
+  {
+    "template": 15657,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 11124
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14162,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 10063
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14156,
+    "equipment": [
+      {
+        "slot": 5,
+        "item_id": 25028
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14081,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 14073
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 12095,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 11109
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14175,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 18065
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 12068,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 11100
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14230,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 20044
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14274,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 11119
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14637,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 15059
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14548,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 13067
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 15689,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 10075
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14615,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 14074
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 12147,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 20046
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 35253,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 11143
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14243,
+    "equipment": [
+      {
+        "slot": 5,
+        "item_id": 25537
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 14242,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 12085
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 12148,
+    "equipment": [
+      {
+        "slot": 2,
+        "item_id": 12503
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 12149,
+    "equipment": [
+      {
+        "slot": 5,
+        "item_id": 25630
+      }
+    ],
+    "allow_missing": true
+  },
+  {
+    "template": 17914,
+    "equipment": [
+      {
+        "slot": 5,
+        "item_id": 25534
+      }
+    ],
+    "allow_missing": true
+  }
+]

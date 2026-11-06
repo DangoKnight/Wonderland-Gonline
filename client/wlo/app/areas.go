@@ -32,7 +32,7 @@ type areaWatch struct {
 
 // areaTick is FUN_00303ff4's area part.
 func (c *Client) areaTick() {
-	if c.World == nil || c.movie != nil || !c.mapReady {
+	if c.World == nil || c.movie != nil || c.mapLoading.active || !c.mapReady {
 		return
 	}
 	now, p := c.Now(), c.World.Player

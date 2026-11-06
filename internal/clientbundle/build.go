@@ -21,6 +21,8 @@ import (
 
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientimage"
+	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/clienttext"
 )
 
 const Version = 1
@@ -40,8 +42,9 @@ type Entry struct {
 	Bytes        int64  `json:"bytes"`
 }
 type Manifest struct {
-	Version int              `json:"version"`
-	Files   map[string]Entry `json:"files"`
+	Version             int              `json:"version"`
+	Files               map[string]Entry `json:"files"`
+	TextOverridesSHA256 string           `json:"text_overrides_sha256,omitempty"`
 }
 type Options struct {
 	Source, Output, Contract string
@@ -64,6 +67,11 @@ func digest(data []byte) string { h := sha256.Sum256(data); return hex.EncodeToS
 // Build replaces only a complete, validated bundle. Existing compressed entries
 // are copied directly when source content has not changed, regardless of mtime.
 func Build(o Options) (result Result, err error) {
+	if o.group == "" {
+		if err := clienttext.CompileDirectory(o.Source); err != nil {
+			return result, err
+		}
+	}
 	contract := Contract{Version: Version, Images: map[string]Dimensions{}}
 	if o.Contract != "" {
 		raw, e := os.ReadFile(o.Contract)
@@ -96,6 +104,10 @@ func Build(o Options) (result Result, err error) {
 			return e
 		}
 		rel = filepath.ToSlash(rel)
+		// Always compile from original exports, never a stale loose projection.
+		if strings.HasPrefix(rel, clientruntime.TextDirectory+"/") {
+			return nil
+		}
 		if o.group != "" && strings.HasPrefix(filepath.Base(rel), ".") {
 			return nil
 		}
@@ -207,6 +219,13 @@ func Build(o Options) (result Result, err error) {
 		}
 	}
 	sourceHashes := map[string]string{}
+	textFingerprint := ""
+	for _, name := range files {
+		if clienttext.IsExport(name) {
+			textFingerprint = clienttext.Fingerprint()
+			break
+		}
+	}
 	unchanged := z != nil && len(old.Files) == len(files)
 	for _, name := range files {
 		hash, e := hashFile(filepath.Join(o.Source, filepath.FromSlash(name)))
@@ -216,7 +235,7 @@ func Build(o Options) (result Result, err error) {
 		sourceHashes[name] = hash
 		result.SourceBytes += sizes[name]
 		f := previous[name]
-		if f == nil || old.Files[name].SourceSHA256 != hash {
+		if f == nil || old.Files[name].SourceSHA256 != hash || clienttext.IsExport(name) && old.TextOverridesSHA256 != textFingerprint {
 			unchanged = false
 			continue
 		}
@@ -244,12 +263,17 @@ func Build(o Options) (result Result, err error) {
 	defer out.Close()
 	writer := zip.NewWriter(out)
 	defer writer.Close()
-	manifest := Manifest{Version: Version, Files: map[string]Entry{}}
+	manifest := Manifest{Version: Version, Files: map[string]Entry{}, TextOverridesSHA256: textFingerprint}
 	for _, name := range files {
 		path := filepath.Join(o.Source, filepath.FromSlash(name))
+		sourcePath := path
+		if o.group == "" && clienttext.IsExport(name) {
+			rel, _ := clientruntime.TextPath(name)
+			path = filepath.Join(o.Source, rel)
+		}
 		sourceHash := sourceHashes[name]
 		var e error
-		if prev, ok := old.Files[name]; ok && prev.SourceSHA256 == sourceHash && previous[name] != nil {
+		if prev, ok := old.Files[name]; ok && prev.SourceSHA256 == sourceHash && previous[name] != nil && (!clienttext.IsExport(name) || old.TextOverridesSHA256 == textFingerprint) {
 			copyFile := *previous[name]
 			copyFile.Extra = withoutZIP64(copyFile.Extra)
 			if e = writer.Copy(&copyFile); e != nil {
@@ -301,7 +325,7 @@ func Build(o Options) (result Result, err error) {
 			return result, e
 		}
 		// Reject a source edited while it was being compiled.
-		current, e := hashFile(path)
+		current, e := hashFile(sourcePath)
 		if e != nil {
 			return result, e
 		}

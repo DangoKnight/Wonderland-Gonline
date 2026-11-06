@@ -43,6 +43,7 @@ const (
 	CommandHotbar             = 40 // Native AC40:1 hotbar bindings (seven bytes).
 	CommandBank               = 45
 	CommandBattleAction       = 50
+	CommandBattleStat         = 51
 	CommandBattleReady        = 52
 	CommandMonsterBook        = 53 // Outbound discovery; AC53:9 carries a template ID.
 	CommandBattleEffect       = 53
@@ -62,6 +63,7 @@ const (
 	CommandPackContents       = 91
 	CommandLuckyDraw          = 104
 	CommandMovie              = 186
+	CommandGonlineCombat      = 254 // Negotiated Gonline transport; never sent without opt-in.
 )
 
 // Discovery subcommands (AC0).
@@ -69,6 +71,9 @@ const (
 	// Native AC0:19 displays "Repeated Login" when the rejected socket closes.
 	DiscoveryAlreadyLoggedIn           = 19
 	DiscoveryCharacterCreationRejected = 30
+	HandshakeCompactCreationResult     = 3
+	CompactCreationSucceeded           = 0
+	CompactCreationFailed              = 1
 	// Unresolved wire meaning; retain the numeric code until verified.
 	DiscoveryWireCode32 = 32
 )
@@ -81,6 +86,17 @@ const (
 	HandshakeWireCode6         = 6
 	HandshakeServerDescription = 9
 	HandshakeWorldReady        = 11
+	HandshakeCombatOffer       = 240
+	HandshakeCombatAccept      = 241
+	HandshakeCombatEnabled     = 242
+	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
+	HandshakeBackdropOffer     = 244
+	HandshakeBackdropAccept    = 245
+	HandshakeBackdropEnabled   = 246
+	HandshakeBackdropLocation  = 247
+	HandshakeConnectionOffer   = 248
+	HandshakeConnectionAccept  = 249
+	HandshakeConnectionEnabled = 250
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -102,7 +118,7 @@ const (
 // CharacterState subcommands (AC5).
 const (
 	CharacterStateEquipmentSnapshot = 0
-	CharacterStateRepairEffect      = 5
+	CharacterStateShapeshift        = 5
 	// Unresolved wire meaning; retain the numeric code until verified.
 	CharacterStateWireCode3     = 3
 	CharacterStateRefresh       = 4
@@ -178,7 +194,12 @@ const (
 	BattleStateInitialize    = 10
 	BattleStateFinish        = 12
 	BattleStateFormation     = 250
+	BattleExitRequest        = 3 // Inbound AC11:1:3, an escape command rather than an escape result.
 )
+
+// AC11:5 entry mode, FUN_0039108c: native clients hide the participant and reject direct selection
+// until AC52:1 clears its unavailable flag (FUN_0039783c). Side comes from grid.
+const BattleParticipantWaitNextTurn = 5
 
 // Team subcommands (AC13).
 const (
@@ -189,6 +210,40 @@ const (
 	TeamRoster             = 6
 	TeamKick               = 9
 	TeamTransferLeadership = 10
+	TeamLeadershipNotice   = 15
+)
+
+// Native AC13 transfer serializer (002c4f3c) and receiver (00407304).
+const (
+	TeamMaximumMembers      = 4
+	TeamTransferOffer       = 1
+	TeamTransferResponse    = 2
+	TeamTransferTimeout     = 3
+	TeamTransferDeclined    = 2
+	TeamTransferAccepted    = 3
+	TeamLeadershipOffered   = 1
+	TeamLeadershipStatus    = 2
+	TeamLeadershipChanged   = 3
+	TeamLeadershipRefused   = 2
+	TeamLeadershipTimedOut  = 3
+	TeamLeadershipCancelled = 4
+	TeamLeadershipBusy      = 5
+)
+
+const (
+	TeamIDPacketBytes            = 6
+	TeamJoinReplyBytes           = 7
+	TeamFormationBytes           = 10
+	TeamRosterHeaderBytes        = 7
+	TeamLeaderOfferRequestBytes  = 7
+	TeamLeaderResponseBytes      = 4
+	TeamLeaderTimeoutBytes       = 3
+	TeamLeaderOfferNoticeBytes   = 7
+	TeamLeaderChangeNoticeBytes  = 11
+	TeamLeaderStatusNoticeBytes  = 4
+	TeamLeaderRefusalNoticeBytes = 8
+	TeamLeaveShortRequestBytes   = 2 // Compatibility with older migrated clients.
+	TeamLeaveNativeRequestBytes  = 6 // 002c4b69 appends the current leader U32.
 )
 
 // Social relation operations (inbound AC10) and status notifications (outbound).
@@ -224,6 +279,13 @@ const (
 	FriendsAcceptanceReply   = 9
 	FriendsAcceptanceSuccess = 0
 	FriendsTabs              = 11
+	// AC14:3's answer byte (aLogin: Yes 0x3bfc28, No FUN_003bfcb4, the
+	// question's timeout FUN_003c23e4); replies carry the same values
+	// (dispatcher case 0xe/3: " friend accepted", " refused to add",
+	// " ignored", otherwise "Player busy").
+	FriendsAnswerAccept = 1
+	FriendsAnswerRefuse = 2
+	FriendsAnswerIgnore = 3
 	// Unresolved wire meaning; retain the numeric code until verified.
 	FriendsWireCode13 = 13
 )
@@ -238,11 +300,14 @@ const (
 	PetControlRename       = 6
 	PetControlBoardVehicle = 7
 	// Unresolved wire meaning; retain the numeric code until verified.
-	PetControlWireCode8             = 8
-	PetControlBoardVehicleAlternate = 9
-	PetControlDismountVehicle       = 10
+	PetControlWireCode8          = 8
+	PetControlPlaceVehicleManual = 9 // C>S; native request case 0x002c5cde.
+	PetControlPetName            = 9 // S>C; distinct direction-specific meaning.
+	PetControlDismountVehicle    = 10
 	// Unresolved wire meaning; retain the numeric code until verified.
 	PetControlWireCode11      = 11
+	PetControlVehiclePlaced   = 12 // S>C manual placement; automatic boarding uses 18.
+	PetControlVehicleProgress = 14 // S>C wear uint32 and fuel uint16; C>S 14 places a vehicle.
 	PetControlVehicleNoOp     = 13
 	PetControlPlaceVehicle    = 14
 	PetControlRemoveVehicle   = 15
@@ -266,6 +331,7 @@ const (
 // Event subcommands (AC20).
 const (
 	EventActorClick   = 1
+	EventActorContact = 2 // Touch-only actors share the click-ID request layout.
 	EventRegion       = 4
 	EventAcknowledge  = 6
 	EventClose        = 7
@@ -277,20 +343,36 @@ const (
 	EventWireCode33 = 33
 )
 
+// Native NPC speech modes: EVE dword2 selects whether dialogue turns the actor.
+const (
+	// Older hand-authored/synthetic events omit the operand; retain their
+	// existing turn-to-player behavior. Native NPC speech uses modes 1 or 2.
+	EventTalkCompatibilityDefault = 0
+	EventTalkTurnToPlayer         = 1
+	EventTalkPreserveFacing       = 2
+)
+
+// Native movie modes: a map load releases mode 2's rendering hold.
+const (
+	EventMovieContinue       = 1
+	EventMovieHoldForMapLoad = 2
+)
+
 // Scene subcommands (AC22).
 const (
-	SceneActorState    = 1
-	SceneActorWalk     = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
-	SceneActorPosition = 4
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode7 = 7
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode8 = 8
-	// Unresolved wire meaning; retain the numeric code until verified.
-	SceneWireCode9     = 9
-	SceneActorHide     = 10 // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
-	SceneActorMovement = 11
-	SceneActorAction   = 12
+	SceneActorState      = 1
+	SceneActorFacing     = 1
+	SceneActorWalk       = 2 // Ambient NPC movement, distinct from scripted AC22:11 paths.
+	SceneActorPosition   = 4
+	SceneActorExpression = 7                    // Click UInt16, expression UInt8 (native adds 100).
+	SceneActorAnimation  = 8                    // Click UInt16, action UInt8, optional compatibility UInt8.
+	SceneWireCode7       = SceneActorExpression // Retained compatibility name.
+	SceneWireCode8       = SceneActorAnimation
+	SceneActorPose       = 9              // Actor U16, animation U8, held frame U8 (255 animates).
+	SceneWireCode9       = SceneActorPose // Retained compatibility name.
+	SceneActorHide       = 10             // Explicit actor despawn; native S.Monkey rescue uses FFFF flags.
+	SceneActorMovement   = 11
+	SceneActorAction     = 12
 )
 
 // Inventory subcommands (AC23).
@@ -299,10 +381,18 @@ const (
 	InventoryDrop             = 3
 	InventoryGroundItems      = 4
 	InventoryItems            = 5
+	InventoryAcquire          = 6 // Slotless native inventory gain, 33 bytes.
+	InventoryAcquisitionBytes = 33
+
+	// AC23:6's final byte requests an item-icon flight from the last clicked actor.
+	InventoryAcquisitionFromActor = 1
+
+	InventoryDestroyPrompt    = 7 // AC23:212 marker for undroppable items.
 	InventoryCompoundResult   = 8
 	InventoryRemove           = 9
 	InventoryMove             = 10
 	InventoryEquip            = 11
+	InventoryVacuumCollection = 73 // Native one-byte actor ID; zero stops collection.
 	InventoryUnequip          = 12
 	InventoryCompoundSuccess  = 13
 	InventoryCompound         = 14 // Primary Alchemy.
@@ -362,15 +452,55 @@ const (
 	QuestWireCode7 = 7
 )
 
-// Trade subcommands (AC25).
+// Trade subcommands (AC25), as aLogin sends and reads them (serializer case
+// 0x2cfd7c; dispatcher cases 0x2e92e6..0x2e930e). Each code means different
+// things by direction.
 const (
-	TradeRequest   = 1
-	TradeReply     = 2
-	TradeItemOffer = 3
-	TradeGoldOffer = 4
-	TradeOfferNoOp = 5
-	TradeConfirm   = 6
-	TradeCancel    = 7
+	// TradeRequest: the client asks to trade with [target u32]; the server
+	// opens both windows with [partner u32].
+	TradeRequest = 1
+	// TradeOffer: the client locks its offer, [gold u32][bag slot...];
+	// TradeEnded is the server's [result] that closes the window.
+	TradeOffer = 2
+	TradeEnded = 2
+	// TradeDecision: the client's [TradeDecisionAccept/Cancel];
+	// TradePartnerOffer is the server's [gold u32] and 30-byte item records.
+	TradeDecision     = 3
+	TradePartnerOffer = 3
+	// TradeOnlineTime tells the client whether the account may trade
+	// (dispatcher case 0x2c: 1 clears and 2 sets the player's +0x5791,
+	// which starts clear; Trade Items refuses with "Not enough online
+	// time to use!" while it is).
+	TradeOnlineTime = 0x2c
+)
+
+// AC25:44 values.
+const (
+	TradeOnlineTimeShort  = 1
+	TradeOnlineTimeEnough = 2
+)
+
+// AC25:3 client decisions (Trade button 0x368000, cancel FUN_00367dfc).
+const (
+	TradeDecisionAccept = 1
+	TradeDecisionCancel = 2
+)
+
+// AC25:2 results (FUN_003c6bd0's notices).
+const (
+	TradeResultSystemBusy      = 0  // "System busy, trade later"
+	TradeResultDisconnected    = 1  // "Player disconnected"
+	TradeResultBusy            = 2  // "Player is busy"
+	TradeResultCanceled        = 3  // "Trade canceled"
+	TradeResultCompleted       = 4  // "Trade complete"
+	TradeResultDifferentMaps   = 5  // "Players on diff maps"
+	TradeResultNotEnoughGold   = 6  // "Not enough Gold"
+	TradeResultInventoryFull   = 7  // "Player's inventory full"
+	TradeResultUnavailable     = 8  // "Can't trade now"
+	TradeResultPartnerCanceled = 9  // "Other player canceled trade"
+	TradeResultStallInUse      = 10 // "Stall is in use"
+	TradeResultAlreadyTrading  = 11 // "Can't have few trades"
+	TradeResultPetCrafting     = 14 // "Can't trade, pet is crafting"
 )
 
 // Bank/ATM operations (AC45). PIN and inter-character transfer remain unavailable.
@@ -391,15 +521,39 @@ const (
 
 // Shop subcommands (AC27).
 const (
-	ShopSell            = 2
-	ShopPropsWindow     = 3
-	ShopEquipmentWindow = 4
+	ShopSell             = 2
+	ShopBuy              = 1
+	CommandShopCatalog   = 35
+	ShopCatalogOpen      = 12
+	ShopCatalogWeapons   = 0x0001FB84
+	ShopCatalogArmor     = 0x0001FB83
+	ShopCatalogProps     = 0x0001FB85
+	ShopBuySuccess       = 0
+	ShopBuyRejected      = 1
+	ShopBuyNotEnoughGold = 2
+	ShopBuyInventoryFull = 3
+	ShopPropsWindow      = 3
+	ShopEquipmentWindow  = 4
 )
 
 // LegacyStorage subcommands (AC29).
 const (
 	// Unresolved wire meaning; retain the numeric code until verified.
 	LegacyStorageWireCode6 = 6
+	RemoteControlOpen      = 6
+
+	// Money bank counter. The client's bank form sends AC29:1 (withdraw) and
+	// AC29:2 (deposit) with the amount as a U32, and waits for AC29:7 or AC29:8
+	// to clear its in-flight flag. AC29:5 shows the window and AC29:4 publishes
+	// the account balance. Verified against aLogin's bank form.
+	MoneyBankWithdraw         = 1
+	MoneyBankDeposit          = 2
+	MoneyBankRejected         = 3 // Native bank form shows its "Bank is full.." rejection.
+	MoneyBankBankBalance      = 4
+	MoneyBankOpen             = 5
+	MoneyBankWithdrawComplete = 7
+	MoneyBankDepositComplete  = 8
+	MoneyBankAmountRequestLen = 6
 )
 
 // Storage subcommands (AC30).
@@ -431,6 +585,16 @@ const (
 	PoseBroadcast = 2
 )
 
+// Held AC32:2 poses are aLogin actions: the Emote grid's pose table
+// (0x4bd7bc) plus the facing. Lying down is grid action 4 (actions 26..27,
+// two facings); sitting is grid action 13 (actions 46..53, eight facings).
+const (
+	PoseLieFirst = 26
+	PoseLieLast  = 27
+	PoseSitFirst = 46
+	PoseSitLast  = 53
+)
+
 // Settings subcommands (AC33).
 const (
 	SettingsPK           = 1 // C->S: desired PK permission.
@@ -451,9 +615,16 @@ const (
 
 // BattleAction subcommands (AC50).
 const (
-	BattleActionAnimation = 1
-	BattleActionTurn      = 6
+	BattleActionAnimation     = 1
+	BattleActionTurn          = 6
+	BattleActionAttackRequest = 1
+	BattleActionItemRequest   = 2 // Native FUN_002c2394: cells, item ID, random trailer, bag slot, flag.
+	BattleActionDefendRequest = 4
+	BattleActionFleeRequest   = 5
 )
+
+// AC51:1 carries repeated cell X/Y, stat and U32 absolute-value records.
+const BattleStatValues = 1
 
 // BattleReady subcommands (AC52).
 const (
@@ -462,8 +633,13 @@ const (
 
 // BattleEffect subcommands (AC53).
 const (
-	BattleEffectDefeated = 3
-	BattleEffectEscape   = 5
+	BattleEffectOverkill = 3 // FUN_00393c58: remove through the upward flight state.
+	BattleEffectItemGain = 4 // Item ID, defeated cell, then recipient cell pairs.
+	// Compatibility alias. Ordinary knockouts do not send AC53:3.
+	BattleEffectDefeated  = BattleEffectOverkill
+	BattleEffectSubmitted = 5
+	// Compatibility alias for the former, misleading name. AC53:5 is an action ACK.
+	BattleEffectEscape = BattleEffectSubmitted
 )
 
 // DiscoveryChannels subcommands (AC54).
@@ -477,6 +653,9 @@ const (
 	MinigameStart  = 1
 	MinigameResult = 1
 	MinigameEnd    = 2
+	// MinigameThrow is sport kind 1, the dodgeball game, whose 57/1 carries a
+	// sixth byte: its battle scene variant.
+	MinigameThrow = 1
 )
 
 // Wire62 subcommands (AC62).
@@ -531,13 +710,6 @@ const (
 // AC15:10 has different meanings by direction.
 const PetControlVehicleMount = 10
 
-// AC25:2 reply values.
-const (
-	TradeReplyAccepted  = 1
-	TradeReplyRejected  = 2
-	TradeReplyCompleted = 4
-)
-
 // Direction-specific or context-specific requests and responses.
 const (
 	MapAcknowledgmentMapLoaded = 1
@@ -553,6 +725,9 @@ const (
 	PetHotelDeposit            = 3
 	PetHotelTransfer           = 4
 	PetHotelOpen               = 7
+	PetHotelCopyToTeam         = 5
+	PetHotelStorageUnlock      = 8
+	PetHotelModalUnlock        = 12
 	StorageWithdraw            = 1
 	StorageDeposit             = 2
 	StorageReorder             = 3
@@ -653,8 +828,45 @@ const (
 	NativeInactive                = 0
 )
 
+// AC66:2 is the server's native event-timer update. AC66 also has unrelated
+// reborn-job requests; timer updates are outbound and contain counted records.
+const (
+	CommandEventTimers    byte = 66
+	EventTimersUpdate     byte = 2
+	EventTimerHeaderBytes      = 3
+	EventTimerRecordBytes      = 10 // UInt16 timer ID followed by Float64 seconds.
+)
+
+// AC44's three-byte native request is form_NPCUpgrade. The legacy title adapter
+// uses a word operand and remains separately supported for existing Go clients.
+const (
+	CommandCompanionRebirth     = 44
+	CompanionRebirthRequest     = 1
+	CompanionRebirthOpen        = 2
+	CompanionRebirthSuccess     = 0
+	CompanionRebirthNoPet       = 2
+	CompanionRebirthLevel       = 3
+	CompanionRebirthAlready     = 6
+	CompanionRebirthAmity       = 7
+	CompanionRebirthEquipment   = 8
+	CompanionRebirthUnavailable = 255
+)
+
 const NativeDefaultRebornJob = 1
 const RebornJobMetadata = 11
+
+const (
+	CommandTeleportScroll    = 74
+	TeleportScrollRecord     = 1
+	TeleportScrollTravel     = 2
+	InventoryBambooDragonfly = 89
+)
+
+const (
+	CommandRebirthJobSelection = 79
+	RebirthJobConfirm          = 1
+	RebirthJobChange           = 2
+)
 
 // LoginSelect is retained for older callers; AC63:0 returns to the account form.
 // Deprecated: use LoginReturn. Character selection uses LoginSelectAlternate.
@@ -743,6 +955,12 @@ const (
 const (
 	BattleHitLanded = 1
 	BattleHitMiss   = 0
+	// FUN_0039b558 subtracts modes 1/2; native item recovery also uses 0.
+	BattleStatItemRecovery     = 0 // Live legacy Grape Syrup result (2026-11-03).
+	BattleStatDamage           = 1
+	BattleStatCriticalDamage   = 2
+	BattleStatRecovery         = 3
+	BattleStatCriticalRecovery = 4
 )
 
 // Companion rebirth (AC69).
@@ -795,6 +1013,7 @@ const (
 	SceneReadyNativeAckRequestBytes = 3
 	MonsterBookDiscover             = 9
 	StoryConstellationList          = 19
+	StoryConstellationAcquire       = 20 // Constellation UInt8, map actor UInt8 (zero=self).
 )
 
 // PalaceTrial preserves the AC77 request/reply envelope.
@@ -807,12 +1026,24 @@ const (
 
 // Native player stalls (AC56).
 const (
-	CommandStall = 56
-	StallOpen    = 1
-	StallClose   = 2
-	StallView    = 3
-	StallBuy     = 4
-	StallSign    = 30
+	CommandStall                  = 56
+	StallOpen                     = 1
+	StallClose                    = 2
+	StallView                     = 3
+	StallBuy                      = 4
+	StallSign                     = 30
+	InventoryStallOpen            = 30
+	InventoryStallClose           = 31
+	InventoryStallBrowse          = 32
+	InventoryStallPurchase        = 33
+	InventoryPetStallPurchase     = 63
+	InventoryVehicleStallPurchase = 68
+	InventoryPetStallBrowse       = 113
+	InventoryVehicleStallBrowse   = 133
+	InventoryStallMapState        = 31
+	InventoryStallDespawn         = 32
+	InventoryStallFormClose       = 165
+	StallItemShopType             = 1
 )
 
 // Guild gameplay (AC39), distinct from inbound chat AC2:6.
@@ -842,20 +1073,22 @@ const (
 
 // Native manufacturing (AC59). The reference wire handler selects Forge.
 const (
-	CommandGemSocket            = 37
-	GemSocketRequestBytes       = 4
-	CommandTentManufacture      = 64
-	TentManufactureStart        = 1
-	TentManufactureContinue     = 2
-	TentManufactureStop         = 3
-	TentManufactureStopped      = 4
-	TentManufactureBagComplete  = 9
-	TentManufactureStartBytes   = 5
-	TentManufactureControlBytes = 3
-	CommandManufacture          = 59
-	ManufactureRequestBytes     = 8
-	ManufactureFailed           = 0
-	ManufactureSucceeded        = 1
+	CommandGemSocket                = 37
+	GemSocketRequestBytes           = 4
+	CommandTentManufacture          = 64
+	TentManufactureStart            = 1
+	TentManufactureContinue         = 2
+	TentManufactureStop             = 3
+	TentManufactureStopped          = 4
+	TentManufactureBagComplete      = 9
+	TentManufactureStartBytes       = 5
+	TentManufactureNativeStartBytes = 6
+	TentManufactureNativeBatchBytes = 7
+	TentManufactureControlBytes     = 3
+	CommandManufacture              = 59
+	ManufactureRequestBytes         = 8
+	ManufactureFailed               = 0
+	ManufactureSucceeded            = 1
 )
 
 // Fixed Economy/Social inbound payload sizes include command and subcommand.
@@ -880,13 +1113,21 @@ const (
 	TentOpened                  = 59
 	TentOpenedStatus            = 2
 	TentPlaceFurniture          = 1
-	TentMoveFurniture           = 3
 	TentPickupFurniture         = 2
-	TentAddAccessory            = 4
-	TentFloorColor              = 14
-	TentWallpaper               = 15
-	TentPickupRequestBytes      = 4
-	TentAccessoryRequestBytes   = 5
+	TentAttachTool              = 4
+	TentFurnitureTree           = 4
+	TentToolAttached            = 5
+	TentInteriorLayout          = 12
+	TentTreeHeaderBytes         = 6
+	TentTreeItemBytes           = 57
+	TentTreeRecordBytes         = 59
+	TentNativePlaceBytes        = 15
+	TentNativePlaceFloorBytes   = 16
+	TentNativeToolBytes         = 5
+	TentNativePickupBytes       = 4
+	TentFloorSurface            = 14
+	TentWallpaperSurface        = 15
+	TentMoveFurniture           = 3
 	TentFurnitureSucceeded      = 1
 	InventoryTentFurniture      = 3
 	PresenceMapAvailable        = 255
@@ -940,4 +1181,18 @@ const (
 	InstanceLevelTooLow         = 2
 	InstanceRoomsFull           = 1
 	InstanceRejected            = 255
+)
+
+// Alternative stall adapters used by upstream clients. Incoming event controls
+// share numeric codes with unrelated outgoing event presentation frames.
+const (
+	CommandBazaar    = 53
+	BazaarOpen       = 1
+	BazaarBuy        = 2
+	BazaarClose      = 3
+	BazaarQuery      = 4
+	EventStallOpen   = 10
+	EventStallClose  = 13
+	EventStallBrowse = 14
+	EventStallBuy    = 17
 )

@@ -7,20 +7,30 @@
 /client/reference/
 __pycache__/
 
-# Regenerated local audio payloads (about 1.43 GB); indexes remain versioned.
-/data/audio/**/*.ogg
+# Client-derived tables, media, sprite payloads and manifests are regenerated
+# from the original installation. Keep local copies, documentation and the
+# server-only definitions that cannot be reconstructed from that client.
+/data/*
+!/data/README.md
+!/data/server/
+!/data/runtime/
+/data/runtime/*
+!/data/runtime/locales/
+/data/runtime/locales/*
+!/data/runtime/locales/en.json
+!/data/runtime/locales/zh-TW.json
+!/data/runtime/locales/README.md
+!/data/sprites/
+/data/sprites/*
+!/data/sprites/*.md
+!/data/pictures/
+/data/pictures/*
+!/data/pictures/*.md
 
-# Generated image and native sprite payloads stay local; JSON metadata is tracked.
-/data/**/*.png
-/data/sprites/**/*.jma
-
-# Decoded PCM sound/voice/video audio remains local with image payloads.
-/data/**/*.wav
-/data/**/*.WAV
-
-# Preserved video containers remain local with other media payloads.
-/data/**/*.avi
-/data/**/*.AVI
+# Generated native-resource inventories and first-build PNG dimension baseline.
+/client/assets-manifest.json
+/client/asset-packages.json
+/client/asset-contract.json
 
 # Documented data mining
 /docs/References/*

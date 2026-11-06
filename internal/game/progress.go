@@ -44,8 +44,12 @@ func (c *Character) AddExp(amount uint64) int {
 
 // ExpPacket is SendExp: AC8:1 stat 36 carries total EXP as 64 bits.
 func (c Character) ExpPacket() []byte {
-	return protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatTotalEXP, protocol.StatsValueAbsolute}.U64(uint64(c.EXP))
+	return protocol.Builder{protocol.CommandStats, protocol.StatsStatUpdate, StatTotalEXP, protocol.StatsValueAbsolute}.U64(min(uint64(c.EXP), NativeMaxDisplayedEXP))
 }
+
+// The native client's EXP display is bounded separately from durable progression.
+// Explicit stat 35 carries the true level beyond that display limit.
+const NativeMaxDisplayedEXP uint64 = 0x76F1D017
 
 // Refill sets HP and SP to the equipped maxima, as Send8_1(levelup) does.
 func (c *Character) Refill(items map[uint16]ItemDefinition, growth ...ElementalGrowth) {

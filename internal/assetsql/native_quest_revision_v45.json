@@ -1,0 +1,22 @@
+{
+  "id": "native_quest_backdrop_v45",
+  "append": [
+    {
+      "when_any_present": [
+        "robbery_hide_companion",
+        "robbery_show_actors"
+      ],
+      "rule": {
+        "id": "kelan_xaolan_house_battle_background",
+        "kind": "battle_background",
+        "scope": {
+          "maps": [
+            12002
+          ],
+          "allow_missing": true
+        },
+        "value": 140
+      }
+    }
+  ]
+}

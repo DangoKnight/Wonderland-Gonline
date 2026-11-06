@@ -1,6 +1,7 @@
 package world
 
 import (
+	"slices"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
@@ -15,30 +16,43 @@ type rule struct {
 	actions    []assets.Operation
 }
 
-// rules groups PreEvent branches: a branch with actions starts a rule, and following
-// branches without actions add AND conditions to it.
+// rules uses the authored condition count. Unrelated condition-only records must
+// not attach themselves to the preceding rule (reference revisions fd63dac/0966c3d).
 func rules(ev assets.Event) []rule {
 	var out []rule
-	for _, br := range ev.Branches {
-		if len(br.Operations) > 0 || len(out) == 0 {
-			out = append(out, rule{conditions: [][21]byte{br.Condition}, actions: br.Operations})
-		} else {
-			last := &out[len(out)-1]
-			last.conditions = append(last.conditions, br.Condition)
+	for i, br := range ev.Branches {
+		if len(br.Operations) == 0 {
+			continue
+		}
+		count := 1 + DecodeCond(br.Condition).ExtraConditions()
+		if i+count > len(ev.Branches) {
+			continue // Truncated conditions cannot authorize an action.
+		}
+		r := rule{actions: br.Operations}
+		valid := true
+		for j := i; j < i+count; j++ {
+			if j > i && len(ev.Branches[j].Operations) != 0 {
+				valid = false
+			}
+			r.conditions = append(r.conditions, ev.Branches[j].Condition)
+		}
+		if valid {
+			out = append(out, r)
 		}
 	}
 	return out
 }
 
-func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event) []rule {
+func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event, views ...*View) []rule {
 	all := rules(ev)
 	// Sealed Bead's type-6 fallback must not override its quest-specific rules.
-	if mapID != game.MapID12508 || ev.ClickID != 2 {
+	policy, configured := w.StoryFirst(assets.StoryPreFallback, c, nil, StoryContext{Map: mapID, Event: ev.ClickID})
+	if !configured {
 		return all
 	}
 	specific := false
 	for _, r := range all {
-		if w.ruleMatches(c, mapID, r) && r.conditions[0][0] != 6 {
+		if w.ruleMatches(c, mapID, r, views...) && r.conditions[0][0] != byte(policy.Value) {
 			specific = true
 		}
 	}
@@ -47,16 +61,16 @@ func (w *World) applicable(c *game.Character, mapID uint16, ev assets.Event) []r
 	}
 	out := all[:0:0]
 	for _, r := range all {
-		if !(len(r.conditions) == 1 && r.conditions[0][0] == 6) {
+		if !(len(r.conditions) == 1 && r.conditions[0][0] == byte(policy.Value)) {
 			out = append(out, r)
 		}
 	}
 	return out
 }
 
-func (w *World) ruleMatches(c *game.Character, mapID uint16, r rule) bool {
+func (w *World) ruleMatches(c *game.Character, mapID uint16, r rule, views ...*View) bool {
 	for _, cond := range r.conditions {
-		if !w.preEventCondition(c, mapID, cond) {
+		if !w.preEventCondition(c, mapID, cond, views...) {
 			return false
 		}
 	}
@@ -87,15 +101,15 @@ func questActive(c *game.Character, id uint16) (game.Quest, bool) {
 }
 
 // preEventCondition is MatchesPreEventCondition: no event context.
-func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte) bool {
-	kind, w1, w2, w3, w4, w5, w6 := d[0], le16(d[:], 1), le16(d[:], 3), le16(d[:], 5), le16(d[:], 7), le16(d[:], 9), le16(d[:], 11)
-	// Holy's wine delivery conceals the record keeper only during an active delivery.
-	if mapID == game.MapID11013 && kind == 5 && w1 == 13056 && w2 == 1 && w3 == 1 && w4 == 0x0301 && w5 == 0 && w6&255 == 0 {
-		if q, ok := questActive(c, 13056); !ok || q.Step == 0 {
-			return false
-		}
+func (w *World) preEventCondition(c *game.Character, mapID uint16, d [21]byte, views ...*View) bool {
+	var view *View
+	if len(views) > 0 {
+		view = views[0]
 	}
-	return w.condition(c, nil, mapID, nil, d)
+	if r, ok := w.StoryFirst(assets.StoryPreCondition, c, view, StoryContext{Map: mapID, Raw: &d}); ok {
+		return r.Value != 0
+	}
+	return w.condition(c, view, mapID, nil, d)
 }
 
 // condition is EveEventRuntime.MatchesCondition. ev is nil for PreEvents.
@@ -113,9 +127,13 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 	case ConditionEmptyOperands:
 		return w1 == 0 && w2 == 0 && w3 == 0 && w4 == 0
 	case ConditionQuest:
-		q, active := questActive(c, w1)
+		q, exists := c.Quests[uint32(w1)]
+		active := exists && (q.State == game.InProgress || q.State == game.Completed)
 		if w2 == 2 {
-			return !active
+			if op == 0 {
+				return !exists || q.State != game.InProgress
+			}
+			return compare(int64(questState(c, w1)), value, op)
 		}
 		if w2 != 1 {
 			return false
@@ -123,10 +141,38 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		mark := int64(0)
 		if active {
 			mark = int64(q.Step)
+			if q.State == game.Completed && mark == 0 {
+				mark = 1
+			}
+		}
+		// A positive inequality on an in-progress mark requires that mark
+		// to be running. An absent or archived quiz score is not a failed
+		// attempt; completing Noa's retry branch archives the old score.
+		if op == CompareNotEqual && value > 0 && (!exists || q.State != game.InProgress) {
+			return false
+		}
+		if !active && (op == CompareLessOrEqual || (op == CompareLess && value > 1) || op == CompareGreater || op == CompareGreaterOrEqual) {
+			return false
 		}
 		return compare(mark, value, op)
 	case ConditionSubject:
 		switch w1 {
+		case SubjectBodyOrGender:
+			switch w2 {
+			case game.BodySmallMale, game.BodySmallFemale, game.BodyBigMale, game.BodyBigFemale:
+				return c.Body == w2
+			}
+			male := c.Body == game.BodySmallMale || c.Body == game.BodyBigMale
+			return (w2 == GenderMale && male) || (w2 == GenderFemale && !male)
+		case SubjectElement, SubjectRebornJob:
+			actual := uint16(c.Element)
+			if w1 == SubjectRebornJob {
+				actual = uint16(c.Job)
+			}
+			if op == CompareNotEqual {
+				return actual != w2
+			}
+			return actual == w2
 		case 1:
 			switch w2 {
 			case 1:
@@ -158,9 +204,15 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 				return present
 			case 2:
 				return !present
-			case 3:
-				// The only 2/2/3 record is Clive's prison branch with the active-Clive alternative.
-				return ev != nil && mapID == game.MapID11050 && ev.ClickID == 1 && w3 == 14175 && present
+			case CompanionConditionPrisonPresence, CompanionConditionCaptureAbsence:
+				// These legacy operands are enabled only by reviewed SQL contracts:
+				// Clive's prison presence and the Sledge Wolf capture encounter.
+				event := uint16(0)
+				if ev != nil {
+					event = ev.ClickID
+				}
+				r, ok := w.StoryFirst(assets.StoryCondition, c, v, StoryContext{Map: mapID, Event: event, Raw: &d})
+				return ok && r.Value != 0
 			case 5:
 				return compare(int64(max(0, game.MaxPets-len(c.Pets))), value, op)
 			case 6:
@@ -212,7 +264,11 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		return compare(grade, value, op)
 	case ConditionWaterGathering:
 		// Only the four verified water timers have native condition semantics.
-		if !game.IsWaterGatheringTimer(w1) || w2 < 1 || w2 > 2 || w3 != 0 || w4 != 0 || w5 != 0 || w6&255 != 0 {
+		known := slices.Contains(w.catalog.EventGathering.Timers, w1)
+		if w.catalog.EventGathering.Timers == nil {
+			known = game.IsWaterGatheringTimer(w1)
+		}
+		if !known || w2 < 1 || w2 > 2 || w3 != 0 || w4 != 0 || w5 != 0 || w6&255 != 0 {
 			return false
 		}
 		return c.EventTimerActive(w1, now) == (w2 == 1)
@@ -224,27 +280,73 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 		if v != nil {
 			team += int64(v.Team.Load())
 		}
-		return ev != nil && mapID == game.MapID11052 && ev.ClickID == 3 && w1 == 1 && w2 == 0 && w3 == 0 && compare(team, value, op)
-	case ConditionCompanionEquipment:
-		// EveEventRuntime enables only Elin's three authored weapon gates.
-		if mapID != storyElinWeaponMap || w1 != storyElinTemplate ||
-			!((w2 == storyElinNativeWeaponOperand4 && w3 == storyElinOriginalWeapon) ||
-				(w2 == storyElinNativeWeaponOperand1 && w3 == storyElinReplacementWeapon)) {
+		return w1 == 1 && w2 == 0 && w3 == 0 && compare(team, value, op)
+	case ConditionMissionVariable:
+		actual := int64(0)
+		if v != nil {
+			actual = int64(v.MissionVariables[w1])
+		}
+		return (w2 == MissionVariableAdd && compare(actual, value, op)) || (w2 == MissionVariableAbsent && actual == 0)
+	case ConditionCompanionRebirth:
+		return w1 == uint16(c.CompanionRebirthState())
+	case ConditionPlayerEquipment:
+		// FUN_0049c76c converts EVE 16 to native condition 22: equipment
+		// selector, item identity and equality comparison; no quantity operand.
+		if w1 < PlayerEquipmentFirstSelector || w1 > PlayerEquipmentLastSelector || w3 != 0 || value != 0 || (op != CompareEqual && op != CompareNotEqual) {
 			return false
 		}
-		index, present := c.Pet(storyElinTemplate)
-		return present && compare(int64(c.Pets[index].Equipment[storyWeaponEquipmentIndex].ID), int64(w3), op)
-	case ConditionFreeBagSlots:
-		free := int64(0)
-		for _, it := range c.Bag {
-			if it.ID == 0 {
-				free++
-			}
+		return (c.Equipment[w1-PlayerEquipmentFirstSelector].ID == w2) == (op == CompareEqual)
+	case ConditionCompanionEquipment:
+		event := uint16(0)
+		if ev != nil {
+			event = ev.ClickID
 		}
-		return w1 == 1 && compare(free, value, op)
+		policy, allowed := w.StoryFirst(assets.StoryEquipmentGate, c, v, StoryContext{Map: mapID, Event: event, Raw: &d})
+		if !allowed {
+			return false
+		}
+		index, present := c.Pet(uint32(w1))
+		slot := int(policy.Value)
+		return present && slot >= 0 && slot < len(c.Pets[index].Equipment) && compare(int64(c.Pets[index].Equipment[slot].ID), int64(w3), op)
+	case ConditionFreeBagSlots:
+		return w.inventoryCapacity(c, w1, w2, w3, value, op)
 	}
 	// Unknown condition types never authorize rewards.
 	return false
+}
+
+func (w *World) inventoryCapacity(c *game.Character, selector, item, reserved uint16, value int64, comparison byte) bool {
+	if reserved != 0 {
+		return false
+	}
+	cells, err := c.Bag.Occupancy(w.catalog.Items)
+	if err != nil {
+		return false
+	}
+	if selector == BagCapacityFreeCells {
+		if item != 0 {
+			return false
+		}
+		free := int64(0)
+		for _, anchor := range cells {
+			if anchor == 0 {
+				free++
+			}
+		}
+		return compare(free, value, comparison)
+	}
+	if (selector != BagCapacityCanReceive && selector != BagCapacityCannotReceive) || value != 0 || comparison != 0 {
+		return false
+	}
+	definition, known := w.catalog.Items[item]
+	if !known || item == 0 {
+		return false
+	}
+	// Native paired branches select either the actual grant or the inventory-full
+	// dialogue. Probe a copy: checking capacity must never reserve or grant items.
+	bag := c.Bag
+	fits := bag.Add(game.Item{ID: item, Count: 1}, 1, definition.StackLimit(), w.catalog.Items) == nil
+	return fits == (selector == BagCapacityCanReceive)
 }
 
 func handsInVehicle(ev *assets.Event, vehicle uint16) bool {
@@ -271,19 +373,11 @@ func (w *World) propCondition(c *game.Character, v *View, mapID uint16, ev *asse
 		}
 		return compare(0, value, op)
 	}
-	switch {
-	case mapID == game.MapID11036 && actor == 7 && mode == 3:
-		door, ok := questActive(c, 10024)
-		done, ok2 := questActive(c, 10025)
-		return flag((ok && door.Step >= 1) || (ok2 && done.Step == 1))
-	case mapID == game.MapID11037 && actor == 7 && mode == 3:
-		fate, ok := questActive(c, 13086)
-		done, ok2 := questActive(c, 13087)
-		return flag(ok && fate.Step > 0 && !(ok2 && done.Step > 0))
-	case mapID == game.MapID11015 && actor == 4 && mode == 3:
-		heretic, ok := questActive(c, 13024)
-		done, ok2 := questActive(c, 13025)
-		return flag((ok && heretic.Step >= 7) || (ok2 && done.Step > 0))
+	var raw [21]byte
+	raw[3] = byte(mode)
+	raw[4] = byte(mode >> 8)
+	if r, ok := w.StoryFirst(assets.StoryPropCondition, c, v, StoryContext{Map: mapID, Event: ev.ClickID, Actor: actor, Raw: &raw}); ok {
+		return compare(r.Value, value, op)
 	}
 	if expiry, configured := c.ChestRespawns[ChestKey(mapID, ev.ClickID)]; configured {
 		return flag(time.Now().Before(expiry))
@@ -294,7 +388,7 @@ func (w *World) propCondition(c *game.Character, v *View, mapID uint16, ev *asse
 		}
 	}
 	if mode == 3 {
-		if state, declared := w.PropState(c, mapID, actor); declared {
+		if state, declared := w.PropState(c, mapID, actor, v); declared {
 			return compare(int64(state), value, op)
 		}
 	}
@@ -308,13 +402,13 @@ func ChestKey(mapID, event uint16) uint32 { return uint32(mapID)*1000 + uint32(e
 // PropState is PreEventInterpreter.TryGetNativePropState: the frame PreEvents author for
 // an actor (action 2/5 with word 1), where later matching rules win. declared reports
 // whether any rule mentions the actor; undeclared props start closed (0).
-func (w *World) PropState(c *game.Character, mapID, actor uint16) (state int32, declared bool) {
+func (w *World) PropState(c *game.Character, mapID, actor uint16, views ...*View) (state int32, declared bool) {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return 0, false
 	}
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
+		for _, r := range w.applicable(c, mapID, ev, views...) {
 			var frames []int32
 			for _, a := range r.actions {
 				if a.Data[0] == 2 && le16(a.Data[:], 1) == actor && le16(a.Data[:], 3) == 5 && le16(a.Data[:], 5) == 1 {
@@ -325,7 +419,7 @@ func (w *World) PropState(c *game.Character, mapID, actor uint16) (state int32, 
 				continue
 			}
 			declared = true
-			if w.ruleMatches(c, mapID, r) {
+			if w.ruleMatches(c, mapID, r, views...) {
 				state = frames[len(frames)-1]
 			}
 		}
@@ -355,47 +449,10 @@ func questStep(c *game.Character, id uint16) int {
 	return 0
 }
 
-// storyVisibility ports the hardcoded ShouldNpcBeVisible overrides that depend only on
-// quest marks. Companion-based overrides evaluate with an empty party.
-func storyVisibility(c *game.Character, mapID, click uint16) (visible, decided bool) {
-	switch {
-	case mapID == game.MapID12000 && (click == 17 || click == 10 || click == 31):
-		return true, true
-	case mapID == game.MapID11040 && click == 4:
-		if q, ok := questActive(c, 13102); ok && q.Step == 4 {
-			if done, ok := questActive(c, 13103); !ok || done.Step == 0 {
-				return true, true
-			}
-		}
-	case mapID == game.MapID11016 && click == 1:
-		// S. Monkey leaves once recruited (as a pet or by mark 12002).
-		_, monkey := c.Pet(17162)
-		_, alias := c.Pet(10727)
-		return !(monkey || alias || c.ActivePet == 17162 || c.ActivePet == 10727 || questState(c, 12002) == 3), true
-	case mapID == game.MapID12000:
-		switch click {
-		case 32:
-			return false, true
-		case 29:
-			return true, true
-		case 28:
-			st, step := questState(c, 13046), questStep(c, 13046)
-			return !(st == 2 || (st == 1 && step < 2 && questState(c, 13047) != 1)), true
-		case 20:
-			st, step := questState(c, 13046), questStep(c, 13046)
-			return st == 1 && step < 2 && questState(c, 13047) != 1, true
-		case 18, 19:
-			return questState(c, 13023) != 2, true
-		case 14:
-			st, step := questState(c, 12020), questStep(c, 12020)
-			return (st == 1 && step >= 2) || st == 3 || questState(c, 12021) == 1, true
-		case 15:
-			return questState(c, 12020) == 1 && questStep(c, 12020) == 1, true
-		case 16:
-			return !(questState(c, 13020) == 2 || questState(c, 13021) == 1), true
-		}
-	}
-	return false, false
+// storyVisibility applies the SQL-authored early visibility overrides.
+func (w *World) storyVisibility(c *game.Character, mapID, click uint16) (bool, bool) {
+	r, ok := w.StoryFirst(assets.StoryVisibility, c, nil, StoryContext{Map: mapID, Actor: click})
+	return r.Value != 0, ok
 }
 
 // Visible reports whether a map actor starts visible for a character.
@@ -428,7 +485,7 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 			}
 		}
 	}
-	if v, ok := storyVisibility(c, mapID, click); ok {
+	if v, ok := w.storyVisibility(c, mapID, click); ok {
 		return v
 	}
 	m, ok := w.maps[mapID]
@@ -456,8 +513,8 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 	}
 	// Rules are cumulative in file order; later matches override earlier ones.
 	for _, ev := range m.data.PreEvents {
-		for _, r := range w.applicable(c, mapID, ev) {
-			if !w.ruleMatches(c, mapID, r) {
+		for _, r := range w.applicable(c, mapID, ev, view) {
+			if !w.ruleMatches(c, mapID, r, view) {
 				continue
 			}
 			for _, a := range r.actions {
@@ -473,28 +530,10 @@ func (w *World) visible(c *game.Character, view *View, mapID, click uint16) bool
 			}
 		}
 	}
-	if mapID == game.MapID60002 && (click == 43 || click == 44) {
-		if q, ok := questActive(c, 50042); ok && (q.Step == 1 || (q.Step > 1 && questState(c, 50047) == 1)) {
-			return true
-		}
-	}
-	if mapID == game.MapID12002 && (click == 2 || click == 7) && xaolanInFate(c) {
-		return false
-	}
-	if mapID == game.MapID12002 && (click == 2 || click == 3) {
-		if q, ok := questActive(c, 13033); ok && q.Step == 1 && questState(c, 13004) != 1 && questState(c, 13005) != 1 {
-			return click != 2 || !w.InParty(c, 14156)
-		}
+	if r, ok := w.StoryFirst(assets.StoryFinalVisibility, c, view, StoryContext{Map: mapID, Actor: click}); ok {
+		return r.Value != 0
 	}
 	return visible
-}
-
-func xaolanInFate(c *game.Character) bool {
-	if q, ok := questActive(c, 13087); ok && q.Step > 0 {
-		return true
-	}
-	q, ok := questActive(c, 13086)
-	return ok && q.Step >= 2
 }
 
 // Template is the Npc.dat data a pet or companion derives from.
@@ -503,7 +542,35 @@ func (w *World) Template(id uint32) (game.PetTemplate, bool) {
 		return game.PetTemplate{}, false
 	}
 	n, ok := w.catalog.NPCs[uint16(id)]
-	return game.PetTemplate{Type: n.Type, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}, ok
+	t := game.PetTemplate{Type: n.Type, Element: n.Element, Stats: game.Attributes{Strength: n.Stats[0], Constitution: n.Stats[1], Intelligence: n.Stats[2], Wisdom: n.Stats[3], Agility: n.Stats[4]}, Skills: n.Skills}
+	initial, exists := w.catalog.PetInitialStats[game.BroadcastID(id)]
+	if !exists {
+		// Recruitment and NPC appearances may use paired companion IDs, notably
+		// Roca. Preserve each NPC template, but share the starting-stat rule.
+		for template, candidate := range w.catalog.PetInitialStats {
+			if game.SamePet(template, id) {
+				initial, exists = candidate, true
+				break
+			}
+		}
+	}
+	if exists {
+		t.InitialStats = &initial
+	}
+	for _, definition := range w.catalog.Story.CompanionEquipment {
+		if !game.SamePet(definition.Template, id) {
+			continue
+		}
+		for _, item := range definition.Equipment {
+			if int(item.Slot) >= len(t.StartingEquipment) {
+				continue
+			}
+			if _, known := w.catalog.Items[item.ItemID]; known {
+				t.StartingEquipment[item.Slot] = game.Item{ID: item.ItemID, Count: 1}
+			}
+		}
+	}
+	return t, ok
 }
 
 // InParty is HasStoryCompanionInParty: a story companion template now in the party.

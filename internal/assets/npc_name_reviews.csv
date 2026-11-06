@@ -1,0 +1,278 @@
+id,original_name,name,certain,sprite
+11008,Little Per,Little Persian Cat,true,1035
+11013,Cat,Tabby Cat,true,1033
+11015,Lazy Sheep,Lazy Sheep,true,1107
+11016,Cute Panda,Cute Panda,true,1177
+11017,Grunt Boar,Angry Boar,true,1032
+12000,Commercial,Commercial Ship,true,1101
+12008,Marco Polo,Marco Polo,true,1010
+12012,Indian Sol,Indian Soldier,true,1057
+12013,Indian Sol,Indian Soldier,true,1057
+12014,Indian Sol,Indian Soldier,true,1057
+12015,Lake Fairy,Lake Fairy,true,1096
+12026,Sleepy,Sleepy Gnome,true,1091
+12031,P.Charming,Prince Charming,true,1010
+12035,Match Girl,Match Girl,true,1092
+12038,Blackbeard,Blackbeard,true,1191
+12041,Pirate,Pirate Leader,true,1155
+12042,Meng Jiang,Meng Jiang,true,1010
+12044,Magellan's,Magellan's Ship,true,1100
+12046,Pirate,Pirate,true,1156
+12047,Pirate,Pirate,true,1157
+12048,Pirate Shi,Pirate Ship,true,1193
+12051,Guard,Guard,true,1120
+12052,Santa Clau,Santa Claus,true,1240
+12053,BeardedMan,Bearded Man,true,1241
+12054,Magellan's,Magellan's Ship,true,1100
+12057,Fairy Stat,Stat Fairy,true,1274
+12060,Mysterious,Mysterious Vampire,true,1260
+12066,Match Girl,Match Girl,true,1276
+12067,Frog Princ,Frog Prince,true,1286
+12069,Matchmaker,Matchmaker,true,1173
+12072,Old Dragon,Old Man,true,1173
+12074,Ghost Ship,Ghost Ship,true,1326
+12084,Knight Sta,Knight Statue,true,1363
+12085,Guardstone,Guard Stone,false,1364
+12091,Pirate,Pirate,true,1156
+12092,Pirate,Pirate,true,1154
+12093,Pirate,Pirate,true,1154
+12094,Pirate,Pirate,true,1156
+12101,Hell Stone,Hell Stone,false,1364
+12107,Shop Clerk,Shop Clerk,true,1498
+12111,Mage,Mage,true,1142
+12113,Tutankhamu,Tutankhamun,true,1337
+12119,Pirate,Pirate,true,1156
+12120,Pirate,Pirate,true,1154
+12121,Pirate,Pirate,true,1154
+12122,Pirate,Pirate,true,1156
+12123,Pirate,Pirate,true,1156
+12124,Pirate,Pirate,true,1154
+12125,Pirate,Pirate,true,1154
+12126,Pirate,Pirate,true,1156
+12127,Pirate,Pirate,true,1156
+12128,Pirate,Pirate,true,1154
+12129,Pirate,Pirate,true,1154
+12130,Pirate,Pirate,true,1156
+12133,PirateGirl,Pirate Girl,true,1585
+12139,G.Sea Lord,Great Sea Lord,false,1574
+12152,Death Guar,Death Guard,false,1484
+12153,Death Guar,Death Guard,false,1484
+12154,Death Guar,Death Guard,false,1484
+12155,Death Guar,Death Guard,false,1484
+12156,Death Guar,Death Guard,false,1484
+12157,Death Guar,Death Guard,false,1484
+12158,Death Guar,Death Guard,false,1484
+12159,Death Guar,Death Guard,false,1484
+12160,Death Guar,Death Guard,false,1484
+12161,Death Guar,Death Guard,false,1484
+12162,Death Guar,Death Guard,false,1484
+12163,Death Guar,Death Guard,false,1484
+12165,King Hower,King Howert,false,1730
+12167,Slave Ship,Slave Ship,false,1193
+12169,HP Testing,HP Testing,false,1062
+12170,HP Testing,HP Testing,false,1062
+12171,HP Testing,HP Testing,false,1484
+12172,HP Testing,HP Testing,false,1062
+12177,St Valenti,Saint Valentin,true,1060
+12180,Kana,Kana,false,1703
+12183,King Hower,King Howert,false,1780
+12185,Death Guar,Death Guard,false,1583
+12186,Death Guar,Death Guard,false,1583
+12187,Death Guar,Death Guard,false,1583
+12188,Death Guar,Death Guard,false,1583
+12189,Death Guar,Death Guard,false,1583
+12190,Death Guar,Death Guard,false,1583
+12191,Death Guar,Death Guard,false,1583
+12192,Death Guar,Death Guard,false,1583
+12193,Death Guar,Death Guard,false,1583
+12194,Death Guar,Death Guard,false,1583
+12195,Death Guar,Death Guard,false,1583
+12196,Death Guar,Death Guard,false,1583
+12197,King Hower,King Howert,false,1779
+12204,Little Boy,Little Boy,true,1074
+12211,Guard,Guard,true,1162
+12212,Pirate,Pirate,true,1154
+12213,Pirate,Pirate,true,1155
+12214,Pirate,Pirate,true,1156
+12215,Pirate,Pirate,true,1157
+12216,Guard,Guard,false,1154
+12227,Ambassador,Ambassador,false,1499
+12322,Skill Mast,Skill Master,false,1073
+12323,Skill Mast,Skill Master,false,1114
+12324,Skill Mast,Skill Master,false,1460
+12325,Skill Mast,Skill Master,false,1676
+12326,Skill Mast,Skill Master,false,1688
+12327,Skill Mast,Skill Master,false,1071
+12351,Sick Villa,Sick Villager,true,1336
+12352,Sad Villag,Sad Villager,true,1477
+12353,Scared Gir,Scared Girl,true,1328
+12354,Sus Warior,Suspicious Warrior,false,1056
+12356,Misgivings,Misgivings,false,1763
+12357,Misgivings,Misgivings,false,1763
+12358,Misgivings,Misgivings,false,1763
+12359,Misgivings,Misgivings,false,1763
+12366,King Hower,King Howert,false,1779
+12377,Misgivings,Misgivings,false,1763
+12379,King Hower,King Howert,false,1730
+12384,Envy Ghost,Envy Ghost,false,1780
+12386,Fear Ghost,Fear Ghost,false,1780
+12387,Ugly Ghost,Ugly Ghost,false,1780
+12389,Fear Ghost,Fear Ghost,false,1780
+12390,Fake Ghost,Fake Ghost,false,1780
+12407,God's Maid,God's Maid,false,1011
+12408,God's Aide,God's Aide,false,1484
+12900,Santa Clau,Santa Claus,true,1240
+13000,Weapon Sho,Weapon Shopkeeper,true,1006
+13001,Props Shop,Props Shopkeeper,true,1006
+13003,HotelOwner,Hotel Owner,true,1006
+13004,Props Shop,Props Shopkeeper,true,1006
+13006,Weapon Sho,Weapons Shopkeeper,true,1205
+13007,Props Shop,Props Shopkeeper,true,1196
+13008,Weapon Sho,Weapons Shopkeeper,true,1006
+13009,Armor Shop,Armor Shopkeeper,true,1006
+13010,Magic Shop,Magic Shopkeeper,true,1006
+13011,Props Shop,Props Shopkeeper,true,1006
+13012,Stock Keep,Stock Keeper,true,1080
+13014,Stock Keep,Stock Keeper,true,1076
+13016,European M,European Man,false,1006
+13017,Maintenanc,Maintenance,false,1006
+14020,Village Le,Village Leader,true,1131
+14035,Al,Al,false,1141
+14037,Aboriginal,Native,true,1004
+14044,Woodcutter,Woodcutter,false,1204
+14055,Shephard B,Shepherd Boy,true,1008
+14056,Drunk Fath,Drunk Man,true,1016
+14057,Drunk Fath,Drunk Man,true,1050
+14060,Little Boy,Little Boy,true,1014
+14061,Welling Le,Welling Leader,true,1131
+14062,Kelan Lead,Kelan Leader,true,1131
+14092,Guard,Guard,true,1010
+14096,Guard,Guard,true,1016
+14101,Drunken Vi,Drunken Vi,false,1050
+14114,Dodge King,Dodge King,true,1010
+14116,Little Boy,Little Boy,true,1008
+14122,Guard,Guard,true,1120
+14128,Little Boy,Little Boy,true,1069
+14129,Honey Merc,Honey Merchant,true,1016
+14135,PK Servant,PK Servant,false,1121
+14138,Band of Br,Band of Brothers,false,1120
+14151,Witch Doct,Witch Doctor,true,1194
+14159,Design Mas,Design Master,true,1228
+14168,Little Boy,Little Boy,true,1008
+14169,Little Boy,Little Boy,true,1008
+14177,Antique Me,Antique Merchant,true,1228
+14181,Stock Keep,Stock Keeper,true,1280
+14182,TGC Sign-u,TGC Sign-u,false,1227
+14184,Challengee,Challengee,true,1120
+14185,Enchantres,Enchantress,true,1287
+14204,Little Boy,Little Boy,true,1069
+14211,Earth Gate,Earth Gate,false,1071
+14212,Water Gate,Water Gate,false,1071
+14215,Earth Prot,Earth Protector,false,1071
+14216,Water Prot,Water Protector,false,1071
+14221,Armor Impr,Armor Improver,false,1016
+14222,Castle Ser,Castle Guard,false,1121
+14223,Weapon Imp,Weapon Improver,false,1016
+14229,Award Carr,Award Carrier,false,1010
+14238,Witty Pres,Witty President,false,1228
+14246,Mystic Imm,Mystic Immortal,false,1173
+14250,Cannon Car,Cannon Carrier,false,1280
+14251,Wumen Aren,Wumen Aren,false,1288
+14269,Strengthen,Strengthen,false,1280
+14270,Restoratio,Restoration,false,1071
+14272,Babylonian,Babylonian,false,1625
+14276,Hijacker L,Hijacker Leader,false,1156
+14281,Lost Items,Lost Items,false,1226
+14284,Star Princ,Star Prince,false,1553
+14300,Little Boy,Little Boy,false,1065
+14312,Summer Mer,Summer Merchant,false,1006
+14412,Yan Xiaome,Yian Xiaome,false,1075
+14418,Little Boy,Little Boy,false,1074
+14424,Miss Flowe,Miss Flowers,false,1186
+14438,Monk,Monk,true,1564
+14445,Weapon Sho,Weapon Shopkeeper,true,1076
+14446,Props Shop,Props Shopkeeper,true,1077
+14471,Chinese Wa,Chinese Warrior,false,1479
+14477,Wine Warme,Wine Warmer,true,1076
+14480,Fortune Te,Fortune Teller,true,1173
+14493,Clay Soldi,Terracotta Soldier,true,1162
+14494,Clay Soldi,Terracotta Soldier,true,1162
+14495,Clay Soldi,Terracotta Soldier,true,1162
+14496,Clay Soldi,Terracotta Soldier,true,1162
+14497,Clay Gener,Terracotta General,true,1461
+14498,Clay Gener,Terracotta General,true,1461
+14500,Little Boy,Little Boy,true,1078
+14508,Cloth Stor,Cloth Storekeeper,true,1081
+14511,Casino Own,Casino Owner,true,1083
+14513,Little Boy,Little Boy,true,1078
+14524,Lunatic Pr,Lunatic Princess,false,1081
+14539,Challenger,Challenger,true,1080
+14542,Water Guar,Water Guard,true,1080
+14544,Vapor Guar,Steam Guard,true,1080
+14556,Cave Inspe,Cave Inspector,true,1080
+14576,Vapor Guar,Steam Guard,true,1080
+14581,East Ninja,Eastern Ninja,true,1460
+14582,East Ninja,Eastern Ninja,true,1460
+14583,East Ninja,Eastern Ninja,true,1460
+14584,East Ninja,Eastern Ninja,true,1460
+14585,Rock Ronin,Rock Ronin,true,1459
+14586,Aqua Ronin,Aqua Ronin,true,1459
+14587,Fire Ronin,Fire Ronin,true,1459
+14588,Wind Ronin,Wind Ronin,true,1459
+14589,Shad Ronin,Shadow Ronin,true,1459
+14594,Local Bull,Local Bully,true,1080
+14600,Little Boy,Little Boy,true,1040
+14614,Wounded Ma,Wounded Man,true,1062
+14616,Guard,Guard,true,1161
+14617,Guard,Guard,true,1161
+14618,Guard,Guard,true,1161
+14619,Guard,Guard,true,1161
+14622,Maya Guard,Mayan Guard,true,1161
+14624,Water Guar,Water Guard,true,1161
+14630,Uncle Hunt,Hunter,false,1387
+14631,Ware Maker,Wares Maker,false,1062
+14632,Guard,Guard,true,1161
+14633,Guard,Guard,true,1161
+14634,Guard,Guard,true,1161
+14635,Guard,Guard,true,1161
+14639,Group Lead,Group Leader,true,1062
+14700,Little Boy,Little Boy,true,1051
+14704,Little Boy,Little Boy,true,1051
+14717,Sacred Cow,Sacred Cow,true,1108
+14722,Slave Merc,Slave Merchant,true,1057
+14723,Female Sla,Female Slave,true,1058
+14800,Aboriginal,Native,true,1004
+14801,Aboriginal,Native,true,1004
+14942,Fruit Merc,Fruit Merchant,true,1017
+15100,Little Boy,Little Boy,true,1327
+15107,Drug Store,Drug Storekeeper,false,1331
+15121,Little Boy,Little Boy,true,1078
+15123,Little Boy,Little Boy,true,1074
+15251,Little Boy,Little Boy,true,1051
+15261,Archaeolog,Archeologist,false,1336
+15274,Guard,Guard,true,1334
+15283,Little Boy,Little Boy,true,1051
+15301,Male Villa,Male Villager,true,1478
+15302,Holy Guard,Holy Guard,true,1478
+15306,King,King,true,1478
+15314,Female Vil,Female Villager,true,1058
+15315,Male Villa,Male Villager,true,1057
+15351,Steel Sold,Steel Soldier,true,1485
+15356,Gold Sculp,Gold Sculptor,true,1334
+15357,Gold Sculp,Gold Sculptor,false,1057
+15361,Guard,Guard,true,1484
+15362,Evil Armed,Evil Armor,false,1583
+15367,Guard,Guard,true,1334
+15368,Guard,Guard,true,1334
+15369,Guard Lead,Guard Leader,true,1334
+15370,Guard,Guard,true,1334
+15373,Man,Man,true,1016
+15375,Little Fai,Little Fairy,true,1483
+15377,Guard,Guard,true,1334
+15378,Guard,Guard,true,1334
+15379,Guard,Guard,true,1334
+15380,Guard,Guard,true,1334
+15419,First Prin,First Prince,true,1041
+15420,Second Pri,Second Prince,true,1041
+15503,HotelOwner,Hotel Owner,true,1085
+15975,King Hower,King Howert,false,1719

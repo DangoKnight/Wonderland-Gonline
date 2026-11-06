@@ -1,17 +1,19 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
+	"time"
 
 	"wonderland-gonline/client/wlo/seui"
 )
 
 // InputBar is TSe_InputBar (constructor FUN_0026348c, paint FUN_00268194):
 // the chat bar along the bottom: the channel button, the whisper name and
-// message fields, the recent whisperers, and the emote button. Not ported
-// yet: the mail animation,
-// the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
+// message fields, the recent whisperers, the emote button and the mail
+// icon. Not ported yet: the battle buttons (Atk, Skill, Def, Catch, Flee, Help) and the viewer
 // and auto-play buttons.
 type InputBar struct {
 	seui.FixedForm
@@ -51,6 +53,13 @@ type InputBar struct {
 	recalled int      // +0x14c
 	channels [inputChannels + 1]int
 	mail     int
+	// MailUnread is +0x155 (FUN_00267c4c / FUN_00267c54).
+	MailUnread bool
+	mailFrame  int       // +0x156
+	mailAt     time.Time // +0x158
+	Now        func() time.Time
+	// OpenMailbox is the mail icon's press.
+	OpenMailbox func()
 }
 
 // Input bar channels (+0x140); each sends its own 2/x (FUN_002641c4).
@@ -65,17 +74,24 @@ const (
 )
 
 const (
-	inputChannels     = 5
-	channelListSlots  = 4
-	inputWidth        = 0x209
-	inputHeight       = 0x19
-	inputTop          = 0x23f
-	inputChannelX     = 6
-	inputChannelY     = 2
-	inputMailX        = 4
-	inputMailY        = 2
-	inputMailW        = 0x17
-	inputMailH        = 0x15
+	inputChannels    = 5
+	channelListSlots = 4
+	inputWidth       = 0x209
+	inputHeight      = 0x19
+	inputTop         = 0x23f
+	inputChannelX    = 6
+	inputChannelY    = 2
+	inputMailX       = 4
+	inputMailY       = 2
+	inputMailW       = 0x17
+	inputMailH       = 0x15
+	// FUN_00268084: while letters are unread (+0x155) the icon swaps its
+	// two frames every 800 ms (+0x160); a press in the 0x16-pixel square
+	// at (8, 1) opens the mailbox (FUN_002695d8).
+	inputMailBlink    = 800 * time.Millisecond
+	inputMailHitX     = 8
+	inputMailHitY     = 1
+	inputMailHit      = 0x16
 	inputSwitchLeft   = 0x1f
 	inputSwitchTop    = 2
 	inputSwitchW      = 0x28
@@ -114,8 +130,8 @@ const (
 	channelPictureEnd = "_1"
 	channelFrame      = "icon_Channelframe_1"
 	// Team and Guild refuse without a team or guild (FUN_00267db0).
-	notInTeam  = "(System):You are not in a Team"
-	notInGuild = "(System):You are not in a Guild"
+	notInTeam  = "ui.hud.system_you_are_not_in_a_team_208570c5"
+	notInGuild = "ui.hud.system_you_are_not_in_a_guild_0405dd37"
 )
 
 // NewInputBar is FUN_0026348c's layout.
@@ -130,7 +146,7 @@ func NewInputBar(env *seui.Env) *InputBar {
 	}
 	b.Switch = seui.NewFixedButton(env, b)
 	b.Switch.Init(channelButton(InputLocal), inputSwitchLeft, inputSwitchH, inputSwitchW, 0, 0, true, inputSwitchH, inputSwitchW, inputSwitchTop)
-	b.Switch.SetHint([]byte("Switch Channel"))
+	b.Switch.BindLanguage("hint", func() { b.Switch.SetHint([]byte(localization.UI("ui.hud.switch_channel_0e69d064"))) })
 	b.Switch.OnClick = b.nextChannel
 	b.Switch.OnUp = b.toggleList
 	for i := 1; i <= channelListSlots; i++ {
@@ -149,14 +165,15 @@ func NewInputBar(env *seui.Env) *InputBar {
 	// The whisper field is read-only outside the Whisper channel.
 	b.Whisper = newField(env, b, inputWhisperLeft, inputWhisperWidth, inputWhisperMax, "")
 	b.Whisper.ReadOnly = true
-	b.Message = newField(env, b, inputMessageLeft, inputMessageWidth, inputMessageMax, "Press Ctrl+V to paste")
+	b.Message = newField(env, b, inputMessageLeft, inputMessageWidth, inputMessageMax, localization.UI("ui.hud.press_ctrl_v_to_paste_4fa3c43f"))
+	b.Message.BindLanguage("hint", func() { b.Message.SetHint([]byte(localization.UI("ui.hud.press_ctrl_v_to_paste_4fa3c43f"))) })
 	b.Message.AllowPaste = true
 	// The constructor clears the message field's pixel hit test (+0xa8);
 	// it has no picture, so it is clicked by its rectangle. The whisper
 	// field keeps it and takes the keyboard when Whisper is selected.
 	b.Message.PixelHit = false
 	b.Message.OnUp, b.Message.OnDown = b.recallOlder, b.recallNewer
-	b.Emotes = newBarButton(env, b, "Btn_expression_1", inputEmoteLeft, 0, "Chat Emotes")
+	b.Emotes = newBarButton(env, b, "Btn_expression_1", inputEmoteLeft, 0, func() string { return localization.UI("ui.hud.chat_emotes_9039fc28") })
 	b.WhispererBox = seui.NewPanel(env, b)
 	b.WhispererBox.Init("", whispererBoxLeft, 0x32, 0x56, 0, 0, true, 0x24, whispererBoxW, -0x20)
 	b.WhispererBox.SetMargins(7, 7, 7, 7)
@@ -260,12 +277,16 @@ func (b *InputBar) toggleList() { b.showList(!b.Frame.Visible) }
 // whose read-only field takes no hits, selects Whisper.
 var whisperArea = image.Rect(0x46, 0x240, 0x46+0x56, 0x240+0x16)
 
-// LeftDown is the bar's press (FUN_002695d8). The mail icon's press
-// (opening the mailbox) is not ported.
+// LeftDown is the bar's press (FUN_002695d8).
 func (b *InputBar) LeftDown(shift byte, x, y int) {
 	b.FixedForm.LeftDown(shift, x, y)
 	if image.Pt(x, y).In(whisperArea) {
 		b.SelectChannel(InputWhisper)
+	}
+	at := b.Abs()
+	icon := image.Rect(at.X+inputMailHitX, at.Y+inputMailHitY, at.X+inputMailHitX+inputMailHit, at.Y+inputMailHitY+inputMailHit)
+	if image.Pt(x, y).In(icon) && b.OpenMailbox != nil {
+		b.OpenMailbox()
 	}
 }
 
@@ -295,13 +316,13 @@ func (b *InputBar) SelectChannel(n byte) {
 		}
 	case InputTeam:
 		if b.InTeam == nil || !b.InTeam() {
-			b.notice(notInTeam)
+			b.notice(localization.UI(notInTeam))
 			b.SelectChannel(InputLocal)
 			return
 		}
 	case InputGuild:
 		if b.InGuild == nil || !b.InGuild() {
-			b.notice(notInGuild)
+			b.notice(localization.UI(notInGuild))
 			b.SelectChannel(InputLocal)
 			return
 		}
@@ -391,5 +412,14 @@ func (b *InputBar) Paint() {
 	if b.Channel >= 1 && b.Channel <= inputChannels {
 		pics.Draw(scr, b.channels[b.Channel], b.Left+inputChannelX, b.Top+inputChannelY, true)
 	}
-	pics.DrawRect(scr, b.mail, b.Left+inputMailX, b.Top+inputMailY, image.Rect(0, 0, inputMailW, inputMailH), true)
+	if !b.MailUnread {
+		b.mailFrame = 0
+	} else if b.Now != nil {
+		if now := b.Now(); now.Sub(b.mailAt) > inputMailBlink {
+			b.mailFrame = (b.mailFrame + 1) % 2
+			b.mailAt = now
+		}
+	}
+	frame := image.Rect(0, b.mailFrame*inputMailH, inputMailW, (b.mailFrame+1)*inputMailH)
+	pics.DrawRect(scr, b.mail, b.Left+inputMailX, b.Top+inputMailY, frame, true)
 }

@@ -2,15 +2,19 @@ package server
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/big"
 	"math/rand/v2"
 	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
 
 const (
@@ -80,14 +84,14 @@ func (s *Server) fishingAvailable(c *Session) bool {
 func (s *Server) startFishing(ctx context.Context, c *Session, slot byte) error {
 	f := s.Assets.Fishing
 	if !f.Enabled {
-		return c.send(headBanner("Fishing is not configured."))
+		return c.send(serverwire.HeadBanner("Fishing is not configured."))
 	}
 	if !s.fishingAvailable(c) {
-		return c.send(headBanner("Leave your team and finish active interactions before fishing."))
+		return c.send(serverwire.HeadBanner("Leave your team and finish active interactions before fishing."))
 	}
 	terrain, ok := s.Assets.Terrains[c.character.Map]
 	if !ok || !f.AllowsMap(c.character.Map) || !terrain.FishingShore(c.character.X, c.character.Y) {
-		return c.send(headBanner("Stand near water in a configured fishing area."))
+		return c.send(serverwire.HeadBanner("Stand near water in a configured fishing area."))
 	}
 	if slot == 0 {
 		var grade byte
@@ -100,11 +104,11 @@ func (s *Server) startFishing(ctx context.Context, c *Session, slot byte) error 
 		}
 	}
 	if slot == 0 || int(slot) > len(c.character.Bag) {
-		return c.send(headBanner("You need a fishing rod."))
+		return c.send(serverwire.HeadBanner("You need a fishing rod."))
 	}
 	item := c.character.Bag[slot-1]
 	if _, ok := f.Rod(item.ID); !ok || item.Empty() || item.Locked {
-		return c.send(headBanner("Select an available fishing rod."))
+		return c.send(serverwire.HeadBanner("Select an available fishing rod."))
 	}
 	_, due, err := s.Store.MutateFishing(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, slot, item.ID, time.Now(), time.Duration(f.IntervalSeconds)*time.Second, false, nil, *c.character)
 	if err != nil {
@@ -218,7 +222,7 @@ func (s *Server) catchFishing(ctx context.Context, c *Session, now time.Time) er
 		// recipient pet slot (zero for player), item ID and quantity (FUN_003d9984).
 		s.sendOrClose(c, protocol.Builder{protocol.CommandInventory, protocol.InventoryAcquisitionNotice, 0}.U16(reward.ItemID).U8(1))
 		// Send the catch notification directly to its owner after durable delivery.
-		s.sendOrClose(c, headBanner(fmt.Sprintf("Fishing: caught [%s] x1.", s.itemName(reward.ItemID))))
+		s.sendOrClose(c, serverwire.HeadBanner(fmt.Sprintf("Fishing: caught [%s] x1.", s.itemName(reward.ItemID))))
 	}
 
 	if run.Legacy {
@@ -232,7 +236,7 @@ func (s *Server) catchFishing(ctx context.Context, c *Session, now time.Time) er
 		s.sendOrClose(c, p)
 	}
 	if discarded {
-		s.sendOrClose(c, headBanner("Your bag is full. The catch was discarded; fishing proficiency was retained."))
+		s.sendOrClose(c, serverwire.HeadBanner("Your bag is full. The catch was discarded; fishing proficiency was retained."))
 	}
 	return nil
 }
@@ -349,4 +353,69 @@ func (s *Server) fishingCatchAnimation(c *Session, item uint16) [][]byte {
 		protocol.Builder{protocol.CommandInventory, protocol.InventoryDrop}.U16(item).U16(wx).U16(wy).U32(0),
 		protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(slot)).U8(protocol.NativeActive),
 	}
+}
+
+// Caller holds worldMu. The whole water branch is intercepted before the ordinary
+// event loop so a failed timer claim cannot leave a reward or quest mark behind.
+func (s *Server) tryWaterGathering(ctx context.Context, c *Session, click uint16, ev *assets.Event, branch int, now time.Time, nodes ...store.ResourceKey) (bool, error) {
+	plan, involved := s.World.PlanEventGathering(c.character.Map, ev, branch)
+	if !involved {
+		return false, nil
+	}
+	es := &eventSession{mapID: c.character.Map, click: click, ev: ev, branch: branch}
+	c.event = es
+	if err := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); err != nil {
+		return true, err
+	}
+	reject := func() (bool, error) {
+		if err := c.send(serverwire.HeadBanner("Cannot gather now. Check bag space and wait for the resource to recover.")); err != nil {
+			return true, err
+		}
+		return true, s.finishEvent(c, es)
+	}
+	if plan.Timer == 0 || len(plan.Pools) == 0 {
+		return reject()
+	}
+	rewards := map[uint16]int{}
+	for _, pool := range plan.Pools {
+		draw, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(len(pool))))
+		if err != nil {
+			return true, err
+		}
+		id := pool[draw.Int64()]
+		if _, known := s.stackLimit(id); !known {
+			return reject()
+		}
+		rewards[id]++
+	}
+	node := s.collectionNode(es.mapID, click, ev, nodes)
+	cooldown := s.Assets.ResourceCooldown(node.Kind, node.MapID, node.NodeID, plan.Cooldown)
+	timers := s.collectionTimers(es.mapID, ev)
+	next, adds, err := s.Store.GatherResources(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, node, plan.Timer, cooldown, rewards, now, func(stored *game.Character) bool {
+		return stored.Map == es.mapID && s.World.FindBranchAt(collectionCharacter(stored, timers, time.Time{}), c.view, es.mapID, ev, world.TriggerEntry, 0, 0, -1, now) == branch
+	}, s.Assets.Items, c.character.Clone())
+	if errors.Is(err, store.ErrGatheringUnavailable) || errors.Is(err, game.ErrInventoryFull) {
+		return reject()
+	}
+	if err != nil {
+		return true, errors.Join(err, s.cancelInteraction(c))
+	}
+	s.adoptSavedCharacter(c, next)
+	// Use the native slotless receipt so both clients present the acquisition.
+	// Keep the committed addition order, metadata and split-stack quantities.
+	var packets [][]byte
+	for _, add := range adds {
+		item := next.Bag[add.Slot-1]
+		item.Count = add.Count
+		packets = append(packets, game.AcquisitionPacket(item))
+	}
+	packets = append(packets, serverwire.EventTimerUpdate(plan.Timer, cooldown))
+	packets = append(packets, s.World.QuestUpdate(c.view, uint32(plan.Timer), next.Quests[uint32(plan.Timer)])...)
+	packets = append(packets, []byte{protocol.CommandEvent, protocol.EventStepComplete})
+	// Acknowledgement ends presentation, never commits or grants the reward again.
+	es.onComplete = func() error { return s.finishEvent(c, es) }
+	if err := s.sendAll(c, packets); err != nil {
+		return true, err
+	}
+	return true, nil
 }

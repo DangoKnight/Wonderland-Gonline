@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 
@@ -15,7 +17,9 @@ const (
 	pwFields       = 4
 	pwMinLen       = 6
 	pwMaxLen       = 10
-	pwFieldLeft    = 0x8d
+	pwFieldLeft    = 149 // Align with the field boxes authored into Form_InputPw_1/2.
+	pwFieldWidth   = 104
+	pwFieldHeight  = 14
 	pwFieldTop     = 0x7b
 	pwFieldStep    = 0x30
 	pwButtonTop    = 0x138
@@ -61,11 +65,11 @@ func NewInputPassword(env *seui.Env, a Assets) *InputPassword {
 	for i := 1; i <= pwFields; i++ {
 		e := seui.NewEditor(env, f)
 		top := (i-1)*pwFieldStep + pwFieldTop
-		e.Init("Panel26", 0x95, 0x15, 0x78, 0, 0, true, 0xe, 0x68, top)
 		e.SetMargins(1, 1, 1, 1)
 		e.SetColor(skinTextColor)
 		e.Color2 = 0
-		e.Init("Panel26", pwFieldLeft, 0x15, 0x68, 0, 0, true, 0xe, 0x89, top)
+		w, h := env.Pics.Size(env.Pics.Find("Panel26"))
+		e.Init("Panel26", pwFieldLeft, h, w, 0, 0, true, pwFieldHeight, pwFieldWidth, top)
 		e.SetMaxLen(pwMaxLen)
 		e.Password = true
 		e.Tag = i
@@ -100,7 +104,7 @@ func (f *InputPassword) SetMode(mode byte) {
 	}
 	f.OK.OnClick = nil
 	f.Second.OnClick = f.Hide
-	f.Background, _ = loadJPEG(f.Assets.SkinPicture("Menu", "Skins", "White", name+".jpg"))
+	bindSkinBackground(f, "background", f.Assets, name+".jpg", &f.Background)
 	w, h := 0, 0
 	if f.Background != nil {
 		w, h = f.Background.W, f.Background.H
@@ -162,19 +166,19 @@ func (f *InputPassword) Check(notify bool) int {
 	pw, code := f.Fields[1].Text, f.Fields[3].Text
 	switch {
 	case !bytes.Equal(pw, f.Fields[2].Text):
-		return say(PwMismatch, "Wrong Passwords")
+		return say(PwMismatch, localization.UI("ui.login.wrong_passwords_c30fe40a"))
 	case !bytes.Equal(code, f.Fields[4].Text):
-		return say(PwCodeMismatch, "Wrong Del Pwd")
+		return say(PwCodeMismatch, localization.UI("ui.login.wrong_del_pwd_2a5d515f"))
 	case len(pw) < pwMinLen:
-		return say(PwBadLength, "Password less 6 char")
+		return say(PwBadLength, localization.UI("ui.login.password_less_6_char_1d73a030"))
 	case len(code) < pwMinLen:
-		return say(PwBadCodeLength, "Del Pwd less 6 char")
+		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_less_6_char_41e8891d"))
 	case len(pw) > pwMaxLen:
-		return say(PwBadLength, "Password is too long")
+		return say(PwBadLength, localization.UI("ui.login.password_is_too_long_f4ecbe2a"))
 	case len(code) > pwMaxLen:
-		return say(PwBadCodeLength, "Del Pwd is too long")
+		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_is_too_long_997f1f09"))
 	case bytes.Equal(pw, code):
-		return say(PwSameAsCode, "Pwd & Del are same!")
+		return say(PwSameAsCode, localization.UI("ui.login.pwd_del_are_same_8704e5e6"))
 	}
 	return PwOK
 }

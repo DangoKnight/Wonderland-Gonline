@@ -61,6 +61,7 @@ type manifest struct {
 	Decrypted               int          `json:"decrypted_sprites"`
 	AlreadyPlaintext        int          `json:"already_plaintext_authenticated"`
 	MissingCompanionRecords int          `json:"missing_companion_records"`
+	MissingActionRecords    int          `json:"missing_action_records"`
 }
 type frame struct {
 	Index        int    `json:"index"`
@@ -169,12 +170,8 @@ func run(input, executable, output string) error {
 	if err != nil {
 		return err
 	}
-	relative, err := filepath.Rel(input, output)
-	if err != nil {
+	if err := ensureSpriteOutputOutside(input, output); err != nil {
 		return err
-	}
-	if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("output must be outside source directory")
 	}
 	executable, err = filepath.Abs(executable)
 	if err != nil {
@@ -267,23 +264,15 @@ func run(input, executable, output string) error {
 		format := "plaintext-jxa"
 		var value any
 		if extension == ".jxa" {
-			if len(data) < spriteHeaderBytes || string(data[:2]) != "jx" {
-				return fmt.Errorf("invalid JXA signature")
+			actions, missing, err := decodeActions(path, data, spriteCounts[stem])
+			if err != nil {
+				return fmt.Errorf("%s: %w", file.Name(), err)
 			}
-			count := binary.LittleEndian.Uint32(data[spriteCountOffset:])
-			if int(count) != spriteCounts[stem] || uint64(spriteHeaderBytes)+uint64(count)*actionRecordBytes != uint64(len(data)) {
-				return fmt.Errorf("invalid JXA record count")
+			value = actions
+			result.MissingActionRecords += missing
+			if missing > 0 {
+				fmt.Printf("%s: %d sprites have no source action record; preserving frames without animations\n", file.Name(), missing)
 			}
-			rows := make([]any, 0, count)
-			for i := range int(count) {
-				row := data[spriteHeaderBytes+i*actionRecordBytes:][:actionRecordBytes]
-				counts := make([]int, len(row))
-				for j, v := range row {
-					counts[j] = int(v)
-				}
-				rows = append(rows, map[string]any{"sprite_index": i, "action_frame_counts": counts, "record_hex": hex.EncodeToString(row)})
-			}
-			value = map[string]any{"schema_version": exportSchemaVersion, "source": path, "source_sha256": hashBytes(data), "header_hex": hex.EncodeToString(data[:spriteHeaderBytes]), "records": rows}
 		} else {
 			destination = filepath.Join(output, stem, "encryption_metadata.json")
 			format = "plaintext-jxan-metadata"

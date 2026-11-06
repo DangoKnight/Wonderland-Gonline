@@ -135,14 +135,11 @@ receipts; AC40 and the chat shortcut retain ordinary stack-aware grants.
 
 Debug logging records tier, level, base rank, selected primary, required bases,
 book bonus, final delta including the book/ceiling, final rank, secondary loss and catastrophe for
-committed attempts. Existing sensitive-resource tests cover metadata, rectangular
-placement, full bags, locks, ownership gates, save/receipt failure and replay;
-new tests cover rank sums, book caps, fallback, base preservation, curve ordering,
-multi-input SQL consumption, proficiency, forced-catastrophe consumption and
-concurrent requests.
+committed attempts. Focused coverage and execution recipes are in
+[compounding checks](TESTING.md#compounding-checks).
 
 Manual aLogin scenarios are available as `compound-*` in
-[Live testing](LIVE_TESTING.md#compounding-acceptance-batch). Generated reports
+[Live testing](TESTING.md#compounding-acceptance-batch). Generated reports
 include real SQL-derived ingredient tables, isolated credentials and packet/log
 checks. They remain NOT RUN until the player performs the checklist.
 

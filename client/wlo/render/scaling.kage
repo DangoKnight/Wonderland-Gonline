@@ -1,0 +1,94 @@
+//kage:unit pixels
+package main
+
+var Filter float
+
+const bilinearFilter = 1
+const bicubicFilter = 2
+const edgeAwareSharpFilter = 4
+const buildEdgesFilter = 5
+
+func pixel(p vec2) vec4 {
+	lo := imageSrc0Origin() + vec2(0.5)
+	hi := imageSrc0Origin() + imageSrc0Size() - vec2(0.5)
+	return imageSrc0At(clamp(p, lo, hi))
+}
+func linear(p vec2) vec4 {
+	b := floor(p-vec2(0.5)) + vec2(0.5)
+	f := fract(p - vec2(0.5))
+	return mix(mix(pixel(b), pixel(b+vec2(1, 0)), f.x), mix(pixel(b+vec2(0, 1)), pixel(b+vec2(1, 1)), f.x), f.y)
+}
+
+// Catmull-Rom cubic kernel, with a clamped final color to suppress overshoot.
+func cubicWeight(x float) float {
+	x = abs(x)
+	if x < 1 {
+		return 1.5*x*x*x - 2.5*x*x + 1
+	}
+	if x < 2 {
+		return -0.5*x*x*x + 2.5*x*x - 4*x + 2
+	}
+	return 0
+}
+func cubic(p vec2) vec4 {
+	b := floor(p-vec2(0.5)) + vec2(0.5)
+	f := fract(p - vec2(0.5))
+	total := vec4(0)
+	for y := -1; y <= 2; y++ {
+		for x := -1; x <= 2; x++ {
+			weight := cubicWeight(float(x)-f.x) * cubicWeight(float(y)-f.y)
+			total += pixel(b+vec2(float(x), float(y))) * weight
+		}
+	}
+	return clamp(total, vec4(0), vec4(1))
+}
+func same(a, b vec4) bool { return dot(abs(a.rgb-b.rgb), vec3(1)) < 0.001 }
+
+// Virtual Scale2x subpixels use the four cardinal neighbours to preserve
+// corners while extending matching diagonal edges in a reusable 2x prepass.
+// Algorithm reference: https://www.scale2x.it/algorithm
+func edgePixel(v vec2) vec4 {
+	o := imageSrc0Origin()
+	b := floor(v/2) + o + vec2(0.5)
+	q := mod(v, vec2(2))
+	e := pixel(b)
+	top := pixel(b + vec2(0, -1))
+	bottom := pixel(b + vec2(0, 1))
+	left := pixel(b + vec2(-1, 0))
+	right := pixel(b + vec2(1, 0))
+	if !same(top, bottom) && !same(left, right) {
+		if q.y < 1 {
+			if q.x < 1 && same(left, top) {
+				return left
+			}
+			if q.x >= 1 && same(top, right) {
+				return right
+			}
+		} else {
+			if q.x < 1 && same(left, bottom) {
+				return left
+			}
+			if q.x >= 1 && same(bottom, right) {
+				return right
+			}
+		}
+	}
+	return e
+}
+func Fragment(dst vec4, src vec2, color vec4) vec4 {
+	if Filter == buildEdgesFilter {
+		return edgePixel(floor((src - imageSrc0Origin()) * 2))
+	}
+	if Filter == bilinearFilter {
+		return linear(src)
+	}
+	if Filter == bicubicFilter {
+		return cubic(src)
+	}
+	c := linear(src)
+	if Filter == edgeAwareSharpFilter {
+		neighbours := (linear(src+vec2(2, 0)) + linear(src-vec2(2, 0)) + linear(src+vec2(0, 2)) + linear(src-vec2(0, 2))) / 4
+		c = clamp(c+(c-neighbours)*0.2, vec4(0), vec4(1))
+	}
+	return c
+}

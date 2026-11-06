@@ -1,9 +1,9 @@
 # Native command compatibility
 
 These handlers port reachable Private Server action-code implementations. They
-use the registry in `internal/server/command_registry.go` and share existing
+use the registry in `internal/server/commands.go` and share existing
 movement, mall and character persistence helpers. Golden tests use independent
-raw expected packet bytes in `internal/server/native_commands_test.go`.
+raw expected packet bytes in `internal/server/commands_test.go`.
 Native-client acceptance is still required; unit tests establish handler behavior.
 
 | Request                                       | Behavior                                                                                                                                                      |
@@ -158,7 +158,7 @@ remaining exact-parity questions are documented in [FISHING.md](FISHING.md).
 The expanded `native-commands` checklist separates naturally captured requests
 from unreached handlers and checks observer replay, pose cleanup and mall aliases.
 Fishing fixtures cover unlearned, full-bag and threshold-minus-one advancement
-states. See the [prepared acceptance batch](LIVE_TESTING.md#native-command-acceptance-and-fishing-parity-batch)
+states. See the [prepared acceptance batch](TESTING.md#native-command-acceptance-and-fishing-parity-batch)
 for run directories and evidence requirements. Preparation is not live acceptance.
 
 ### Expressions and held poses
@@ -167,7 +167,9 @@ The live native-command run emits expressions as AC32:1 (not AC18). WLRI
 `FUN_00432478` calls `FUN_00430700` to restart a temporary expression animation;
 AC32:2 `FUN_00438684` sets the held pose. Expressions are now forwarded on every
 request to same-scene observers without overwriting or replaying the held pose.
-Only changed held poses are deduplicated. Debug logs include bounded AC32 payloads
+Only changed held poses are deduplicated; a position change clears the held pose,
+since native walking ends it without an AC32 report. Sitting and lying poses
+heal slowly (ITEMS_PLAYER_STATE.md, Resting recovery). Debug logs include bounded AC32 payloads
 for verifying expression IDs and recipients. The tester's original observer
 failure is recorded; the correction still needs live retesting.
 
@@ -377,6 +379,6 @@ restores them on character entry, independently of server resource state.
 Private Server's AC40 handler implements four-byte synthesis instead. Go retains
 that legacy compatibility layout separately. Previously the seven-byte native
 assignment was rejected as malformed, closing the requesting connection. Tests
-in `internal/server/hotbar_test.go` cover Basic Attack, Defense, item/empty
+in `internal/server/crafting_test.go` cover Basic Attack, Defense, item/empty
 bindings, invalid layouts and unchanged resources; the existing alchemy tests
 verify synthesis still behaves as before.

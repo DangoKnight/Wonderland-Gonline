@@ -62,6 +62,10 @@ func TestCompiledBundleLoginAndSharedWorld(t *testing.T) {
 		}
 		t.Fatal("compiled world entry failed")
 	}
+	c.loadTalks()
+	if c.items[10034].Definition.Name != "Pure Iron Knife" || c.npcTemplates[17738].Name != "Half Beast Ghost" || c.talks[57166] != "Breillat" {
+		t.Fatal("bundle text fields were not translated during asset compilation")
+	}
 	c.Frame()
 	next, err := New(o)
 	if err != nil {
@@ -73,6 +77,28 @@ func TestCompiledBundleLoginAndSharedWorld(t *testing.T) {
 	if next.World == nil || next.World.Scene == c.World.Scene || next.World.Scene.Layers[0].Image != c.World.Scene.Layers[0].Image {
 		t.Fatal("scene descriptors not isolated or map pixels duplicated")
 	}
+	c.mapReady = true
+	c.dispatch([]byte{104, 1, 1, 0, 1, 216, 132, 3})
+	c.dispatch([]byte{104, 1, 2, 1, 1})
+	c.LuckyDraw.Show()
+	c.LuckyDraw.Preview.Open()
+	c.Frame()
+	if c.LuckyDraw.Image < 0 || c.LuckyDraw.Spin.Image < 0 || c.LuckyDraw.Preview.Image < 0 || c.LuckyDraw.State.Slot != 1 {
+		t.Fatal("compiled Lucky Draw artwork or result unavailable")
+	}
+	if next.LuckyDraw.State.Ready || next.LuckyDraw.Visible || next.LuckyDraw.Preview.Visible {
+		t.Fatal("shared resources leaked Lucky Draw state across sessions")
+	}
+	c.LuckyDraw.Hide()
+	c.Frame()
+	c.dispatch([]byte{15, 20, 6, 0})
+	if run := c.constellation; run == nil || run.picture < 0 || run.sky < 0 {
+		t.Fatal("compiled constellation artwork unavailable")
+	}
+	if next.constellation != nil {
+		t.Fatal("shared resources leaked constellation cutscene state")
+	}
+	c.stopConstellation()
 	if path := os.Getenv("BUNDLE_SNAPSHOT"); path != "" {
 		savePNG(t, path, c)
 	}

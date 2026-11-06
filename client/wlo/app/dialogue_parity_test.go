@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/movie"
@@ -39,6 +40,41 @@ func TestDialogueVoicesAndOGG(t *testing.T) {
 		}
 		if pcm := sounds.PCM(path); len(pcm) == 0 {
 			t.Fatalf("no decoded audio for %s", path)
+		}
+	}
+}
+
+func TestNoaMovieVoicesFromExpansionArchive(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	if bundle := os.Getenv("WONDERLAND_TEST_CLIENT_BUNDLE"); bundle != "" {
+		useCompiledPetAssets(t, c, bundle)
+		c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+	}
+	var played []string
+	c.Env.Sound = func(path string) {
+		if strings.HasSuffix(path, ".ogg") {
+			played = append(played, path)
+		}
+	}
+	c.dispatch(movieFrameFor(26005, 2))
+	for frame := 0; frame < 200 && c.movie != nil; frame++ {
+		if c.Talk.Shown() {
+			c.advanceTalk()
+		}
+		*now = now.Add(100 * time.Millisecond)
+		c.Frame()
+	}
+	want := []string{`..\audio\odd_d01\57153.ogg`, `..\audio\odd_d01\57154.ogg`}
+	if len(played) != len(want) {
+		t.Fatal("Noa movie did not request both recorded lines", played)
+	}
+	for i, path := range played {
+		if path != want[i] {
+			t.Fatal("incorrect Noa recording", path, want[i])
+		}
+		sounds := &Sounds{Root: c.Assets.Media}
+		if pcm := sounds.PCM(path); len(pcm) == 0 {
+			t.Fatal("Noa recording could not be decoded", path)
 		}
 	}
 }

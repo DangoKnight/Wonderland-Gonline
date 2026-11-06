@@ -35,6 +35,32 @@ func TestCompoundResultValidation(t *testing.T) {
 	}
 }
 
+func TestPetFoodCompoundingSelection(t *testing.T) {
+	for _, foods := range []int{1, 2, 3} {
+		f, _, sent := presentationFixture()
+		for i := 1; i <= foods; i++ {
+			id := uint16(i)
+			f.Inventory.State.Items[id] = assets.NativeItem{Definition: game.ItemDefinition{ID: id, Type: 20}}
+		}
+		if foods == 3 {
+			f.Inventory.State.Bag[2] = game.Item{ID: 3, Count: 1}
+			f.SelectIngredient(3, 2)
+		}
+		before := f.Inventory.State.Bag
+		f.Synthesize()
+		if foods == 2 {
+			if len(*sent) != 1 || !bytes.Equal((*sent)[0], []byte{23, 14, 2, 1, 2}) {
+				t.Fatal("food request", *sent)
+			}
+		} else if len(*sent) != 0 || f.pending {
+			t.Fatal("invalid food recipe sent", *sent)
+		}
+		if f.Inventory.State.Bag != before {
+			t.Fatal("optimistic consumption")
+		}
+	}
+}
+
 func TestAlchemyMaterialBaseTooltip(t *testing.T) {
 	item := assets.NativeItem{}
 	item.Record[136], item.Record[138] = 1, 67

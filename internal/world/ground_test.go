@@ -30,15 +30,35 @@ func TestGroundPickupRespawn(t *testing.T) {
 	if p := w.GroundPacket(12345); len(p) != 2+15 || p[3] != 2 {
 		t.Fatalf("taken item still listed: %v", p)
 	}
-	if got := w.Respawn(now.Add(29 * time.Second)); len(got) != 0 {
+	if got := w.Respawn(now.Add(119 * time.Second)); len(got) != 0 {
 		t.Fatal("respawned early")
 	}
-	got := w.Respawn(now.Add(30 * time.Second))
-	if len(got[12345]) != 1 || !bytes.Equal(got[12345][0], []byte{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 0, 0, 0, 0}) {
+	got := w.Respawn(now.Add(120 * time.Second))
+	if len(got[12345]) != 1 || !bytes.Equal(got[12345][0], []byte{23, 4, 3, 7, 0, 0x31, 0x75, 0, 0, 10, 0, 20, 0, 30, 0, 0, 0}) {
 		t.Fatalf("respawn: %v", got)
 	}
 	if _, ok := w.GroundAt(12345, 7); !ok {
 		t.Fatal("respawned item unavailable")
+	}
+}
+
+func TestGroundCooldownRestoreRetainsPendingRespawn(t *testing.T) {
+	w := groundFixture()
+	now := time.Unix(1000, 0)
+	target, ok := w.GroundAt(12345, 7)
+	if !ok {
+		t.Fatal("missing native item")
+	}
+	w.Take(12345, target, now)
+	w.RestoreGroundCooldowns(12345, map[uint16]time.Time{uint16(target.Slot): now.Add(time.Second)})
+	// Another arrival after expiry finds no active SQL clock. It must not erase
+	// the pending ticker notification for viewers already on this map.
+	w.RestoreGroundCooldowns(12345, nil)
+	if got := w.Respawn(now.Add(time.Second)); len(got[12345]) != 1 {
+		t.Fatal("map arrival suppressed the respawn broadcast", got)
+	}
+	if got := w.Respawn(now.Add(2 * time.Second)); len(got) != 0 {
+		t.Fatal("respawn broadcast repeated", got)
 	}
 }
 

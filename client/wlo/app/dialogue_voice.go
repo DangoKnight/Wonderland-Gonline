@@ -26,8 +26,8 @@ var companionVoiceActors = map[byte]byte{201: 3, 206: 6, 211: 2, 216: 5, 221: 1,
 
 // FUN_0034d3e8 prefers a speaker-specific recording, then the plain talk
 // ID. The base odd archive wins over odd_d01 for specific recordings;
-// the native plain-ID fallback consults only odd.
-func (c *Client) dialogueVoice(talk uint16, speaker uint32) string {
+// plain-ID recordings also search both archives, as TWlOggPlayer does.
+func (c *Client) dialogueVoice(talk uint32, speaker uint32) string {
 	suffix := ""
 	if speaker == movie.PlayerTemplate {
 		p := c.World.Player
@@ -50,13 +50,15 @@ func (c *Client) dialogueVoice(talk uint16, speaker uint32) string {
 		}
 	}
 	name := fmt.Sprintf("%d.ogg", talk)
-	if _, err := clientfs.Stat(c.Assets.DataPath("audio", "odd", name)); err == nil {
-		return `..\audio\odd\` + name
+	for _, archive := range []string{"odd", "odd_d01"} {
+		if _, err := clientfs.Stat(c.Assets.DataPath("audio", archive, name)); err == nil {
+			return fmt.Sprintf(`..\audio\%s\%s`, archive, name)
+		}
 	}
 	return ""
 }
 
-func (c *Client) playDialogueVoice(talk uint16, speaker uint32) {
+func (c *Client) playDialogueVoice(talk uint32, speaker uint32) {
 	if c.World != nil && c.Env.Sound != nil {
 		if c.sfx != nil {
 			c.sfx.StopVoice()

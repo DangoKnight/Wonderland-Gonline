@@ -28,7 +28,7 @@ func TestLoginWireFlow(t *testing.T) {
 	s := New(config.Default(), db, &assets.Catalog{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	client, host := net.Pipe()
 	defer client.Close()
-	c := &Session{conn: host, info: SessionInfo{ID: 1}, lastWindow: time.Now()}
+	c := s.networkSession(host, "", 1)
 	s.sessions[1] = c
 	done := make(chan struct{})
 	go func() { s.serve(context.Background(), c); close(done) }()
@@ -54,6 +54,12 @@ func TestLoginWireFlow(t *testing.T) {
 	}
 	if p := read(); p[0] != 54 || p[1] != 201 {
 		t.Fatal(p)
+	}
+	// Independent wire golden: one connection hello advertises collection
+	// timing and local backdrops, with full-round combat disabled. A Legacy
+	// client can ignore it and proceed with the native login exchange.
+	if p := read(); !bytes.Equal(p, []byte{1, 248, 71, 76, 79, 78, 1, 0, 13, 0, 0, 0}) {
+		t.Fatalf("connection capability %x", p)
 	}
 	login, _ := protocol.Builder{63, 4}.U16(1205).String("tester")
 	login, _ = login.String("password")

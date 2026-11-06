@@ -18,8 +18,8 @@ func TestSetLevelThresholdsAndRequestedCap(t *testing.T) {
 		t.Fatal("lowering a level reclaimed points")
 	}
 	c.SetLevel(200)
-	if c.Level != 199 || c.StatPoints != 603 {
-		t.Fatal("legacy requested-200 cap/point behavior changed", c.Level, c.StatPoints)
+	if c.Level != 199 || c.StatPoints != 600 {
+		t.Fatal("199 level cap/point behavior", c.Level, c.StatPoints)
 	}
 	c.StatPoints = math.MaxUint16 - 1
 	c.Level = 1

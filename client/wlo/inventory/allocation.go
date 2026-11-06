@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"math"
 	"time"
@@ -24,7 +26,7 @@ func (f *Form) initAllocation() {
 		b := f.button("Btn_ArrowUp_2", allocationArrowLeft, allocationArrowTop+i*allocationArrowStep, 9, 11, nil)
 		b.Tag = i
 		b.OnClickTag = f.AddPoint
-		b.SetHint([]byte("Allocate one attribute point"))
+		b.BindLanguage("hint", func() { b.SetHint([]byte(localization.UI("ui.inventory.allocate_one_attribute_point_1ea05d1b"))) })
 		f.Increase[i] = b
 	}
 	f.Allocate = f.button("Btn_OK_1", 0, 423, 56, 20, f.SubmitAllocation)
@@ -68,8 +70,10 @@ func (f *Form) CancelPoints() {
 	f.syncAllocationControls()
 }
 
-// SubmitAllocation ports FUN_003540c4: character target 0, counted stat/word
-// entries in STR, CON, INT, WIS, AGI order. AC8:1 replies supply final values.
+// SubmitAllocation ports FUN_003540c4: character target 0 and counted entries
+// in STR, CON, INT, WIS, AGI order. Use DWORD amounts on the wire: the server's
+// legacy decoder reads four bytes whenever available, so packed WORD amounts
+// would consume the following stat ID. AC8:1 replies supply final values.
 func (f *Form) SubmitAllocation() {
 	if !f.allocationAllowed() || f.AllocationWaiting || f.draftTotal() == 0 || f.draftTotal() > uint32(f.Stats.Points) || f.Send == nil {
 		return
@@ -84,7 +88,7 @@ func (f *Form) SubmitAllocation() {
 	for i, n := range f.PendingPoints {
 		if n != 0 {
 			p[3]++
-			p = p.U8(allocationStats[i]).U16(n)
+			p = p.U8(allocationStats[i]).U32(uint32(n))
 		}
 	}
 	f.PendingPoints = [allocationAttributes]uint16{}
@@ -106,7 +110,7 @@ func (f *Form) syncAllocationControls() {
 	if f.AllocationWaiting && f.Now != nil && !f.Now().Before(f.allocationSent.Add(allocationWait)) {
 		f.AllocationWaiting = false
 		if f.Notice != nil {
-			f.Notice("Attribute allocation has not been confirmed. Check your points before trying again.")
+			f.Notice(localization.UI("ui.inventory.attribute_allocation_has_not_been_confir_c3e45d21"))
 		}
 	}
 	if f.draftTotal() > uint32(f.Stats.Points) {

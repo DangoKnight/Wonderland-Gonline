@@ -14,11 +14,19 @@ type Op struct {
 	raw            assets.Operation
 }
 
+// MapLoad identifies the EVE operations that release a native movie's map hold.
+func (o Op) MapLoad() bool {
+	return o.Code == ActionPlayer && o.D1 == PlayerActionSceneTransition ||
+		o.Code == ActionServiceOrTeleport && o.D1 >= ServiceTeleportMinimumMapID
+}
+
 func DecodeOp(o assets.Operation) Op {
 	d := o.Data[:]
 	dw := func(i int) uint32 { return uint32(d[i]) | uint32(d[i+1])<<8 | uint32(d[i+2])<<16 | uint32(d[i+3])<<24 }
 	return Op{Index: o.Index, Code: d[0], D1: le16(d, 1), D2: le16(d, 3), D3: le16(d, 5), D4: le16(d, 7), DW1: dw(9), DW2: dw(13), DW3: dw(17), raw: o}
 }
+
+func (o Op) Raw() [21]byte { return o.raw.Data }
 
 // Value is DecodeActionValue: an amount packed across dialog4's high byte and dword1.
 func (o Op) Value() uint32 { return uint32(o.D4>>8) | o.DW1<<8 }
@@ -72,10 +80,20 @@ func (w *World) NPCEvents(mapID, click uint16) []*assets.Event {
 	if !ok {
 		return nil
 	}
+	return m.npcEvents(click)
+}
+
+func (m *Map) npcEvents(click uint16) []*assets.Event {
 	var out []*assets.Event
 	add := func(id uint16) {
-		ev, ok := w.Event(mapID, id)
-		if !ok || len(ev.Branches) == 0 {
+		var ev *assets.Event
+		for i := range m.data.Events {
+			if m.data.Events[i].ClickID == id {
+				ev = &m.data.Events[i]
+				break
+			}
+		}
+		if ev == nil || len(ev.Branches) == 0 {
 			return
 		}
 		for _, have := range out {
@@ -99,33 +117,38 @@ func (w *World) NPCEvents(mapID, click uint16) []*assets.Event {
 	return out
 }
 
-// RoamingBattle is IsRoamingBattleNpc: a field actor (flag 5) linked to an encounter.
+// RoamingBattle identifies mobile field combat actors by movement plus a native
+// battle-start operation, not an event-header whitelist or monster ID range.
+// Stationary actors retain the verified field-event compatibility values so
+// ordinary quest speakers do not disappear merely because they start a battle.
 func (w *World) RoamingBattle(mapID, click uint16) bool {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return false
 	}
+	return m.fieldBattles[click]
+}
+
+func (m *Map) indexFieldBattles() {
+	m.fieldBattles = make(map[uint16]bool)
 	for _, n := range m.data.NPCs {
-		if n.ClickID != click {
+		if n.Flags != ActorFlagFieldEncounter {
 			continue
 		}
-		if n.Flags != 5 {
-			return false
-		}
-		for _, id := range n.Events {
-			if ev, ok := w.Event(mapID, uint16(id)); ok && ev.Kind == 10 {
-				for _, br := range ev.Branches {
-					for _, o := range br.Operations {
-						if op := DecodeOp(o); op.Code == ActionBattle && op.D1 == 1 {
-							return true
-						}
+		mobile := n.WalkBehavior >= walkPatrol && n.WalkBehavior <= walkPatrolAlternate
+		for _, ev := range m.npcEvents(n.ClickID) {
+			if !mobile && ev.Kind != EventKindFieldBattle && ev.Kind != EventKindFieldBattleCompatibility8 {
+				continue
+			}
+			for _, br := range ev.Branches {
+				for _, o := range br.Operations {
+					if op := DecodeOp(o); (op.Code == ActionBattle || op.Code == ActionBattleAlternate) && op.D1 == BattleActionStart {
+						m.fieldBattles[n.ClickID] = true
 					}
 				}
 			}
 		}
-		return false
 	}
-	return false
 }
 
 // FindBranch is EveEventRuntime.FindBranch. trigger 0 selects a normal entry branch by
@@ -139,31 +162,22 @@ func (w *World) FindBranch(c *game.Character, v *View, mapID uint16, ev *assets.
 
 // FindBranchAt evaluates every timer in the branch against one instant.
 func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *assets.Event, trigger byte, question, answer uint16, exclude int, now time.Time) int {
+	x := StoryContext{Map: mapID, Event: ev.ClickID}
+	_, forward := w.StoryFirst(assets.StoryForwardOnly, c, v, x)
 	first := 0
-	if exclude >= 0 && (DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult || storyForwardOnly(mapID, ev.ClickID)) {
+	if exclude >= 0 && (DecodeCond(ev.Branches[exclude].Condition).Kind == ConditionChoiceResult || forward) {
 		first = exclude + 1
 	}
-	if mapID == storyXaolanHomeMap && (ev.ClickID == storyXaolanHomeFirst || ev.ClickID == storyXaolanHomeSecond) && xaolanFate(c) {
+	if _, blocked := w.StoryFirst(assets.StoryBlock, c, v, x); blocked {
 		return -1
 	}
 	order := make([]int, 0, len(ev.Branches))
-	// Native voucher hand-ins precede the broad greeting and transformation offer.
 	if trigger == TriggerEntry {
-		for i := first; i < len(ev.Branches); i++ {
-			if _, ok := BreillatExchange(ev, i); ok {
-				order = append(order, i)
-			}
-		}
-	}
-	// The broad greeting condition precedes the unlock condition in native data.
-	if trigger == TriggerEntry && IsBreillat(ev) && first <= BreillatOfferBranch-1 {
-		order = append(order, BreillatOfferBranch-1)
-	}
-	preferred := storyPreferredBranch(mapID, ev.ClickID)
-	if trigger == TriggerEntry && preferred != 0 {
-		for i := first; i < len(ev.Branches); i++ {
-			if ev.Branches[i].Index == preferred {
-				order = append(order, i)
+		for r := range w.StoryRules(assets.StoryPriority, c, v, x) {
+			for i := first; i < len(ev.Branches); i++ {
+				if ev.Branches[i].Index == byte(r.Value) {
+					order = append(order, i)
+				}
 			}
 		}
 	}
@@ -210,10 +224,21 @@ func (w *World) FindBranchAt(c *game.Character, v *View, mapID uint16, ev *asset
 
 // Speech reports whether an action is a dialogue line the client acknowledges.
 func (o Op) PlayerSpeech() bool {
-	return o.Code == ActionPlayer && o.D1 == PlayerActionSpeech && o.D2 >= MinDialogueID
+	return o.Code == ActionPlayer && o.D1 == PlayerActionSpeech && o.TalkID() >= MinDialogueID
 }
 func (o Op) NPCSpeech() bool {
-	return o.Code == ActionActor && (o.D2 == ActorActionSpeech || o.D2 == ActorActionSpeechAlternate) && o.D3 >= MinDialogueID
+	return o.Code == ActionActor && (o.D2 == ActorActionSpeech || o.D2 == ActorActionSpeechAlternate) && o.TalkID() >= MinDialogueID
+}
+
+func (o Op) TalkID() uint32 {
+	low, high := o.D3, o.D4
+	if o.Code == ActionPlayer {
+		low, high = o.D2, o.D3
+	}
+	if high > MaxTalkIDHighByte {
+		high = 0
+	}
+	return uint32(low) | uint32(high)<<16
 }
 
 // Choice reports a player (1/4) or actor (2/6) question.
@@ -251,8 +276,10 @@ func (o Op) Unsupported() bool {
 	case ActionMinigame:
 		return o.D1 == 0 || o.D1 > 255
 	case ActionTransform:
-		return !o.BreillatTransform()
-	case ActionWireCode10, ActionGather, ActionWireCode16, ActionWireCode17:
+		return false // Authorization and program shape are checked by the story policy.
+	case ActionMissionVariable:
+		return o.D2 != MissionVariableAdd
+	case ActionGather, ActionWireCode16:
 		return true
 	case ActionLearnSkill:
 		return o.D1 == 0 || o.D2 != 1 || o.D3 != 0 || o.Value() != 1
@@ -269,6 +296,24 @@ func (o Op) Unsupported() bool {
 // Formation lists the enemy templates of a map battle entry (EVE category 8): each
 // 3-byte member starts with a template ID; IDs below 10000 are not monsters.
 func (w *World) Formation(mapID, entry uint16) []uint32 {
+	members := w.FormationMembers(mapID, entry)
+	var out []uint32
+	for _, member := range members {
+		out = append(out, member.Template)
+	}
+	return out
+}
+
+// FormationMember preserves the third byte of a native three-byte battle
+// record. Repeated slots are occupants queued behind the same initial enemy.
+type FormationMember struct {
+	Template uint32
+	Slot     byte
+}
+
+const nativeBattleMemberBytes = 3 // NPC template UInt16 followed by occupant queue UInt8.
+
+func (w *World) FormationMembers(mapID, entry uint16) []FormationMember {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return nil
@@ -277,10 +322,10 @@ func (w *World) Formation(mapID, entry uint16) []uint32 {
 		if b.ClickID != entry {
 			continue
 		}
-		var out []uint32
-		for i := 0; i+3 <= len(b.Team1); i += 3 {
+		var out []FormationMember
+		for i := 0; i+nativeBattleMemberBytes <= len(b.Team1); i += nativeBattleMemberBytes {
 			if id := uint32(b.Team1[i]) | uint32(b.Team1[i+1])<<8; id >= MinMonsterTemplateID {
-				out = append(out, id)
+				out = append(out, FormationMember{Template: id, Slot: b.Team1[i+2]})
 			}
 		}
 		return out
@@ -335,7 +380,7 @@ func absCells(v int32) int32 {
 func (w *World) Entry(mapID, id uint16) (Area, bool) {
 	if m, ok := w.maps[mapID]; ok {
 		for _, e := range m.data.Entries {
-			if a := areaOf(e); a.ClickID == id && (a.Kind == RegionEntry || a.Kind == RegionDoor) {
+			if a := areaOf(e); a.ClickID == id && a.Kind >= RegionEntry && a.Kind <= RegionArea {
 				return a, true
 			}
 		}

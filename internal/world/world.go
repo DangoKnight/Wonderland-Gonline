@@ -25,18 +25,26 @@ type GroundItem struct {
 	ClickID uint16
 	ItemID  uint16
 	X, Y    uint16
+	Depth   int32
 	Respawn time.Duration
 }
 
 type Map struct {
-	ID    uint16
-	NPCs  []NPC // Ascending click ID, the AC22:4 order.
-	Items []GroundItem
-	data  assets.Map
+	ID             uint16
+	NPCs           []NPC // Ascending click ID, the AC22:4 order.
+	Items          []GroundItem
+	data           assets.Map
+	npcDefinitions map[uint16]int
+	fieldBattles   map[uint16]bool // Derived once from immutable EVE movement/event definitions.
 }
 
 func newMap(m assets.Map) *Map {
-	out := &Map{ID: m.ID, data: m}
+	out := &Map{ID: m.ID, data: m, npcDefinitions: make(map[uint16]int, len(m.NPCs))}
+	for i, n := range m.NPCs {
+		if _, exists := out.npcDefinitions[n.ClickID]; !exists {
+			out.npcDefinitions[n.ClickID] = i
+		}
+	}
 	for _, n := range m.NPCs {
 		// Corrupted entries have no click ID or no position.
 		if n.ClickID == 0 || (n.X == 0 && n.Y == 0) {
@@ -50,16 +58,14 @@ func newMap(m assets.Map) *Map {
 		if it.ItemID == 0 || (it.X == 0 && it.Y == 0) {
 			continue
 		}
-		g := GroundItem{Slot: slot, ClickID: it.ClickID, ItemID: uint16(it.ItemID), X: uint16(it.X), Y: uint16(it.Y), Respawn: 120 * time.Second}
+		g := GroundItem{Slot: slot, ClickID: it.ClickID, ItemID: uint16(it.ItemID), X: uint16(it.X), Y: uint16(it.Y), Depth: it.DrawDepth(), Respawn: groundItemRespawnInterval}
 		if it.ClickID > 0 && it.ClickID < 256 {
 			g.Slot = byte(it.ClickID)
-		}
-		if it.Unknown[0] > 0 {
-			g.Respawn = time.Duration(it.Unknown[0]) * time.Second
 		}
 		slot++
 		out.Items = append(out.Items, g)
 	}
+	out.indexFieldBattles()
 	return out
 }
 
@@ -83,16 +89,23 @@ func (m *Map) DoorPortal(click uint16) (uint16, bool) {
 }
 
 func (m *Map) npc(click uint16) (NPC, bool) {
-	for _, n := range m.NPCs {
-		if n.ClickID == click {
-			return n, true
-		}
+	i := sort.Search(len(m.NPCs), func(i int) bool { return m.NPCs[i].ClickID >= click })
+	if i < len(m.NPCs) && m.NPCs[i].ClickID == click {
+		return m.NPCs[i], true
 	}
 	return NPC{}, false
 }
 
+func (m *Map) npcDefinition(click uint16) assets.MapNPC {
+	if i, ok := m.npcDefinitions[click]; ok {
+		return m.data.NPCs[i]
+	}
+	return assets.MapNPC{}
+}
+
 // World is safe for concurrent use. Map definitions are immutable; ground state has its own lock.
 type World struct {
+	story    *storyRuntime
 	maps     map[uint16]*Map
 	catalog  *assets.Catalog
 	ground   ground
@@ -108,6 +121,7 @@ func New(c *assets.Catalog) *World {
 	for id, m := range c.Maps {
 		w.maps[id] = newMap(m)
 	}
+	w.indexStory()
 	return w
 }
 
@@ -133,7 +147,12 @@ func questPropOpened(m *Map, n NPC, c *game.Character) bool {
 	if expiry, ok := c.ChestRespawns[ChestKey(c.Map, n.ClickID)]; ok {
 		return time.Now().Before(expiry)
 	}
-	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= 12000 && n.Template <= 12999)) {
+	// Native breakable containers need not belong to the chest template
+	// ranges. Their claimed reward is the authoritative opened-state receipt.
+	if q, ok := c.Quests[ChestKey(c.Map, n.ClickID)]; ok && q.State == game.Completed {
+		return true
+	}
+	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax) || (n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax)) {
 		return false
 	}
 	for _, ev := range m.data.Events {
@@ -161,8 +180,8 @@ func NPCRecord(click, state, x, y uint16, hidden bool) protocol.Builder {
 	return protocol.Builder{}.U16(click).U16(state).U16(x).U16(y).U8(kind).U32(duration).U8(0)
 }
 
-func groundItem(p protocol.Builder, slot byte, item, x, y uint16) protocol.Builder {
-	return p.U8(3).U16(uint16(slot)).U32(uint32(item)).U16(x).U16(y).U32(0)
+func groundItem(p protocol.Builder, slot byte, item, x, y uint16, depth int32) protocol.Builder {
+	return p.U8(3).U16(uint16(slot)).U32(uint32(item)).U16(x).U16(y).U32(uint32(depth))
 }
 
 // MapInfo follows SendMapInfo for a character entering its current map. players lists
@@ -205,9 +224,11 @@ func (w *World) ReloadEvents(maps map[uint16]assets.Map) {
 		if old, ok := w.maps[id]; ok {
 			copy := *old
 			copy.data.Events, copy.data.PreEvents = updated.Events, updated.PreEvents
+			copy.indexFieldBattles()
 			w.maps[id] = &copy
 		}
 	}
+	w.indexStoryRepairs()
 }
 
 // ReloadCatalog changes definitions while preserving runtime item/monster state.
@@ -219,4 +240,8 @@ func (w *World) ReloadCatalog(c *assets.Catalog) {
 	}
 	w.maps = maps
 	w.catalog = c
+	w.indexStory()
 }
+
+// ReloadStory publishes definitions under the same external ownership lock as events.
+func (w *World) ReloadStory(d assets.StoryDefinitions) { w.catalog.Story = d; w.indexStory() }

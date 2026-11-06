@@ -2,9 +2,9 @@
 
 ## Database upgrade
 
-Current server startup requires gameplay schema **v15** and structured assets
-schema **v10**. Economy/social tables were introduced in earlier versions.
-Use the preserving offline copy procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
+Current server startup requires gameplay schema **v18** and structured assets
+schema **v16**. Economy/social tables were introduced in earlier versions.
+Use the preserving offline upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,
 relationships and administrator content edits are retained. Repeat migration
@@ -18,6 +18,35 @@ not change an existing installation. The seed projects the authored definitions
 in Private Server's `TentManufactureManager`, `GatheringManager`,
 `MarriageManager` and `AlchemyManager`; their item names are not assumed to match
 WLRI. Missing item definitions reject operations before consuming resources.
+
+## Player item trades
+
+AC25 follows aLogin's direction-specific protocol. AC25:1 with a target ID opens
+both trade forms immediately when both nearby players are available and allow
+trades. The Private Server reference at `1ff5bba` also opens both forms immediately;
+its older pending-request and incremental-offer aliases remain separate paths.
+There is no pending invitation. World entry sends AC25:44 value 2 to enable the
+native client's online-time flag; the server imposes no online-time delay.
+
+AC25:2 locks one offer: gold as U32 followed by up to 20 distinct bag-slot bytes,
+each offering a whole stack. It cannot be revised after locking. The partner
+receives AC25:3 with gold and 30-byte item records, including damage and all
+26 metadata bytes. Once both offers are locked, AC25:3 value 1 from each player
+commits both inventories and balances in one SQL transaction against current
+ownership and exact offered records. Failed validation or persistence transfers
+nothing. Success publishes inventory/gold updates and AC25:2 result 4 after commit.
+
+The reference still saves players separately and transfers received items by
+ID/quantity, which recreates their instance state. Go preserves damage and metadata
+and rejects offers whose exact items changed. It removes outgoing items from both
+planned inventories before granting incoming items, permitting valid full-bag
+swaps. The reference checks incoming capacity first and does not enforce its
+offer-lock fields. These differences are why the existing Go exchange is retained.
+
+AC25:3 value 2 cancels, notifying the partner with AC25:2 result 9. Disconnect
+uses result 1; other server interruptions close both forms with results 3 and 9.
+See [client controls and wire layouts](CLIENT.md#trade-ported-in-part-clientwloinventorytradego-clientwlohudbusinessgo-clientwloapptradego)
+for the remaining client restrictions and presentation gaps.
 
 ## Player stalls
 
@@ -36,9 +65,16 @@ Ordinary chat and read-only synchronization can continue. Items are not removed
 from the owner's inventory until a purchase commits. Sellers in battle or active
 interactions cannot sell. A stall's distance limit matches player trading.
 
-The separate native market browser (AC23:77) keeps its verified empty-list/end
-sequence. Private Server supplies no nonempty catalog layout; use map signs and
-AC56 instead. Purchase-history requests remain unimplemented.
+Native item stalls also accept AC23:30/31/32/33 for open, close, browse and
+purchase. Browse packets contain up to five native rows; quoted item IDs and
+prices must still match. Native AC23:30 opens with a title, style and five-byte
+bag-slot/price records, offering the whole stack; six-byte quantity records remain
+an explicit compatibility form. Native listings retain bag-slot keys and replay
+map state/styles, with AC56:30 zero terminating the scene stall list.
+AC23:77 retains its separate empty market list.
+Persistent administrator bazaars and pet/vehicle stalls use typed SQL stock and
+transactional purchases; see [the source update](SOURCE_UPDATES.md). Purchase
+history remains pending.
 
 ## Guilds
 
@@ -105,8 +141,9 @@ Fees, ingredients and output commit in one authoritative SQL transaction; a full
 bag on a successful attempt or missing material consumes nothing. An authored
 failed attempt consumes ingredients and its fee without granting output. Repeated input IDs consume the combined recipe cost. These
 handlers follow the reference's workbench-name selection. Tent furniture now
-lives in isolated homes; linking manufacturing recipes to verified physical
-workbench item identities remains pending.
+lives in isolated homes. These two-input paths retain workbench-name matching;
+native AC64 separately checks placed owned benches, tools and plans, with durable
+timed output. See [manufacturing](MANUFACTURING_CHARACTER_STATE.md).
 
 `/compound <slot1> <slot2> [slot3] [slot4] [slot5]` (alias `/synthesize`)
 shares the rank/base engine with native AC23 and compatibility AC40. See
@@ -121,6 +158,22 @@ these gathering runs. `/fish` uses the rod/shoreline/proficiency system describe
 in [FISHING.md](FISHING.md); `/stop` stops either activity. Fishing retains
 proficiency when a full bag discards a catch. No incompatible short AC5 animation
 packets are emitted.
+
+## NPC vendor purchases
+
+EVE shop services open the native AC35:12 catalog. AC27:1 accepts native carts,
+resolves slots through the current map catalog (or configured SQL defaults), and
+commits the complete delivery with the gold debit. An arbitrary item ID outside
+the active catalog cannot be bought. Prices are in `NPCBuyPrices`; existing sale
+prices remain independent. Native sell choices retain their AC27 sale window.
+
+## EVE gathering nodes
+
+`EventGathering` supplies all imported EVE pool/variant and timer definitions.
+Complete branches may grant multiple pooled rewards followed by a three-minute
+node timer and optional mark. SQL commits rewards, timer and mark together after
+rechecking the branch. The pools use upstream equal weights. Ordinary continuous
+`/mine`, `/chop` and fishing pools remain separate definitions.
 
 ## Shared resource nodes
 
@@ -167,11 +220,12 @@ by supplied username. Any future player HTTP checkout must authenticate ownershi
 and use the same SQL transaction guarantees as native purchases.
 
 Purchases, fees, transfers, rewards and parcel claims stay immediately durable.
-Buffered walking preserves pending position when adopting a committed SQL
-result. Guarded checkpoints must not undo balances, attachments or draw usage.
+Buffered walking and resting recovery preserve pending position and HP/SP
+when adopting a committed SQL result that leaves those saved fields unchanged.
+Guarded checkpoints must not undo balances, attachments or draw usage.
 See DEVELOPMENT.md for the persistence boundary and remaining concurrency limits.
 
-## Focused migration verification
+## Retained compatibility rules
 
 AC45 retains the reference default: unknown bank subcommands return the private
 AC45:8 bank/wallet snapshot, ignoring any payload and changing no balances. PIN
@@ -183,4 +237,36 @@ overflow and reopen.
 Recipe lookup retains authored entries before Compound2 then Compound, including
 first-match priority when inputs have multiple outputs. Typed SQL reload preserves
 this order independently of import snapshots. Manufacturing keeps first matching
-workbench order. See [focused results](PORTING.md#focused-migration-verification--2026-10-04).
+workbench order. See [focused results](TESTING.md#migration-verification-recorded-on-2026-10-04).
+
+## Persistent administrator bazaars
+
+Administrators can create vendors at their current ordinary-world position:
+
+```
+/bazaar create item finite 32176:100:50 Traveling supplies
+/bazaar create pet infinite 17162:10000:1 Companions
+/bazaar create vehicle finite 48010:5000:3 Transport
+/bazaar list
+/bazaar remove <vendor ID>
+```
+
+Each entry is `definition ID:unit price:stock`. Item, pet and vehicle/appliance
+stalls have native capacities of five, fifteen and three rows. Definitions must
+exist; no fictional fallback catalog is created. Vendor IDs start above the
+player-character range. Vendor identity, stock and settings persist in gameplay
+SQL and replay on map entry. Source operator-owned example stalls are excluded
+from initialization.
+
+Native AC23:32 browses a vendor. Item carts use AC23:33; pet and vehicle purchases
+use AC23:63 and :68, with their separate :113/:133 browse layouts. Browsing saves
+a quote; purchases require proximity and revalidate the entire cart, SQL funds,
+finite stock, bag capacity or pet eligibility before committing. Stock, payment
+and delivery commit together. Pets retain the normal ownership/capacity and
+companion-alias checks. Limited-stock sales survive restarts.
+
+Personal item stalls retain AC56 and native AC23. Alternative AC53 and AC20
+adapters share those transactions; automatic opening lists actual unlocked owned
+items and never invents goods for an empty bag. Native item quotes include the
+advertised ID and price. Walking closes personal stalls and invalidates NPC shop
+sessions. Administrative vendor creation/removal requires GM authority.

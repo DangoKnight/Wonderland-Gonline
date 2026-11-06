@@ -51,7 +51,7 @@ func TestNativeItemCompleteGoldenRecord(t *testing.T) {
 	if len(items) != 1 || !bytes.Equal(v.Record[:], decoded) || !bytes.Equal(data, before) {
 		t.Fatal("full decryption or source isolation failed")
 	}
-	if v.Definition != (game.ItemDefinition{CellWidth: 187, CellHeight: 224, ID: 10002, Name: "測試Item", Type: 4, EquipSlot: 3, Level: 12, Status: [2]uint16{210, 214}, Values: [2]int32{120, -2}}) || v.Description != "中文 description" || v.Icon != 525 || v.LargeIcon != 1000 || v.Sprites != [4]uint16{10, 20, 30, 40} {
+	if v.Definition != (game.ItemDefinition{CellWidth: 187, CellHeight: 224, ID: 10002, Name: "測試Item", Type: 4, EquipSlot: 3, Level: 12, EquipLevel: 98, Status: [2]uint16{210, 214}, Values: [2]int32{120, -2}}) || v.Description != "中文 description" || v.Icon != 525 || v.LargeIcon != 1000 || v.Sprites != [4]uint16{10, 20, 30, 40} {
 		t.Fatal(v)
 	}
 	// Zero IDs are decoded then skipped. The first duplicate wins.
@@ -173,5 +173,13 @@ func TestTranslatedClientNativeItemCatalog(t *testing.T) {
 	}
 	if got := fmt.Sprintf("%x", h.Sum(nil)); got != "105274f6b0e8f063d18ebb00cda3f37c383e5b44145013dd66afec12eea1f84d" {
 		t.Fatal("translated catalog decoded hash", got)
+	}
+}
+
+func TestNativeItemBuyPrice(t *testing.T) {
+	var item NativeItem
+	item.Record[114], item.Record[115], item.Record[116], item.Record[117] = 0x2a, 0, 0, 0
+	if bought := item.BuyPrice(); bought != 42 {
+		t.Fatalf("buy price %d", bought)
 	}
 }

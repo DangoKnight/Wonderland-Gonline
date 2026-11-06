@@ -1,14 +1,18 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"image"
+	"strconv"
 	"time"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/team"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -22,9 +26,50 @@ func (c *Client) initTeam() {
 	c.resources.loadInstances(c.Assets)
 	c.Team.Instances.Definitions = c.resources.instanceDefinitions
 	c.Team.CanAct = c.Inventory.CanAct
-	c.Team.Send = c.Net.Send
+	c.Team.InBattle = func() bool { return c.battle.state.Active }
+	c.Team.CanChangePet = c.canChangeBattlePet
+	c.Team.RidingVehicle = func() bool { return c.World != nil && c.World.Player.VehicleID != 0 }
+	c.Team.Send = func(p []byte) error {
+		if err := c.Net.Send(p); err != nil {
+			return err
+		}
+		if c.battle.state.Active && len(p) >= 2 && p[0] == protocol.CommandBattlePet {
+			// FUN_00277728 closes selection after AC19; no AC50 Defend is sent.
+			c.combat.choices, c.combat.choiceToken = nil, 0
+			c.battle.state.Ready, c.remote.battle.ready, c.battle.timerOn = false, false, false
+			c.battle.binding = nil
+			c.battle.item = nil
+			c.closeHotbarTarget()
+			c.Team.Hide()
+		}
+		return nil
+	}
 	c.Team.Notice = c.Chat.Notice
 	c.Team.NameOf = c.playerName
+	// FUN_0025a8f8/FUN_0034c814 copy the applicant into the request window.
+	// This preview must not change the animated overworld role.
+	applicants := make(map[uint32]*role.Human)
+	c.Team.DrawPlayerBody = func(id uint32, x, y, action int) {
+		if c.lib == nil || c.World == nil {
+			return
+		}
+		peer := c.World.Peers[id]
+		if peer == nil {
+			peer = c.teamAppearances[id]
+		}
+		if peer == nil {
+			return
+		}
+		h := applicants[id]
+		if h == nil {
+			h = role.NewHuman(c.lib, c.items)
+			h.Now = c.Now
+			h.Hold(0, false)
+			applicants[id] = h
+		}
+		world.Dress(h, peer.Player)
+		h.DrawBody(c.Screen, x, y, int32(action))
+	}
 	// Confirmation previews have their own fixed frame, independent of Inventory.
 	previews := make(map[uint16]*role.NPC)
 	preview := func(slot byte) *role.NPC {
@@ -50,7 +95,7 @@ func (c *Client) initTeam() {
 	}
 	c.Team.DrawPetBody = func(slot byte, x, y, action int) {
 		if n := preview(slot); n != nil {
-			n.Draw(c.Screen, x, y, action)
+			n.Draw(c.Env.Screen, x, y, action)
 		}
 	}
 	c.Team.PetPreviewSize = func(slot byte) (int, int) {
@@ -97,16 +142,14 @@ func (c *Client) initTeam() {
 	c.UI.Add(c.Team)
 	c.MainButtons.Buttons[mainTeamButton].OnClick = c.toggleTeam
 	c.FuncButtons.Buttons[joinTeamButton].OnClick = c.toggleJoinTeam
+	c.FuncButtons.Buttons[makeFriendsButton].OnClick = c.makeFriends
 }
 
 // Join Team is a world selection tool: clicking the toolbar arms it;
 // the next player click sends the native AC13:1 invitation request.
 func (c *Client) setJoinTeamTarget(active bool) {
 	c.joinTeamTarget = active
-	if c.World != nil {
-		c.World.JoinTeamSelection = active
-		c.World.Hover(-1, -1)
-	}
+	c.syncTargetSelection()
 	if c.FuncButtons != nil && c.FuncButtons.Buttons[joinTeamButton] != nil {
 		c.FuncButtons.Buttons[joinTeamButton].IconDown = active
 	}
@@ -116,22 +159,24 @@ func (c *Client) toggleJoinTeam() {
 		c.setJoinTeamTarget(false)
 		return
 	}
-	if c.World == nil || !c.Inventory.CanAct() || c.UI.Modal != nil {
+	if c.World == nil || !c.Inventory.CanAct() || c.UI.Modal != nil || c.toolbarBlocked(joinTeamButton) {
 		return
 	}
 	if c.inTeam() {
-		c.Notices.Show([]byte("Leave your current party before joining another."), inventoryWarningDuration, c.Now())
+		c.Notices.Show([]byte(localization.UI("ui.app.leave_your_current_party_before_joining__c47308b7")), inventoryWarningDuration, c.Now())
 		return
 	}
 	c.Team.Hide()
 	c.World.StopWalk()
 	c.groundHeld = false
+	c.setFriendTarget(false)
+	c.setTradeTarget(false)
 	c.setJoinTeamTarget(true)
 }
 func (c *Client) toggleTeam() {
 	if c.Team.Visible {
 		c.Team.Hide()
-	} else if c.Inventory.CanAct() && c.UI.Modal == nil {
+	} else if c.canOpenModule() && c.UI.Modal == nil {
 		c.Team.Show()
 	}
 }
@@ -152,6 +197,14 @@ func (c *Client) TeamKey(key uint16, shift byte) bool {
 		c.setJoinTeamTarget(false)
 		return true
 	}
+	if key == escapeKey && c.friendTarget {
+		c.setFriendTarget(false)
+		return true
+	}
+	if key == escapeKey && c.tradeTarget {
+		c.setTradeTarget(false)
+		return true
+	}
 	if key == escapeKey && c.Team.Visible && (c.UI.Active == c.Team || c.Input.Focused != nil && c.Input.Focused.Base().Root() == c.Team) {
 		c.Team.Hide()
 		return true
@@ -167,12 +220,16 @@ func (c *Client) teamTargetAt(x, y int) bool {
 		return true
 	}
 	if id := c.World.TeamTargetAt(x, y); id != 0 {
+		if members := c.World.TeamMembers(id); len(members) > 1 {
+			id = members[0]
+		}
 		c.setJoinTeamTarget(false)
 		if err := c.Net.Send(protocol.Builder{protocol.CommandTeam, protocol.TeamRequest}.U32(id)); err != nil {
 			c.Notices.Show([]byte(err.Error()), inventoryWarningDuration, c.Now())
 		}
 		return true
 	}
+	c.setJoinTeamTarget(false)
 	return true
 }
 func (c *Client) rememberTeammate(peer *world.Peer) {
@@ -204,9 +261,12 @@ func (c *Client) teamPacket(p []byte) bool {
 		}
 		return true
 	case protocol.CommandTeam:
+		if p[1] == protocol.TeamLeadershipNotice {
+			return c.teamLeadershipPacket(p)
+		}
 		switch p[1] {
 		case protocol.TeamRoster:
-			if !c.TeamState.ApplyRoster(p) && c.Unhandled != nil {
+			if !c.applyTeamFormation(p) && c.Unhandled != nil {
 				c.Unhandled(p)
 			}
 			if c.inTeam() {
@@ -215,18 +275,24 @@ func (c *Client) teamPacket(p []byte) bool {
 			c.Team.Refresh()
 			return true
 		case protocol.TeamRequest:
-			if len(p) < 7 || len(p) != 7+int(p[6]) {
+			if len(p) != protocol.TeamIDPacketBytes && (len(p) < protocol.TeamJoinReplyBytes || len(p) != protocol.TeamJoinReplyBytes+int(p[6])) {
 				if c.Unhandled != nil {
 					c.Unhandled(p)
 				}
 				return true
 			}
 			id := binary.LittleEndian.Uint32(p[2:])
-			name := append([]byte(nil), p[7:]...)
+			name := append([]byte(nil), c.playerName(id)...)
+			if len(p) > protocol.TeamIDPacketBytes {
+				name = append([]byte(nil), p[7:]...)
+			}
+			if len(name) == 0 {
+				name = []byte(localization.UI("ui.team.player_2b656543") + strconv.FormatUint(uint64(id), 10))
+			}
 			if id == 0 || id == c.World.Player.ID {
 				return true
 			}
-			c.Team.Confirm(string(name)+": Please let me join you!", 0, func() {
+			c.Team.ConfirmApplicant(id, name, localization.UI("ui.app.please_let_me_join_you_d49b7c95"), func() {
 				if c.Inventory.CanAct() {
 					if err := c.Net.Send(protocol.Builder{protocol.CommandTeam, protocol.TeamReply, 1}.U32(id)); err != nil {
 						c.Notices.Show([]byte(err.Error()), inventoryWarningDuration, c.Now())
@@ -240,13 +306,20 @@ func (c *Client) teamPacket(p []byte) bool {
 				}
 			})
 			return true
-		case protocol.TeamLeave:
-			if len(p) == 6 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID {
-				c.TeamState.Reset(c.World.Player.ID)
+		case protocol.TeamReply:
+			if len(p) == protocol.TeamJoinReplyBytes && p[2] == 1 {
+				leader := binary.LittleEndian.Uint32(p[3:])
+				if leader != c.World.Player.ID {
+					c.applyTeamFormation(protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(leader).U32(c.World.Player.ID))
+				}
 			}
 			return true
+		case protocol.TeamLeave:
+			c.applyTeamFormation(p)
+			return true
 		case protocol.TeamFormation:
-			return true // Public follow presentation is independent of own membership.
+			c.applyTeamFormation(p)
+			return true
 		}
 	case protocol.CommandStats:
 		if p[1] == protocol.StatsWireCode3 {
@@ -269,6 +342,7 @@ func (c *Client) teamPacket(p []byte) bool {
 			}
 			id := uint16(binary.LittleEndian.Uint32(p[2:]))
 			c.TeamState.BattlePet = id
+			c.remote.activePet = uint32(id)
 			c.showCompanion(c.World.Player.ID, id, nil)
 			return true
 		case protocol.BattlePetRest:
@@ -276,6 +350,7 @@ func (c *Client) teamPacket(p []byte) bool {
 				return true
 			}
 			c.TeamState.BattlePet = 0
+			c.remote.activePet = 0
 			delete(c.World.Companions, c.World.Player.ID)
 			return true
 		case protocol.BattlePetWireCode7:
@@ -286,7 +361,7 @@ func (c *Client) teamPacket(p []byte) bool {
 		}
 	case protocol.CommandPetControl:
 		switch p[1] {
-		case protocol.PetControlBoardVehicleAlternate:
+		case protocol.PetControlPetName:
 			if len(p) >= 7 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID && p[6] >= 1 && p[6] <= game.MaxPets {
 				pet := &c.InventoryState.Pets[p[6]-1]
 				pet.Name = append([]byte(nil), p[7:]...)
@@ -328,9 +403,12 @@ func (c *Client) teamPacket(p []byte) bool {
 			c.showCompanion(binary.LittleEndian.Uint32(p[2:]), uint16(binary.LittleEndian.Uint32(p[6:])), p[13:13+nameLen])
 			return true
 		case protocol.PetControlWireCode1:
+			before := c.InventoryState.Pets
 			if c.InventoryState.ApplyPetRecruit(p, c.World.Player.ID) {
 				c.assignPetSkills()
+				c.announceNewPets(before)
 				c.Skills.Refresh()
+				c.BattleSkills.Refresh()
 			}
 			return true
 		case protocol.PetControlPetSlot:
@@ -359,6 +437,7 @@ func (c *Client) showCompanion(owner uint32, id uint16, name []byte) {
 	}
 	t, ok := c.npcTemplates[uint32(id)]
 	if !ok {
+		c.World.SetCompanion(owner, uint32(id), name, nil)
 		return
 	}
 	if len(name) == 0 && owner == c.World.Player.ID {
@@ -370,7 +449,7 @@ func (c *Client) showCompanion(owner uint32, id uint16, name []byte) {
 		}
 	}
 	if len(name) == 0 {
-		name = []byte(t.Name)
+		name = clientassets.Big5Text(t.Name)
 	}
 	var painter world.NPCPainter
 	if c.lib != nil {

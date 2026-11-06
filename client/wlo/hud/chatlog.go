@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"image"
@@ -43,13 +45,14 @@ type ChatLog struct {
 	Pointer func() (int, int)
 	Hovered uint32
 
-	ticker  []byte   // +0x170, the shown ticker text
-	queue   [][]byte // +0x178, system lines waiting for the ticker
-	message []byte   // +0x174, the line being typed in
-	next    int      // +0x188, its next character (from 1)
-	plays   int      // +0x18a, how often it has played
-	tickAt  time.Time
-	strip   int // Panel_TalkForm2_1, the strip in this mode
+	ticker       []byte   // +0x170, the shown ticker text
+	queue        [][]byte // +0x178, system lines waiting for the ticker
+	message      []byte   // +0x174, the line being typed in
+	next         int      // +0x188, its next character (from 1)
+	plays        int      // +0x18a, how often it has played
+	tickAt       time.Time
+	strip        int // Panel_TalkForm2_1, the strip in this mode
+	tickerCanvas *surface.Surface
 }
 
 // ChatLine is one wrapped row of the list.
@@ -195,10 +198,10 @@ func NewChatLog(env *seui.Env) *ChatLog {
 	l.Name = "TTalkMsgForm"
 	l.Draggable = false
 	l.Init("", chatLeft, 0, 0, 0, 0, false, chatHeight, chatWidth, chatTop)
-	l.Lock = newBarButton(env, l, "Btn_MsgLock_1", chatLockLeft, chatLockY, "Chatbox Lock")
-	l.Up = newBarButton(env, l, "Btn_ArrowUp_1", chatArrowLeft, chatUpTop, "")
-	l.Down = newBarButton(env, l, "Btn_ArrowDn_1", chatArrowLeft, chatHeight-chatDownFromBottom, "")
-	l.Switch = newBarButton(env, l, "Btn_Transition_1", chatSwitchLeft, chatHeight-chatSwitchFromBottom, "Chat Box Switch")
+	l.Lock = newBarButton(env, l, "Btn_MsgLock_1", chatLockLeft, chatLockY, func() string { return localization.UI("ui.hud.chatbox_lock_7ab908d9") })
+	l.Up = newBarButton(env, l, "Btn_ArrowUp_1", chatArrowLeft, chatUpTop, nil)
+	l.Down = newBarButton(env, l, "Btn_ArrowDn_1", chatArrowLeft, chatHeight-chatDownFromBottom, nil)
+	l.Switch = newBarButton(env, l, "Btn_Transition_1", chatSwitchLeft, chatHeight-chatSwitchFromBottom, func() string { return localization.UI("ui.hud.chat_box_switch_1e178753") })
 	l.Scroll = seui.NewScrollButton(env, l)
 	l.Scroll.Init("", chatScrollLeft, 0, 0, 0, 0, false, chatScrollH, chatScrollWidth, chatScrollTop)
 	l.Scroll.SetThumb("bar_H4", 0, 21, chatThumbWidth, 0)
@@ -365,7 +368,7 @@ func (l *ChatLog) tick() {
 // Paint draws the scroll bar, the list's rows (newest at the bottom) and
 // the ticker.
 func (l *ChatLog) Paint() {
-	scr, pics, txt := l.Env.Screen, l.Env.Pics, l.Env.Text
+	scr, pics := l.Env.Screen, l.Env.Pics
 	if l.Mode == ChatOpaque && l.background != nil {
 		l.drawBackgroundGrid()
 		l.background.Left, l.background.Top = l.Left, l.Top
@@ -396,9 +399,43 @@ func (l *ChatLog) Paint() {
 	}
 	l.tick()
 	if l.ticker != nil {
-		shown := l.ticker[:l.tickerBytes()]
-		txt.Draw(l.Left+chatTickerX, l.Top+l.Height-(chatTop+chatHeight-chatTickerY), 0, false, true, scr, shown, 0, len(shown)*chatCharWidth+chatCharWidth, 0, ChannelInk(ChannelSystem), chatTextStyle)
+		l.paintTicker()
 	}
+}
+
+// Interpolate between the native character ticks. Draw into a small transparent
+// strip so partial glyphs are clipped at both edges of the chat window.
+func (l *ChatLog) paintTicker() {
+	width := min(chatTickerShown*chatCharWidth, max(l.listWidth(), chatCharWidth))
+	const extra = 2 * chatCharWidth // One complete Big5 glyph beyond the right edge.
+	if l.tickerCanvas == nil || l.tickerCanvas.W != width+extra {
+		l.tickerCanvas = surface.New(width+extra, chatRowHeight)
+	}
+	l.tickerCanvas.Fill(image.Rect(0, 0, width+extra, chatRowHeight), 0)
+	text := append([]byte(nil), l.ticker...)
+	if l.next < len(l.message) {
+		n := 1
+		if l.message[l.next] >= 0x80 && l.next+1 < len(l.message) {
+			n = 2
+		}
+		text = append(text, l.message[l.next:l.next+n]...)
+	}
+	// Disable wrapping; the canvas itself clips the off-screen glyphs.
+	l.Env.Text.Draw(0, 0, 0, false, true, l.tickerCanvas, text, 0, (len(text)+1)*chatCharWidth, 0, ChannelInk(ChannelSystem), chatTextStyle)
+	offset := l.tickerOffset(l.Now())
+	l.Env.Screen.DrawRect(l.Left+chatTickerX, l.Top+l.Height-(chatTop+chatHeight-chatTickerY), image.Rect(offset, 0, offset+width, chatRowHeight), l.tickerCanvas, true)
+}
+
+func (l *ChatLog) tickerOffset(now time.Time) int {
+	if len(l.ticker) == 0 {
+		return 0
+	}
+	step := chatCharWidth
+	if l.ticker[0] >= 0x80 && len(l.ticker) > 1 {
+		step *= 2
+	}
+	elapsed := max(time.Duration(0), min(now.Sub(l.tickAt), chatTickerEvery))
+	return int(elapsed * time.Duration(step) / chatTickerEvery)
 }
 
 // SetLocked freezes the current viewport while other players add messages.
@@ -413,9 +450,9 @@ func (l *ChatLog) SetLocked(locked bool) {
 		l.firstRow = max(len(l.Lines)-l.rows(), 0)
 	}
 	if l.Lock != nil {
-		picture, hint := "Btn_MsgLock_1", "Chatbox: Unlocked"
+		picture, hint := "Btn_MsgLock_1", localization.UI("ui.hud.chatbox_unlocked_0457341a")
 		if locked {
-			picture, hint = "Btn_MsgLock_2", "Chatbox: Locked"
+			picture, hint = "Btn_MsgLock_2", localization.UI("ui.hud.chatbox_locked_3bf494c5")
 		}
 		l.Lock.Image = l.Env.Pics.Find(picture)
 		l.Lock.SetHint([]byte(hint))

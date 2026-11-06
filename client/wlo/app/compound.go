@@ -25,7 +25,7 @@ func (c *Client) initCompound() {
 func (c *Client) toggleCompound() {
 	if c.Compound.Visible {
 		c.Compound.Hide()
-	} else if c.Inventory.CanAct() && c.UI.Modal == nil {
+	} else if c.canOpenModule() && c.UI.Modal == nil {
 		c.Compound.Show()
 	}
 }

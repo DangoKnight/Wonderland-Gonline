@@ -13,9 +13,10 @@ frames. This records presentation and recovery; it does not infer new reward
 probabilities or override authored event conditions. Existing transactional
 resource-node grants retain their configured cooldowns.
 
-Gameplay schema v15 adds `map_props.frame`, preserving old implicit broken frames
-with default one. Asset schema remains v9. Use the preserving database-copy
-procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md); installation data is not reset.
+Gameplay schema v15 introduced `map_props.frame`, preserving old implicit broken
+frames with default one. Current startup requires gameplay v18 and assets v16.
+Use the preserving in-place upgrade in [ASSET_DATABASE.md](ASSET_DATABASE.md);
+installation data is not reset.
 
 ## Generic NPC greeting
 
@@ -59,16 +60,15 @@ PvP keeps the owner's explicit no-reward rule: no EXP, gold, loot or captures.
 Private Server's attacking-victory 150 EXP/100 gold grant is deliberately omitted.
 Native animation/HUD and multiplayer/load acceptance remain separate work.
 
-## Laura exit fallback remains pending
+## Laura exit gift
 
-The reference adds a gift on map 10001 → 10000 using IDs 32000, 32075 and quest
-10035. The extracted WLRI catalog has no item 32000, calls 32075 Chocolate and
-32001 White Rice; the actual Tent is 36002. Inspection of typed event operations
-on maps 10000/10001 found no matching positive item reward. These facts do not
-identify a verified replacement cutscene, remote or completion mark. No duplicate
-hardcoded fallback is added. Authored EVE rewards elsewhere retain their normal
-transactional execution. Verify native content/captures before implementing this
-separate fallback.
+Upstream 1ff5bba corrects the 10001 → 10000 exit reward to Tent 36002 and Remote
+Control 34058, with talk 30126 and completion mark 10035. Asset v14 stores the
+route and reward in `MapTransitions`. The exit resolves to (1892,1655) on map
+10000. Both items, the mark and the destination commit together. A full bag
+retains the old scene and items; a completed mark prevents repeat grants even
+after the tent is consumed or sold. Existing old-tent ownership suppresses the
+compatibility fallback. No player state from the source snapshot is imported.
 
 ## Starter Beach monkey cinematic
 
@@ -81,7 +81,8 @@ play the cinematic.
 
 The rescue controller now reads its movie operations from the assets database
 and sends the native AC20:1 kind-5 frames in order, waiting for AC20:6 after
-each movie. It then commits the companion and marks 12002/12003 together.
+each movie in playback mode one. Full-party attempts play only the first
+movie before their explanation. It then commits the companion and marks 12002/12003 together.
 Full-party attempts explain the capacity limit without completing the quest;
 cancelled movies and failed commits do not grant or hide the companion.
 Definitions without movie operations retain the older dialogue sequence.
@@ -101,5 +102,62 @@ movie 12000. Movie 11011 has the illustration background `JRPJRole_5_3`, rather
 than a map. `JRP` is resolved to the exported JPEG picture; the 832×640 artwork
 is drawn opaque at the authored camera origin and cropped to the 800×600 game
 viewport. It does not reuse the current map or its objects. Owned pet speakers
-prefer their roster nickname. Focused tests cover both movies' completion,
-the authored depth offset, visible illustration pixels and compiled GPU parity.
+prefer their roster nickname. Verification is recorded in [TESTING.md](TESTING.md).
+
+Noa's introduction (movie 26005) names `JRole_5_80` directly, without a `JRP`
+prefix. The native movie loader distinguishes map backgrounds from registered
+illustrations; both direct image names and prefixed names now use the same JPEG
+lookup and empty world view. A rendering regression checks the 832×640 Noa
+illustration against the displayed scene so a fallback to the current map fails.
+
+Noa's Kelan puzzle (event 56) uses SQL-owned continuation policies to connect the
+last answer to result evaluation, the failed-result reset to the quiz invitation,
+and the successful marks to the recruitment movie and companion grant. These
+handoffs retain the interaction lock for both clients. Declining the invitation
+or cancelling still ends it. Native-script regressions cover a perfect attempt,
+a failed attempt followed by a successful retry, a previously failed score,
+and explicit decline/cancel, including mode-zero question acknowledgments.
+
+### Native continuation ownership (Noa investigation)
+
+The available aLogin decompilation does not choose the next server EVE branch
+after a dialogue line or question. The relevant native paths are:
+
+- `var/decompiled/aLogin_ca19ee087b60_full.c`, AC20 receive case at
+  `0x002e3dc0`: subcommands 1–6 copy the server frame into the event manager
+  and invoke `FUN_00304fd0`. Subcommand 7 marks a step complete; subcommand 8
+  closes the dialogue, clears the active/waiting flags and releases movement.
+- `FUN_00304fd0` (also `FUN_0031ee6c` in reference unit 213) interprets the
+  supplied step. Question mode 0 sets both step-done and awaiting-answer;
+  mode 1 sets only awaiting-answer. Neither chooses an EVE continuation.
+- `FUN_00307300` (`FUN_0032119c` in reference unit 213) sends AC20:6 once the
+  completed step has no outstanding dialogue, question, route or constellation
+  wait. It does not end the interaction or send another actor click.
+- `FUN_00307c4c`, `FUN_00307c78` and `FUN_00307ca4` send AC20:9 for Yes, No or
+  a selected option and clear the awaiting-answer flag. Mode-zero questions
+  subsequently also produce AC20:6. The server chooses which frame follows.
+
+These observations establish the client/server boundary, not a general rule
+for re-evaluating server EVE branches. The native Noa program has no explicit
+question operation after its last-answer branches 15/16; result branches 17/19
+and recruitment branch 21 are separate conditional entries. Its remaining raw
+operation metadata does not supply a verified continuation rule in the traced
+client paths. Do not infer an automatic loop over all eligible branches: that
+can repeat rewards or reminders and prevent intentional conversation endings.
+
+Consequently Noa's three SQL-owned continuation rules remain a scoped fallback,
+not a claim that they reproduce a decoded generic EVE continuation flag. Native
+operation bytes and conditions are unchanged. Replace the rules only when
+server-side semantics or further reference evidence establish the general rule.
+
+## Starter storm and beach rescue
+
+The storm event frame precedes its AC186:12 movie trigger. AC186:9 arms completion;
+premature AC20:6 requests are ignored. A run-scoped watchdog recovers a stalled
+accepted movie. Beach arrival immediately stages Robinson as actor one and starts
+the wake-up movie. The rescue releases posture/movement/scene gates without
+starting quest 12040 or automatically opening dialogue. A manual Robinson click
+starts first contact; event eight continues into its guide question within the
+same interaction. Authored portal click IDs take priority over reverse geometry;
+entry requests use the upstream two-cell margin. Scene-local prop and actor
+state now applies to every map, with quest-defined visibility replay after combat.

@@ -1,0 +1,163 @@
+source_id,source,kind,location,region,map_id,x,y,map_candidates,rewards,images,resolution
+1,wlohub,vacuum,Calcutta,India,12300,,,12300,Sapphire;Ruby;Red Clay;Emerald,snake_cave_HNre.jpg;snake_cave-2_HNre.jpg,coordinates missing
+2,wlohub,unresolved,Fishing Village,China,12100,1822,1035,12100,Common Grass,1822-1035_HNre.jpg,location and rewards resolved
+3,wlohub,unresolved,Fishing Village,China,12100,1262,1035,12100,Tilapia,1262-1035_HNre.jpg,location and rewards resolved
+4,wlohub,vacuum,Fishing Village,China,0,842,2455,,Ordinary Wood;Wood;Lauan,842-2455_HNre.jpg;842-2455-2_HNre.jpg,map unresolved
+5,wlohub,vacuum,Fishing Village,China,0,5362,4815,,Bamboo;Turpentine;Pine;Common Grass,5362-4815_HNre.jpg;5362-4815-2_HNre.jpg,map unresolved
+6,wlohub,unresolved,Hawaii - Large Island,,60008,2622,4315,60008,Coconut,2622-4315_HNre.jpg;2622-4315-2_HNre.jpg,location and rewards resolved
+7,wlohub,unresolved,Hawaii - Large Island,,60008,3422,3795,60008,Coconut,3422-3795_HNre.jpg;3422-3795-2_HNre.jpg,location and rewards resolved
+8,wlohub,vacuum,Hawaii - Large Island,,60008,3522,3135,60008,Vine Grass;Vine;Cotton;Harl Grass;Common Grass,3522-3135_HNre.jpg;3522-3135-2_HNre.jpg,location and rewards resolved
+9,wlohub,unresolved,Hawaii - Large Island,,60008,4082,2955,60008,Coconut,4082-2955_HNre.jpg;4082-2955-2_HNre.jpg,location and rewards resolved
+10,wlohub,unresolved,Hawaii - Large Island,,60008,3302,1655,60008,Coconut,3302-1655_HNre.jpg;3302-1655-2_HNre.jpg,location and rewards resolved
+11,wlohub,unresolved,Hawaii - Large Island,,60008,2342,1435,60008,Coconut,2342-1435_HNre.jpg;2342-1435-2_HNre.jpg,location and rewards resolved
+12,wlohub,unresolved,Hawaii - Large Island,,60008,1382,2395,60008,Coconut,1382-2395_HNre.jpg;1382-2395-2_HNre.jpg,location and rewards resolved
+13,wlohub,unresolved,Hawaii - Large Island,,60008,1662,3235,60008,Coconut,1662-3235_HNre.jpg;1662-3235-2_HNre.jpg,location and rewards resolved
+14,wlohub,unresolved,Hawaii - Large Island,,60008,702,450,60008,Yaro Safflower,702-450_HNre.jpg,location and rewards resolved
+15,wlohub,unresolved,Hawaii,,0,1242,1435,,Coconut,1242-1435_HNre.jpg,map unresolved
+16,wlohub,unresolved,Hawaii,,0,1522,1075,,Coconut,1522-1075_HNre.jpg,map unresolved
+17,wlohub,unresolved,Holy Village,South Island,11003,142,1535,11003,Common Grass,142-1535_HNre.jpg,location and rewards resolved
+18,wlohub,unresolved,Holy Village,South Island,11003,542,1855,11003,Small Daisy,542-1855_HNre.jpg,location and rewards resolved
+19,wlohub,unresolved,Holy Village,South Island,11003,742,1875,11003,Bay Leaves,742-1875_HNre.jpg,location and rewards resolved
+20,wlohub,unresolved,Holy Village,South Island,11003,1102,1855,11003,Common Grass,1102-1855_HNre.jpg,location and rewards resolved
+21,wlohub,unresolved,Holy Village,South Island,11003,482,795,11003,Mushroom,482-795_HNre.jpg,location and rewards resolved
+22,wlohub,unresolved,Holy Village,South Island,11003,2302,1735,11003,Persian Mum,2302-1735_HNre.jpg,location and rewards resolved
+23,wlohub,unresolved,Holy Village,South Island,11003,,,11003,Brandy,holy_village_HNre.jpg,coordinates missing
+24,wlohub,unresolved,Holy Village,South Island,11003,2502,175,11003,Sun Mushroom,2502-175_HNre.jpg,location and rewards resolved
+25,wlohub,unresolved,Holy Village,South Island,11003,2802,295,11003,Fungus,2802-295_HNre.jpg,location and rewards resolved
+26,wlohub,unresolved,Holy Village,South Island,11003,2722,755,11003,Paper Grass,2722-755_HNre.jpg,location and rewards resolved
+27,wlohub,unresolved,Holy Village,South Island,11003,3902,1095,11003,Common Grass,3902-1095_HNre.jpg,location and rewards resolved
+28,wlohub,unresolved,Holy Village,South Island,11003,3602,1295,11003,Su Mushroom,3602-1295_HNre.jpg,location and rewards resolved
+29,wlohub,unresolved,Holy Village,South Island,11003,1822,475,11003,Common Grass,1822-475_HNre.jpg,location and rewards resolved
+30,wlohub,unresolved,Holy Village,South Island,11003,2762,535,11003,Chrysanthemum,2762-535_HNre.jpg,location and rewards resolved
+31,wlohub,unresolved,Holy Village,South Island,11003,1502,775,11003,Common Grass,1502-775_HNre.jpg,location and rewards resolved
+32,wlohub,unresolved,Holy Village,South Island,11003,2662,1135,11003,Common Grass,2662-1135_HNre.jpg,location and rewards resolved
+33,wlohub,unresolved,Holy Village,South Island,11003,3022,1315,11003,Fungus,3022-1315_HNre.jpg,location and rewards resolved
+34,wlohub,unresolved,Holy Village,South Island,11003,1862,1515,11003,Sun Mushroom,1862-1515_HNre.jpg,location and rewards resolved
+35,wlohub,unresolved,Holy Village,South Island,11003,1142,1355,11003,Mushroom,1142-1355_HNre.jpg,location and rewards resolved
+36,wlohub,unresolved,Holy Village,South Island,11003,,,11003,Pine,holy_village-2_HNre.jpg,coordinates missing
+37,wlohub,unresolved,Holy Village,South Island,11003,602,1075,11003,Small Daisy,602-1075_HNre.jpg,location and rewards resolved
+38,wlohub,unresolved,Holy Village,South Island,11003,242,1115,11003,Chrysanthemum,242-1115_HNre.jpg,location and rewards resolved
+39,wlohub,unresolved,Holy Village,South Island,11003,222,1535,11003,Common Grass,222-1535_HNre.jpg,location and rewards resolved
+40,wlohub,unresolved,Holy Village,South Island,11003,2742,835,11003,Mushroom,2742-835_HNre.jpg,location and rewards resolved
+41,wlohub,unresolved,Holy Village,South Island,11003,2882,675,11003,Paper Grass,2882-675_HNre.jpg,location and rewards resolved
+42,wlohub,unresolved,Holy Village,South Island,11003,1382,1175,11003,Mushroom,1382-1175_HNre.jpg,location and rewards resolved
+43,wlohub,unresolved,Holy Village,South Island,11003,1402,1095,11003,Common Grass,1402-1095_HNre.jpg,location and rewards resolved
+44,wlohub,unresolved,Holy Village,South Island,11003,1602,795,11003,Mushroom,1602-795_HNre.jpg,location and rewards resolved
+45,wlohub,unresolved,Holy Village,South Island,11003,1382,575,11003,Bay Leaves,1382-575_HNre.jpg,location and rewards resolved
+46,wlohub,unresolved,Holy Village,South Island,11003,1322,353,11003,Small Daisy,1322-353_HNre.jpg,location and rewards resolved
+47,wlohub,unresolved,Holy Village,South Island,11003,782,1135,11003,Small Daisy,782-1135_HNre.jpg,location and rewards resolved
+48,wlohub,unresolved,Holy Village,South Island,11003,742,475,11003,Small Daisy,742-475_HNre.jpg,location and rewards resolved
+49,wlohub,unresolved,Holy Village,South Island,11003,562,375,11003,Common Grass,562-375_HNre.jpg,location and rewards resolved
+50,wlohub,vacuum,Iceberg,,0,3622,2215,,Water Jade;Black Jade;Purple Jade;White Jade;Red Jade,3622-2215_HNre.jpg;3622-2215-2_HNre.jpg,map unresolved
+51,wlohub,unresolved,Inca,,60015,2002,3235,60015,Su Mushroom,2002-3235_HNre.jpg,location and rewards resolved
+52,wlohub,unresolved,Inca,,60015,2002,3535,60015,Yaro Safflower,2002-3535_HNre.jpg,location and rewards resolved
+53,wlohub,unresolved,Inca,,60015,2062,535,60015,Sun Mushroom,2062-535_HNre.jpg,location and rewards resolved
+54,wlohub,unresolved,Inca,,0,4702,2975,,Persian Mum,4702-2975_HNre.jpg,map unresolved
+55,wlohub,unresolved,Inca,,0,4822,3375,,White Flower,4822-3375_HNre.jpg,map unresolved
+56,wlohub,unresolved,Inca,,60015,2122,1635,60015,Copper Knife,2122-1635_HNre.jpg,location and rewards resolved
+57,wlohub,unresolved,Jungle,North Island,0,4962,1295,11030;11044;11187;12066;12271;12272;12273;12293;13230;13231;13232,Common Grass,4962-1295_HNre.jpg;4962-1295-2_HNre.jpg,map unresolved
+58,wlohub,unresolved,Jungle,North Island,0,3782,1095,11030;11044;11187;12066;12271;12272;12273;12293;13230;13231;13232,Small Daisy,3782-1095_HNre.jpg;3782-1095-2_HNre.jpg,map unresolved
+59,wlohub,unresolved,Jungle,North Island,0,2662,355,11030;11044;11187;12066;12271;12272;12273;12293;13230;13231;13232,Straw Mushroom,2662-355_HNre.jpg;2662-355-2_HNre.jpg,map unresolved
+60,wlohub,unresolved,Jungle,North Island,0,1642,1355,11030;11044;11187;12066;12271;12272;12273;12293;13230;13231;13232,Mushroom,1642-1355_HNre.jpg;1642-1355-2_HNre.jpg,map unresolved
+61,wlohub,vacuum,Kama Cave,North Island,0,3962,1935,,Galena;Aluminum Ore;Copper Ore;Tin Ore,3962-1935_HNre.jpg;3962-1935-2_HNre.jpg,map unresolved
+62,wlohub,vacuum,Kelan Village's Cave,,0,1922,1255,,Common Stone;Shale;Sulfur;Mica Rock;Coal Ore;Granite,1922-1255_HNre.jpg;1922-1255-2_HNre.jpg,map unresolved
+63,wlohub,vacuum,Kelan Village's Cave,,0,2802,715,,Common Stone;Yellow Clay;Black Clay;Grey Clay;Dry Clay,2802-715_HNre.jpg;2802-715-2_HNre.jpg,map unresolved
+64,wlohub,unresolved,Kelan Village's Woods,,0,2962,1135,,Common Grass,2962-1135_HNre.jpg;2962-1135-2_HNre.jpg,map unresolved
+65,wlohub,unresolved,Kelan Village's Woods,,0,5082,1275,,Common Grass,5082-1275_HNre.jpg;5082-1275-2_HNre.jpg,map unresolved
+66,wlohub,unresolved,Kelan Village's Woods,,0,4502,1695,,Gyrophora,4502-1695_HNre.jpg;4502-1695-2_HNre.jpg,map unresolved
+67,wlohub,unresolved,Kelan Village's Woods,,0,3782,1275,,Persian Mum,3782-1275_HNre.jpg;3782-1275-2_HNre.jpg,map unresolved
+68,wlohub,unresolved,Kelan Village's Woods,,0,3062,1235,,Vine,3062-1235_HNre.jpg;3062-1235-2_HNre.jpg,map unresolved
+69,wlohub,vacuum,Kelan Village's Woods,,0,2862,1335,,Oak;Ordinary Wood;Wood;Lauan;Cypress Wood,2862-1335_HNre.jpg;2862-1335-2_HNre.jpg,map unresolved
+70,wlohub,unresolved,Kelan Village's Woods,,0,3062,695,,Common Grass,3062-695_HNre.jpg;3062-695-2_HNre.jpg,map unresolved
+71,wlohub,unresolved,Kelan Village's Woods,,0,882,1495,,Blue Wild Flower,882-1495_HNre.jpg;882-1495-2_HNre.jpg,map unresolved
+72,wlohub,unresolved,Kelan Village,North Island,12000,,,12000,Ordinary Wood,kelan_village_HNre.jpg,coordinates missing
+73,wlohub,unresolved,Kelan Village,North Island,12000,1102,1615,12000,Ordinary Wood,1102-1615_HNre.jpg,location and rewards resolved
+74,wlohub,unresolved,Kelan Village,North Island,12000,1802,1635,12000,Ordinary Wood,1802-1635_HNre.jpg,location and rewards resolved
+75,wlohub,unresolved,Kelan Village,North Island,12000,2182,1255,12000,Shale,2182-1255_HNre.jpg,location and rewards resolved
+76,wlohub,vacuum,Koyota,,60011,4162,455,60011,Wood;Lauan;Cypress,4162-455_HNre.jpg;4162-455-2_HNre.jpg,location and rewards resolved
+77,wlohub,vacuum,Koyota,,60011,1002,1195,60011,Amethyst;White Crystal;Black Clay;Red Clay;Pink Crystal,1002-1195_HNre.jpg;1002-1195-2_HNre.jpg,location and rewards resolved
+78,wlohub,unresolved,Koyota,,60011,3842,1335,60011,Fresh Water,3842-1335_HNre.jpg;3842-1335-2_HNre.jpg,location and rewards resolved
+79,wlohub,vacuum,Koyota,,60011,602,2695,60011,Vine Grass;Harl Grass;Common Grass,602-2695_HNre.jpg;602-2695-2_HNre.jpg,location and rewards resolved
+80,wlohub,unresolved,Kyoto,Koyota,12250,1622,2095,12250,Paper Grass,1622-2095_HNre.jpg,location and rewards resolved
+81,wlohub,unresolved,Kyoto,Koyota,12250,,,12250,Nigiri Sushi,japan_HNre.jpg,coordinates missing
+82,wlohub,unresolved,Kyoto,Koyota,12250,1082,855,12250,Pine,1082-855_HNre.jpg,location and rewards resolved
+83,wlohub,unresolved,Kyoto,Koyota,12250,2282,1075,12250,Sashimi,2282-1075_HNre.jpg,location and rewards resolved
+84,wlohub,unresolved,Kyoto,Koyota,12250,3762,1455,12250,Blue Wild Flower,3762-1455_HNre.jpg,location and rewards resolved
+85,wlohub,unresolved,Kyoto,Koyota,12250,3902,1655,12250,Mushroom,3902-1655_HNre.jpg,location and rewards resolved
+86,wlohub,vacuum,Maka Cave,South Island,0,4882,1355,,Red Clay;Pure Iron Ore;Copper Ore,4882-1355_HNre.jpg;4882-1355-2_HNre.jpg,map unresolved
+87,wlohub,vacuum,Maka Cave,South Island,0,2722,1895,,Yellow Clay;White Clay;Pure Iron Fillet;Clay;Dry Clay,2722-1895_HNre.jpg;2722-1895-2_HNre.jpg,map unresolved
+88,wlohub,unresolved,Mayan Forest,,60005,562,2435,60005,Fresh Water,562-2435_HNre.jpg;562-2435-2_HNre.jpg,location and rewards resolved
+89,wlohub,vacuum,Mayan Forest,,60005,2362,395,60005,Vine Grass;Cotton;Harl Grass;Common Grass,2362-395_HNre.jpg;2362-395-2_HNre.jpg,location and rewards resolved
+90,wlohub,vacuum,Mayan Forest,,60005,2943,2515,60005,Bluestone;Shale;White Silvery;Silvery Ore,2943-2515_HNre.jpg;2943-2515-2_HNre.jpg,location and rewards resolved
+91,wlohub,unresolved,Mayan Tribe,,12150,,,12150,Lyme Liquor,mayan_forest_HNre.jpg,coordinates missing
+92,wlohub,unresolved,Mayan Tribe,,12150,302,1315,12150,Silvery Ore,302-1315_HNre.jpg,location and rewards resolved
+93,wlohub,unresolved,Mayan Tribe,,12150,3282,1175,12150,Yaro Safflower,3282-1175_HNre.jpg,location and rewards resolved
+94,wlohub,unresolved,Mayan Tribe,,12150,1682,595,12150,Yaro Safflower,1682-595_HNre.jpg,location and rewards resolved
+95,wlohub,unresolved,North Island,,60001,542,655,60001,Coconut,542-655_HNre.jpg;542-655-2_HNre.jpg,location and rewards resolved
+96,wlohub,vacuum,North Island,,60001,1382,1375,60001,Vine Grass;Vine;Cotton;Harl Grass;Common Grass,1382-1375_HNre.jpg;1382-1375-2_HNre.jpg,location and rewards resolved
+97,wlohub,vacuum,North Island,,60001,4822,655,60001,Ordinary Wood;Wood;Lauan;Cypress Wood,4822-655_HNre.jpg;4822-655-2_HNre.jpg,location and rewards resolved
+98,wlohub,unresolved,North Island,,60001,5202,675,60001,Common Grass,5202-675_HNre.jpg;5202-675-2_HNre.jpg,location and rewards resolved
+99,wlohub,unresolved,North Island,,60001,1702,1055,60001,Mushroom,1702-1055_HNre.jpg;1702-1055-2_HNre.jpg,location and rewards resolved
+100,wlohub,unresolved,North Island,,60001,1102,2395,60001,Fungus,1102-2395_HNre.jpg;1102-2395-2_HNre.jpg,location and rewards resolved
+101,wlohub,unresolved,North Island,,60001,942,2395,60001,Straw Mushroom,942-2395_XQob.jpg;942-2395-2_XQob.jpg,location and rewards resolved
+102,wlohub,vacuum,North Island,,60001,3542,3835,60001,Yellow Clay;White Clay;Clay;Grey Clay;Dry Clay;Red Clay,3542-3835_XQob.jpg;3542-3835-2_XQob.jpg,location and rewards resolved
+103,wlohub,unresolved,North Island,,60001,5300,1900,60001,Sea Water,5300-1900_XQob.jpg;5300-1900-2_XQob.jpg,location and rewards resolved
+104,wlohub,vacuum,Oslya,,60006,1042,635,60006,Aluminum Ore;Quartz;Pure Iron Ore;Copper Ore;Iron Ore,1042-635_XQob.jpg;1042-635-2_XQob.jpg,location and rewards resolved
+105,wlohub,vacuum,Oslya,,60006,4222,975,60006,Bluestone;Black Clay;Crude Oil,4222-975_XQob.jpg;4222-975-2_XQob.jpg,location and rewards resolved
+106,wlohub,unresolved,Persia,,13100,120,1190,13100,Chrysanthemum,120-1190_XQob.jpg,location and rewards resolved
+107,wlohub,unresolved,Persia,,13100,1910,1190,13100,Persian Mum,1910-1190_XQob.jpg,location and rewards resolved
+108,wlohub,vacuum,Revival Isle,,60004,4062,2815,60004,Common Stone;Shale;Sulfur;Mica Rock;Coal Ore;Granite,4062-2815_XQob.jpg;4062-2815-2_XQob.jpg,location and rewards resolved
+109,wlohub,unresolved,Revival Isle,,60004,4902,3095,60004,Coconut,4902-3095_XQob.jpg;4902-3095-2_XQob.jpg,location and rewards resolved
+110,wlohub,unresolved,Revival Isle,,60004,5422,1815,60004,Coconut,5422-1815_XQob.jpg;5422-1815-2_XQob.jpg,location and rewards resolved
+111,wlohub,unresolved,Revival Isle,,60004,4882,1715,60004,Coconut,4882-1715_XQob.jpg;4882-1715-2_XQob.jpg,location and rewards resolved
+112,wlohub,unresolved,Revival Isle,,60004,4262,1115,60004,Coconut,4262-1115_XQob.jpg;4262-1115-2_XQob.jpg,location and rewards resolved
+113,wlohub,unresolved,Revival Isle,,60004,3402,655,60004,Coconut,3402-655_XQob.jpg;3402-655-2_XQob.jpg,location and rewards resolved
+114,wlohub,unresolved,Revival Isle,,60004,1502,2175,60004,Coconut,1502-2175_XQob.jpg;1502-2175-2_XQob.jpg,location and rewards resolved
+115,wlohub,unresolved,Revival Isle,,60004,1922,3295,60004,Coconut,1922-3295_XQob.jpg;1922-3295-2_XQob.jpg,location and rewards resolved
+116,wlohub,unresolved,Revival Isle,,60004,1402,4475,60004,Coconut,1402-4475_XQob.jpg;1402-4475-2_XQob.jpg,location and rewards resolved
+117,wlohub,unresolved,Revival Isle,,60004,562,575,60004,Chrysanthemum,562-575_XQob.jpg,location and rewards resolved
+118,wlohub,unresolved,Shayii Hill,,12281,222,450,12281,Pine,222-450_XQob.jpg,location and rewards resolved
+119,wlohub,unresolved,South Island,,0,1362,3575,60002;60003,Sea Water,1362-3575_XQob.jpg;1362-3575-2_XQob.jpg,map unresolved
+120,wlohub,unresolved,Stoowa Isle (Subterranean Maze),,0,1702,4555,,Coconut,1702-4555_XQob.jpg;1702-4555-2_XQob.jpg,map unresolved
+121,wlohub,unresolved,Stoowa Isle (Subterranean Maze),,0,1602,5215,,Coconut,1602-5215_XQob.jpg;1602-5215-2_XQob.jpg,map unresolved
+122,wlohub,vacuum,Subway,,0,2442,615,11035;11039,Yellow Clay;Clay;Dry Clay;Quartz;Saltpeter,2442-615_XQob.jpg;2442-615-2_XQob.jpg,map unresolved
+123,wlohub,unresolved,Taiwan (Carnie) - Pleasure Island,,0,1782,4895,,Coconut,1782-4895_XQob.jpg;1782-4895-2_XQob.jpg,map unresolved
+124,wlohub,unresolved,Taiwan (Carnie) - Pleasure Island,,0,1522,4595,,Coconut,1522-4595_XQob.jpg;1522-4595-2_XQob.jpg,map unresolved
+125,wlohub,vacuum,Taiwan (Carnie) - Pleasure Island,,0,2242,435,,Mercury;Gold Ore;Titanium;Black Clay,2242-435_XQob.jpg;2242-435-2_XQob.jpg,map unresolved
+126,wlohub,vacuum,Taiwan (Carnie) - Pleasure Island,,0,2182,1855,,Wood;Cypress,2182-1855_XQob.jpg;2182-1855-2_XQob.jpg,map unresolved
+127,wlohub,unresolved,Universal Island,,60007,722,1135,60007,Common Grass,722-1135_XQob.jpg;722-1135-2_XQob.jpg,location and rewards resolved
+128,wlohub,unresolved,Universal Island,,60007,942,1075,60007,Coconut,942-1075_XQob.jpg;942-1075-2_XQob.jpg,location and rewards resolved
+129,wlohub,unresolved,Universal Island,,60007,982,1115,60007,Mushroom,982-1115_XQob.jpg;982-1115-2_XQob.jpg,location and rewards resolved
+130,wlohub,unresolved,Universal Island,,60007,1582,1415,60007,Coconut,1582-1415_XQob.jpg;1582-1415-2_XQob.jpg,location and rewards resolved
+131,wlohub,unresolved,Welling Village,North Island,12050,3222,375,12050,Sun Mushroom,3222-375_XQob.jpg,location and rewards resolved
+132,wlohub,unresolved,Welling Village,North Island,12050,3562,895,12050,Brazil Mushroom,3562-895_XQob.jpg,location and rewards resolved
+133,wlohub,unresolved,Welling Village,North Island,12050,3762,1055,12050,Fungus,3762-1055_XQob.jpg,location and rewards resolved
+134,wlohub,unresolved,Welling Village,North Island,12050,1642,1075,12050,Su Mushroom,1642-1075_XQob.jpg,location and rewards resolved
+135,wlohub,unresolved,Welling Village,North Island,12050,2062,695,12050,Daphne,2062-695_XQob.jpg,location and rewards resolved
+136,wlohub,unresolved,Welling Village,North Island,12050,,,12050,Lyme Liquor,welling_village_XQob.jpg,coordinates missing
+137,wlohub,unresolved,Welling Village,North Island,12050,922,275,12050,Aligote,922-275_XQob.jpg,location and rewards resolved
+138,wlohub,unresolved,Welling Village,North Island,12050,82,415,12050,Mushroom,82-415_XQob.jpg,location and rewards resolved
+139,wlohub,unresolved,Welling Village,North Island,12050,82,416,12050,Clay,82-416_XQob.jpg,location and rewards resolved
+140,wlohub,unresolved,Welling Village,North Island,12050,602,535,12050,Aligote,602-535_XQob.jpg,location and rewards resolved
+141,wlohub,unresolved,Welling Village,North Island,12050,,,12050,Fruit Wine,welling_village-2_XQob.jpg,coordinates missing
+142,wlohub,unresolved,Welling Village,North Island,12050,,,12050,Pine,welling_village-3_XQob.jpg,coordinates missing
+143,wlohub,unresolved,Welling Village,North Island,12050,2542,1675,12050,Ordinary Wood,2542-1675_XQob.jpg,location and rewards resolved
+144,wlohub,unresolved,Welling Village,North Island,12050,,,12050,Multi Bread,welling_village-4_XQob.jpg,coordinates missing
+145,wlohub,unresolved,Welling Village,North Island,12050,1722,1955,12050,Common Grass,1722-1955_XQob.jpg,location and rewards resolved
+146,wlohub,unresolved,Welling Village,North Island,12050,1602,1775,12050,Common Grass,,location and rewards resolved
+147,wlohub,unresolved,Welling Village,North Island,12050,1582,2295,12050,Blue Wild Flower,1582-2295_XQob.jpg,location and rewards resolved
+148,wlohub,unresolved,Welling Village,North Island,12050,1822,2415,12050,Daphne,1822-2415_XQob.jpg,location and rewards resolved
+149,wlohub,unresolved,Welling Village,North Island,12050,2142,2235,12050,Daphne,2142-2235_XQob.jpg,location and rewards resolved
+150,wlohub,unresolved,Taiwan,,0,1782,4895,,Coconut,1782-4895_XQob.jpg;1782-4895-2_XQob.jpg,map unresolved
+151,wlohub,unresolved,Taiwan,,0,1522,4595,,Coconut,1522-4595_XQob.jpg;1522-4595-2_XQob.jpg,map unresolved
+152,wlohub,vacuum,Taiwan,,0,2242,435,,Mercury;Gold Ore;Titanium;Black Clay,2242-435_XQob.jpg;2242-435-2_XQob.jpg,map unresolved
+153,wlohub,vacuum,Taiwan,,0,2182,1855,,Wood;Cypress,2182-1855_XQob.jpg;2182-1855-2_XQob.jpg,map unresolved
+154,wlohub,unresolved,Northeast Forest,Kelan Village,0,2962,1135,,Common Grass,2962-1135_XQob.jpg;2962-1135-2_XQob.jpg,map unresolved
+155,wlohub,unresolved,Northeast Forest,Kelan Village,0,5082,1275,,Common Grass,5082-1275_XQob.jpg;5082-1275-2_XQob.jpg,map unresolved
+156,wlohub,unresolved,Northeast Forest,Kelan Village,0,4502,1695,,Gyrophora,4502-1695_XQob.jpg;4502-1695-2_XQob.jpg,map unresolved
+157,wlohub,unresolved,Northeast Forest,Kelan Village,0,3782,1275,,Persian Mum,3782-1275_XQob.jpg;3782-1275-2_XQob.jpg,map unresolved
+158,wlohub,unresolved,Northeast Forest,Kelan Village,0,3062,1235,,Vine,3062-1235_XQob.jpg;3062-1235-2_XQob.jpg,map unresolved
+159,wlohub,vacuum,Northeast Forest,Kelan Village,0,2862,1335,,Oak;Ordinary Wood;Wood;Lauan;Cypress Wood,2862-1335_XQob.jpg;2862-1335-2_XQob.jpg,map unresolved
+160,wlohub,unresolved,Northeast Forest,Kelan Village,0,3062,695,,Common Grass,3062-695_XQob.jpg;3062-695-2_XQob.jpg,map unresolved
+65001,owner,vacuum,North Island,,60001,5300,1900,60001,,,reward unresolved
+65002,owner,vacuum,South Island,,0,1362,3575,60002;60003,,,map unresolved;reward unresolved

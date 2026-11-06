@@ -14,7 +14,7 @@ your configured addresses when preserving an existing local configuration.
 
 | Tool | Used for |
 | --- | --- |
-| Git and Git LFS | Checkout and large tracked JSON assets |
+| Git | Checkout; client-derived JSON and media are generated locally |
 | Go 1.25 or newer | Build both programs; the server alone requires Go 1.24 |
 | C compiler and C development headers | Server SQLite driver with CGO |
 | Python 3.11 or newer and `venv` | Asset extraction and verification |
@@ -32,27 +32,30 @@ running the graphical client needs a desktop/display environment.
 After checking out the repository:
 
 ```sh
-git lfs install
-git lfs pull
 go version
 python3 --version
 ffmpeg -version
 ffprobe -version
 ```
 
-LFS must materialize `data/ground_data.json` and `data/sprites/**/sprites.json`.
-A file beginning with `version https://git-lfs.github.com/spec/v1` is an LFS
-pointer, not usable game data.
+Client-derived files, including `data/ground_data.json` and sprite metadata,
+are excluded from Git. Generate them from the original installation below.
 
 ## 2. Extract the missing WLRI assets
 
 Obtain the full **WLRI (Wonderland Rhode Island)** installation. Its root must
 contain `aLogin.exe`, `data/`, `jma/`, `pic/` and its other media directories.
-`Wonderland-Client` below is the installation path; its actual folder name may
-be different. No Wonderland-Private-Server checkout is needed for this setup.
+Replace the example source path below with that installation's root. Its folder
+name and location are unrestricted; no sibling checkout is assumed. No
+Wonderland-Private-Server checkout is needed for this setup. Either the updated
+original Chinese edition or the updated manually translated English edition
+is sufficient; IGG is not required. For Chinese-only input, add
+`--client-language zh-TW` to the regeneration command below. For both editions,
+use the translated edition as `--client` and add `--chinese-client PATH_TO_CHINESE`.
+See [source language choices](ASSET_IMPORT.md#select-ui-artwork-languages).
 
 ```sh
-wlo_client_source="/absolute/path/to/Wonderland-Client"
+wlo_client_source="/absolute/path/to/WLRI-client"
 wlo_import_output="$PWD/var/asset-import"
 python3 -m venv var/asset-import-venv
 var/asset-import-venv/bin/python -m pip install -r tools/data_export/requirements.txt
@@ -63,11 +66,12 @@ var/asset-import-venv/bin/python tools/data_export/regenerate.py \
 Choose an output directory that does not exist. Allow space for both the
 complete temporary export and the installed payloads; the audio alone is about
 1.43 GB. The original installation is read-only input. Matching original data,
-including its executable, is required for the tracked manifests and sprite keys.
+including its executable, is required for sprite keys and source provenance.
 
 Verify the temporary output, then restore missing files into this checkout:
 
 ```sh
+var/asset-import-venv/bin/python tools/data_export/verify.py --data "$wlo_import_output"
 var/asset-import-venv/bin/python tools/data_export/extract_audio.py \
   --input "$wlo_client_source/data" --output "$wlo_import_output/audio" --verify-existing
 var/asset-import-venv/bin/python tools/data_export/verify_sprites.py "$wlo_import_output/sprites"
@@ -80,11 +84,11 @@ var/asset-import-venv/bin/python tools/data_export/import_untracked.py \
 go run ./cmd/asset-build -data data
 ```
 
-The result is PNG picture/sprite atlases, OGG tracks, WAV sounds/voices and
-preserved video under `data/`. The importer checks media metadata, fills missing
-ignored files and preserves existing artwork and tracked definitions. It fails
-on incompatible metadata instead of mixing asset versions. Root game tables and
-server-specific JSON definitions are already tracked. The original database and
+The result includes root client tables, PNG sprite/image atlases, manifests,
+Ogg Vorbis music/sounds/voices and preserved AVI video under `data/`. The importer fills
+missing ignored files and preserves existing artwork and tracked definitions.
+Server-specific JSON remains tracked and is copied into the generated tree;
+client-derived tables and metadata are regenerated locally. The original database and
 database-path override are excluded. See [ASSET_IMPORT.md](ASSET_IMPORT.md) for
 scope, extraction limits and repeat-import behavior.
 
@@ -107,7 +111,7 @@ The example uses loopback addresses and two separate databases:
 | --- | --- | --- |
 | `var/assets.db` | Static gameplay catalog | `cmd/data-rebuild` |
 | `var/wonderland.db` | Go accounts, characters and settings | Server startup |
-| `data/` | Client media and offline JSON exports | Checkout plus WLRI extraction |
+| `data/` | Local client exports and tracked server-only definitions | Original client extraction plus checkout |
 
 Build the static catalog and check that it loads:
 
@@ -119,9 +123,9 @@ go run ./cmd/wonderland -config config.local.json -inspect-data
 
 `-inspect-data` prints catalog counts and warnings without opening listeners or
 requiring an admin token. Missing-item warnings can disable individual gacha
-pools; missing required catalogs stop startup. A server-only installation can
-build its SQL catalog from the tracked JSON without installing image/audio/video
-payloads.
+pools; missing required catalogs stop startup. A server-only installation needs
+the generated client tables plus tracked server-only definitions (or an already
+built assets database), but does not need image/audio/video payloads at runtime.
 
 Stop the server before rebuilding an existing active catalog. Rebuilds preserve
 old asset databases as backups. The commands above do not reset gameplay storage.
@@ -160,7 +164,7 @@ not a JSON config field or game-account password. Reuse it when restarting in th
 same shell; generating a new token changes the credential the admin UI accepts.
 The log file appends JSON lines and does not create a missing parent directory.
 Add `-debug` when investigating packets: ordinary packets log metadata; Lucky
-Draw packets also have bounded decoded traces.
+Draw, movement and pose packets also have bounded decoded traces.
 
 For development, the equivalent source run is:
 
@@ -243,7 +247,8 @@ For a source run inside `client/`, the override path is `../var/SERVER.INI`.
 Use [CONFIGURATION.md](CONFIGURATION.md) for every server config field, CLI
 flags, client overrides and gameplay-tuning sources. Changes to listeners and
 limits require a restart. Admin name/account/session changes apply live; static
-SQL gameplay changes require a restart to reload the catalog.
+SQL gameplay changes publish through the validated editor or supported reload
+scopes; other catalog/startup changes require a restart.
 
 ## Windows PowerShell
 
@@ -253,13 +258,19 @@ with these substitutions; use PowerShell backticks instead of Bash backslashes
 for multiline commands, or put each command on one line:
 
 ```powershell
-$wlo_client_source = 'C:/Games/Wonderland-Client'
+$wlo_client_source = 'C:/path/to/WLRI-client'
 $wlo_import_output = Join-Path (Get-Location) 'var/asset-import'
 python -m venv var/asset-import-venv
 $wlo_python = '.\var\asset-import-venv\Scripts\python.exe'
 & $wlo_python -m pip install -r tools/data_export/requirements.txt
 & $wlo_python tools/data_export/regenerate.py --client $wlo_client_source --output $wlo_import_output
 ```
+
+That command assumes the manually translated English edition. With only the
+original Chinese edition, append `--client-language zh-TW`. With both editions,
+keep the translated edition in `$wlo_client_source` and append
+`--chinese-client 'C:/path/to/updated-Chinese-client'`; both UI sets and matching
+Chinese text are included automatically.
 
 Run the same verification and restoration scripts using `& $wlo_python` in place
 of `var/asset-import-venv/bin/python` before proceeding:
@@ -293,8 +304,8 @@ credential. Use Ctrl+C there to stop it.
 
 | Symptom | Check |
 | --- | --- |
-| JSON parse failure mentioning `version https://git-lfs…` | Run `git lfs pull`; confirm actual LFS data was downloaded |
-| Import reports differing metadata | WLRI build/source hashes must match tracked definitions; retain the temporary output for comparison |
+| Missing client JSON tables or sprite metadata | Regenerate them from the original installation; these outputs are intentionally ignored |
+| Import reports differing metadata | Retain the temporary output for comparison; existing local files and any retained tracked metadata are preserved |
 | Asset export destination exists | Select a new temporary output directory |
 | Missing PNG, WAV, font or sprite file | Complete verified restoration into `data/`; normal runtime has no native fallback |
 | `assets database … no such file` | Build the configured `assets_database` from the repository root |
@@ -307,6 +318,5 @@ credential. Use Ctrl+C there to stop it.
 | Config change appears ineffective | Restart for startup settings; saved admin `server_name` overrides config `name` |
 | Files appear under an unexpected directory | Relative paths resolve from the working directory, including database and log paths |
 
-For development verification, root `go test ./...` checks the server module;
-the nested client module needs its own build/tests. See the README's validation
-section for race tests and native-data checks.
+Use [Testing](TESTING.md) for development selections, the separate server/client
+suites, required environments and optional native-data checks.

@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -126,8 +128,8 @@ func (g *Lucky) Draw(dst *surface.Surface, mx, my int, now time.Time) {
 	g.picture(dst, "59001", 0, -50)
 	g.picture(dst, "59016", 0, 0)
 	g.picture(dst, "59083", 0, 420)
-	arcadeText(dst, 30, 15, fmt.Sprintf("Lucky  Lives: %d  Caught: %d/%d  Time: %d", g.Lives, g.Score, luckyWinScore, g.seconds))
-	arcadeText(dst, 220, 580, "Move the pointer to catch falling rewards. Avoid bombs.")
+	arcadeText(dst, 30, 15, fmt.Sprintf(localization.UI("ui.minigame.lucky_lives_d_caught_d_d_time_d_8ad3c7d3"), g.Lives, g.Score, luckyWinScore, g.seconds))
+	arcadeText(dst, 220, 580, localization.UI("ui.minigame.move_the_pointer_to_catch_falling_reward_7dba4b54"))
 	if !g.Started {
 		return
 	}

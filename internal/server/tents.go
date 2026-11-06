@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
+	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
 	"wonderland-gonline/internal/world"
 )
@@ -49,7 +51,7 @@ func (s *Server) ensurePlayerTent(ctx context.Context, c *Session) (store.Tent, 
 }
 func (s *Server) openPlayerTent(ctx context.Context, c *Session, slot byte) error {
 	if !gmIdle(c) || c.tentOwner != 0 || c.invisible {
-		return c.send(systemLine("Finish active interactions before opening a tent."))
+		return c.send(serverwire.SystemLine("Finish active interactions before opening a tent."))
 	}
 	if c.openTent != nil {
 		return nil
@@ -58,7 +60,7 @@ func (s *Server) openPlayerTent(ctx context.Context, c *Session, slot byte) erro
 		return nil
 	}
 	if _, err := s.ensurePlayerTent(ctx, c); err != nil {
-		return c.send(systemLine(err.Error()))
+		return c.send(serverwire.SystemLine(err.Error()))
 	}
 	c.openTent = &openTent{Map: c.character.Map, X: c.character.X, Y: c.character.Y, Slot: slot}
 	c.character.Bag[slot-1].Locked = true
@@ -74,12 +76,22 @@ func (s *Server) tentSnapshot(ctx context.Context, c *Session) error {
 	if err != nil {
 		return err
 	}
-	packets := [][]byte{{protocol.CommandInventory, protocol.InventoryTentFurniture}}
-	for _, row := range tent.Items {
-		packets = append(packets, protocol.Builder{protocol.CommandInventory, protocol.InventoryTentFurniture}.U16(row.ItemID).U32(uint32(row.X)).U32(uint32(row.Y)).U32(uint32(row.Floor)).U8(1).U8(row.Rotation).U16(0))
+	packets := [][]byte{
+		{protocol.CommandTent, protocol.TentInteriorLayout, max(byte(1), tent.Type), 0},
+		protocol.Builder{protocol.CommandTentFurniture, protocol.TentFloorSurface}.U16(tent.Floor),
+		protocol.Builder{protocol.CommandTentFurniture, protocol.TentWallpaperSurface}.U16(tent.Wallpaper),
 	}
-	packets = append(packets, protocol.Builder{protocol.CommandTentFurniture, protocol.TentFloorColor}.U16(tent.Floor), protocol.Builder{protocol.CommandTentFurniture, protocol.TentWallpaper}.U16(tent.Wallpaper))
-	packets = append(packets, protocol.Builder{protocol.CommandTent, protocol.TentInteriorStatus}.U16(0), []byte{protocol.CommandInventory, protocol.InventoryTentPlayers})
+	if tent.Enlarged {
+		packets = append(packets, []byte{protocol.CommandTent, protocol.TentInteriorLayout, max(byte(1), tent.Type), 1})
+	}
+	if c.ready {
+		tree := serverwire.NativeTentTree(tent)
+		if len(tree) > protocol.MaxPayload {
+			return errors.New("tent furniture exceeds the native snapshot limit")
+		}
+		packets = append(packets, tree)
+	}
+	packets = append(packets, []byte{protocol.CommandTent, protocol.TentInteriorStatus, tentLockedByte(tent.Locked), 0}, []byte{protocol.CommandInventory, protocol.InventoryTentPlayers})
 	occupants := append(s.peers(c), c)
 	for _, peer := range occupants {
 		if peer.invisible {
@@ -110,14 +122,14 @@ func (s *Server) enterTent(ctx context.Context, c *Session, owner uint32) error 
 	host := s.onlineByID(owner)
 	if host == nil || host.openTent == nil || host.openTent.Map != c.character.Map || host.invisible ||
 		(owner != c.character.ID && s.World.HideOtherPlayers(c.character.Map)) {
-		return c.send(systemLine("This tent is unavailable."))
+		return c.send(serverwire.SystemLine("This tent is unavailable."))
 	}
 	tent, err := s.Store.Tent(ctx, owner)
 	if err != nil {
 		return err
 	}
 	if tent.Locked && owner != c.character.ID {
-		return c.send(systemLine("This tent is locked."))
+		return c.send(serverwire.SystemLine("This tent is locked."))
 	}
 	if c.openTent != nil && owner != c.character.ID {
 		if err = s.closePlayerTent(ctx, c); err != nil {
@@ -161,23 +173,25 @@ func (s *Server) exitTent(ctx context.Context, c *Session) error {
 	}
 	dst, ok := s.tentExitDestination(c)
 	if !ok {
-		return nil
+		return errors.New("tent has no valid overworld return point")
 	}
 	return s.teleport(ctx, c, world.Destination{Map: dst.Map, X: dst.X, Y: dst.Y}, 0)
 }
 
-// tentExitDestination follows the desktop server's order: the saved return point,
-// then the location where the tent was opened. (460,700) is the tent spawn, so it
-// is never used as a return point.
+// Prefer each visitor's durable return point. Recover missing/invalid map data
+// from the host's open sign, never from the character's interior coordinates.
 func (s *Server) tentExitDestination(c *Session) (game.Location, bool) {
-	usable := func(l game.Location) bool { return !(l.X == 460 && l.Y == 700) }
-	if r := c.character.TentReturn; r != nil && r.Map > 0 && usable(*r) {
-		return *r, true
+	usable := func(dst game.Location) bool {
+		_, known := s.World.Map(dst.Map)
+		return known && dst.Map != game.TentMapID
+	}
+	if dst := c.character.TentReturn; dst != nil && usable(*dst) {
+		return *dst, true
 	}
 	if host := s.onlineByID(c.tentOwner); host != nil && host.openTent != nil {
-		l := game.Location{Map: host.openTent.Map, X: host.openTent.X, Y: host.openTent.Y}
-		if (l.X > 0 || l.Y > 0) && usable(l) {
-			return l, true
+		dst := game.Location{Map: host.openTent.Map, X: host.openTent.X, Y: host.openTent.Y}
+		if usable(dst) {
+			return dst, true
 		}
 	}
 	return game.Location{}, false
@@ -247,7 +261,7 @@ func (s *Server) tentFurnitureCommand(ctx context.Context, c *Session, p []byte)
 		return protocol.ErrMalformed
 	}
 	if c.tentOwner == 0 || c.tentOwner != c.character.ID {
-		return c.send(systemLine("Only the owner can edit furniture inside their tent."))
+		return c.send(serverwire.SystemLine("Only the owner can edit furniture inside their tent."))
 	}
 	if !gmIdle(c) {
 		return nil
@@ -255,102 +269,134 @@ func (s *Server) tentFurnitureCommand(ctx context.Context, c *Session, p []byte)
 	r := protocol.NewReader(p[2:])
 	ref := store.CharacterRef{Account: c.account.ID, ID: c.character.ID}
 	switch p[1] {
-	case protocol.TentPlaceFurniture:
-		if len(p) != protocol.TentPlaceRequestBytes {
+	case protocol.TentAttachTool:
+		if len(p) != protocol.TentNativeToolBytes {
 			return protocol.ErrMalformed
 		}
-		_ = r.U8()
+		slot, host := r.U8(), r.U16()
+		next, tent, err := s.Store.AttachTentTool(ctx, ref, slot, host, s.Assets.TentToolHosts, s.Assets.Items, *c.character)
+		if err != nil {
+			return c.send(serverwire.SystemLine("Attachment failed: " + err.Error()))
+		}
+		s.adoptSavedCharacter(c, next)
+		hostIndex := host
+		if hostIndex == 0 {
+			hostIndex = 1
+		}
+		root := tent.Items[hostIndex-1]
+		accessory := len(tent.Items)
+		for i, row := range tent.Items {
+			accessory += len(row.Tools)
+			if i == int(hostIndex)-1 {
+				break
+			}
+		}
+		confirmation := protocol.Builder{protocol.CommandTentFurniture, protocol.TentToolAttached}.U16(uint16(accessory)).U16(root.Tools[len(root.Tools)-1].ItemID).U16(hostIndex)
+		s.broadcastWorld(c, confirmation)
+		if err := s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, confirmation}); err != nil {
+			return err
+		}
+	case protocol.TentPickupFurniture:
+		if len(p) != protocol.TentNativePickupBytes {
+			return protocol.ErrMalformed
+		}
+		raw := r.U16()
+		index := raw
+		if index > 0 {
+			index--
+		}
+		next, adds, err := s.Store.PickUpTentItem(ctx, ref, index, s.Assets.Items, *c.character)
+		if err != nil {
+			return c.send(serverwire.SystemLine("Pickup failed: " + err.Error()))
+		}
+		s.adoptSavedCharacter(c, next)
+		if err := s.sendAll(c, [][]byte{next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandTentFurniture, protocol.TentPickupFurniture}.U16(raw)}); err != nil {
+			return err
+		}
+	case protocol.TentPlaceFurniture:
+		legacy := len(p) == protocol.TentPlaceRequestBytes && p[2] == 0
+		if !legacy && len(p) != protocol.TentNativePlaceBytes && len(p) != protocol.TentNativePlaceFloorBytes {
+			return protocol.ErrMalformed
+		}
+		if legacy {
+			_ = r.U8()
+		}
 		slot := r.U8()
-		x, y, floor := r.U32(), r.U32(), r.U32()
-		if slot < 1 || slot > game.BagSize || x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor != 0 {
+		x, y, third := r.U32(), r.U32(), r.U32()
+		floor := uint32(0)
+		if legacy {
+			floor = third
+		} else if r.Remaining() > 0 {
+			floor = uint32(r.U8())
+		}
+		if slot < 1 || slot > game.BagSize || x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor > 1 || r.Err() != nil {
 			return protocol.ErrMalformed
 		}
 		item := c.character.Bag[slot-1]
 		def, known := s.Assets.Items[item.ID]
-		if item.Empty() || item.Locked || !known {
-			return c.send(systemLine("Select an available furniture or decoration item."))
-		}
-		if wall, surface := tentSurfaceKind(def); surface {
-			next, err := s.Store.ApplyTentSurface(ctx, ref, slot, item, 0, wall)
-			if err != nil {
-				return c.send(systemLine(err.Error()))
+		if kind, ok := s.Assets.TentSurfaces[item.ID]; ok && known && !item.Empty() && !item.Locked {
+			wallpaper := kind == assets.TentSurfaceWallpaper
+			if !wallpaper && kind != assets.TentSurfaceFloor {
+				return nil
 			}
-			if err = game.PreserveItemLocks(*c.character, &next); err != nil {
-				return err
+			next, _, err := s.Store.ApplyTentSurface(ctx, ref, slot, item, wallpaper, byte(floor), c.character.Clone())
+			if err != nil {
+				return c.send(serverwire.SystemLine("Decoration failed: " + err.Error()))
 			}
 			s.adoptSavedCharacter(c, next)
-			message := "Zemin kaplamasi uygulandi!"
-			if wall {
-				message = "Duvar kagidi uygulandi!"
+			sub := byte(protocol.TentFloorSurface)
+			if wallpaper {
+				sub = protocol.TentWallpaperSurface
 			}
-			s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, systemLine(message))
-			return s.refreshTent(ctx, c.tentOwner)
+			packet := protocol.Builder{protocol.CommandTentFurniture, sub}.U16(item.ID)
+			s.broadcastWorld(c, packet)
+			return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, packet})
 		}
-		if def.Type != tentFurnitureType && def.Type != tentWorkbenchType && def.Type != tentDecorationType {
-			return c.send(systemLine("Select an available furniture or decoration item."))
+		if item.Empty() || item.Locked || !known || (def.Type != tentFurnitureType && def.Type != tentWorkbenchType && def.Type != tentDecorationType) {
+			return c.send(serverwire.SystemLine("Select an available furniture or decoration item."))
 		}
-		next, err := s.Store.PlaceTentItem(ctx, ref, slot, uint16(x), uint16(y), item, s.Assets.Items)
+		var next game.Character
+		var err error
+		if legacy {
+			next, err = s.Store.PlaceTentItem(ctx, ref, slot, uint16(x), uint16(y), item)
+		} else {
+			next, err = s.Store.PlaceNativeTentItem(ctx, ref, slot, uint16(x), uint16(y), byte(floor), item, s.Assets.Items, *c.character)
+		}
 		if err != nil {
-			return c.send(systemLine(err.Error()))
-		}
-		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
-			return err
-		}
-		s.adoptSavedCharacter(c, next)
-		s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1}, []byte{protocol.CommandTentFurniture, protocol.TentPlaceFurniture, protocol.TentFurnitureSucceeded})
-	case protocol.TentMoveFurniture:
-		if len(p) != protocol.TentMoveRequestBytes && len(p) != protocol.TentMoveRotatedRequestBytes {
-			return protocol.ErrMalformed
-		}
-		index, x, y, floor := r.U16(), r.U32(), r.U32(), r.U32()
-		rotation := byte(0)
-		if r.Remaining() > 0 {
-			rotation = r.U8()
-		}
-		if x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || floor != 0 || rotation > tentRotationMax {
-			return protocol.ErrMalformed
-		}
-		if err := s.Store.MoveTentItem(ctx, ref, index, uint16(x), uint16(y), byte(floor), rotation, s.Assets.Items); err != nil {
-			return c.send(systemLine(err.Error()))
-		}
-	case protocol.TentPickupFurniture:
-		if len(p) != protocol.TentPickupRequestBytes {
-			return protocol.ErrMalformed
-		}
-		index, err := s.tentWireIndex(ctx, c.tentOwner, r.U16())
-		if err != nil {
-			return c.send(systemLine(err.Error()))
-		}
-		next, adds, err := s.Store.PickUpTentItem(ctx, ref, index, s.Assets.Items, c.character.Clone())
-		if err != nil {
-			return c.send(systemLine(err.Error()))
-		}
-		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
-			return err
-		}
-		s.adoptSavedCharacter(c, next)
-		s.sendOrClose(c, next.Bag.AdditionPacket(adds))
-	case protocol.TentAddAccessory:
-		if len(p) != protocol.TentAccessoryRequestBytes {
-			return protocol.ErrMalformed
-		}
-		slot := r.U8()
-		host, err := s.tentWireIndex(ctx, c.tentOwner, r.U16())
-		if err != nil {
-			return c.send(systemLine(err.Error()))
-		}
-		if slot < 1 || slot > game.BagSize || c.character.Bag[slot-1].Empty() || c.character.Bag[slot-1].Locked {
-			return c.send(systemLine("Select an available accessory tool."))
-		}
-		next, err := s.Store.AttachTentTool(ctx, ref, slot, c.character.Bag[slot-1], host)
-		if err != nil {
-			return c.send(systemLine(err.Error()))
+			return c.send(serverwire.SystemLine("Placement failed: " + err.Error()))
 		}
 		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
 			return err
 		}
 		s.adoptSavedCharacter(c, next)
 		s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, slot, 1})
+		if legacy {
+			s.sendOrClose(c, []byte{protocol.CommandTentFurniture, protocol.TentPlaceFurniture, protocol.TentFurnitureSucceeded})
+		} else {
+			tent, err := s.Store.Tent(ctx, c.character.ID)
+			if err != nil {
+				return err
+			}
+			row := tent.Items[len(tent.Items)-1]
+			confirmation := protocol.Builder{protocol.CommandTentFurniture, protocol.TentPlaceFurniture}.Bytes(serverwire.TentTreeRecord(uint16(len(tent.Items)), row.ItemID, uint32(row.X), uint32(row.Y), 1, row.Rotation, 0, nil, row.Floor))
+			s.sendOrClose(c, confirmation)
+		}
+
+	case protocol.TentMoveFurniture:
+		if len(p) != protocol.TentMoveRequestBytes && len(p) != protocol.TentMoveRotatedRequestBytes {
+			return protocol.ErrMalformed
+		}
+		index, x, y, _ := r.U16(), r.U32(), r.U32(), r.U32()
+		rotation := byte(0)
+		if r.Remaining() > 0 {
+			rotation = r.U8()
+		}
+		if x > protocol.TentCoordinateMax || y > protocol.TentCoordinateMax || rotation > tentRotationMax {
+			return protocol.ErrMalformed
+		}
+		if err := s.Store.MoveNativeTentItem(ctx, ref, index, uint16(x), uint16(y), rotation, s.Assets.Items); err != nil {
+			return c.send(serverwire.SystemLine(err.Error()))
+		}
 	default:
 		return ErrUnsupported
 	}
@@ -360,7 +406,7 @@ func (s *Server) tentChatCommand(ctx context.Context, c *Session, name string, a
 	switch name {
 	case "tentlock", "tentunlock":
 		if len(args) != 0 || !gmIdle(c) {
-			return true, c.send(systemLine("Finish active interactions before changing the tent lock."))
+			return true, c.send(serverwire.SystemLine("Finish active interactions before changing the tent lock."))
 		}
 		if _, err := s.ensurePlayerTent(ctx, c); err != nil {
 			return true, err
@@ -369,18 +415,18 @@ func (s *Server) tentChatCommand(ctx context.Context, c *Session, name string, a
 		if err != nil {
 			return true, err
 		}
-		return true, c.send(systemLine("Tent access updated."))
+		return true, c.send(serverwire.SystemLine("Tent access updated."))
 	case "tentpickup":
 		if len(args) != 1 || !gmIdle(c) || c.tentOwner != c.character.ID {
-			return true, c.send(systemLine("Usage: /tentpickup <zero-based furniture index> inside your own tent."))
+			return true, c.send(serverwire.SystemLine("Usage: /tentpickup <zero-based furniture index> inside your own tent."))
 		}
 		index, err := strconv.ParseUint(args[0], 10, 16)
 		if err != nil {
-			return true, c.send(systemLine("Invalid furniture index."))
+			return true, c.send(serverwire.SystemLine("Invalid furniture index."))
 		}
 		next, adds, err := s.Store.PickUpTentItem(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID}, uint16(index), s.Assets.Items, c.character.Clone())
 		if err != nil {
-			return true, c.send(systemLine(err.Error()))
+			return true, c.send(serverwire.SystemLine(err.Error()))
 		}
 		if err = game.PreserveItemLocks(*c.character, &next); err != nil {
 			return true, err
@@ -390,12 +436,12 @@ func (s *Server) tentChatCommand(ctx context.Context, c *Session, name string, a
 		return true, s.refreshTent(ctx, c.tentOwner)
 	case "tentexit":
 		if len(args) != 0 || !gmIdle(c) {
-			return true, c.send(systemLine("Usage: /tentexit"))
+			return true, c.send(serverwire.SystemLine("Usage: /tentexit"))
 		}
 		return true, s.exitTent(ctx, c)
 	case "tentclose":
 		if len(args) != 0 {
-			return true, c.send(systemLine("Usage: /tentclose"))
+			return true, c.send(serverwire.SystemLine("Usage: /tentclose"))
 		}
 		return true, s.closePlayerTent(ctx, c)
 	}
@@ -414,30 +460,9 @@ func recoverTentCharacter(c *game.Character) bool {
 	return true
 }
 
-// tentSurfaceKind reports whether an item is applied to a wall or a floor.
-func tentSurfaceKind(def game.ItemDefinition) (wall, surface bool) {
-	if game.IsTentWallpaper(def.ID, def.Name) {
-		return true, true
+func tentLockedByte(locked bool) byte {
+	if locked {
+		return 1
 	}
-	if game.IsTentFloor(def.ID, def.Name) {
-		return false, true
-	}
-	return false, false
-}
-
-// tentWireIndex maps a client index to a stored position. The desktop server
-// reads a one-based index when it is in range and a zero-based one otherwise.
-func (s *Server) tentWireIndex(ctx context.Context, owner uint32, raw uint16) (uint16, error) {
-	tent, err := s.Store.Tent(ctx, owner)
-	if err != nil {
-		return 0, err
-	}
-	n := len(tent.Items)
-	switch {
-	case raw >= 1 && int(raw) <= n:
-		return raw - 1, nil
-	case int(raw) < n:
-		return raw, nil
-	}
-	return 0, errors.New("Gecersiz konum!")
+	return 0
 }

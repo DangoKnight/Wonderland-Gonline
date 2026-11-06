@@ -4,15 +4,52 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+import math
+import shutil
+import wave
 
 from PIL import Image
 import media
 import export
 import styles
 from verify_media import reconstruct_style
+from media_formats import export_audio_file, validate_output_formats
 
 
 class MediaTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('ffmpeg'), 'FFmpeg is required for audio extraction')
+    def test_single_media_profile_converts_audio_and_images_and_keeps_vorbis(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);client=root/'original';output=root/'export'
+            (client/'sound').mkdir(parents=True)
+            source=client/'sound'/'tone.wav'
+            with wave.open(str(source),'wb') as stream:
+                stream.setparams((1,2,22050,0,'NONE','not compressed'))
+                stream.writeframes(b''.join(struct.pack('<h',int(10000*math.sin(i*2*math.pi*440/22050))) for i in range(2205)))
+            before=source.read_bytes()
+            doc=media.export_one(source,client,output)
+            self.assertEqual((doc['format'],doc['sample_rate'],doc['channels']),('ogg-vorbis',44100,2))
+            ogg=output/doc['audio']
+            self.assertEqual(ogg.suffix,'.ogg')
+            self.assertFalse((output/'sound/tone.wav').exists())
+            self.assertEqual(source.read_bytes(),before)
+            copied=output/'sound/copied.ogg'
+            meta=export_audio_file(ogg,copied)
+            self.assertEqual(meta['conversion'],'copied')
+            self.assertEqual(copied.read_bytes(),ogg.read_bytes())
+            with self.assertRaisesRegex(ValueError,'colliding'):
+                export_audio_file(source,ogg)
+            bitmap=client/'tile.bmp'
+            Image.new('RGB',(2,2),(20,40,60)).save(bitmap)
+            image_doc=media.export_one(bitmap,client,output)
+            with Image.open(output/image_doc['png']) as image:
+                self.assertEqual(image.mode,'RGBA')
+                self.assertEqual(image.getpixel((0,0)),(20,40,60,255))
+            self.assertEqual(validate_output_formats(output)['counts'],dict(images=1,audio=2,video=0))
+            (output/'unexpected.wav').write_bytes(before)
+            with self.assertRaisesRegex(ValueError,'non-Vorbis'):
+                validate_output_formats(output)
+
     def test_cursor_hotspot_mask_and_invert_operation(self):
         # Two bottom-up RGB24 pixels: black transparent and white invert.
         dib = struct.pack('<IiiHHIIiiII', 40, 2, 2, 1, 24, 0, 8, 0, 0, 0, 0)

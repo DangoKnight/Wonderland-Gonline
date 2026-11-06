@@ -1,0 +1,26 @@
+policy_id,map,event,branch,tail_index,completion_mark,notepad_positions,method
+wiki_quest_bundle_10071_6_6,10071,6,6,5,15070,16:3,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_11052_3_24,11052,3,24,5,13114,8:5,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_11062_2_8,11062,2,8,2,13108,8:1,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_11079_1_15,11079,1,15,6,13104,7:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_11149_2_20,11149,2,20,23,13172,14:9,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_11187_3_12,11187,3,12,2,13210,24:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12145_7_7,12145,7,7,4,21048,23:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12145_7_9,12145,7,9,4,21048,23:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12145_7_11,12145,7,11,4,21048,23:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12145_7_13,12145,7,13,4,21048,23:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12159_2_18,12159,2,18,15,13008,2:5,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12273_6_10,12273,6,10,12,13138,11:1,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12284_2_1,12284,2,1,14,13164,13:1,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12408_3_12,12408,3,12,3,14046,22:7,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12521_2_19,12521,2,19,7,13176,16:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12603_4_2,12603,4,2,3,14028,18:1,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12639_3_1,12639,3,1,1,14032,18:8,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12647_11_18,12647,11,18,1,15096,19:6,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12647_12_6,12647,12,6,1,15096,19:6,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_12800_43_24,12800,43,24,1,21102,30:4,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_13013_2_16,13013,2,16,1,15158,33:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_13013_3_14,13013,3,14,1,15158,33:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_13013_4_14,13013,4,14,1,15158,33:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_13013_5_14,13013,5,14,1,15158,33:10,exact native resource/companion/skill/mark tail; quest-gated entry branch
+wiki_quest_bundle_13013_6_14,13013,6,14,1,15158,33:10,exact native resource/companion/skill/mark tail; quest-gated entry branch

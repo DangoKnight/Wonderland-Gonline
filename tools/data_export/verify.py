@@ -8,6 +8,7 @@ import struct
 
 from export import (FORMATS, REPO, inventory, require, sha256, transform,
                     COPY_BUFFER_BYTES, EVE_HEADER_BYTES)
+from text_languages import verify_language_sources
 
 # Independent item wire map, retained as data for inverse verification of the
 # Go exporter. The native item golden tests separately check decoded meaning.
@@ -71,10 +72,17 @@ def check_readable(document):
 
 def verify(destination):
     manifest=json.loads((destination/'asset_manifest.json').read_text())
-    selected,shadowed=inventory(Path(manifest['client_source']),Path(manifest['server_source']))
+    selected,shadowed=inventory(Path(manifest['client_source']),Path(manifest['server_source']) if manifest.get('server_source') else None)
     entries={entry['asset']:entry for entry in manifest['assets']}
-    require(len(entries)==len(manifest['assets']) and entries.keys()==selected.keys() | (entries.keys() & {'skill_effects.json', 'lucky_draw.json'}),'manifest inventory is incomplete or duplicated')
+    preserved = {key: row for key, row in entries.items() if manifest.get('server_exports_source') and row['origin'] in ('server', 'server-listdata')}
+    require(len(entries)==len(manifest['assets']) and entries.keys()==selected.keys() | preserved.keys() | (entries.keys() & {'skill_effects.json', 'lucky_draw.json'}),'manifest inventory is incomplete or duplicated')
     require(manifest['priority']=='client-over-server','incorrect source priority')
+    for asset, entry in preserved.items():
+        output = destination / entry['output']
+        require(sha256(output) == entry['output_sha256'] and output.stat().st_size == entry['output_bytes'], 'preserved server export checksum mismatch: ' + asset)
+        document = json.loads(output.read_text())
+        original = reconstruct(document, asset)
+        require(hashlib.sha256(original).hexdigest() == entry['source_sha256'] and len(original) == entry['source_bytes'], 'preserved server source mismatch: ' + asset)
     if 'lucky_draw.json' in entries:
         from lucky_draw import RULES
         row = entries['lucky_draw.json']
@@ -107,6 +115,7 @@ def verify(destination):
         output=destination/entry['output']
         require(sha256(output)==entry['output_sha256'] and output.stat().st_size==entry['output_bytes'],'export checksum mismatch: '+asset)
         document=json.loads(output.read_text())
+        verify_language_sources(document)
         require(document['source_sha256']==entry['source_sha256'],'embedded provenance mismatch')
         if asset in shadowed:
             require(sha256(shadowed[asset])==entry['overridden_server_source']['sha256'],'overridden source checksum mismatch')
@@ -142,7 +151,7 @@ def verify(destination):
             reconstructed=reconstruct(document,asset)
             require(len(reconstructed)==entry['source_bytes'] and hashlib.sha256(reconstructed).hexdigest()==entry['source_sha256'],'source reconstruction mismatch: '+asset)
         print(asset+': source selection, export checksum and complete reconstruction verified',flush=True)
-    print(f'All {len(selected)} source assets reconstruct byte-for-byte; derived compatibility definitions verified separately.',flush=True)
+    print(f'All {len(selected) + len(preserved)} source assets reconstruct byte-for-byte; derived compatibility definitions verified separately.',flush=True)
 
 
 if __name__=='__main__':
