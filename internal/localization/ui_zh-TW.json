@@ -451,7 +451,7 @@
     "ui.app.player_busy_de73189c": "玩家忙碌中",
     "ui.app.player_is_offline_8905a767": "玩家已離線",
     "ui.app.please_free_an_inventory_slot_lucky_draw_b9243187": "請騰出物品欄空間。抽獎結果已保留。",
-    "ui.app.please_let_me_join_you_d49b7c95": "：請讓我加入隊伍！",
+    "ui.app.please_let_me_join_you_d49b7c95": "請讓我加入隊伍！",
     "ui.app.purchase_rejected_b3496b8d": "購買遭拒",
     "ui.app.record_bfdd5106": "紀錄點",
     "ui.app.refused_to_add_799f16a8": " 拒絕好友邀請",
@@ -710,6 +710,10 @@
     "ui.app.windowed_3f26603a": "視窗",
     "ui.app.settings": "設定",
     "ui.app.settings_f10": "設定（F10）",
-    "ui.settings.language_live": "語言變更將立即套用。"
+    "ui.settings.language_live": "語言變更將立即套用。",
+    "ui.team.leadership_offer": "要成為隊長嗎？",
+    "ui.team.leadership_refused": "對方拒絕成為隊長。",
+    "ui.team.leadership_timeout": "沒有回應。",
+    "ui.team.leadership_busy": "玩家忙碌中。"
   }
 }

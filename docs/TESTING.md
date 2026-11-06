@@ -1,5 +1,27 @@
 # Testing and validation
 
+## Native team protocol — 2026-11-06
+
+The two-Alogin Legacy capture and decompilation now back ID-only invitations,
+Join Team targeting, formation-based membership, leader trails, public rosters,
+native leave requests and the complete leadership confirmation exchange. Raw-byte
+fixtures are authored independently of protocol builders. Tests cover joining
+without an immediate full roster, missing/late appearances, map replacement,
+unrelated teams, pet identity separation, disbanding without changing active pets,
+transfer acceptance/refusal/expiry/cancellation and stale or malformed requests.
+
+Focused server tests run under the race detector, including concurrent transfer
+offer/reply/expiry, follower coordinate checkpoints, map snapshots and existing
+party battle victory/flee/disconnect cases. A follower-initiated battle after
+transfer keeps the new leader's captured formation cell while preserving the
+original event/loot initiator. Focused client tests, affected-package vet checks,
+compiled locale consistency checks and server/client builds pass. Validation
+binaries are under ignored `var/validation/team-native-20261106/`.
+
+This is development validation, not a full pre-push run. Repeat the two-client
+live sequence for presentation/timing acceptance. Protocol evidence and exact
+native serializer/callback references are in [TEAM_PROTOCOL.md](TEAM_PROTOCOL.md).
+
 ## Full quest-development pre-push validation — 2026-11-05
 
 Validated native map backdrops/schema v50, client-local backdrop selection, the

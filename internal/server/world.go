@@ -184,6 +184,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	if err := s.sendAll(c, s.stallList(c)); err != nil {
 		return err
 	}
+	s.partySceneSnapshot(c, peers)
 	s.partyArrival(c)
 	if s.friendSessions == nil {
 		s.friendSessions = map[uint32]*Session{}
@@ -430,11 +431,7 @@ func (s *Server) enterPortalStep(ctx context.Context, c *Session, portal uint16,
 		s.Log.Debug("portal not found", "map", char.Map, "portal", portal, "x", char.X, "y", char.Y)
 		return unfreeze()
 	}
-	from := char.Map
-	if e := s.teleport(ctx, c, dst, byte(portal)); e != nil {
-		return e
-	}
-	return s.partyFollow(ctx, c, from)
+	return s.teleport(ctx, c, dst, byte(portal))
 }
 
 // portalDestination applies session return points to both regular and scripted
@@ -463,6 +460,28 @@ func (s *Server) teleportPrelude(c *Session) error {
 // persisted before any packet; the character is republished after its AC12:1. Caller
 // holds worldMu.
 func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination, portal byte) error {
+	p := c.party
+	if p == nil || p.transitioning {
+		return s.teleportMember(ctx, c, dst, portal)
+	}
+	// Followers traverse the same scripted/regular exit as the leader. Defer
+	// scene validation until every member has had its durable warp attempted.
+	p.transitioning = true
+	defer func() {
+		p.transitioning = false
+		s.validatePartyScene(p)
+	}()
+	from := c.character.Map
+	if err := s.teleportMember(ctx, c, dst, portal); err != nil {
+		return err
+	}
+	if c.character.Map != from {
+		return s.partyFollow(ctx, c, from)
+	}
+	return nil
+}
+
+func (s *Server) teleportMember(ctx context.Context, c *Session, dst world.Destination, portal byte) error {
 	char := c.character
 	if c.openTent != nil && (c.tentOwner == 0 || dst.Map != c.openTent.Map) {
 		if err := s.closePlayerTent(ctx, c); err != nil {
@@ -509,6 +528,8 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 
 // teleportAfterSave publishes an already durable destination. Caller holds worldMu.
 func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byte) error {
+	defer func() { s.validatePartyScene(c.party) }()
+	s.cancelPartyLeadership(c.party, protocol.TeamLeadershipCancelled)
 	char := c.character
 	c.gathering = nil
 	s.stopFishing(c)
@@ -683,6 +704,9 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 		return protocol.ErrMalformed
 	}
 	// AC06 ignores movement while an event holds the player.
+	if c.party != nil && c.party.leader() != c && c.party.leader().ready && s.samePlayerScene(c, c.party.leader()) {
+		return nil
+	}
 	if c.event != nil {
 		return nil
 	}
@@ -731,6 +755,7 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 	}
 	s.Log.Debug("movement destination accepted", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)
 	c.character.X, c.character.Y = x, y
+	s.movePartyFollowers(c)
 	// Resolve quest-raft landing before any land region can start an event.
 	// Stop reports may supply the final shore coordinate too.
 	if s.starterBeachQuestRaft(c) {

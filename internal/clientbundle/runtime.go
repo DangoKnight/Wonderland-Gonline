@@ -22,6 +22,7 @@ import (
 
 const PacksName = "_packs.json"
 const runtimeCompilerVersion = 2
+const compiledGroundLayoutVersion = 2 // Retain the native isometric scenery grid.
 const runtimePackDescriptorVersion = 1
 const compiledImageCodecVersion = 2
 const compiledGroundMaxGridSide = 900
@@ -513,6 +514,9 @@ func (c *runtimeCompiler) signature(deps []string) (string, error) {
 	h := sha256.New()
 	fmt.Fprintf(h, "runtime-%d\n", runtimeCompilerVersion)
 	for _, name := range deps {
+		if name == "ground_data.json" {
+			fmt.Fprintf(h, "ground-layout-%d\n", compiledGroundLayoutVersion)
+		}
 		sum, err := hashFile(filepath.Join(c.source, filepath.FromSlash(name)))
 		if err != nil {
 			return "", err

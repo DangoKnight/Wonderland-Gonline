@@ -42,6 +42,7 @@ type Scene struct {
 	Ground        clientassets.GroundPrefix
 	Layers        []Layer
 	Objects       []Object
+	Tiles         []TerrainTile
 	Zones         []SoundZone
 }
 
@@ -133,6 +134,9 @@ func loadScene(a login.Assets, mapID uint16) (*Scene, error) {
 	if err := s.loadObjects(a, t.Objects); err != nil {
 		return nil, err
 	}
+	if err := s.loadTerrainTiles(a, t.TileGrid); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
@@ -198,6 +202,7 @@ func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
 	out := *s
 	out.Layers = append([]Layer(nil), s.Layers...)
 	out.Objects = append([]Object(nil), s.Objects...)
+	out.Tiles = append([]TerrainTile(nil), s.Tiles...)
 	out.Zones = append([]SoundZone(nil), s.Zones...)
 	return &out, nil
 }

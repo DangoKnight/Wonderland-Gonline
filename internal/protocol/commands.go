@@ -210,6 +210,40 @@ const (
 	TeamRoster             = 6
 	TeamKick               = 9
 	TeamTransferLeadership = 10
+	TeamLeadershipNotice   = 15
+)
+
+// Native AC13 transfer serializer (002c4f3c) and receiver (00407304).
+const (
+	TeamMaximumMembers      = 4
+	TeamTransferOffer       = 1
+	TeamTransferResponse    = 2
+	TeamTransferTimeout     = 3
+	TeamTransferDeclined    = 2
+	TeamTransferAccepted    = 3
+	TeamLeadershipOffered   = 1
+	TeamLeadershipStatus    = 2
+	TeamLeadershipChanged   = 3
+	TeamLeadershipRefused   = 2
+	TeamLeadershipTimedOut  = 3
+	TeamLeadershipCancelled = 4
+	TeamLeadershipBusy      = 5
+)
+
+const (
+	TeamIDPacketBytes            = 6
+	TeamJoinReplyBytes           = 7
+	TeamFormationBytes           = 10
+	TeamRosterHeaderBytes        = 7
+	TeamLeaderOfferRequestBytes  = 7
+	TeamLeaderResponseBytes      = 4
+	TeamLeaderTimeoutBytes       = 3
+	TeamLeaderOfferNoticeBytes   = 7
+	TeamLeaderChangeNoticeBytes  = 11
+	TeamLeaderStatusNoticeBytes  = 4
+	TeamLeaderRefusalNoticeBytes = 8
+	TeamLeaveShortRequestBytes   = 2 // Compatibility with older migrated clients.
+	TeamLeaveNativeRequestBytes  = 6 // 002c4b69 appends the current leader U32.
 )
 
 // Social relation operations (inbound AC10) and status notifications (outbound).

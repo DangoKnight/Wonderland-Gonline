@@ -139,12 +139,15 @@ type World struct {
 	OnLeg  func(facing, x, y int)
 	walker Walker
 	// Peers are the other players on the map, by ID (peers.go).
-	Peers             map[uint32]*Peer
-	Companions        map[uint32]*Companion
-	Expressions       map[uint32]Expression
-	JoinTeamSelection bool
-	teamHover         teamTarget
-	hovered           *NPC
+	Peers               map[uint32]*Peer
+	Teams               map[uint32][]uint32
+	TeamFollowingPaused bool
+	teamTrails          map[uint32]*teamTrail
+	Companions          map[uint32]*Companion
+	Expressions         map[uint32]Expression
+	JoinTeamSelection   bool
+	teamHover           teamTarget
+	hovered             *NPC
 	// CameraAt, when set, is the camera's top-left instead of the
 	// player-centred one.
 	CameraAt      *image.Point
@@ -267,6 +270,11 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		w.Scene.Draw(scr, cx, cy)
 	}
 	now := w.Now()
+	for i := range w.Scene.Tiles {
+		if tile := &w.Scene.Tiles[i]; !tile.Sorted {
+			tile.Draw(scr, cx, cy)
+		}
+	}
 	// The weather's under pass (FUN_00334580) follows the ground.
 	if w.Weather != nil {
 		w.Weather.Under(scr, w.WeatherKind, image.Pt(cx, cy), now)
@@ -288,6 +296,11 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		draw func()
 	}
 	var figures []figure
+	for i := range w.Scene.Tiles {
+		if tile := &w.Scene.Tiles[i]; tile.Sorted {
+			figures = append(figures, figure{tile.Depth, func() { tile.Draw(scr, cx, cy) }})
+		}
+	}
 	for _, sprite := range sprites {
 		if sprite.Draw != nil {
 			figures = append(figures, figure{sprite.Y + sprite.Depth, func() { sprite.Draw(scr, sprite.X-cx, sprite.Y-cy) }})

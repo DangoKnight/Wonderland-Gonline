@@ -13,11 +13,21 @@ import (
 
 // party is a team of up to four characters; members[0] leads. Membership is
 // guarded by worldMu. Reference: Player.cs (Team region) and AC13.
-type party struct{ members []*Session }
+type party struct {
+	members       []*Session
+	transfer      *partyLeadershipTransfer
+	transitioning bool // One synchronous group warp; guarded by worldMu.
+}
+
+type partyLeadershipTransfer struct {
+	leader, target *Session
+	deadline       time.Time
+}
 
 const (
-	partyMax        = 4
-	partyRequestTTL = time.Minute
+	partyMax               = protocol.TeamMaximumMembers
+	partyRequestTTL        = time.Minute
+	partyLeadershipTimeout = 5 * time.Second // Native confirmation, FUN_00407304.
 )
 
 func (p *party) leader() *Session { return p.members[0] }
@@ -56,12 +66,18 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	switch p[1] {
 	case protocol.TeamRequest:
+		if len(p) != protocol.TeamIDPacketBytes {
+			return protocol.ErrMalformed
+		}
 		target := r.U32()
 		if r.Err() != nil {
 			return r.Err()
 		}
 		return s.partyRequest(c, target)
 	case protocol.TeamReply:
+		if len(p) != protocol.TeamJoinReplyBytes {
+			return protocol.ErrMalformed
+		}
 		reply, requester := r.U8(), r.U32()
 		if r.Err() != nil {
 			return r.Err()
@@ -72,9 +88,18 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 		delete(c.partyRequests, requester)
 		return nil
 	case protocol.TeamLeave:
+		if len(p) != protocol.TeamLeaveShortRequestBytes && len(p) != protocol.TeamLeaveNativeRequestBytes {
+			return protocol.ErrMalformed
+		}
+		if len(p) == protocol.TeamLeaveNativeRequestBytes && c.party != nil && r.U32() != c.party.leader().character.ID {
+			return nil
+		}
 		s.partyLeave(c, true)
 		return nil
 	case protocol.TeamKick:
+		if len(p) != protocol.TeamIDPacketBytes {
+			return protocol.ErrMalformed
+		}
 		target := r.U32()
 		if r.Err() != nil {
 			return r.Err()
@@ -86,11 +111,7 @@ func (s *Server) partyCommand(ctx context.Context, c *Session, p []byte) error {
 		}
 		return nil
 	case protocol.TeamTransferLeadership:
-		target := r.U32()
-		if r.Err() != nil {
-			return r.Err()
-		}
-		return s.partyTransfer(c, target)
+		return s.partyLeadershipCommand(c, p)
 	}
 	return ErrUnsupported
 }
@@ -130,13 +151,16 @@ func (p *party) member(id uint32) *Session {
 // A requester already in a team must leave it first (C# would overwrite it).
 func (s *Server) partyRequest(c *Session, id uint32) error {
 	target := s.mapPlayer(c, id)
-	if target == nil || target == c || target.character.Preferences().PartyInvitesBlocked || (c.party != nil && len(c.party.members) > 1) {
+	if target != nil && target.party != nil {
+		target = target.party.leader()
+		if !s.samePlayerScene(c, target) {
+			return nil
+		}
+	}
+	if target == nil || target == c || target.character.Preferences().PartyInvitesBlocked || (c.party != nil && len(c.party.members) > 1) || c.battle != nil || target.battle != nil || c.event != nil || target.event != nil {
 		return nil
 	}
-	packet, err := protocol.Builder{protocol.CommandTeam, protocol.TeamRequest}.U32(c.character.ID).String(c.character.Name)
-	if err != nil {
-		return err
-	}
+	packet := protocol.Builder{protocol.CommandTeam, protocol.TeamRequest}.U32(c.character.ID)
 	if target.partyRequests == nil {
 		target.partyRequests = map[uint32]time.Time{}
 	}
@@ -156,7 +180,7 @@ func (s *Server) partyAccept(c *Session, id uint32) error {
 	}
 	at, ok := c.partyRequests[requester.character.ID]
 	delete(c.partyRequests, requester.character.ID)
-	if !ok || time.Since(at) > partyRequestTTL || requester == c || c.character.Preferences().PartyInvitesBlocked {
+	if !ok || time.Since(at) > partyRequestTTL || requester == c || c.character.Preferences().PartyInvitesBlocked || c.battle != nil || requester.battle != nil || c.event != nil || requester.event != nil {
 		return nil
 	}
 	if requester.party != nil && len(requester.party.members) > 1 {
@@ -170,6 +194,7 @@ func (s *Server) partyAccept(c *Session, id uint32) error {
 	}
 	c.party.members = append(c.party.members, requester)
 	requester.party = c.party
+	s.sendOrClose(requester, protocol.Builder{protocol.CommandTeam, protocol.TeamReply, 1}.U32(c.character.ID))
 	// Player.JoinParty: the follow formation goes to the leader's whole map.
 	follow := protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(c.character.ID).U32(requester.character.ID)
 	s.sendMap(c.character.Map, follow, nil)
@@ -186,6 +211,7 @@ func (s *Server) partyLeave(c *Session, notify bool) {
 	if p == nil {
 		return
 	}
+	s.cancelPartyLeadership(p, protocol.TeamLeadershipCancelled)
 	c.party = nil
 	if c.view != nil {
 		c.view.Team.Store(0)
@@ -226,20 +252,145 @@ func (s *Server) partyReset(c *Session) {
 	)
 }
 
-// partyTransfer is Player.TransferLeadership.
+// partyTransfer offers leadership; only the candidate's native acceptance commits it.
 func (s *Server) partyTransfer(c *Session, id uint32) error {
 	p := c.party
 	if p == nil || p.leader() != c {
 		return nil
 	}
 	next := p.member(id)
-	if next == nil || next == c {
+	if next == nil || next == c || !s.samePlayerScene(c, next) || !next.ready {
 		return nil
 	}
-	i := p.index(next)
-	p.members = append([]*Session{next}, append(p.members[:i:i], p.members[i+1:]...)...)
+	if c.battle != nil || next.battle != nil || c.event != nil || next.event != nil {
+		s.sendOrClose(c, []byte{protocol.CommandTeam, protocol.TeamLeadershipNotice, protocol.TeamLeadershipStatus, protocol.TeamLeadershipBusy})
+		return nil
+	}
+	if p.transfer != nil {
+		return nil
+	}
+	p.transfer = &partyLeadershipTransfer{leader: c, target: next, deadline: time.Now().Add(partyLeadershipTimeout)}
+	if s.partyTransfers == nil {
+		s.partyTransfers = map[*party]struct{}{}
+	}
+	s.partyTransfers[p] = struct{}{}
+	s.sendOrClose(next, protocol.Builder{protocol.CommandTeam, protocol.TeamLeadershipNotice, protocol.TeamLeadershipOffered}.U32(c.character.ID))
+	return nil
+}
+
+func (s *Server) partyLeadershipCommand(c *Session, packet []byte) error {
+	if len(packet) < protocol.TeamLeaderTimeoutBytes {
+		return protocol.ErrMalformed
+	}
+	switch packet[2] {
+	case protocol.TeamTransferOffer:
+		if len(packet) != protocol.TeamLeaderOfferRequestBytes {
+			return protocol.ErrMalformed
+		}
+		return s.partyTransfer(c, protocol.NewReader(packet[3:]).U32())
+	case protocol.TeamTransferResponse:
+		if len(packet) != protocol.TeamLeaderResponseBytes || packet[3] != protocol.TeamTransferAccepted && packet[3] != protocol.TeamTransferDeclined {
+			return protocol.ErrMalformed
+		}
+	case protocol.TeamTransferTimeout:
+		if len(packet) != protocol.TeamLeaderTimeoutBytes {
+			return protocol.ErrMalformed
+		}
+	default:
+		return protocol.ErrMalformed
+	}
+	p := c.party
+	if p == nil || p.transfer == nil || p.transfer.target != c {
+		return nil
+	}
+	t := p.transfer
+	if !time.Now().Before(t.deadline) || packet[2] == protocol.TeamTransferTimeout {
+		s.cancelPartyLeadership(p, protocol.TeamLeadershipTimedOut)
+		return nil
+	}
+	if packet[3] == protocol.TeamTransferDeclined {
+		s.cancelPartyLeadership(p, protocol.TeamLeadershipRefused)
+		return nil
+	}
+	if p.leader() != t.leader || t.leader.party != p || !c.ready || !t.leader.ready || !s.samePlayerScene(c, t.leader) || c.battle != nil || t.leader.battle != nil || c.event != nil || t.leader.event != nil {
+		s.cancelPartyLeadership(p, protocol.TeamLeadershipBusy)
+		return nil
+	}
+	i := p.index(c)
+	if i <= 0 {
+		s.cancelPartyLeadership(p, protocol.TeamLeadershipCancelled)
+		return nil
+	}
+	p.transfer = nil
+	delete(s.partyTransfers, p)
+	p.members[0], p.members[i] = p.members[i], p.members[0]
+	changed := protocol.Builder{protocol.CommandTeam, protocol.TeamLeadershipNotice, protocol.TeamLeadershipChanged}.U32(c.character.ID).U32(t.leader.character.ID)
+	s.broadcastWorld(c, changed)
+	s.sendOrClose(c, changed)
+	for _, m := range p.members {
+		if !s.samePlayerScene(c, m) {
+			s.sendOrClose(m, changed)
+		}
+	}
 	s.partyUpdate(p)
 	return nil
+}
+
+// Caller holds worldMu; no goroutine or SQL state is attached to a party offer.
+func (s *Server) cancelPartyLeadership(p *party, reason byte) {
+	if p == nil || p.transfer == nil {
+		return
+	}
+	t := p.transfer
+	p.transfer = nil
+	delete(s.partyTransfers, p)
+	status := protocol.Builder{protocol.CommandTeam, protocol.TeamLeadershipNotice, protocol.TeamLeadershipStatus, reason}
+	if reason == protocol.TeamLeadershipRefused {
+		status = status.U32(t.target.character.ID)
+	}
+	s.sendOrClose(t.leader, status)
+	s.sendOrClose(t.target, status)
+}
+
+func (s *Server) expirePartyLeadership(now time.Time) {
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	for p := range s.partyTransfers {
+		if p.transfer == nil {
+			delete(s.partyTransfers, p)
+			continue
+		}
+		if p.transfer != nil && !now.Before(p.transfer.deadline) {
+			s.cancelPartyLeadership(p, protocol.TeamLeadershipTimedOut)
+		}
+	}
+}
+
+// Following coordinates are buffered just like ordinary walking. The client's
+// trail supplies visual spacing; the server retains the accepted group endpoint.
+func (s *Server) movePartyFollowers(c *Session) {
+	if c.party == nil || c.party.leader() != c {
+		return
+	}
+	for _, m := range c.party.members[1:] {
+		if !m.ready || m.battle != nil || m.event != nil || !s.samePlayerScene(c, m) {
+			continue
+		}
+		if m.autosaveBaseline == nil {
+			baseline := m.character.Clone()
+			m.autosaveBaseline = &baseline
+		}
+		m.character.X, m.character.Y = c.character.X, c.character.Y
+		m.emote, m.arrived = 0, false
+		m.gathering = nil
+		s.stopFishing(m)
+		s.closeStall(m)
+		s.cancelTrade(m)
+		m.saleMode, m.saleMap, m.storageMap, m.hotelMap = -1, 0, 0, 0
+		if m.view != nil {
+			m.view.ShopItems = nil
+		}
+	}
 }
 
 // partyUpdate is BroadcastPartyUpdate: every member receives the roster (AC13:6)
@@ -330,9 +481,40 @@ func (s *Server) partyArrival(c *Session) {
 	s.partyUpdate(p)
 }
 
-// partyFollow is Teleport(Regular)'s party follow: members on the leader's former
-// map are brought to its destination (C# brings members from any map). Caller
-// holds worldMu.
+// Public rosters follow the actor snapshot, allowing a new observer to render
+// already formed teams without adopting their membership in its own UI.
+func (s *Server) partySceneSnapshot(c *Session, peers []*Session) {
+	seen := map[*party]bool{}
+	for _, peer := range peers {
+		p := peer.party
+		if p == nil || p == c.party || seen[p] || len(p.members) < 2 {
+			continue
+		}
+		seen[p] = true
+		leader := p.leader()
+		if leader.invisible || !leader.ready || !s.samePlayerScene(c, leader) {
+			continue
+		}
+		members := []*Session{leader}
+		for _, member := range p.members[1:] {
+			if !member.invisible && member.ready && s.samePlayerScene(c, member) {
+				members = append(members, member)
+			}
+		}
+		if len(members) < 2 {
+			continue
+		}
+		packet := protocol.Builder{protocol.CommandTeam, protocol.TeamRoster}.U32(leader.character.ID).U8(byte(len(members) - 1))
+		for _, member := range members[1:] {
+			packet = packet.U32(member.character.ID)
+		}
+		s.sendOrClose(c, packet)
+	}
+}
+
+// partyFollow carries members on the leader's former map through both regular
+// portals and scripted exits. Members already elsewhere are not summoned;
+// validatePartyScene dissolves a split group after the transfer. Caller holds worldMu.
 func (s *Server) partyFollow(ctx context.Context, c *Session, from uint16) error {
 	p := c.party
 	if p == nil || p.leader() != c {
@@ -348,6 +530,33 @@ func (s *Server) partyFollow(ctx context.Context, c *Session, from uint16) error
 		}
 	}
 	return nil
+}
+
+// validatePartyScene runs after a complete group warp, never between its member
+// transfers. Failed, independent or otherwise mismatched warps dissolve the whole
+// formation, including members no longer visible on the leader's map.
+func (s *Server) validatePartyScene(p *party) {
+	if p == nil || p.transitioning || len(p.members) < 2 {
+		return
+	}
+	leader := p.leader()
+	for _, member := range p.members[1:] {
+		if member.character.Map != leader.character.Map || member.tentOwner != leader.tentOwner {
+			s.cancelPartyLeadership(p, protocol.TeamLeadershipCancelled)
+			leave := protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(leader.character.ID)
+			for _, m := range p.members {
+				s.sendMap(m.character.Map, leave, m)
+				m.party = nil
+				if m.view != nil {
+					m.view.Team.Store(0)
+				}
+				s.sendOrClose(m, leave)
+				s.partyReset(m)
+			}
+			p.members = nil
+			return
+		}
+	}
 }
 
 // sendMap sends to every published character on a map except skip. Caller holds worldMu.

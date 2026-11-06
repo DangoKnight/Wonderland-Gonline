@@ -80,10 +80,20 @@ func (w *World) NPCEvents(mapID, click uint16) []*assets.Event {
 	if !ok {
 		return nil
 	}
+	return m.npcEvents(click)
+}
+
+func (m *Map) npcEvents(click uint16) []*assets.Event {
 	var out []*assets.Event
 	add := func(id uint16) {
-		ev, ok := w.Event(mapID, id)
-		if !ok || len(ev.Branches) == 0 {
+		var ev *assets.Event
+		for i := range m.data.Events {
+			if m.data.Events[i].ClickID == id {
+				ev = &m.data.Events[i]
+				break
+			}
+		}
+		if ev == nil || len(ev.Branches) == 0 {
 			return
 		}
 		for _, have := range out {
@@ -107,33 +117,38 @@ func (w *World) NPCEvents(mapID, click uint16) []*assets.Event {
 	return out
 }
 
-// RoamingBattle is IsRoamingBattleNpc: a field actor (flag 5) linked to an encounter.
+// RoamingBattle identifies mobile field combat actors by movement plus a native
+// battle-start operation, not an event-header whitelist or monster ID range.
+// Stationary actors retain the verified field-event compatibility values so
+// ordinary quest speakers do not disappear merely because they start a battle.
 func (w *World) RoamingBattle(mapID, click uint16) bool {
 	m, ok := w.maps[mapID]
 	if !ok {
 		return false
 	}
+	return m.fieldBattles[click]
+}
+
+func (m *Map) indexFieldBattles() {
+	m.fieldBattles = make(map[uint16]bool)
 	for _, n := range m.data.NPCs {
-		if n.ClickID != click {
+		if n.Flags != ActorFlagFieldEncounter {
 			continue
 		}
-		if n.Flags != 5 {
-			return false
-		}
-		for _, id := range n.Events {
-			if ev, ok := w.Event(mapID, uint16(id)); ok && ev.Kind == 10 {
-				for _, br := range ev.Branches {
-					for _, o := range br.Operations {
-						if op := DecodeOp(o); op.Code == ActionBattle && op.D1 == 1 {
-							return true
-						}
+		mobile := n.WalkBehavior >= walkPatrol && n.WalkBehavior <= walkPatrolAlternate
+		for _, ev := range m.npcEvents(n.ClickID) {
+			if !mobile && ev.Kind != EventKindFieldBattle && ev.Kind != EventKindFieldBattleCompatibility8 {
+				continue
+			}
+			for _, br := range ev.Branches {
+				for _, o := range br.Operations {
+					if op := DecodeOp(o); (op.Code == ActionBattle || op.Code == ActionBattleAlternate) && op.D1 == BattleActionStart {
+						m.fieldBattles[n.ClickID] = true
 					}
 				}
 			}
 		}
-		return false
 	}
-	return false
 }
 
 // FindBranch is EveEventRuntime.FindBranch. trigger 0 selects a normal entry branch by

@@ -3,6 +3,16 @@ package world
 // EVE namespaces use explicit values from the decoded legacy event data.
 // WireCode names mean the action is recognized numerically but remains unported.
 
+// Compatibility headers for stationary field actors. Moving field combat actors
+// are identified from their movement and battle operation, regardless of header.
+// The precise trigger distinction between kinds 8 and 10 remains unresolved.
+const (
+	EventKindFieldBattleCompatibility8 = 8
+	EventKindFieldBattle               = 10
+	ActorFlagFieldEncounter            = 5
+	BattleActionStart                  = 1
+)
+
 // Action codes (DialogPtr).
 const (
 	ActionPlayer            = 1

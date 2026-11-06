@@ -648,6 +648,14 @@ Creation snapshot, packet and live-account checks are in
 
 **Scene** (`scene.go`, loader `FUN_003f830c`): `Data\Ground.MMG` is a named archive (`clientassets.ReadNamedArchive`, `FUN_0010f154`: payloads, then 29-byte index rows and a count). The record `<map>.map` begins with the scene size, its background layers and a 20-pixel walk grid (`FUN_004121a8`). The client reads it from the export (`ground_data.json`, its `terrain`). Each layer is `<resource>.jpg` from `pic\map_d01.JMg`, `map_c01.JMg` or `map.JMG`, read from their PNG exports (`pictures/map_d01`, `map_c01`, `map`). Map 10017 is the 2432×1792 Ship Deck with one layer, 10001.
 
+The final `optional_grid` is also retained in compiled map records. Mode 1 uses
+native isometric floor/wall resources from `images2.BMg` (`FUN_003fab58`,
+`FUN_003faa10`, `FUN_003fb2b4`), including Chicken Farm's cliffs. Wall pictures
+are depth-sorted using the authored signed 32-bit depth rather than their image
+top. This is independent of the WEM object list and applies across maps. Other
+grid modes retain their raw export data until their rendering semantics are ported.
+Rebuild previously compiled client bundles to retain this formerly discarded grid.
+
 **Names** (`names.go`): scene names come from the `SceneData.dat` export (`scene_data.json`), and each map's scene from the `eve.Emg` export (`eve_data.json`); map 10017 is scene 10001, "Ship Deck".
 
 **Drawing**: the camera keeps the player at the screen centre (the scene is drawn from X − 400, Y − 300; this matches `In-Game/Ship_Deck.png` exactly) but stays on the map (`FUN_003f94e8`, the map's +0xc/+0x10): within 400 pixels of the left edge (300 of the top) it is 0; the horizontal camera clamps continuously at the map's width − 800 − 20 (the original's 0x14) and at the bottom edge at its height − 600 (0 when the map is narrower or shorter than the screen). Before this the port drew black past the map's edges (`Chat_02/Go_Beach_Camera_Black_Edge.png`); at Dango Beach X:1082 Y:1195 it now frames the scene as the original's `Chat_02/Beach_Camera_Clamped.png` does. The player's name follows the player instead of a fixed row. The player is drawn by the selection's layered renderer, with the name centred above (yellow) and the location line `<name> <scene> X:<x> Y:<y>` at the bottom right; both positions are measured from the capture. `world_snapshot_test.go` (opt-in) renders the capture's position.
@@ -675,6 +683,15 @@ The background pictures already contain railings, masts and other scenery, but t
 - kinds 4–5 after every character. The deck's railings are kind 5 (42 of the deck's 72 objects), so they cross the characters' legs as in the captures.
 
 `TestShipDeckObjects` checks the deck's counts. Not ported: the cull test (`FUN_003f5d70`), translucent objects (+0xd4 other than 0xff, or +0xe0 from the picture's first pixel), and the resources 11011–11015 and 11031 that the loader forces to kind 3. Compiled picture pages use a shared 64 MiB LRU cache; map backgrounds decode only visible tiles. The editable PNG atlas fallback also uses a separate 64 MiB LRU cache.
+
+Scenery shadow smoothing (`world/scenery_shadows.go`) reconstructs complete
+2-by-2 checkerboards of transparent key pixels and matching dark pixels as
+half-opacity shading. This reduces tree-shadow shimmer during fractional camera
+motion without filtering opaque foliage or characters. Detection is shared per
+unique scenery picture when loading a scene, respects animation frame boundaries,
+and retains the authored source. Both editable and bundled pictures use the same
+CPU/GPU alpha path; no extraction or bundle rebuild is needed. Tests cover camera
+phase stability, artwork preservation and Chicken Farm's actual scenery.
 
 ### Status panel (ported: `client/wlo/hud`, `client/wlo/world/stats.go`)
 

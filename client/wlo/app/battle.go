@@ -281,6 +281,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.closeBattleView()
 		c.startSceneFade(sceneFadeEnterBattle)
 		c.World.StopWalk()
+		c.closeTeamTransfer()
 		c.groundHeld = false
 		c.pendingNPC = nil
 		c.floorPendingPickup, c.floorHovered = 0, 0

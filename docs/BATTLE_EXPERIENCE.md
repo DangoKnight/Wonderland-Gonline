@@ -25,7 +25,7 @@ killing contributor. Assisters count once even if they helped multiple comboers
 or also attacked. Pets are independent entities for both the pool and shares;
 their EXP is awarded to the pet, not added to the owner's personal EXP.
 
-For each monster, let `BASE = monster level * 8`, `N` be the number
+For each monster, let `BASE = max(1, monster level) * 1.5`, `N` be the number
 of unique eligible participants, `COMBO_UNITS` the number of distinct attacking
 units that landed hits in the killing combo, and `LEVEL_SUM` the sum of all
 eligible participants' levels. Support-only assistants count in `N` and the
@@ -39,24 +39,38 @@ COMBO_UNITS >= 2: POOL *= 1.40 + 0.10 * (COMBO_UNITS - 2)
 N = 1: participant gets POOL
 N > 1: WEIGHT = PARTICIPATION * (LEVEL_SUM - participant level)
        share = POOL * WEIGHT / SUM(WEIGHT)
+LEVEL_RATIO = max(1, participant level) / max(1, monster level)
+LEVEL_MULTIPLIER = 0.5 + 2.5 / (1 + 4 * LEVEL_RATIO^2)
+earned EXP = round-to-even(share * LEVEL_MULTIPLIER)
 ```
+
+Apply the level multiplier separately to each player or pet, including assistants
+and earlier attackers, after dividing the pool. It is exactly 1 at equal levels,
+approaches 3 for much lower-level participants and 0.5 for much higher-level
+participants. At half the monster's level it is 1.75; at 1.5 times its level it
+is 0.75. This adjustment changes the total awarded EXP rather than redistributing
+the adjusted amounts among participants. A level-20 monster has a base of 30:
+a solo level-10/20/30 participant earns 52/30/22 EXP respectively (midpoint-even
+rounding). Simple mode is unchanged.
 
 Earlier attackers do not increase the killing combo bonus. For two equal-level
 units and a 200 base reward, an earlier attacker and a solo killer receive
-100 and 200 EXP respectively. If both join the killing combo, both receive
-full credit and the two-unit bonus: 280 EXP each. Only positive HP damage is
+100 and 200 EXP respectively before the level multiplier. If both join the killing combo, both receive
+full credit and the two-unit bonus: 280 EXP each before the level multiplier. Only positive HP damage is
 tracked; misses and SP-only effects do not establish earlier damage credit.
 
 For a base reward of 200, two killing comboers plus one assistant produce a
 600 base pool, increased by 40% to 840 EXP. Levels 10/20/30 receive 350/280/210
-respectively. Three attacking units grant +50%, four +60%, and each additional
+respectively before the level multiplier. Three attacking units grant +50%, four +60%, and each additional
 attacking unit adds ten percentage points. A solo attacker gets no combo bonus,
 even with assistants. This EXP bonus is independent of the combo damage switch.
 Fractional bonused pools use midpoint-even rounding. Shares are rounded
 down first; leftover EXP goes to the largest fractional remainders, with stable
-entity-identity ordering for ties. This preserves the complete pool per kill.
+entity-identity ordering for ties. This preserves the complete pool per kill
+before the per-participant level adjustment. Fractional base EXP is retained
+until the bonused pool is rounded, so odd monster levels do not truncate 1.5x.
 The calculation uses each fighter's battle level at the time of that kill.
-The global EXP rate applies once to each entity's accumulated base share at
+The global EXP rate applies once to each entity's accumulated level-adjusted share at
 victory, using the existing midpoint-even rounding and native caps.
 
 ## Assistance lifetime

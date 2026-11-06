@@ -195,6 +195,7 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	s.cancelPartyLeadership(c.party, protocol.TeamLeadershipBusy)
 	for i := range enemies {
 		e := &enemies[i]
 		if e.Template <= math.MaxUint16 {
@@ -210,15 +211,21 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 	}
 	var fighters []*battle.Fighter
 	for i, m := range s.battleTeam(c) {
+		// Native cells follow party order, even when an enemy contacts a
+		// follower first. Keep run.members[0] as the event/loot initiator.
+		slot := i
+		if c.party != nil && c.party.index(m) >= 0 {
+			slot = c.party.index(m)
+		}
 		s.cancelTrade(m)
-		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, i)}
+		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, slot)}
 		fighters = append(fighters, member.self)
 		if pet := m.character.BattlePet(); pet != nil {
 			copy := *pet
 			copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
 			copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 			copy.Name = s.companionName(copy.ID, copy.Name)
-			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
+			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, slot, s.petTemplate(copy.ID))
 			fighters = append(fighters, member.pet)
 		}
 		run.members = append(run.members, member)

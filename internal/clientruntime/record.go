@@ -28,12 +28,30 @@ type Terrain struct {
 	Width      uint32 `json:"width"`
 	Height     uint32 `json:"height"`
 	Layers     []clientassets.GroundLayer
-	GridWidth  uint16   `json:"grid_width"`
-	GridHeight uint16   `json:"grid_height"`
-	CellsHex   string   `json:"cells_hex,omitempty"`
-	Cells      []byte   `json:"-"`
-	Zones      []Zone   `json:"unknown_triples"`
-	Objects    []Object `json:"objects"`
+	GridWidth  uint16    `json:"grid_width"`
+	GridHeight uint16    `json:"grid_height"`
+	CellsHex   string    `json:"cells_hex,omitempty"`
+	Cells      []byte    `json:"-"`
+	Zones      []Zone    `json:"unknown_triples"`
+	Objects    []Object  `json:"objects"`
+	TileGrid   *TileGrid `json:"optional_grid,omitempty"`
+}
+
+// Native Ground.MMG's final isometric grid (FUN_003f830c / FUN_003fab58).
+// Raw export names remain compatible with existing extraction documents.
+type TileGrid struct {
+	Mode    byte       `json:"unknown_flag"`
+	Rows    int        `json:"rows"`
+	Columns int        `json:"columns"`
+	Cells   []TileCell `json:"cells"`
+}
+type TileCell struct {
+	Floor        uint16 `json:"unknown_u16_0"`
+	Wall         uint16 `json:"unknown_u16_2"`
+	FloorVariant byte   `json:"unknown_u8_4"`
+	WallVariant  byte   `json:"unknown_u8_5"`
+	WallStyle    byte   `json:"unknown_u8_6"`
+	Depth        uint32 `json:"unknown_u32_7"`
 }
 type Zone struct {
 	X      uint16 `json:"unknown_u16_0"`

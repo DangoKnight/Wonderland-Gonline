@@ -32,6 +32,7 @@ func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 	defer s.worldMu.Unlock()
 	maps := map[uint16][]*Session{}
 	for _, c := range s.world {
+		s.validatePartyScene(c.party)
 		if c.ready && c.character != nil && c.tentOwner == 0 {
 			maps[c.character.Map] = append(maps[c.character.Map], c)
 		}

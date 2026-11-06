@@ -624,6 +624,64 @@ func TestWorldSimulationNativeRoamingEncounter(t *testing.T) {
 	}
 }
 
+func TestWorldSimulationKind8EncounterPursuitAndRespawn(t *testing.T) {
+	testFieldEncounterLifecycle(t, 8, 3)
+}
+
+func TestWorldSimulationMobileEncounterPursuitAndRespawn(t *testing.T) {
+	for _, tt := range []struct {
+		name           string
+		kind, movement byte
+	}{
+		{"chicken patrol", 11, 5},
+		{"chicken roamer", 11, 4},
+		{"patrolling leader", 1, 2},
+		{"bounded encounter", 2, 3},
+	} {
+		t.Run(tt.name, func(t *testing.T) { testFieldEncounterLifecycle(t, tt.kind, tt.movement) })
+	}
+}
+
+func testFieldEncounterLifecycle(t *testing.T, kind, movement byte) {
+	t.Helper()
+	s, c, wire := boundedEncounterFixture(t)
+	if movement == 4 {
+		c.character.X = 1140 // Inside the roamer's 150-pixel spawn leash, outside contact.
+	}
+	m := s.Assets.Maps[30001]
+	m.NPCs[0].Flags = 5
+	m.NPCs[0].WalkBehavior = movement
+	if movement == 2 || movement == 5 {
+		m.NPCs[0].WalkSteps = []assets.WalkStep{{X: 1300, Y: 1000}, {X: 1000, Y: 1000}}
+	}
+	m.NPCs[0].Events = []byte{42}
+	m.Events = []assets.Event{{ClickID: 42, Kind: kind, Branches: []assets.Branch{{Index: 1, Operations: []assets.Operation{evOp(1, world.ActionBattle, 1, 17100, 0, 0)}}}}}
+	s.Assets.Maps[30001] = m
+	s.World = world.New(s.Assets)
+	now := time.Now()
+	s.simulateWorldTick(now, false)
+	if pursuit := s.actorPursuits[30001][4]; pursuit == nil || pursuit.target != c.character.ID {
+		t.Fatal("field enemy did not acquire nearby player")
+	}
+	c.character.X = 1050
+	s.simulateWorldTick(now.Add(actorTargetScanInterval), false)
+	if c.battle == nil || c.battle.event == nil || c.battle.encounter != 4 || !s.World.Defeated(30001, 4) || !c.view.Hidden[4] {
+		t.Fatal("native encounter did not reserve and hide its map actor")
+	}
+	s.worldMu.Lock()
+	s.endBattle(c.battle, battle.Victory)
+	s.worldMu.Unlock()
+	settle(t, s, c)
+	if c.battle != nil || !s.World.Defeated(30001, 4) || !c.view.Hidden[4] {
+		t.Fatal("enemy reappeared immediately after victory")
+	}
+	wire.Reset()
+	s.reviveMonsters(time.Now().Add(world.EncounterRespawn + time.Second))
+	if s.World.Defeated(30001, 4) || c.view.Hidden[4] || len(wire.packets(t)) != 1 {
+		t.Fatal("enemy did not respawn after its cooldown")
+	}
+}
+
 func TestWorldSimulationClickedActorShortRespawnAfterEveryOutcome(t *testing.T) {
 	for _, outcome := range []battle.Outcome{battle.Victory, battle.Defeat, battle.Fled} {
 		t.Run(string(rune('0'+outcome)), func(t *testing.T) {

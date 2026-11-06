@@ -3,7 +3,9 @@ package clientbundle
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"image/color"
 	"os"
 	"path/filepath"
@@ -14,6 +16,73 @@ import (
 	"wonderland-gonline/internal/localization"
 	"wonderland-gonline/internal/spritepack"
 )
+
+func TestRuntimeGroundUpgradeRebuildsCachedMaps(t *testing.T) {
+	o, source := fixture(t)
+	put(t, filepath.Join(source, "ground_data.json"), []byte(`{"entries":[{"name":"11083.map","terrain":{"width":800,"height":600,"grid_width":2,"grid_height":2,"cells_hex":"00000000","optional_grid":{"unknown_flag":1,"rows":1,"columns":1,"cells":[{"unknown_u16_2":20000,"unknown_u8_5":4,"unknown_u8_6":1,"unknown_u32_7":883}]}}}]}`))
+	if _, err := BuildRuntime(o); err != nil {
+		t.Fatal(err)
+	}
+	abs, err := filepath.Abs(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache := filepath.Join(filepath.Dir(o.Output), ".client-runtime-"+digest([]byte(abs))[:12])
+	cacheFile := filepath.Join(cache, ".cache.json")
+	data, err := os.ReadFile(cacheFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entries map[string]runtimeCacheEntry
+	if err = json.Unmarshal(data, &entries); err != nil {
+		t.Fatal(err)
+	}
+	name := filepath.ToSlash(clientruntime.MapPath(11083))
+	var ground clientruntime.Ground
+	if err = clientruntime.Read(filepath.Join(cache, filepath.FromSlash(name)), &ground); err != nil {
+		t.Fatal(err)
+	}
+	if ground.Terrain.TileGrid == nil {
+		t.Fatal("initial compile discarded native grid")
+	}
+	// Reproduce a pre-grid compiler's output, including its valid checksum and
+	// unchanged source signature. Source timestamps cannot detect this upgrade.
+	ground.Terrain.TileGrid = nil
+	encoded, err := clientruntime.Encode(ground)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, filepath.Join(cache, filepath.FromSlash(name)), encoded)
+	legacyHash := sha256.New()
+	sourceHash, err := hashFile(filepath.Join(source, "ground_data.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(legacyHash, "runtime-2\nground_data.json:%s\n", sourceHash)
+	entry := entries["ground"]
+	entry.Signature = fmt.Sprintf("%x", legacyHash.Sum(nil))
+	entry.Outputs[name] = digest(encoded)
+	entries["ground"] = entry
+	data, err = json.Marshal(entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, cacheFile, data)
+	if _, err = BuildRuntime(o); err != nil {
+		t.Fatal(err)
+	}
+	root, closeBundle, err := clientfs.Mount(o.Output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeBundle()
+	if err = clientruntime.Read(filepath.Join(root, clientruntime.MapPath(11083)), &ground); err != nil {
+		t.Fatal(err)
+	}
+	if ground.Terrain.TileGrid == nil || len(ground.Terrain.TileGrid.Cells) != 1 || ground.Terrain.TileGrid.Cells[0].Wall != 20000 {
+		t.Fatal("stale pre-grid map reused during compiler upgrade")
+	}
+}
 
 func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	o, source := fixture(t)

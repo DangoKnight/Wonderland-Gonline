@@ -8,6 +8,23 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v54 adds 71 verified character, pet and quest skill powers from the saved
+unique-skill reference. Native NPC ownership, SP costs, descriptions and Chinese
+actor names identify the skills independently of unreliable icon filenames.
+Six matched but approximate/grade-conditional powers remain review-only; see
+[skill powers](DAMAGE.md). The additive migration fills only unresolved matching
+definitions and preserves all existing powers, including administrator edits
+and explicit zero. Stop the server, migrate, rebuild and restart as below.
+
+Assets v53 adds an editable nullable base skill power to `catalog_skills` and
+seeds 153 verified elemental skill powers from the saved Japanese wiki tables.
+Blast Attack and Flame Attack both use power 20. Existing explicit powers,
+including zero, and all native coefficients remain intact. Unlisted skills use
+the documented [damage compatibility fallback](DAMAGE.md). Stop the server, run
+the offline migration below, rebuild and restart. No client asset rebuild or
+gameplay-state change is required. Grade scaling is provisional +5% of base per
+grade above grade 1, compiled in the battle engine.
+
 Assets v52 keeps Noa's puzzle, result evaluation, retry invitation and recruitment
 in one conversation. Scoped continuation policies connect Kelan event 56's native
 branches without unlocking movement between stages. Decline and cancel still end

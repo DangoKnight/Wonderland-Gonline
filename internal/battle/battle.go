@@ -620,47 +620,24 @@ func (r Rules) Delay(skill uint16, kind string) time.Duration {
 	return time.Duration(assets.AnimationDelay(r.Timing, skill, fallback, margin)) * time.Millisecond
 }
 
-// Elemental is GetElementalMultiplier (Earth 1, Water 2, Fire 3, Wind 4).
+// Elemental includes the element's inherent offense; do not add Fire's 30% again.
 func Elemental(hitter, target byte) float64 {
-	switch {
-	case hitter == 1 && target == 2, hitter == 2 && target == 3, hitter == 4 && target == 1:
-		return 1.7
-	case hitter == 3 && target == 4:
-		return 1.5
-	case hitter == 1 && target == 4, hitter == 2 && target == 1, hitter == 3 && target == 2, hitter == 4 && target == 3:
-		return 0.6
+	matrix := [5][5]float64{
+		{1, 1, 1, 1, 1},
+		{1, .9, 1.3, 1, .6},
+		{.9, .5, .9, 1.4, .9},
+		{1.3, 1.2, .7, 1.3, 1.6},
+		{1, 1.3, 1, .7, 1},
+	}
+	if int(hitter) < len(matrix) && int(target) < len(matrix[0]) {
+		return matrix[hitter][target]
 	}
 	return 1
 }
 
 // baseDamage is CalculateBaseDamage.
 func (r Rules) baseDamage(actor, target *Fighter, skill uint16, roll int) int {
-	s, ok := r.Skills[skill]
-	if Basic(skill) || !ok {
-		if actor.Weapon == 5 { // A staff strikes with magic.
-			return max(10, actor.magicAttack()*2-target.magicDefense()+roll)
-		}
-		return max(10, actor.attack()*2-target.defense()+roll)
-	}
-	if s.EffectLayer != assets.SkillLayerPhysical && s.EffectLayer != assets.SkillLayerMagical {
-		return max(15, int(float64(actor.attack())*2.8)-target.defense()/2)
-	}
-	grade := 1
-	if actor.Pet != nil {
-		if l, ok := petLearned(actor.Pet, skill); ok {
-			grade = max(1, min(int(l.Grade), 10))
-		}
-	} else if actor.Char != nil {
-		if l, ok := learned(actor.Char, skill); ok {
-			grade = max(1, min(int(l.Grade), 10))
-		}
-	}
-	offense, defense := actor.attack(), target.defense()
-	if s.EffectLayer == assets.SkillLayerMagical {
-		offense, defense = actor.magicAttack(), target.magicDefense()
-	}
-	damage := float64(offense)*s.StatMultiplier + float64(grade)*s.PowerPerLevel + float64(s.AdditionalDamage) - float64(defense)/2
-	return int(math.Max(1, math.Min(math.MaxInt32, math.Floor(damage))))
+	return clampDamage(r.damageBase(actor, target, skill) + float64(roll))
 }
 
 func hitRecord(p protocol.Builder, actor, target *Fighter, skill uint16, defended bool, stat byte, amount int, mode byte) protocol.Builder {
@@ -1183,10 +1160,8 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 			if r.attackMisses(m, t, basicAttackSkill) {
 				return []Step{{Packets: [][]byte{turnPacket(m), missRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill)}, Delay: r.Delay(basicAttackSkill, "attack")}}
 			}
-			dmg := max(5, int(float64(m.attack())*1.2)-t.defense())
-			dmg = max(1, m.modified(assets.EffectDamageDealt, dmg))
-			dmg = max(1, r.incomingDamage(t, basicAttackSkill, dmg))
-			anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, defending[t.key()], 0x19, dmg, 1)
+			dmg, mode := r.strikeDamage(Action{Actor: m, Skill: basicAttackSkill, Kind: "attack"}, t, defending[t.key()], 1)
+			anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, defending[t.key()], 0x19, dmg, mode)
 			t.hurt(dmg)
 			steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}
 			steps = b.appendOverkill(steps, t)
@@ -1197,14 +1172,9 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 	if r.attackMisses(m, t, basicAttackSkill) {
 		return []Step{{Packets: [][]byte{turnPacket(m), missRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill)}, Delay: r.Delay(basicAttackSkill, "attack")}}
 	}
-	dmg := max(5, int(float64(m.attack())*1.2)-t.defense())
-	dmg = max(1, m.modified(assets.EffectDamageDealt, dmg))
-	dmg = max(1, r.incomingDamage(t, basicAttackSkill, dmg))
 	guarded := defending[t.key()]
-	if guarded {
-		dmg = max(1, int(float64(dmg)*0.4))
-	}
-	anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, guarded, 0x19, dmg, 1)
+	dmg, mode := r.strikeDamage(Action{Actor: m, Skill: basicAttackSkill, Kind: "attack"}, t, guarded, 1)
+	anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, guarded, 0x19, dmg, mode)
 	t.hurt(dmg)
 
 	steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}

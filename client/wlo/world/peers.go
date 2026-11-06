@@ -77,6 +77,10 @@ func (w *World) AddPeer(p *Peer, newBody func() login.RoleView) {
 		Dress(p.Role, p.Player)
 	}
 	w.Peers[p.ID] = p
+	if members := w.TeamMembers(w.Player.ID); len(members) > 1 && members[0] == p.ID {
+		w.StopWalk()
+		w.Marker.Hide()
+	}
 }
 
 // Dress fills a role from an appearance (FUN_004013d0's fields).
@@ -112,6 +116,7 @@ func (w *World) MovePeer(id uint32, x, y int, now time.Time) {
 
 // PlacePeer is AC7 for another player.
 func (w *World) PlacePeer(id uint32, x, y int) {
+	w.resetTeamTrail(id)
 	if p := w.Peers[id]; p != nil {
 		p.Walker.Stop(&p.Player)
 		p.X, p.Y = x, y

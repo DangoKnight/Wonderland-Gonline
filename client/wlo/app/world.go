@@ -93,6 +93,7 @@ func (c *Client) warp(p []byte) {
 	pl := c.World.Player
 	mapChanged := binary.LittleEndian.Uint16(p[4:]) != pl.Map
 	if mapChanged {
+		c.closeTeamTransfer()
 		c.startMapLoading()
 	}
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
@@ -114,6 +115,9 @@ func (c *Client) warp(p []byte) {
 		w.OnLeg = c.sendLeg
 		w.Now = func() time.Time { return c.Now() }
 		c.World = w
+		if c.TeamState != nil && len(c.TeamState.Members) > 1 {
+			w.SetTeamRoster(c.TeamState.Members)
+		}
 		c.applyWaterVehicle()
 		c.applyLocalSettings()
 		c.eventMusic = "" // FUN_002f2fd0 clears the event's track
@@ -278,6 +282,9 @@ func (c *Client) WalkKeys(left, up, right, down bool) {
 
 // sendLeg is 6/1 for a leg of the player's walk.
 func (c *Client) sendLeg(facing, x, y int) {
+	if c.World != nil && c.World.FollowingTeam() {
+		return
+	}
 	c.stopVacuum()
 	p := []byte{protocol.CommandMovement, protocol.MovementMove, byte(facing)}
 	p = binary.LittleEndian.AppendUint16(p, uint16(x))

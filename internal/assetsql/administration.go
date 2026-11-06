@@ -222,6 +222,9 @@ func validateDefinition(name string, c *assets.Catalog) error {
 			}
 		}
 		for id, s := range c.Skills {
+			if s.BasePower != nil && (math.IsNaN(*s.BasePower) || math.IsInf(*s.BasePower, 0) || *s.BasePower < 0) {
+				return fmt.Errorf("skill %d: invalid base power", id)
+			}
 			if id == 0 || id != s.ID || math.IsNaN(s.PowerPerLevel) || math.IsInf(s.PowerPerLevel, 0) || math.IsNaN(s.StatMultiplier) || math.IsInf(s.StatMultiplier, 0) {
 				return fmt.Errorf("invalid skill %d", id)
 			}

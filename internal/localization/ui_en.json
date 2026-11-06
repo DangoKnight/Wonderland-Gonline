@@ -120,7 +120,7 @@
     "ui.app.player_is_offline_8905a767": "Player is offline",
     "ui.app.player_sp_d_d_da6308b8": "Player SP: %d(%d%%)",
     "ui.app.please_free_an_inventory_slot_lucky_draw_b9243187": "Please free an inventory slot. Lucky Draw retained.",
-    "ui.app.please_let_me_join_you_d49b7c95": ": Please let me join you!",
+    "ui.app.please_let_me_join_you_d49b7c95": "Please let me join you!",
     "ui.app.prev_73912999": "Prev",
     "ui.app.purchase_rejected_b3496b8d": "Purchase rejected",
     "ui.app.record_bfdd5106": "Record",
@@ -710,6 +710,10 @@
     "ui.app.windowed_3f26603a": "Windowed",
     "ui.app.settings": "Settings",
     "ui.app.settings_f10": "Settings (F10)",
-    "ui.settings.language_live": "Language changes take effect immediately."
+    "ui.settings.language_live": "Language changes take effect immediately.",
+    "ui.team.leadership_offer": "Want to be a team leader?",
+    "ui.team.leadership_refused": "The player refused to be leader.",
+    "ui.team.leadership_timeout": "No response.",
+    "ui.team.leadership_busy": "Player busy."
   }
 }

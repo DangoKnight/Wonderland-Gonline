@@ -79,66 +79,69 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World              *world.World
-	Settings           *settings.Form
-	SettingsState      *settings.State
-	settingsPromptForm *seui.Form
-	settingsPath       string
-	Inventory          *inventory.Form
-	Compound           *inventory.CompoundForm
-	Team               *team.Form
-	TeamState          *team.State
-	teamAppearances    map[uint32]*world.Peer
-	joinTeamTarget     bool
-	friendTarget       bool // Make Friends' target mode 5 (friends.go)
-	tradeTarget        bool // Trade Items' target mode 9 (trade.go)
-	tradeAllowed       bool // the player's +0x5791, set by 25/44 2
-	Business           *hud.Business
-	LuckyDraw          *lottery.Form
-	Trade              *inventory.TradeForm
-	Services           *inventory.ServiceForm
-	clinicPrompt       *clinicPrompt
-	clinicUntil        time.Time
-	clinicSleepGlyph   *surface.Surface
-	friendAsk          *friendAsk // the open friend question
-	remote             remoteRuntime
-	battle             battleView
-	battleResults      battleResultsRuntime
-	combat             combatRuntime // Per-connection opt-in; never shared between sessions.
-	InventoryState     *inventory.State
-	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
-	MainStatus         *hud.MainStatus  // the status panel over the world
-	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
-	MainButtons        *hud.MainBtnForm // the menu at the bottom right
-	inventoryPoints    inventoryPointAlert
-	HotKeys            *hud.HotKeyForm // the F1–F8 bar
-	ChatBar            *hud.InputBar   // the chat bar
-	groundHeld         bool            // the left button went down on the ground
-	groundSince        time.Time       // when it went down
-	uiHovered          bool            // a control was under the pointer last frame
-	nextWalk           time.Time       // next re-plan while a button or arrow is held
-	Chat               *hud.ChatLog    // the chat log over the map
-	npcTemplates       map[uint32]world.NPCTemplate
-	Talk               *hud.Talk // the event talk window
-	MiniMap            *hud.MiniMap
-	Social             *hud.Social
-	MailSend           *hud.MailSend
-	Mailbox            *hud.Mailbox
-	MailRead           *hud.MailRead
-	MailCompose        *hud.MailCompose
-	talkConfirm        func()
-	gmFace             *role.NPC
-	friendFaces        map[uint32]*role.Human
-	Music              *Music // background music, nil without audio
-	movie              *moviePlay
-	sport              *sportPlay // the running minigame
-	sceneMusic         map[uint16]string
-	eventMusic         string // event kind 15's track (+0x732c)
-	constellation      *constellationRun
-	constellations     [constellationLimit]bool
-	talks              map[uint32]string
-	event              eventState
-	eventTimers        map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
+	World                *world.World
+	Settings             *settings.Form
+	SettingsState        *settings.State
+	settingsPromptForm   *seui.Form
+	settingsPath         string
+	Inventory            *inventory.Form
+	Compound             *inventory.CompoundForm
+	Team                 *team.Form
+	TeamState            *team.State
+	teamAppearances      map[uint32]*world.Peer
+	teamTransferLeader   uint32
+	teamTransferDeadline time.Time
+	teamTransferClose    func()
+	joinTeamTarget       bool
+	friendTarget         bool // Make Friends' target mode 5 (friends.go)
+	tradeTarget          bool // Trade Items' target mode 9 (trade.go)
+	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
+	Business             *hud.Business
+	LuckyDraw            *lottery.Form
+	Trade                *inventory.TradeForm
+	Services             *inventory.ServiceForm
+	clinicPrompt         *clinicPrompt
+	clinicUntil          time.Time
+	clinicSleepGlyph     *surface.Surface
+	friendAsk            *friendAsk // the open friend question
+	remote               remoteRuntime
+	battle               battleView
+	battleResults        battleResultsRuntime
+	combat               combatRuntime // Per-connection opt-in; never shared between sessions.
+	InventoryState       *inventory.State
+	Stats                *world.Stats     // the player's values (5/3, 8/1, 26/4)
+	MainStatus           *hud.MainStatus  // the status panel over the world
+	FuncButtons          *hud.FuncBtnForm // the toolbar at the top right
+	MainButtons          *hud.MainBtnForm // the menu at the bottom right
+	inventoryPoints      inventoryPointAlert
+	HotKeys              *hud.HotKeyForm // the F1–F8 bar
+	ChatBar              *hud.InputBar   // the chat bar
+	groundHeld           bool            // the left button went down on the ground
+	groundSince          time.Time       // when it went down
+	uiHovered            bool            // a control was under the pointer last frame
+	nextWalk             time.Time       // next re-plan while a button or arrow is held
+	Chat                 *hud.ChatLog    // the chat log over the map
+	npcTemplates         map[uint32]world.NPCTemplate
+	Talk                 *hud.Talk // the event talk window
+	MiniMap              *hud.MiniMap
+	Social               *hud.Social
+	MailSend             *hud.MailSend
+	Mailbox              *hud.Mailbox
+	MailRead             *hud.MailRead
+	MailCompose          *hud.MailCompose
+	talkConfirm          func()
+	gmFace               *role.NPC
+	friendFaces          map[uint32]*role.Human
+	Music                *Music // background music, nil without audio
+	movie                *moviePlay
+	sport                *sportPlay // the running minigame
+	sceneMusic           map[uint16]string
+	eventMusic           string // event kind 15's track (+0x732c)
+	constellation        *constellationRun
+	constellations       [constellationLimit]bool
+	talks                map[uint32]string
+	event                eventState
+	eventTimers          map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
 
 	vacuum                  vacuumRuntime
 	gonlineCollectionTiming bool // Per-connection capability, independent of combat mode.
@@ -416,10 +419,12 @@ func (c *Client) frame(draw bool) {
 	c.luckyDrawTick()
 	c.inventoryPointTick()
 	c.clinicTick()
+	c.teamTransferTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.syncWorldZoom()
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
 		c.waterTravelTick()
 		c.remoteTick()

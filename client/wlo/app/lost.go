@@ -116,6 +116,7 @@ func (c *Client) disconnected() {
 		return
 	}
 	if c.Team != nil {
+		c.closeTeamTransfer()
 		c.Team.Reset()
 		c.teamAppearances = nil
 		c.setJoinTeamTarget(false)

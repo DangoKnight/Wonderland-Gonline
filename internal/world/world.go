@@ -35,6 +35,7 @@ type Map struct {
 	Items          []GroundItem
 	data           assets.Map
 	npcDefinitions map[uint16]int
+	fieldBattles   map[uint16]bool // Derived once from immutable EVE movement/event definitions.
 }
 
 func newMap(m assets.Map) *Map {
@@ -64,6 +65,7 @@ func newMap(m assets.Map) *Map {
 		slot++
 		out.Items = append(out.Items, g)
 	}
+	out.indexFieldBattles()
 	return out
 }
 
@@ -222,6 +224,7 @@ func (w *World) ReloadEvents(maps map[uint16]assets.Map) {
 		if old, ok := w.maps[id]; ok {
 			copy := *old
 			copy.data.Events, copy.data.PreEvents = updated.Events, updated.PreEvents
+			copy.indexFieldBattles()
 			w.maps[id] = &copy
 		}
 	}

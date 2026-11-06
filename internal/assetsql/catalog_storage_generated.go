@@ -8115,6 +8115,8 @@ type SkillsRow struct {
 	ValueElement            uint8
 	ValueAttack             uint16
 	ValueEffectLayer        uint8
+	ValueBasePowerPresent   bool
+	ValueBasePower          float64
 	ValuePowerPerLevel      float64
 	ValueStatMultiplier     float64
 	ValueAdditionalDamage   uint16
@@ -8146,6 +8148,10 @@ func writeSkills(tx *gorm.DB, values map[uint16]assets.Skill) error {
 		row.ValueElement = value.Element
 		row.ValueAttack = value.Attack
 		row.ValueEffectLayer = value.EffectLayer
+		if value.BasePower != nil {
+			row.ValueBasePowerPresent = true
+			row.ValueBasePower = (*value.BasePower)
+		}
 		row.ValuePowerPerLevel = value.PowerPerLevel
 		row.ValueStatMultiplier = value.StatMultiplier
 		row.ValueAdditionalDamage = value.AdditionalDamage
@@ -8217,6 +8223,10 @@ func readSkills(tx *gorm.DB) (map[uint16]assets.Skill, error) {
 		value.Element = row.ValueElement
 		value.Attack = row.ValueAttack
 		value.EffectLayer = row.ValueEffectLayer
+		if row.ValueBasePowerPresent {
+			value.BasePower = new(float64)
+			(*value.BasePower) = row.ValueBasePower
+		}
 		value.PowerPerLevel = row.ValuePowerPerLevel
 		value.StatMultiplier = row.ValueStatMultiplier
 		value.AdditionalDamage = row.ValueAdditionalDamage

@@ -41,6 +41,9 @@ type waterTravelState struct {
 
 func (c *Client) walkWaterAware(x, y int, now time.Time) {
 	w := c.World
+	if w.FollowingTeam() {
+		return
+	}
 	target := image.Pt(x, y)
 	c.waterTravel.goal = nil
 	if c.waterTravel.requestID != 0 {

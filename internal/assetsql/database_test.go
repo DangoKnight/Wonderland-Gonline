@@ -216,6 +216,7 @@ func TestInstalledSQLCatalogMatchesClientData(t *testing.T) {
 		got.Name = ""
 		want.Name = ""
 		got.EffectRefs = nil // Export annotation has no native byte equivalent.
+		got.BasePower = nil // Authored wiki power is independent of native Skill.dat coefficients.
 		if len(got.Effects) == 0 {
 			got.Effects = nil
 		}

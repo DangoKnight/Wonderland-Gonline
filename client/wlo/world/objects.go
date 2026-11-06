@@ -34,14 +34,17 @@ import (
 // Not ported: the cull test (FUN_003f5d70), translucent objects (+0xd4
 // other than 0xff, and +0xe0 from the picture's first pixel), and the
 // resources 11011..11015 and 11031 that the loader forces to kind 3.
+// Dark/key checkerboard shadows are reconstructed as half-alpha shading at
+// load time to reduce shimmer during fractional camera motion.
 type Object struct {
-	Resource uint32
-	X, Y     int
-	Depth    int // pixels below Y where characters pass behind it
-	Kind     byte
-	Frames   int
-	Interval time.Duration
-	Image    *surface.Surface
+	Resource     uint32
+	X, Y         int
+	Depth        int // pixels below Y where characters pass behind it
+	Kind         byte
+	Frames       int
+	Interval     time.Duration
+	Image        *surface.Surface
+	shadowFrames []*image.NRGBA // Shared load-time reconstruction of stippled shadows.
 }
 
 // Object kinds (+0xd6).
@@ -187,6 +190,7 @@ func (s *Scene) loadObjects(a login.Assets, list []groundObject) error {
 		return err
 	}
 	pics := map[uint32]*surface.Surface{}
+	shadows := map[uint32][]*image.NRGBA{}
 	for _, o := range list {
 		r, ok := recs[o.Resource]
 		if !ok {
@@ -196,12 +200,15 @@ func (s *Scene) loadObjects(a login.Assets, list []groundObject) error {
 		if !seen {
 			img, _ = objectPicture(a, o.Resource)
 			pics[o.Resource] = img
+			if img != nil {
+				shadows[o.Resource] = smoothSceneryShadows(img, r.frames)
+			}
 		}
 		if img == nil {
 			continue
 		}
 		s.Objects = append(s.Objects, Object{Resource: o.Resource, X: int(o.X), Y: int(o.Y), Depth: r.depth,
-			Kind: r.kind, Frames: r.frames, Interval: r.interval, Image: img})
+			Kind: r.kind, Frames: r.frames, Interval: r.interval, Image: img, shadowFrames: shadows[o.Resource]})
 	}
 	return nil
 }
@@ -212,6 +219,11 @@ func (o *Object) Draw(dst *surface.Surface, camX, camY int, now time.Time) {
 	frame := 0
 	if o.Frames > 1 && o.Interval > 0 {
 		frame = int(now.UnixMilli()/o.Interval.Milliseconds()) % o.Frames
+	}
+	if len(o.shadowFrames) > frame {
+		img := o.shadowFrames[frame]
+		_ = dst.DrawSprite(o.X-camX, o.Y-camY, img, func() (*image.NRGBA, error) { return img, nil })
+		return
 	}
 	dst.DrawRect(o.X-camX, o.Y-camY, image.Rect(0, frame*h, o.Image.W, (frame+1)*h), o.Image, true)
 }
