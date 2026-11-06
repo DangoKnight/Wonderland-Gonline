@@ -814,7 +814,7 @@ func TestSQLWaterShieldAllowsPhysicalDamageAndSavesProgress(t *testing.T) {
 	actor.Spd = 100
 	actor.HP, actor.MaxHP = 1000, 1000
 	actor.Def = 20
-	run.b.Defenders[0].Atk = 100 // Native monster basic attack deals 100 physical damage.
+	run.b.Defenders[0].Atk = 100 // floor(1.4*100 - .98*20) + random[1,5] = 121..125.
 	if err := s.worldCommand(context.Background(), c, []byte{50, 1, 4, 2, 4, 2, 72, 43}); err != nil {
 		t.Fatal(err)
 	}
@@ -822,7 +822,7 @@ func TestSQLWaterShieldAllowsPhysicalDamageAndSavesProgress(t *testing.T) {
 	s.worldMu.Lock()
 	protected, remainingHP, remainingSP, enemyHP := actor.HasEffect(11080), actor.HP, actor.SP, run.b.Defenders[0].HP
 	s.worldMu.Unlock()
-	if !protected || remainingHP != 900 || remainingSP != 300-int(skill.SP) || enemyHP != 1000 {
+	if !protected || remainingHP < 875 || remainingHP > 879 || remainingSP != 300-int(skill.SP) || enemyHP != 1000 {
 		t.Fatal("Water Shield blocked physical damage or cast incorrectly", protected, remainingHP, remainingSP, enemyHP)
 	}
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)
@@ -860,8 +860,10 @@ func TestSQLShieldDefenseBuffsStatsAndSavesProgress(t *testing.T) {
 	actor.SP = 300
 	actor.Spd = 100
 	actor.HP, actor.MaxHP = 1000, 1000
-	actor.Def = 20
-	run.b.Defenders[0].Atk = 100 // Native monster basic attack deals 100 physical damage.
+	actor.Def = 50
+	// +10% DEF gives 55: floor(140 - .98*55) + random[1,5] = 87..91.
+	// Its HP interval is disjoint from the unbuffed damage interval, 92..96.
+	run.b.Defenders[0].Atk = 100
 	if err := s.worldCommand(context.Background(), c, []byte{50, 1, 4, 2, 4, 2, 49, 43}); err != nil {
 		t.Fatal(err)
 	}
@@ -869,7 +871,7 @@ func TestSQLShieldDefenseBuffsStatsAndSavesProgress(t *testing.T) {
 	s.worldMu.Lock()
 	protected, remainingHP, remainingSP, enemyHP := actor.HasEffect(11057), actor.HP, actor.SP, run.b.Defenders[0].HP
 	s.worldMu.Unlock()
-	if !protected || remainingHP != 902 || remainingSP != 300-int(skill.SP) || enemyHP != 1000 {
+	if !protected || remainingHP < 909 || remainingHP > 913 || remainingSP != 300-int(skill.SP) || enemyHP != 1000 {
 		t.Fatal("Shield Defense failed to increase defense or cast incorrectly", protected, remainingHP, remainingSP, enemyHP)
 	}
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)

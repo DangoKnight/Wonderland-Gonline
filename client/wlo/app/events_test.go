@@ -149,6 +149,8 @@ func TestTalkWrap(t *testing.T) {
 // effect and shows "Meow~".
 func TestCatTalk(t *testing.T) {
 	c, _, _ := enteredClient(t)
+	// Test native sound/body control markup independently of imported wording.
+	c.talks = map[uint32]string{30137: "#swav1541/#sMeow~"}
 	var played []string
 	c.Env.Sound = func(p string) { played = append(played, p) }
 	cat := c.World.NPCs[8]

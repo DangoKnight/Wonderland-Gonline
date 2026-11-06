@@ -17,7 +17,7 @@ func TestClientBackdropsNegotiatedWithoutRoundChains(t *testing.T) {
 	if err := s.discoveryCommand(context.Background(), c, nil); err != nil {
 		t.Fatal(err)
 	}
-	if !contains(wires[0].packets(t), []byte{1, 248, 71, 76, 79, 78, 1, 0, 5, 0, 0, 0}) {
+	if !contains(wires[0].packets(t), []byte{1, 248, 71, 76, 79, 78, 1, 0, 13, 0, 0, 0}) {
 		t.Fatal("missing backdrop offer")
 	}
 	if err := s.handshakeCommand(context.Background(), c, accept); err != nil {

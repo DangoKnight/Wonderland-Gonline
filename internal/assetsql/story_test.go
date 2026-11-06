@@ -188,6 +188,13 @@ func TestStoryMigrationPreservesEditsAndEmptyDefinitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	defs.Rules, err = seedWikiQuests(defs.Rules, true)
+	// v52 appends these new scoped continuations to every nonempty story,
+	// including an administrator's otherwise unrelated custom collection.
+	defs.Rules = append(defs.Rules,
+		assets.StoryRule{ID: "noa_quiz_result_continuation", Kind: assets.StoryContinue, Scope: assets.StoryScope{AllowMissing: true, Maps: []uint16{12000}, Events: []uint16{56}, Branches: []byte{15, 16}}},
+		assets.StoryRule{ID: "noa_quiz_retry_continuation", Kind: assets.StoryContinue, Scope: assets.StoryScope{AllowMissing: true, Maps: []uint16{12000}, Events: []uint16{56}, Branches: []byte{1, 17}}, TargetBranch: 3},
+		assets.StoryRule{ID: "noa_recruitment_continuation", Kind: assets.StoryContinue, Scope: assets.StoryScope{AllowMissing: true, Maps: []uint16{12000}, Events: []uint16{56}, Branches: []byte{19}}, TargetBranch: 21},
+	)
 	if err != nil || !reflect.DeepEqual(got.Story, defs) {
 		t.Fatal("migration replaced edited story", err)
 	}
@@ -301,10 +308,20 @@ func TestStoryInstalledMigration(t *testing.T) {
 	// independent lookup kinds elsewhere. Visibility snapshots and backgrounds
 	// never compete with other kinds; preserve precedence within each kind while
 	// comparing them separately. Constellations are sent in numeric star order.
-	// All remaining executable rules retain their authored relative ordering.
+	// The v51/v52 Xaolan and Noa continuations occupy disjoint event branches
+	// and may occur before or after unrelated wiki rules in old installations.
+	// Preserve their own order and every other executable rule's relative order.
 	canonical := func(rules []assets.StoryRule) []assets.StoryRule {
-		var ordered, constellations, visits, backgrounds []assets.StoryRule
+		var ordered, constellations, visits, backgrounds, noa, xaolan []assets.StoryRule
 		for _, rule := range rules {
+			if rule.ID == "xaolan_recruitment_question_continuation" {
+				xaolan = append(xaolan, rule)
+				continue
+			}
+			if rule.ID == "noa_quiz_result_continuation" || rule.ID == "noa_quiz_retry_continuation" || rule.ID == "noa_recruitment_continuation" {
+				noa = append(noa, rule)
+				continue
+			}
 			switch rule.Kind {
 			case assets.StoryConstellation:
 				constellations = append(constellations, rule)
@@ -319,6 +336,8 @@ func TestStoryInstalledMigration(t *testing.T) {
 		slices.SortFunc(constellations, func(a, b assets.StoryRule) int { return strings.Compare(a.ID, b.ID) })
 		ordered = append(ordered, visits...)
 		ordered = append(ordered, backgrounds...)
+		ordered = append(ordered, xaolan...)
+		ordered = append(ordered, noa...)
 		return append(ordered, constellations...)
 	}
 	actual := got.Story

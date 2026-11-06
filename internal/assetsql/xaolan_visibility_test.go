@@ -51,6 +51,17 @@ func TestXaolanVisibilityRevisionPreservesEdits(t *testing.T) {
 			want := defs
 			if scenario == "stock" {
 				want = assets.DefaultStoryDefinitions()
+				// v46 appends its visit policy after preexisting rules, preserving
+				// their precedence even when newer defaults include later families.
+				var existing, additions []assets.StoryRule
+				for _, rule := range want.Rules {
+					if rule.Kind == assets.StoryVisitVisibility {
+						additions = append(additions, rule)
+					} else {
+						existing = append(existing, rule)
+					}
+				}
+				want.Rules = append(existing, additions...)
 			}
 			if !reflect.DeepEqual(got, want) {
 				t.Fatal("Xaolan revision changed unrelated or edited content")

@@ -57,6 +57,10 @@ func TestJoinTeamPlayerAndPetHover(t *testing.T) {
 	world.Dress(human, p)
 	c.World.Peers = map[uint32]*world.Peer{p.ID: peer}
 	c.World.Draw()
+	// Painted fallback frames have no palette indices to brighten. Wait for
+	// native palette preparation before comparing highlighted/unlit pixels.
+	c.Sprites.WaitNative()
+	c.World.Draw()
 	cx, cy := c.World.Camera()
 	find := func(hit func(int, int) bool) image.Point {
 		for y := p.Y - cy - 250; y < p.Y-cy+50; y++ {

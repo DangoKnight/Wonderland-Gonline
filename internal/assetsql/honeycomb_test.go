@@ -24,6 +24,20 @@ func TestHoneycombMigrationPreservesEdits(t *testing.T) {
 				}
 				defs.Rules = baseline
 				expected := defs
+				if version == 40 {
+					// The missing rule is appended after preexisting policies. Preserve
+					// their order even when this fixture includes newer policy families.
+					var ordered []assets.StoryRule
+					var addition assets.StoryRule
+					for _, rule := range expected.Rules {
+						if rule.ID == "honeycomb_start_bee_battle" {
+							addition = rule
+						} else {
+							ordered = append(ordered, rule)
+						}
+					}
+					expected.Rules = append(ordered, addition)
+				}
 				var old []assets.StoryRule
 				raw, err := os.ReadFile("testdata/honey_story_v42.json")
 				if err != nil {
