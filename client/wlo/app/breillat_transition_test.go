@@ -15,7 +15,8 @@ func TestBreillatPlayerToNPCDialogue(t *testing.T) {
 	c.dispatch([]byte{20, 1, 0, 0, 0, 2, 1, 7, 0, 0, 1, 0, 0, 0, 0, 177, 119, 1})
 	*now = now.Add(120 * time.Millisecond)
 	c.Frame()
-	if got := string(bytes.Join(c.Talk.Lines(), nil)); got != "Why do yo say that?" {
+	// The preferred IGG English catalog uses this shorter line for talk 30641.
+	if got := string(bytes.Join(c.Talk.Lines(), nil)); got != "why?" {
 		t.Fatalf("player line %q", got)
 	}
 	c.GroundClick(400, 500)

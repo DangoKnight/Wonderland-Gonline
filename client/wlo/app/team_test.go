@@ -140,12 +140,7 @@ func TestTeamInvitationResponse(t *testing.T) {
 		c.Frame()
 		savePNG(t, path, c)
 	}
-	for _, child := range c.UI.Modal.Base().Children {
-		if child.Base().Left == 70 {
-			child.(*seui.FixedButton).Click()
-			break
-		}
-	}
+	acceptTeamPrompt(t, c)
 	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{13, 3, 1, 34, 78, 0, 0}) {
 		t.Fatal("invite acceptance", got)
 	}
@@ -246,9 +241,10 @@ func TestJoinTeamToolbarSelection(t *testing.T) {
 		t.Fatal("missing selection cursor")
 	}
 	c.GroundClick(10, 400)
-	if !c.joinTeamTarget || len(capture()) != 0 || c.World.Walking() {
-		t.Fatal("empty selection should wait without walking")
+	if c.joinTeamTarget || button.IconDown || c.World.JoinTeamSelection || len(capture()) != 0 || c.World.Walking() {
+		t.Fatal("empty selection must cancel without sending or walking")
 	}
+	button.Click()
 	if !c.TeamKey(escapeKey, 0) || c.joinTeamTarget || button.IconDown {
 		t.Fatal("escape did not cancel")
 	}

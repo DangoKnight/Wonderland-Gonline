@@ -10,7 +10,10 @@ import (
 const (
 	minimumMonsterExperience        = 10
 	monsterExperiencePerLevel       = 15
-	participationExperiencePerLevel = 8
+	participationExperiencePerLevel = 1.5
+	participationMinimumMultiplier  = 0.5
+	participationMaximumMultiplier  = 3.0
+	participationLevelRatioWeight   = 4.0 // Makes equal-level rewards exactly 1x.
 	experiencePercentBase           = 100
 	experienceTwoUnitComboBonus     = 40
 	experienceExtraComboUnitBonus   = 10
@@ -23,8 +26,16 @@ func MonsterExperience(level byte) uint64 {
 	return uint64(max(minimumMonsterExperience, int(level)*monsterExperiencePerLevel))
 }
 
-func participationMonsterExperience(level byte) uint64 {
-	return uint64(max(1, level)) * participationExperiencePerLevel
+func participationMonsterExperience(level byte) float64 {
+	return float64(max(1, level)) * participationExperiencePerLevel
+}
+
+// Apply separately to each participant's share, including pets and assistants.
+// The smooth ratio curve is 1 at equal levels and tends to 3/0.5 as the
+// participant becomes much lower/higher level than the defeated monster.
+func participationLevelMultiplier(participantLevel, monsterLevel byte) float64 {
+	ratio := float64(max(1, participantLevel)) / float64(max(1, monsterLevel))
+	return participationMinimumMultiplier + (participationMaximumMultiplier-participationMinimumMultiplier)/(1+participationLevelRatioWeight*ratio*ratio)
 }
 
 type experienceIdentity struct {
@@ -134,10 +145,10 @@ func killExperiencePool(base uint64, participants, comboUnits int) uint64 {
 // The base amount is bounded by the native byte-sized monster level. Largest
 // remainders preserve the bonused pool; ties use stable entity identity.
 func divideKillExperience(base uint64, participants []*Fighter, comboUnits int) map[experienceIdentity]uint64 {
-	return divideWeightedKillExperience(base, participants, nil, comboUnits)
+	return divideWeightedKillExperience(float64(base), participants, nil, comboUnits)
 }
 
-func divideWeightedKillExperience(base uint64, participants, earlier []*Fighter, comboUnits int) map[experienceIdentity]uint64 {
+func divideWeightedKillExperience(base float64, participants, earlier []*Fighter, comboUnits int) map[experienceIdentity]uint64 {
 	unique := map[experienceIdentity]*Fighter{}
 	credit := map[experienceIdentity]uint64{}
 	for _, f := range earlier {
@@ -175,7 +186,7 @@ func divideWeightedKillExperience(base uint64, participants, earlier []*Fighter,
 	if comboUnits >= experienceComboMinimum {
 		percent += experienceTwoUnitComboBonus + (comboUnits-experienceComboMinimum)*experienceExtraComboUnitBonus
 	}
-	pool := uint64(math.RoundToEven(float64(base*credits) * float64(percent) / (experienceFullCredit * experiencePercentBase)))
+	pool := uint64(math.RoundToEven(base * float64(credits) * float64(percent) / (experienceFullCredit * experiencePercentBase)))
 	if len(ids) == 1 {
 		result[ids[0]] = pool
 		return result
@@ -243,8 +254,14 @@ func (b *Battle) recordKillExperience(target *Fighter, actors []Action) {
 	if b.experience == nil {
 		b.experience = map[experienceIdentity]uint64{}
 	}
+	levels := map[experienceIdentity]byte{}
+	for _, f := range append(earlier, participants...) {
+		if validExperienceParticipant(f) {
+			levels[f.experienceID()] = f.Level
+		}
+	}
 	for id, share := range divideWeightedKillExperience(participationMonsterExperience(target.Level), participants, earlier, len(comboUnits)) {
-		b.experience[id] += share
+		b.experience[id] += uint64(math.RoundToEven(float64(share) * participationLevelMultiplier(levels[id], target.Level)))
 	}
 }
 

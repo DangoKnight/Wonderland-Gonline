@@ -163,7 +163,7 @@ func TestFullPartyComboPacketDamageAndSkillUses(t *testing.T) {
 			t.Fatalf("record %d: %v", i, animation[off:off+19])
 		}
 		damage := int(animation[off+14]) | int(animation[off+15])<<8
-		if damage != int(float64(r.baseDamage(a.Actor, b.Defenders[0], 11001, 1))*1.3) {
+		if damage != 29 {
 			t.Fatalf("actor %d damage %d", i, damage)
 		}
 		total += damage

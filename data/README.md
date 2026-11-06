@@ -1,5 +1,9 @@
 # Exported Wonderland data
 
+Compiled client language tables are tracked under
+[`runtime/locales`](runtime/locales/README.md). Other client-derived exports and
+media remain local. Regenerate the string tables after changing their sources.
+
 `item_data.json` contains every item record from
 the supplied WLRI installation's `data/Item.dat`.
 
@@ -216,7 +220,10 @@ GIFs and ANI cursors use PNG frames and JSON playback metadata. The intro
 movie remains whole at `media/sty/WLOnline.avi`, copied byte for byte with its
 embedded audio and timing. Video payloads are ignored by Git.
 ANI cursor manifests preserve hotspots, timings and framebuffer inversion pixels.
-Sound/voice WAV files are decoded to PCM16 without lossy audio encoding. Font
+Fresh extraction uses the `png-vorbis-v1` profile: standalone sound, voice and
+music files are Ogg Vorbis; images and animation frames are PNG. Existing Vorbis
+tracks are copied byte-for-byte. Other audio is encoded with libvorbis quality 6
+at 44.1 kHz stereo. Font
 atlases retain physical glyph indices; their manifests also retain all decrypted
 font bits. `media/sty/style_data.json` contains all 768 decoded styles, keyed by
 original filename. It preserves every operand, unknown field and source hash;

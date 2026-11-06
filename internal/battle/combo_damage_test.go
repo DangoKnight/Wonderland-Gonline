@@ -2,6 +2,7 @@ package battle
 
 import (
 	"fmt"
+	"math"
 	"testing"
 )
 
@@ -22,7 +23,8 @@ func TestParticipantComboDamageAnimationAndHPLoss(t *testing.T) {
 				expected := 0
 				hits := make(map[byte]int)
 				for _, a := range actions {
-					damage := int(float64(r.baseDamage(a.Actor, b.Defenders[0], a.Skill, 1)) * multiplier)
+					// Base 7, inherent Fire 1.3, additive combo bonus, then roll 1.
+					damage := int(math.Floor(7*(1.3+multiplier-1))) + 1
 					hits[a.Actor.Y] = damage
 					expected += damage
 				}
@@ -59,8 +61,8 @@ func TestParticipantComboDamageFailedChainAndUnavailableAttacker(t *testing.T) {
 		b.Defenders[0].Level = 30
 		r.Float = func() float64 { return .99 }
 		expected := 0
-		for _, a := range actions {
-			expected += r.baseDamage(a.Actor, b.Defenders[0], a.Skill, 1)
+		for range actions {
+			expected += 10
 		}
 		steps, _ := r.attack(b, b.order(r, actions)[0], map[int]bool{})
 		if len(steps) != 3 || b.Defenders[0].HP != 10000-expected {
@@ -73,8 +75,8 @@ func TestParticipantComboDamageFailedChainAndUnavailableAttacker(t *testing.T) {
 		group := b.order(r, actions)[0]
 		actions[2].Actor.HP = 0
 		expected := 0
-		for _, a := range actions[:2] {
-			expected += int(float64(r.baseDamage(a.Actor, b.Defenders[0], a.Skill, 1)) * 1.2)
+		for range actions[:2] {
+			expected += 11
 		}
 		steps, _ := r.attack(b, group, map[int]bool{})
 		if len(steps) != 1 || len(steps[0].SkillUses) != 2 || b.Defenders[0].HP != 10000-expected {

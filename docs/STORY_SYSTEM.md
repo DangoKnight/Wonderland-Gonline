@@ -177,21 +177,24 @@ and execute both the pre-acceptance dialogue and accepted recovery branch.
 
 ### Battle backdrop policies
 
-`battle_background` selects the native UInt16 formation background with `value`.
-It supports the ordinary map, event, branch, actor and player-state gates, so
-encounter scenery stays in structured Story definitions. Operation patterns are
-not used for this kind. A running battle selects its backdrop at entry; every
-participating client receives that selector. Unconfigured encounters retain the
-historical compatibility selection.
+`battle_background` selects the native byte formation background with `value`
+(0–255). AC11:250's next header byte is independent metadata, not the high
+byte of a UInt16 backdrop. `FUN_0038e4f4` reads these separately before passing
+the first byte to `FUN_0036f448`.
+It supports ordinary map, event, branch, actor and player-state gates as an
+explicit administrator override for server-resolved recipients (Legacy or
+unnegotiated clients). Negotiated Gonline clients resolve their native regions
+locally; see [backdrop negotiation](BATTLE_BACKDROPS.md). Operation patterns are not used for this kind.
+Otherwise, schema v50's `BattleBackdrops` dataset selects from native
+`Ground.MMG` rectangles at the initiating player's position, then uses the map's
+native default. Selection happens at battle entry and all participants receive
+the same selector. Maps without definitions retain the documented compatibility
+selection.
 
-The default map-12002 policy selects wire value 140 for Xaolan's house. The
-native client subtracts 0x1988 with UInt16 wrapping (`FUN_0036f448`), resolving
-scene 59140. Its sole layer is artwork 59140, verified against the Legacy
-screenshot. The Gonline client accepts this single-layer record rather than
-requiring a third/sky layer and falling back to grassland. Schema v45 installs
-this rule through `native_quest_revision_v45.json`, guarded by the existing
-robbery quest policy family. Same-ID edits and intentionally empty/removed
-families remain intact.
+Earlier revisions inferred encounter-specific overrides from screenshots. Schema
+v50 retires their exact original policies after decoding the native map records;
+operator-edited policies remain intact. See [native backdrop evidence and
+coverage](BATTLE_BACKDROPS.md) for the format, migration and audit command.
 
 ### Declarative policy revisions
 
@@ -295,3 +298,31 @@ resets the snapshot and evaluates the durable quest progress again. Schema v46
 replaces the stock Xaolan rescue visibility overrides with this policy for
 actors 2 and 3 in map 12002. Native pre-events hide them after the rescue on the
 next visit, while later quest stages can show alternate actors 6 and 7.
+
+### Native dialogue facing
+
+NPC speech retains the EVE operation's dword2 facing mode in AC20's dialogue
+frame: mode 1 permits turning toward the player; mode 2 preserves the actor's
+authored facing. This applies equally to Legacy and Gonline clients. For example,
+North Island map 60001 actor 62 (bound Xaolan, template 14154), event 46 and talk
+30062 use mode 2. Limited sprite artwork must not be mistaken for permission to
+turn the actor. Existing hand-authored operations that omit this operand (zero)
+retain the server's historical turn-to-player default. The native EVE speech
+operations use modes 1 and 2; no map-specific override or asset migration is needed.
+
+### North Island rescue battle reference
+
+The earlier screenshot-based selector-90 rescue override is superseded by
+schema v50's native position regions. For example, map 60001 at (2622,755)
+selects 81, while other forest regions select 90. Encounter IDs do not determine
+the biome. Explicit operator overrides remain supported.
+
+Native formations 15 and 33 contain templates 12049 at slot 5, 12050 at slot 8,
+and 14155 at slot 2, in different record orders. The reference positions and
+client's native grid coordinates establish slots 1–4 as wire column 1 and slots
+5–8 as wire column 2, with rows 1–4 in each column. Thus the two Hijackers occupy
+(2,1)/(2,4), and the Pirate Leader occupies (1,2). This reverses the columns in
+Private Server's `GetEnemySlotCoordinates` helper; its output is not used as a
+Legacy golden. Gonline now honors authored slots for initial positions while
+retaining first-seen roster order, repeated-slot reinforcement queues, and the
+existing sequential fallback for encounters without authored slots.

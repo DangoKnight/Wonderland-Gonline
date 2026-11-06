@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -208,9 +210,9 @@ func (g *Sheep) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	// of mouse position. FUN_001391b0 selects rows on the 30 ms game clock.
 	g.strip(dst, "Hammer_1", sheepHammerX, sheepHammerY, g.hammerFrame(now), sheepHammerFrames)
 	if (!g.resultAt.IsZero() || g.finished) && g.Pics != nil {
-		label := "You Lose"
+		label := localization.UI("ui.minigame.you_lose_b24f26d5")
 		if g.win {
-			label = "You Win"
+			label = localization.UI("ui.minigame.you_win_2fc51f9b")
 		}
 		DrawWord(dst, g.Pics, 400, 200, label, true, 65, 0, FontRed)
 	}

@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -52,24 +54,28 @@ const (
 	ServiceSell
 	ServiceStorage
 	ServiceHotel
-	serviceCellStep           = 34
-	serviceGridTop            = 83 // FUN_001de750: storage grids.
-	serviceGridLeft           = 20
-	serviceGridRight          = 224
-	serviceNoticeInk          = 0x0841
-	serviceSalePriceOffset    = 118 // FUN_0036cd40: in-memory +0x7a, minus four-byte prefix.
-	serviceSaleFlagsOffset    = 122
-	serviceSaleUnavailable    = 16
-	serviceHotelRowHeight     = 37 // FUN_00223208: native hotel row pitch.
-	serviceHotelLeft          = 20
-	serviceHotelRight         = 248
-	serviceHotelTop           = 63
-	serviceHotelWidth         = 203
-	serviceHotelSelectedPaper = 0xc6fe   // RGB565 (198,223,247), reference selected row.
-	serviceHotelSelectedInk   = 0xfc00   // RGB565 (255,130,0), reference selected name.
-	serviceTableHighlight     = 0xf5bf89 // Native TColor, not RGB565.
-	serviceSelectionLight     = 0xff7f   // RGB565 (255,239,255), native selected grid scanline.
-	serviceSelectionDark      = 0xf5df   // RGB565 (247,186,255).
+	serviceCellStep             = 34
+	serviceGridTop              = 83 // FUN_001de750: storage grids.
+	serviceGridLeft             = 20
+	serviceGridRight            = 224
+	serviceNoticeInk            = 0x0841
+	serviceSalePriceOffset      = 118 // FUN_0036cd40: in-memory +0x7a, minus four-byte prefix.
+	serviceSaleFlagsOffset      = 122
+	serviceSaleUnavailable      = 16
+	serviceHotelRowHeight       = 37 // FUN_00223208: native hotel row pitch.
+	serviceHotelLeft            = 20
+	serviceHotelRight           = 248
+	serviceHotelTop             = 63
+	serviceHotelWidth           = 203
+	serviceHotelSelectionLeft   = 17 // Interior of the row borders in Form_Inn_1.
+	serviceHotelSelectionRight  = 244
+	serviceHotelSelectionWidth  = 201
+	serviceHotelSelectionHeight = 33
+	serviceHotelSelectedPaper   = 0xc6fe   // RGB565 (198,223,247), reference selected row.
+	serviceHotelSelectedInk     = 0xfc00   // RGB565 (255,130,0), reference selected name.
+	serviceTableHighlight       = 0xf5bf89 // Native TColor, not RGB565.
+	serviceSelectionLight       = 0xff7f   // RGB565 (255,239,255), native selected grid scanline.
+	serviceSelectionDark        = 0xf5df   // RGB565 (247,186,255).
 )
 
 const (
@@ -271,7 +277,7 @@ func (f *ServiceForm) cell(side, index, x, y, w, h int) {
 	f.rows = append(f.rows, r)
 }
 func (f *ServiceForm) text(x, y, w int, s string) {
-	f.Env.Text.Draw(f.Left+x, f.Top+y, 0, false, true, f.Env.Screen, clientassets.Big5Text(s), 13, w, 0, serviceNoticeInk, 0)
+	f.Env.Text.Draw(f.Left+x, f.Top+y, 0, false, true, f.Env.Screen, []byte(s), 13, w, 0, serviceNoticeInk, 0)
 }
 func (f *ServiceForm) Paint() {
 	f.FixedForm.Paint()
@@ -341,7 +347,7 @@ func (f *ServiceForm) Confirm() {
 	var p []byte
 	if f.Mode == ServiceBuy {
 		if f.Gold != nil && f.Total() > uint64(f.Gold()) {
-			f.notice("Not enough Gold")
+			f.notice(localization.UI("ui.inventory.not_enough_gold_c1d5d70f"))
 			return
 		}
 		p = []byte{protocol.CommandShop, protocol.ShopBuy, 0}
@@ -545,7 +551,7 @@ func (f *ServiceForm) buyQuantity(index int) bool {
 		return true
 	}
 	previous := f.Cart[row]
-	f.Inventory.quantity("Purchase quantity", limit-previous, func(count byte) {
+	f.Inventory.quantity(localization.UI("ui.inventory.purchase_quantity_b9604aa0"), limit-previous, func(count byte) {
 		if !f.Visible || f.Mode != ServiceBuy || f.Waiting || index >= len(f.Stock) || f.Stock[index] != entry || f.Cart[row] != previous {
 			return
 		}
@@ -614,7 +620,11 @@ func (r *serviceCell) Paint() {
 		}
 		selected := f.Selected[r.side][slot-1]
 		if selected {
-			f.Env.Screen.Fill(r.Rect(), serviceHotelSelectedPaper)
+			x := f.Left + serviceHotelSelectionLeft
+			if r.side == 1 {
+				x = f.Left + serviceHotelSelectionRight
+			}
+			f.Env.Screen.Fill(image.Rect(x, a.Y, x+serviceHotelSelectionWidth, a.Y+serviceHotelSelectionHeight), serviceHotelSelectedPaper)
 		}
 		if f.DrawPortrait != nil {
 			f.DrawPortrait(pet, image.Rect(a.X+2, a.Y+2, a.X+26, a.Y+26))
@@ -833,7 +843,7 @@ func (f *ServiceForm) HotelPacket(p []byte) bool {
 		}
 		f.Hotel[p[2]-1] = f.Inventory.State.Pets[p[3]-1]
 		f.hotelSource[p[2]-1] = f.Hotel[p[2]-1]
-		f.notice(string(f.Hotel[p[2]-1].Name) + " left party")
+		f.notice(string(f.Hotel[p[2]-1].Name) + localization.UI("ui.inventory.left_party_502d6b59"))
 	case protocol.PetHotelCopyToTeam:
 		if len(p) != 4 || p[2] < 1 || p[2] > game.MaxHotelPets || p[3] < 1 || p[3] > game.MaxPets {
 			return false
@@ -855,7 +865,7 @@ func (f *ServiceForm) HotelPacket(p []byte) bool {
 				f.Inventory.State.ApplyPetStat(q)
 			}
 			f.PendingPetStats = nil
-			f.notice(string(pet.Name) + " joined party")
+			f.notice(string(pet.Name) + localization.UI("ui.inventory.joined_party_3c80fab6"))
 		}
 	case protocol.NPCServiceWireCode4:
 		if len(p) != 3 || p[2] < 1 || p[2] > game.MaxHotelPets {

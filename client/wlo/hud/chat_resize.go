@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 
@@ -95,7 +97,7 @@ func newChatResize(env *seui.Env, l *ChatLog) *chatResize {
 	r.InitComponent(r, env, l)
 	r.Name = "TSe_SizeBtn"
 	r.Init("Btn_Resize_1", l.Width-chatResizeRight, chatResizeSize, chatResizeSize, 0, 0, true, chatResizeSize, chatResizeSize, chatResizeTop)
-	r.SetHint([]byte("Resize chat window"))
+	r.BindLanguage("hint", func() { r.SetHint([]byte(localization.UI("ui.hud.resize_chat_window_7955794d"))) })
 	return r
 }
 func (r *chatResize) LeftDown(shift byte, x, y int) {
@@ -175,19 +177,4 @@ func (l *ChatLog) drawBackgroundGrid() {
 			l.Env.Pics.DrawRect(l.Env.Screen, l.grid, x, y, image.Rect(0, 0, min(w, area.Max.X-x), min(h, area.Max.Y-y)), true)
 		}
 	}
-}
-func (l *ChatLog) tickerBytes() int {
-	limit := min(len(l.ticker), chatTickerShown, max(l.listWidth()/chatCharWidth, 1))
-	n := 0
-	for n < limit {
-		step := 1
-		if l.ticker[n] >= 0x80 && n+1 < len(l.ticker) {
-			step = 2
-		}
-		if n+step > limit {
-			break
-		}
-		n += step
-	}
-	return n
 }

@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import "image"
 
 // Authored tables of character creation (WLRI build).
@@ -125,9 +127,22 @@ var statBonus = [16][5]uint16{
 // statHints are FUN_002198a8's tooltips, STR..AGI.
 var statHints = [6]string{
 	"",
-	"Strength influences basic physical damage and physical skills damage",
-	"Constitution increases maximum health (HP) and basic defense against physical damage",
-	"Intelligence determines magical skills damage and sealing skills chance",
-	"Wisdom increases maximum mana (SP), defense against magic attacks, and unlocks some support skills",
-	"Agility determines movement order in battle and ability to perform combo-attacks with other characters",
+	localization.UI("ui.login.strength_influences_basic_physical_damag_4f7dd4d0"),
+	localization.UI("ui.login.constitution_increases_maximum_health_hp_825f5c17"),
+	localization.UI("ui.login.intelligence_determines_magical_skills_d_8b178d97"),
+	localization.UI("ui.login.wisdom_increases_maximum_mana_sp_defense_601dbe75"),
+	localization.UI("ui.login.agility_determines_movement_order_in_bat_f992e32c"),
+}
+
+func init() {
+	localization.Register(func() {
+		statHints = [6]string{
+			"",
+			localization.UI("ui.login.strength_influences_basic_physical_damag_4f7dd4d0"),
+			localization.UI("ui.login.constitution_increases_maximum_health_hp_825f5c17"),
+			localization.UI("ui.login.intelligence_determines_magical_skills_d_8b178d97"),
+			localization.UI("ui.login.wisdom_increases_maximum_mana_sp_defense_601dbe75"),
+			localization.UI("ui.login.agility_determines_movement_order_in_bat_f992e32c"),
+		}
+	})
 }

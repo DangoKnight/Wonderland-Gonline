@@ -6,6 +6,8 @@
 // draws the exported ANI frames itself.
 package cursor
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -95,7 +97,7 @@ func Load(dir, name string) (*Animation, error) {
 		return nil, fmt.Errorf("cursor %s: %w", name, err)
 	}
 	if m.Format != "animated-cursor" || len(m.Frames) == 0 {
-		return nil, fmt.Errorf("cursor %s: not an animated cursor export", name)
+		return nil, fmt.Errorf(localization.UI("ui.cursor.cursor_s_not_an_animated_cursor_export_3f1e2d54"), name)
 	}
 	a := &Animation{Name: name, Sequence: m.Sequence, Rates: m.Rates}
 	for _, f := range m.Frames {
@@ -111,11 +113,11 @@ func Load(dir, name string) (*Animation, error) {
 		}
 	}
 	if len(a.Rates) != len(a.Sequence) {
-		return nil, fmt.Errorf("cursor %s: %d rates for %d steps", name, len(a.Rates), len(a.Sequence))
+		return nil, fmt.Errorf(localization.UI("ui.cursor.cursor_s_d_rates_for_d_steps_3c1b5218"), name, len(a.Rates), len(a.Sequence))
 	}
 	for i, s := range a.Sequence {
 		if s < 0 || s >= len(a.Frames) {
-			return nil, fmt.Errorf("cursor %s: step %d shows missing frame %d", name, i, s)
+			return nil, fmt.Errorf(localization.UI("ui.cursor.cursor_s_step_d_shows_missing_frame_d_1def9717"), name, i, s)
 		}
 		a.period += time.Duration(max(a.Rates[i], 1)) * jiffy
 	}

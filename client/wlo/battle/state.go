@@ -1,6 +1,8 @@
 // Package battle ports TFightManage's native battle roster and action records.
 package battle
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -130,7 +132,7 @@ func (s *State) CanChoose(cell Cell) bool {
 }
 func parseFighters(p []byte) ([]Fighter, error) {
 	if len(p) == 0 || len(p)%FighterRecordBytes != 0 || len(p)/FighterRecordBytes > MaximumFighters {
-		return nil, fmt.Errorf("invalid fighter records")
+		return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_fighter_records_34c9ec23"))
 	}
 	var out []Fighter
 	seen := map[Cell]bool{}
@@ -147,7 +149,7 @@ func parseFighters(p []byte) ([]Fighter, error) {
 			}
 		}
 		if !f.Cell.Valid() || seen[f.Cell] || f.ID == 0 || f.HP > f.MaxHP || f.SP > f.MaxSP || f.Side != Attacker && f.Side != Defender || f.Kind != Player && f.Kind != Pet && f.Kind != Monster {
-			return nil, fmt.Errorf("invalid fighter")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_fighter_8e58bea6"))
 		}
 		seen[f.Cell] = true
 		out = append(out, f)
@@ -161,16 +163,16 @@ func parseFighters(p []byte) ([]Fighter, error) {
 func ParseActions(p []byte) ([]Action, error) {
 	var out []Action
 	if len(p) == 0 {
-		return nil, fmt.Errorf("empty actions")
+		return nil, fmt.Errorf("%s", localization.UI("ui.battle.empty_actions_e60bf08c"))
 	}
 	for len(p) > 0 {
 		if len(p) < 2 {
-			return nil, fmt.Errorf("short actor length")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.short_actor_length_d9d57fb1"))
 		}
 		n := int(binary.LittleEndian.Uint16(p))
 		p = p[2:]
 		if n < actorHeaderBytes || n > len(p) || len(out) >= MaximumFighters {
-			return nil, fmt.Errorf("invalid actor length")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_actor_length_fe0be926"))
 		}
 		v := p[:n]
 		p = p[n:]
@@ -178,17 +180,17 @@ func ParseActions(p []byte) ([]Action, error) {
 		count := int(v[5])
 		v = v[actorHeaderBytes:]
 		if !a.Actor.Valid() || count < 1 || count > MaximumFighters {
-			return nil, fmt.Errorf("invalid actor")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_actor_7be7208f"))
 		}
 		for i := 0; i < count; i++ {
 			if len(v) < targetHeaderBytes {
-				return nil, fmt.Errorf("short target")
+				return nil, fmt.Errorf("%s", localization.UI("ui.battle.short_target_04721dff"))
 			}
 			t := Target{Cell: Cell{v[0], v[1]}, Result: v[2], Guard: v[3]}
 			stats := int(v[4])
 			v = v[targetHeaderBytes:]
 			if !t.Cell.Valid() || stats > maximumStatResults || len(v) < stats*statResultBytes {
-				return nil, fmt.Errorf("invalid target stats")
+				return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_target_stats_bfe0670f"))
 			}
 			for j := 0; j < stats; j++ {
 				t.Stats = append(t.Stats, StatResult{v[0], binary.LittleEndian.Uint32(v[1:]), v[5]})
@@ -197,7 +199,7 @@ func ParseActions(p []byte) ([]Action, error) {
 			a.Targets = append(a.Targets, t)
 		}
 		if len(v) != 0 {
-			return nil, fmt.Errorf("actor trailing bytes")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.actor_trailing_bytes_a2dbce4b"))
 		}
 		out = append(out, a)
 	}
@@ -238,7 +240,9 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 				if !own {
 					return true, false
 				}
-				next = State{Self: s.Self, Side: next.Side, Active: true, Background: binary.LittleEndian.Uint16(p[2:]), Turn: s.Turn + 1}
+				// FUN_0038e4f4 passes only the first header byte to the scene
+				// selector. The following byte is independent formation metadata.
+				next = State{Self: s.Self, Side: next.Side, Active: true, Background: uint16(p[2]), Turn: s.Turn + 1}
 			} else if !s.Active {
 				return true, false
 			}

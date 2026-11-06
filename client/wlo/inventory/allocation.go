@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"math"
 	"time"
@@ -24,7 +26,7 @@ func (f *Form) initAllocation() {
 		b := f.button("Btn_ArrowUp_2", allocationArrowLeft, allocationArrowTop+i*allocationArrowStep, 9, 11, nil)
 		b.Tag = i
 		b.OnClickTag = f.AddPoint
-		b.SetHint([]byte("Allocate one attribute point"))
+		b.BindLanguage("hint", func() { b.SetHint([]byte(localization.UI("ui.inventory.allocate_one_attribute_point_1ea05d1b"))) })
 		f.Increase[i] = b
 	}
 	f.Allocate = f.button("Btn_OK_1", 0, 423, 56, 20, f.SubmitAllocation)
@@ -108,7 +110,7 @@ func (f *Form) syncAllocationControls() {
 	if f.AllocationWaiting && f.Now != nil && !f.Now().Before(f.allocationSent.Add(allocationWait)) {
 		f.AllocationWaiting = false
 		if f.Notice != nil {
-			f.Notice("Attribute allocation has not been confirmed. Check your points before trying again.")
+			f.Notice(localization.UI("ui.inventory.attribute_allocation_has_not_been_confir_c3e45d21"))
 		}
 	}
 	if f.draftTotal() > uint32(f.Stats.Points) {

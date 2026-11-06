@@ -13,6 +13,13 @@ __pycache__/
 /data/*
 !/data/README.md
 !/data/server/
+!/data/runtime/
+/data/runtime/*
+!/data/runtime/locales/
+/data/runtime/locales/*
+!/data/runtime/locales/en.json
+!/data/runtime/locales/zh-TW.json
+!/data/runtime/locales/README.md
 !/data/sprites/
 /data/sprites/*
 !/data/sprites/*.md

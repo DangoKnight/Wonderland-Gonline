@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -128,8 +130,8 @@ const (
 	channelPictureEnd = "_1"
 	channelFrame      = "icon_Channelframe_1"
 	// Team and Guild refuse without a team or guild (FUN_00267db0).
-	notInTeam  = "(System):You are not in a Team"
-	notInGuild = "(System):You are not in a Guild"
+	notInTeam  = "ui.hud.system_you_are_not_in_a_team_208570c5"
+	notInGuild = "ui.hud.system_you_are_not_in_a_guild_0405dd37"
 )
 
 // NewInputBar is FUN_0026348c's layout.
@@ -144,7 +146,7 @@ func NewInputBar(env *seui.Env) *InputBar {
 	}
 	b.Switch = seui.NewFixedButton(env, b)
 	b.Switch.Init(channelButton(InputLocal), inputSwitchLeft, inputSwitchH, inputSwitchW, 0, 0, true, inputSwitchH, inputSwitchW, inputSwitchTop)
-	b.Switch.SetHint([]byte("Switch Channel"))
+	b.Switch.BindLanguage("hint", func() { b.Switch.SetHint([]byte(localization.UI("ui.hud.switch_channel_0e69d064"))) })
 	b.Switch.OnClick = b.nextChannel
 	b.Switch.OnUp = b.toggleList
 	for i := 1; i <= channelListSlots; i++ {
@@ -163,14 +165,15 @@ func NewInputBar(env *seui.Env) *InputBar {
 	// The whisper field is read-only outside the Whisper channel.
 	b.Whisper = newField(env, b, inputWhisperLeft, inputWhisperWidth, inputWhisperMax, "")
 	b.Whisper.ReadOnly = true
-	b.Message = newField(env, b, inputMessageLeft, inputMessageWidth, inputMessageMax, "Press Ctrl+V to paste")
+	b.Message = newField(env, b, inputMessageLeft, inputMessageWidth, inputMessageMax, localization.UI("ui.hud.press_ctrl_v_to_paste_4fa3c43f"))
+	b.Message.BindLanguage("hint", func() { b.Message.SetHint([]byte(localization.UI("ui.hud.press_ctrl_v_to_paste_4fa3c43f"))) })
 	b.Message.AllowPaste = true
 	// The constructor clears the message field's pixel hit test (+0xa8);
 	// it has no picture, so it is clicked by its rectangle. The whisper
 	// field keeps it and takes the keyboard when Whisper is selected.
 	b.Message.PixelHit = false
 	b.Message.OnUp, b.Message.OnDown = b.recallOlder, b.recallNewer
-	b.Emotes = newBarButton(env, b, "Btn_expression_1", inputEmoteLeft, 0, "Chat Emotes")
+	b.Emotes = newBarButton(env, b, "Btn_expression_1", inputEmoteLeft, 0, func() string { return localization.UI("ui.hud.chat_emotes_9039fc28") })
 	b.WhispererBox = seui.NewPanel(env, b)
 	b.WhispererBox.Init("", whispererBoxLeft, 0x32, 0x56, 0, 0, true, 0x24, whispererBoxW, -0x20)
 	b.WhispererBox.SetMargins(7, 7, 7, 7)
@@ -313,13 +316,13 @@ func (b *InputBar) SelectChannel(n byte) {
 		}
 	case InputTeam:
 		if b.InTeam == nil || !b.InTeam() {
-			b.notice(notInTeam)
+			b.notice(localization.UI(notInTeam))
 			b.SelectChannel(InputLocal)
 			return
 		}
 	case InputGuild:
 		if b.InGuild == nil || !b.InGuild() {
-			b.notice(notInGuild)
+			b.notice(localization.UI(notInGuild))
 			b.SelectChannel(InputLocal)
 			return
 		}

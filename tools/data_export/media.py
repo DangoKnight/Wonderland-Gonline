@@ -11,11 +11,12 @@ import io
 from pathlib import Path
 import shutil
 import struct
-import subprocess
 
 from PIL import Image, ImageSequence
 from export import REPO, write_json, require, sha256
 from styles import decode_style
+from media_formats import IMAGE_SUFFIXES, AUDIO_SUFFIXES, MEDIA_PROFILE, export_audio_file
+from ui import skin_source, skin_sources, export_ui
 
 FONT_KEY = 0x58
 ASCII_COUNT = 256
@@ -26,7 +27,7 @@ BITMAP_HEADER_BYTES = 40
 BITMAP_ROW_ALIGNMENT = 4
 CURSOR_TYPE = 2
 TEXT_XOR_KEY = 0x33
-MEDIA_DIRS = ('menu', 'images', 'upimg', 'cursor', 'font', 'sound', 'voice', 'sty', 'info', 'txt')
+MEDIA_DIRS = ('menu', 'images', 'upimg', 'cursor', 'font', 'sound', 'voice', 'Mp3s', 'sty', 'info', 'txt')
 ROOT_RESOURCES = ('Finfo.txt', 'Sinfo.txt', 'MsgSkin.txt', 'SERVER.INI', 'ISP0.DAT', 'isp1.dat', 'web0.DAT', 'PackagesVersion_z.dat', 'update2.dat', 'WL.ico', 'unWL.ico')
 
 
@@ -157,12 +158,6 @@ def export_custom_text(raw, name):
                 'encoding': 'cp950', 'text': decoded.decode('cp950'), 'decoder_reference': 'aLogin 0x255d0c'}
     return None
 
-def run_media(command):
-    result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    if result.returncode:
-        raise ValueError(f'{command[0]} failed: {result.stderr.decode(errors="replace")}')
-
-
 def export_one(source, client, destination):
     relative = source.relative_to(client)
     raw = source.read_bytes()
@@ -172,7 +167,7 @@ def export_one(source, client, destination):
     target.mkdir(parents=True, exist_ok=True)
     if source.name.lower() == 'thumbs.db':
         return {**row, 'status': 'excluded', 'reason': 'Windows thumbnail cache; generated metadata, not a game asset.'}
-    if ext in ('.bmp', '.jpg', '.jpeg', '.png', '.gif', '.ico'):
+    if ext in IMAGE_SUFFIXES:
         if ext == '.gif':
             target = target / source.stem
             target.mkdir()
@@ -209,11 +204,10 @@ def export_one(source, client, destination):
         target = target / source.name.replace('.', '_')
         target.mkdir()
         doc = export_font(raw, source.name, target)
-    elif ext == '.wav':
-        output = target / source.name
-        # PCM16 handles both native PCM and compressed MS/IMA ADPCM WAVs.
-        run_media(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(source), '-map', '0:a:0', '-c:a', 'pcm_s16le', '-threads', '1', str(output)])
-        return {**row, 'status': 'decoded', 'format': 'pcm-s16le-wave', 'wav': output.relative_to(destination).as_posix()}
+    elif ext in AUDIO_SUFFIXES:
+        output = target / (source.stem+'.ogg')
+        metadata = export_audio_file(source, output)
+        return {**row, 'status': 'decoded', **metadata, 'audio': output.relative_to(destination).as_posix()}
     elif ext == '.avi':
         # AVI remains a usable video container. Preserve its embedded video,
         # audio and timing instead of expanding it into separate frame files.
@@ -268,26 +262,41 @@ def export_style_collection(client, destination):
                             'source': str(directory.resolve()), 'styles': records})
     return files
 
-def export_media(client, destination):
+def export_media(client, destination, ui_language='en', chinese_client=None):
     client, destination = client.resolve(), destination.resolve()
     require(client.is_dir() and not destination.is_relative_to(client), 'invalid original/output directories')
     require(not destination.exists(), 'export into a new directory to protect asset edits')
     require(shutil.which('ffmpeg'), 'ffmpeg is required')
+    require(ui_language in ('en', 'zh-TW', 'both'), 'invalid UI language selection')
+    if ui_language == 'both':
+        require(chinese_client is not None, '--chinese-client is required for both UI languages')
+    if ui_language != 'en':
+        chinese_client = (chinese_client or client).resolve()
+        require(not destination.is_relative_to(chinese_client), 'media output must be outside Chinese UI installation')
+        skin_sources(chinese_client)  # Validate before creating any output.
     destination.mkdir(parents=True)
     sources = [p for name in MEDIA_DIRS for p in sorted((client / name).rglob('*')) if p.is_file()]
     sources += [client / name for name in ROOT_RESOURCES if (client / name).is_file()]
     require(all(not p.is_symlink() and p.resolve().is_relative_to(client) for p in sources), 'media source escapes original sibling directory')
     def checked_source(p):
+        if ui_language == 'zh-TW' and skin_source(p.relative_to(client)):
+            return {'source': p.relative_to(client).as_posix(), 'source_bytes': p.stat().st_size,
+                    'source_sha256': sha256(p), 'status': 'excluded', 'reason': 'Only Chinese UI artwork selected'}
         row = export_one(p, client, destination)
         require(sha256(p) == row['source_sha256'], f'source changed during media export: {p}')
         return row
     with ThreadPoolExecutor(max_workers=4) as workers:
         files = list(workers.map(checked_source, [p for p in sources if p.suffix.lower() != '.sty']))
     files.extend(export_style_collection(client, destination))
+    ui_manifests = []
+    if ui_language != 'en':
+        export_ui(chinese_client, destination, 'zh-TW')
+        ui_manifests.append('locales/zh-TW/skin_manifest.json')
     files.sort(key=lambda row: row['source'])
-    doc = {'schema_version': 1, 'source': str(client), 'files': files,
+    doc = {'schema_version': 1, 'media_profile': MEDIA_PROFILE, 'source': str(client), 'files': files,
+           'ui_languages': ['en', 'zh-TW'] if ui_language == 'both' else [ui_language], 'ui_manifests': ui_manifests,
            'unresolved': [r['source'] for r in files if r['status'] == 'unresolved'],
-           'excluded_directories': {'ErrorLog': 'runtime logs', 'user': 'player state', 'Download': 'download staging', 'Photo': 'user screenshots', 'Mp3s': 'empty legacy audio folder'},
+           'excluded_directories': {'ErrorLog': 'runtime logs', 'user': 'player state', 'Download': 'download staging', 'Photo': 'user screenshots'},
            'scope': 'Static media/resource folders and named root resources; executables, DLLs and website/help pages are not game media.'}
     doc['outputs'] = [{'path': p.relative_to(destination).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha256(p)}
                       for p in sorted(destination.rglob('*')) if p.is_file()]
@@ -300,5 +309,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=REPO.parent / 'Wonderland-Client')
     parser.add_argument('--output', type=Path, default=REPO / 'data-media-new')
+    parser.add_argument('--ui-language', choices=('en', 'zh-TW', 'both'), default='en')
+    parser.add_argument('--chinese-client', type=Path, help='Chinese UI source; required with --ui-language both')
     args = parser.parse_args()
-    export_media(args.input, args.output)
+    export_media(args.input, args.output, args.ui_language, args.chinese_client)

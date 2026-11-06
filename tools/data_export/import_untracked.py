@@ -17,9 +17,10 @@ EXTERNAL_ASSET_FILES = (
     'item_data.json', 'lbd_data.json', 'lucky_draw.json', 'mark_data.json',
     'npc_data.json', 'player_titles.json', 'ride_pet_positions.json',
     'scene_data.json', 'skill_data.json', 'skill_effects.json', 'talk_data.json',
-    'traffic_settings.json', 'wem_data.json',
+    'traffic_settings.json', 'wem_data.json', 'media_formats.json',
 )
 EXTERNAL_IMPORT_FORMAT = 'wlri-external-assets'
+LEGACY_EXTERNAL_ASSET_FILES = tuple(name for name in EXTERNAL_ASSET_FILES if name != 'media_formats.json')
 
 
 def checksum(path):
@@ -60,7 +61,7 @@ def restore(source, repo=REPO, dry_run=False):
         if scope.get('schema_version') != 1 or scope.get('format') != EXTERNAL_IMPORT_FORMAT or scope.get('directories') != list(EXTERNAL_ASSET_DIRECTORIES):
             raise ValueError('invalid external asset import scope')
         scoped_files = scope.get('files', [])
-        if scoped_files and scoped_files != list(EXTERNAL_ASSET_FILES):
+        if scoped_files and scoped_files not in (list(EXTERNAL_ASSET_FILES), list(LEGACY_EXTERNAL_ASSET_FILES)):
             raise ValueError('invalid external asset file scope')
         for directory in EXTERNAL_ASSET_DIRECTORIES:
             if not (source / directory).is_dir():

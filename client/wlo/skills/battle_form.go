@@ -1,5 +1,7 @@
 package skills
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"sort"
@@ -157,7 +159,7 @@ func (f *BattleForm) Update(in *seui.Input) {
 			}
 			d := f.Browser.definition(part.rows[i], t)
 			at := part.list.Abs()
-			f.Env.Text.Draw(at.X+199, at.Y+row*(part.list.RowHeight+part.list.Spacing)+3, 0, false, true, f.Env.Screen, []byte(fmt.Sprintf("%d sp", d.SP)), 15, 43, 0, textInk, 0)
+			f.Env.Text.Draw(at.X+199, at.Y+row*(part.list.RowHeight+part.list.Spacing)+3, 0, false, true, f.Env.Screen, []byte(fmt.Sprintf(localization.UI("ui.skills.d_sp_e5072ea2"), d.SP)), 15, 43, 0, textInk, 0)
 		}
 	}
 }

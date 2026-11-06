@@ -1,5 +1,111 @@
 # Testing and validation
 
+## Full synchronized-branch pre-push validation — 2026-11-06
+
+Validated native teams/leadership/map following, generalized roaming enemies,
+Chicken Farm terrain grids, reconstructed scenery shadows, combat damage and
+authored skill powers (asset schema v54), participation EXP and battle notices.
+The root module ran `go test -json -race -count=1 -timeout=60m -p 1 ./...`;
+the client module ran `go test -json -count=1 -timeout=60m -p 1 ./...` with
+source assets, compiled packs, original-client references and GPU opt-ins enabled.
+SQL integration used a separately migrated, verified assets snapshot; live
+databases and account state were unchanged. Live account mutation opt-ins were
+cleared. The pinned translated Item.dat census/hash uses its original reference
+installation, rather than the newer installation's larger item catalog.
+
+The initial commands exposed outdated integration fixtures. Corrections retain
+literal protocol goldens while including the complete-map-snapshot offer bit,
+preserve login capitalization, isolate dialogue markup from translated wording,
+wait for map readiness/loading completion and asynchronous hover palettes, and
+use independently calculated damage intervals for shield tests. Historical
+story checks retain policy contents and precedence within competing families,
+allowing unrelated later Noa/Xaolan continuations at their preserved migration
+positions. No production behavior changed during these validation corrections.
+
+The final audit combines the complete runs with explicitly recorded corrected
+reruns: the entire native-assets and SQL-asset packages under `-race`, followed
+by the corrected installed-story ordering test; socket login/handshake and
+shield regressions under `-race`; and the affected client regressions (hover
+repeated three times). Other tests retain their full-run results. All **40 root
+packages** and **26 client packages** are accounted for: **2,435 passing server
+test/subtest results, 2 optional skips**, and **934 passing client results,
+39 optional skips**. Ten root and two client packages have no tests. There are
+no unresolved failed tests, missing packages or race reports. This does not
+establish new interactive live-server acceptance.
+
+Also passed full server/client vet, server/client/migration builds, all three
+10-second fuzz targets (`FuzzRead`, `FuzzEVE`, `FuzzNativeItems`), Python exporter
+validation (69 tests, one optional skip), web formatting, HTML lint, Go formatting
+and whitespace checks. Affected vet/format checks passed again after fixture
+corrections. Asset packaging verified **74,841 files**, all reused from the
+current cache (6,041.3 MiB source). The isolated SQL snapshot contains all
+224 authored skill powers and preserves native coefficients.
+
+Full logs, corrected rerun logs, package inventories, the audit script and final
+`summary.json` remain under ignored `var/validation/prepush-all-20261106/`.
+
+## Native team protocol — 2026-11-06
+
+The two-Alogin Legacy capture and decompilation now back ID-only invitations,
+Join Team targeting, formation-based membership, leader trails, public rosters,
+native leave requests and the complete leadership confirmation exchange. Raw-byte
+fixtures are authored independently of protocol builders. Tests cover joining
+without an immediate full roster, missing/late appearances, map replacement,
+unrelated teams, pet identity separation, disbanding without changing active pets,
+transfer acceptance/refusal/expiry/cancellation and stale or malformed requests.
+
+Focused server tests run under the race detector, including concurrent transfer
+offer/reply/expiry, follower coordinate checkpoints, map snapshots and existing
+party battle victory/flee/disconnect cases. A follower-initiated battle after
+transfer keeps the new leader's captured formation cell while preserving the
+original event/loot initiator. Focused client tests, affected-package vet checks,
+compiled locale consistency checks and server/client builds pass. Validation
+binaries are under ignored `var/validation/team-native-20261106/`.
+
+This is development validation, not a full pre-push run. Repeat the two-client
+live sequence for presentation/timing acceptance. Protocol evidence and exact
+native serializer/callback references are in [TEAM_PROTOCOL.md](TEAM_PROTOCOL.md).
+
+## Full quest-development pre-push validation — 2026-11-05
+
+Validated native map backdrops/schema v50, client-local backdrop selection, the
+connection-wide GLON hello, battle formation/weapon/AUTO fixes and area-title
+presentation. The full root module ran with `go test -json -race -count=1
+-timeout=60m -p 1 ./...`; the separate client module ran with `go test -json
+-count=1 -timeout=60m -p 1 ./...`, including installed source assets, freshly
+compiled packs and opt-in GPU checks. Used a consistent disposable copy of the
+configured schema-v50 assets database; live gameplay state was not modified.
+Live account creation/deletion opt-ins were cleared.
+
+The final package/test audit covers all 38 server packages and 26 client
+packages. It records 2,318 passing server test/subtest results with 2 skips,
+and 827 passing client test/subtest results with 36 skips. No unresolved failed
+tests, missing packages or race reports remain. Packages with no tests are
+reported separately: 10 server and 2 client package skips.
+
+The initial full run exposed two test issues. The socket-login wire golden
+still expected the superseded GLCT offer; it now independently pins the combined
+GLON hello and confirms a Legacy login can ignore it. The complete socket login
+and connection/configuration regressions passed again under `-race`. The team
+hover pixel test mixed real-time actor animations with a fixed scene clock;
+both actor clocks now use the scene clock without weakening highlight or pixel
+assertions. The entire client app package passed again with native/GPU options,
+including that test in full package order. Other packages retain their full-run
+results; the audit merges the explicitly recorded corrected reruns.
+
+Also passed full server/client vet, server/client/migration builds, all three
+10-second fuzz targets (`FuzzRead`, `FuzzEVE`, `FuzzNativeItems`), Python exporter
+validation (48 tests, one optional skip), web formatting, HTML lint, Go formatting
+and whitespace checks. Runtime asset packaging passed (72,855 files, 72,853
+reused); an independent mounted-pack check verified 1,147 backdrop maps, 1,398
+rectangles and the reference lakeside selector. No new original artwork extraction
+was required. This automated run does not establish new interactive live-server
+acceptance.
+
+Logs, package inventories, final `summary.json`, the isolated assets snapshot
+and build binaries remain under ignored
+`var/validation/prepush-quest-20261105-connection/`.
+
 ## Native NPC services — 2026-11-04
 
 Kelan Legacy captures and screenshots now back the client shop buy/sell,

@@ -8,8 +8,9 @@
 // packs from them with cmd/sprite-build.
 package sprites
 
+import "wonderland-gonline/internal/localization"
+
 import (
-	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -37,7 +38,7 @@ const maxCachedPageBytes = 256 << 20
 const maxNativeDecoders = 2
 
 // ErrNotFound reports an archive that no source provides.
-var ErrNotFound = errors.New("sprite archive not found")
+var ErrNotFound = localization.Error("ui.sprites.sprite_archive_not_found_c90953d0")
 
 // Manager loads archives on demand. It is safe for concurrent use.
 type Manager struct {
@@ -278,7 +279,7 @@ func (m *Manager) loadPage(p *page) (image.Image, error) {
 		return nil, err
 	}
 	if cfg.Width > spritepack.MaxPageSide || cfg.Height > spritepack.MaxPageSide {
-		return nil, fmt.Errorf("%s exceeds %d pixels", p.path, spritepack.MaxPageSide)
+		return nil, fmt.Errorf(localization.UI("ui.sprites.s_exceeds_d_pixels_62994c1b"), p.path, spritepack.MaxPageSide)
 	}
 	if _, err = f.Seek(0, 0); err != nil {
 		return nil, err
@@ -325,7 +326,7 @@ func (f *Frame) Image(m *Manager) (*image.NRGBA, error) {
 	}
 	pg, ok := img.(*image.NRGBA)
 	if !ok || !f.rect.In(pg.Bounds()) {
-		return nil, fmt.Errorf("frame outside %s", f.page.path)
+		return nil, fmt.Errorf(localization.UI("ui.sprites.frame_outside_s_e8295bbe"), f.page.path)
 	}
 	return pg.SubImage(f.rect).(*image.NRGBA), nil
 }
@@ -350,7 +351,7 @@ func (f *Frame) Indices(m *Manager) (*image.Gray, error) {
 	}
 	pg, ok := img.(*image.Gray)
 	if !ok || !f.rect.In(pg.Bounds()) {
-		return nil, fmt.Errorf("frame outside %s", f.index.path)
+		return nil, fmt.Errorf(localization.UI("ui.sprites.frame_outside_s_e8295bbe"), f.index.path)
 	}
 	return pg.SubImage(f.rect).(*image.Gray), nil
 }
@@ -447,4 +448,10 @@ func (p *Player) Index() int { return p.frame }
 // Frame is the current frame, or nil.
 func (p *Player) Frame() *Frame {
 	return p.Sprite.Frame(p.Sprite.Animation(p.Action), p.frame)
+}
+
+func init() {
+	localization.Register(func() {
+		ErrNotFound = localization.Error("ui.sprites.sprite_archive_not_found_c90953d0")
+	})
 }

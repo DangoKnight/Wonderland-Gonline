@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -112,11 +114,11 @@ func (p *PetStatus) Hint() {
 	text := string(p.current.Name)
 	switch y := in.Y - a.Y; {
 	case y >= 10 && y < 18 && in.X >= a.X+petStatsLeft:
-		text = fmt.Sprintf("HP: %d / %d", s.HP, s.MaxHP)
+		text = fmt.Sprintf(localization.UI("ui.hud.hp_d_d_e8eeccd4"), s.HP, s.MaxHP)
 	case y >= 18 && y < 26 && in.X >= a.X+petStatsLeft:
-		text = fmt.Sprintf("SP: %d / %d", s.SP, s.MaxSP)
+		text = fmt.Sprintf(localization.UI("ui.hud.sp_d_d_60a05436"), s.SP, s.MaxSP)
 	case y >= 28:
-		text = fmt.Sprintf("EXP: %d", s.EXP)
+		text = fmt.Sprintf(localization.UI("ui.hud.exp_d_23374e68"), s.EXP)
 	}
 	p.SetHint([]byte(text))
 	p.GrBasic.Hint()

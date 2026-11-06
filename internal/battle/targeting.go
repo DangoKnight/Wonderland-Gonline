@@ -1,7 +1,6 @@
 package battle
 
 import (
-	"math"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -138,12 +137,9 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 
 func (r Rules) strikeDamage(a Action, target *Fighter, defending bool, participants int) (int, byte) {
 	actor := a.Actor
-	dmg := r.baseDamage(actor, target, a.Skill, r.Next(1, 6))
-	dmg = max(1, int(min(float64(dmg)*Elemental(actor.Element, target.Element), math.MaxInt32)))
+	roll := r.Next(1, 6)
+	dmg := clampDamage(r.damageBase(actor, target, a.Skill) * r.damageElement(actor, target, a.Skill, defending, participants))
 	dmg = max(1, actor.modified(assets.EffectDamageDealt, dmg))
-	if participants > 1 {
-		dmg = int(min(float64(dmg)*r.comboDamageMultiplier(participants), math.MaxInt32))
-	}
 	// Players and pets use their own equipment's critical chance.
 	crit := false
 	var equipment *game.Equipment
@@ -157,11 +153,8 @@ func (r Rules) strikeDamage(a Action, target *Fighter, defending bool, participa
 		d, crit = r.Critical.Damage(int32(dmg), equipment.IDs(), a.Kind, r.Next(0, 100))
 		dmg = int(d)
 	}
-	guarded := defending
 	dmg = max(1, r.incomingDamage(target, a.Skill, dmg))
-	if guarded {
-		dmg = max(1, dmg/2)
-	}
+	dmg = clampDamage(float64(dmg) + float64(roll))
 	mode := byte(effectNormalHitMode)
 	if crit {
 		mode = effectCriticalHitMode // Enlarged critical digits.

@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"strconv"
 
@@ -59,9 +61,9 @@ func NewMiniMap(env *seui.Env, screenW int) *MiniMap {
 	m.InitForm(m, env)
 	m.Name = "CH_TMiniMapForm_World"
 	m.Draggable = false
-	m.Minimize = newBarButton(env, m, "Btn_Minimize_1", 0, 0, "Minimize Map")
+	m.Minimize = newBarButton(env, m, "Btn_Minimize_1", 0, 0, func() string { return localization.UI("ui.hud.minimize_map_a928308b") })
 	m.Minimize.OnClick = m.Toggle
-	m.Reload = newBarButton(env, m, "Btn_Reload", 0, 0, "Reload Mini-map")
+	m.Reload = newBarButton(env, m, "Btn_Reload", 0, 0, func() string { return localization.UI("ui.hud.reload_mini_map_9721e4bb") })
 	m.Reload.OnClick = func() { m.Setup(m.Map, m.MapWidth) }
 	return m
 }
@@ -104,7 +106,7 @@ func (m *MiniMap) Setup(id uint16, mapWidth int) {
 	m.shown = true
 	bw, bh := m.buttonSize("Btn_Minimize_1")
 	m.Minimize.Init("Btn_Minimize_1", w-bw, bh, bw, 0, 0, true, bh, bw, 0)
-	m.Minimize.SetHint([]byte("Minimize Map"))
+	m.Minimize.BindLanguage("hint", func() { m.Minimize.SetHint([]byte(localization.UI("ui.hud.minimize_map_a928308b"))) })
 	m.Minimize.SetVisible(true)
 	rw, rh := m.buttonSize("Btn_Reload")
 	m.Reload.Init("Btn_Reload", w-2*rw, rh, rw, 0, 0, true, rh, rw, 0)
@@ -130,7 +132,7 @@ func (m *MiniMap) Toggle() {
 		top := m.Top + b.Top - (miniMapMinHeight-b.Height)/2
 		m.Init(miniMapMinimized, left, 0, 0, 0, 0, false, miniMapMinHeight, miniMapMinWidth, top)
 		b.Init(miniMapExpand, miniMapExpandLeft, miniMapButtonHeight, miniMapButtonWidth, 0, 0, true, miniMapButtonHeight, miniMapButtonWidth, miniMapExpandTop)
-		b.SetHint([]byte("Expand Map"))
+		b.BindLanguage("hint", func() { b.SetHint([]byte(localization.UI("ui.hud.expand_map_360b1cb5"))) })
 		m.Minimized = true
 		m.Reload.SetVisible(false)
 		return
@@ -151,7 +153,7 @@ func (m *MiniMap) Toggle() {
 	top := m.Top + b.Top
 	m.Init(name, left, h, w, 0, 0, true, h, w, top)
 	b.Init("Btn_Minimize_1", w-miniMapButtonWidth, miniMapButtonHeight, miniMapButtonWidth, 0, 0, true, miniMapButtonHeight, miniMapButtonWidth, 0)
-	b.SetHint([]byte("Minimize map"))
+	b.BindLanguage("hint", func() { b.SetHint([]byte(localization.UI("ui.hud.minimize_map_1537238b"))) })
 	m.Minimized = false
 	m.Reload.SetVisible(true)
 }

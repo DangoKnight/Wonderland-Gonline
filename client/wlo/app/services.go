@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -120,10 +122,10 @@ func (c *Client) servicePacket(p []byte) bool {
 		n := binary.LittleEndian.Uint32(p[2:])
 		if p[1] == protocol.GoldGain {
 			c.Stats.Gold = uint32(min(uint64(game.MaxGold), uint64(c.Stats.Gold)+uint64(n)))
-			c.serviceNotice(fmt.Sprintf("Obtain %d Gold", n))
+			c.serviceNotice(fmt.Sprintf(localization.UI("ui.app.obtain_d_gold_bf448578"), n))
 		} else {
 			c.Stats.Gold -= min(c.Stats.Gold, n)
-			c.serviceNotice(fmt.Sprintf("Decrease %d Gold", n))
+			c.serviceNotice(fmt.Sprintf(localization.UI("ui.app.decrease_d_gold_d49a78e2"), n))
 		}
 		return true
 	case protocol.CommandLegacyStorage:
@@ -151,11 +153,11 @@ func (c *Client) servicePacket(p []byte) bool {
 			}
 			c.Services.Waiting = false
 			if p[2] != 0 {
-				messages := []string{"", "Purchase rejected", "Not enough Gold", "Inventory full"}
+				messages := []string{"", localization.UI("ui.app.purchase_rejected_b3496b8d"), localization.UI("ui.app.not_enough_gold_c1d5d70f"), localization.UI("ui.app.inventory_full_fab91b5c")}
 				if p[1] == protocol.ShopSell {
-					messages = []string{"", "Gold limit reached", "Item unavailable", "Too many items", "Cannot sell that item"}
+					messages = []string{"", localization.UI("ui.app.gold_limit_reached_ca5ca241"), localization.UI("ui.app.item_unavailable_210366e5"), localization.UI("ui.app.too_many_items_a536c916"), localization.UI("ui.app.cannot_sell_that_item_78ccfec5")}
 				}
-				s := "Transaction rejected"
+				s := localization.UI("ui.app.transaction_rejected_feee6f4b")
 				if int(p[2]) < len(messages) {
 					s = messages[p[2]]
 				}
@@ -177,7 +179,7 @@ func (c *Client) servicePacket(p []byte) bool {
 			if len(p) == 3 {
 				c.closeClinicPrompt()
 				if p[2] != 0 {
-					c.serviceNotice("Treatment unavailable")
+					c.serviceNotice(localization.UI("ui.app.treatment_unavailable_c544600a"))
 				}
 				if c.clinicUntil.IsZero() {
 					c.event.done = true
@@ -249,7 +251,7 @@ func (c *Client) showClinicPrompt(cost uint32) {
 	c.Services.Hide()
 	c.closeClinicPrompt()
 	if cost == ^uint32(0) {
-		c.serviceNotice("No need to rest")
+		c.serviceNotice(localization.UI("ui.app.no_need_to_rest_eb9ea5fe"))
 		c.event.done = true
 		return
 	}
@@ -263,9 +265,9 @@ func (c *Client) showClinicPrompt(cost uint32) {
 	e.Init("", 24, 0, 0, 0, 0, false, 44, 230, 24)
 	e.ReadOnly = true
 	e.Color = 0xffe0
-	text := "This stay is free. Stay?"
+	text := localization.UI("ui.app.this_stay_is_free_stay_562774b6")
 	if cost != 0 {
-		text = fmt.Sprintf("Rest for %d Gold?", cost)
+		text = fmt.Sprintf(localization.UI("ui.app.rest_for_d_gold_9e7a0752"), cost)
 	}
 	e.SetText([]byte(text))
 	for i, pic := range []string{"Btn_confirm_1", "Btn_Cancel_1"} {

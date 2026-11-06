@@ -40,3 +40,21 @@ func TestCloseCancelsQueuedNativeDecode(t *testing.T) {
 		t.Fatal("repeated close", err)
 	}
 }
+
+func TestNativeProgressTracksPendingAndFailedArchives(t *testing.T) {
+	m := NewManager(nil, nil)
+	defer m.Close()
+	n := &nativeSource{opening: true}
+	m.archives["pending"] = &Archive{m: m, native: n}
+	m.archives["unused"] = &Archive{m: m, native: &nativeSource{}}
+	if settled, total := m.NativeProgress(); settled != 0 || total != 1 {
+		t.Fatal("pending archive reported ready", settled, total)
+	}
+	m.mu.Lock()
+	n.failed = true // Missing optional originals retain usable painted frames.
+	m.mu.Unlock()
+	if settled, total := m.NativeProgress(); settled != 1 || total != 1 {
+		t.Fatal("fallback archive never settled", settled, total)
+	}
+	m.WaitNative()
+}

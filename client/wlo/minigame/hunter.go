@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"time"
@@ -559,7 +561,7 @@ func (h *Hunter) Draw(dst *surface.Surface, mx, my int, now time.Time) {
 		}
 	}
 	if h.ammo < 1 {
-		DrawWord(dst, pics, centreX, 200, "You Lose", true, 0x41, 0, FontRed)
+		DrawWord(dst, pics, centreX, 200, localization.UI("ui.minigame.you_lose_b24f26d5"), true, 0x41, 0, FontRed)
 	}
 	draw(HunterScoreLabel, 0x276, 0x19, true)
 	draw(HunterTimeLabel, 0x159, 0x19, true)
@@ -575,10 +577,10 @@ func (h *Hunter) Draw(dst *surface.Surface, mx, my int, now time.Time) {
 		}
 	}
 	if h.seconds < 1 {
-		DrawWord(dst, pics, centreX, 200, "You Win", true, 0x41, 0, FontRed)
+		DrawWord(dst, pics, centreX, 200, localization.UI("ui.minigame.you_win_2fc51f9b"), true, 0x41, 0, FontRed)
 	}
 	if h.lives < 1 {
-		DrawWord(dst, pics, centreX, 200, "You Lose", true, 0x41, 0, FontRed)
+		DrawWord(dst, pics, centreX, 200, localization.UI("ui.minigame.you_lose_b24f26d5"), true, 0x41, 0, FontRed)
 	}
 }
 

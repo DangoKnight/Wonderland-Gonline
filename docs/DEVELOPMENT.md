@@ -57,7 +57,7 @@ durations belong in the assets database's `ResourceRespawns` definitions.
 v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v46 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v54 stores runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -974,8 +974,12 @@ Hostile bounded, random roaming and patrol actors search for the nearest eligibl
 player every three seconds, within 200 pixels of their current position. Bounded
 and random roaming actors acquire and chase players only inside their fixed
 areas. Pathless patrols use the random roaming area; authored patrols may pursue
-nearby players throughout their scene. Existing town restrictions still prevent
-random roaming there. Cached targets are revalidated each tick and discarded as
+nearby players throughout their scene. Town restrictions prevent incidental
+random roaming but must not suppress explicitly authored mobile field enemies.
+Identify these by field flag 5, movement behaviors 2–5 and a linked native
+battle-start action, regardless of the event header or monster template range.
+Cache this derived classification with the immutable map and rebuild it on reload.
+Cached targets are revalidated each tick and discarded as
 soon as they become ineligible or leave the area or detection radius. Pursuit uses
 legs of at most 100 pixels. Patrol cursors pause while chasing and resume afterward.
 Keep the chosen player while eligible, even when a nearer player appears. A

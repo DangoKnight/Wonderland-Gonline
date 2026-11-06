@@ -276,6 +276,7 @@ func (s *Server) runRespawns(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case now := <-t.C:
+			s.expirePartyLeadership(now)
 			elapsed += actorSimulationInterval
 			if elapsed < worldMaintenanceInterval {
 				s.simulateWorldTick(now, false)

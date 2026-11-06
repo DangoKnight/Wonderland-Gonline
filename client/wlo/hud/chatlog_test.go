@@ -133,3 +133,30 @@ func TestChatColorChangesSurviveRewrap(t *testing.T) {
 		}
 	}
 }
+
+func TestChatTickerInterpolatesBetweenCharacterTicks(t *testing.T) {
+	l, now := newTestLog()
+	l.Add([]byte("Smooth"), ChannelSystem)
+	l.tick()
+	*now = now.Add(33 * chatTickerEvery)
+	l.tick()
+	before := bytes.Clone(l.ticker)
+	for _, tc := range []struct {
+		elapsed time.Duration
+		pixels  int
+	}{
+		{0, 0}, {25 * time.Millisecond, 2}, {50 * time.Millisecond, 4}, {75 * time.Millisecond, 6},
+	} {
+		if got := l.tickerOffset(now.Add(tc.elapsed)); got != tc.pixels {
+			t.Fatalf("offset at %v=%d want %d", tc.elapsed, got, tc.pixels)
+		}
+	}
+	if !bytes.Equal(before, l.ticker) {
+		t.Fatal("interpolation consumed message bytes")
+	}
+	// Big5 glyphs stay intact while their full width moves across the edge.
+	l.ticker = []byte{0xa4, 0x40, 'x'}
+	if got := l.tickerOffset(now.Add(50 * time.Millisecond)); got != 8 {
+		t.Fatalf("Big5 offset=%d", got)
+	}
+}

@@ -72,10 +72,10 @@ func TestComboChanceRollsOnceAndFailedChainsAttackSeparately(t *testing.T) {
 			} else if len(step.SkillUses) != 1 {
 				t.Fatal("failed chain retained combo bonus")
 			}
-			for _, a := range step.SkillUses {
-				hit := r.baseDamage(a.Actor, b.Defenders[0], a.Skill, 1)
+			for range step.SkillUses {
+				hit := 10
 				if tc.combined {
-					hit = int(float64(hit) * 1.3)
+					hit = 12
 				}
 				damage += hit
 			}

@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 
@@ -102,7 +104,7 @@ func (f *InputPassword) SetMode(mode byte) {
 	}
 	f.OK.OnClick = nil
 	f.Second.OnClick = f.Hide
-	f.Background, _ = loadJPEG(f.Assets.SkinPicture("Menu", "Skins", "White", name+".jpg"))
+	bindSkinBackground(f, "background", f.Assets, name+".jpg", &f.Background)
 	w, h := 0, 0
 	if f.Background != nil {
 		w, h = f.Background.W, f.Background.H
@@ -164,19 +166,19 @@ func (f *InputPassword) Check(notify bool) int {
 	pw, code := f.Fields[1].Text, f.Fields[3].Text
 	switch {
 	case !bytes.Equal(pw, f.Fields[2].Text):
-		return say(PwMismatch, "Wrong Passwords")
+		return say(PwMismatch, localization.UI("ui.login.wrong_passwords_c30fe40a"))
 	case !bytes.Equal(code, f.Fields[4].Text):
-		return say(PwCodeMismatch, "Wrong Del Pwd")
+		return say(PwCodeMismatch, localization.UI("ui.login.wrong_del_pwd_2a5d515f"))
 	case len(pw) < pwMinLen:
-		return say(PwBadLength, "Password less 6 char")
+		return say(PwBadLength, localization.UI("ui.login.password_less_6_char_1d73a030"))
 	case len(code) < pwMinLen:
-		return say(PwBadCodeLength, "Del Pwd less 6 char")
+		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_less_6_char_41e8891d"))
 	case len(pw) > pwMaxLen:
-		return say(PwBadLength, "Password is too long")
+		return say(PwBadLength, localization.UI("ui.login.password_is_too_long_f4ecbe2a"))
 	case len(code) > pwMaxLen:
-		return say(PwBadCodeLength, "Del Pwd is too long")
+		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_is_too_long_997f1f09"))
 	case bytes.Equal(pw, code):
-		return say(PwSameAsCode, "Pwd & Del are same!")
+		return say(PwSameAsCode, localization.UI("ui.login.pwd_del_are_same_8704e5e6"))
 	}
 	return PwOK
 }

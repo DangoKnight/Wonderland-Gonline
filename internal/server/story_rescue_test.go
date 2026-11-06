@@ -166,3 +166,70 @@ func TestNativeXaolanRobberyRewardBranches(t *testing.T) {
 		t.Fatal("native rescue reward census", count)
 	}
 }
+
+func TestNativeXaolanRecruitmentQuestionContinuesWithoutUnlock(t *testing.T) {
+	catalog, err := installedCatalog(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const houseMap = 12002
+	const xaolanActor = 7
+	const recruitmentEvent = 9
+	const recruitmentMark = 13004
+	var native *assets.Event
+	m := catalog.Maps[houseMap]
+	for i := range m.Events {
+		if m.Events[i].ClickID == recruitmentEvent {
+			native = &m.Events[i]
+			break
+		}
+	}
+	if native == nil {
+		t.Fatal("native recruitment event missing")
+	}
+	s, c, wire := eventFixture(t)
+	s.Assets, s.World = catalog, world.New(catalog)
+	next := c.character.Clone()
+	next.Map = houseMap
+	next.Pets = nil
+	next.HotelPets = nil
+	next.Quests[recruitmentMark] = game.Quest{ID: recruitmentMark, State: game.InProgress, Step: 1}
+	if err := s.commit(context.Background(), c, next); err != nil {
+		t.Fatal(err)
+	}
+	wire.Reset()
+	branch := s.World.FindBranch(c.character, c.view, houseMap, native, 0, 0, 0, -1)
+	if branch < 0 || native.Branches[branch].Index != 1 {
+		t.Fatal("missing initial dialogue", branch)
+	}
+	if err := s.startEvent(context.Background(), c, xaolanActor, native, branch, true); err != nil {
+		t.Fatal(err)
+	}
+	for n := 0; n < 40 && c.event != nil && c.event.onChoice == nil; n++ {
+		if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.event == nil || c.event.onChoice == nil || c.event.ev.Branches[c.event.branch].Index != 4 {
+		t.Fatal("dialogue ended before recruitment question")
+	}
+	packets := wire.packets(t)
+	if contains(packets, []byte{6, 2, 0}) || contains(packets, []byte{20, 8}) {
+		t.Fatal("interaction released between dialogue and question", packets)
+	}
+	if c.character.Quests[recruitmentMark].Step != 2 {
+		t.Fatal("dialogue checkpoint not advanced once")
+	}
+	// Declining the native choice still releases the interaction normally.
+	if err := c.event.onChoice(31); err != nil {
+		t.Fatal(err)
+	}
+	for n := 0; n < 10 && c.event != nil; n++ {
+		if err := s.worldCommand(context.Background(), c, []byte{20, 6}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if c.event != nil {
+		t.Fatal("decline did not finish")
+	}
+}

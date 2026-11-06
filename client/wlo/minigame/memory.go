@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -158,8 +160,8 @@ func (m *Memory) Click(x, y int, now time.Time) {
 }
 func (m *Memory) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	m.background(dst, "CJ_BG1")
-	arcadeText(dst, 30, 15, fmt.Sprintf("Memory  Lives: %d  Score: %d/%d", m.Lives, m.Score, memoryWinRounds))
-	arcadeText(dst, 200, 450, "Remember the numbers, then click from lowest to highest.")
+	arcadeText(dst, 30, 15, fmt.Sprintf(localization.UI("ui.minigame.memory_lives_d_score_d_d_d830f06c"), m.Lives, m.Score, memoryWinRounds))
+	arcadeText(dst, 200, 450, localization.UI("ui.minigame.remember_the_numbers_then_click_from_low_121bfd38"))
 	if !m.Started {
 		return
 	}
@@ -174,7 +176,7 @@ func (m *Memory) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 		}
 	}
 	if m.phase == memoryPlaying {
-		arcadeText(dst, 620, 15, fmt.Sprintf("Time: %d", max(0, int(m.deadline.Sub(now).Seconds()))))
+		arcadeText(dst, 620, 15, fmt.Sprintf(localization.UI("ui.minigame.time_d_239a5b00"), max(0, int(m.deadline.Sub(now).Seconds()))))
 	}
 	m.outcome(dst)
 }

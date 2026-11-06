@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -57,7 +59,7 @@ func (c *Client) loadEmotes() {
 	if p := c.emotePath(); p != "" {
 		if b, err := os.ReadFile(p); err == nil {
 			if err := json.Unmarshal(b, &f); err != nil {
-				c.Chat.Notice("Could not load emotes: " + err.Error())
+				c.Chat.Notice(localization.UI("ui.app.could_not_load_emotes_7c263d70") + err.Error())
 				f = emoteFile{Slots: hud.DefaultSlots()}
 			}
 		}
@@ -93,7 +95,7 @@ func (c *Client) saveEmotes() {
 		err = os.WriteFile(p, b, 0o600)
 	}
 	if err != nil {
-		c.Chat.Notice("Could not save emotes: " + err.Error())
+		c.Chat.Notice(localization.UI("ui.app.could_not_save_emotes_422aef05") + err.Error())
 	}
 }
 
@@ -144,6 +146,7 @@ func (c *Client) GroundRightClick(x, y int) {
 		return
 	}
 	cx, cy := c.World.Camera()
+	x, y = c.World.ScenePoint(x, y)
 	tx, ty := x+cx, y+cy
 	if tx == p.X && ty == p.Y {
 		return

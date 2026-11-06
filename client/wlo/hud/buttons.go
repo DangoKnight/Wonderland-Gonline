@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"strconv"
 	"time"
@@ -12,13 +14,13 @@ import (
 const stateRows = 3
 
 // newBarButton places a three-row picture button with its hint.
-func newBarButton(env *seui.Env, owner seui.Control, picture string, left, top int, hint string) *seui.FixedButton {
+func newBarButton(env *seui.Env, owner seui.Control, picture string, left, top int, hint func() string) *seui.FixedButton {
 	b := seui.NewFixedButton(env, owner)
 	w, h := env.Pics.Size(env.Pics.Find(picture))
 	h /= stateRows
 	b.Init(picture, left, h, w, 0, 0, true, h, w, top)
-	if hint != "" {
-		b.SetHint([]byte(hint))
+	if hint != nil {
+		b.BindLanguage("hint", func() { b.SetHint([]byte(hint())) })
 	}
 	return b
 }
@@ -47,8 +49,8 @@ const (
 )
 
 var funcHints = [funcButtons + 1]string{
-	1: "World PK", 2: "PK", 3: "Jump In", 4: "Spectate", 5: "Join Team",
-	6: "Make Friends", 7: "Trade", 8: "Guild Invite", 9: "Events", 10: "Lucky Draw",
+	1: localization.UI("ui.hud.world_pk_bf29a09d"), 2: "PK", 3: localization.UI("ui.hud.jump_in_63bd1f8d"), 4: localization.UI("ui.hud.spectate_f56e0a1e"), 5: localization.UI("ui.hud.join_team_971d010d"),
+	6: localization.UI("ui.hud.make_friends_cc1ba3e5"), 7: localization.UI("ui.hud.trade_9709653f"), 8: localization.UI("ui.hud.guild_invite_2af3295e"), 9: localization.UI("ui.hud.events_8d14f6e7"), 10: localization.UI("ui.hud.lucky_draw_a6113b86"),
 }
 
 // NewFuncBtnForm is FUN_00295fb8.
@@ -65,7 +67,7 @@ func NewFuncBtnForm(env *seui.Env) *FuncBtnForm {
 		if i > funcHiddenButton {
 			slot-- // placed over the hidden button
 		}
-		b := newBarButton(env, f, picture, slot*funcStep+funcLeft, 0, funcHints[i])
+		b := newBarButton(env, f, picture, slot*funcStep+funcLeft, 0, func() string { return funcHints[i] })
 		b.Tag = i
 		if i > funcHiddenButton {
 			// The app enables Lucky Draw's animation when draws are available.
@@ -74,7 +76,7 @@ func NewFuncBtnForm(env *seui.Env) *FuncBtnForm {
 		f.Buttons[i] = b
 	}
 	f.Buttons[funcHiddenButton].SetVisible(false)
-	f.Mall = newBarButton(env, f, "Btn_711", funcMallLeft, 0, "Item Mall")
+	f.Mall = newBarButton(env, f, "Btn_711", funcMallLeft, 0, func() string { return localization.UI("ui.hud.item_mall_56cd7c32") })
 	return f
 }
 
@@ -109,8 +111,8 @@ var mainPlaces = [mainButtons + 1]struct {
 	left, top int
 	hint      string
 }{
-	1: {0x213, 0x223, "Inventory"}, 2: {0x23b, 0x223, "Skills"}, 3: {0x26c, 0x222, "Alchemy"},
-	4: {0x297, 0x225, "Team"}, 5: {0x2c2, 0x220, "Social"}, 6: {0x2ef, 0x225, "Options"},
+	1: {0x213, 0x223, localization.UI("ui.hud.inventory_758f487f")}, 2: {0x23b, 0x223, localization.UI("ui.hud.skills_66d0f523")}, 3: {0x26c, 0x222, localization.UI("ui.hud.alchemy_2805fc43")},
+	4: {0x297, 0x225, localization.UI("ui.hud.team_5985039f")}, 5: {0x2c2, 0x220, localization.UI("ui.hud.social_f1b7505a")}, 6: {0x2ef, 0x225, localization.UI("ui.hud.options_d0db8b5e")},
 }
 
 // NewMainBtnForm is FUN_002950b8.
@@ -121,11 +123,11 @@ func NewMainBtnForm(env *seui.Env) *MainBtnForm {
 	m.Draggable = false
 	for i := 1; i <= mainButtons; i++ {
 		p := mainPlaces[i]
-		b := newBarButton(env, m, "Btn_1"+strconv.Itoa(i), p.left, p.top, p.hint)
+		b := newBarButton(env, m, "Btn_1"+strconv.Itoa(i), p.left, p.top, func() string { return mainPlaces[i].hint })
 		b.Tag = i
 		m.Buttons[i] = b
 	}
-	m.Furniture = newBarButton(env, m, "Btn_BringUpFur_1", furnitureLeft, furnitureTop, "Pickup Furn")
+	m.Furniture = newBarButton(env, m, "Btn_BringUpFur_1", furnitureLeft, furnitureTop, func() string { return localization.UI("ui.hud.pickup_furn_9607789e") })
 	m.Furniture.SetVisible(false)
 	return m
 }
@@ -151,4 +153,20 @@ func (m *MainBtnForm) InventoryAttention(on bool) {
 		b.SetPos(p.left, p.top)
 		b.StopAnimation()
 	}
+}
+
+func init() {
+	localization.Register(func() {
+		funcHints = [funcButtons + 1]string{
+			1: localization.UI("ui.hud.world_pk_bf29a09d"), 2: "PK", 3: localization.UI("ui.hud.jump_in_63bd1f8d"), 4: localization.UI("ui.hud.spectate_f56e0a1e"), 5: localization.UI("ui.hud.join_team_971d010d"),
+			6: localization.UI("ui.hud.make_friends_cc1ba3e5"), 7: localization.UI("ui.hud.trade_9709653f"), 8: localization.UI("ui.hud.guild_invite_2af3295e"), 9: localization.UI("ui.hud.events_8d14f6e7"), 10: localization.UI("ui.hud.lucky_draw_a6113b86"),
+		}
+		mainPlaces = [mainButtons + 1]struct {
+			left, top int
+			hint      string
+		}{
+			1: {0x213, 0x223, localization.UI("ui.hud.inventory_758f487f")}, 2: {0x23b, 0x223, localization.UI("ui.hud.skills_66d0f523")}, 3: {0x26c, 0x222, localization.UI("ui.hud.alchemy_2805fc43")},
+			4: {0x297, 0x225, localization.UI("ui.hud.team_5985039f")}, 5: {0x2c2, 0x220, localization.UI("ui.hud.social_f1b7505a")}, 6: {0x2ef, 0x225, localization.UI("ui.hud.options_d0db8b5e")},
+		}
+	})
 }

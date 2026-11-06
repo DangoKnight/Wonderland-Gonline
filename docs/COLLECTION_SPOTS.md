@@ -274,9 +274,11 @@ removing the tool or disconnecting ends the local run.
 
 On Gonline, a successful collection's `AC66:2` respawn expiry schedules the next
 attempt **10 seconds after expiry**, respecting each source's configured duration.
-The versioned `AC1:243 GLCT` capability identifies this behavior independently of
-combat-chain configuration. Server names and generic handshake echoes cannot
-enable it, and the capability resets on reconnect. Rebuild both server and client
+Bit 0 of the initial connection-wide `GLON` hello identifies this behavior,
+independently of combat-chain configuration. No collection-specific handshake
+is required. Older Gonline servers' `AC1:243 GLCT` announcement remains supported
+for compatibility. Server names and generic echoes cannot enable it; connection
+state resets on reconnect. Rebuild both server and client
 to use this timing policy; older servers retain the Legacy fallback.
 
 Other servers use the Legacy client's fixed **190-second interval**, rather than

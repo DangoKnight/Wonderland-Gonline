@@ -90,6 +90,13 @@ const (
 	HandshakeCombatAccept      = 241
 	HandshakeCombatEnabled     = 242
 	HandshakeCollectionTiming  = 243 // Gonline resource-timer scheduling, independent of combat chains.
+	HandshakeBackdropOffer     = 244
+	HandshakeBackdropAccept    = 245
+	HandshakeBackdropEnabled   = 246
+	HandshakeBackdropLocation  = 247
+	HandshakeConnectionOffer   = 248
+	HandshakeConnectionAccept  = 249
+	HandshakeConnectionEnabled = 250
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both
@@ -203,6 +210,40 @@ const (
 	TeamRoster             = 6
 	TeamKick               = 9
 	TeamTransferLeadership = 10
+	TeamLeadershipNotice   = 15
+)
+
+// Native AC13 transfer serializer (002c4f3c) and receiver (00407304).
+const (
+	TeamMaximumMembers      = 4
+	TeamTransferOffer       = 1
+	TeamTransferResponse    = 2
+	TeamTransferTimeout     = 3
+	TeamTransferDeclined    = 2
+	TeamTransferAccepted    = 3
+	TeamLeadershipOffered   = 1
+	TeamLeadershipStatus    = 2
+	TeamLeadershipChanged   = 3
+	TeamLeadershipRefused   = 2
+	TeamLeadershipTimedOut  = 3
+	TeamLeadershipCancelled = 4
+	TeamLeadershipBusy      = 5
+)
+
+const (
+	TeamIDPacketBytes            = 6
+	TeamJoinReplyBytes           = 7
+	TeamFormationBytes           = 10
+	TeamRosterHeaderBytes        = 7
+	TeamLeaderOfferRequestBytes  = 7
+	TeamLeaderResponseBytes      = 4
+	TeamLeaderTimeoutBytes       = 3
+	TeamLeaderOfferNoticeBytes   = 7
+	TeamLeaderChangeNoticeBytes  = 11
+	TeamLeaderStatusNoticeBytes  = 4
+	TeamLeaderRefusalNoticeBytes = 8
+	TeamLeaveShortRequestBytes   = 2 // Compatibility with older migrated clients.
+	TeamLeaveNativeRequestBytes  = 6 // 002c4b69 appends the current leader U32.
 )
 
 // Social relation operations (inbound AC10) and status notifications (outbound).
@@ -300,6 +341,15 @@ const (
 	EventBattleBegin  = 12
 	// Unresolved wire meaning; retain the numeric code until verified.
 	EventWireCode33 = 33
+)
+
+// Native NPC speech modes: EVE dword2 selects whether dialogue turns the actor.
+const (
+	// Older hand-authored/synthetic events omit the operand; retain their
+	// existing turn-to-player behavior. Native NPC speech uses modes 1 or 2.
+	EventTalkCompatibilityDefault = 0
+	EventTalkTurnToPlayer         = 1
+	EventTalkPreserveFacing       = 2
 )
 
 // Native movie modes: a map load releases mode 2's rendering hold.

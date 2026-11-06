@@ -11,7 +11,7 @@ import (
 func TestNativeQuestBackdropRevisionPreservesEdits(t *testing.T) {
 	for _, scenario := range []string{"missing", "edited", "removed_family", "empty"} {
 		t.Run(scenario, func(t *testing.T) {
-			defs := assets.DefaultStoryDefinitions()
+			defs := historicalBackdropDefaults()
 			raw, err := os.ReadFile("testdata/xaolan_visibility_v45.json")
 			if err != nil {
 				t.Fatal(err)
@@ -23,7 +23,7 @@ func TestNativeQuestBackdropRevisionPreservesEdits(t *testing.T) {
 			defs.Rules = append(defs.Rules, historical...)
 			var rules []assets.StoryRule
 			for _, r := range defs.Rules {
-				if r.Kind == assets.StoryVisitVisibility {
+				if r.Kind == assets.StoryVisitVisibility || r.ID == "north_island_xaolan_battle_background" {
 					continue // This revision predates visit-scoped visibility.
 				}
 				if r.Kind == assets.StoryBattleBackground {
@@ -54,8 +54,8 @@ func TestNativeQuestBackdropRevisionPreservesEdits(t *testing.T) {
 			want := defs
 			if scenario == "missing" {
 				want.Rules = append([]assets.StoryRule(nil), defs.Rules...)
-				for _, r := range assets.DefaultStoryDefinitions().Rules {
-					if r.Kind == assets.StoryBattleBackground {
+				for _, r := range historicalBackdropDefaults().Rules {
+					if r.ID == "kelan_xaolan_house_battle_background" {
 						want.Rules = append(want.Rules, r)
 					}
 				}

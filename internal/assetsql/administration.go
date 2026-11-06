@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"ResourceRespawns", "CollectionSpots", "Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
+var DefinitionNames = []string{"ResourceRespawns", "CollectionSpots", "Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "BattleBackdrops", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -183,6 +183,8 @@ func validateDefinition(name string, c *assets.Catalog) error {
 		return validateFishingCatalog(c)
 	case "Terrains":
 		return assets.ValidateTerrains(c.Terrains)
+	case "BattleBackdrops":
+		return assets.ValidateBattleBackdrops(c.BattleBackdrops)
 	case "Tents":
 		return validateTents(c.Tents)
 	case "Economy":
@@ -220,6 +222,9 @@ func validateDefinition(name string, c *assets.Catalog) error {
 			}
 		}
 		for id, s := range c.Skills {
+			if s.BasePower != nil && (math.IsNaN(*s.BasePower) || math.IsInf(*s.BasePower, 0) || *s.BasePower < 0) {
+				return fmt.Errorf("skill %d: invalid base power", id)
+			}
 			if id == 0 || id != s.ID || math.IsNaN(s.PowerPerLevel) || math.IsInf(s.PowerPerLevel, 0) || math.IsNaN(s.StatMultiplier) || math.IsInf(s.StatMultiplier, 0) {
 				return fmt.Errorf("invalid skill %d", id)
 			}

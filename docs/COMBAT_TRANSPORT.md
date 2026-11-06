@@ -15,26 +15,28 @@ turn readiness. A mixed battle can use both transports simultaneously.
 
 ## Negotiation and fallback
 
-With `combat_round_chain` enabled, after the normal discovery description and channel list, Gonline sends
-AC1:240. Native WLRI's AC1 dispatcher (`FUN_002dde1c`, case 1) has no branch
-for subcommands 240–242 and ignores the offer. The client never probes a legacy
-server or identifies capabilities by the server's display name.
-
-All three capability messages use this exact payload, including AC/subcommand:
+Immediately after TCP connection establishment, the normal discovery response
+contains the native description and channel list followed by one connection-wide
+application hello. All current Gonline-specific behavior uses this same feature
+selection for the lifetime of the connection. No feature negotiates again at
+interaction or battle entry. See [the connection protocol](CONNECTION_PROTOCOL.md).
 
 | Field | Encoding |
 | --- | --- |
-| Command / subcommand | U8 `1`, U8 `240` offer / `241` acceptance / `242` confirmation |
-| Signature | Four ASCII bytes `GLBR` |
+| Command / subcommand | U8 `1`, U8 `248` offer / `249` acceptance / `250` confirmation |
+| Signature | Four ASCII bytes `GLON` |
 | Version | U16 `1` |
-| Capabilities | U32 bit mask; bit 0 enables round chains and batched choices |
+| Features | U32: bit 0 collection timing, bit 1 round chains, bit 2 local backdrops, bit 3 complete map snapshot readiness |
 
-All integers are little endian; ordinary Wonderland TCP framing still applies.
-The client accepts a supported offer and waits for confirmation before enabling
-the extension. The server requires its own prior offer and an explicit valid
-acceptance, and rejects renegotiation during battle. A short generic AC1 echo
-cannot negotiate anything. Capability and playback state belong to one
-connection and are cleared on reconnect/disconnect.
+The server advertises round chains only when its captured startup
+`combat_round_chain` setting is enabled. The client accepts the supported subset
+and waits for exact confirmation. A client without backdrop metadata excludes
+that feature. Repeated discovery does not issue another offer; established modes
+cannot be changed by late feature handshakes. Legacy clients ignore the extension,
+and Legacy servers continue using native packets. Connection state resets on
+reconnect/disconnect. Older Gonline servers' GLBR/GLCT/GLBD messages remain
+understood by the client for compatibility, but current servers do not emit these
+separate feature offers.
 
 ## Disconnect settlement
 
@@ -200,3 +202,10 @@ Implementation: `internal/protocol/combat_round.go`,
 `internal/server/combat_round.go`, and `client/wlo/app/combat_round.go`.
 Focused wire, compatibility, persistence, race and rendering checks are recorded
 in [TESTING.md](TESTING.md#negotiated-combat-round-transport---2026-11-02).
+
+## Client-side backdrop resolution
+
+Backdrop resolution is bit 2 of the connection-wide GLON hello and remains
+available with round-chain mode disabled. Negotiated clients receive the battle entry
+map/coordinates and choose scenery locally; Legacy clients retain the native
+server-selected backdrop. See [backdrop protocol](BATTLE_BACKDROPS.md#gonline-client-resolution-protocol).

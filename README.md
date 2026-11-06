@@ -31,6 +31,9 @@ Follow [the setup guide](docs/GETTING_STARTED.md) in this order:
 The WLRI installation supplies generated client tables, metadata and media;
 server-only definitions remain tracked. The native WLRI executable
 supplies extraction keys and is separate from the Go client.
+Use the updated original Chinese installation, its manually translated English
+edition, or both. No IGG or Private Server installation is required. See the
+[source-language import commands](docs/ASSET_IMPORT.md#select-ui-artwork-languages).
 
 | Guide | Contents |
 | --- | --- |

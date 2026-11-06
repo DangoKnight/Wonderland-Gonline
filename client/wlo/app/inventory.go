@@ -183,16 +183,12 @@ func (c *Client) inventoryPacket(p []byte) {
 		return
 	}
 	before := c.InventoryState.Equipment
-	bagBefore := c.InventoryState.Bag
 	if handled, valid := c.InventoryState.Apply(p); handled {
 		if !valid {
 			if c.Unhandled != nil {
 				c.Unhandled(p)
 			}
 			return
-		}
-		if p[1] == protocol.InventoryItems || p[1] == protocol.InventoryAcquire {
-			c.recordBattleResultItems(bagBefore)
 		}
 		if p[1] == protocol.InventoryAcquire {
 			if c.vacuum.actor != 0 && c.vacuum.waiting {

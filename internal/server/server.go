@@ -34,10 +34,11 @@ type actorPursuit struct {
 }
 
 type Server struct {
-	instanceRooms map[uint16]*instanceRoom
-	configPath    string // Set before HTTP starts; protected by adminEditMu thereafter.
-	bannedIPs     atomic.Value
-	ipBanMu       sync.Mutex
+	instanceRooms  map[uint16]*instanceRoom
+	partyTransfers map[*party]struct{} // Only pending leadership offers; guarded by worldMu.
+	configPath     string              // Set before HTTP starts; protected by adminEditMu thereafter.
+	bannedIPs      atomic.Value
+	ipBanMu        sync.Mutex
 	// accountMu orders credential verification/publication against admin changes.
 	accountMu     sync.RWMutex
 	privilegeMu   sync.Mutex   // Orders persisted and live GM permissions.

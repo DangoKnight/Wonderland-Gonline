@@ -5,12 +5,14 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"image"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/hud"
@@ -46,9 +48,9 @@ const (
 )
 
 var (
-	noticeTimeout       = []byte("Can't reach login server") // 0x4a2e48
-	noticeWrongPassword = []byte("Password wrong")           // 0x2f02c8
-	noticeConnection    = []byte("Connection lost")          // 0x4988d4
+	noticeTimeout       = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e")) // 0x4a2e48
+	noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))           // 0x2f02c8
+	noticeConnection    = []byte(localization.UI("ui.app.connection_lost_6c44751e"))          // 0x4988d4
 )
 
 // Client is the running login phase.
@@ -78,69 +80,74 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World              *world.World
-	Settings           *settings.Form
-	SettingsState      *settings.State
-	settingsPromptForm *seui.Form
-	settingsPath       string
-	Inventory          *inventory.Form
-	Compound           *inventory.CompoundForm
-	Team               *team.Form
-	TeamState          *team.State
-	teamAppearances    map[uint32]*world.Peer
-	joinTeamTarget     bool
-	friendTarget       bool // Make Friends' target mode 5 (friends.go)
-	tradeTarget        bool // Trade Items' target mode 9 (trade.go)
-	tradeAllowed       bool // the player's +0x5791, set by 25/44 2
-	Business           *hud.Business
-	LuckyDraw          *lottery.Form
-	Trade              *inventory.TradeForm
-	Services           *inventory.ServiceForm
-	clinicPrompt       *clinicPrompt
-	clinicUntil        time.Time
-	clinicSleepGlyph   *surface.Surface
-	friendAsk          *friendAsk // the open friend question
-	remote             remoteRuntime
-	battle             battleView
-	battleResults      battleResultsRuntime
-	combat             combatRuntime // Per-connection opt-in; never shared between sessions.
-	InventoryState     *inventory.State
-	Stats              *world.Stats     // the player's values (5/3, 8/1, 26/4)
-	MainStatus         *hud.MainStatus  // the status panel over the world
-	FuncButtons        *hud.FuncBtnForm // the toolbar at the top right
-	MainButtons        *hud.MainBtnForm // the menu at the bottom right
-	inventoryPoints    inventoryPointAlert
-	HotKeys            *hud.HotKeyForm // the F1–F8 bar
-	ChatBar            *hud.InputBar   // the chat bar
-	groundHeld         bool            // the left button went down on the ground
-	groundSince        time.Time       // when it went down
-	uiHovered          bool            // a control was under the pointer last frame
-	nextWalk           time.Time       // next re-plan while a button or arrow is held
-	Chat               *hud.ChatLog    // the chat log over the map
-	npcTemplates       map[uint32]world.NPCTemplate
-	Talk               *hud.Talk // the event talk window
-	MiniMap            *hud.MiniMap
-	Social             *hud.Social
-	MailSend           *hud.MailSend
-	Mailbox            *hud.Mailbox
-	MailRead           *hud.MailRead
-	MailCompose        *hud.MailCompose
-	talkConfirm        func()
-	gmFace             *role.NPC
-	friendFaces        map[uint32]*role.Human
-	Music              *Music // background music, nil without audio
-	movie              *moviePlay
-	sport              *sportPlay // the running minigame
-	sceneMusic         map[uint16]string
-	eventMusic         string // event kind 15's track (+0x732c)
-	constellation      *constellationRun
-	constellations     [constellationLimit]bool
-	talks              map[uint32]string
-	event              eventState
-	eventTimers        map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
+	World                *world.World
+	Settings             *settings.Form
+	SettingsState        *settings.State
+	settingsPromptForm   *seui.Form
+	settingsPath         string
+	Inventory            *inventory.Form
+	Compound             *inventory.CompoundForm
+	Team                 *team.Form
+	TeamState            *team.State
+	teamAppearances      map[uint32]*world.Peer
+	teamTransferLeader   uint32
+	teamTransferDeadline time.Time
+	teamTransferClose    func()
+	joinTeamTarget       bool
+	friendTarget         bool // Make Friends' target mode 5 (friends.go)
+	tradeTarget          bool // Trade Items' target mode 9 (trade.go)
+	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
+	Business             *hud.Business
+	LuckyDraw            *lottery.Form
+	Trade                *inventory.TradeForm
+	Services             *inventory.ServiceForm
+	clinicPrompt         *clinicPrompt
+	clinicUntil          time.Time
+	clinicSleepGlyph     *surface.Surface
+	friendAsk            *friendAsk // the open friend question
+	remote               remoteRuntime
+	battle               battleView
+	battleResults        battleResultsRuntime
+	combat               combatRuntime // Per-connection opt-in; never shared between sessions.
+	InventoryState       *inventory.State
+	Stats                *world.Stats     // the player's values (5/3, 8/1, 26/4)
+	MainStatus           *hud.MainStatus  // the status panel over the world
+	FuncButtons          *hud.FuncBtnForm // the toolbar at the top right
+	MainButtons          *hud.MainBtnForm // the menu at the bottom right
+	inventoryPoints      inventoryPointAlert
+	HotKeys              *hud.HotKeyForm // the F1–F8 bar
+	ChatBar              *hud.InputBar   // the chat bar
+	groundHeld           bool            // the left button went down on the ground
+	groundSince          time.Time       // when it went down
+	uiHovered            bool            // a control was under the pointer last frame
+	nextWalk             time.Time       // next re-plan while a button or arrow is held
+	Chat                 *hud.ChatLog    // the chat log over the map
+	npcTemplates         map[uint32]world.NPCTemplate
+	Talk                 *hud.Talk // the event talk window
+	MiniMap              *hud.MiniMap
+	Social               *hud.Social
+	MailSend             *hud.MailSend
+	Mailbox              *hud.Mailbox
+	MailRead             *hud.MailRead
+	MailCompose          *hud.MailCompose
+	talkConfirm          func()
+	gmFace               *role.NPC
+	friendFaces          map[uint32]*role.Human
+	Music                *Music // background music, nil without audio
+	movie                *moviePlay
+	sport                *sportPlay // the running minigame
+	sceneMusic           map[uint16]string
+	eventMusic           string // event kind 15's track (+0x732c)
+	constellation        *constellationRun
+	constellations       [constellationLimit]bool
+	talks                map[uint32]string
+	event                eventState
+	eventTimers          map[uint16]time.Time // Native per-character cooldowns; server remains authoritative.
 
 	vacuum                  vacuumRuntime
 	gonlineCollectionTiming bool // Per-connection capability, independent of combat mode.
+	backdrops               backdropRuntime
+	connection              connectionRuntime
 
 	petAnnouncements [][]byte
 	petAnnouncement  bool
@@ -179,6 +186,8 @@ type Client struct {
 	// first entry.
 	sceneNames map[uint16]string
 	mapScenes  map[uint16]uint16
+	areaTitle  areaTitle
+	worldZoom  worldZoomState
 	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
 	// movies, and each scene's weather byte.
 	weather      *weather.Layer
@@ -199,13 +208,15 @@ type Client struct {
 	Lost *LostForm
 	fade fadeState
 	// sceneFade is the battle entry/exit transition (transition.go).
-	sceneFade sceneFade
+	sceneFade  sceneFade
+	mapLoading mapLoading
 	// Unhandled receives packets the login phase does not handle.
 	Unhandled func(p []byte)
 }
 
 // Options configure New.
 type Options struct {
+	Language string // en or zh-TW; empty uses the saved local preference.
 	Renderer string // auto (default), gpu rasterization, or cpu compatibility rendering
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
@@ -232,6 +243,28 @@ func New(o Options) (*Client, error) {
 	}
 	c := &Client{Root: o.Root, Assets: login.NewAssets(o.Root), Now: time.Now, resources: r, options: o}
 	c.Assets.UserRoot = o.UserRoot
+	language := o.Language
+	if language == "" {
+		if prefs, err := loadDisplaySettings(applicationSettingsPath(o, c.Assets)); err == nil {
+			language = prefs.Language
+		}
+		if r.ready {
+			language = r.language
+		}
+	}
+	language, err := localization.Normalize(language)
+	if err != nil {
+		return nil, err
+	}
+	if r.ready && r.language != language {
+		return nil, fmt.Errorf("%s", localization.UI("ui.app.shared_resources_cannot_mix_languages_92b353fe"))
+	}
+	catalog, err := localization.Load(o.Root, language)
+	if err != nil {
+		return nil, err
+	}
+	localization.Install(catalog)
+	r.language = language
 	a := c.Assets
 	if err := r.prepare(a, o.SpritesRoot); err != nil {
 		return nil, err
@@ -266,6 +299,8 @@ func New(o Options) (*Client, error) {
 		c.combat = combatRuntime{}
 		c.vacuum = vacuumRuntime{}
 		c.gonlineCollectionTiming = false
+		c.backdrops = backdropRuntime{}
+		c.connection = connectionRuntime{}
 		c.clearProfileAccount()
 		c.Net.Send(login.Discovery())
 	}
@@ -381,6 +416,11 @@ func (c *Client) Frame() { c.frame(true) }
 func (c *Client) frame(draw bool) {
 	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
+	// Story cinematics take ownership immediately; do not play their opening
+	// seconds behind a decorative loading screen.
+	if c.mapLoading.active && c.movie != nil {
+		c.stopMapLoading()
+	}
 	if draw {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
 	}
@@ -390,9 +430,12 @@ func (c *Client) frame(draw bool) {
 	c.luckyDrawTick()
 	c.inventoryPointTick()
 	c.clinicTick()
+	c.teamTransferTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
+		c.syncWorldZoom()
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
 		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
 		c.waterTravelTick()
@@ -401,7 +444,8 @@ func (c *Client) frame(draw bool) {
 		if c.floorHovered != 0 || c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
 		} else {
-			c.World.Hover(c.Input.X, c.Input.Y)
+			x, y := c.World.ScenePoint(c.Input.X, c.Input.Y)
+			c.World.Hover(x, y)
 		}
 		c.reachNPC()
 		c.reachFloorItem()
@@ -410,6 +454,7 @@ func (c *Client) frame(draw bool) {
 		c.eventTick()
 		c.vacuumTick()
 		c.areaTick()
+		c.areaTitleTick(c.Now())
 		c.ambientTick()
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
@@ -423,12 +468,11 @@ func (c *Client) frame(draw bool) {
 			if !c.clinicUntil.IsZero() {
 				c.World.HidePlayer = true
 			}
-			c.World.DrawWithSprites(append(c.floorItemSprites(), c.placedVehicleSprites()...))
+			c.drawWorldScene()
 			c.World.HidePlayer = hide
-			c.drawWorldItemGains(c.Now())
 			c.drawClinicRest()
-			c.drawVehicleEffects()
 			c.drawFloorItemName()
+			c.drawAreaTitle(c.Now())
 			dialogueOverlay = true
 		}
 		c.sportFrame()
@@ -492,6 +536,7 @@ func (c *Client) frame(draw bool) {
 	c.uiHovered = c.Input.Hovered != nil
 	if draw {
 		c.drawConstellation(c.Now())
+		c.drawMapLoading(now)
 	}
 	c.updateCursor(now)
 }
@@ -714,7 +759,7 @@ func (c *Client) dispatchNative(p []byte) {
 				c.rememberVehiclePosition(id)
 				c.waterTravel = waterTravelState{}
 				c.World.Relocate(image.Pt(x, y))
-				c.World.MarkWalk()
+				c.groundHeld, c.groundSince = false, time.Time{}
 			} else if id != c.World.Player.ID {
 				c.rememberVehiclePosition(id)
 				c.World.PlacePeer(id, x, y)
@@ -775,6 +820,7 @@ func (c *Client) dispatchNative(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.mapReady = false
 	c.placedVehicles = nil
 	c.floorItems = nil
 	c.floorPendingPickup = 0
@@ -810,6 +856,7 @@ func (c *Client) enterWorld(p []byte) {
 	c.UI.HideAll()
 	c.World = w
 	c.resetInventory(pl)
+	c.queueAreaTitle()
 	c.playMapMusic()
 	c.MainStatus.Show()
 	c.FuncButtons.Show()
@@ -866,3 +913,11 @@ func (c *Client) connectFailed() {
 }
 
 const statTargetOffset, statTargetEnd = 7, 11 // AC8:1 target after stat, kind and value; zero denotes self.
+
+func init() {
+	localization.Register(func() {
+		noticeConnection = []byte(localization.UI("ui.app.connection_lost_6c44751e"))
+		noticeTimeout = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e"))
+		noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))
+	})
+}

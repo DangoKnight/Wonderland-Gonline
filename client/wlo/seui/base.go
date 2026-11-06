@@ -98,6 +98,7 @@ type GrBasic struct {
 	PixelHit bool // +0xa8 hit tests use the image's pixels
 	HasHint  bool // +0xa9
 	HintText []byte
+	language map[string]func()
 	Tag      int // +0xb0
 
 	OnClick, OnDown, OnUp, OnRight func()        // +0x50, +0x58, +0x60, +0x68
@@ -173,7 +174,7 @@ func (g *GrBasic) RemoveChild(c Control) {
 }
 
 // SetHint is FUN_00466e90.
-func (g *GrBasic) SetHint(s []byte) { g.HasHint, g.HintText = len(s) > 0, s }
+func (g *GrBasic) SetHint(s []byte) { g.ClearLanguage("hint"); g.HasHint, g.HintText = len(s) > 0, s }
 
 // Root is FUN_00466914: the topmost ancestor.
 func (g *GrBasic) Root() Control {

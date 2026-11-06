@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -317,12 +319,12 @@ func (g *Mario) arm(mode byte) {
 			id = marioPlayToken
 		}
 		if g.tokens(id) < r.tokens {
-			g.notice("Not enough token", marioNoticeFor)
+			g.notice(localization.UI("ui.minigame.not_enough_token_6ba261a7"), marioNoticeFor)
 			return
 		}
 	default:
 		if g.Points < r.points {
-			g.notice("Not enough Points!", marioNoticeFor)
+			g.notice(localization.UI("ui.minigame.not_enough_points_a0dd2336"), marioNoticeFor)
 			return
 		}
 	}
@@ -336,19 +338,19 @@ func (g *Mario) arm(mode byte) {
 			g.Music("sound\\BGM0019.wav")
 		}
 	} else {
-		g.notice("Inv. full\nMake more space", marioNoticeFor)
+		g.notice(localization.UI("ui.minigame.inv_full_make_more_space_b0b915d3"), marioNoticeFor)
 	}
 	g.confirmed = true
 }
 
 // pointsPrompt is the price question of FUN_00145aa4 and FUN_00146d18.
 func (g *Mario) pointsPrompt() string {
-	return fmt.Sprintf("IM Points: %d\rPrice per game %d Points!\nContinue?", g.Points, marioRules[g.Kind].points)
+	return fmt.Sprintf(localization.UI("ui.minigame.im_points_d_price_per_game_d_points_cont_a1d2afb2"), g.Points, marioRules[g.Kind].points)
 }
 
 // tokensPrompt is FUN_001471d8's token question.
 func (g *Mario) tokensPrompt(id uint16) string {
-	return fmt.Sprintf("Tokens left:%d pcs\rTokens per game %d pcs\nContinue?", g.tokens(id), marioRules[g.Kind].tokens)
+	return fmt.Sprintf(localization.UI("ui.minigame.tokens_left_d_pcs_tokens_per_game_d_pcs__95ec3f78"), g.tokens(id), marioRules[g.Kind].tokens)
 }
 
 func (g *Mario) confirm(prompt string, ok func()) {
@@ -383,7 +385,7 @@ func (g *Mario) Press() {
 	}
 	if g.Kind == MarioKind {
 		if !g.hasRoom() {
-			g.notice("Inventory Full\nMake room for prize", marioNoticeFor)
+			g.notice(localization.UI("ui.minigame.inventory_full_make_room_for_prize_ed8c57ba"), marioNoticeFor)
 		} else if !g.confirmed {
 			g.confirm(g.pointsPrompt(), func() { g.arm(MarioPayPoints) })
 		} else {
@@ -405,13 +407,13 @@ func (g *Mario) payment() {
 		g.confirm(g.pointsPrompt(), func() { g.arm(MarioPayPoints) })
 		return
 	}
-	g.Choose("Payment Method?", []string{"Points", "Token", "Fun Token"}, g.paymentChoice)
+	g.Choose(localization.UI("ui.minigame.payment_method_6a60aed8"), []string{localization.UI("ui.minigame.points_77deabe2"), localization.UI("ui.minigame.token_d2089be6"), localization.UI("ui.minigame.fun_token_a32664d5")}, g.paymentChoice)
 }
 
 // paymentChoice is FUN_001471d8 / 00147510.
 func (g *Mario) paymentChoice(row int) {
 	if !g.hasRoom() {
-		g.notice("Inv. full\nMake more space", marioNoticeFor)
+		g.notice(localization.UI("ui.minigame.inv_full_make_more_space_b0b915d3"), marioNoticeFor)
 		return
 	}
 	switch row {
@@ -431,7 +433,7 @@ func (g *Mario) again() {
 		g.rearm()
 		return
 	}
-	prompt := fmt.Sprintf("IM Points: %d\rPlay again?Points used%d Pts", g.Points, marioRules[g.Kind].points)
+	prompt := fmt.Sprintf(localization.UI("ui.minigame.im_points_d_play_again_points_used_d_pts_be92145a"), g.Points, marioRules[g.Kind].points)
 	switch g.mode {
 	case MarioPayFunTokens:
 		prompt = g.tokensPrompt(marioFunToken)
@@ -460,7 +462,7 @@ func (g *Mario) Exit() {
 		return
 	}
 	if !g.pending {
-		g.confirm("Leave the game?\nNo points will be used", func() { g.End(false) })
+		g.confirm(localization.UI("ui.minigame.leave_the_game_no_points_will_be_used_47436199"), func() { g.End(false) })
 	}
 	if g.finished {
 		g.End(false)
@@ -491,10 +493,10 @@ func (g *Mario) Receive(p []byte, _ time.Time) bool {
 		return true
 	case marioDenied:
 		g.armed = false
-		g.notice("Not enough Points!", marioNoticeFor)
+		g.notice(localization.UI("ui.minigame.not_enough_points_a0dd2336"), marioNoticeFor)
 		return true
 	case marioBagFull:
-		g.notice("Inventory Full\nMake room for prize", marioNoticeFor)
+		g.notice(localization.UI("ui.minigame.inventory_full_make_room_for_prize_ed8c57ba"), marioNoticeFor)
 		return true
 	case marioJackpot, marioPrize:
 	default:
@@ -520,7 +522,7 @@ func (g *Mario) Receive(p []byte, _ time.Time) bool {
 	if g.Name != nil {
 		name = string(g.Name(marioRules[g.Kind].prizes[p[2]]))
 	}
-	g.message = fmt.Sprintf("Got reward: %d pcs [ %s ]", quantity, name)
+	g.message = fmt.Sprintf(localization.UI("ui.minigame.got_reward_d_pcs_s_72c854cf"), quantity, name)
 	g.spinning, g.announce = true, true
 	if p[1] == marioJackpot {
 		if p[2] != 0 {

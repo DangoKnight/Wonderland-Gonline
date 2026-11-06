@@ -17,6 +17,19 @@ func TestStandFacing(t *testing.T) {
 	}
 }
 
+func TestNativePirateWeaponSprites(t *testing.T) {
+	needAssets(t)
+	templates, err := NPCTemplates(assets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[uint32]uint16{14155: 4025, 12049: 4032, 12050: 4032} {
+		if got := templates[id].WeaponSprite; got != want {
+			t.Fatalf("NPC %d weapon sprite = %d, want %d", id, got, want)
+		}
+	}
+}
+
 func TestNPCFullMonsterNames(t *testing.T) {
 	needAssets(t)
 	templates, err := NPCTemplates(assets)
@@ -26,19 +39,28 @@ func TestNPCFullMonsterNames(t *testing.T) {
 	if templates[17001].Name != "Pineapple Monster" {
 		t.Fatal(templates[17001].Name)
 	}
-	for id, want := range map[uint32]string{17004: "Fragrance Monster", 17466: "Poisonous Snake", 17834: "Ancient Chameleon", 17034: "Sky Dragonfly", 17826: "Ruka the Bird God", 40121: "Pineapple Monster"} {
+	for id, want := range map[uint32]string{17004: "Fragrance Monster", 17466: "Poisonous Snake", 17834: "Ancient Chameleon", 17034: "Sky Dragonfly", 17826: "Ruka the Bird God", 40121: "Pineapple Guard"} {
 		if got := templates[id].Name; got != want {
 			t.Fatal("reviewed name not loaded", id, got, want)
 		}
 	}
-	for id, want := range map[uint32]string{11004: "Persian Cat", 12073: "Cool Ronin", 17003: "Grape Monster", 17067: "Blue Beetle", 17414: "Hot-blooded Starfish", 14469: "Inspecting Soldier", 17738: "Half Beast Man", 17739: "Half Beast Man", 30310: "Yellow Rock Monster", 30334: "Yellow Rock Monster", 40089: "Tyrannosaur Lord"} {
+	for id, want := range map[uint32]string{11004: "Persian Cat", 12073: "Cool Ronin", 17003: "Grape Monster", 17067: "Blue Beetle", 17414: "Hot-blooded Starfish", 14469: "Inspecting Soldier", 17738: "Half Beast Ghost", 17739: "Half Beast Ghost", 30310: "Yellow Rock Owl", 30334: "Yellow Rock Owl", 40089: "Tyrannosaur Lord"} {
 		if got := templates[id].Name; got != want {
 			t.Fatal(id, got, want)
 		}
 	}
-	for id, want := range map[uint32]string{11008: "Little Persian Cat", 12072: "Old Man", 12113: "Tutankhamun", 14493: "Terracotta Soldier", 14223: "Weapon Imp", 15357: "Gold Sculp"} {
+	for id, want := range map[uint32]string{11008: "Little Persian", 12072: "Dragon Old Man", 12113: "TutanKhamen", 14493: "Clay Soldier"} {
 		if templates[id].Name != want {
-			t.Fatal("owner certainty or reviewed name lost", id, templates[id].Name, want)
+			t.Fatal("IGG did not override reviewed name", id, templates[id].Name, want)
+		}
+	}
+	if templates[12351].Name != "Sick Villager" {
+		t.Fatal("authored fallback lost for an NPC without an IGG override")
+	}
+	// These reviews were uncertain; the IGG record now supplies their names.
+	for id, want := range map[uint32]string{14223: "Weapon Improver", 15357: "Gold Sculpture"} {
+		if templates[id].Name != want {
+			t.Fatal("verified IGG name missing", id, templates[id].Name, want)
 		}
 	}
 }

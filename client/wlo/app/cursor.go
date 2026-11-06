@@ -23,6 +23,10 @@ func (c *Client) updateCursor(now time.Time) {
 	if c.Cursors == nil {
 		return
 	}
+	if c.mapLoading.active {
+		c.Cursors.Set(cursor.ShapeMushroom, now)
+		return
+	}
 	state := byte(0)
 	if h, ok := c.Input.Hovered.(interface{ CursorState() byte }); ok {
 		state = h.CursorState()

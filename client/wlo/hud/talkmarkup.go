@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import "bytes"
 
 // Talk text markup. FUN_00478140 scans a line for tags (FUN_00477e2c): an
@@ -26,7 +28,7 @@ const (
 	talkInkWhite = 0xffff
 	soundNameLen = 7
 	// noCastleOwner is #g's text while no guild owns the castle.
-	noCastleOwner = "No guild own Castle"
+	noCastleOwner = "ui.hud.no_guild_own_castle_8f122d70"
 )
 
 // talkText is a line with its markup applied.
@@ -72,7 +74,7 @@ func parseTalk(src, name []byte) talkText {
 					i += 2
 					continue
 				case 'g':
-					t.add([]byte(noCastleOwner), open)
+					t.add([]byte(localization.UI(noCastleOwner)), open)
 					i += 2
 					continue
 				}

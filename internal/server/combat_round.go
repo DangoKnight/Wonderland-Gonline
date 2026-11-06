@@ -16,7 +16,7 @@ func (s *Server) acceptCombatProtocol(c *Session, p []byte) error {
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
-	if !s.combatRoundChain || !c.combatOffered || c.battle != nil {
+	if c.connectionOffered != 0 || c.connectionNegotiated || !s.combatRoundChain || !c.combatOffered || c.battle != nil {
 		return protocol.ErrMalformed
 	}
 	if err := c.send(protocol.CombatCapabilities(protocol.HandshakeCombatEnabled, flags)); err != nil {

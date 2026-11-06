@@ -70,3 +70,59 @@ func TestStoryRevisionRejectsInvalidDocuments(t *testing.T) {
 		}
 	}
 }
+
+func TestXaolanRecruitmentContinuationRevision(t *testing.T) {
+	defs := assets.DefaultStoryDefinitions()
+	var expected assets.StoryRule
+	var old []assets.StoryRule
+	for _, r := range defs.Rules {
+		if r.ID == "xaolan_recruitment_question_continuation" {
+			expected = r
+		} else {
+			old = append(old, r)
+		}
+	}
+	if expected.ID == "" {
+		t.Fatal("default continuation missing")
+	}
+	migrated, changed, err := applyStoryRevision(old, nativeQuestRevisionV51)
+	if err != nil || !changed {
+		t.Fatal("migration did not append continuation", err)
+	}
+	if !sameStoryRule(migrated[len(migrated)-1], expected) {
+		t.Fatal("migration differs from fresh defaults")
+	}
+	edited := expected
+	edited.TargetBranch = 5
+	old = append(old, edited)
+	migrated, changed, err = applyStoryRevision(old, nativeQuestRevisionV51)
+	if err != nil || changed || !reflect.DeepEqual(old, migrated) {
+		t.Fatal("administrator edit overwritten", err)
+	}
+	if _, changed, err = applyStoryRevision(nil, nativeQuestRevisionV51); err != nil || changed {
+		t.Fatal("empty collection reseeded", err)
+	}
+}
+
+func TestNoaConversationContinuationRevision(t *testing.T) {
+	defs := assets.DefaultStoryDefinitions()
+	var before, expected []assets.StoryRule
+	for _, r := range defs.Rules {
+		if r.ID == "noa_quiz_result_continuation" || r.ID == "noa_quiz_retry_continuation" || r.ID == "noa_recruitment_continuation" {
+			expected = append(expected, r)
+		} else {
+			before = append(before, r)
+		}
+	}
+	got, changed, err := applyStoryRevision(before, nativeQuestRevisionV52)
+	if err != nil || !changed || len(expected) != 3 || !reflect.DeepEqual(got[len(before):], expected) {
+		t.Fatal("Noa migration differs from new defaults", err)
+	}
+	got[len(before)].TargetBranch = 3 // Keep administrator customization.
+	for _, rules := range [][]assets.StoryRule{got, nil} {
+		again, changed, err := applyStoryRevision(rules, nativeQuestRevisionV52)
+		if err != nil || changed || !reflect.DeepEqual(again, rules) {
+			t.Fatal("revision overwrote existing policies", err)
+		}
+	}
+}

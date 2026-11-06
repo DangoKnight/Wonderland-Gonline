@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"sort"
@@ -109,7 +111,7 @@ func (c *Client) potentialSkillsAtRisk() []string {
 		if kept[uint16(id)] {
 			continue
 		}
-		name := "Skill " + strconv.Itoa(id)
+		name := localization.Text("ui.app.skill_604d4259") + strconv.Itoa(id)
 		if c.Skills != nil && c.Skills.Catalog != nil {
 			if def, ok := c.Skills.Catalog.Definitions[uint16(id)]; ok && def.Name != "" {
 				name = def.Name

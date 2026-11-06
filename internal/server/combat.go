@@ -34,15 +34,16 @@ var (
 // (GetTeamMembers). Its quest event stays suspended until the outcome callback
 // resumes or releases it. Reference: PvEBattleManager.
 type battleRun struct {
-	rewardError error
-	rewarded    map[*battle.Fighter]bool
-	b           *battle.Battle
-	members     []*battleMember // members[0] started the battle and owns its event and loot.
-	event       *eventSession   // The suspended event, if a quest action started the battle.
-	source      uint16          // The battle action's d1: the callback branch's source.
-	flee        bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
-	timer       *time.Timer
-	turn        int // Increments per round so a stale timer cannot fire into a new round.
+	backdropLocation protocol.BattleBackdropLocation
+	rewardError      error
+	rewarded         map[*battle.Fighter]bool
+	b                *battle.Battle
+	members          []*battleMember // members[0] started the battle and owns its event and loot.
+	event            *eventSession   // The suspended event, if a quest action started the battle.
+	source           uint16          // The battle action's d1: the callback branch's source.
+	flee             bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
+	timer            *time.Timer
+	turn             int // Increments per round so a stale timer cannot fire into a new round.
 	// encounter is the visible overworld actor reserved for this battle.
 	encounter    uint16
 	encounterMap uint16
@@ -194,6 +195,7 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	s.cancelPartyLeadership(c.party, protocol.TeamLeadershipBusy)
 	for i := range enemies {
 		e := &enemies[i]
 		if e.Template <= math.MaxUint16 {
@@ -209,15 +211,21 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 	}
 	var fighters []*battle.Fighter
 	for i, m := range s.battleTeam(c) {
+		// Native cells follow party order, even when an enemy contacts a
+		// follower first. Keep run.members[0] as the event/loot initiator.
+		slot := i
+		if c.party != nil && c.party.index(m) >= 0 {
+			slot = c.party.index(m)
+		}
 		s.cancelTrade(m)
-		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, i)}
+		member := &battleMember{c: m, self: battle.PlayerFighter(m.character, s.Assets.Items, slot)}
 		fighters = append(fighters, member.self)
 		if pet := m.character.BattlePet(); pet != nil {
 			copy := *pet
 			copy.Skills = append([]game.PetSkill(nil), pet.Skills...)
 			copy.Normalize(s.Assets.Items, false, s.petTemplate(copy.ID))
 			copy.Name = s.companionName(copy.ID, copy.Name)
-			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, i, s.petTemplate(copy.ID))
+			member.pet = battle.PetFighter(copy, m.character.ID, s.Assets.Items, slot, s.petTemplate(copy.ID))
 			fighters = append(fighters, member.pet)
 		}
 		run.members = append(run.members, member)
@@ -228,7 +236,8 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 	}
 	run.b = battle.New(fighters, enemies)
-	background := s.battleBackground(c, run)
+	run.backdropLocation = battleBackdropLocation(c, run)
+	background := s.legacyBattleBackground(c, run)
 	for _, m := range run.members {
 		for _, p := range m.c.character.Pets {
 			run.b.Roster[m.c.character.ID] = append(run.b.Roster[m.c.character.ID], p.ID)
@@ -260,7 +269,13 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 	return nil
 }
 
-func (s *Server) battleIntro(run *battleRun, m *battleMember, background uint16) error {
+func (s *Server) battleIntro(run *battleRun, m *battleMember, background byte) error {
+	if m.c.clientBackdrops {
+		if err := m.c.send(run.backdropLocation.Packet()); err != nil {
+			return err
+		}
+		background = compatibilityBattleBackground
+	}
 	if i := battlePetIndex(*m.c.character, m); i >= 0 {
 		pet := m.c.character.Pets[i]
 		if err := s.sendAll(m.c, pet.ProgressionPackets(m.c.pets.slot(pet.ID), s.Assets.Items, s.petTemplate(pet.ID))); err != nil {
@@ -976,7 +991,8 @@ func (s *Server) startPvP(attacker, defender *Session) error {
 	for _, m := range run.members {
 		m.c.battle = run
 	}
-	background := s.battleBackground(attacker, run)
+	run.backdropLocation = battleBackdropLocation(attacker, run)
+	background := s.legacyBattleBackground(attacker, run)
 	for _, m := range run.members {
 		if err := s.battleIntro(run, m, background); err != nil {
 			run.b.Finished = true

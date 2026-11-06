@@ -1,5 +1,7 @@
 package lottery
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"strconv"
@@ -57,7 +59,7 @@ func NewForm(env *seui.Env) *Form {
 		}
 	})
 	f.RewardIcon = button("", iconLeft, iconTop, iconSize, iconSize, func() { f.Preview.Open() })
-	f.RewardIcon.SetHint([]byte("Click to see rewards"))
+	f.RewardIcon.BindLanguage("hint", func() { f.RewardIcon.SetHint([]byte(localization.UI("ui.lottery.click_to_see_rewards_b99fd419"))) })
 	f.Preview = newPreview(env, f)
 	f.Refresh()
 	return f
@@ -65,18 +67,18 @@ func NewForm(env *seui.Env) *Form {
 
 func (f *Form) Refresh() {
 	f.Spin.Enabled = f.State.Ready && len(f.State.Rewards) > 0 && f.State.Remaining() > 0 && !f.State.Busy() && (f.CanDraw == nil || f.CanDraw())
-	hint := "Draw once"
+	hint := localization.UI("ui.lottery.draw_once_de04c241")
 	switch {
 	case !f.State.Ready:
-		hint = "Rewards have not arrived yet"
+		hint = localization.UI("ui.lottery.rewards_have_not_arrived_yet_da5529af")
 	case len(f.State.Rewards) == 0:
-		hint = "No rewards are available"
+		hint = localization.UI("ui.lottery.no_rewards_are_available_2a78b6ec")
 	case f.State.Pending:
-		hint = "Waiting for the draw result"
+		hint = localization.UI("ui.lottery.waiting_for_the_draw_result_688e659a")
 	case f.State.Rolling:
 		hint = "Drawing..."
 	case f.State.Remaining() == 0:
-		hint = "No draws remain. Come again tomorrow"
+		hint = localization.UI("ui.lottery.no_draws_remain_come_again_tomorrow_fb83a87f")
 	}
 	f.Spin.SetHint([]byte(hint))
 }
@@ -138,13 +140,13 @@ func (p *Preview) Open() {
 func (p *Preview) Paint() {
 	p.Form.Paint()
 	a := p.Abs()
-	p.Env.Text.Draw(a.X+24, a.Y+10, 0, false, true, p.Env.Screen, []byte("Lucky Draw Rewards"), textHeight, p.Width-48, 0, textInk, 0)
+	p.Env.Text.Draw(a.X+24, a.Y+10, 0, false, true, p.Env.Screen, []byte(localization.UI("ui.lottery.lucky_draw_rewards_902b6ea4")), textHeight, p.Width-48, 0, textInk, 0)
 	for i, reward := range p.draw.State.Rewards {
 		x, y := a.X+(i/previewRows)*previewColumnStep+8, a.Y+(i%previewRows)*previewRowStep+37
 		if p.draw.DrawItem != nil {
 			p.draw.DrawItem(reward, x, y)
 		}
-		name := fmt.Sprintf("Item %d", reward.ID)
+		name := fmt.Sprintf(localization.UI("ui.lottery.item_d_c8edea5f"), reward.ID)
 		if p.draw.ItemName != nil {
 			name = p.draw.ItemName(reward.ID)
 		}

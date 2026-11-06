@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -61,7 +63,7 @@ const (
 	musicPlay    = 1
 	musicRestore = 2
 	// Speakers, and the talk mode that turns the NPC.
-	npcTalkTurn      = 1
+	npcTalkTurn      = protocol.EventTalkTurnToPlayer
 	eventSpeakerNPC  = 3
 	eventSpeakerSelf = 7
 	// eventChoiceCancel closes a question (the server's cancel value).
@@ -99,7 +101,7 @@ func (c *Client) clickNPC(n *world.NPC) {
 		return
 	}
 	c.pendingNPC = nil
-	c.Notices.Show([]byte("Too far"), interactionNoticeDuration, c.Now())
+	c.Notices.Show([]byte(localization.UI("ui.app.too_far_0ef2cb2c")), interactionNoticeDuration, c.Now())
 }
 
 func abs(v int) int {
@@ -258,6 +260,9 @@ func (c *Client) say(subject byte, actor uint16, talk uint32) {
 	}
 	text := clientassets.Big5Text(c.talks[talk])
 	c.Talk.Say(text, c.speaker(subject, actor), c.World.Player.Name)
+	c.Talk.BindLanguage(func() {
+		c.Talk.Say(clientassets.Big5Text(c.talks[talk]), c.speaker(subject, actor), c.World.Player.Name)
+	})
 	if subject == eventSpeakerSelf {
 		c.playDialogueVoice(talk, movie.PlayerTemplate)
 	} else if n := c.World.NPCs[actor]; subject == eventSpeakerNPC && n != nil {
@@ -270,7 +275,7 @@ func (c *Client) loadTalks() {
 	if c.talks == nil {
 		var err error
 		if c.resources.talks == nil {
-			c.resources.talks, err = world.Talks(c.Assets)
+			c.resources.talks, c.resources.talkIDs, err = world.TalksWithReferences(c.Assets)
 		}
 		c.talks = c.resources.talks
 		if err != nil {
@@ -385,6 +390,21 @@ func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 	c.event.done = false
 	c.event.answers, c.event.ackAnswer = answers, mode == 0
 	c.Talk.Ask(prompt, c.speaker(subject, actor), c.World.Player.Name, options, buttons)
+	c.Talk.BindLanguage(func() {
+		var translatedPrompt, translatedOptions [][]byte
+		for _, entry := range q.Entries {
+			switch entry.Type {
+			case world.QuestionPrompt:
+				translatedPrompt = append(translatedPrompt, c.questionText(entry))
+			case world.QuestionOption:
+				translatedOptions = append(translatedOptions, c.questionText(entry))
+			}
+		}
+		if buttons {
+			translatedOptions = [][]byte{nil, nil}
+		}
+		c.Talk.Ask(translatedPrompt, c.speaker(subject, actor), c.World.Player.Name, translatedOptions, buttons)
+	})
 }
 
 // questionText is an entry's text: a talk line, or an item's name.

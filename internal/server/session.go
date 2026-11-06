@@ -68,6 +68,11 @@ type Session struct {
 	battle               *battleRun
 	combatOffered        bool // Negotiated transport state; guarded by worldMu.
 	combatCapabilities   uint32
+	backdropOffered      bool
+	clientBackdrops      bool
+	connectionOffered    uint32 // Connection-wide feature negotiation; guarded by worldMu.
+	connectionFeatures   uint32
+	connectionNegotiated bool
 	combatSequence       uint32
 	encounter            encounterState
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).

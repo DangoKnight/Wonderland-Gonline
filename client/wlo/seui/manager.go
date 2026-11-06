@@ -195,6 +195,10 @@ func (c *Component) isComponent() {}
 func (m *Manager) MouseMove(shift byte, x, y int, held bool) {
 	in := m.Input
 	in.X, in.Y = x, y
+	if c := in.Captured; exclusivePointer(c) {
+		c.CapturedMove(shift, x, y)
+		return
+	}
 	if h := in.Hovered; h != nil {
 		h.MouseMove(shift, x, y)
 	}
@@ -209,6 +213,13 @@ func (m *Manager) MouseMove(shift byte, x, y int, held bool) {
 // MouseUp is FUN_0040f7e4.
 func (m *Manager) MouseUp(button, shift byte, x, y int) {
 	in := m.Input
+	if c := in.Captured; button == ButtonLeft && exclusivePointer(c) {
+		// This gesture belongs to the captured control, including its release.
+		// A newly hovered child or a control behind it must not receive a click.
+		c.LeftUpOutside(shift, x, y)
+		in.Pressed, in.Captured = nil, nil
+		return
+	}
 	if button == ButtonLeft && in.Pressed != nil {
 		in.Pressed.LeftUp(shift, x, y)
 	}
@@ -229,6 +240,12 @@ func (m *Manager) MouseUp(button, shift byte, x, y int) {
 		}
 	}
 	in.Captured = nil
+}
+
+// Opt-in capture for gestures that must not dispatch to whatever is underneath.
+func exclusivePointer(c Control) bool {
+	owner, ok := c.(interface{ ExclusivePointerCapture() bool })
+	return ok && owner.ExclusivePointerCapture()
 }
 
 // DblClick is FUN_0040f4f4's first part: the hovered control's slot +0x2c.

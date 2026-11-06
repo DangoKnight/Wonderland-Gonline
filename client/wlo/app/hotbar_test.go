@@ -10,6 +10,71 @@ import (
 	"wonderland-gonline/client/wlo/skills"
 )
 
+func TestHotbarPanelDragOwnsPointerUntilRelease(t *testing.T) {
+	for _, horizontal := range []bool{false, true} {
+		name := "vertical"
+		if horizontal {
+			name = "horizontal"
+		}
+		t.Run(name, func(t *testing.T) {
+			c, _, _ := enteredClient(t)
+			h := c.HotKeys
+			if horizontal {
+				h.ToggleView()
+			}
+			h.Left, h.Top = 300, 120
+			c.Input.Hovered = h
+			if !c.UI.MouseDown(seui.ButtonLeft, 0, 310, 130) || c.Input.Captured != h {
+				t.Fatal("hotbar did not capture drag")
+			}
+			clicks := 0
+			h.Slots[1].OnClick = func() { clicks++ }
+			c.Input.Hovered = h.Slots[1]
+			c.UI.MouseMove(1, 410, 230, true)
+			c.Frame()
+			if !h.Dragging || c.Input.Captured != h || h.Left != 400 || h.Top != 220 {
+				t.Fatal("crossing child released or stalled drag")
+			}
+			c.Input.Hovered = nil
+			c.UI.MouseMove(1, -100, -100, true)
+			c.Frame()
+			if !h.Dragging || h.Left != 0 || h.Top != 0 {
+				t.Fatal("leaving bar dropped drag instead of clamping")
+			}
+			// Movement on the release frame must not discard capture before
+			// MouseUp can consume it, even when another control is underneath.
+			c.Input.Hovered = h.Slots[1]
+			c.UI.MouseMove(0, 210, 210, false)
+			if c.Input.Captured != h {
+				t.Fatal("release-frame move discarded capture")
+			}
+			c.UI.MouseUp(seui.ButtonLeft, 0, 210, 210)
+			if clicks != 0 || h.Dragging || c.Input.Captured != nil {
+				t.Fatal("drag release activated underlying slot or retained capture")
+			}
+			if h.Left != 200 || h.Top != 200 {
+				t.Fatal("final release position was lost")
+			}
+			c.Input.Hovered = h.Slots[1]
+			c.UI.MouseDown(seui.ButtonLeft, 0, 210, 210)
+			c.UI.MouseUp(seui.ButtonLeft, 0, 210, 210)
+			if clicks != 1 {
+				t.Fatal("ordinary slot click stopped working after drag")
+			}
+		})
+	}
+}
+
+func TestHotbarPanelDragCancelledWithSessionInput(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.Input.Hovered = c.HotKeys
+	c.UI.MouseDown(seui.ButtonLeft, 0, c.HotKeys.Left+10, c.HotKeys.Top+10)
+	c.cancelSessionInput()
+	if c.HotKeys.Dragging || c.Input.Captured != nil {
+		t.Fatal("session cancellation retained hotbar drag")
+	}
+}
+
 func TestHotbarDragPagesPersistenceAndRemoval(t *testing.T) {
 	c, _, _ := enteredClient(t)
 	c.mapReady = true

@@ -8,6 +8,68 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v54 adds 71 verified character, pet and quest skill powers from the saved
+unique-skill reference. Native NPC ownership, SP costs, descriptions and Chinese
+actor names identify the skills independently of unreliable icon filenames.
+Six matched but approximate/grade-conditional powers remain review-only; see
+[skill powers](DAMAGE.md). The additive migration fills only unresolved matching
+definitions and preserves all existing powers, including administrator edits
+and explicit zero. Stop the server, migrate, rebuild and restart as below.
+
+Assets v53 adds an editable nullable base skill power to `catalog_skills` and
+seeds 153 verified elemental skill powers from the saved Japanese wiki tables.
+Blast Attack and Flame Attack both use power 20. Existing explicit powers,
+including zero, and all native coefficients remain intact. Unlisted skills use
+the documented [damage compatibility fallback](DAMAGE.md). Stop the server, run
+the offline migration below, rebuild and restart. No client asset rebuild or
+gameplay-state change is required. Grade scaling is provisional +5% of base per
+grade above grade 1, compiled in the battle engine.
+
+Assets v52 keeps Noa's puzzle, result evaluation, retry invitation and recruitment
+in one conversation. Scoped continuation policies connect Kelan event 56's native
+branches without unlocking movement between stages. Decline and cancel still end
+the interaction. The migration preserves existing same-ID administrator rules,
+deliberately empty policy collections and character progress. Stop the server,
+run the offline migration below, then rebuild and restart the server. No client
+asset rebuild is required.
+
+Assets v51 keeps Xaolan's house recruitment dialogue and its following choice
+in one interaction. It adds a scoped continuation from event 9, branch 1 to
+branch 4, preserving existing same-ID administrator policies and deliberately
+empty policy collections. Stop the server and run the offline migration below
+before starting the rebuilt server. No client asset rebuild is required.
+
+Assets v50 imports every map's native default backdrop and ordered spatial
+regions from retained `Ground.MMG` bytes into `catalog_battle_backdrops` and
+`catalog_battle_backdrops_regions`. All 1,119 EVE maps have matching definitions;
+the archive contains 1,147 terrain records and 1,398 regional rectangles.
+Battle entry selects by the initiating player's coordinates. The migration
+retires only exact original v45/v47/v48/v49 backdrop policies; administrator
+edits, explicit overrides and intentionally empty backdrop tables remain intact.
+See [native backdrop evidence](BATTLE_BACKDROPS.md). Stop the server, run the
+offline migration below, rebuild and restart. Existing client assets suffice.
+The following v45–v49 notes describe historical migrations superseded by v50's
+native map regions.
+
+Assets v49 assigns the Beach backdrop to North Island map 60000's seven
+seaflower encounter events (36, 37, 38, 40–43). Map 60001 is also named
+North Island but has different encounter definitions. This revision preserves
+same-ID administrator edits and empty policy collections.
+
+Assets v48 adds the verified Lakeside Jungle backdrop for North Island's
+lakeside Fresh Mushroom encounter (event 65), and Kelan Village scenery from
+the captured honey battle. Existing same-ID backdrop edits and intentionally
+empty policy collections are preserved. The formation backdrop is one byte;
+the next byte is independent metadata. Rebuild the client as well to correct
+backdrop decoding when using a Legacy server.
+
+Assets v47 adds the verified Jungle backdrop for Xaolan's North Island rescue
+(map 60001, events 44 and 83). Native selector 90 resolves to scene 59090. The
+content revision preserves same-ID edits, intentionally removed quest families
+and empty policy collections. Enemy placement now also honors authored EVE
+formation slots instead of packing initial enemies into sequential cells. Run
+the offline upgrade and rebuild the server to apply these corrections.
+
 Assets v46 replaces the stock Xaolan rescue visibility overrides with a
 visit-scoped visibility policy. Xaolan and her grandmother remain for the rescue
 scene, then native map-entry events hide them on the next visit. Later quest
@@ -49,7 +111,7 @@ level 10. Repeated upgrades preserve administrator edits. Stop the server and
 run the offline migration below before deploying this version.
 
 Client v30 through v32 catalogs are recognized independently of quest schema versions.
-They upgrade to v46 without losing existing definitions.
+They upgrade to v50 without losing existing definitions.
 
 Assets v29–v38 add atomic native quest completion, temporary escorts/disguises, native quest NPC reactions and removal of two obsolete quest disable reasons. See [quest research and implementation](QUEST_RESEARCH.md) and the [complete 345-entry notepad list](QUEST_LIST.md). Gameplay now uses v21.
 
@@ -283,7 +345,7 @@ See [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md).
 
 Gameplay v15 adds `map_props.frame` with default one to preserve existing broken
 nodes. Timed scripted shared frames now replay on entry and reset after 60 seconds.
-Asset schema is now v46. The upgrade procedure upgrades existing older installations
+Asset schema is now v50. The upgrade procedure upgrades existing older installations
 without resetting accounts, characters, manufacturing jobs or typed content.
 
 ### Administration quest registry (asset v10)
@@ -327,7 +389,7 @@ Existing machines, including edited costs, weights and disabled states, remain
 unchanged. A deleted egg/slot kind is also reseeded by this upgrade; keep an
 explicit disabled row to preserve its unavailability. Machines whose prize
 items are missing are added disabled. Follow the offline upgrade procedure above
-before running the new server; runtime requires v46. See
+before running the new server; runtime requires v50. See
 [fruit machines](MINIGAMES.md#fruit-machines).
 
 ### Private Server update content (asset v14, gameplay v18)
@@ -365,7 +427,7 @@ rules, scopes, predicates, repairs, program guards, recruitment, transformations
 reward checkpoints and cinematic cues. It seeds current story behavior only when
 the root table is new; repeat upgrades retain edits and deliberately empty
 collections. Gameplay remains v18, with existing quest progress unchanged.
-Runtime requires v46 and reads only SQL definitions. The `Story` administration
+Runtime requires v50 and reads only SQL definitions. The `Story` administration
 dataset and `/reload quests` publish validated policies through the existing
 interaction ownership gates. See [story execution and authoring](STORY_SYSTEM.md).
 

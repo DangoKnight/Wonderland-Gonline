@@ -45,12 +45,12 @@ func TestBuildEditableChangesReuseAndAtomicValidation(t *testing.T) {
 	picture(t, imagePath, 4, 4, color.NRGBA{R: 255, A: 255})
 	put(t, filepath.Join(source, "values.json"), []byte("{\n\"rate\": 1\n}"))
 	first, err := Build(o)
-	if err != nil || first.Files != 2 || first.Reused != 0 {
+	if err != nil || first.Files != 4 || first.Reused != 0 {
 		t.Fatal(first, err)
 	}
 	originalInfo, _ := os.Stat(o.Output)
 	second, err := Build(o)
-	if err != nil || second.Reused != 2 {
+	if err != nil || second.Reused != 4 {
 		t.Fatal(second, err)
 	}
 	afterInfo, _ := os.Stat(o.Output)
@@ -60,7 +60,7 @@ func TestBuildEditableChangesReuseAndAtomicValidation(t *testing.T) {
 	picture(t, imagePath, 4, 4, color.NRGBA{B: 255, A: 128})
 	put(t, filepath.Join(source, "values.json"), []byte("{\n\"rate\": 2\n}"))
 	third, err := Build(o)
-	if err != nil || third.Reused != 0 {
+	if err != nil || third.Reused != 2 {
 		t.Fatal(third, err)
 	}
 	root, closeBundle, err := clientfs.Mount(o.Output)

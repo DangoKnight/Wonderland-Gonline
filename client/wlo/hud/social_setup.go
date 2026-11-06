@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"strconv"
 	"time"
@@ -48,8 +50,8 @@ const (
 	nicknameMax  = 0xe
 	yearBase     = 1900
 	yearMin      = 1000
-	confirmSetUp = "Ensure your data is correct. System will be sending bday gift on specified date. Log in game to receive it."
-	noBloodType  = "No blood type"
+	confirmSetUp = "ui.hud.ensure_your_data_is_correct_system_will__caf80570"
+	noBloodType  = "ui.hud.no_blood_type_e714481a"
 	signPrefix   = "SunSign_"
 	signSuffix   = "_1"
 )
@@ -316,7 +318,7 @@ func (s *Social) refreshSetUp() {
 // confirmSetUp is OK: the talk window's confirmation, then 0x27a73c.
 func (s *Social) confirmSetUp() {
 	if s.Confirm != nil {
-		s.Confirm([]byte(confirmSetUp), s.saveSetUp)
+		s.Confirm([]byte(localization.UI(confirmSetUp)), s.saveSetUp)
 	}
 }
 
@@ -345,7 +347,7 @@ func (s *Social) saveSetUp() {
 		t.Attractive = false
 		s.refreshSetUp()
 		if s.Notice != nil {
-			s.Notice(noBloodType)
+			s.Notice(localization.UI(noBloodType))
 		}
 		return
 	}

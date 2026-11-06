@@ -28,7 +28,12 @@ func EventFrame(kind, subject byte, actor uint16, mode byte, value uint32, text 
 }
 
 func SpeechFrame(subject byte, actor uint16, talk uint32, step byte) []byte {
-	p := EventFrame(1, subject, actor, 1, 0, uint16(talk), step, 0)
+	return SpeechFrameWithMode(subject, actor, talk, step, protocol.EventTalkTurnToPlayer)
+}
+
+// SpeechFrameWithMode preserves the native EVE talk-facing operand.
+func SpeechFrameWithMode(subject byte, actor uint16, talk uint32, step, mode byte) []byte {
+	p := EventFrame(1, subject, actor, mode, 0, uint16(talk), step, 0)
 	p[len(p)-1] = byte(talk >> 16)
 	return p
 }

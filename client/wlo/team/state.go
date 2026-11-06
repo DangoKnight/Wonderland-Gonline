@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	MaximumMembers    = 4
+	MaximumMembers    = protocol.TeamMaximumMembers
 	teammateStatBytes = 16
 	rosterHeaderBytes = 7
 )
@@ -25,7 +25,12 @@ type State struct {
 }
 
 func (s *State) Reset(self uint32) { *s = State{Self: self, Vitals: map[uint32]*Member{}} }
-func (s *State) InParty() bool     { return len(s.Members) > 1 }
+
+// ClearParty detaches players without changing independently selected pets.
+func (s *State) ClearParty() {
+	s.Leader, s.Members, s.Vitals = 0, nil, map[uint32]*Member{}
+}
+func (s *State) InParty() bool { return len(s.Members) > 1 }
 func (s *State) Others() []uint32 {
 	var ids []uint32
 	for _, id := range s.Members {

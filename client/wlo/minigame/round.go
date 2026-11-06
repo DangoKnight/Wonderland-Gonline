@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"image/color"
@@ -102,9 +104,9 @@ func (r *Round) outcome(dst *surface.Surface) {
 	if r.resultAt.IsZero() && !r.finished {
 		return
 	}
-	label := "You Lose"
+	label := localization.UI("ui.minigame.you_lose_b24f26d5")
 	if r.win {
-		label = "You Win"
+		label = localization.UI("ui.minigame.you_win_2fc51f9b")
 	}
 	arcadeText(dst, 350, 280, label)
 }

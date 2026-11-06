@@ -1,14 +1,14 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/world"
-	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -27,23 +27,22 @@ type battleResultActor struct {
 	id           uint16
 	name         string // Native Big5 bytes, kept intact for the game font.
 	exp          uint32
+	hp           uint32
 	level, amity byte
 }
 
 type battleResultSnapshot struct {
 	player battleResultActor
-	gold   uint32
 	pets   [game.MaxPets]battleResultActor
 }
 
 // FUN_00394f68 snapshots progression on entry; FUN_00394fe8 compares it on
-// exit. This extends that native message with confirmed gold/item receipts.
+// exit. Only progression and dead-pet amity penalties belong in this summary.
 // Nothing here predicts rewards, changes inventory or sends a request.
 type battleResultsRuntime struct {
 	owner          uint32
 	active, closed bool
 	before, after  battleResultSnapshot
-	items          map[uint16]uint64
 	form           *battleResultsForm
 	until          time.Time
 	lines          []string
@@ -52,9 +51,9 @@ type battleResultsRuntime struct {
 func resultPet(p inventory.UsePet, slot int) battleResultActor {
 	name := string(p.Name)
 	if name == "" {
-		name = fmt.Sprintf("Pet %d", slot+1)
+		name = fmt.Sprintf(localization.UI("ui.app.pet_d_e4752948"), slot+1)
 	}
-	return battleResultActor{id: p.ID, name: name, exp: p.Stats.EXP, level: p.Stats.Level, amity: p.Amity}
+	return battleResultActor{id: p.ID, name: name, exp: p.Stats.EXP, hp: p.Stats.HP, level: p.Stats.Level, amity: p.Amity}
 }
 
 func (c *Client) beginBattleResults() {
@@ -64,12 +63,11 @@ func (c *Client) beginBattleResults() {
 	}
 	r.owner = c.World.Player.ID
 	r.active, r.closed = true, false
-	r.before = battleResultSnapshot{player: battleResultActor{name: string(c.World.Player.Name), exp: c.Stats.EXP, level: c.Stats.Level}, gold: c.Stats.Gold}
+	r.before = battleResultSnapshot{player: battleResultActor{name: string(c.World.Player.Name), exp: c.Stats.EXP, level: c.Stats.Level}}
 	for i, p := range c.InventoryState.Pets {
 		r.before.pets[i] = resultPet(p, i)
 	}
 	r.after = r.before
-	r.items = map[uint16]uint64{}
 }
 
 func (c *Client) resetBattleResults() {
@@ -99,9 +97,6 @@ func (c *Client) recordBattleResultsPacket(p []byte) {
 	if p[0] == protocol.CommandCharacterState && p[1] == protocol.CharacterStateWireCode3 {
 		r.after.player.exp, r.after.player.level = c.Stats.EXP, c.Stats.Level
 	}
-	if p[0] == protocol.CommandGold && p[1] == protocol.GoldBalance {
-		r.after.gold = c.Stats.Gold
-	}
 	if p[0] == protocol.CommandStats && p[1] == protocol.StatsWireCode2 || p[0] == protocol.CommandPetControl {
 		for i, p := range c.InventoryState.Pets {
 			// Retain the last confirmed progression when a dead pet deserts;
@@ -113,33 +108,14 @@ func (c *Client) recordBattleResultsPacket(p []byte) {
 	}
 }
 
-func (c *Client) recordBattleResultItems(before game.Inventory) {
-	r := &c.battleResults
-	if !r.active {
-		return
-	}
-	for i, item := range c.InventoryState.Bag {
-		if item.Empty() {
-			continue
-		}
-		previous := 0
-		if before[i].ID == item.ID {
-			previous = int(before[i].Count)
-		}
-		if added := int(item.Count) - previous; added > 0 {
-			r.items[item.ID] += uint64(added)
-		}
-	}
-}
-
 func resultDelta(label, name string, before, after uint32) string {
 	if before == after {
 		return ""
 	}
 	if after > before {
-		return fmt.Sprintf("%s%s gained: %d", name, label, uint64(after)-uint64(before))
+		return fmt.Sprintf(localization.UI("ui.app.s_s_gained_d_017912c4"), name, label, uint64(after)-uint64(before))
 	}
-	return fmt.Sprintf("%s%s lost: %d", name, label, uint64(before)-uint64(after))
+	return fmt.Sprintf(localization.UI("ui.app.s_s_lost_d_fd4b8928"), name, label, uint64(before)-uint64(after))
 }
 
 func (c *Client) battleResultLines() []string {
@@ -155,12 +131,14 @@ func (c *Client) battleResultLines() []string {
 		if name != "" {
 			name += " "
 		}
-		add(resultDelta("EXP", name, before.exp, after.exp))
-		if after.level > before.level {
-			add(fmt.Sprintf("%slevel up: %d", name, after.level))
+		if after.exp > before.exp {
+			add(resultDelta(localization.UI("ui.app.exp_06a1ad63"), name, before.exp, after.exp))
 		}
-		if amity {
-			add(resultDelta("Amity", name, uint32(before.amity), uint32(after.amity)))
+		if after.level > before.level {
+			add(fmt.Sprintf(localization.UI("ui.app.slevel_up_d_a2fc5dd1"), name, after.level))
+		}
+		if amity && after.hp == 0 && after.amity < before.amity {
+			add(resultDelta(localization.UI("ui.app.amity_56851ac2"), name, uint32(before.amity), uint32(after.amity)))
 		}
 	}
 	actor(r.before.player, r.after.player, false)
@@ -172,22 +150,6 @@ func (c *Client) battleResultLines() []string {
 	}
 	// Recruitment is announced immediately during combat by announceNewPets;
 	// do not repeat captures in the post-battle reward summary.
-	add(resultDelta("Gold", "", r.before.gold, r.after.gold))
-	ids := make([]int, 0, len(r.items))
-	for id := range r.items {
-		ids = append(ids, int(id))
-	}
-	sort.Ints(ids)
-	if len(ids) > 0 {
-		add("Items obtained:")
-	}
-	for _, id := range ids {
-		name := string(clientassets.Big5Text(c.items[uint16(id)].Definition.Name))
-		if name == "" {
-			name = fmt.Sprintf("Item #%d", id)
-		}
-		add(fmt.Sprintf("%s x%d", name, r.items[uint16(id)]))
-	}
 	return lines
 }
 
@@ -253,7 +215,7 @@ func (l *battleResultsList) Paint() {
 func newBattleResultsForm(env *seui.Env) *battleResultsForm {
 	f := &battleResultsForm{}
 	f.InitForm(f, env)
-	f.Name = "Battle results"
+	f.Name = localization.UI("ui.app.battle_results_a0f88204")
 	f.Init("panel22", 0, 0xa8, 0x14c, 0, 0, true, 0, battleResultsMinWidth, battleResultsTop)
 	f.SetMargins(0x32, 0x20, 0x20, 0x3c)
 	f.Dockable, f.Draggable, f.PixelHit = false, false, false

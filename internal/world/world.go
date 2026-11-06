@@ -35,6 +35,7 @@ type Map struct {
 	Items          []GroundItem
 	data           assets.Map
 	npcDefinitions map[uint16]int
+	fieldBattles   map[uint16]bool // Derived once from immutable EVE movement/event definitions.
 }
 
 func newMap(m assets.Map) *Map {
@@ -64,6 +65,7 @@ func newMap(m assets.Map) *Map {
 		slot++
 		out.Items = append(out.Items, g)
 	}
+	out.indexFieldBattles()
 	return out
 }
 
@@ -145,6 +147,11 @@ func questPropOpened(m *Map, n NPC, c *game.Character) bool {
 	if expiry, ok := c.ChestRespawns[ChestKey(c.Map, n.ClickID)]; ok {
 		return time.Now().Before(expiry)
 	}
+	// Native breakable containers need not belong to the chest template
+	// ranges. Their claimed reward is the authoritative opened-state receipt.
+	if q, ok := c.Quests[ChestKey(c.Map, n.ClickID)]; ok && q.State == game.Completed {
+		return true
+	}
 	if !(n.Template == 0 || n.Template >= 19000 || (n.Template >= actorContainerTemplateMin && n.Template <= actorContainerTemplateMax) || (n.Template >= actorChestTemplateMin && n.Template <= actorChestTemplateMax)) {
 		return false
 	}
@@ -217,6 +224,7 @@ func (w *World) ReloadEvents(maps map[uint16]assets.Map) {
 		if old, ok := w.maps[id]; ok {
 			copy := *old
 			copy.data.Events, copy.data.PreEvents = updated.Events, updated.PreEvents
+			copy.indexFieldBattles()
 			w.maps[id] = &copy
 		}
 	}

@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"image"
@@ -93,12 +95,12 @@ const (
 
 // Notices of the wizard and of 9/3.
 var (
-	noticeEnterName    = []byte("Enter name")
-	noticeNameTooLong  = []byte("Name is too long")
-	noticeIllegalWords = []byte("Don't use Illegal words")
-	noticeAllocate     = []byte("Allocate all points")
-	noticeNameInUse    = []byte("Name already in use")       // 0x2f03a0
-	noticeIllegalName  = []byte("Illegal name, try another") // 0x2f03c4
+	noticeEnterName    = []byte(localization.UI("ui.login.enter_name_80ccd89c"))
+	noticeNameTooLong  = []byte(localization.UI("ui.login.name_is_too_long_09629b13"))
+	noticeIllegalWords = []byte(localization.UI("ui.login.don_t_use_illegal_words_23e8b152"))
+	noticeAllocate     = []byte(localization.UI("ui.login.allocate_all_points_42db8d10"))
+	noticeNameInUse    = []byte(localization.UI("ui.login.name_already_in_use_a022ad90"))      // 0x2f03a0
+	noticeIllegalName  = []byte(localization.UI("ui.login.illegal_name_try_another_bafdd9f0")) // 0x2f03c4
 )
 
 // Colour digit groups each part edits (+0xd8, +0xdb, +0xde, +0xfc).
@@ -240,12 +242,12 @@ func NewCreateCharacter(env *seui.Env, g *Globals, n *Net, a Assets, content byt
 	c.PrevChar.Init("Btn_ArrowL_1", 0x26, 0x11, 0x12, 0, 0, true, 0x11, 0x12, 0x112)
 	c.PrevChar.OnClick = c.prevChar
 	c.PrevChar.SetAnimation("Btn_ArrowL_10", 0, 2, 1, arrowFrameEvery, 0x11, 0x12, 0)
-	c.PrevChar.SetHint([]byte("Prev Char"))
+	c.PrevChar.BindLanguage("hint", func() { c.PrevChar.SetHint([]byte(localization.UI("ui.login.prev_char_83de3fc2"))) })
 	c.NextChar = seui.NewFixedButton(env, c)
 	c.NextChar.Init("Btn_ArrowR_1", 0x1f7, 0x11, 0x12, 0, 0, true, 0x11, 0x12, 0x112)
 	c.NextChar.OnClick = c.nextChar
 	c.NextChar.SetAnimation("Btn_ArrowR_10", 0, 2, 1, arrowFrameEvery, 0x11, 0x12, 0)
-	c.NextChar.SetHint([]byte("Next Char"))
+	c.NextChar.BindLanguage("hint", func() { c.NextChar.SetHint([]byte(localization.UI("ui.login.next_char_acab000f"))) })
 
 	c.Current = 1
 	c.buildCarousel()
@@ -600,7 +602,9 @@ func (c *CreateCharacter) step(forward bool) {
 	}
 	c.Background = nil
 	if background != "" {
-		c.Background, _ = loadJPEG(c.Assets.SkinPicture("Menu", "Skins", "White", background))
+		bindSkinBackground(c, "background", c.Assets, background, &c.Background)
+	} else {
+		c.ClearLanguage("skin:background")
 	}
 	c.Step = next
 	c.animate()
@@ -1038,4 +1042,15 @@ func (c *CreateCharacter) CreatePacket() []byte {
 		p = append(p, code...)
 	}
 	return p
+}
+
+func init() {
+	localization.Register(func() {
+		noticeAllocate = []byte(localization.UI("ui.login.allocate_all_points_42db8d10"))
+		noticeEnterName = []byte(localization.UI("ui.login.enter_name_80ccd89c"))
+		noticeIllegalName = []byte(localization.UI("ui.login.illegal_name_try_another_bafdd9f0"))
+		noticeIllegalWords = []byte(localization.UI("ui.login.don_t_use_illegal_words_23e8b152"))
+		noticeNameInUse = []byte(localization.UI("ui.login.name_already_in_use_a022ad90"))
+		noticeNameTooLong = []byte(localization.UI("ui.login.name_is_too_long_09629b13"))
+	})
 }

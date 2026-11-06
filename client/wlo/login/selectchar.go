@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"image"
@@ -164,27 +166,12 @@ func NewSelectCharacter(env *seui.Env, g *Globals, n *Net, a Assets, status *Sta
 	s := &SelectCharacter{G: g, Net: n, Assets: a, Status: status, Now: time.Now}
 	s.InitForm(s, env)
 	s.Name = "SelectCharacter"
-	side := "_L"
-	if content != 0 {
-		side = "_R"
-	}
-	load := func(name string) *surface.Surface {
-		m, _ := loadJPEG(a.SkinPicture("Menu", "Skins", "White", name))
-		return m
-	}
-	// The original install ships only the "_R" panels; "_L" is absent. With
-	// the jma size unknown (browser build) content is 0 and "_L" would leave
-	// the slot panels blank, so fall back to "_R".
-	loadSide := func(stem string) *surface.Surface {
-		if m := load(stem + side + ".jpg"); m != nil {
-			return m
-		}
-		return load(stem + "_R.jpg")
-	}
-	s.EmptyBack = loadSide("Form_SelectRole_Empty")
-	s.EmptyBack2 = load("Form_SelectRole_Empty_R.jpg")
-	s.InfoBack = loadSide("Form_SelectRole_Info")
-	s.InfoBack2 = load("Form_SelectRole_Info_R.jpg")
+	// The install ships only the "_R" panels ("_L" never exists), and with the
+	// jma size unknown in the browser build content is 0; both cases use "_R".
+	bindSkinBackground(s, "empty", a, "Form_SelectRole_Empty_R.jpg", &s.EmptyBack)
+	bindSkinBackground(s, "empty-right", a, "Form_SelectRole_Empty_R.jpg", &s.EmptyBack2)
+	bindSkinBackground(s, "info", a, "Form_SelectRole_Info_R.jpg", &s.InfoBack)
+	bindSkinBackground(s, "info-right", a, "Form_SelectRole_Info_R.jpg", &s.InfoBack2)
 	s.EmptyIcon = env.Pics.Find("Icon_Empty")
 	s.SelectIcon = -1
 	if content != 0 {
@@ -426,16 +413,16 @@ func (s *SelectCharacter) DeleteResult(p []byte) {
 	var text string
 	switch p[0] {
 	case deleteSucceeded:
-		text = "Delete success"
+		text = localization.UI("ui.login.delete_success_b7be0257")
 		if len(p) > 1 {
 			s.clearSlot(p[1])
 		}
 	case 2, 3:
-		text = "Wrong Del Pwd"
+		text = localization.UI("ui.login.wrong_del_pwd_2a5d515f")
 	case deleteFailed:
-		text = "Delete failed"
+		text = localization.UI("ui.login.delete_failed_8727e2ba")
 	case deleteErrorCode:
-		text = "Delete failed, error code: "
+		text = localization.UI("ui.login.delete_failed_error_code_36d8279f")
 		if len(p) > 1 {
 			text += strconv.Itoa(int(p[1]))
 		}

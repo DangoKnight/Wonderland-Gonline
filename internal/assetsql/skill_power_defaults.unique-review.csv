@@ -1,0 +1,79 @@
+table,row,source_name,owner,grade,source_sp,source_power,skill_id,native_name,native_sp,npc_id,npc_name,status,evidence
+0,2,トリプルブロウ,シド,,9,53,11076,Combo x3 Attack,9,0,,verified,Starter stunt; triple punch description and fire physical SP9
+0,3,往復ビンタ,バネッサ,,7,39,15040,Palm,7,0,,verified,Starter stunt; palm slap description and wind physical SP7
+0,4,機銃掃射,イリス,,20,89,11078,Bomber Attack,20,0,,verified,Starter stunt; bomber description and wind physical SP20
+0,5,当て身投げ,ダニエル,,8,49,15038,Overarm Stumble,8,0,,verified,Starter stunt; catch and throw description and earth physical SP8
+0,6,トリックタップ,ベティ,,9,53,12036,Leap,9,0,,verified,Starter stunt; leap and stab description and fire physical SP9
+0,7,わんおーわん,ロコ,,18,70,11075,Summon Dogs Groups,18,0,,verified,Starter stunt; summon dogs description and earth physical SP18
+0,8,ラブリィキッス,ニナ,,10,34,15041,Love Wish,10,0,,verified,Starter stunt; dazing love skill and fire magical SP10
+0,10,ライドアタック,リカ,,35,69,12053,Gallop,35,0,,verified,Starter stunt; car charge description and water physical SP35
+0,11,グラーヴェ,ジェシカ,,9,55,12051,Note,9,0,,verified,Starter stunt; music description and earth magical SP9
+0,12,スピリタス,モア,,9,55,15039,Wine Flame,9,0,,verified,Starter stunt; wine flame description and fire magical SP9
+0,13,焔舞,鶴子,,15,70,12049,Fire Dance,15,0,,verified,Starter stunt; fire wheel description and fire magical SP15
+0,14,仰せのままに,かりん,,7,35,11183,Deacon Attack,7,0,,verified,Starter stunt; deacon description and wind physical SP7
+0,15,大工ハンマー,十蔵,,9,75,11182,Ghost Hammer,9,0,,verified,Starter stunt; hammer description and fire physical SP9
+0,16,エアソーサー,ブレイヤ,,6,30,15060,Throw Dish,6,0,,verified,Starter stunt; thrown dish description and wind physical SP6
+1,3,ブラッドバイト,凶悪トラを倒せ(中国) 星３個と交換,10,30,65,15025,Bloodsuck Attack,30,0,,verified,Bloodsuck attack; neutral physical SP30
+2,2,暗殺,クエスト(始皇帝陵、サムライ用),1,132,232,15241,Murder,132,0,,verified,Chinese skill name 暗殺; neutral physical SP132
+4,5,天雷,ニース,10~12,110,180,15135,Sky Thunder,110,14081,Niss,conditional,Niss owns Sky Thunder SP110; power180 is stated only for grades10-12
+4,6,神の怒槌,転生ニース,12,135,450,30141,Lightening Ice,135,31026,Niss,verified,Reborn Niss owns Lightening Ice SP135
+4,7,羅刹･大車輪,レイチェル,8,18,145,15072,Tulwar,18,14161,Roca,verified,Roca owns spinning blade Tulwar SP18
+4,8,黒獄エックス斬,転生レイチェル,12,80,220,25153,X Blast,80,31025,Roca,verified,Reborn Roca owns X Blast SP80
+4,9,孤星,リン,8,55,195,15071,Star,55,14156,Xaolan,verified,Xaolan owns Star SP55
+4,10,獄蝕浄裂,転生リン,12,66,330,25155,Force Spall,66,31027,Xaolan,verified,Reborn Xaolan owns earth Force Spall SP66
+4,11,神楽,加奈子,12,32,160,25008,Ice Arrow,32,14548,Kanako,verified,Kanako owns Ice Arrow SP32
+4,13,凍弾術,転生サシャ,12,88,435,25157,Frozen Ball,88,31034,Shasha,verified,Reborn Shasha owns Frozen Ball SP88
+4,17,雷神招来,フリード,18,66,500,11170,Blowout,66,12095,Frederico,verified,Frederico owns Blowout SP66; Rage Thunder is a different SP115 skill
+4,22,雷球閃電,シャルロット,12,50,270,25064,Thunder Ball,50,17914,Charlotte,verified,Charlotte owns Thunder Ball SP50
+4,23,狂乱撃,アイリーン,8,26,110,25033,Chaotic Attack,26,14230,Elin,verified,Elin owns Chaotic Attack SP26
+4,27,サモンフラカン,転生ナキラー,12,74,350,30148,Air Ball,74,31035,Qlaya,verified,Reborn Qlaya owns Air Ball SP74
+4,32,火燐斬,燕玲,8,28,150,25072,Fire Strike,28,15657,Victoria,verified,Victoria owns Fire Strike SP28; Chinese name 火靈斬
+4,33,紅炎狂龍破,転生燕玲,12,95,300,25135,Red Dragon Blitz,95,31039,Victoria,verified,Reborn Victoria owns Red Dragon Blitz SP95
+4,36,白狼抜刀斬,サールス,15,30,185,15249,Fury Strike,30,14274,Sam,verified,Sam has Chinese name 薩爾斯 matching Japanese サールス; owns water Fury Strike SP30
+4,38,疾風手裏剣,疾風,8,40,195,30139,Hand Sword,40,15689,Hayate,verified,Hayate owns wind Hand Sword SP40; not generic neutral ninja skill30076
+4,47,女神の炎弾,アテナ,1～8,158,205,30133,Goddess' Anger,158,12148,Athena,verified,Athena owns Goddess Anger SP158
+4,48,女神の炎弾,アテナ,9～18,158,205,30133,Goddess' Anger,158,12148,Athena,verified,Same Athena skill and power; merged row describes higher-grade targeting
+4,49,女神の炎翔,アテナ,1～18,133,660,25162,Goddess' Anger,133,12148,Athena,verified,Athena second Goddess Anger skill SP133
+4,52,石頭アタック,子ザル,8,8,15,12027,Head Attack,8,17162,S.Monkey,verified,Small Monkey owns earth Head Attack SP8; not Throw Banana Skin SP12
+5,8,弐連撃,黒皮山怪,10,22,95,15203,Double Hit,22,17721,B.Troll,verified,Chinese 黑皮山怪 owns earth Double Hit SP22
+5,9,ヘヴィ頭突き,大きなゾウ,10,22,100,15197,Knock head,22,17262,Heavy Elep,verified,Heavy Elephant owns Knock head SP22
+5,14,影鎌,仙女,8,34,155,12023,Wind Shadow,34,14455,Fairy,verified,Fairy owns Wind Shadow SP34
+5,21,懇蝕転,かぼちゃ頭,8,17,113,15212,Chaw Throw,17,17282,Pumpkin Mo,verified,Pumpkin Monster owns Chaw Throw SP17; Chinese 啃蝕摔
+5,23,炎鳥召喚の術,グリフォン 金グリフォン,,,120,30072,Summon Eagle,23,17285,Griffin,verified,Griffin owns Summon Eagle; fire magical description; reference omits SP
+5,24,巨石突撃,ビッグフット,8,28,118,30083,Stone Strike,28,17225,Big Harry,verified,Chinese 大腳哈利 owns Stone Strike SP28
+5,26,小旋風,高麗人参の精,8,19,85,30056,Whirly,19,17222,P.Ginseng,verified,Chinese 粉嫩人參精 owns Whirly SP19; skill is shared with Potato Monster
+5,27,甲籠張手,百年亀,8,21,120,25055,Turtle Palm,21,17214,Old Turtle,verified,Chinese 百年龜 owns Turtle Palm SP21
+5,28,氷の爪,東風のツル,8,20,113,15168,Ice Claw,20,17215,East Crane,verified,Chinese 東風鶴 owns Ice Claw SP20
+5,29,連続飛蹴,ゼブラ,10,22,124,15228,Leap Kick,22,17217,Zebra,verified,Zebra owns Leap Kick SP22; not generic Sprint Strike SP10
+5,31,飛奔衝撞,サイ,8,24,110,30063,Scud Crash,24,17216,Rhino,verified,Rhino owns Scud Crash SP24
+5,32,怒号炎撃,ライオン,10,30,160,15230,Rage Roar,30,17219,Lion,verified,Lion owns Rage Roar SP30
+5,33,重蹄蹴,金角の水牛,8,20,93,25052,Heavy Kick,20,17224,G.Buffalo,verified,Chinese 金角水牛 owns Heavy Kick SP20
+5,34,窒息毒粉,幽谷の蝶,8,17,80,30065,Scatter powder,17,17223,V.Butterfl,verified,Valley Butterfly owns Scatter powder SP17
+5,38,上昇気流,翼竜,,20,80,30043,Wing Wind,20,17294,Yellow Pte,verified,Pterosaur owns magical Wing Wind SP20
+5,40,体当たり,アシカ,8,26,115,18007,Body Bump,26,30008,Sea Lion,verified,Sea Lion owns physical Body Bump SP26; not Air Freeze SP10
+6,3,双竜脚,子ウサギ 青眼の子ウサギ 茶色の子ウサギ 金の子ウサギ,8,2,15,30028,Double Kick,2,17036,Rabbit,verified,Rabbit owns Double Kick SP2
+6,4,舌アタック,カエル 劇毒カエル 褐樹カエル 雨林カエル,8,8,35,30024,Frog Licking,8,17078,Frog,verified,Frog owns Frog Licking SP8
+6,7,ハチの一撃,蜜蜂 (クラン村NPC),8,1,10,30033,Bee Attack,1,17064,Baby Bee,verified,Baby Bee owns Bee Attack SP1; distinct from field Bee Swirl SP8
+6,8,蜂の一刺し,やわらか蜜蜂 ぶんぶん蜜蜂 働き蜂 青蜂,8,8,40,30027,Bee Swirl,8,17062,Worker Bee,verified,Worker Bee owns Bee Swirl SP8
+6,13,噛み付き,アリ 毒アリ 赤アリ 白アリ 岩皮アリ 鋼鉄アリ,8,11,52,30023,Ant Attack,11,17018,Ant,verified,Ant owns Ant Attack SP11; not Little Ant skill30032 SP2
+6,14,ジャッキアップ,土カブト虫 青カブト虫 赤カブト虫 緑カブト虫,,8,20,30040,Horn Rising,8,17066,Ground Bee,verified,Ground Beetle owns Horn Rising SP8
+6,15,ジャッキアップ,強力雄カブト虫 強力雌カブト虫,,9,35,30041,Horn Rising,9,17070,Male Bug,verified,Male Bug owns distinct Horn Rising SP9
+6,17,電撃,かわいいくらげ 帯電くらげ 燥熱くらげ 自在くらげ 大くらげ,8,7,60,30035,Electricity,7,17054,Cute Jely,verified,Jellyfish owns magical Electricity SP7; icon11053 is unrelated Revival
+6,18,放屁,リス 栗の木リス,8,11,90,30009,Fart,11,17114,Squirrel,verified,Squirrel owns magical Fart SP11
+6,19,スイングテイル,みかんの木リス シュロの木リス,,12,53,30010,Tail Attack,12,17115,Orange Squ,verified,Orange Squirrel owns Tail Attack SP12
+6,20,連撃乱舞,リス (ウォーリン村NPC),8,16,69,30011,Tail Hit,16,17383,Squirrel,verified,Welling Squirrel owns distinct Tail Hit SP16; both squirrel icons reuse10039
+6,22,気刃,小黄トンボ 紺青トンボ 小赤トンボ 草緑トンボ 天空トンボ 飛翔トンボ,8,5,30,30034,Air Cut,5,17030,Yellow Dra,verified,Dragonfly owns magical Air Cut SP5
+6,23,熱視線,黄モアイ 青モアイ 赤モアイ 緑モアイ,8,45,250,30003,Red Ray,45,17342,Yellow Moa,verified,Yellow Moai owns magical Red Ray SP45
+6,30,ダブルホーン,大地野牛 河の野牛 炎の野牛 草原野牛,,,80,25013,Circle Run,20,17502,Ground Aur,approximate,Ground and Fire Urus own Circle Run; source says approximately80
+6,30,ダブルホーン,大地野牛 河の野牛 炎の野牛 草原野牛,,,80,17003,Urus Run,20,17503,River Auro,approximate,Water and Wind Urus own distinct Urus Run; source says approximately80
+6,31,連続後ろ蹴り,馬,8,19,89,25005,Horse Kick,19,17218,Blue Horse,verified,Horse owns Horse Kick SP19
+6,32,凶牙殺生,豹 白豹 黄豹 緑豹,,38,155,30106,Brute Bite,38,30016,Leopard,verified,Leopard owns Brute Bite SP38
+6,33,コウモリ旋風,土コウモリ 青コウモリ 赤コウモリ 緑コウモリ,8,28,120,25038,Bat Wind,28,17682,Brass Bat,verified,Bat owns neutral magical Bat Wind SP28
+6,36,ゴリラパンチ,ゴリラ,,,90,30051,Orangutan Rage,20,17233,Gorilla,approximate,Great Gorilla owns Orangutan Rage; source marks power90 with question mark
+6,37,爆裂メロディ,黄色オウム 水色オウム 赤色オウム 緑色オウム,8,47,83,30103,Sound Wave,47,30020,Brown Parr,verified,Parrot owns magical Sound Wave SP47
+6,38,ベノムバイト,毒蛇,,,120,11064,Viper,9,17186,Snake,approximate,Poison Snake owns Viper SP9; source marks power120 with question mark
+6,39,ベノムバイト,毒蛇 (カルカッタNPC),,7,25,15164,Viper,7,17466,Snake,approximate,Calcutta Snake owns separate Viper SP7; source marks power25 with question mark
+6,40,刺棘の園,柔らか蔓花 柔らか蔓花,8,8,41,30037,Combo Stab,8,17112,Tender Cir,verified,Tender Liana owns Combo Stab SP8
+6,41,キツネ火,キツネ 土キツネ 水色キツネ 赤キツネ 緑毛キツネ,8,50,120,30016,Fox's Fire Ball,50,17392,Little Fox,verified,Fox owns fire magical Fox Fire Ball SP50
+6,44,掴み去り,コンドル,,19,118,30038,Falling,19,17150,Vulture,verified,Vulture owns Falling SP19; catch and throw description
+6,45,刺尾重撃,黄剣竜 青剣竜 赤剣竜 緑剣竜,8,20,90,30044,Tail Stabbing,20,17306,Yellow Ste,verified,Stegosaur owns Tail Stabbing SP20

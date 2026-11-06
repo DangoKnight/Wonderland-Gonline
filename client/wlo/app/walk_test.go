@@ -1,11 +1,24 @@
 package app
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"wonderland-gonline/internal/protocol"
 )
+
+func TestHeldReplanPreservesElapsedMovement(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.GroundClick(300, 350)
+	x, y := c.World.Player.X, c.World.Player.Y
+	*now = now.Add(walkHoldRepeat)
+	c.GroundHold(true, 300, 350)
+	travel := math.Hypot(float64(c.World.Player.X-x), float64(c.World.Player.Y-y))
+	if travel < 14 {
+		t.Fatalf("held replan discarded elapsed movement: %.2f pixels", travel)
+	}
+}
 
 // enteredClient is a test client standing on Ship Deck, with its sent
 // packets collected.
@@ -23,7 +36,7 @@ func enteredClient(t *testing.T) (*Client, *time.Time, *[][]byte) {
 }
 
 // TestHoldWalk: holding the button after a ground click re-aims the walk at
-// the pointer every 400 ms; releasing stops re-aiming.
+// the pointer every 100 ms; releasing stops re-aiming.
 func TestHoldWalk(t *testing.T) {
 	c, now, sent := enteredClient(t)
 	c.GroundClick(300, 350)
@@ -33,9 +46,9 @@ func TestHoldWalk(t *testing.T) {
 	}
 	c.GroundHold(true, 320, 360) // too soon
 	if len(*sent) != first {
-		t.Fatal("re-aimed before 400 ms")
+		t.Fatal("re-aimed before the held-walk interval")
 	}
-	*now = now.Add(walkRepeat)
+	*now = now.Add(walkHoldRepeat)
 	c.GroundHold(true, 320, 360)
 	if len(*sent) == first {
 		t.Fatal("held button did not re-aim")

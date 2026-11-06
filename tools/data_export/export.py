@@ -268,6 +268,11 @@ def ground_record(data):
     flag0, flag1, count = read('<BBB')
     terrain['unknown_flags'] = [flag0, flag1]
     terrain['unknown_records'] = [dict(zip(('unknown_u32_0', 'unknown_u16_4', 'unknown_u16_6', 'unknown_u8_8'), read('<IHHB'))) for _ in range(count)]
+    # FUN_003fa0b8 draws these records as battle-scene rectangles. Retain the
+    # original export fields for compatibility with existing import snapshots.
+    terrain['battle_backdrop'] = flag1
+    terrain['battle_backdrop_regions'] = [dict(zip(('selector', 'left', 'top', 'right', 'bottom'),
+        struct.unpack('<BHHHH', struct.pack('<IHHB', *row.values())))) for row in terrain['unknown_records']]
     terrain['unknown_block_hex'] = bytes(read('<10B')).hex()
     terrain['unknown_u32_pair'] = list(read('<II'))
     terrain['color_rgb'] = list(read('<BBB'))

@@ -28,6 +28,7 @@ type NPC struct {
 	Now func() time.Time
 
 	sprite int
+	weapon uint16
 	colors Colors
 	// Lit draws the NPC highlighted, as while the pointer is over it.
 	Lit         bool
@@ -69,6 +70,10 @@ func NewNPC(lib *Library, look uint16, colors [npcColorParts]uint32) *NPC {
 
 // SetLit turns the hover highlight on or off.
 func (n *NPC) SetLit(on bool) { n.Lit = on }
+
+// SetBattleWeapon supplies the NPC's separate native weapon sprite. Combat
+// actors enable this layer (+0x1f81); ordinary map NPCs keep it hidden.
+func (n *NPC) SetBattleWeapon(sprite uint16) { n.weapon = sprite }
 
 // RestartAnimation is an authoritative scene action, even when its action
 // number matches the previously playing animation.
@@ -116,6 +121,27 @@ func (n *NPC) Draw(dst *surface.Surface, x, y, action int) {
 			colors = &lit
 		}
 		s.drawColoredScaled(dst, f, x, y, n.sprite, colors, n.rasterScale())
+		n.drawWeapon(dst, x, y, action, n.shown(count), colors)
+	}
+}
+
+// FUN_00433318 draws the default NPC weapon after the body, using the same
+// action/frame. Weapon archive canvases have FUN_002fe8e8's +68 ground offset.
+func (n *NPC) drawWeapon(dst *surface.Surface, x, y, action, frame int, colors *Colors) {
+	if n.weapon <= idsPerFamily*2 || n.weapon >= idsPerFamily*6 {
+		return
+	}
+	family := familyName(byte(int(n.weapon)/idsPerFamily-1)) + "w"
+	arc, key := n.Lib.lookup(family, int(n.weapon))
+	if arc == nil {
+		return
+	}
+	s := arc.sprite(key)
+	if s == nil || s.frameCount(action) == 0 {
+		return
+	}
+	if f := s.frame(action, frame%s.frameCount(action)); f != nil {
+		s.drawColoredScaled(dst, f, x, y+weaponGroundOffset*n.rasterScale(), int(n.weapon), colors, n.rasterScale())
 	}
 }
 

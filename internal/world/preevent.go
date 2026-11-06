@@ -145,6 +145,12 @@ func (w *World) conditionAt(c *game.Character, v *View, mapID uint16, ev *assets
 				mark = 1
 			}
 		}
+		// A positive inequality on an in-progress mark requires that mark
+		// to be running. An absent or archived quiz score is not a failed
+		// attempt; completing Noa's retry branch archives the old score.
+		if op == CompareNotEqual && value > 0 && (!exists || q.State != game.InProgress) {
+			return false
+		}
 		if !active && (op == CompareLessOrEqual || (op == CompareLess && value > 1) || op == CompareGreater || op == CompareGreaterOrEqual) {
 			return false
 		}

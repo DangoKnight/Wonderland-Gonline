@@ -228,7 +228,7 @@ func boundedArea(n NPC, def assets.MapNPC) (ActorBounds, bool) {
 // actorTargetArea shares movement and acquisition boundaries. Patrollers with
 // authored paths can pursue nearby players throughout the scene; pathless patrols
 // use the same fixed spawn leash as random roamers.
-func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC) (ActorBounds, bool) {
+func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC, fieldBattle bool) (ActorBounds, bool) {
 	if bounds, ok := boundedArea(n, def); ok {
 		return bounds, true
 	}
@@ -241,7 +241,7 @@ func actorTargetArea(mapID uint16, n NPC, def assets.MapNPC) (ActorBounds, bool)
 	default:
 		return ActorBounds{}, false
 	}
-	if RoamingTown(mapID) {
+	if RoamingTown(mapID) && !fieldBattle {
 		return ActorBounds{}, false
 	}
 	return roamArea(n), true
@@ -264,7 +264,7 @@ func (w *World) ActorTargetArea(mapID, click uint16) (ActorBounds, bool) {
 	if !ok {
 		return ActorBounds{}, false
 	}
-	return actorTargetArea(mapID, n, m.npcDefinition(click))
+	return actorTargetArea(mapID, n, m.npcDefinition(click), m.fieldBattles[click])
 }
 
 func (w *World) wanderPosition(mapID uint16, state *actorState, bounds ActorBounds, random func(int) int) (int, int) {
@@ -355,7 +355,7 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 		if paused[n.ClickID] || w.Defeated(mapID, n.ClickID) {
 			continue
 		}
-		area, mayPursue := actorTargetArea(mapID, n, def)
+		area, mayPursue := actorTargetArea(mapID, n, def, m.fieldBattles[n.ClickID])
 		target, hasTarget := targets[n.ClickID]
 		chasing := hasTarget && mayPursue && area.Contains(target.X, target.Y) && w.Wild(mapID, n)
 		interrupt := chasing && !state.pursuing && !now.Before(state.pursuitRetry)
@@ -385,7 +385,7 @@ func (w *World) AdvanceActorsToward(mapID uint16, now time.Time, paused map[uint
 			} else {
 				state.step = (state.step + 1) % len(path)
 			}
-		case (w.Wild(mapID, n) || def.WalkBehavior == walkRoam) && !RoamingTown(mapID):
+		case (w.Wild(mapID, n) || def.WalkBehavior == walkRoam) && (!RoamingTown(mapID) || m.fieldBattles[n.ClickID]):
 			x, y = w.wanderPosition(mapID, origin, roamArea(n), random)
 		default:
 			state.next = now.Add(actorStationaryDelay)

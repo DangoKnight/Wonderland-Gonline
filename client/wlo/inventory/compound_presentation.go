@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"math"
@@ -88,7 +90,7 @@ func (p *compoundPresentation) Paint() {
 	f := p.form
 	a := f.Abs()
 	if f.Junior.Visible {
-		f.Env.Text.Draw(a.X+38, a.Y+53, 0, false, true, f.Env.Screen, []byte("Use Junior Alchemy"), 13, 150, inventoryTextPaper, inventoryTextInk, 0)
+		f.Env.Text.Draw(a.X+38, a.Y+53, 0, false, true, f.Env.Screen, []byte(localization.UI("ui.inventory.use_junior_alchemy_43f5ad51")), 13, 150, inventoryTextPaper, inventoryTextInk, 0)
 	}
 	if f.TierButton.Visible {
 		f.Env.Pics.Draw(f.Env.Screen, f.Env.Pics.Find("Icon_UseCompoundSkill"), a.X+18, a.Y+47, true)

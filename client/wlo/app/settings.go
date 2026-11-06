@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"time"
 
@@ -25,7 +27,7 @@ func (c *Client) initSettings(path string) {
 	if l, err := settings.Load(path); err == nil {
 		c.SettingsState.Local = l
 	} else {
-		c.Chat.Notice("Could not load settings: " + err.Error())
+		c.Chat.Notice(localization.UI("ui.app.could_not_load_settings_c698905e") + err.Error())
 	}
 	c.Settings = settings.NewForm(c.Env, c.SettingsState)
 	c.UI.Add(c.Settings)
@@ -37,7 +39,7 @@ func (c *Client) initSettings(path string) {
 	c.Settings.Changed = func() {
 		c.applyLocalSettings()
 		if err := c.SettingsState.Local.Save(c.settingsPath); err != nil {
-			c.Chat.Notice("Could not save settings: " + err.Error())
+			c.Chat.Notice(localization.UI("ui.app.could_not_save_settings_e51e17c4") + err.Error())
 		}
 	}
 	c.Settings.OnHide = c.closeSettingsPrompt
@@ -68,7 +70,7 @@ func (c *Client) settingsPacket(p []byte) {
 	}
 	// Native AC33:1 reports rejected settings; refresh from the authoritative server.
 	if len(p) == 3 && p[1] == protocol.SettingsError {
-		c.Chat.Notice("The server rejected that setting.")
+		c.Chat.Notice(localization.UI("ui.app.the_server_rejected_that_setting_98cb9f44"))
 		c.Settings.Send([]byte{protocol.CommandSettings, protocol.SettingsSnapshot})
 		return
 	}
@@ -138,7 +140,7 @@ func (c *Client) settingsAction(action string) {
 	case "readme":
 		c.Chat.Notice("Wonderland Gonline: see docs/CLIENT.md and docs/GETTING_STARTED.md.")
 	case "spawn":
-		c.settingsPrompt("Select return point", []string{"Beach", "Record", "Carnie"}, func(i int) {
+		c.settingsPrompt(localization.UI("ui.app.select_return_point_12e68ead"), []string{localization.UI("ui.app.beach_c1624a26"), localization.UI("ui.app.record_bfdd5106"), localization.UI("ui.app.carnie_36d09707")}, func(i int) {
 			c.Settings.Send([]byte{protocol.CommandCharacterState, protocol.CharacterStateTeleport, byte(i + 1)})
 		})
 	case "logout":
@@ -146,7 +148,7 @@ func (c *Client) settingsAction(action string) {
 	case "exit":
 		c.logoutConfirmation(true)
 	default:
-		c.Chat.Notice("This settings service is not yet available in the Go client.")
+		c.Chat.Notice(localization.UI("ui.app.this_settings_service_is_not_yet_availab_e6613048"))
 	}
 }
 

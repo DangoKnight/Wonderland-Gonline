@@ -15,11 +15,14 @@ import (
 
 	"wonderland-gonline/internal/clientimage"
 	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/clienttext"
+	"wonderland-gonline/internal/localization"
 	"wonderland-gonline/internal/spritepack"
 )
 
 const PacksName = "_packs.json"
 const runtimeCompilerVersion = 2
+const compiledGroundLayoutVersion = 2 // Retain the native isometric scenery grid.
 const runtimePackDescriptorVersion = 1
 const compiledImageCodecVersion = 2
 const compiledGroundMaxGridSide = 900
@@ -76,6 +79,9 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	for _, name := range c.files {
+		if clienttext.IsExport(name) {
+			continue
+		}
 		if !runtimeSource(name) {
 			continue
 		}
@@ -83,10 +89,60 @@ func BuildRuntime(o Options) (Result, error) {
 			return Result{}, err
 		}
 	}
+	var textSources []string
+	for _, name := range c.files {
+		if clienttext.IsExport(name) {
+			textSources = append(textSources, name)
+		}
+	}
+	if len(textSources) > 0 {
+		if err := c.generateBytes("localized-text-"+clienttext.Fingerprint(), textSources, func(write func(string, []byte) error) error {
+			catalogs := clienttext.NewCatalogs()
+			for _, name := range textSources {
+				raw, err := os.ReadFile(filepath.Join(c.source, name))
+				if err != nil {
+					return err
+				}
+				keyed, texts, err := clienttext.CompileLocalizedDocument(name, raw)
+				if err != nil {
+					return err
+				}
+				clienttext.MergeCatalogs(catalogs, texts)
+				if err := write(name, keyed); err != nil {
+					return err
+				}
+			}
+			for code, values := range catalogs {
+				raw, err := json.Marshal(localization.Document{Version: localization.Version, Language: code, Strings: values})
+				if err != nil {
+					return err
+				}
+				if err := write(localization.Directory+"/"+code+".json", raw); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return Result{}, err
+		}
+	}
 	if err = c.compileImages(); err != nil {
 		return Result{}, err
 	}
 	if contains(c.files, "ground_data.json") {
+		if err = c.generate("battle-backdrops", []string{"ground_data.json"}, func(write func(string, any) error) error {
+			var doc clientruntime.BackdropExport
+			if e := c.readJSON("ground_data.json", &doc); e != nil {
+				return e
+			}
+			values, e := doc.Decode()
+			if e != nil {
+				return e
+			}
+			return write(clientruntime.BattleBackdropsFile, values)
+		}); err != nil {
+			return Result{}, err
+		}
 		if err = c.generate("ground", []string{"ground_data.json"}, func(write func(string, any) error) error {
 			var doc struct {
 				Entries []clientruntime.Ground `json:"entries"`
@@ -297,7 +353,7 @@ func runtimeSource(name string) bool {
 		return included(name) && !strings.HasSuffix(lower, ".png")
 	}
 	switch name {
-	case "item_data.json", "formula_data.json", "skill_data.json", "animation_data.json", "npc_data.json", "scene_data.json", "talk_data.json":
+	case "item_data.json", "formula_data.json", "skill_data.json", "animation_data.json", "npc_data.json", "scene_data.json", "talk_data.json", "mark_data.json":
 		return true
 	}
 	return false
@@ -458,6 +514,9 @@ func (c *runtimeCompiler) signature(deps []string) (string, error) {
 	h := sha256.New()
 	fmt.Fprintf(h, "runtime-%d\n", runtimeCompilerVersion)
 	for _, name := range deps {
+		if name == "ground_data.json" {
+			fmt.Fprintf(h, "ground-layout-%d\n", compiledGroundLayoutVersion)
+		}
 		sum, err := hashFile(filepath.Join(c.source, filepath.FromSlash(name)))
 		if err != nil {
 			return "", err

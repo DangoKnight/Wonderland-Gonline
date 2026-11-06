@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -54,7 +56,7 @@ func (v *VehicleStatus) Refresh() {
 	v.Height = max(1, info.Rows) * vehicleIconCellPixels
 	hint := info.Name
 	if info.Fuel > 0 {
-		hint += fmt.Sprintf("\nFuel: %d%%", percent(info.Fuel, info.Maximum))
+		hint += fmt.Sprintf(localization.UI("ui.hud.fuel_d_7bd959aa"), percent(info.Fuel, info.Maximum))
 	}
 	v.SetHint([]byte(hint))
 }

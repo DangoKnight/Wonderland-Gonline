@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"encoding/json"
@@ -210,7 +212,7 @@ func (c *Client) loadMail() {
 	if p := c.mailPath(); p != "" {
 		if b, err := os.ReadFile(p); err == nil {
 			if err := json.Unmarshal(b, &f); err != nil {
-				c.Chat.Notice("Could not load mail: " + err.Error())
+				c.Chat.Notice(localization.UI("ui.app.could_not_load_mail_7db89d36") + err.Error())
 				f = mailFile{}
 			}
 		}
@@ -239,6 +241,6 @@ func (c *Client) saveMail() {
 		err = os.WriteFile(p, b, 0o600)
 	}
 	if err != nil {
-		c.Chat.Notice("Could not save mail: " + err.Error())
+		c.Chat.Notice(localization.UI("ui.app.could_not_save_mail_1ae04a40") + err.Error())
 	}
 }

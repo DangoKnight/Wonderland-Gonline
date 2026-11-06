@@ -24,6 +24,7 @@ type Skill struct {
 	Element            byte             `json:"element"`
 	Attack             uint16           `json:"attack_category"`
 	EffectLayer        byte             `json:"effect_layer"`
+	BasePower          *float64         `json:"base_power,omitempty"` // Authored skill power; nil means unresolved.
 	PowerPerLevel      float64          `json:"power_per_level"`
 	StatMultiplier     float64          `json:"stat_multiplier"`
 	AdditionalDamage   uint16           `json:"additional_damage"`

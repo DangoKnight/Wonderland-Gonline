@@ -2,6 +2,10 @@
 
 Open **Teams** with the top toolbar's party button or **Ctrl+T**.
 
+The [2026-11-06 Legacy team capture](TEAM_PROTOCOL.md) records native join,
+following, leadership transfer, battle formation and disband exchanges, and
+documents the compatibility fixes and their native decompilation references.
+
 - Pet rows do not select pets or change the selection in Inventory and Skills.
   Following pets use their roster nickname when assigned; rename replies update
   the active follower immediately. Template names are only a fallback.
@@ -125,8 +129,29 @@ native controls. Private Server contains no working instance backend.
 See [Teams and instance checks](TESTING.md#teams-and-instance-checks) for automated
 coverage, graphics parity and the two-client acceptance checklist.
 
-Remaining presentation work includes native party walking formations. Dungeon
-objectives and rewards require verified source rules.
+Joining snaps the new follower to the leader's current position, as in native
+`FUN_00406e0c`, and then follows the normal walking trail. Replayed roster messages
+do not repeatedly teleport existing followers. Pets belonging to the leader and
+followers are hidden in the world while their owners are in the party. Their
+battle selection and combat participation remain active; leaving or disbanding
+makes them visible again beside their owner (`FUN_004274cc`).
+
+Party walking now follows the native leader trail, including local followers and
+other visible teams, without separate follower walk requests. Leadership changes
+require the candidate's five-second confirmation. Regular portals and scripted
+exits carry followers to the leader's destination. Membership survives asynchronous
+map loading; a failed transfer, independent follower warp or other split across
+maps disbands the entire team. The world scan also repairs unexpected split teams.
+leader departure clears the corresponding formation. The updated behavior still
+needs a repeated two-client live acceptance run. Dungeon objectives and rewards
+require verified source rules.
+
+Join Team selection ends after an empty world click. Incoming requests show the
+applicant's independent standing body preview (action 13) and name at the left of
+the confirmation panel, following `FUN_0025a8f8` / `FUN_0034c814`. Teammate HP/SP
+use the native `Panel34_1` / `Panel35_1` frames and `Panel31_1` / `Panel32_1` fills,
+with the two-pixel inset and 14-pixel row spacing from `FUN_0027580c` and
+`FUN_004794e0` / `FUN_00479600`.
 
 ## Native window presentation
 

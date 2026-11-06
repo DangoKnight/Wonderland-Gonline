@@ -75,7 +75,7 @@ func TestBattleResultsConfirmedProgressAndItemsAfterMapFade(t *testing.T) {
 	// Final post-close stat synchronization belongs to this battle too.
 	c.dispatch(exp)
 	showResultAfterFade(c, now)
-	want := []string{"Dango EXP gained: 75", "Dango level up: 3", "Roca EXP gained: 75", "Roca level up: 3", "Roca Amity lost: 1", "Gold gained: 40", "Items obtained:", "Pure Iron Ore x5"}
+	want := []string{"Dango EXP gained: 75", "Dango level up: 3", "Roca EXP gained: 75", "Roca level up: 3", "Roca Amity lost: 1"}
 	if !reflect.DeepEqual(c.battleResults.lines, want) || c.battleResults.form == nil || !c.battleResults.form.Visible {
 		t.Fatal("results", c.battleResults.lines)
 	}
@@ -128,7 +128,7 @@ func TestBattleResultsIncludeFinalPostCloseReceipts(t *testing.T) {
 	c.dispatch([]byte{26, 4, 15, 0, 0, 0})
 	c.dispatch(resultItemPacket(1, 300, 1))
 	showResultAfterFade(c, now)
-	if !reflect.DeepEqual(c.battleResults.lines, []string{"Dango EXP gained: 10", "Gold gained: 5", "Items obtained:", "Pure Iron Ore x1"}) {
+	if !reflect.DeepEqual(c.battleResults.lines, []string{"Dango EXP gained: 10"}) {
 		t.Fatal("late settlement lost", c.battleResults.lines)
 	}
 	// Unrelated later rewards must not modify the immutable displayed summary.
@@ -146,7 +146,7 @@ func TestBattleResultsReceiptsExcludeInvalidItemsAndConsumedStock(t *testing.T) 
 	c.dispatch(resultItemPacket(0, 300, 40)) // Malformed slot changes neither bag nor rewards.
 	closeResultBattle(c)
 	showResultAfterFade(c, now)
-	if !reflect.DeepEqual(c.battleResults.lines, []string{"Items obtained:", "Pure Iron Ore x2"}) || c.InventoryState.Bag[0].Count != 2 {
+	if len(c.battleResults.lines) != 0 || c.battleResults.form != nil || c.InventoryState.Bag[0].Count != 2 {
 		t.Fatal("predicted/incorrect items", c.battleResults.lines)
 	}
 }
@@ -165,7 +165,7 @@ func TestBattleResultsNoEmptyPopupAndLosses(t *testing.T) {
 			if !loss && (len(c.battleResults.lines) != 0 || c.battleResults.form != nil) {
 				t.Fatal("empty battle created reward popup")
 			}
-			if loss && !reflect.DeepEqual(c.battleResults.lines, []string{"Dango EXP lost: 5", "Roca Amity lost: 1"}) {
+			if loss && !reflect.DeepEqual(c.battleResults.lines, []string{"Roca Amity lost: 1"}) {
 				t.Fatal("loss summary", c.battleResults.lines)
 			}
 		})
@@ -195,15 +195,11 @@ func TestBattleResultsDesertionAndReusedPetSlot(t *testing.T) {
 
 func TestBattleResultsLongListScrollAndExpiry(t *testing.T) {
 	c, now := resultsClient(t)
-	for i := 0; i < 20; i++ {
-		id := uint16(300 + i)
-		c.items[id] = assets.NativeItem{Definition: game.ItemDefinition{ID: id, Name: fmt.Sprintf("Material %02d", i)}}
-		c.dispatch(resultItemPacket(byte(i+1), id, 1))
-	}
+	addLongBattleProgress(c)
 	closeResultBattle(c)
 	showResultAfterFade(c, now)
 	f := c.battleResults.form
-	if f == nil || !f.Visible || !f.scroll.Visible || len(f.list.Items) != 21 || f.Bottom() > ScreenHeight {
+	if f == nil || !f.Visible || !f.scroll.Visible || len(f.list.Items) != 8 || f.Bottom() > ScreenHeight {
 		t.Fatal("large list truncated or off-screen")
 	}
 	at := f.list.Abs()
@@ -213,7 +209,7 @@ func TestBattleResultsLongListScrollAndExpiry(t *testing.T) {
 		t.Fatal("centered notice lost wheel scrolling")
 	}
 	f.list.SetTop(len(f.list.Items) - f.list.RowsShown)
-	if string(f.list.Items[len(f.list.Items)-1]) != "Material 19 x1" || f.list.TopIndex == 0 {
+	if string(f.list.Items[len(f.list.Items)-1]) != "Pet 3 level up: 2" || f.list.TopIndex == 0 {
 		t.Fatal("last reward inaccessible")
 	}
 	at = f.Abs()
@@ -234,9 +230,7 @@ func TestBattleResultsClicksDismissNoticeExceptScrollbar(t *testing.T) {
 	for _, target := range []string{"panel", "text", "scrollbar"} {
 		t.Run(target, func(t *testing.T) {
 			c, now := resultsClient(t)
-			for i := 0; i < 8; i++ {
-				c.dispatch(resultItemPacket(byte(i+1), uint16(300+i), 1))
-			}
+			addLongBattleProgress(c)
 			closeResultBattle(c)
 			showResultAfterFade(c, now)
 			f := c.battleResults.form
@@ -270,6 +264,7 @@ func TestBattleResultsClicksDismissNoticeExceptScrollbar(t *testing.T) {
 func TestBattleResultsDisconnectAndCharacterReset(t *testing.T) {
 	t.Run("disconnect", func(t *testing.T) {
 		c, now := resultsClient(t)
+		c.dispatch(statUpdate(world.StatEXP, 16))
 		c.dispatch(resultItemPacket(1, 300, 1))
 		closeResultBattle(c)
 		showResultAfterFade(c, now)
@@ -307,7 +302,42 @@ func TestGonlineCombatResultsWaitForQueuedSettlement(t *testing.T) {
 		*now = now.Add(100 * time.Millisecond)
 		c.frame(false)
 	}
-	if c.battleResults.form == nil || !c.battleResults.form.Visible || strings.Join(c.battleResults.lines, ";") != "Dango EXP gained: 75;Items obtained:;Pure Iron Ore x3" {
+	if c.battleResults.form == nil || !c.battleResults.form.Visible || strings.Join(c.battleResults.lines, ";") != "Dango EXP gained: 75" {
 		t.Fatal("queued results", c.battleResults.lines)
+	}
+}
+
+func addLongBattleProgress(c *Client) {
+	c.dispatch(statUpdate(world.StatEXP, 16))
+	c.dispatch(statUpdate(world.StatLevel, 2))
+	for i := 0; i < 3; i++ {
+		pet := inventory.UsePet{ID: uint16(14162 + i), Name: []byte(fmt.Sprintf("Pet %d", i+1)), Amity: 100, Stats: world.Stats{Level: 1, HP: 100, EXP: 6}}
+		c.InventoryState.Pets[i] = pet
+		c.battleResults.before.pets[i] = resultPet(pet, i)
+		c.dispatch(game.PetStat(byte(i+1), 36, 16))
+		c.dispatch(game.PetStat(byte(i+1), 35, 2))
+	}
+}
+
+func TestBattleResultsOnlyDeadPetAmityLoss(t *testing.T) {
+	for _, alive := range []bool{false, true} {
+		t.Run(fmt.Sprint(alive), func(t *testing.T) {
+			c, now := resultsClient(t)
+			if alive {
+				c.dispatch(game.PetStat(1, 25, 100))
+			}
+			c.dispatch(game.PetStat(1, 64, 99))
+			c.dispatch(resultItemPacket(1, 300, 2))
+			c.dispatch([]byte{26, 4, 50, 0, 0, 0})
+			closeResultBattle(c)
+			showResultAfterFade(c, now)
+			if alive {
+				if len(c.battleResults.lines) != 0 || c.battleResults.form != nil {
+					t.Fatal("living pet loss or loot created a result message", c.battleResults.lines)
+				}
+			} else if !reflect.DeepEqual(c.battleResults.lines, []string{"Roca Amity lost: 1"}) {
+				t.Fatal("dead pet penalty missing", c.battleResults.lines)
+			}
+		})
 	}
 }

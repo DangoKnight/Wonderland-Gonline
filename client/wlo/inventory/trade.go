@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"strconv"
@@ -84,12 +86,12 @@ const (
 	tradeNoticeLong  = 3000 * time.Millisecond
 	tradeNoticeBrief = 1000 * time.Millisecond
 
-	noticeItemLocked      = "Item locked, can't use@"
-	noticeTooMuchGold     = "Can't give that much at once!"
-	noticeNotEnoughGold   = "Not enough Gold"
-	noticeFeatureDisabled = "Feature disabled"
-	noticeInventoryFull   = "Inventory full, can't trade"
-	noticeTooManyItems    = "Can't trade that much items"
+	noticeItemLocked      = "ui.inventory.item_locked_can_t_use_099d3a94"
+	noticeTooMuchGold     = "ui.inventory.can_t_give_that_much_at_once_0193a7c9"
+	noticeNotEnoughGold   = "ui.inventory.not_enough_gold_c1d5d70f"
+	noticeFeatureDisabled = "ui.inventory.feature_disabled_055d9a02"
+	noticeInventoryFull   = "ui.inventory.inventory_full_can_t_trade_74e40a51"
+	noticeTooManyItems    = "ui.inventory.can_t_trade_that_much_items_56ca77dc"
 )
 
 // Bag items the click path refuses without a notice (0x366a94): the
@@ -350,7 +352,7 @@ func (f *TradeForm) refresh() {
 // goldChanged is 0x367a38.
 func (f *TradeForm) goldChanged() {
 	if v, err := strconv.ParseUint(string(f.Gold.Text), 10, 64); err == nil && v > tradeGoldLimit {
-		f.notice(noticeTooMuchGold, tradeNoticeShort)
+		f.notice(localization.UI(noticeTooMuchGold), tradeNoticeShort)
 	}
 }
 
@@ -361,7 +363,7 @@ func (f *TradeForm) confirm() {
 	}
 	gold, _ := strconv.ParseUint(string(f.Gold.Text), 10, 64)
 	if f.PlayerGold == nil || gold > uint64(f.PlayerGold()) {
-		f.notice(noticeNotEnoughGold, tradeNoticeShort)
+		f.notice(localization.UI(noticeNotEnoughGold), tradeNoticeShort)
 		return
 	}
 	p := protocol.Builder{protocol.CommandTrade, protocol.TradeOffer}.U32(uint32(gold))
@@ -378,11 +380,11 @@ func (f *TradeForm) confirm() {
 // accept is 0x368000.
 func (f *TradeForm) accept() {
 	if f.busy() {
-		f.notice(noticeFeatureDisabled, tradeNotice)
+		f.notice(localization.UI(noticeFeatureDisabled), tradeNotice)
 		return
 	}
 	if !f.fits() {
-		f.notice(noticeInventoryFull, tradeNotice)
+		f.notice(localization.UI(noticeInventoryFull), tradeNotice)
 		return
 	}
 	f.Decision = protocol.TradeDecisionAccept
@@ -448,7 +450,7 @@ func (f *TradeForm) PartnerOffer(p []byte) bool {
 			pos = place(f.theirs[:], tradeRows, w, h)
 		}
 		if pos == 0 {
-			f.notice(noticeTooManyItems, tradeNotice)
+			f.notice(localization.UI(noticeTooManyItems), tradeNotice)
 			f.Close()
 			return true
 		}
@@ -464,39 +466,39 @@ func (f *TradeForm) Ended(result byte) {
 	if f.busy() {
 		return
 	}
-	text, d := "Interrupted", tradeNoticeBrief
+	text, d := localization.UI("ui.inventory.interrupted_132d124d"), tradeNoticeBrief
 	switch result {
 	case protocol.TradeResultSystemBusy:
-		text = "System busy, trade later"
+		text = localization.UI("ui.inventory.system_busy_trade_later_41217e0b")
 	case protocol.TradeResultDisconnected:
-		text = "Player disconnected"
+		text = localization.UI("ui.inventory.player_disconnected_b4aeb5d8")
 	case protocol.TradeResultBusy:
-		text = "Player is busy"
+		text = localization.UI("ui.inventory.player_is_busy_d6a58476")
 	case protocol.TradeResultCanceled:
-		text = "Canceled"
+		text = localization.UI("ui.inventory.canceled_13ca2ee2")
 		if f.Visible {
-			text = "Trade canceled"
+			text = localization.UI("ui.inventory.trade_canceled_142b0185")
 		}
 	case protocol.TradeResultCompleted:
-		text = "Trade complete"
+		text = localization.UI("ui.inventory.trade_complete_f9a432ee")
 	case protocol.TradeResultDifferentMaps:
-		text = "Players on diff maps"
+		text = localization.UI("ui.inventory.players_on_diff_maps_f0465d22")
 	case protocol.TradeResultNotEnoughGold:
-		text = "Not enough Gold"
+		text = localization.UI("ui.inventory.not_enough_gold_c1d5d70f")
 	case protocol.TradeResultInventoryFull:
-		text = "Player's inventory full"
+		text = localization.UI("ui.inventory.player_s_inventory_full_c747250a")
 	case protocol.TradeResultUnavailable:
-		text = "Can't trade now"
+		text = localization.UI("ui.inventory.can_t_trade_now_7200f201")
 	case protocol.TradeResultPartnerCanceled:
-		text = "Other player canceled trade"
+		text = localization.UI("ui.inventory.other_player_canceled_trade_4c5c479a")
 	case protocol.TradeResultStallInUse:
-		text = "Stall is in use"
+		text = localization.UI("ui.inventory.stall_is_in_use_13b099ff")
 	case protocol.TradeResultAlreadyTrading:
-		text = "Can't have few trades"
+		text = localization.UI("ui.inventory.can_t_have_few_trades_55fb7918")
 	case protocol.TradeResultPetCrafting:
-		text = "Can't trade, pet is crafting"
+		text = localization.UI("ui.inventory.can_t_trade_pet_is_crafting_53664374")
 	}
-	if text != "Interrupted" {
+	if text != localization.UI("ui.inventory.interrupted_132d124d") {
 		d = tradeNoticeLong
 	}
 	f.notice(text, d)
@@ -580,7 +582,7 @@ func (c *tradeCell) LeftDown(shift byte, x, y int) {
 		return
 	}
 	if it.Locked {
-		f.notice(noticeItemLocked, tradeNotice)
+		f.notice(localization.UI(noticeItemLocked), tradeNotice)
 		return
 	}
 	f.pressed = byte(c.index)

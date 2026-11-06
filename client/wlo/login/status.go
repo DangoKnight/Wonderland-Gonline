@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -46,7 +48,7 @@ const (
 )
 
 // jobNames are the tooltips of the job icons (PTR_DAT_004c980c).
-var jobNames = [...]string{1: "Killer", 2: "Warrior", 3: "Knight", 4: "Wit", 5: "Priest", 6: "Seer"}
+var jobNames = [...]string{1: localization.UI("ui.login.killer_e8e9edb9"), 2: localization.UI("ui.login.warrior_eaf0fe0a"), 3: localization.UI("ui.login.knight_f24b5246"), 4: localization.UI("ui.login.wit_c6aefa9d"), 5: localization.UI("ui.login.priest_909a4523"), 6: localization.UI("ui.login.seer_7484a0fe")}
 
 // jobIcons are the icons FUN_002618bc picks, small then large.
 var jobIcons = [...][2]string{
@@ -347,4 +349,10 @@ func (f *Formula) CombatValues(level int, element byte, attrs [5]uint16, contrib
 		out[i] = int32(delphiRound(v))
 	}
 	return
+}
+
+func init() {
+	localization.Register(func() {
+		jobNames = [...]string{1: localization.UI("ui.login.killer_e8e9edb9"), 2: localization.UI("ui.login.warrior_eaf0fe0a"), 3: localization.UI("ui.login.knight_f24b5246"), 4: localization.UI("ui.login.wit_c6aefa9d"), 5: localization.UI("ui.login.priest_909a4523"), 6: localization.UI("ui.login.seer_7484a0fe")}
+	})
 }

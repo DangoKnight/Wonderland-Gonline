@@ -25,7 +25,7 @@ func runClientWithSprites(assets, serverINI, snapshot, sprites string) error {
 	return runClientWithRenderer(assets, serverINI, snapshot, sprites, render.Auto)
 }
 
-func runClientWithRenderer(assets, serverINI, snapshot, sprites, renderer string) error {
+func runClientWithRenderer(assets, serverINI, snapshot, sprites, renderer string, languages ...string) error {
 	if err := render.Validate(renderer); err != nil {
 		return err
 	}
@@ -44,7 +44,11 @@ func runClientWithRenderer(assets, serverINI, snapshot, sprites, renderer string
 			serverINI = filepath.Join(filepath.Dir(assets), "SERVER.INI")
 		}
 	}
-	c, err := app.New(app.Options{Renderer: renderer, Root: root, UserRoot: userRoot, SpritesRoot: sprites, ServerINI: serverINI, FallbackINI: localServerINI})
+	language := ""
+	if len(languages) > 0 {
+		language = languages[0]
+	}
+	c, err := app.New(app.Options{Language: language, Renderer: renderer, Root: root, UserRoot: userRoot, SpritesRoot: sprites, ServerINI: serverINI, FallbackINI: localServerINI})
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,8 @@
 // panel (TSe_MainStatus) so far.
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"math/rand"
@@ -72,7 +74,7 @@ const (
 	statusButtonTop  = 0x6a
 	discussLeft      = 0x10
 	recoverLeft      = 0x27
-	recoverHint      = "Restore HP/SP using Potions and Bottles"
+	recoverHint      = "ui.hud.restore_hp_sp_using_potions_and_bottles_8c7c9b82"
 	elementSize      = 0x19
 )
 
@@ -94,7 +96,7 @@ func NewMainStatus(env *seui.Env, f *login.Formula, stats *world.Stats) *MainSta
 	m.Discuss.SetVisible(false)
 	m.Recover = seui.NewFixedButton(env, m)
 	m.Recover.Init("Btn_Allrecovery_1", recoverLeft, statusButtonSize, statusButtonSize, 0, 0, true, statusButtonSize, statusButtonSize, statusButtonTop)
-	m.Recover.SetHint([]byte(recoverHint))
+	m.Recover.BindLanguage("hint", func() { m.Recover.SetHint([]byte(localization.UI(recoverHint))) })
 	m.Pet = newPetStatus(env, m)
 	m.Vehicle = newVehicleStatus(env, m)
 	return m

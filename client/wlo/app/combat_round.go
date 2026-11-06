@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"time"
@@ -32,8 +34,16 @@ func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
 		return
 	}
+	if c.connectionCapabilitiesPacket(p) {
+		return
+	}
 	if protocol.IsCollectionTimingCapability(p) {
-		c.gonlineCollectionTiming = true
+		if !c.connection.offered && !c.connection.enabled {
+			c.gonlineCollectionTiming = true
+		}
+		return
+	}
+	if !(len(p) > 1 && p[0] == protocol.CommandHandshake && p[1] == protocol.HandshakeBackdropLocation) && c.backdropPacket(p) {
 		return
 	}
 	if c.combatCapabilitiesPacket(p) {
@@ -52,6 +62,9 @@ func (c *Client) dispatch(p []byte) {
 		c.combatPacket(p)
 		return
 	}
+	if c.backdropPacket(p) {
+		return
+	}
 	c.dispatchNative(p)
 }
 
@@ -61,6 +74,9 @@ func (c *Client) combatCapabilitiesPacket(p []byte) bool {
 	}
 	switch p[1] {
 	case protocol.HandshakeCombatOffer:
+		if c.connection.offered || c.connection.enabled {
+			return true
+		}
 		flags, valid := protocol.ParseCombatCapabilities(p, protocol.HandshakeCombatOffer)
 		if valid && flags&protocol.CombatCapabilityRoundChain != 0 && !c.combat.offered && !c.combat.enabled {
 			if c.Net.Send(protocol.CombatCapabilities(protocol.HandshakeCombatAccept, protocol.CombatCapabilityRoundChain)) == nil {
@@ -69,6 +85,9 @@ func (c *Client) combatCapabilitiesPacket(p []byte) bool {
 		}
 		return true
 	case protocol.HandshakeCombatEnabled:
+		if c.connection.offered || c.connection.enabled {
+			return true
+		}
 		flags, valid := protocol.ParseCombatCapabilities(p, protocol.HandshakeCombatEnabled)
 		if valid && c.combat.offered && flags == protocol.CombatCapabilityRoundChain {
 			c.combat.enabled = true
@@ -151,7 +170,7 @@ func (c *Client) combatPacket(p []byte) {
 }
 
 func (c *Client) invalidCombat() {
-	c.disconnectText = []byte("Invalid combat communication")
+	c.disconnectText = []byte(localization.UI("ui.app.invalid_combat_communication_8a4215fb"))
 	c.Net.Close()
 	c.disconnected()
 }

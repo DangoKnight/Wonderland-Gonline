@@ -59,6 +59,7 @@ func (m *Memo) SetBounds(left, top, width, height int) {
 
 // SetText replaces the text.
 func (m *Memo) SetText(s []byte) {
+	m.ClearLanguage("text")
 	m.Text = append([]byte(nil), s...)
 	if m.MaxLen > 0 && len(m.Text) > m.MaxLen {
 		m.Text = m.Text[:m.MaxLen]

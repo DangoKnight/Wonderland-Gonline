@@ -85,12 +85,12 @@ func TestRoundDamageAndOutcomes(t *testing.T) {
 	steps, outcome := b.Round(lowest)
 	m := b.Defenders[0]
 	// Hero (fire) ATK = round(1*2 + 5*2) = 12; slime DEF = round(5*2 + 0*2) = 10.
-	// Basic damage = 12*2 - 10 + roll 1 = 15; slime ATK 7 hits for the damage floor of 5.
-	if outcome != Continue || m.HP != 1000-15 || self.HP != 95 || len(steps) != 2 {
+	// floor((1.4*12 - .98*10)*1.3) + 1 = 10; the slime deals 3.
+	if outcome != Continue || m.HP != 1000-10 || self.HP != 97 || len(steps) != 2 {
 		t.Fatal(outcome, m.HP, self.HP, len(steps))
 	}
 	hit := steps[0].Packets[1]
-	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 15 || hit[20] != 1 {
+	if hit[0] != 50 || hit[1] != 1 || hit[2] != 0x11 || hit[15] != 0x19 || hit[16] != 10 || hit[20] != 1 {
 		t.Fatalf("hit record %v", hit)
 	}
 	// A magic skill spends SP and uses MAT against MDF.
@@ -142,7 +142,7 @@ func TestDropsAndElements(t *testing.T) {
 	if got := never.RollDrops(table, [5]uint16{1, 2}, known); len(got) != 0 {
 		t.Fatal("rate ignored", got)
 	}
-	if Elemental(3, 4) != 1.5 || Elemental(4, 3) != 0.6 || Elemental(2, 3) != 1.7 || Elemental(0, 3) != 1 {
+	if Elemental(3, 4) != 1.6 || Elemental(4, 3) != 0.7 || Elemental(2, 3) != 1.4 || Elemental(0, 3) != 1 {
 		t.Fatal("elements")
 	}
 }

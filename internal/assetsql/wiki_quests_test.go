@@ -12,7 +12,7 @@ import (
 )
 
 func TestQuestBranchMigrationFromTranslationAndDevelopmentSchemas(t *testing.T) {
-	for _, version := range []int{28, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 45} {
+	for _, version := range []int{28, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
 			path := runtimeDatabaseFixture(t)
 			if err := MigrateDatabase(path); err != nil {

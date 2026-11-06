@@ -142,19 +142,28 @@ func (m *Manager) Close() error {
 	return first
 }
 
+// NativeProgress reports background archive preparation without blocking the
+// render or network loop. Failed archives are settled and retain painted frames.
+func (m *Manager) NativeProgress() (settled, total int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, a := range m.archives {
+		if n := a.native; n != nil && n.opening {
+			total++
+			if n.json != nil || n.failed {
+				settled++
+			}
+		}
+	}
+	return
+}
+
 // WaitNative blocks until every archive loaded so far has finished opening
 // its sprites.json; tests and snapshots use it for deterministic colours.
 func (m *Manager) WaitNative() {
 	for {
-		m.mu.Lock()
-		busy := false
-		for _, a := range m.archives {
-			if n := a.native; n != nil && n.opening && n.json == nil && !n.failed {
-				busy = true
-			}
-		}
-		m.mu.Unlock()
-		if !busy {
+		settled, total := m.NativeProgress()
+		if settled == total {
 			return
 		}
 		sleepBriefly()

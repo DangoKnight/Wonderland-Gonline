@@ -1,6 +1,9 @@
 package battle
 
-import "wonderland-gonline/internal/assets"
+import (
+	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/game"
+)
 
 const (
 	monsterTargetAdvantageWeight    = 4
@@ -9,10 +12,15 @@ const (
 )
 
 func monsterTargetWeight(actor, target *Fighter) int {
-	switch relation := Elemental(actor.Element, target.Element); {
-	case relation > 1:
+	// Target preferences follow the elemental counter cycle. The damage matrix
+	// also includes inherent offense, which must not turn neutral matchups into
+	// counter-element preferences merely because a formula changed.
+	advantage := [5]byte{0, game.Water, game.Fire, game.Wind, game.Earth}
+	disadvantage := [5]byte{0, game.Wind, game.Earth, game.Water, game.Fire}
+	switch {
+	case actor.Element > 0 && int(actor.Element) < len(advantage) && target.Element == advantage[actor.Element]:
 		return monsterTargetAdvantageWeight
-	case relation < 1:
+	case actor.Element > 0 && int(actor.Element) < len(disadvantage) && target.Element == disadvantage[actor.Element]:
 		return monsterTargetDisadvantageWeight
 	default:
 		return monsterTargetNeutralWeight

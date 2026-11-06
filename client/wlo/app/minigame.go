@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"log"
@@ -168,13 +170,13 @@ func newSportStartForm(env *seui.Env, l sportLayout, click func(tag int)) *sport
 		b.SetHint([]byte(hint))
 		return b
 	}
-	f.Start = button("btn_Start_1", l.startLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagStart, "Start")
-	f.Leave = button("btn_Leave_1", l.leaveLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagLeave, "Leave")
+	f.Start = button("btn_Start_1", l.startLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagStart, localization.UI("ui.app.start_e4bb9f1e"))
+	f.Leave = button("btn_Leave_1", l.leaveLeft, sportButtonH, sportButtonW, l.buttonsTop, sportTagLeave, localization.UI("ui.app.leave_fc6e4a40"))
 	closeName := "btn_close_s_1"
 	if l.form == "MemGame_Exp" {
 		closeName = "btn_close_s_3"
 	}
-	f.Close = button(closeName, l.closeLeft, sportCloseSide, sportCloseSide, sportCloseTop, sportTagClose, "Leave")
+	f.Close = button(closeName, l.closeLeft, sportCloseSide, sportCloseSide, sportCloseTop, sportTagClose, localization.UI("ui.app.leave_fc6e4a40"))
 	if l.extra != "" {
 		f.extra, f.extraX, f.extraY = env.Pics.Find(l.extra), l.extraX, l.extraY
 	}

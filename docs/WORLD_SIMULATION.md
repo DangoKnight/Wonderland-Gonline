@@ -29,6 +29,13 @@ conversation facing must preserve that held pose.
 - Behavior 3 wanders within signed EVE offsets, bounded to ±300 pixels.
 - Behavior 4 and eligible wild monsters roam field maps with a 150-pixel leash.
   The native town classification is separate from random encounter safety.
+- Mobile field actors (flag 5, behaviors 2–5) with a linked battle-start action
+  are enemies regardless of the event header or template ID. This covers Chicken
+  Farm's kind 11, mushroom kind 8, ordinary kind 10 and patrollers using kinds
+  1/2 without map-specific exceptions. Both native battle action codes are
+  recognized; absent links use the same event-ID fallback as ordinary NPC clicks.
+  Noncombat walkers and stationary quest speakers are not made aggressive.
+  Authored field enemies can roam even on maps covered by the legacy town heuristic.
 - Behaviors 2–5 begin movement after 1–3 seconds and wait 1–3 seconds after
   estimated arrival before choosing another route. This replaces authored
   waypoint delays and the previous 5–10-second random roaming schedule.
@@ -54,6 +61,10 @@ is built once for all viewers. Events and battles reserve their actors. Packets 
 only to viewers who can see the actor and do not own it as a story companion.
 Private tent occupants and players on other maps receive no public-map movement.
 Failed recipients do not stop other viewers' updates.
+
+Field-combat classification is derived once when each immutable map is built
+(and rebuilt on a definition reload). Simulation and battle reservations use
+constant-time actor lookups rather than rescanning EVE branches every tick.
 
 Map-entry snapshots, actor show packets, NPC click reach and proximity encounters
 use interpolated current actor positions. Arrival gating uses native speed byte

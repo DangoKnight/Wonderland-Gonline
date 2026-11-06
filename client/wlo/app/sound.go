@@ -1,21 +1,17 @@
 package app
 
 import (
-	"bytes"
 	"io"
-	"path/filepath"
 	"strings"
 	"sync"
 	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
-	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 
 	"wonderland-gonline/client/wlo/login"
 )
 
-// sampleRate is the mixing rate; wave files are resampled to it.
+// sampleRate is the mixing rate; Vorbis and legacy wave sources are resampled to it.
 const sampleRate = 44100
 const voicePendingLimit = 1 // Keep only the newest line behind the active decoder.
 
@@ -119,16 +115,12 @@ func (s *Sounds) PCM(path string) []byte {
 }
 
 func decodeAudioPCM(path string) []byte {
+	path = audioAssetPath(path)
 	raw, err := clientfs.ReadFile(path)
 	if err != nil {
 		return nil
 	}
-	var decoded io.Reader
-	if strings.EqualFold(filepath.Ext(path), ".ogg") {
-		decoded, err = vorbis.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
-	} else {
-		decoded, err = wav.DecodeWithSampleRate(sampleRate, bytes.NewReader(raw))
-	}
+	decoded, err := decodeAudioStream(raw, path, sampleRate)
 	if err != nil {
 		return nil
 	}

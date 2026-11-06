@@ -10,11 +10,19 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 46
+const catalogSchemaVersion = 54
+const skillPowerSchemaVersion = 53
+const uniqueSkillPowerSchemaVersion = 54
+const nativeNoaConversationSchemaVersion = 52
+const nativeXaolanRecruitmentContinuationSchemaVersion = 51
+const nativeMapBackdropSchemaVersion = 50
 const nativeQuestPolicyRevisionSchemaVersion = 43
 const nativeQuestVisibilityRevisionSchemaVersion = 44
 const nativeQuestBackdropRevisionSchemaVersion = 45
 const nativeXaolanVisibilityRevisionSchemaVersion = 46
+const nativeXaolanBackdropRevisionSchemaVersion = 47
+const nativeEncounterBackdropRevisionSchemaVersion = 48
+const nativeSeaflowerBackdropRevisionSchemaVersion = 49
 
 // Branch compatibility: Client v30 introduced collection respawns while quest
 // v29 onward introduced independent content batches from the common v28 base.
@@ -54,6 +62,12 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		// Older migrations read complete skill rows through the generated model.
+		if schema.Version < skillPowerSchemaVersion {
+			if err := addSkillPowerColumns(tx); err != nil {
+				return err
+			}
 		}
 		// Client v30 and quest v30 used the same version for different features.
 		// Detect the Client lineage before adding its collection projection.
@@ -555,6 +569,44 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < nativeXaolanBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV47); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeEncounterBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV48); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeSeaflowerBackdropRevisionSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV49); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeMapBackdropSchemaVersion {
+			if err := migrateBattleBackdrops(tx); err != nil {
+				return err
+			}
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV50); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeXaolanRecruitmentContinuationSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV51); err != nil {
+				return err
+			}
+		}
+		if schema.Version < nativeNoaConversationSchemaVersion {
+			if err := migrateStoryRevision(tx, nativeQuestRevisionV52); err != nil {
+				return err
+			}
+		}
+		if schema.Version < uniqueSkillPowerSchemaVersion {
+			if err := migrateSkillPowers(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -589,6 +641,10 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Terrains, err = importedTerrains(tx)
+	if err != nil {
+		return err
+	}
+	c.BattleBackdrops, err = importedBattleBackdrops(tx)
 	if err != nil {
 		return err
 	}
@@ -668,6 +724,9 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	initializeCollectionUsage(c)
+	if err := seedSkillPowers(c); err != nil {
+		return err
+	}
 	for _, model := range append(catalogTables(), &catalogSchema{}) {
 		if err := tx.Migrator().CreateTable(model); err != nil {
 			return err
@@ -731,6 +790,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	if err = assets.ValidateTerrains(c.Terrains); err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateBattleBackdrops(c.BattleBackdrops); err != nil {
 		return nil, err
 	}
 	if err = assets.ValidateArcades(c.Arcades, c.Items); err != nil {

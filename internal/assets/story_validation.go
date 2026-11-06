@@ -90,7 +90,7 @@ func ValidateStoryDefinitions(d StoryDefinitions) error {
 				return fmt.Errorf("invalid visit visibility scope")
 			}
 		case StoryBattleBackground:
-			if r.Value < 0 || r.Value > math.MaxUint16 || r.Pattern != (StoryPattern{}) {
+			if r.Value < 0 || r.Value > math.MaxUint8 || r.Pattern != (StoryPattern{}) {
 				return fmt.Errorf("invalid story battle background")
 			}
 		case StoryConstellation:

@@ -312,6 +312,9 @@ func (k *Walker) Step(p *Player, now time.Time) {
 // WalkTo starts the player walking toward a point on the scene (scene
 // coordinates). It reports whether a path was found.
 func (w *World) WalkTo(x, y int, now time.Time) bool {
+	if w.FollowingTeam() {
+		return false
+	}
 	path := w.Scene.Plan(w.Player.X, w.Player.Y, x, y)
 	if path == nil {
 		return false
@@ -329,6 +332,11 @@ func (w *World) Walking() bool { return w.walker.Walking() }
 
 // Step moves all session-owned actors, including server-driven roaming NPCs.
 func (w *World) Step(now time.Time) {
+	if w.TeamFollowingPaused {
+		for _, id := range w.TeamMembers(w.Player.ID) {
+			w.stopTeamFollower(id)
+		}
+	}
 	w.walker.Step(&w.Player, now)
 	for _, p := range w.Peers {
 		p.Walker.Step(&p.Player, now)
@@ -336,11 +344,18 @@ func (w *World) Step(now time.Time) {
 	for _, n := range w.NPCs {
 		n.stepWalk(now)
 	}
+	w.stepTeamFollowing(now)
 	for owner, companion := range w.Companions {
+		if w.inTeam(owner) {
+			companion.initialized = false
+			companion.walker.Stop(&companion.position)
+			continue
+		}
 		if p := w.companionOwner(owner); p != nil {
 			companion.step(p, now)
 		}
 	}
+	w.stepCamera(now)
 }
 
 // Water follows the native shore transition checks in FUN_0041897c.
@@ -425,8 +440,11 @@ func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
 
 // Relocate resets interpolated walking before a native shore transition.
 func (w *World) Relocate(point image.Point) {
+	w.resetTeamTrail(w.Player.ID)
 	w.StopWalk()
+	w.Marker.Hide()
 	w.Player.X, w.Player.Y = point.X, point.Y
+	w.followCamera.ready = false
 }
 
 // SameCell compares points on the native walk grid.

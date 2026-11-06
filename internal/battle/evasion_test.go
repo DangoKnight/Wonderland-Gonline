@@ -272,9 +272,12 @@ func TestShieldDefenseBuffsDefenseAgainstAllAttackCategories(t *testing.T) {
 				t.Fatal("Shield Defense cast changed cost, HP or proficiency")
 			}
 			r.attack(b, []Action{a}, map[int]bool{})
-			want := damage - 5
-			if Basic(tc.skill) {
-				want = damage - 10
+			want := 41 // Low-ATK physical branch against DEF 110.
+			if tc.layer == 2 || tc.name == "staff" {
+				want = 33 // Magic continues to use 1.4*MATK - .98*MDEF.
+			}
+			if damage != 43 {
+				t.Fatal("unshielded reference damage", damage)
 			}
 			if f.Def != 100 || f.Mdef != 100 || f.defense() != 110 || f.magicDefense() != 110 {
 				t.Fatal("stat buff overwrote base or failed")

@@ -1,15 +1,10 @@
 package app
 
 import (
-	"bytes"
 	"strings"
 	"sync"
-	"wonderland-gonline/internal/clientfs"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/hajimehoshi/ebiten/v2/audio/wav"
-
-	"wonderland-gonline/client/wlo/login"
 )
 
 // Background music. At login FormCreate's timer (CheckStartMusic,
@@ -48,12 +43,12 @@ func (m *Music) Play(path string) {
 	}
 	m.stop()
 	m.current = path
-	raw, err := readTrack(m, path)
+	raw, resolved, err := readAudioAsset(m.Root, path)
 	if err != nil {
 		return
 	}
 	ctx := m.Context()
-	s, err := wav.DecodeWithSampleRate(ctx.SampleRate(), bytes.NewReader(raw))
+	s, err := decodeAudioStream(raw, resolved, ctx.SampleRate())
 	if err != nil {
 		return
 	}
@@ -67,11 +62,6 @@ func (m *Music) Play(path string) {
 		p.SetVolume(m.volume)
 	}
 	p.Play()
-}
-
-// readTrack reads a track's file.
-func readTrack(m *Music, path string) ([]byte, error) {
-	return clientfs.ReadFile(login.Path(m.Root, strings.Split(path, `\`)...))
 }
 
 // Stop ends the music.

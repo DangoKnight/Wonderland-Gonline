@@ -1,5 +1,7 @@
 package settings
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strings"
@@ -228,7 +230,7 @@ func (f *Form) Paint() {
 	setToggle(f.Env, f.Sound, f.State.Local.SoundOn)
 	setToggle(f.Env, f.Zoom, f.State.Local.Zoom)
 	f.Panel.Paint()
-	for row, label := range []string{"Local", "Whisper", "Team", "Guild", "World"} {
+	for row, label := range []string{localization.UI("ui.settings.local_8c31e6e7"), localization.UI("ui.settings.whisper_41714d2c"), localization.UI("ui.settings.team_5985039f"), localization.UI("ui.settings.guild_298ffc49"), localization.UI("ui.settings.world_78ae647d")} {
 		f.Env.Text.Draw(f.Left+colorSampleX, f.Top+colorSampleY+row*colorRowHeight, 0, false, true, f.Env.Screen, []byte(label), 0, 60, 0, Palette[f.State.Local.Colors[row]], 2)
 	}
 	for row, v := range []int{f.State.Local.MusicVolume, f.State.Local.SoundVolume} {

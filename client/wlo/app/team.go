@@ -1,14 +1,18 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"image"
+	"strconv"
 	"time"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/team"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -42,6 +46,30 @@ func (c *Client) initTeam() {
 	}
 	c.Team.Notice = c.Chat.Notice
 	c.Team.NameOf = c.playerName
+	// FUN_0025a8f8/FUN_0034c814 copy the applicant into the request window.
+	// This preview must not change the animated overworld role.
+	applicants := make(map[uint32]*role.Human)
+	c.Team.DrawPlayerBody = func(id uint32, x, y, action int) {
+		if c.lib == nil || c.World == nil {
+			return
+		}
+		peer := c.World.Peers[id]
+		if peer == nil {
+			peer = c.teamAppearances[id]
+		}
+		if peer == nil {
+			return
+		}
+		h := applicants[id]
+		if h == nil {
+			h = role.NewHuman(c.lib, c.items)
+			h.Now = c.Now
+			h.Hold(0, false)
+			applicants[id] = h
+		}
+		world.Dress(h, peer.Player)
+		h.DrawBody(c.Screen, x, y, int32(action))
+	}
 	// Confirmation previews have their own fixed frame, independent of Inventory.
 	previews := make(map[uint16]*role.NPC)
 	preview := func(slot byte) *role.NPC {
@@ -135,7 +163,7 @@ func (c *Client) toggleJoinTeam() {
 		return
 	}
 	if c.inTeam() {
-		c.Notices.Show([]byte("Leave your current party before joining another."), inventoryWarningDuration, c.Now())
+		c.Notices.Show([]byte(localization.UI("ui.app.leave_your_current_party_before_joining__c47308b7")), inventoryWarningDuration, c.Now())
 		return
 	}
 	c.Team.Hide()
@@ -192,12 +220,16 @@ func (c *Client) teamTargetAt(x, y int) bool {
 		return true
 	}
 	if id := c.World.TeamTargetAt(x, y); id != 0 {
+		if members := c.World.TeamMembers(id); len(members) > 1 {
+			id = members[0]
+		}
 		c.setJoinTeamTarget(false)
 		if err := c.Net.Send(protocol.Builder{protocol.CommandTeam, protocol.TeamRequest}.U32(id)); err != nil {
 			c.Notices.Show([]byte(err.Error()), inventoryWarningDuration, c.Now())
 		}
 		return true
 	}
+	c.setJoinTeamTarget(false)
 	return true
 }
 func (c *Client) rememberTeammate(peer *world.Peer) {
@@ -229,9 +261,12 @@ func (c *Client) teamPacket(p []byte) bool {
 		}
 		return true
 	case protocol.CommandTeam:
+		if p[1] == protocol.TeamLeadershipNotice {
+			return c.teamLeadershipPacket(p)
+		}
 		switch p[1] {
 		case protocol.TeamRoster:
-			if !c.TeamState.ApplyRoster(p) && c.Unhandled != nil {
+			if !c.applyTeamFormation(p) && c.Unhandled != nil {
 				c.Unhandled(p)
 			}
 			if c.inTeam() {
@@ -240,18 +275,24 @@ func (c *Client) teamPacket(p []byte) bool {
 			c.Team.Refresh()
 			return true
 		case protocol.TeamRequest:
-			if len(p) < 7 || len(p) != 7+int(p[6]) {
+			if len(p) != protocol.TeamIDPacketBytes && (len(p) < protocol.TeamJoinReplyBytes || len(p) != protocol.TeamJoinReplyBytes+int(p[6])) {
 				if c.Unhandled != nil {
 					c.Unhandled(p)
 				}
 				return true
 			}
 			id := binary.LittleEndian.Uint32(p[2:])
-			name := append([]byte(nil), p[7:]...)
+			name := append([]byte(nil), c.playerName(id)...)
+			if len(p) > protocol.TeamIDPacketBytes {
+				name = append([]byte(nil), p[7:]...)
+			}
+			if len(name) == 0 {
+				name = []byte(localization.UI("ui.team.player_2b656543") + strconv.FormatUint(uint64(id), 10))
+			}
 			if id == 0 || id == c.World.Player.ID {
 				return true
 			}
-			c.Team.Confirm(string(name)+": Please let me join you!", 0, func() {
+			c.Team.ConfirmApplicant(id, name, localization.UI("ui.app.please_let_me_join_you_d49b7c95"), func() {
 				if c.Inventory.CanAct() {
 					if err := c.Net.Send(protocol.Builder{protocol.CommandTeam, protocol.TeamReply, 1}.U32(id)); err != nil {
 						c.Notices.Show([]byte(err.Error()), inventoryWarningDuration, c.Now())
@@ -265,13 +306,20 @@ func (c *Client) teamPacket(p []byte) bool {
 				}
 			})
 			return true
-		case protocol.TeamLeave:
-			if len(p) == 6 && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID {
-				c.TeamState.Reset(c.World.Player.ID)
+		case protocol.TeamReply:
+			if len(p) == protocol.TeamJoinReplyBytes && p[2] == 1 {
+				leader := binary.LittleEndian.Uint32(p[3:])
+				if leader != c.World.Player.ID {
+					c.applyTeamFormation(protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(leader).U32(c.World.Player.ID))
+				}
 			}
 			return true
+		case protocol.TeamLeave:
+			c.applyTeamFormation(p)
+			return true
 		case protocol.TeamFormation:
-			return true // Public follow presentation is independent of own membership.
+			c.applyTeamFormation(p)
+			return true
 		}
 	case protocol.CommandStats:
 		if p[1] == protocol.StatsWireCode3 {
@@ -389,6 +437,7 @@ func (c *Client) showCompanion(owner uint32, id uint16, name []byte) {
 	}
 	t, ok := c.npcTemplates[uint32(id)]
 	if !ok {
+		c.World.SetCompanion(owner, uint32(id), name, nil)
 		return
 	}
 	if len(name) == 0 && owner == c.World.Player.ID {
@@ -400,7 +449,7 @@ func (c *Client) showCompanion(owner uint32, id uint16, name []byte) {
 		}
 	}
 	if len(name) == 0 {
-		name = []byte(t.Name)
+		name = clientassets.Big5Text(t.Name)
 	}
 	var painter world.NPCPainter
 	if c.lib != nil {

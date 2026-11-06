@@ -151,7 +151,7 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	if err := s.partyCommand(ctx, bobby, protocol.Builder{13, 1}.U32(a)); err != nil {
 		t.Fatal(err)
 	}
-	want, _ := protocol.Builder{13, 1}.U32(b).String("Bobby")
+	want := protocol.Builder{13, 1}.U32(b)
 	if got := wires[0].packets(t); len(got) != 1 || !bytes.Equal(got[0], want) {
 		t.Fatalf("request: %v", got)
 	}
@@ -200,13 +200,19 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	}
 
 	// Only the leader transfers or kicks.
-	if err := s.partyCommand(ctx, bobby, protocol.Builder{13, 10}.U32(a)); err != nil {
+	if err := s.partyCommand(ctx, bobby, protocol.Builder{13, 10, 1}.U32(a)); err != nil {
 		t.Fatal(err)
 	}
 	if alice.party.leader() != alice {
 		t.Fatal("member transferred leadership")
 	}
-	if err := s.partyCommand(ctx, alice, protocol.Builder{13, 10}.U32(b)); err != nil {
+	if err := s.partyCommand(ctx, alice, protocol.Builder{13, 10, 1}.U32(b)); err != nil {
+		t.Fatal(err)
+	}
+	if alice.party.leader() != alice {
+		t.Fatal("leadership changed without acceptance")
+	}
+	if err := s.partyCommand(ctx, bobby, []byte{13, 10, 2, 3}); err != nil {
 		t.Fatal(err)
 	}
 	if alice.party.leader() != bobby || !hasPacket(wires[0].packets(t), protocol.Builder{13, 6}.U32(b).U8(1).U32(a)) {

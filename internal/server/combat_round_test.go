@@ -42,7 +42,7 @@ func TestGonlineCombatNegotiation(t *testing.T) {
 	c.battle.timer.Stop()
 	c.battle = nil
 	w.Reset()
-	accept := []byte{1, 241, 71, 76, 66, 82, 1, 0, 1, 0, 0, 0}
+	accept := []byte{1, 249, 71, 76, 79, 78, 1, 0, 2, 0, 0, 0}
 	if err := s.dispatch(context.Background(), c, accept); err == nil || c.combatCapabilities != 0 {
 		t.Fatal("unsolicited acceptance")
 	}
@@ -50,13 +50,14 @@ func TestGonlineCombatNegotiation(t *testing.T) {
 		t.Fatal(err)
 	}
 	packets := w.packets(t)
-	if len(packets) != 4 || !bytes.Equal(packets[3], []byte{1, 240, 71, 76, 66, 82, 1, 0, 1, 0, 0, 0}) {
+	// Includes the complete-map-snapshot bit; acceptance below selects only combat.
+	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 15, 0, 0, 0}) {
 		t.Fatal("offer", packets)
 	}
 	if err := s.dispatch(context.Background(), c, accept); err != nil || c.combatCapabilities != 1 {
 		t.Fatal("negotiation", err)
 	}
-	if !contains(w.packets(t), []byte{1, 242, 71, 76, 66, 82, 1, 0, 1, 0, 0, 0}) {
+	if !contains(w.packets(t), []byte{1, 250, 71, 76, 79, 78, 1, 0, 2, 0, 0, 0}) {
 		t.Fatal("missing confirmation")
 	}
 	// The generic native handshake remains unchanged, even at extension subcodes.
@@ -76,11 +77,11 @@ func TestGonlineCombatDisabledByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	packets := w.packets(t)
-	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 243, 71, 76, 67, 84, 1, 0}) || c.combatOffered || s.combatRoundChain {
+	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 13, 0, 0, 0}) || c.combatOffered || s.combatRoundChain {
 		t.Fatal("default server offered full-round combat", packets)
 	}
 	c.combatOffered = true // Even a stale/forged offer cannot bypass the startup gate.
-	if err := s.acceptCombatProtocol(c, []byte{1, 241, 71, 76, 66, 82, 1, 0, 1, 0, 0, 0}); err == nil || c.combatCapabilities != 0 || w.Len() != 0 {
+	if err := s.acceptConnectionProtocol(c, []byte{1, 249, 71, 76, 79, 78, 1, 0, 2, 0, 0, 0}); err == nil || c.combatCapabilities != 0 || w.Len() != 0 {
 		t.Fatal("disabled extension was accepted or acknowledged", err)
 	}
 }
@@ -97,7 +98,7 @@ func TestGonlineCombatEnabledKeepsUnnegotiatedClientNative(t *testing.T) {
 	if err := s.discoveryCommand(context.Background(), c, nil); err != nil {
 		t.Fatal(err)
 	}
-	if len(w.packets(t)) != 4 || !c.combatOffered || c.combatCapabilities != 0 {
+	if len(w.packets(t)) != 3 || c.connectionOffered != 15 || c.combatCapabilities != 0 {
 		t.Fatal("offer activated transport without acceptance")
 	}
 	// A legacy-style short handshake reply cannot enable full-round delivery.

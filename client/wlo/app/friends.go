@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"time"
@@ -33,16 +35,16 @@ const (
 
 	friendRefuseSound = `sound\wav0151.wav`
 
-	noticeNotHere        = "Not available here"
-	noticeTemporarilyOff = "Temporary unavailable"
-	noticeAlreadyFriend  = "Already your friendW"
-	noticeTooManyFriends = "Too many friends in list"
-	friendAsks           = " wants to add you as a friend"
-	friendNoticePrefix   = "Player "
-	friendAccepted       = " friend accepted"
-	friendRefused        = " refused to add"
-	friendIgnored        = " ignored"
-	friendBusy           = "Player busy"
+	noticeNotHere        = "ui.app.not_available_here_3a63b49d"
+	noticeTemporarilyOff = "ui.app.temporary_unavailable_21cbd418"
+	noticeAlreadyFriend  = "ui.app.already_your_friendw_8d2f68e9"
+	noticeTooManyFriends = "ui.app.too_many_friends_in_list_14e614b6"
+	friendAsks           = "ui.app.wants_to_add_you_as_a_friend_f5064aa9"
+	friendNoticePrefix   = "ui.app.player_2b656543"
+	friendAccepted       = "ui.app.friend_accepted_9d59112f"
+	friendRefused        = "ui.app.refused_to_add_799f16a8"
+	friendIgnored        = "ui.app.ignored_dfcfd33c"
+	friendBusy           = "ui.app.player_busy_de73189c"
 
 	noticeHereDuration = 2000 * time.Millisecond
 	noticeTempDuration = 1200 * time.Millisecond
@@ -67,10 +69,10 @@ func (c *Client) toolbarBlocked(tag int) bool {
 	}
 	switch m := c.World.Player.Map; {
 	case m == mapNoToolbarA || m == mapNoToolbarB:
-		c.friendNotice(noticeNotHere, noticeHereDuration)
+		c.friendNotice(localization.UI(noticeNotHere), noticeHereDuration)
 		return true
 	case (tag == joinTeamButton || tag == makeFriendsButton) && m == mapNoTeamOrFriends:
-		c.friendNotice(noticeTemporarilyOff, noticeTempDuration)
+		c.friendNotice(localization.UI(noticeTemporarilyOff), noticeTempDuration)
 		return true
 	}
 	return false
@@ -82,7 +84,7 @@ func (c *Client) makeFriends() {
 		return
 	}
 	if c.World.Player.Map == mapNoMakeFriends {
-		c.friendNotice(noticeNotHere, noticeFriendsHere)
+		c.friendNotice(localization.UI(noticeNotHere), noticeFriendsHere)
 		return
 	}
 	if c.Social == nil || len(c.Social.Friends)-1 >= friendListLimit {
@@ -117,7 +119,7 @@ func (c *Client) friendTargetAt(x, y int) bool {
 	}
 	c.setFriendTarget(false)
 	if _, ok := c.friend(id); ok {
-		c.friendNotice(noticeAlreadyFriend, noticeFriendAnswer)
+		c.friendNotice(localization.UI(noticeAlreadyFriend), noticeFriendAnswer)
 		return true
 	}
 	c.Net.Send(protocol.Builder{protocol.CommandFriends, protocol.FriendsRequest}.U32(id))
@@ -141,10 +143,10 @@ func (c *Client) askFriend(p []byte) bool {
 	name := c.peerName(id)
 	ask := &friendAsk{id: id, until: c.Now().Add(friendAskTimeout)}
 	c.friendAsk = ask
-	ask.dismiss = c.Team.Confirm(string(name)+friendAsks, 0, func() {
+	ask.dismiss = c.Team.Confirm(string(name)+localization.UI(friendAsks), 0, func() {
 		c.friendAsk = nil
 		if c.Social != nil && len(c.Social.Friends)-1 >= friendListLimit {
-			c.friendNotice(noticeTooManyFriends, noticeFriendAnswer)
+			c.friendNotice(localization.UI(noticeTooManyFriends), noticeFriendAnswer)
 			c.answerFriend(id, friendAnswerRefuse)
 			return
 		}
@@ -186,13 +188,13 @@ func (c *Client) friendAnswered(p []byte) bool {
 	switch p[5] {
 	case friendAnswerAccept:
 		c.addFriend(id)
-		c.friendNotice(friendNoticePrefix+name+friendAccepted, noticeFriendAnswer)
+		c.friendNotice(localization.UI(friendNoticePrefix)+name+localization.UI(friendAccepted), noticeFriendAnswer)
 	case friendAnswerRefuse:
-		c.friendNotice(friendNoticePrefix+name+friendRefused, noticeFriendAnswer)
+		c.friendNotice(localization.UI(friendNoticePrefix)+name+localization.UI(friendRefused), noticeFriendAnswer)
 	case friendAnswerIgnore:
-		c.friendNotice(friendNoticePrefix+name+friendIgnored, noticeFriendAnswer)
+		c.friendNotice(localization.UI(friendNoticePrefix)+name+localization.UI(friendIgnored), noticeFriendAnswer)
 	default:
-		c.friendNotice(friendNoticePrefix+name+friendBusy, noticeFriendAnswer)
+		c.friendNotice(localization.UI(friendNoticePrefix)+name+localization.UI(friendBusy), noticeFriendAnswer)
 	}
 	return true
 }

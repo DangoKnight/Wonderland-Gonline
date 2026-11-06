@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"strconv"
@@ -24,10 +26,10 @@ const (
 	mapNoBusinessA = 10079 // 0x275f, FUN_004851a4
 	mapNoBusinessB = 10095 // 0x276f
 
-	noticeTradeHere      = "Can't trade here"
-	noticeRequiresLevel  = "Requires player LV25!"
-	noticeOnlineTime     = "Not enough online time to use!"
-	noticeTargetLevel    = "Player is below LV25!"
+	noticeTradeHere      = "ui.app.can_t_trade_here_4570ba5e"
+	noticeRequiresLevel  = "ui.app.requires_player_lv25_d0cc1c20"
+	noticeOnlineTime     = "ui.app.not_enough_online_time_to_use_3c5ebb44"
+	noticeTargetLevel    = "ui.app.player_is_below_lv25_b9ded6ee"
 	tradeTargetNotice    = 1500 * time.Millisecond
 	tradeHereNotice      = 1200 * time.Millisecond
 	tradeBusinessNotice  = 2000 * time.Millisecond
@@ -60,7 +62,7 @@ func (c *Client) toggleBusiness() {
 		return
 	}
 	if c.World.Player.Map == mapNoMakeFriends {
-		c.friendNotice(noticeNotHere, noticeFriendsHere)
+		c.friendNotice(localization.UI(noticeNotHere), noticeFriendsHere)
 		return
 	}
 	c.Business.Toggle()
@@ -74,15 +76,15 @@ func (c *Client) tradeItems() {
 	m := c.World.Player.Map
 	switch {
 	case c.Stats.EffectiveLevel() < tradeMinLevel:
-		c.friendNotice(noticeRequiresLevel, tradeBusinessNotice)
+		c.friendNotice(localization.UI(noticeRequiresLevel), tradeBusinessNotice)
 	case !c.tradeAllowed:
-		c.friendNotice(noticeOnlineTime, tradeBusinessNotice)
+		c.friendNotice(localization.UI(noticeOnlineTime), tradeBusinessNotice)
 	case m == mapNoTradeA || m == mapNoTradeB:
-		c.friendNotice(noticeTradeHere, tradeBusinessNotice)
+		c.friendNotice(localization.UI(noticeTradeHere), tradeBusinessNotice)
 	case noBusinessMap(m):
-		c.friendNotice(noticeNotHere, tradeUnavailableHere)
+		c.friendNotice(localization.UI(noticeNotHere), tradeUnavailableHere)
 	case m == mapNoTeamOrFriends:
-		c.friendNotice(noticeTemporarilyOff, tradeUnavailableHere)
+		c.friendNotice(localization.UI(noticeTemporarilyOff), tradeUnavailableHere)
 	default:
 		c.setJoinTeamTarget(false)
 		c.setFriendTarget(false)
@@ -132,12 +134,12 @@ func (c *Client) tradeTargetAt(x, y int) bool {
 	c.setTradeTarget(false)
 	switch m := c.World.Player.Map; {
 	case m == mapNoBusinessA || m == mapNoBusinessB:
-		c.friendNotice(noticeTradeHere, tradeHereNotice)
+		c.friendNotice(localization.UI(noticeTradeHere), tradeHereNotice)
 	case c.sport != nil:
 		c.Trade.Close()
 	default:
 		if p := c.World.Peers[id]; p != nil && p.EffectiveLevel() < tradeMinLevel {
-			c.friendNotice(noticeTargetLevel, tradeTargetNotice)
+			c.friendNotice(localization.UI(noticeTargetLevel), tradeTargetNotice)
 			return true
 		}
 		c.Net.Send(protocol.Builder{protocol.CommandTrade, protocol.TradeRequest}.U32(id))

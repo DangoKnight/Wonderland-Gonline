@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -177,8 +179,8 @@ func (f *Form) SetMode(mode byte) {
 	if mode == 2 {
 		f.StatusOnly.Left = 60
 	}
-	f.StatusOnly.SetHint([]byte("Status only / combined"))
-	f.BagOnly.SetHint([]byte("Inventory only / combined"))
+	f.StatusOnly.BindLanguage("hint", func() { f.StatusOnly.SetHint([]byte(localization.UI("ui.inventory.status_only_combined_192cb62b"))) })
+	f.BagOnly.BindLanguage("hint", func() { f.BagOnly.SetHint([]byte(localization.UI("ui.inventory.inventory_only_combined_5385dbb4"))) })
 	f.syncAllocationControls()
 	f.RotateLeft.SetVisible(mode != 2)
 	f.RotateRight.SetVisible(mode != 2)
@@ -363,7 +365,7 @@ func (f *Form) Use(slot int, worn bool) {
 		}
 		free := f.State.FirstFree()
 		if free == 0 {
-			f.notice("Your inventory is full.")
+			f.notice(localization.UI("ui.inventory.your_inventory_is_full_7d6760c2"))
 			return
 		}
 		if f.Selected == 0 {
@@ -420,7 +422,7 @@ func (f *Form) release(x, y int) {
 			bag := f.State.Bag
 			limit, err := bag.Move(byte(d.slot), byte(dst.slot), d.item.Count, f.State.Items[d.item.ID].Definition.StackLimit())
 			if err == nil {
-				f.quantity(moveQuantityTitle, limit, request)
+				f.quantity(localization.UI(moveQuantityTitle), limit, request)
 			}
 		} else {
 			request(1)
@@ -450,7 +452,7 @@ func (f *Form) release(x, y int) {
 			}
 		}
 		if d.split && d.item.Count > 1 {
-			f.quantity("Select quantity", d.item.Count, request)
+			f.quantity(localization.UI("ui.inventory.select_quantity_58aa4e3a"), d.item.Count, request)
 		} else {
 			request(1)
 		}
@@ -525,7 +527,7 @@ func (f *Form) quantity(prompt string, limit byte, submit func(byte)) {
 }
 func (d *actionDialog) Paint() {
 	d.Env.Pics.DrawStretch(d.Env.Screen, d.Image, d.MessageRect(), true)
-	if d.prompt == moveQuantityTitle {
+	if d.prompt == localization.UI(moveQuantityTitle) {
 		return
 	}
 	// Replace the exported skin's baked "Moving quantity" title for drop and

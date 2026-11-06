@@ -5,6 +5,8 @@
 // Addresses are from the WLRI build decompile.
 package role
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -64,7 +66,7 @@ func (l *Library) open(name string, first int) *archive {
 	arc, err := l.Sprites.Archive(key)
 	if err != nil {
 		if err != sprites.ErrNotFound {
-			log.Printf("sprites %s: %v", key, err)
+			log.Printf(localization.UI("ui.role.sprites_s_v_c8a0a374"), key, err)
 		}
 		l.missing[key] = true
 		return nil
@@ -179,7 +181,7 @@ func (s *sprite) draw(dst *surface.Surface, f *sprites.Frame, x, y int) {
 func (s *sprite) drawScaled(dst *surface.Surface, f *sprites.Frame, x, y, scale int) {
 	err := dst.DrawSpriteScaled(x+f.OffsetX*scale, y+f.OffsetY*scale, scale, f, func() (*image.NRGBA, error) { return f.Image(s.m) })
 	if err != nil && !s.reported {
-		log.Printf("sprite %s: %v", s.Name, err)
+		log.Printf(localization.UI("ui.role.sprite_s_v_17bce311"), s.Name, err)
 		s.reported = true
 	}
 }
@@ -193,15 +195,15 @@ func blendSpritePixel(source color.NRGBA, destination color.RGBA) color.NRGBA {
 func (l *Library) Image(family string, id, action, frame int) (*image.NRGBA, error) {
 	a, mapped := l.lookup(family, id)
 	if a == nil {
-		return nil, fmt.Errorf("sprite family %s unavailable", family)
+		return nil, fmt.Errorf(localization.UI("ui.role.sprite_family_s_unavailable_f62bc637"), family)
 	}
 	s := a.sprite(mapped)
 	if s == nil {
-		return nil, fmt.Errorf("sprite %d unavailable", id)
+		return nil, fmt.Errorf(localization.UI("ui.role.sprite_d_unavailable_5e9be982"), id)
 	}
 	f := s.frame(action, frame)
 	if f == nil {
-		return nil, fmt.Errorf("sprite %d frame unavailable", id)
+		return nil, fmt.Errorf(localization.UI("ui.role.sprite_d_frame_unavailable_e870a693"), id)
 	}
 	return f.Image(l.Sprites)
 }

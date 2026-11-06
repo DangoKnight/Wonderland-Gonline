@@ -534,7 +534,11 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 			case op.PlayerSpeech():
 				return c.send(serverwire.SpeechFrame(7, 0, op.TalkID(), op.Index))
 			case op.NPCSpeech():
-				return c.send(serverwire.SpeechFrame(3, op.D1, op.TalkID(), op.Index))
+				mode := byte(op.DW2)
+				if mode == protocol.EventTalkCompatibilityDefault {
+					mode = protocol.EventTalkTurnToPlayer
+				}
+				return c.send(serverwire.SpeechFrameWithMode(3, op.D1, op.TalkID(), op.Index, mode))
 			}
 			if movie {
 				raw := op.Raw()
@@ -928,7 +932,7 @@ func (s *Server) questItem(ctx context.Context, c *Session, es *eventSession, op
 	}
 	packets = append(packets, serverwire.HeadBanner(fmt.Sprintf("Obtain %s x%d", s.itemName(op.D3), amount)), []byte{protocol.CommandEvent, protocol.EventStepComplete})
 	if chest {
-		if c.view != nil && pool != nil {
+		if c.view != nil {
 			c.view.Props[es.ev.ClickID] = 1
 		}
 		packets = append(packets, protocol.Builder{protocol.CommandScene, protocol.SceneActorState}.U16(es.ev.ClickID).U8(1))

@@ -1,0 +1,76 @@
+{
+  "id": "native_map_backdrops_v50",
+  "remove": [
+    {
+      "id": "north_island_seaflower_beach_battle_background",
+      "kind": "battle_background",
+      "scope": {
+        "maps": [
+          60000
+        ],
+        "events": [
+          36,
+          37,
+          38,
+          40,
+          41,
+          42,
+          43
+        ],
+        "allow_missing": true
+      },
+      "value": 50
+    },
+    {
+      "id": "kelan_village_battle_background",
+      "kind": "battle_background",
+      "scope": {
+        "maps": [
+          12000
+        ],
+        "allow_missing": true
+      },
+      "value": 130
+    },
+    {
+      "id": "north_island_lakeside_mushroom_battle_background",
+      "kind": "battle_background",
+      "scope": {
+        "maps": [
+          60001
+        ],
+        "events": [
+          65
+        ],
+        "allow_missing": true
+      },
+      "value": 91
+    },
+    {
+      "id": "kelan_xaolan_house_battle_background",
+      "kind": "battle_background",
+      "scope": {
+        "maps": [
+          12002
+        ],
+        "allow_missing": true
+      },
+      "value": 140
+    },
+    {
+      "id": "north_island_xaolan_battle_background",
+      "kind": "battle_background",
+      "scope": {
+        "maps": [
+          60001
+        ],
+        "events": [
+          44,
+          83
+        ],
+        "allow_missing": true
+      },
+      "value": 90
+    }
+  ]
+}

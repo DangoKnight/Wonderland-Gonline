@@ -18,9 +18,6 @@ func TestLoginClipboardPaste(t *testing.T) {
 		c.UI.Focus(field)
 		c.UI.KeyDown(seui.VKV, seui.ShiftCtrl)
 		want := "Abcd123456"
-		if i == 0 {
-			want = "ABCD123456"
-		}
 		if string(field.Text) != want {
 			t.Fatal("paste did not respect field rules", i)
 		}
