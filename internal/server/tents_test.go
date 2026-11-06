@@ -105,7 +105,7 @@ func TestTentLocksFurniturePermissionsAndGuestLogout(t *testing.T) {
 	}
 	enterTestTent(t, s, owner, owner.character.ID)
 	enterTestTent(t, s, guest, owner.character.ID)
-	place := protocol.Builder{62, 1}.U8(0).U8(2).U32(50).U32(60).U32(0)
+	place := protocol.Builder{62, 1}.U8(0).U8(2).U32(40).U32(45).U32(0)
 	tradeDo(t, s, guest, place)
 	home, _ := s.Store.Tent(context.Background(), owner.character.ID)
 	if len(home.Items) != 1 {
@@ -116,10 +116,10 @@ func TestTentLocksFurniturePermissionsAndGuestLogout(t *testing.T) {
 	if len(home.Items) != 2 || home.Items[1].Metadata[0] != 9 || owner.character.Bag[1].Count != 1 || !owner.character.Bag[0].Locked {
 		t.Fatal("placement damaged state")
 	}
-	move := protocol.Builder{62, 3}.U16(1).U32(75).U32(85).U32(0).U8(2)
+	move := protocol.Builder{62, 3}.U16(1).U32(41).U32(46).U32(0).U8(2)
 	tradeDo(t, s, owner, move)
 	home, _ = s.Store.Tent(context.Background(), owner.character.ID)
-	if home.Items[1].X != 75 || home.Items[1].Rotation != 2 {
+	if home.Items[1].X != 41 || home.Items[1].Rotation != 2 {
 		t.Fatal("move failed")
 	}
 	wires[0].Reset()
@@ -180,9 +180,9 @@ func TestTentReadyResyncsFurnitureChangedDuringLoad(t *testing.T) {
 	enterTestTent(t, s, owner, owner.character.ID)
 	tradeDo(t, s, guest, protocol.Builder{65, 1}.U32(owner.character.ID))
 	wires[1].Reset()
-	tradeDo(t, s, owner, protocol.Builder{62, 3}.U16(0).U32(100).U32(200).U32(0).U8(3))
+	tradeDo(t, s, owner, protocol.Builder{62, 3}.U16(0).U32(41).U32(46).U32(0).U8(3))
 	tradeDo(t, s, guest, []byte{12, 1})
-	updated := protocol.Builder{23, 3}.U16(38027).U32(100).U32(200).U32(0).U8(1).U8(3).U16(0)
+	updated := protocol.Builder{23, 3}.U16(38027).U32(41).U32(46).U32(0).U8(1).U8(3).U16(0)
 	if !contains(wires[1].packets(t), updated) {
 		t.Fatal("ready snapshot missed changed furniture")
 	}

@@ -881,6 +881,12 @@ const (
 	TentOpenedStatus            = 2
 	TentPlaceFurniture          = 1
 	TentMoveFurniture           = 3
+	TentPickupFurniture         = 2
+	TentAddAccessory            = 4
+	TentFloorColor              = 14
+	TentWallpaper               = 15
+	TentPickupRequestBytes      = 4
+	TentAccessoryRequestBytes   = 5
 	TentFurnitureSucceeded      = 1
 	InventoryTentFurniture      = 3
 	PresenceMapAvailable        = 255

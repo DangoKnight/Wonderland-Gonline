@@ -12,7 +12,6 @@ import (
 var ErrManufacturingBusy = errors.New("a manufacturing job already exists")
 var ErrManufacturingNotDue = errors.New("manufacturing is paused or not complete")
 
-const manufacturedFurnitureCoordinate = 42
 
 type ManufactureJob struct {
 	CharacterID     uint32 `gorm:"primaryKey;autoIncrement:false"`
@@ -229,10 +228,20 @@ func (s *Store) CompleteManufacturing(ctx context.Context, ref CharacterRef, now
 			if len(tent.Items)+int(job.Count) > TentItemLimit {
 				return game.ErrInventoryFull
 			}
-			for i := 0; i < int(job.Count); i++ {
-				row := TentItem{OwnerID: ref.ID, Slot: slot + uint16(i), ItemID: job.ItemID, Count: 1, Metadata: make([]byte, game.ItemMetadataBytes), X: manufacturedFurnitureCoordinate, Y: manufacturedFurnitureCoordinate, Floor: job.Floor}
-				if err = tx.Create(&row).Error; err != nil {
+			if wall := game.IsTentWallpaper(definition.ID, definition.Name); wall || game.IsTentFloor(definition.ID, definition.Name) {
+				// Wall and floor items change the tent surface instead of becoming furniture.
+				if err = applyTentSurfaceTx(tx, ref.ID, job.ItemID, 0, wall); err != nil {
 					return err
+				}
+			} else {
+				w, h := game.TentFootprint(definition, 0)
+				for i := 0; i < int(job.Count); i++ {
+					x, y := game.TentFreeSpot(tentRects(tent.Items, items, -1), w, h, tent.Type, tent.Enlarged)
+					row := TentItem{OwnerID: ref.ID, Slot: slot + uint16(i), ItemID: job.ItemID, Count: 1, Metadata: make([]byte, game.ItemMetadataBytes), X: uint16(x), Y: uint16(y), Floor: job.Floor}
+					if err = tx.Create(&row).Error; err != nil {
+						return err
+					}
+					tent.Items = append(tent.Items, row)
 				}
 			}
 		} else {
