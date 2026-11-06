@@ -26,6 +26,22 @@ func (c *Client) canOpenModule() bool {
 
 func (c *Client) initInventory() {
 	c.InventoryState = &inventory.State{Items: c.items}
+	c.InventoryState.SkillMaximumGrade = func(id uint16) byte {
+		if c.SkillState != nil && c.SkillState.Catalog != nil {
+			return c.SkillState.Catalog.Definitions[id].GradeLimit()
+		}
+		return game.SkillGradeLimit()
+	}
+	c.InventoryState.PetSkillMaximumGrade = func(id uint16, index int) byte {
+		if c.npcTemplates == nil {
+			c.npcTemplates, _ = world.NPCTemplates(c.Assets)
+		}
+		t, ok := c.npcTemplates[uint32(id)]
+		if !ok {
+			t = c.npcTemplates[game.BroadcastID(uint32(id))]
+		}
+		return c.InventoryState.SkillMaximumGrade(t.Skills[index])
+	}
 	c.InventoryState.PetElement = func(id uint16) byte {
 		if c.npcTemplates == nil {
 			c.npcTemplates, _ = world.NPCTemplates(c.Assets)

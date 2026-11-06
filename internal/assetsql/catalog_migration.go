@@ -10,7 +10,10 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 54
+const catalogSchemaVersion = 57
+const skillMaximumGradeSchemaVersion = 57
+const repositoryContactDefaultsSchemaVersion = 56
+const skillContactSchemaVersion = 55
 const skillPowerSchemaVersion = 53
 const uniqueSkillPowerSchemaVersion = 54
 const nativeNoaConversationSchemaVersion = 52
@@ -64,6 +67,16 @@ func migrateCatalog(tx *gorm.DB) error {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
 		}
 		// Older migrations read complete skill rows through the generated model.
+		if schema.Version < skillMaximumGradeSchemaVersion {
+			if err := addSkillGradeColumn(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < skillContactSchemaVersion {
+			if err := addSkillContactColumn(tx); err != nil {
+				return err
+			}
+		}
 		if schema.Version < skillPowerSchemaVersion {
 			if err := addSkillPowerColumns(tx); err != nil {
 				return err
@@ -607,6 +620,16 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < repositoryContactDefaultsSchemaVersion {
+			if err := migrateSkillContacts(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < skillMaximumGradeSchemaVersion {
+			if err := migrateSkillGrades(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -725,6 +748,12 @@ func migrateCatalog(tx *gorm.DB) error {
 	}
 	initializeCollectionUsage(c)
 	if err := seedSkillPowers(c); err != nil {
+		return err
+	}
+	if err := seedSkillContacts(c); err != nil {
+		return err
+	}
+	if err := seedSkillGrades(c); err != nil {
 		return err
 	}
 	for _, model := range append(catalogTables(), &catalogSchema{}) {

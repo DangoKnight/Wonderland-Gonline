@@ -8,6 +8,32 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v57 stores each skill's native `maximum_grade`. The repository-owned
+`skill_grade_defaults.csv` supplies all 953 definitions without client extraction.
+The migration fills absent limits and preserves administrator
+values. Progression, damage, targeting and grade validation use this limit;
+missing definitions fall back to ten, while explicit zero limits remain zero.
+An independent presence flag distinguishes these states in SQL. The embedded server seed is updated
+to v57. Stop the server, migrate, rebuild and restart using the procedure below.
+
+Assets v56 supplies repository-owned contact defaults and a complete server-only
+seed. No client installation, exported manifest or retained MBTM archive is
+required to build, initialize, run or migrate the server. Contact migration fills
+only missing/zero counts and preserves administrator edits. Normal startup
+initializes only a missing catalog, never replacing or silently upgrading one.
+`go run ./cmd/data-rebuild -config config.local.json` explicitly rebuilds from
+the repository seed with backups; `-data data` opts into extracted inputs.
+
+Assets v55 adds `contact_events` to the structured skill catalog. The offline
+migration originally derived counts from retained SkillData.MBTM records; v56
+uses the tracked extracted contact table instead. It preserves existing
+nonzero administrator counts and leaves missing records at the one-contact
+compatibility fallback. Damage now uses
+`P = (AdditionalDamage + PowerPerLevel * Grade) * ContactEvents`, with
+`StatMultiplier` scaling only the relevant ATK/MATK term. Wiki BasePower values
+remain stored as references. Stop the server, migrate, rebuild and restart as
+below; no gameplay database or client protocol change is required.
+
 Assets v54 adds 71 verified character, pet and quest skill powers from the saved
 unique-skill reference. Native NPC ownership, SP costs, descriptions and Chinese
 actor names identify the skills independently of unreliable icon filenames.
@@ -18,12 +44,10 @@ and explicit zero. Stop the server, migrate, rebuild and restart as below.
 
 Assets v53 adds an editable nullable base skill power to `catalog_skills` and
 seeds 153 verified elemental skill powers from the saved Japanese wiki tables.
-Blast Attack and Flame Attack both use power 20. Existing explicit powers,
-including zero, and all native coefficients remain intact. Unlisted skills use
-the documented [damage compatibility fallback](DAMAGE.md). Stop the server, run
-the offline migration below, rebuild and restart. No client asset rebuild or
-gameplay-state change is required. Grade scaling is provisional +5% of base per
-grade above grade 1, compiled in the battle engine.
+Blast Attack and Flame Attack both have reference power 20. Existing explicit
+powers, including zero, and all native coefficients remain intact. The former
+wiki-power fallback and provisional five-percent grade curve were superseded
+by the v55 [native-coefficient formula](DAMAGE.md).
 
 Assets v52 keeps Noa's puzzle, result evaluation, retry invitation and recruitment
 in one conversation. Scoped continuation policies connect Kelan event 56's native

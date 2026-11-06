@@ -23,7 +23,7 @@ func TestCompiledWorldMatchesEditable(t *testing.T) {
 	defer closePacks()
 	loose := login.NewAssets(filepath.Join("..", "..", "..", "data"))
 	compiled := login.NewAssets(root)
-	for _, id := range []uint16{10017, 11016} {
+	for _, id := range []uint16{10017, 11016, 11083} {
 		want, err := LoadScene(loose, id)
 		if err != nil {
 			t.Fatal(err)

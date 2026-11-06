@@ -38,6 +38,251 @@
                 "items": {
                   "$ref": "skill_effects.schema.json#/$defs/effect"
                 }
+              },
+              "type": {
+                "title": "Skill type",
+                "description": "Native type domain, separate from the UI/effect layer.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_004815dc reads manager +0x19.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "id": {
+                "title": "Skill ID",
+                "description": "Skill identity used in protocol requests and catalogs.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_00480b74 / FUN_00480f8c; Gonline ParseSkills.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "sp": {
+                "title": "SP cost",
+                "description": "Base SP cost; not current actor SP.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_0048155c reads manager +0x1c; skill UI SP display.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "element": {
+                "title": "Element",
+                "description": "Native element code.",
+                "type": "integer",
+                "x-confidence": "reference",
+                "x-evidence": "Private Server SkillInfoRaw.ElementType / LoadSkillDatabase.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "attack_category": {
+                "title": "Attack range/category",
+                "description": "Presentation/range category; not skill damage power.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_003822d8 checks +0x1f; Gonline battle_camera.go.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "effect_layer": {
+                "title": "Effect/UI layer",
+                "description": "Physical, magical, support or life category; context-specific effect classes.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_00481584 reads manager +0x21; Gonline skill tabs and effect conversion.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "power_per_level": {
+                "title": "Power per skill grade",
+                "description": "Native grade coefficient used by the empirical whole-attack power model; see docs/DAMAGE.md.",
+                "type": "number",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server SkillInfoRaw.Decimal1; docs/DAMAGE.md."
+              },
+              "stat_multiplier": {
+                "title": "Unresolved native coefficient (legacy stat_multiplier)",
+                "description": "Compatibility field name retained; not applied as an ATK/MATK multiplier in the empirical damage model.",
+                "type": "number",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server SkillInfoRaw.Decimal2; docs/DAMAGE.md."
+              },
+              "additional_damage": {
+                "title": "Additional damage coefficient",
+                "description": "Native additive coefficient retained as provenance.",
+                "type": "integer",
+                "x-confidence": "reference",
+                "x-evidence": "Private Server SkillInfoRaw.AdditinalHarm; Gonline ParseSkills.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "effect_rounds": {
+                "title": "Effect duration in rounds",
+                "description": "Native duration input used by compatibility effect conversion.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server NumberOfTurns; internal/assets/native_effect_rules.go.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_51": {
+                "description": "Compatibility alias for effect_rounds; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "effect_code": {
+                "title": "Effect/status code",
+                "description": "Interpret together with effect_layer; not a globally unique status enum.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server Effect; internal/assets/native_effect_rules.json.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_52": {
+                "description": "Compatibility alias for effect_code; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "secondary_skill_id": {
+                "title": "Secondary skill reference",
+                "description": "Raw SkillID2 reference; its precise relationship is unresolved.",
+                "type": "integer",
+                "x-confidence": "reference",
+                "x-evidence": "Private Server SkillInfoRaw.SkillID2; no prerequisite semantics assumed.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "table_order": {
+                "title": "Skill table order",
+                "description": "Native ordered skill index used by snapshots and progress packets.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_0048161c reads manager +0x65; Gonline skill snapshot decoder.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "target_policy": {
+                "title": "Target policy",
+                "description": "0 enemy, 1 ally, 2 either, 3 self, 5 other ally; remaining values unresolved.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "FUN_00481640 (+0x67), FUN_0038972c; client/wlo/skills/catalog.go.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "icon_id": {
+                "title": "Skill icon ID",
+                "description": "Icon_sk<ID>s UI image reference; not the battle effect animation ID.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "TRe_SkillForm; client/wlo/skills/catalog.go nativeIconField.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "maximum_grade": {
+                "title": "Maximum skill grade",
+                "description": "Maximum native proficiency/skill grade, not actor level.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "TRe_SkillForm; client/wlo/skills/catalog.go nativeMaximumGradeField.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "additional_effect_code": {
+                "title": "Additional effect code",
+                "description": "Reference status qualifier; exact native interpretation remains unresolved.",
+                "type": "integer",
+                "x-confidence": "reference",
+                "x-evidence": "Private Server AdditionalEffect support classifiers.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "target_pattern_grade_1_3": {
+                "title": "Target pattern for grades 1-3",
+                "description": "Native shape code, using the documented compatibility grade band.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server GetPatternForGrade; Gonline Skill.NativePatternAt.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_109": {
+                "description": "Compatibility alias for target_pattern_grade_1_3; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "target_pattern_grade_4_6": {
+                "title": "Target pattern for grades 4-6",
+                "description": "Zero falls back to the preceding nonzero band in compatibility mode.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server GetPatternForGrade; Gonline Skill.NativePatternAt.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_110": {
+                "description": "Compatibility alias for target_pattern_grade_4_6; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "target_pattern_grade_7_9": {
+                "title": "Target pattern for grades 7-9",
+                "description": "Zero falls back to the preceding nonzero band in compatibility mode.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server GetPatternForGrade; Gonline Skill.NativePatternAt.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_111": {
+                "description": "Compatibility alias for target_pattern_grade_7_9; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "target_pattern_grade_10": {
+                "title": "Target pattern for grade 10",
+                "description": "Final native shape band; native grade selection still needs live verification.",
+                "type": "integer",
+                "x-confidence": "compatibility",
+                "x-evidence": "Private Server GetPatternForGrade; docs/COMBAT_TARGETING.md.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "unknown_u8_offset_112": {
+                "description": "Compatibility alias for target_pattern_grade_10; must retain the same value.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "injury_type": {
+                "title": "Injury type (reference name)",
+                "description": "Reference TypeOfInjury byte; enum and runtime behavior remain unresolved.",
+                "type": "integer",
+                "x-confidence": "reference",
+                "x-evidence": "Private Server SkillInfoRaw.TypeOfInjury / LoadSkillDatabase.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "battle_voice_id": {
+                "title": "Battle voice WAV ID",
+                "description": "Native skill-specific battle voice selector.",
+                "type": "integer",
+                "x-confidence": "native",
+                "x-evidence": "Skill.dat manager +0x7a; client/wlo/skills/catalog.go nativeBattleVoiceField.",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "contact_events": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 50,
+                "description": "Server catalog contact count derived from SkillData.MBTM; zero means unavailable. Playback uses one fallback contact. This metadata does not multiply total damage. Not a Skill.dat byte."
               }
             },
             "not": {
@@ -57,6 +302,50 @@
                   "effect_refs"
                 ]
               }
+            ]
+          }
+        }
+      }
+    },
+    "field_layout": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "confidence": {
+            "enum": [
+              "native",
+              "reference",
+              "compatibility",
+              "unresolved"
+            ]
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "legacy_name": {
+            "type": "string"
+          },
+          "encoding": {
+            "enum": [
+              "float64-le"
             ]
           }
         }

@@ -26,8 +26,10 @@ type Skill struct {
 	EffectLayer        byte             `json:"effect_layer"`
 	BasePower          *float64         `json:"base_power,omitempty"` // Authored skill power; nil means unresolved.
 	PowerPerLevel      float64          `json:"power_per_level"`
-	StatMultiplier     float64          `json:"stat_multiplier"`
+	StatMultiplier     float64          `json:"stat_multiplier"` // Unresolved native coefficient; retained compatibility name, not a runtime stat multiplier.
 	AdditionalDamage   uint16           `json:"additional_damage"`
+	ContactEvents      byte             `json:"contact_events,omitempty"` // MBTM damage contacts; zero means unavailable (single-contact fallback).
+	MaximumGrade       *byte            `json:"maximum_grade,omitempty"`  // Skill.dat; nil uses ten, explicit zero stays zero.
 	TableOrder         uint16           `json:"table_order"`
 }
 
@@ -54,6 +56,7 @@ func ParseSkills(data []byte) (map[uint16]Skill, error) {
 			return nil, fmt.Errorf("Skill.dat: nonfinite coefficients for %d", id)
 		}
 		v.NativeRounds51 = (b[51] ^ 0xfd) - 4
+		v.MaximumGrade = GradeLimit((b[nativeSkillMaximumGradeOffset] ^ 0xfd) - 4)
 		v.NativeEffectCode52 = (b[52] ^ 0xfd) - 4
 		v.NativePattern109 = (b[nativeSkillPatternOffset109] ^ 0xfd) - 4
 		v.NativePattern110 = (b[nativeSkillPatternOffset110] ^ 0xfd) - 4
@@ -68,8 +71,15 @@ func ParseSkills(data []byte) (map[uint16]Skill, error) {
 }
 
 const (
+	// Skill.dat element 7 is user/caster affinity, not neutral. The unique-skill
+	// reference identifies Turtle Palm, Chaw Throw, Body Bump and Scatter powder
+	// as caster-element attacks; all four native records contain this value.
+	SkillElementNeutral byte = 0
+	SkillElementCaster  byte = 7
+
 	SkillLayerPhysical            = 1
 	SkillLayerMagical             = 2
+	nativeSkillMaximumGradeOffset = 105
 	nativeSkillPatternOffset109   = 109
 	nativeSkillPatternOffset110   = 110
 	nativeSkillPatternOffset111   = 111
@@ -79,8 +89,19 @@ const (
 	compatibilityPatternGradeBand = 3
 )
 
+// GradeLimit records an explicit limit, including zero, as optional metadata.
+func GradeLimit(value byte) *byte { return &value }
+
+// GradeLimit uses the native limit, with ten only for absent metadata.
+func (s Skill) GradeLimit() byte {
+	if s.MaximumGrade != nil {
+		return *s.MaximumGrade
+	}
+	return DefaultSkillGrade
+}
+
 // IsAreaAttack reads native targeting patterns, not the attack_category (range).
-// The four patterns use compatibility grade bands 1–3, 4–6, 7–9 and 10.
+// The four patterns use compatibility grade bands 1–3, 4–6, 7–9 and 10+.
 // Bands follow Private Server; official-client acceptance remains to be verified. SQL authors
 // may override classification explicitly without changing native provenance.
 func (s Skill) IsAreaAttack(grade int) bool {
@@ -95,8 +116,9 @@ func (s Skill) IsAreaAttack(grade int) bool {
 }
 
 // NativePatternAt follows Private Server SkillManager.GetPatternForGrade:
-// grades 1-3, 4-6, 7-9 and 10, falling back to the previous nonzero band.
+// grades 1-3, 4-6, 7-9 and 10+, falling back to the previous nonzero band.
 func (s Skill) NativePatternAt(grade int) byte {
+	grade = min(int(s.GradeLimit()), max(1, grade))
 	patterns := [4]byte{s.NativePattern109, s.NativePattern110, s.NativePattern111, s.NativePattern112}
 	for i := min((max(1, grade)-1)/compatibilityPatternGradeBand, len(patterns)-1); i >= 0; i-- {
 		if patterns[i] != 0 {

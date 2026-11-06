@@ -222,6 +222,9 @@ func validateDefinition(name string, c *assets.Catalog) error {
 			}
 		}
 		for id, s := range c.Skills {
+			if s.ContactEvents > assets.MaxSkillContactEvents {
+				return fmt.Errorf("skill %d: invalid contact event count", id)
+			}
 			if s.BasePower != nil && (math.IsNaN(*s.BasePower) || math.IsInf(*s.BasePower, 0) || *s.BasePower < 0) {
 				return fmt.Errorf("skill %d: invalid base power", id)
 			}

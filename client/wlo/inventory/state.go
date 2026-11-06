@@ -21,11 +21,27 @@ const (
 // request never changes it. FUN_003dc9d0 adds 31-byte records; FUN_003da044
 // removes counts; FUN_003dce4c moves stacks; FUN_003fc308 restores worn items.
 type State struct {
-	Bag        game.Inventory
-	Equipment  game.Equipment
-	Items      map[uint16]assets.NativeItem
-	Pets       [game.MaxPets]UsePet
-	PetElement func(uint16) byte // NPC asset lookup; definitions are not owned pet state.
+	Bag                  game.Inventory
+	Equipment            game.Equipment
+	Items                map[uint16]assets.NativeItem
+	Pets                 [game.MaxPets]UsePet
+	PetElement           func(uint16) byte // NPC asset lookup; definitions are not owned pet state.
+	SkillMaximumGrade    func(uint16) byte
+	PetSkillMaximumGrade func(uint16, int) byte
+}
+
+func (s *State) skillGradeLimit(id uint16) byte {
+	if s.SkillMaximumGrade != nil {
+		return game.SkillGradeLimit(s.SkillMaximumGrade(id))
+	}
+	return game.SkillGradeLimit()
+}
+
+func (s *State) petSkillGradeLimit(id uint16, index int) byte {
+	if s.PetSkillMaximumGrade != nil {
+		return game.SkillGradeLimit(s.PetSkillMaximumGrade(id, index))
+	}
+	return game.SkillGradeLimit()
 }
 
 func (s *State) Reset(worn []uint16) {

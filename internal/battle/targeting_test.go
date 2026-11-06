@@ -45,6 +45,7 @@ func TestAreaAttackProtectsJoiningPetUntilNextRound(t *testing.T) {
 func TestAreaAttackCostProtectionEffectsAndNativeRecord(t *testing.T) {
 	r := targetingRules()
 	b, actor := setup(1000)
+	actor.Matk = 100 // Keep both defended/undefended results above minimum damage.
 	first := b.Defenders[0]
 	guarded := *first
 	guarded.X = 1

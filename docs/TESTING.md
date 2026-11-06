@@ -1,5 +1,134 @@
 # Testing and validation
 
+## Signed scenery coordinates — 2026-11-06
+
+The Chicken Farm tree regression reproduced five missing edge-crossing placements
+before the fix, including the northern trees at (811, -91) and (988, -70).
+Alogin's `FUN_003f830c` explicitly sign-extends the native X/Y words before
+creating each scenery object. The scene loader now follows that behavior for
+all maps while preserving the raw export/compiled coordinate bits.
+
+Focused world tests pass for independent WEM bytes and signed-coordinate extrema,
+negative-border pixel clipping, all five Chicken Farm placements, native terrain
+coordinates, Ship Deck scenery, scene-sprite occlusion and shadow reconstruction.
+Compiled-versus-editable parity now includes Chicken Farm alongside Ship Deck
+and Newbie Island and passes with the installed bundle. The before/after viewport
+renders at the reference location are under `var/reports/chicken-farm-trees/`;
+visual inspection confirms the restored northern trees. No asset rebuild or
+re-extraction is required. These are affected rendering checks, not a full
+pre-push battery or live-server acceptance.
+
+## Low-MAT magical stat floor — 2026-11-06
+
+The missing low-MAT grade-1 Blast cases are now explicit battle regressions.
+At MAT25, Straw Chicken changes from 6–10 to 18–22 (recorded 22/22), and
+Hyperkinetic Chicken from 8–12 to 14–18 (recorded 16/19). Single-target magic now
+floors the combined stat term plus Q at zero before adding unchanged P. This is
+an empirical general rule, with no skill/enemy exceptions. Area and physical
+stat formulas retain their established behavior.
+
+The battle package passes, including the independent packet goldens and high-stat
+source cases. Damage-analysis tests compare the previous formula and floor rule;
+the full 91-cast metrics expose the controlled grade-2/3 tradeoff rather than
+relying solely on aggregate improvement. All 54 research tests pass, as do focused
+server combat integrations and `go vet ./internal/battle`. All 455 updated
+expectations match Battle.Round across 91 casts and five random rolls. These
+checks establish implementation consistency, not proof of the original Legacy
+formula. See [DAMAGE.md](DAMAGE.md) for scores and limitations. No migration or
+asset extraction is needed; the server needs rebuilding to apply the code.
+
+## Saved damage references — 2026-11-06
+
+The saved Japanese/Bahamut audit retains P and the MDEF-only policy, corrects
+native skill element 0 (neutral) versus 7 (caster affinity), restores neutral
+damage's 10% Earth reduction, and fades the bounded magic correction beyond its
+upper measurement range. The fade is an extrapolation policy, not a claimed
+Legacy constant. Shared asset definitions and native bytes are unchanged.
+
+The complete battle package and focused server combat integrations pass.
+Regressions cover neutral attacks across caster/target elements, caster-dependent
+physical/magical skills, fixed affinity, basic/unknown fallbacks, and monotonic
+stats around the fit and fade boundaries. Three independent high-stat article
+means fall within runtime damage ranges when the article's P is supplied.
+Existing independent packet goldens are preserved by explicitly marking their
+synthetic Fire-skill fixtures. The expected shield totals reflect the faded
+correction at MDEF 100/110.
+
+All 51 damage-analysis tests pass. The actual `Battle.Round` replay still matches
+all 455 checks across the 91 normal user observations and five random rolls.
+`go vet ./internal/battle` passes. Reports and provenance are under ignored
+`var/reports/damage-references/`; [DAMAGE.md](DAMAGE.md) records accepted and
+conflicting source claims. No full pre-push battery, live acceptance, migration
+or asset rebuild was performed.
+
+## Native skill grade limits — 2026-11-06
+
+Schema v57 stores an optional native maximum grade and a separate SQL presence
+flag. Missing metadata uses ten; an explicit zero remains zero. The repository
+includes all 953 Skill.dat limits and an updated server-only seed. Migration
+fills absent limits without replacing administrator edits, including zero.
+
+Focused race-enabled asset, gameplay, battle, legacy-import and asset SQL tests
+passed. Coverage includes independent encoded grade bytes, JSON missing/null/zero
+semantics, zero-disabled learning/progression, lower and higher caps, grade 255,
+player/pet damage, high-grade targeting, durable battle proficiency, GM limits,
+SQL rollback, absent-column upgrades and bundled catalog parity. Existing
+alchemy fixtures explicitly supply the native thirty-grade limit. The installed
+GM integration now expects each skill's native cap rather than ten for every skill.
+
+Focused client skills, inventory and app tests passed, including grades above
+thirty, zero versus missing limits and high-grade pet roster packets. Both grade
+extractor tests, affected server vet checks and the server executable build pass.
+The validation database was an isolated copy; live databases and player progress
+were unchanged. Logs are under `var/validation/repository-server/grade-zero-*`.
+No full pre-push battery or live gameplay acceptance was performed.
+
+## Repository-only server catalog — 2026-11-06
+
+The tracked server seed contains 180 structured definition tables and 322,126
+rows, compressed to 9,162,228 bytes. Export verification compares every shared
+catalog value with the source SQL database after stripping client archives,
+import paths and non-catalog tables. A separate tracked table supplies 1,832
+animation contact counts; schema v56 fills only missing/zero skill counts.
+
+Focused asset SQL tests passed under the race detector, covering seed creation
+without client assets, definition/contact parity, preservation of existing
+administrator edits and invalid files, rebuild backups, untouched gameplay
+storage and transactional contact migration rollback. The complete assetdb
+package passed with `-race`; both contact extractor tests and affected Go vet
+checks passed.
+
+An isolated source tree containing only server Go sources, module files and the
+tracked seed built both `wonderland` and `data-rebuild`. With no `data/`, Go
+client or original client installation in that tree or working directory, the
+binary initialized a missing catalog, printed its census, rebuilt it with a
+backup and started all services on temporary loopback ports. The live HTTP
+`/healthz` returned `status: ok`. Validation used disposable databases only;
+live assets, accounts and character progress were unchanged. Logs and binaries
+are under ignored `var/validation/repository-server/`. This is affected-module
+validation, not a new full pre-push run or live gameplay acceptance.
+
+## Native-coefficient damage and contacts — 2026-11-06
+
+Combat now uses `(AdditionalDamage + PowerPerLevel * Grade) * ContactEvents`
+for P and applies StatMultiplier only to the ATK/MATK contribution. Independent
+arithmetic fixtures cover grade changes, contact scaling, explicit zero stat
+multiplier, missing-contact fallback, physical high/low-defense branches,
+magical defense and learned pet grades. Shield fixtures use explicit neutral
+stat multipliers to retain their independent category and packet goldens;
+the existing full-party damage expectation follows the revised coefficient math.
+
+Complete battle and asset unit suites passed under `-race`, along with focused
+SQL schema/contact migration and native-parity checks. Migration tests exercise
+v54 without the new column, missing animation records, authored edits, repeated
+initialization and transactional rollback on failed SQL updates. An isolated
+copy of the previously verified v54 snapshot migrated to v55 and matched native
+skill/contact data. Live databases were unchanged. Selected server battle,
+combat, round, shield/support/skill and disconnect integrations also passed
+under `-race`. Logs and the isolated snapshot are under ignored
+`var/validation/skill-field-labels/`. These are affected-module checks, not a new
+full pre-push run or interactive Legacy-client acceptance.
+
 ## PR #9 tent reconciliation — 2026-11-06
 
 Reconciled the desktop tent port (`edb3995`) with main (`b03f895`), retaining
@@ -3796,3 +3925,44 @@ snapshot and platform tests remain skipped; golangci-lint is unavailable.
 Logs, validation binaries and the strict package audit are retained under
 ignored `var/validation/prepush-merged-20261105/`, including `final-summary.json`.
 These automated results do not establish live gameplay acceptance.
+
+## Selected magical stat correction, 2026-11-06
+
+The selected bounded quadratic changes the single-target magical stat remainder;
+P and physical/area formulas retain their existing rules. Independent packet
+goldens remain unchanged, with explicit fixture stats adjusted where needed.
+The shield test now accounts for the fixed noise roll being added after damage
+reduction instead of relying on even-numbered fixture damage.
+
+The battle package passes, including measured low/MAT238/high-MAT regressions,
+pet grade limits, area coefficients, fixed P, shields, combos and monotonicity at
+the saturation bounds and extreme stats. The selected comparison replays 91
+normal observations at all five random rolls (455 matching `Battle.Round`
+checks). `go vet ./internal/battle` and a repository-only server executable build
+pass. The executable is retained under ignored
+`var/validation/damage-selected-20261106/`, without replacing the running server.
+No database migration or asset extraction is needed.
+
+## Damage approximation, 2026-11-06
+
+The whole-attack model in [DAMAGE.md](DAMAGE.md) passed the complete battle
+package, focused asset/skill metadata tests, and affected server combat tests
+(damage, combos, native/chain playback, PvP, pet actions, persistence and overkill).
+`go vet ./internal/battle` and a repository-only `./cmd/wonderland` executable
+build passed. The validation executable is under ignored
+`var/validation/damage-formula-20261106/`; it does not replace the running server.
+Five exporter field-label tests also passed; raw data and protocol goldens are
+preserved. No concurrency behavior or database schema changed.
+
+Eighty-one usable Legacy observations were replayed through `Battle.Round` with
+each random roll from one through five (405 matching checks). Mean absolute
+percentage error versus sampled damage fell from 29.67% to 7.83%; median error
+fell from 25.93% to 1.69%. The physical coefficient fit uses some of these
+observations, so these are fit/validation comparisons, not entirely independent
+held-out accuracy. Independent authored single-target P references and area P
+references were also compared; live AoE validation remains pending. The uncertain
+Sheet3 target and flagged critical hit were excluded. Ignored detailed comparisons
+and runtime replay results are under `var/reports/skill-power-formulas/`.
+
+Validation used development scope, not the full pre-push battery. No push was
+requested.

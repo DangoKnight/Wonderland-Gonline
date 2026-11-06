@@ -387,7 +387,7 @@ func (f *Form) Update(in *seui.Input) {
 	}
 	f.drawText(175, 376, 100, attack, detailInk)
 	proficiency := fmt.Sprintf("%.2f%%", float64(p.Proficiency)/100)
-	if d.MaximumGrade != 0 && p.Grade >= d.MaximumGrade {
+	if p.Grade >= d.GradeLimit() {
 		proficiency = localization.Text("ui.skills.max_a1a5936d")
 	}
 	f.drawText(80, 395, 78, proficiency, detailInk)

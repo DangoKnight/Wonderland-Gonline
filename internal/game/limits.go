@@ -17,7 +17,7 @@ const (
 	SkillProficiencyScale         = 10_000
 	SkillGradeExpScale            = 100
 	MinSkillGrade                 = 1
-	MaxSkillGrade                 = 10
+	DefaultSkillGrade             = 10 // Compatibility limit without catalog metadata.
 	StarterStuntClientID          = 15003
 	VehicleWreckDamage            = 100
 	RaftItemID                    = 48010

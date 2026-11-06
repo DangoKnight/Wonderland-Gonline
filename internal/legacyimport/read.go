@@ -289,7 +289,7 @@ func Read(ctx context.Context, path string, catalog *assets.Catalog) (plan Plan,
 			if _, ok := catalog.Skills[id]; !ok {
 				return fmt.Errorf("legacy skill %d: unavailable definition", id)
 			}
-			skill := game.LearnedSkill{ID: id, Grade: byte(d.n("grade", 10)), EXP: uint32(d.n("exp", math.MaxUint32))}
+			skill := game.LearnedSkill{ID: id, Grade: byte(d.n("grade", uint64(catalog.Skills[id].GradeLimit()))), EXP: uint32(d.n("exp", math.MaxUint32))}
 			if skill.Grade == 0 || d.err != nil {
 				return fmt.Errorf("invalid legacy skill %d", id)
 			}

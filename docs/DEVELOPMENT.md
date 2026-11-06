@@ -1,5 +1,22 @@
 # Development conventions
 
+## Repository-only server builds
+
+The server must build and run from a fresh checkout without a client installation
+or client asset extraction. Ship every required shared definition in tracked,
+server-only seed assets. This includes newly decoded metadata such as animation
+contacts. Keep regeneration tools and portable source hashes with those assets;
+an ignored local export or validation database is not a distributable dependency.
+Client images, audio and editable rendering exports may remain separately extracted.
+
+`internal/assetsql/server_defaults/catalog.db.gz` contains only shared catalog
+tables; its manifest records schema, checksum and census. The command bootstrap
+creates a missing SQL catalog atomically from that seed. Existing databases are
+never replaced or silently upgraded. Normal gameplay still reads SQL exclusively.
+Explicit `data-rebuild` uses the repository seed by default and retains backups;
+`-data` opts into an extracted-data rebuild. New data-dependent schema changes
+must update the seed and preserving migrations before being considered complete.
+
 ## Server data ownership and initialization
 
 All persistent server data must be managed through the databases. Shared game
@@ -57,7 +74,7 @@ durations belong in the assets database's `ResourceRespawns` definitions.
 v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v54 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v57 stores native skill grade limits, with ten as the fallback; v56 includes repository-owned contact defaults; v55 stores animation-derived skill contact counts and runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -480,6 +497,11 @@ Definitions reflect decoded native classes and the documented compatibility
 policy; they are not a claim that unknown native semantics have been recovered.
 JSON schemas live in `schemas/skill_data.schema.json` and
 `schemas/skill_effects.schema.json`.
+
+Skill.dat field labels, disk/native offset conventions, evidence levels and
+preserved compatibility aliases are documented in [Skill.dat fields](SKILL_DAT.md).
+Unknown field meanings must remain explicitly unresolved; native coefficients
+must not be relabelled as verified authored skill power.
 
 Use either inline `fields.effects` or `fields.effect_refs`; mixing them is an
 error. Empty lists intentionally disable effects. Reference lists concatenate

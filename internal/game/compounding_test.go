@@ -150,16 +150,16 @@ func TestCompoundSlotsRollbackAndFootprints(t *testing.T) {
 
 func TestAlchemyProgressNativeThirtyLevelCap(t *testing.T) {
 	c := Character{Skills: []LearnedSkill{{ID: AlchemyPrimarySkill, Grade: 10, EXP: AlchemyGradeEXP(10) - 1}}}
-	c.AddSkillEXP(AlchemyPrimarySkill, 1)
+	c.AddSkillEXP(AlchemyPrimarySkill, 1, AlchemySkillMaximum)
 	if c.Skills[0].Grade != 11 || c.Skills[0].EXP != 0 {
 		t.Fatal("alchemy stopped at combat cap", c.Skills)
 	}
 	c.Skills[0].Grade, c.Skills[0].EXP = 29, AlchemyGradeEXP(29)-1
-	c.AddSkillEXP(AlchemyPrimarySkill, 1)
-	if c.Skills[0].Grade != 30 || len(c.AddSkillEXP(AlchemyPrimarySkill, 1)) != 0 {
+	c.AddSkillEXP(AlchemyPrimarySkill, 1, AlchemySkillMaximum)
+	if c.Skills[0].Grade != 30 || len(c.AddSkillEXP(AlchemyPrimarySkill, 1, AlchemySkillMaximum)) != 0 {
 		t.Fatal("native alchemy cap", c.Skills)
 	}
-	if len(c.SetSkillGrade(AlchemySuperiorSkill, 30)) == 0 || len(c.SetSkillGrade(AlchemySuperiorSkill, 31)) != 0 {
+	if len(c.SetSkillGrade(AlchemySuperiorSkill, 30, AlchemySkillMaximum)) == 0 || len(c.SetSkillGrade(AlchemySuperiorSkill, 31, AlchemySkillMaximum)) != 0 {
 		t.Fatal("alchemy grade assignment")
 	}
 }

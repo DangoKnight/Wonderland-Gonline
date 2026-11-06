@@ -263,7 +263,7 @@ func (s *State) ApplyPetList(p []byte) bool {
 		pet.Amity = r[petListAmity]
 		for i := range pet.Skills {
 			at := petListPrefixBytes + nameLen + i*petSkillRecordBytes
-			if r[at] > game.MaxSkillGrade {
+			if r[at] > s.petSkillGradeLimit(pet.ID, i) {
 				return false
 			}
 			pet.Skills[i] = game.PetSkill{Grade: r[at], Exp: binary.LittleEndian.Uint32(r[at+1:])}

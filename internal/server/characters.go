@@ -451,7 +451,9 @@ func skillSnapshotWithRemovals(previous, next game.Character) game.Character {
 // source table supports synthetic/older catalogs; a populated SQL dataset owns
 // evolution decisions and can disable individual links through administration.
 func (s *Server) unlockQualifiedSkills(c *game.Character, evolve bool) [][]byte {
-	packets := c.UnlockQualifiedSkills(evolve && s.Assets.SkillEvolutions == nil, s.hasSkill)
+	packets := c.UnlockQualifiedSkills(evolve && s.Assets.SkillEvolutions == nil, func(id uint16) bool {
+		return s.hasSkill(id) && s.Assets.Skills[id].GradeLimit() > 0
+	})
 	if evolve {
 		for _, e := range s.Assets.SkillEvolutions {
 			if !s.hasSkill(e.ToSkill) || e.RequiredGrade == 0 {
@@ -459,7 +461,7 @@ func (s *Server) unlockQualifiedSkills(c *game.Character, evolve bool) [][]byte 
 			}
 			for _, sk := range c.Skills {
 				if sk.ID == e.FromSkill && sk.Grade >= e.RequiredGrade {
-					packets = append(packets, c.LearnSkill(e.ToSkill)...)
+					packets = append(packets, c.LearnSkill(e.ToSkill, s.Assets.Skills[e.ToSkill].GradeLimit())...)
 					break
 				}
 			}
@@ -468,7 +470,7 @@ func (s *Server) unlockQualifiedSkills(c *game.Character, evolve bool) [][]byte 
 	if c.Reborn {
 		id := game.RebornJobSkill(c.Job)
 		if id != 0 && s.hasSkill(id) {
-			packets = append(packets, c.LearnSkill(id)...)
+			packets = append(packets, c.LearnSkill(id, s.Assets.Skills[id].GradeLimit())...)
 		}
 	}
 	return packets

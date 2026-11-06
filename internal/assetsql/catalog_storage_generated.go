@@ -8096,31 +8096,34 @@ func readStarterItems(tx *gorm.DB) ([]game.StarterGrant, error) {
 }
 
 type SkillsRow struct {
-	SkillsKey               uint16 `gorm:"column:skills_key;primaryKey;autoIncrement:false"`
-	ValueTargetingPresent   bool
-	ValueEffectRefsPresent  bool
-	ValueNativePattern109   uint8
-	ValueNativePattern110   uint8
-	ValueNativePattern111   uint8
-	ValueNativePattern112   uint8
-	ValueAreaAttackPresent  bool
-	ValueAreaAttack         bool
-	ValueNativeRounds51     uint8
-	ValueNativeEffectCode52 uint8
-	ValueEffectsPresent     bool
-	ValueID                 uint16
-	ValueName               string
-	ValueType               uint8
-	ValueSP                 uint16
-	ValueElement            uint8
-	ValueAttack             uint16
-	ValueEffectLayer        uint8
-	ValueBasePowerPresent   bool
-	ValueBasePower          float64
-	ValuePowerPerLevel      float64
-	ValueStatMultiplier     float64
-	ValueAdditionalDamage   uint16
-	ValueTableOrder         uint16
+	SkillsKey                uint16 `gorm:"column:skills_key;primaryKey;autoIncrement:false"`
+	ValueTargetingPresent    bool
+	ValueEffectRefsPresent   bool
+	ValueNativePattern109    uint8
+	ValueNativePattern110    uint8
+	ValueNativePattern111    uint8
+	ValueNativePattern112    uint8
+	ValueAreaAttackPresent   bool
+	ValueAreaAttack          bool
+	ValueNativeRounds51      uint8
+	ValueNativeEffectCode52  uint8
+	ValueEffectsPresent      bool
+	ValueID                  uint16
+	ValueName                string
+	ValueType                uint8
+	ValueSP                  uint16
+	ValueElement             uint8
+	ValueAttack              uint16
+	ValueEffectLayer         uint8
+	ValueBasePowerPresent    bool
+	ValueBasePower           float64
+	ValuePowerPerLevel       float64
+	ValueStatMultiplier      float64
+	ValueAdditionalDamage    uint16
+	ValueContactEvents       uint8
+	ValueMaximumGradePresent bool
+	ValueMaximumGrade        uint8
+	ValueTableOrder          uint16
 }
 
 func (SkillsRow) TableName() string { return "catalog_skills" }
@@ -8155,6 +8158,11 @@ func writeSkills(tx *gorm.DB, values map[uint16]assets.Skill) error {
 		row.ValuePowerPerLevel = value.PowerPerLevel
 		row.ValueStatMultiplier = value.StatMultiplier
 		row.ValueAdditionalDamage = value.AdditionalDamage
+		row.ValueContactEvents = value.ContactEvents
+		if value.MaximumGrade != nil {
+			row.ValueMaximumGradePresent = true
+			row.ValueMaximumGrade = (*value.MaximumGrade)
+		}
 		row.ValueTableOrder = value.TableOrder
 		rows = append(rows, row)
 	}
@@ -8230,6 +8238,11 @@ func readSkills(tx *gorm.DB) (map[uint16]assets.Skill, error) {
 		value.PowerPerLevel = row.ValuePowerPerLevel
 		value.StatMultiplier = row.ValueStatMultiplier
 		value.AdditionalDamage = row.ValueAdditionalDamage
+		value.ContactEvents = row.ValueContactEvents
+		if row.ValueMaximumGradePresent {
+			value.MaximumGrade = new(uint8)
+			(*value.MaximumGrade) = row.ValueMaximumGrade
+		}
 		value.TableOrder = row.ValueTableOrder
 		result[row.SkillsKey] = value
 	}

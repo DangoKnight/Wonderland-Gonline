@@ -137,9 +137,20 @@ func TestComboExecutionRechecksBridgeAndRetainsSpeedSnapshot(t *testing.T) {
 
 func TestFullPartyComboPacketDamageAndSkillUses(t *testing.T) {
 	b, r, actions := comboFixture(0, 99, 198, 297, 396, 495, 594, 693)
+	// The authored wire golden is a Fire-skill combo, not neutral damage.
+	r.Skills = map[uint16]assets.Skill{}
+	for id, skill := range lowest.Skills {
+		if id == 11001 {
+			skill.Element = 3
+		}
+		r.Skills[id] = skill
+	}
 	for i := range actions {
 		actions[i].Skill = 11001
+		// Explicit offense keeps the independent wire golden at 73 per actor.
+		actions[i].Actor.Matk = 25
 	}
+	b.Defenders[0].Mdef = 11 // Preserve the authored 73-damage wire golden.
 	group := b.order(r, actions)[0]
 	steps, _ := r.attack(b, group, map[int]bool{})
 	if len(steps) != 1 || len(steps[0].SkillUses) != 8 {
@@ -163,7 +174,7 @@ func TestFullPartyComboPacketDamageAndSkillUses(t *testing.T) {
 			t.Fatalf("record %d: %v", i, animation[off:off+19])
 		}
 		damage := int(animation[off+14]) | int(animation[off+15])<<8
-		if damage != 29 {
+		if damage != 73 {
 			t.Fatalf("actor %d damage %d", i, damage)
 		}
 		total += damage

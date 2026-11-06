@@ -42,3 +42,33 @@ func TestPetSkillProgressPacketsAndWideEXP(t *testing.T) {
 		t.Fatal(p.Skills)
 	}
 }
+
+func TestSkillProgressUsesProvidedNativeLimit(t *testing.T) {
+	const skillID = 50000
+	for _, limit := range []byte{5, 15, 30, 255} {
+		c := Character{Skills: []LearnedSkill{{ID: skillID, Grade: limit - 1, EXP: uint32(limit-1)*100 - 1}}}
+		p := Pet{Skills: []PetSkill{{ID: skillID, Grade: limit - 1, Exp: uint32(limit-1)*100 - 1}}}
+		c.AddSkillEXP(skillID, 1, limit)
+		p.AddSkillEXP(skillID, 1, 0, limit)
+		if c.Skills[0].Grade != limit || p.Skills[0].Grade != limit || p.Skills[0].Exp != 0 {
+			t.Fatal("progress stopped at the wrong cap", limit, c.Skills, p.Skills)
+		}
+		if len(c.AddSkillEXP(skillID, 10000, limit)) != 0 || len(p.AddSkillEXP(skillID, 10000, 1, limit)) != 0 {
+			t.Fatal("capped skill gained progress", limit)
+		}
+		if len(c.SetSkillGrade(skillID, limit, limit)) == 0 {
+			t.Fatal("native maximum rejected", limit)
+		}
+		if limit < 255 && len(c.SetSkillGrade(skillID, limit+1, limit)) != 0 {
+			t.Fatal("above-native maximum accepted", limit)
+		}
+	}
+	if SkillGradeLimit() != 10 || SkillGradeLimit(0) != 0 {
+		t.Fatal("missing grade metadata must default to ten")
+	}
+	c := Character{Skills: []LearnedSkill{{ID: skillID, Grade: 1}}}
+	p := Pet{Skills: []PetSkill{{ID: skillID, Grade: 1}}}
+	if len(c.AddSkillEXP(skillID, 1000, 0)) != 0 || len(p.AddSkillEXP(skillID, 1000, 1, 0)) != 0 || len(c.LearnSkill(50001, 0)) != 0 || len(c.SetSkillGrade(skillID, 1, 0)) != 0 {
+		t.Fatal("explicit zero limit allowed learning or progression")
+	}
+}

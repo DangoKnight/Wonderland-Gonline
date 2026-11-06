@@ -1,5 +1,11 @@
 # Exported Wonderland data
 
+These client exports are optional for the server. The complete server catalog
+ships in [`internal/assetsql/server_defaults`](../internal/assetsql/server_defaults/README.md)
+and initializes a missing assets database without extraction. Runtime shared
+definitions come from SQL; the tracked seed is used only for creation or an
+explicit rebuild. See [server setup](../docs/GETTING_STARTED.md).
+
 Compiled client language tables are tracked under
 [`runtime/locales`](runtime/locales/README.md). Other client-derived exports and
 media remain local. Regenerate the string tables after changing their sources.

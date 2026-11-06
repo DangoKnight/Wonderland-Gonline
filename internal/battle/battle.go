@@ -623,7 +623,7 @@ func (r Rules) Delay(skill uint16, kind string) time.Duration {
 // Elemental includes the element's inherent offense; do not add Fire's 30% again.
 func Elemental(hitter, target byte) float64 {
 	matrix := [5][5]float64{
-		{1, 1, 1, 1, 1},
+		{1, .9, 1, 1, 1}, // Neutral retains Earth's inherent damage reduction.
 		{1, .9, 1.3, 1, .6},
 		{.9, .5, .9, 1.4, .9},
 		{1.3, 1.2, .7, 1.3, 1.6},

@@ -193,7 +193,7 @@ func (s *Server) executeCompounding(ctx context.Context, c *Session, slots []byt
 			return err
 		}
 		if !petFood {
-			execution.SkillPackets = next.AddSkillEXP(skill, game.AlchemySkillEXPGain)
+			execution.SkillPackets = next.AddSkillEXP(skill, game.AlchemySkillEXPGain, s.Assets.Skills[skill].GradeLimit())
 		}
 		for _, sk := range next.Skills {
 			if sk.ID == skill {

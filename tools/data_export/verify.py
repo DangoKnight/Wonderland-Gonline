@@ -61,7 +61,12 @@ def check_readable(document):
             record=bytes.fromhex(row['decoded_hex'])
             for field in document['field_layout']:
                 offset=field['offset'];width=field['bytes']
-                require(row['fields'][field['name']]==int.from_bytes(record[offset:offset+width],'little'), 'readable field differs from decoded bytes')
+                expected = (struct.unpack_from('<d', record, offset)[0]
+                            if field.get('encoding') == 'float64-le' else
+                            int.from_bytes(record[offset:offset+width],'little'))
+                require(row['fields'][field['name']]==expected, 'readable field differs from decoded bytes')
+                if 'legacy_name' in field:
+                    require(row['fields'][field['legacy_name']]==expected, 'legacy field alias differs from decoded bytes')
     if document.get('format')=='plaintext-formula':
         encoded=(bytes([document['version']])
                  +struct.pack('<'+'d'*len(document['coefficients']),*document['coefficients'])

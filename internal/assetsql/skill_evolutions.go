@@ -23,7 +23,7 @@ func validateSkillEvolutions(values []assets.SkillEvolution) error {
 	seen := map[[2]uint16]bool{}
 	for _, e := range values {
 		key := [2]uint16{e.FromSkill, e.ToSkill}
-		if e.FromSkill == 0 || e.ToSkill == 0 || e.FromSkill == e.ToSkill || e.RequiredGrade == 0 || e.RequiredGrade > 10 || seen[key] {
+		if e.FromSkill == 0 || e.ToSkill == 0 || e.FromSkill == e.ToSkill || e.RequiredGrade == 0 || seen[key] {
 			return fmt.Errorf("invalid skill evolution %v", key)
 		}
 		seen[key] = true

@@ -207,7 +207,11 @@ func (s *Scene) loadObjects(a login.Assets, list []groundObject) error {
 		if img == nil {
 			continue
 		}
-		s.Objects = append(s.Objects, Object{Resource: o.Resource, X: int(o.X), Y: int(o.Y), Depth: r.depth,
+		// FUN_003f830c sign-extends both native 16-bit coordinates before
+		// creating the object. Large trees can begin above or left of a map;
+		// treating those bits as positive moves them tens of thousands of pixels
+		// off-screen and also puts them on the wrong depth-sort line.
+		s.Objects = append(s.Objects, Object{Resource: o.Resource, X: int(int16(o.X)), Y: int(int16(o.Y)), Depth: r.depth,
 			Kind: r.kind, Frames: r.frames, Interval: r.interval, Image: img, shadowFrames: shadows[o.Resource]})
 	}
 	return nil

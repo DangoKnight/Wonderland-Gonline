@@ -731,6 +731,29 @@ func TestBattlePetSkillProgressWithoutClientSlot(t *testing.T) {
 	}
 }
 
+func TestBattleNativeSkillGradeProgressPersistsBeyondTen(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	const skillID = 50000
+	s.Assets.Skills[skillID] = assets.Skill{ID: skillID, MaximumGrade: assets.GradeLimit(15)}
+	c.character.Skills = []game.LearnedSkill{{ID: skillID, Grade: 10, EXP: 999}}
+	pet := game.Pet{ID: 10501, Skills: []game.PetSkill{{ID: skillID, Grade: 14, Exp: 1399}}}
+	c.character.Pets = []game.Pet{pet}
+	run := c.battle
+	run.members[0].pet = battle.PetFighter(pet, c.character.ID, nil, 0)
+	_, err := s.commitSkillUses(c, run, []battle.Action{
+		{Actor: run.members[0].self, Skill: skillID, SkillEXP: 1},
+		{Actor: run.members[0].pet, Skill: skillID, SkillEXP: 1},
+	})
+	if err != nil || c.character.Skills[0].Grade != 11 || c.character.Pets[0].Skills[0].Grade != 15 {
+		t.Fatal("native player/pet progression", c.character.Skills, c.character.Pets, err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(stored) == 0 || stored[0].Skills[0].Grade != 11 || stored[0].Pets[0].Skills[0].Grade != 15 || stored[0].Pets[0].Skills[0].Exp != 0 {
+		t.Fatal("high native grades were not persisted", stored, err)
+	}
+}
+
 func TestEventSkillRewardPersistenceAndUnknownPreflight(t *testing.T) {
 	for _, known := range []bool{true, false} {
 		t.Run(map[bool]string{true: "learn", false: "unknown"}[known], func(t *testing.T) {

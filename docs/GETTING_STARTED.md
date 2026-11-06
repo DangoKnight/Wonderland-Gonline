@@ -1,7 +1,8 @@
 # Set up and run Wonderland Gonline
 
-This guide takes a fresh checkout through WLRI asset extraction, database setup,
-compilation and a local server/client session. Both Go programs are still being
+The server builds and runs from a fresh checkout without WLRI extraction. This
+guide also covers optional Go-client extraction and a local server/client session.
+Both Go programs are still being
 ported; supported gameplay and client screens do not cover the entire original
 game. See [port status](PORTING.md) and [client details](CLIENT.md).
 
@@ -17,9 +18,9 @@ your configured addresses when preserving an existing local configuration.
 | Git | Checkout; client-derived JSON and media are generated locally |
 | Go 1.25 or newer | Build both programs; the server alone requires Go 1.24 |
 | C compiler and C development headers | Server SQLite driver with CGO |
-| Python 3.11 or newer and `venv` | Asset extraction and verification |
-| Pillow | Image conversion; installed from the repository requirements file |
-| FFmpeg and FFprobe on `PATH` | Client sound/voice conversion |
+| Python 3.11 or newer and `venv` | Go-client asset extraction and verification only |
+| Pillow | Go-client image conversion only; installed from the repository requirements file |
+| FFmpeg and FFprobe on `PATH` | Go-client sound/voice conversion only |
 | Working desktop and graphics drivers | Run the Go/Ebitengine client |
 | OpenSSL | Generate the admin token in the Bash examples |
 
@@ -38,10 +39,11 @@ ffmpeg -version
 ffprobe -version
 ```
 
-Client-derived files, including `data/ground_data.json` and sprite metadata,
-are excluded from Git. Generate them from the original installation below.
+The server's shared definitions are tracked and embedded. Client rendering files,
+including `data/ground_data.json` and sprite metadata, remain excluded from Git.
+For a server-only installation, skip section 2 and proceed to configuration.
 
-## 2. Extract the missing WLRI assets
+## 2. Extract WLRI assets for the Go client only
 
 Obtain the full **WLRI (Wonderland Rhode Island)** installation. Its root must
 contain `aLogin.exe`, `data/`, `jma/`, `pic/` and its other media directories.
@@ -109,7 +111,7 @@ The example uses loopback addresses and two separate databases:
 
 | Path | Contents | Created by |
 | --- | --- | --- |
-| `var/assets.db` | Static gameplay catalog | `cmd/data-rebuild` |
+| `var/assets.db` | Static gameplay catalog | First server startup or explicit `cmd/data-rebuild` |
 | `var/wonderland.db` | Go accounts, characters and settings | Server startup |
 | `data/` | Local client exports and tracked server-only definitions | Original client extraction plus checkout |
 
@@ -117,15 +119,16 @@ Build the static catalog and check that it loads:
 
 ```sh
 export CGO_ENABLED=1
-go run ./cmd/data-rebuild -data data -config config.local.json
+go run ./cmd/data-rebuild -config config.local.json
 go run ./cmd/wonderland -config config.local.json -inspect-data
 ```
 
 `-inspect-data` prints catalog counts and warnings without opening listeners or
 requiring an admin token. Missing-item warnings can disable individual gacha
-pools; missing required catalogs stop startup. A server-only installation needs
-the generated client tables plus tracked server-only definitions (or an already
-built assets database), but does not need image/audio/video payloads at runtime.
+pools. The server creates a missing catalog from its embedded repository seed;
+the rebuild command above explicitly recreates that same seed with a backup.
+No extracted client tables or media are needed. Existing catalogs are preserved
+on normal startup; outdated schemas require the explicit migration procedure.
 
 Stop the server before rebuilding an existing active catalog. Rebuilds preserve
 old asset databases as backups. The commands above do not reset gameplay storage.
@@ -252,8 +255,8 @@ scopes; other catalog/startup changes require a restart.
 
 ## Windows PowerShell
 
-Use Python, FFmpeg and Go installations on `PATH`, and a GCC/MinGW-w64 toolchain
-matching Go's target architecture for the server. The asset commands above work
+The server requires Go and a GCC/MinGW-w64 toolchain on `PATH`. Python and FFmpeg
+are required only for Go-client extraction. The optional client asset commands above work
 with these substitutions; use PowerShell backticks instead of Bash backslashes
 for multiline commands, or put each command on one line:
 
@@ -272,14 +275,15 @@ keep the translated edition in `$wlo_client_source` and append
 `--chinese-client 'C:/path/to/updated-Chinese-client'`; both UI sets and matching
 Chinese text are included automatically.
 
-Run the same verification and restoration scripts using `& $wlo_python` in place
-of `var/asset-import-venv/bin/python` before proceeding:
+For the Go client, run the same verification and restoration scripts using
+`& $wlo_python` in place of `var/asset-import-venv/bin/python`. For the server
+alone, skip all extraction commands and start here:
 
 ```powershell
 if (-not (Test-Path config.local.json)) { Copy-Item config.example.json config.local.json }
 $env:CGO_ENABLED = '1'
 New-Item -ItemType Directory -Force bin, var | Out-Null
-go run ./cmd/data-rebuild -data data -config config.local.json
+go run ./cmd/data-rebuild -config config.local.json
 go build -o bin/wonderland.exe ./cmd/wonderland
 $env:WONDERLAND_ADMIN_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
 .\bin\wonderland.exe -config config.local.json -log-file var/server.jsonl
@@ -308,7 +312,7 @@ credential. Use Ctrl+C there to stop it.
 | Import reports differing metadata | Retain the temporary output for comparison; existing local files and any retained tracked metadata are preserved |
 | Asset export destination exists | Select a new temporary output directory |
 | Missing PNG, WAV, font or sprite file | Complete verified restoration into `data/`; normal runtime has no native fallback |
-| `assets database … no such file` | Build the configured `assets_database` from the repository root |
+| Assets database cannot be created | Check permissions for the configured path; first startup creates a missing catalog from the embedded seed |
 | Asset rebuild reports checksum mismatch | Check manifest/export consistency; use a supported exporter to regenerate intentional table changes |
 | Admin token error | Set `WONDERLAND_ADMIN_TOKEN` in the same shell that starts the server |
 | `address already in use` | Stop the previous instance or change the relevant listener; keep client game-port expectations in mind |

@@ -3,7 +3,7 @@ package assets
 import "fmt"
 
 const (
-	MaxSkillGrade        = 10
+	DefaultSkillGrade    = 10 // Compatibility limit when Skill.dat metadata is unavailable.
 	MaxBattleSideTargets = 8
 	MaxFormationOffset   = 3
 )
@@ -23,7 +23,7 @@ type FormationOffset struct {
 }
 
 func (s Skill) TargetingAt(grade int) (SkillTargeting, bool) {
-	grade = min(MaxSkillGrade, max(1, grade))
+	grade = min(int(s.GradeLimit()), max(1, grade))
 	for _, shape := range s.Targeting {
 		if grade >= int(shape.MinGrade) && grade <= int(shape.MaxGrade) {
 			return shape, true
@@ -31,10 +31,14 @@ func (s Skill) TargetingAt(grade int) (SkillTargeting, bool) {
 	}
 	return SkillTargeting{}, false
 }
-func ValidateSkillTargeting(shapes []SkillTargeting) error {
+func ValidateSkillTargeting(shapes []SkillTargeting, maximumGrade ...byte) error {
+	limit := Skill{}
+	if len(maximumGrade) > 0 {
+		limit.MaximumGrade = GradeLimit(maximumGrade[0])
+	}
 	var previous byte
 	for _, shape := range shapes {
-		if shape.MinGrade < 1 || shape.MinGrade <= previous || shape.MaxGrade < shape.MinGrade || shape.MaxGrade > MaxSkillGrade {
+		if shape.MinGrade < 1 || shape.MinGrade <= previous || shape.MaxGrade < shape.MinGrade || shape.MaxGrade > limit.GradeLimit() {
 			return fmt.Errorf("invalid or overlapping skill targeting grades")
 		}
 		previous = shape.MaxGrade

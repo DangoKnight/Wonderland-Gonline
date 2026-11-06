@@ -4,7 +4,7 @@ import "wonderland-gonline/internal/protocol"
 
 // AddSkillEXP follows SkillManager.AddSkillExp, including the native stunt alias.
 // The caller persists the changed character before sending the returned packets.
-func (c *Character) AddSkillEXP(id uint16, gain uint32) [][]byte {
+func (c *Character) AddSkillEXP(id uint16, gain uint32, maximumGrade ...byte) [][]byte {
 	if id == 0 || gain == 0 {
 		return nil
 	}
@@ -14,7 +14,7 @@ func (c *Character) AddSkillEXP(id uint16, gain uint32) [][]byte {
 		if sk.ID == StarterStunt(c.Body, c.Head) {
 			clientID = 15003
 		}
-		limit := SkillGradeLimit(sk.ID)
+		limit := SkillGradeLimit(maximumGrade...)
 		if (sk.ID != id && clientID != id) || sk.Grade == 0 || sk.Grade >= limit {
 			continue
 		}
@@ -51,24 +51,25 @@ func (c *Character) AddSkillEXP(id uint16, gain uint32) [][]byte {
 }
 
 // AddSkillEXP follows AddPetSkillExp: pet EXP uses a wide accumulator and clears
-// at grade ten. A zero client slot suppresses packets without suppressing progress.
-func (p *Pet) AddSkillEXP(id uint16, gain uint32, slot byte) [][]byte {
+// at the catalog limit. A zero client slot suppresses packets without suppressing progress.
+func (p *Pet) AddSkillEXP(id uint16, gain uint32, slot byte, maximumGrade ...byte) [][]byte {
+	limit := SkillGradeLimit(maximumGrade...)
 	if gain == 0 {
 		return nil
 	}
 	for i := range p.Skills {
 		sk := &p.Skills[i]
-		if sk.ID != id || sk.Grade == 0 || sk.Grade >= 10 {
+		if sk.ID != id || sk.Grade == 0 || sk.Grade >= limit {
 			continue
 		}
 		old := sk.Grade
 		exp := uint64(sk.Exp) + uint64(gain)
-		for sk.Grade < 10 && exp >= uint64(sk.Grade)*100 {
-			exp -= uint64(sk.Grade) * 100
+		for sk.Grade < limit && exp >= uint64(sk.Grade)*SkillGradeExpScale {
+			exp -= uint64(sk.Grade) * SkillGradeExpScale
 			sk.Grade++
 		}
 		sk.Exp = uint32(exp)
-		if sk.Grade >= 10 {
+		if sk.Grade >= limit {
 			sk.Exp = 0
 		}
 		if slot == 0 {

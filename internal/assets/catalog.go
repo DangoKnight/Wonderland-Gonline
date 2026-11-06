@@ -287,6 +287,11 @@ func Load(dir, itemCatalog string) (*Catalog, error) {
 		v, e := ParseAnimationTiming(b)
 		if e == nil {
 			c.AnimationTiming = v
+			contacts, err := ParseAnimationContacts(b)
+			if err != nil {
+				return err
+			}
+			ApplySkillContacts(c.Skills, contacts)
 		}
 		return e
 	})

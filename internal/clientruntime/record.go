@@ -60,8 +60,10 @@ type Zone struct {
 }
 type Object struct {
 	Resource uint32 `json:"resource"`
-	X        uint16 `json:"x"`
-	Y        uint16 `json:"y"`
+	// Preserve native coordinate bits in JSON/compiled records. The scenery
+	// loader interprets these as signed int16, as Alogin's FUN_003f830c does.
+	X uint16 `json:"x"`
+	Y uint16 `json:"y"`
 }
 
 func MapPath(id uint16) string   { return filepath.Join(GroundDir, fmt.Sprintf("%d.bin", id)) }

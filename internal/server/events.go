@@ -850,7 +850,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 			return false, nil
 		}
 		next := c.character.Clone()
-		packets := next.LearnSkill(op.D1)
+		packets := next.LearnSkill(op.D1, s.Assets.Skills[op.D1].GradeLimit())
 		if len(packets) == 0 {
 			return true, nil
 		}

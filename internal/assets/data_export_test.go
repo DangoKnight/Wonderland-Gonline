@@ -99,6 +99,7 @@ func TestBulkNativeExportProjections(t *testing.T) {
 				"attack_category": float64(skill.Attack), "effect_layer": float64(skill.EffectLayer),
 				"power_per_level": skill.PowerPerLevel, "stat_multiplier": skill.StatMultiplier,
 				"additional_damage": float64(skill.AdditionalDamage), "table_order": float64(skill.TableOrder),
+				"maximum_grade": float64(skill.GradeLimit()),
 			} {
 				check(t, row.Fields, name, value)
 			}

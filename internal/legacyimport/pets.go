@@ -66,8 +66,8 @@ func readPets(tx *gorm.DB, catalog *assets.Catalog, plan *Plan, get func(*decode
 					return fmt.Errorf("legacy pet %d: malformed skills", id)
 				}
 				sd := decoder{row: row{"id": parts[0], "grade": parts[1], "exp": parts[2]}}
-				skill := game.PetSkill{ID: uint16(sd.n("id", math.MaxUint16)), Grade: byte(sd.n("grade", 10)), Exp: uint32(sd.n("exp", math.MaxUint32))}
-				if _, ok := catalog.Skills[skill.ID]; !ok || skill.Grade == 0 || sd.err != nil {
+				skill := game.PetSkill{ID: uint16(sd.n("id", math.MaxUint16)), Grade: byte(sd.n("grade", math.MaxUint8)), Exp: uint32(sd.n("exp", math.MaxUint32))}
+				if definition, ok := catalog.Skills[skill.ID]; !ok || skill.Grade == 0 || skill.Grade > definition.GradeLimit() || sd.err != nil {
 					return fmt.Errorf("legacy pet %d: invalid skill", id)
 				}
 				for _, old := range p.Skills {

@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
+from skill_fields import SKILL_FIELDS, annotate_skill_layout
 
 REPO = Path(__file__).resolve().parents[2]
 SCHEMA_VERSION = 1
@@ -126,7 +127,7 @@ FORMATS = {
                  2: [0x1a,0x1c,0x1f,0x35,0x3a,0x3c,0x3e,0x40,0x42,0x44,0x65,0x68,0x6a,0x6f,0x7a,0x7c,0x7e,0x80,0x82],
                  4: [0x84,0x88,0x8c,0x90,0x94]},
         reversals=[(1,21),(67,97)], texts={'name': (0,1,20), 'description': (66,67,30)},
-        names={21:'type',22:'id',24:'sp',26:'element',27:'attack_category',29:'effect_layer',49:'additional_damage',97:'table_order'},
+        names={offset: info[0] for offset, info in SKILL_FIELDS.items()},
         output='skill_data.json', reference='aLogin FUN_00480f8c / FUN_00480b80'),
     'mark.dat': dict(size=553, prefix=4, version=(258, 2, 4), bias=7,
         masks={1: 0x90, 2: 0x2774, 4: 0x082cd1b9},
@@ -191,6 +192,8 @@ def export_records(data, spec):
             occupied |= span
             layout.append({'name': spec['names'].get(offset, f'unknown_u{width*8}_offset_{offset}'),
                            'offset': offset, 'bytes': width})
+    if spec['output'] == 'skill_data.json':
+        annotate_skill_layout(layout)
     layout.sort(key=lambda field: field['offset'])
     header_bytes = spec['size'] if spec['version'] else 0
     if spec['version']:
@@ -201,10 +204,13 @@ def export_records(data, spec):
         source = data[offset:offset+spec['size']]
         decoded = transform(source, spec)
         require(transform(decoded, spec, encrypt=True) == source, 'native record round trip failed')
-        fields = {field['name']: int.from_bytes(decoded[field['offset']:field['offset']+field['bytes']], 'little') for field in layout}
+        fields = {field['name']: (struct.unpack_from('<d', decoded, field['offset'])[0]
+                  if field.get('encoding') == 'float64-le' else
+                  int.from_bytes(decoded[field['offset']:field['offset']+field['bytes']], 'little')) for field in layout}
+        for field in layout:
+            if 'legacy_name' in field:
+                fields[field['legacy_name']] = fields[field['name']]
         texts = {name: short_text(decoded, *positions) for name, positions in spec['texts'].items()}
-        if spec['output'] == 'skill_data.json':
-            fields['power_per_level'], fields['stat_multiplier'] = struct.unpack_from('<dd', decoded, 32)
         records.append({'record_index': offset // spec['size'], 'file_offset': offset,
                         **texts, 'fields': fields, 'decoded_hex': decoded.hex()})
     return {'format': 'native-records', 'record_bytes': spec['size'], 'native_version': spec['version'][2] if spec['version'] else None,

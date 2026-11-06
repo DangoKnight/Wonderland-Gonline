@@ -136,6 +136,16 @@ func TestItemUsePetListGoldenAndAtomicValidation(t *testing.T) {
 	if s.ApplyPetList(badGrade) || s.Pets[2].Skills[0].Grade != 2 {
 		t.Fatal("malformed skill grade replaced roster")
 	}
+	s.PetSkillMaximumGrade = func(id uint16, index int) byte {
+		if id == 12032 && index == 0 {
+			return 15
+		}
+		return 0
+	}
+	badGrade[36] = 15
+	if !s.ApplyPetList(badGrade) || s.Pets[2].Skills[0].Grade != 15 {
+		t.Fatal("native high-grade pet skill rejected")
+	}
 	if equipment := s.Pets[2].Equipment[0]; equipment.ID != 100 || equipment.Damage != 4 || equipment.Forge() != 7 {
 		t.Fatalf("pet equipment metadata %#v", equipment)
 	}

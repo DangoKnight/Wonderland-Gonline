@@ -117,7 +117,7 @@ func (s *State) ApplyPetStat(p []byte) bool {
 	v := binary.LittleEndian.Uint32(p[petStatValueOffset:])
 	if p[petStatCodeOffset] == game.StatSkillGrade || p[petStatCodeOffset] == game.StatSkillEXP {
 		id := binary.LittleEndian.Uint32(p[petStatTargetOffset:])
-		if id == 0 || id > 65535 || p[petStatSignOffset] != petStatPositive || p[petStatCodeOffset] == game.StatSkillGrade && v > game.MaxSkillGrade {
+		if id == 0 || id > 65535 || p[petStatSignOffset] != petStatPositive || p[petStatCodeOffset] == game.StatSkillGrade && v > uint32(s.skillGradeLimit(uint16(id))) {
 			return false
 		}
 		for i := range pet.Skills {
@@ -175,7 +175,7 @@ func (s *State) ApplyPetRecruit(p []byte, owner uint32) bool {
 	pet.Stats = world.Stats{STR: binary.LittleEndian.Uint16(p[11:]), CON: binary.LittleEndian.Uint16(p[13:]), INT: binary.LittleEndian.Uint16(p[15:]), WIS: binary.LittleEndian.Uint16(p[17:]), AGI: binary.LittleEndian.Uint16(p[19:]), Level: p[21], EXP: binary.LittleEndian.Uint32(p[22:]), Rebirth: p[45], Potential: p[46], Job: p[47]}
 	for i := range pet.Skills {
 		at := 26 + i*5
-		if p[at] > game.MaxSkillGrade {
+		if p[at] > s.petSkillGradeLimit(pet.ID, i) {
 			return false
 		}
 		pet.Skills[i] = game.PetSkill{Grade: p[at], Exp: binary.LittleEndian.Uint32(p[at+1:])}

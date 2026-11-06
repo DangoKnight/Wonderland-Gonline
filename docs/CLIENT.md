@@ -656,6 +656,15 @@ top. This is independent of the WEM object list and applies across maps. Other
 grid modes retain their raw export data until their rendering semantics are ported.
 Rebuild previously compiled client bundles to retain this formerly discarded grid.
 
+Scenery object placements are signed 16-bit coordinates (`FUN_003f830c` passes
+both fields through `short` before `FUN_003f9310`). The export and compiled records
+retain their native unsigned bit patterns; the scene loader sign-extends them
+before placement and depth sorting. This allows trees extending above/left of
+the map to remain visible. Chicken Farm's northern trees include (811, -91) and
+(988, -70); treating their Y values as 65445/65466 previously hid them off-screen.
+The correction applies to all maps and works with existing compiled bundles;
+it requires no extraction, asset rebuild or runtime-format change.
+
 **Names** (`names.go`): scene names come from the `SceneData.dat` export (`scene_data.json`), and each map's scene from the `eve.Emg` export (`eve_data.json`); map 10017 is scene 10001, "Ship Deck".
 
 **Drawing**: the camera keeps the player at the screen centre (the scene is drawn from X − 400, Y − 300; this matches `In-Game/Ship_Deck.png` exactly) but stays on the map (`FUN_003f94e8`, the map's +0xc/+0x10): within 400 pixels of the left edge (300 of the top) it is 0; the horizontal camera clamps continuously at the map's width − 800 − 20 (the original's 0x14) and at the bottom edge at its height − 600 (0 when the map is narrower or shorter than the screen). Before this the port drew black past the map's edges (`Chat_02/Go_Beach_Camera_Black_Edge.png`); at Dango Beach X:1082 Y:1195 it now frames the scene as the original's `Chat_02/Beach_Camera_Clamped.png` does. The player's name follows the player instead of a fixed row. The player is drawn by the selection's layered renderer, with the name centred above (yellow) and the location line `<name> <scene> X:<x> Y:<y>` at the bottom right; both positions are measured from the capture. `world_snapshot_test.go` (opt-in) renders the capture's position.
