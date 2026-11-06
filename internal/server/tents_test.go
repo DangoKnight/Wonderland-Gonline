@@ -96,6 +96,8 @@ func TestTentNativePlacementLayoutAndCollision(t *testing.T) {
 func tentFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	t.Helper()
 	s, players, wires := worldFixture(t)
+	s.Assets.Maps[12000] = assets.Map{ID: 12000}
+	s.World.ReloadCatalog(s.Assets)
 	s.Assets.Tents = assets.TentRules{SpawnX: 460, SpawnY: 700, Floor: 39062, Wallpaper: 39064, Furniture: []assets.TentFurnitureDefault{{ItemID: 38027, X: 43, Y: 42}}}
 	s.Assets.Items[36002] = game.ItemDefinition{ID: 36002, Type: 27, Name: "Tent"}
 	s.Assets.Items[38027] = game.ItemDefinition{ID: 38027, Type: 29, Name: "Workbench"}

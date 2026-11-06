@@ -3975,7 +3975,7 @@
         "internal/store/tent_tools.go",
         "internal/store/tent_placement.go"
       ],
-      "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts."
+      "notes": "Applicable behavior is imported through the listed Go owners; SQL resource boundaries, native compatibility and preserving initialization take precedence over unsafe source shortcuts. PR #9 (edb3995579be3113dcf5c47ca2086205aa937909) reconciles against these newer owners: structured tent_tools retains complete instances, SQL TentSurfaces/TentToolHosts replace name heuristics and hardcoded runtime lists, and schema v21 remains authoritative. internal/store/manufacturing.go now searches every allowed floor cell after the preferred (42,42) anchor and rolls back whole batches on exhaustion. internal/server/tents.go prefers the visitor's durable overworld return point and falls back to the host's open sign; map identity, not coordinates alone, distinguishes an interior. Regression evidence is in internal/store/tent_delivery_test.go, internal/server/tent_exit_test.go and the retained native tent wire tests."
     },
     {
       "source": "wlo.pserver.core/Game/PlayerRelated/Trade.cs",

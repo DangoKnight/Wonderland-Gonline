@@ -168,11 +168,33 @@ func (s *Server) enterTent(ctx context.Context, c *Session, owner uint32) error 
 	return s.tentSnapshot(ctx, c)
 }
 func (s *Server) exitTent(ctx context.Context, c *Session) error {
-	if c.tentOwner == 0 || c.character.TentReturn == nil {
+	if c.tentOwner == 0 {
 		return nil
 	}
-	dst := *c.character.TentReturn
+	dst, ok := s.tentExitDestination(c)
+	if !ok {
+		return errors.New("tent has no valid overworld return point")
+	}
 	return s.teleport(ctx, c, world.Destination{Map: dst.Map, X: dst.X, Y: dst.Y}, 0)
+}
+
+// Prefer each visitor's durable return point. Recover missing/invalid map data
+// from the host's open sign, never from the character's interior coordinates.
+func (s *Server) tentExitDestination(c *Session) (game.Location, bool) {
+	usable := func(dst game.Location) bool {
+		_, known := s.World.Map(dst.Map)
+		return known && dst.Map != game.TentMapID
+	}
+	if dst := c.character.TentReturn; dst != nil && usable(*dst) {
+		return *dst, true
+	}
+	if host := s.onlineByID(c.tentOwner); host != nil && host.openTent != nil {
+		dst := game.Location{Map: host.openTent.Map, X: host.openTent.X, Y: host.openTent.Y}
+		if usable(dst) {
+			return dst, true
+		}
+	}
+	return game.Location{}, false
 }
 func (s *Server) closePlayerTent(ctx context.Context, c *Session) error {
 	if c.openTent == nil {

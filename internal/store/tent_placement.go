@@ -8,20 +8,22 @@ import (
 )
 
 const (
-	tentGridMinX         = 29
-	tentGridMaxX         = 44
-	tentGridMinY         = 38
-	tentExpandedGridMinY = 32
-	tentGrandGridMinY    = 27
-	tentGridMaxY         = 50
-	tentExpandedType     = 2
-	tentGrandType        = 3
-	tentRotationMaximum  = 3
+	tentGridMinX            = 29
+	tentGridMaxX            = 44
+	tentGridMinY            = 38
+	tentExpandedGridMinY    = 32
+	tentGrandGridMinY       = 27
+	tentGridMaxY            = 50
+	tentExpandedType        = 2
+	tentGrandType           = 3
+	tentRotationMaximum     = 3
+	tentPreferredFurnitureX = 42
+	tentPreferredFurnitureY = 42
 )
 
 var ErrTentPlacement = errors.New("tent position is outside the floor or occupied")
 
-func tentPlacementAvailable(t Tent, candidate TentItem, items map[uint16]game.ItemDefinition, ignore *uint16) bool {
+func tentMinimumY(t Tent) int {
 	minimumY := tentGridMinY
 	if t.Enlarged || t.Type >= tentExpandedType {
 		minimumY = tentExpandedGridMinY
@@ -29,6 +31,11 @@ func tentPlacementAvailable(t Tent, candidate TentItem, items map[uint16]game.It
 	if t.Type >= tentGrandType {
 		minimumY = tentGrandGridMinY
 	}
+	return minimumY
+}
+
+func tentPlacementAvailable(t Tent, candidate TentItem, items map[uint16]game.ItemDefinition, ignore *uint16) bool {
+	minimumY := tentMinimumY(t)
 	if candidate.Floor > 1 || candidate.Floor == 1 && t.Type < tentExpandedType || candidate.Rotation > tentRotationMaximum || int(candidate.X) < tentGridMinX || int(candidate.X) > tentGridMaxX || int(candidate.Y) < minimumY || int(candidate.Y) > tentGridMaxY {
 		return false
 	}
@@ -51,6 +58,25 @@ func tentPlacementAvailable(t Tent, candidate TentItem, items map[uint16]game.It
 		}
 	}
 	return true
+}
+
+// findTentFurnitureSpot prefers the desktop server's (42,42) anchor, then
+// searches every allowed cell on the requested floor, including enlarged rows.
+// A full floor rejects delivery so the transaction retains the recoverable job.
+func findTentFurnitureSpot(t Tent, candidate TentItem, items map[uint16]game.ItemDefinition) (TentItem, bool) {
+	candidate.X, candidate.Y = tentPreferredFurnitureX, tentPreferredFurnitureY
+	if tentPlacementAvailable(t, candidate, items, nil) {
+		return candidate, true
+	}
+	for y := tentMinimumY(t); y <= tentGridMaxY; y++ {
+		for x := tentGridMinX; x <= tentGridMaxX; x++ {
+			candidate.X, candidate.Y = uint16(x), uint16(y)
+			if tentPlacementAvailable(t, candidate, items, nil) {
+				return candidate, true
+			}
+		}
+	}
+	return TentItem{}, false
 }
 
 func nativeTentIndex(raw uint16) int {

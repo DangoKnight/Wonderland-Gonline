@@ -1,5 +1,39 @@
 # Testing and validation
 
+## PR #9 tent reconciliation — 2026-11-06
+
+Reconciled the desktop tent port (`edb3995`) with main (`b03f895`), retaining
+schema v21, structured tool instances, SQL surface/host definitions and existing
+native packet goldens. Added regressions for preferred-anchor placement, rotated
+footprints, separate floors, enlarged/grand rows, whole-batch rollback/retry and
+exactly-once furniture delivery through both manufacturing adapters. Exit tests
+cover visitor precedence, invalid/missing return maps, host-sign fallback and
+durable departure without confusing outdoor coordinates with the tent interior.
+
+Focused `go test -json -race -count=1 -timeout=15m -p 1 ./internal/store
+./internal/server -run 'Tent|Manufactur'` passed. Full pre-push validation used
+`go test -json -race -count=1 -timeout=60m -p 1 ./...` with the installed-data
+opt-ins and the previously verified isolated schema-v54 assets snapshot.
+The initial native-assets package failed because checking out the older PR
+removed ignored JSON exports that its historical tree still tracked. Restored
+the missing exports from the existing matching extraction backup, without
+overwriting remaining assets, and reran the entire native-assets package under
+`-race`. The final audit combines that explicit rerun with the full run: all
+40 packages accounted for, 30 package passes, 10 packages with no tests,
+**2,446 passing test/subtest results**, two optional skips and no unresolved
+failures or race reports.
+
+Also passed full server/client vet, server/client/database-migrate builds, all
+three ten-second fuzz checks, 69 Python exporter tests (one optional skip), web
+formatting, HTML lint, Go formatting and whitespace checks. After restoring the
+exports, client `TestCompiledWorldMatchesEditable` and
+`TestCompiledBundleLoginAndSharedWorld` passed. No live databases or compiled
+asset packs were changed. No schema migration is required. Interactive Legacy
+acceptance remains separate from these automated results.
+
+Logs, restoration inventory, package inventory and the final audit remain under
+ignored `var/validation/pr9-tents-20261106/`.
+
 ## Full synchronized-branch pre-push validation — 2026-11-06
 
 Validated native teams/leadership/map following, generalized roaming enemies,
