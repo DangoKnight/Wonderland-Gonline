@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"time"
@@ -17,7 +19,7 @@ const (
 	recoveryValueBase       = 100
 	itemConsumableSlot      = 8
 	potentialReplyTimeout   = 5 * time.Second
-	recoveryUnavailableText = "This item cannot benefit the selected target right now."
+	recoveryUnavailableText = "ui.inventory.this_item_cannot_benefit_the_selected_ta_c5cf5353"
 )
 
 type potentialRequest struct {
@@ -33,7 +35,7 @@ func potentialPill(id uint16) bool {
 func (f *Form) useBag(slot byte) {
 	it := f.State.Bag[slot-1]
 	if it.Locked {
-		f.notice("Item locked, can't use.")
+		f.notice(localization.UI("ui.inventory.item_locked_can_t_use_62ebd9b8"))
 		return
 	}
 	def := f.State.Items[it.ID].Definition
@@ -44,7 +46,7 @@ func (f *Form) useBag(slot byte) {
 	if potentialPill(it.ID) {
 		if f.potentialRequest != nil {
 			if f.itemUseTime().Sub(f.potentialRequest.sent) < potentialReplyTimeout {
-				f.notice("Waiting for the previous Potential Pill result.")
+				f.notice(localization.UI("ui.inventory.waiting_for_the_previous_potential_pill__14385cf1"))
 				return
 			}
 			f.potentialRequest = nil
@@ -84,7 +86,7 @@ func (f *Form) UseSelected(slot, count, target byte, expected game.Item) bool {
 		return false
 	}
 	if target != 0 && f.State.Pets[target-1].ID == 0 {
-		f.notice("That pet is no longer available.")
+		f.notice(localization.UI("ui.inventory.that_pet_is_no_longer_available_33a51275"))
 		return false
 	}
 	if potentialPill(expected.ID) {
@@ -98,11 +100,11 @@ func (f *Form) UseSelected(slot, count, target byte, expected game.Item) bool {
 			petID = f.State.Pets[target-1].ID
 		}
 		if before >= game.PotentialMaximum {
-			f.notice("Reached max potential.")
+			f.notice(localization.UI("ui.inventory.reached_max_potential_9f6c9353"))
 			return false
 		}
 		if expected.ID == game.ItemGoldenPotentialPill && before < game.GoldenPotentialMinimum {
-			f.notice("Golden Potential Pills require at least 10 potential.")
+			f.notice(localization.UI("ui.inventory.golden_potential_pills_require_at_least__95646da8"))
 			return false
 		}
 		now := f.itemUseTime()
@@ -112,14 +114,14 @@ func (f *Form) UseSelected(slot, count, target byte, expected game.Item) bool {
 		def := f.State.Items[expected.ID].Definition
 		if target == 0 && def.Type == game.ItemTypePetStatFood {
 			if f.Warning != nil {
-				f.Warning("Select a pet for this food.")
+				f.Warning(localization.UI("ui.inventory.select_a_pet_for_this_food_0199587d"))
 			} else {
-				f.notice("Select a pet for this food.")
+				f.notice(localization.UI("ui.inventory.select_a_pet_for_this_food_0199587d"))
 			}
 			return false
 		}
 		if target == 0 && (def.Status[0] == itemAmityStatus || def.Status[1] == itemAmityStatus) {
-			f.notice("Select a pet for this item.")
+			f.notice(localization.UI("ui.inventory.select_a_pet_for_this_item_7008c86c"))
 			return false
 		}
 		stats := f.Stats
@@ -140,9 +142,9 @@ func (f *Form) UseSelected(slot, count, target byte, expected game.Item) bool {
 			spNeeded := spGain > 0 && (stats.MaxSP == 0 || stats.SP < stats.MaxSP)
 			if !hpNeeded && !spNeeded {
 				if f.Warning != nil {
-					f.Warning(recoveryUnavailableText)
+					f.Warning(localization.UI(recoveryUnavailableText))
 				} else {
-					f.notice(recoveryUnavailableText)
+					f.notice(localization.UI(recoveryUnavailableText))
 				}
 				return false
 			}
@@ -174,7 +176,7 @@ func (f *Form) PotentialReply(p []byte) bool {
 	f.potentialRequest = nil
 	if p[2] == protocol.PotentialPillRejected {
 		if f.Warning != nil {
-			f.Warning("The Potential Pill could not be used.")
+			f.Warning(localization.UI("ui.inventory.the_potential_pill_could_not_be_used_e4a2268f"))
 		}
 		return true
 	}

@@ -144,6 +144,7 @@ func (e *Editor) SetMaxLen(n int) {
 // SetText is FUN_00468de8: the text is replaced and an End key press moves
 // the caret after it.
 func (e *Editor) SetText(s []byte) {
+	e.ClearLanguage("text")
 	e.Text = append([]byte(nil), s...)
 	e.self.KeyDown(VKEnd, 0)
 }

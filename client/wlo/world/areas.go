@@ -29,8 +29,8 @@ const (
 	doorKindLarge = 3
 )
 
-// Door lights: the pictures of pic\images.BMg, their frame counts (stacked
-// vertically), frame time and light level (FUN_003030ec's arguments).
+// Legacy reference metadata from pic\images.BMg (FUN_003030ec's arguments).
+// Runtime gateway and exit rendering no longer loads these sprite sheets.
 const (
 	DoorLightPicture      = "DoorLight"
 	SmallDoorLightPicture = "SmallDoorLight"
@@ -89,11 +89,10 @@ func MapAreas(rec native.Map) []Area {
 	return out
 }
 
-// drawLights keeps FUN_00403b8c's native portal effect and EVE positions,
-// replacing small exit lights with a continuous procedural pointer.
+// drawLights preserves EVE positions, drawing both gateway and small exit
+// indicators procedurally. Each animation is generated once per world frame.
 func (w *World) drawLights(cx, cy int, now time.Time) {
-	pics := w.Env.Pics
-	var pointerDrawn bool
+	var pointerDrawn, gatewayDrawn bool
 	for _, a := range w.Areas {
 		if a.Light == NoLight {
 			continue
@@ -116,13 +115,13 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 			w.exitIndicator.draw(w.Env.Screen, sx, sy)
 			continue
 		}
-		i := pics.Find(DoorLightPicture)
-		pw, ph := pics.Size(i)
-		if i < 0 || ph < doorLightFrames {
-			continue
+		if w.gatewayLight == nil {
+			w.gatewayLight = newGatewayLight()
 		}
-		fh := ph / doorLightFrames
-		frame := int(now.Sub(w.lightsFrom)/doorLightInterval) % doorLightFrames
-		pics.DrawLight(w.Env.Screen, i, sx-pw/2, sy-fh+fh/4, image.Rect(0, frame*fh, pw, (frame+1)*fh), doorLightLevel)
+		if !gatewayDrawn {
+			w.gatewayLight.render(now.Sub(w.lightsFrom))
+			gatewayDrawn = true
+		}
+		w.gatewayLight.draw(w.Env.Screen, sx, sy)
 	}
 }

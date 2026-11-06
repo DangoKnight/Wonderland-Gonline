@@ -39,7 +39,7 @@ func TestExitIndicatorContinuousAnimation(t *testing.T) {
 		preview := image.NewNRGBA(image.Rect(0, 0, exitIndicatorWidth*4, exitIndicatorHeight))
 		draw.Draw(preview, preview.Bounds(), image.NewUniform(color.NRGBA{R: 115, G: 77, B: 38, A: 255}), image.Point{}, draw.Src)
 		for i := 0; i < 4; i++ {
-			p.render(time.Duration(i) * exitIndicatorPeriod / 4)
+			p.render(time.Duration(i) * exitIndicatorPeriod / 8)
 			draw.Draw(preview, image.Rect(i*exitIndicatorWidth, 0, (i+1)*exitIndicatorWidth, exitIndicatorHeight), p.pixels, image.Point{}, draw.Over)
 		}
 		f, err := os.Create(filepath.Join(dir, "exit-indicator.png"))
@@ -49,6 +49,31 @@ func TestExitIndicatorContinuousAnimation(t *testing.T) {
 		defer f.Close()
 		if err = png.Encode(f, preview); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestExitIndicatorPyramidFacetsStayInsideCanvas(t *testing.T) {
+	p := newExitIndicator()
+	for frame := 0; frame < 120; frame++ {
+		p.render(time.Duration(frame) * exitIndicatorPeriod / 120)
+		colors := map[color.NRGBA]bool{}
+		for y := 0; y < exitIndicatorHeight; y++ {
+			for x := 0; x < exitIndicatorWidth; x++ {
+				c := p.pixels.NRGBAAt(x, y)
+				if c.A == exitIndicatorOpacity {
+					colors[c] = true
+				}
+				if c.A > exitIndicatorOpacity {
+					t.Fatal("pyramid exceeded intended opacity")
+				}
+				if (x == 0 || y == 0 || x == exitIndicatorWidth-1 || y == exitIndicatorHeight-1) && c.A != 0 {
+					t.Fatalf("pyramid or glow clipped at rotation frame %d at %d,%d alpha %d", frame, x, y, c.A)
+				}
+			}
+		}
+		if len(colors) < 3 {
+			t.Fatalf("pyramid lacks shaded facets at rotation frame %d", frame)
 		}
 	}
 }

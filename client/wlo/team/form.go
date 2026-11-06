@@ -1,5 +1,7 @@
 package team
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"fmt"
@@ -84,12 +86,14 @@ func NewForm(env *seui.Env, state *State, bag *inventory.Form) *Form {
 		choice := mode
 		f.Options[mode] = f.button(asset, 247, 0, 44, 20, func() { f.SetMode(f.menuSlot, choice) })
 		f.Options[mode].Visible = false
-		f.Options[mode].SetHint([]byte([]string{"Rest the pet.", "Assign the pet to battle.", "Ride the pet."}[mode]))
+		f.Options[mode].BindLanguage("hint", func() {
+			f.Options[mode].SetHint([]byte([]string{localization.UI("ui.team.rest_the_pet_f44e6fe6"), localization.UI("ui.team.assign_the_pet_to_battle_b20cdde3"), localization.UI("ui.team.ride_the_pet_776b8962")}[mode]))
+		})
 	}
 	f.button("Btn_Close_s_1", 321, 24, 18, 18, f.Hide)
 	f.button("Btn_Close_1", 157, 500, 56, 20, f.Hide)
 	f.End = f.button("Btn_DismissTeam_1", 140, 235, 70, 20, func() {
-		f.Confirm("Leave the party?", 0, func() { f.send([]byte{protocol.CommandTeam, protocol.TeamLeave}) })
+		f.Confirm(localization.UI("ui.team.leave_the_party_c2449ad7"), 0, func() { f.send([]byte{protocol.CommandTeam, protocol.TeamLeave}) })
 	})
 	for i := range f.Modes {
 		slot := byte(i + 1)
@@ -100,7 +104,7 @@ func NewForm(env *seui.Env, state *State, bag *inventory.Form) *Form {
 		e.Color = textInk
 		e.SetMaxLen(petNameLimit)
 		e.SetFilter(3)
-		e.SetHint([]byte("Change name"))
+		e.BindLanguage("hint", func() { e.SetHint([]byte(localization.UI("ui.team.change_name_e17a8484"))) })
 		e.OnClick = func() { f.editName(slot) }
 		e.OnEnter = f.finishName
 		e.OnBlur = f.finishName
@@ -235,7 +239,7 @@ func (f *Form) SetMode(slot byte, mode int) {
 	}
 	if mode == modeRide && f.RidingVehicle != nil && f.RidingVehicle() {
 		if f.Notice != nil {
-			f.Notice("Rest the vehicle before riding a pet.")
+			f.Notice(localization.UI("ui.team.rest_the_vehicle_before_riding_a_pet_b2514be7"))
 		}
 		return
 	}
@@ -246,13 +250,13 @@ func (f *Form) SetMode(slot byte, mode int) {
 	f.menuSlot = 0
 	if mode != modeRest && pet.Stats.HP == 0 {
 		if f.Notice != nil {
-			f.Notice("Can't use a defeated pet.")
+			f.Notice(localization.UI("ui.team.can_t_use_a_defeated_pet_e77e446b"))
 		}
 		return
 	}
 	if mode == modeBattle && pet.Amity < game.BattlePetMinimumAmity {
 		if f.Notice != nil {
-			f.Notice("Can't use, Amity below 40")
+			f.Notice(localization.UI("ui.team.can_t_use_amity_below_40_9ecf830c"))
 		}
 		return
 	}
@@ -290,7 +294,7 @@ func (f *Form) DismissPet(slot byte) {
 		return
 	}
 	f.Hide()
-	f.Confirm("Remove "+string(pet.Name)+"?", slot, func() {
+	f.Confirm(localization.UI("ui.team.remove_5948954e")+string(pet.Name)+"?", slot, func() {
 		if f.CanAct != nil && !f.CanAct() {
 			return
 		}
@@ -305,10 +309,10 @@ func (f *Form) memberAction(row int, leader bool) {
 		return
 	}
 	id := ids[row]
-	message := "Dismiss this teammate?"
+	message := localization.UI("ui.team.dismiss_this_teammate_0a7e3d28")
 	code := byte(protocol.TeamKick)
 	if leader {
-		message = "Appoint this teammate as leader?"
+		message = localization.UI("ui.team.appoint_this_teammate_as_leader_30ce278b")
 		code = protocol.TeamTransferLeadership
 	}
 	f.Confirm(message, 0, func() {
@@ -427,7 +431,7 @@ func (f *Form) Paint() {
 		if f.DrawFace != nil {
 			f.DrawFace(id, image.Rect(a.X+25, a.Y+y-3, a.X+97, a.Y+y+69))
 		}
-		name := []byte("Player " + strconv.FormatUint(uint64(id), 10))
+		name := []byte(localization.UI("ui.team.player_2b656543") + strconv.FormatUint(uint64(id), 10))
 		if f.NameOf != nil && len(f.NameOf(id)) > 0 {
 			name = f.NameOf(id)
 		}

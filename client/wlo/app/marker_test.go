@@ -6,8 +6,37 @@ import (
 	"time"
 )
 
+func TestPlacementDoesNotShowWalkMarker(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		packet []byte
+	}{
+		{"login position", []byte{7, 0x11, 0x27, 0, 0, 0x21, 0x27, 0x12, 4, 0x33, 4}},
+		{"same map warp", []byte{12, 0x11, 0x27, 0, 0, 0x21, 0x27, 0x12, 4, 0x33, 4, 0, 0, 0}},
+		{"map switch", []byte{12, 0x11, 0x27, 0, 0, 0x2b, 0x27, 0xa2, 2, 0x2b, 4, 0, 0, 0}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _, _ := enteredClient(t)
+			if c.World.Marker.Shown() {
+				t.Fatal("login showed a waypoint")
+			}
+			c.dispatch(tc.packet)
+			if c.World.Marker.Shown() {
+				t.Fatal("server placement showed a waypoint")
+			}
+			// A later placement must also clear an existing held walk cue.
+			c.World.Marker.Show(image.Pt(c.World.Player.X, c.World.Player.Y))
+			c.groundHeld = true
+			c.dispatch(tc.packet)
+			if c.World.Marker.Shown() || c.groundHeld || c.World.Walking() {
+				t.Fatal("server placement retained walking presentation")
+			}
+		})
+	}
+}
+
 // TestWalkMarker: a mouse walk shows the marker at the route's end and
-// steps Arrow2, Arrow3, Arrow4 every 120 ms, then hides; a click on
+// animates for 600 ms after release, then hides; a click on
 // unwalkable ground puts it on the walkable cell where the line to the
 // player meets it; arrow-key walks show none.
 func TestWalkMarker(t *testing.T) {
@@ -21,23 +50,17 @@ func TestWalkMarker(t *testing.T) {
 	if !c.World.Walking() {
 		t.Fatal("no walk")
 	}
-	pics := []int{c.Pics.Find("Arrow2"), c.Pics.Find("Arrow3"), c.Pics.Find("Arrow4")}
-	for _, p := range pics {
-		if p < 0 {
-			t.Fatal("arrow pictures missing")
-		}
-	}
 	c.GroundHold(false, 0, 0)
 	c.Frame()
 	if !m.Shown() {
 		t.Fatal("marker gone on its first frame")
 	}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		*now = now.Add(121 * time.Millisecond)
 		c.Frame()
 	}
 	if m.Shown() {
-		t.Fatal("marker still up after Arrow4")
+		t.Fatal("marker still up after its animation duration")
 	}
 	if at.X%20 != 2 || at.Y%20 != 15 {
 		t.Fatalf("marker at %v, not on a waypoint", at)
@@ -92,10 +115,62 @@ func TestWalkMarkerBlockedArrival(t *testing.T) {
 	*now = now.Add(401 * time.Millisecond)
 	c.GroundHold(true, target.X-cx, target.Y-cy)
 	if c.World.Walking() || !c.World.Marker.Shown() || c.World.Marker.At() != end {
-		t.Fatal("held-button re-aim moved marker onto unreachable terrain")
+		t.Fatal("held blocked click did not retain marker at reachable feet")
 	}
 	if packets := sent(); len(packets) != 0 {
 		t.Fatalf("stationary blocked clicks sent movement: %x", packets)
 	}
 	c.GroundHold(false, 0, 0)
+}
+
+func TestWalkMarkerFollowsHeldCursor(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.GroundClick(300, 350)
+	deadline := c.nextWalk
+	*now = now.Add(16 * time.Millisecond)
+	c.GroundHold(true, 320, 360)
+	cx, cy := c.World.Camera()
+	if c.World.Marker.At() != image.Pt(320+cx, 360+cy) {
+		t.Fatal("marker waited for walk repeat")
+	}
+	if c.nextWalk != deadline {
+		t.Fatal("visual tracking replanned movement early")
+	}
+	c.GroundHold(true, 790, 590)
+	if at := c.World.Marker.At(); !c.World.Scene.Walkable(at.X, at.Y) {
+		t.Fatal("held marker followed cursor outside walkable area")
+	}
+	if c.nextWalk != deadline {
+		t.Fatal("blocked marker tracking replanned movement early")
+	}
+	c.GroundHold(false, 0, 0)
+	at := c.World.Marker.At()
+	c.GroundHold(false, 500, 500)
+	if c.World.Marker.At() != at {
+		t.Fatal("released marker followed cursor")
+	}
+}
+
+func TestHeldMarkerUsesDrawingCamera(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.GroundClick(300, 350)
+	c.GroundHold(true, 320, 360)
+	cx, cy := c.World.Camera()
+	// The camera changes after input is sampled, as it does when Frame steps
+	// the player. Rendering must retain the exact screen-space pointer anchor.
+	camera := image.Pt(cx+2, cy+1)
+	c.World.CameraAt = &camera
+	*now = now.Add(16 * time.Millisecond)
+	c.Frame()
+	if got := c.World.Marker.At().Sub(camera); got != image.Pt(320, 360) {
+		t.Fatalf("held marker shifted with drawing camera: %v", got)
+	}
+	c.GroundHold(false, 320, 360)
+	at := c.World.Marker.At()
+	camera = camera.Add(image.Pt(2, 1))
+	*now = now.Add(16 * time.Millisecond)
+	c.Frame()
+	if c.World.Marker.At() != at {
+		t.Fatal("released marker followed camera instead of remaining on ground")
+	}
 }

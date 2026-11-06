@@ -103,7 +103,8 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			}
 		}
 	}
-	if c.tentOwner == 0 {
+	completeSnapshot := c.connectionFeatures&protocol.ConnectionCompleteMapSnapshot != 0
+	if c.tentOwner == 0 && !completeSnapshot {
 		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
 			return err
 		}
@@ -141,11 +142,13 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if err := s.tentSnapshot(context.Background(), c); err != nil {
 			return err
 		}
-		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
-			return err
-		}
-		if err := s.restoreMapLoadUI(c); err != nil {
-			return err
+		if !completeSnapshot {
+			if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
+				return err
+			}
+			if err := s.restoreMapLoadUI(c); err != nil {
+				return err
+			}
 		}
 		for _, peer := range peers {
 			s.sendOrClose(peer, protocol.Builder{protocol.CommandInventory, protocol.InventoryTentPlayer}.U32(c.character.ID))
@@ -202,6 +205,16 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	}
 	if err := s.deliverAdminMail(context.Background(), c); err != nil {
 		return err
+	}
+	// Negotiated once at connection setup. Native clients retain the original
+	// packet order; Gonline can use AC5:4 as the full snapshot completion fence.
+	if completeSnapshot {
+		if err := c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateRefresh}); err != nil {
+			return err
+		}
+		if err := s.restoreMapLoadUI(c); err != nil {
+			return err
+		}
 	}
 	// AC12:1 also starts the authored arrival script.
 	return s.arrivalScript(c)

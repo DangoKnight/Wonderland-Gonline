@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"image"
 	"image/png"
 	"net"
 	"os"
@@ -25,7 +26,7 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 79
+const gpuParityStages = 90
 
 func isolateGPUFixture(t *testing.T) bool {
 	t.Helper()
@@ -141,6 +142,53 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 86:
+			c.mapReady = false
+			c.startMapLoading()
+		case 87:
+			at := c.Now().Add(mapLoadingLeave + mapLoadingShow)
+			c.Now = func() time.Time { return at }
+		case 88:
+			c.mapReady = true
+			at := c.Now().Add(mapLoadingHold)
+			c.Now = func() time.Time { return at }
+		case 89:
+			at := c.Now().Add(mapLoadingHide + mapLoadingReveal/2)
+			c.Now = func() time.Time { return at }
+		case 84:
+			c.World.Areas = []world.Area{{ID: 1, Light: world.LargeLight, LightAt: image.Pt(c.World.Player.X+80, c.World.Player.Y)}}
+		case 85:
+			at := c.Now().Add(16 * time.Millisecond)
+			c.Now = func() time.Time { return at }
+		case 82, 83:
+			if g.stage == 82 {
+				c.dispatch(selfPacket(10001, 2, 10017, 1042, 1075, 0, 444444444, 444444444, nil, "Tester"))
+				freezeGPUFixtureAnimations(c)
+			}
+			c.World.CameraAt = nil
+			c.World.Step(c.Now())
+			c.World.Player.X += 3
+			at := c.Now().Add(16 * time.Millisecond)
+			c.Now = func() time.Time { return at }
+			c.World.Step(at)
+			x, _ := c.World.CameraPosition()
+			if x == float64(int(x)) {
+				g.err = fmt.Errorf("subpixel camera fixture did not move fractionally")
+				return
+			}
+			if g.stage == 83 {
+				c.World.Marker.Show(image.Pt(c.World.Player.X, c.World.Player.Y))
+				c.World.Marker.SetHeld(true, at)
+				c.World.TrackHeldMarker(320, 360)
+			}
+		case 79:
+			c.Inventory.UseDialog.Hide()
+			c.Inventory.Hide()
+			c.worldZoom.level = worldZoomMinimum
+		case 80:
+			c.worldZoom.level = worldZoomMaximum
+		case 81:
+			c.worldZoom.level = worldZoomDefault
 		case 73:
 			c.Input.X, c.Input.Y, c.Input.Hovered = -100, -100, nil
 			c.InventoryState.Bag = game.Inventory{{ID: game.ItemPotentialPill, Count: 50}}
@@ -541,6 +589,10 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			w.slide = sessionSlideTicks
 		}
 		w.Tick()
+		if g.stage >= 79 && !worldZoomEnabled && (c.World.ViewWidth != 0 || c.worldZoom.level != worldZoomDefault) {
+			g.err = fmt.Errorf("disabled map zoom did not reset to standard view")
+			return
+		}
 		if g.stage == 72 && c.floorHovered != 1 {
 			g.err = fmt.Errorf("floor-item hover fixture failed: held=%v event=%v UI=%v hit=%d", c.held, c.event.active, c.uiHovered, c.floorItemAt(c.Input.X, c.Input.Y))
 			return

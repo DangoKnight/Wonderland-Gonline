@@ -124,6 +124,19 @@ class ImportTests(unittest.TestCase):
 
 
 class RegenerationTests(unittest.TestCase):
+    def test_ui_selection_is_forwarded_to_media_import(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            client, chinese, output = root / 'client', root / 'chinese', root / 'generated'
+            for name in ('data', 'jma', 'pic'):
+                (client / name).mkdir(parents=True)
+            (client / 'aLogin.exe').write_bytes(b'matching executable')
+            (chinese / 'menu/Skins/default').mkdir(parents=True)
+            (chinese / 'menu/Skins/default/Button.bmp').write_bytes(b'fixture')
+            with mock.patch.object(regenerate, 'native_rows'), mock.patch.object(regenerate, 'annotate_languages'), mock.patch.object(regenerate, 'export_all'), mock.patch.object(regenerate, 'preserve_server_exports'), mock.patch.object(regenerate, 'export_media') as media, mock.patch.object(regenerate.subprocess, 'run'):
+                regenerate.regenerate(output, client, ui_language='zh-TW', chinese_client=chinese)
+            media.assert_called_once_with(client.resolve(), output.resolve() / 'media', ui_language='zh-TW', chinese_client=chinese)
+
     def test_client_path_is_required_instead_of_inferred(self):
         result = subprocess.run([sys.executable, str(Path(regenerate.__file__)), '--output', 'unused-output'], capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
@@ -137,14 +150,18 @@ class RegenerationTests(unittest.TestCase):
             for directory in (client / 'data', client / 'jma', client / 'pic'):
                 directory.mkdir(parents=True)
             (client / 'aLogin.exe').write_bytes(b'matching executable')
-            with mock.patch.object(regenerate, 'export_all') as tables, mock.patch.object(regenerate, 'preserve_server_exports') as server, mock.patch.object(regenerate, 'export_media') as media, mock.patch.object(regenerate.subprocess, 'run') as commands:
+            with mock.patch.object(regenerate, 'annotate_languages') as languages, mock.patch.object(regenerate, 'export_all') as tables, mock.patch.object(regenerate, 'preserve_server_exports') as server, mock.patch.object(regenerate, 'export_media') as media, mock.patch.object(regenerate.subprocess, 'run') as commands:
                 regenerate.regenerate(output, client)
             tables.assert_called_once_with(client / 'data', None, output)
+            languages.assert_called_once_with(output, 'en', None)
             server.assert_called_once_with(output, regenerate.REPO / 'data' / 'server')
             scope = json.loads((output / 'external_asset_import.json').read_text())
             self.assertEqual(scope['format'], EXTERNAL_IMPORT_FORMAT)
             self.assertEqual(scope['directories'], list(EXTERNAL_ASSET_DIRECTORIES))
             self.assertEqual(scope['files'], list(EXTERNAL_ASSET_FILES))
+            formats = json.loads((output / 'media_formats.json').read_text(encoding='utf-8'))
+            self.assertEqual(formats['profile'], 'png-vorbis-v1')
+            self.assertEqual((formats['images'], formats['audio']), ('png', 'ogg-vorbis'))
             media.assert_called_once_with(client, output / 'media')
             sprite = commands.call_args_list[0].args[0]
             picture = commands.call_args_list[1].args[0]

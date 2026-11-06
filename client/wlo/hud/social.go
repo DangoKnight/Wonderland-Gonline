@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -129,8 +131,8 @@ var socialTabPlaces = [socialTabs]struct {
 }{{"Btn_FriendIcon_1", 0x14}, {"Btn_EmuationalIcon_1", 0x55}, {"Btn_setup_2", 0x97}}
 
 var jobIcons = map[byte]struct{ picture, hint string }{
-	1: {"Icon_Asn", "Killer"}, 2: {"Icon_Samurai", "Warrior"}, 3: {"Icon_Knight", "Knight"},
-	4: {"Icon_Sage", "Sage"}, 5: {"Icon_Clergyman", "Priest"}, 6: {"Icon_Prophet", "Prophet"},
+	1: {"Icon_Asn", localization.UI("ui.hud.killer_e8e9edb9")}, 2: {"Icon_Samurai", localization.UI("ui.hud.warrior_eaf0fe0a")}, 3: {"Icon_Knight", localization.UI("ui.hud.knight_f24b5246")},
+	4: {"Icon_Sage", localization.UI("ui.hud.sage_5faa713a")}, 5: {"Icon_Clergyman", localization.UI("ui.hud.priest_909a4523")}, 6: {"Icon_Prophet", localization.UI("ui.hud.prophet_15409e87")},
 }
 
 var presenceIcons = [...]string{"Icon_online_1", "Icon_Busy_1", "Icon_inline_1", "icon_offline_1"}
@@ -407,7 +409,7 @@ func (s *Social) TickRow(row int) {
 func (s *Social) sendMail() {
 	if s.Ticked == 0 {
 		if s.Notice != nil {
-			s.Notice("Select friends to mail")
+			s.Notice(localization.UI("ui.hud.select_friends_to_mail_fb97e97f"))
 		}
 		return
 	}
@@ -442,7 +444,7 @@ func (s *Social) MailRow(row int) {
 func (s *Social) delFriend() {
 	if s.Ticked == 0 {
 		if s.Notice != nil {
-			s.Notice("Select friends to delete")
+			s.Notice(localization.UI("ui.hud.select_friends_to_delete_b9713a7e"))
 		}
 		return
 	}
@@ -454,9 +456,9 @@ func (s *Social) delFriend() {
 			name = s.Friends[i].Name
 		}
 	}
-	text := []byte("Delete these friends?")
+	text := []byte(localization.UI("ui.hud.delete_these_friends_c7ec2df7"))
 	if s.Ticked == 1 {
-		text = append([]byte("Delete this friend?"), name...)
+		text = append([]byte(localization.UI("ui.hud.delete_this_friend_94143db1")), name...)
 		for i := range s.Friends {
 			s.Friends[i].Ticked = false
 		}
@@ -492,4 +494,13 @@ func (s *Social) Toggle() {
 	}
 	s.Show()
 	s.Refresh()
+}
+
+func init() {
+	localization.Register(func() {
+		jobIcons = map[byte]struct{ picture, hint string }{
+			1: {"Icon_Asn", localization.UI("ui.hud.killer_e8e9edb9")}, 2: {"Icon_Samurai", localization.UI("ui.hud.warrior_eaf0fe0a")}, 3: {"Icon_Knight", localization.UI("ui.hud.knight_f24b5246")},
+			4: {"Icon_Sage", localization.UI("ui.hud.sage_5faa713a")}, 5: {"Icon_Clergyman", localization.UI("ui.hud.priest_909a4523")}, 6: {"Icon_Prophet", localization.UI("ui.hud.prophet_15409e87")},
+		}
+	})
 }

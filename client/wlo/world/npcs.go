@@ -1,11 +1,12 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"image"
-	"math"
 	"os"
 	"sync"
 	"wonderland-gonline/internal/clientruntime"
@@ -305,7 +306,8 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 	npcData.Lock()
 	defer npcData.Unlock()
 	path := a.DataPath(npcExport)
-	if npcData.path == path {
+	cacheKey := path + "|" + localization.CurrentLanguage()
+	if npcData.path == cacheKey {
 		return npcData.templates, nil
 	}
 	var doc struct {
@@ -344,19 +346,12 @@ func NPCTemplates(a login.Assets) (map[uint32]NPCTemplate, error) {
 		return nil, err
 	}
 	out := make(map[uint32]NPCTemplate, len(doc.Records))
-	namePatches, err := native.NPCNamePatches()
-	if err != nil {
-		return nil, err
-	}
 	for _, r := range doc.Records {
 		f := r.Fields
-		if f.ID <= math.MaxUint16 {
-			r.Name.Text = namePatches[uint16(f.ID)].Apply(r.Name.Text)
-		}
 		out[f.ID] = NPCTemplate{Element: f.Element, Skills: [3]uint16{f.Skill1, f.Skill2, f.Skill3}, Name: r.Name.Text, Kind: f.Kind, Look: f.Look, Colors: [4]uint32{f.Color1, f.Color2, f.Color3, f.Color4},
 			WeaponSprite: f.WeaponSprite, Face: f.Face, Icon: f.Icon, TalkLow: f.TalkLow, Sound: f.Sound, Voice: f.Voice, Shadow: f.Shadow, HeightScale: f.HeightScale, HeightPreset: f.HeightPreset, MoveKind: f.MoveKind, BattleSoundBody: f.BattleSoundBody, BattleSoundWeapon: f.BattleSoundWeapon}
 	}
-	npcData.path, npcData.templates = path, out
+	npcData.path, npcData.templates = cacheKey, out
 	return out, nil
 }
 
@@ -396,7 +391,7 @@ func MapRecord(a login.Assets, mapID uint16) (native.Map, error) {
 	m, ok := npcData.maps[mapID]
 	npcData.Unlock()
 	if !ok {
-		return native.Map{}, fmt.Errorf("map %d has no event record", mapID)
+		return native.Map{}, fmt.Errorf(localization.UI("ui.world.map_d_has_no_event_record_582b161f"), mapID)
 	}
 	raw, err := hex.DecodeString(m.hex)
 	if err != nil {

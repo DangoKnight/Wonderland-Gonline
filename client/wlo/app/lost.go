@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"time"
@@ -37,10 +39,10 @@ func newLostForm(env *seui.Env) *LostForm {
 		b.SetCaption([]byte(caption))
 		return b
 	}
-	f.Prev = button(0x66, "Prev")
-	f.UpdateButton = button(0x66, "Update")
-	f.Leave = button(0x20, "Leave")
-	f.Finish = button(0x3c, "Finish")
+	f.Prev = button(0x66, localization.UI("ui.app.prev_73912999"))
+	f.UpdateButton = button(0x66, localization.UI("ui.app.update_c1c1009d"))
+	f.Leave = button(0x20, localization.UI("ui.app.leave_fc6e4a40"))
+	f.Finish = button(0x3c, localization.UI("ui.app.finish_a6c7a84b"))
 	f.Finish.SetVisible(false)
 	f.UpdateButton.SetVisible(false)
 	return f
@@ -83,14 +85,17 @@ func (c *Client) drawFade(now time.Time) {
 	}
 }
 
-// sceneFrozen reports whether the scene stopped (a lost connection).
-func (c *Client) sceneFrozen() bool { return c.fade.step > 0 || c.fade.frozen != nil }
+// sceneFrozen also gates manual actions and automation behind a loading screen.
+func (c *Client) sceneFrozen() bool {
+	return c.fade.step > 0 || c.fade.frozen != nil || c.mapLoading.active
+}
 
 // disconnected is ClientSocket1Disconnect (0x49871c). With a login form
 // open or in the game, the login forms close, the message form shows the
 // reason ("Connection lost" unless the server left one) with Leave and
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
+	c.stopMapLoading()
 	c.areaTitle = areaTitle{}
 	c.battle.actionHistory = nil
 	c.battle.auto = false
@@ -156,6 +161,7 @@ func (c *Client) disconnected() {
 // lostPrev is Prev (0x3a547c): the form closes, the game state resets
 // (FUN_00314bf4) and the server list returns.
 func (c *Client) lostPrev() {
+	c.stopMapLoading()
 	c.constellation = nil
 	c.constellations = [constellationLimit]bool{}
 	c.minigameResultAckPending = false

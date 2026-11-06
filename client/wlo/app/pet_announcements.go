@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"wonderland-gonline/client/wlo/inventory"
@@ -29,7 +31,7 @@ func (c *Client) announceNewPets(before [game.MaxPets]inventory.UsePet) {
 			continue
 		}
 		text := bytes.Clone(pet.Name)
-		text = append(text, []byte(" joins the party")...)
+		text = append(text, []byte(localization.UI("ui.app.joins_the_party_20b29322"))...)
 		if c.battle.state.Active {
 			c.Notices.Show(text, battleResultsDuration, c.Now())
 		} else {

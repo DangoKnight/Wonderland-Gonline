@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"math"
@@ -118,17 +120,17 @@ const (
 	mailHoverAlpha   = 0x32
 	mailSelectAlpha  = 0x50
 
-	mailboxAtLastPage   = "At last page"
-	mailboxNoneSelected = "No mail selected"
-	mailboxEmpty        = "Mailbox is empty"
-	mailboxRemoved      = "Letter removed"
-	mailboxEmptied      = "Mailbox emptied"
-	mailboxNearlyFull   = "Mailbox volume at 90%. When full, old letters get deleted"
-	mailUnknownName     = "Unknown"
+	mailboxAtLastPage   = "ui.hud.at_last_page_bfbff4ec"
+	mailboxNoneSelected = "ui.hud.no_mail_selected_fbe80b70"
+	mailboxEmpty        = "ui.hud.mailbox_is_empty_b176cf94"
+	mailboxRemoved      = "ui.hud.letter_removed_2254f1d7"
+	mailboxEmptied      = "ui.hud.mailbox_emptied_01574f51"
+	mailboxNearlyFull   = "ui.hud.mailbox_volume_at_90_when_full_old_lette_a41cfd52"
+	mailUnknownName     = "ui.hud.unknown_b764cdc0"
 	mailPreviewMore     = "..."
 )
 
-var mailKindLabels = map[byte]string{MailKindFriend: "Friends", MailKindGuild: "Guild", MailKindSystem: "System", MailKindPet: "Pet"}
+var mailKindLabels = map[byte]string{MailKindFriend: localization.UI("ui.hud.friends_bd104d1b"), MailKindGuild: localization.UI("ui.hud.guild_298ffc49"), MailKindSystem: localization.UI("ui.hud.system_6725e7bb"), MailKindPet: localization.UI("ui.hud.pet_8f0d1b30")}
 
 // NewMailbox is FUN_001d0ca8.
 func NewMailbox(env *seui.Env) *Mailbox {
@@ -207,7 +209,7 @@ func (m *Mailbox) Receive(l Mail) bool {
 		m.Selected++
 	}
 	if len(m.Inbox) > mailboxWarnAt && m.Notice != nil {
-		m.Notice(mailboxNearlyFull)
+		m.Notice(localization.UI(mailboxNearlyFull))
 	}
 	m.changed()
 	return true
@@ -236,7 +238,7 @@ func (m *Mailbox) File(l Mail) {
 // RemoveInbox is FUN_001d4d48.
 func (m *Mailbox) RemoveInbox(index int, report bool) bool {
 	if len(m.Inbox) == 0 {
-		m.notice(mailboxEmpty)
+		m.notice(localization.UI(mailboxEmpty))
 		return false
 	}
 	if index < 1 || index > len(m.Inbox) {
@@ -251,9 +253,9 @@ func (m *Mailbox) RemoveInbox(index int, report bool) bool {
 	}
 	m.clampPage()
 	if report {
-		m.notice(mailboxRemoved)
+		m.notice(localization.UI(mailboxRemoved))
 		if len(m.Inbox) == 0 {
-			m.notice(mailboxEmptied)
+			m.notice(localization.UI(mailboxEmptied))
 		}
 	}
 	m.changed()
@@ -270,7 +272,7 @@ func (m *Mailbox) removeSent(index int) {
 		m.Selected--
 	}
 	m.clampPage()
-	m.notice(mailboxRemoved)
+	m.notice(localization.UI(mailboxRemoved))
 	m.changed()
 }
 
@@ -314,7 +316,7 @@ func (m *Mailbox) OpenInbox(index int) {
 // the read form closes and the letter now in its place opens.
 func (m *Mailbox) deleteSelected() {
 	if m.Selected == 0 {
-		m.notice(mailboxNoneSelected)
+		m.notice(localization.UI(mailboxNoneSelected))
 		return
 	}
 	if (m.Selected+mailboxRows-1)/mailboxRows != m.Page {
@@ -342,7 +344,7 @@ func (m *Mailbox) nextPage() {
 		m.Page++
 		return
 	}
-	m.notice(mailboxAtLastPage)
+	m.notice(localization.UI(mailboxAtLastPage))
 }
 
 func (m *Mailbox) prevPage() {
@@ -448,13 +450,13 @@ func (m *Mailbox) Paint() {
 		y := at.Y + mailboxTextY + (row-1)*mailboxRowStep
 		label, ok := mailKindLabels[l.Kind]
 		if !ok {
-			label = "Normal "
+			label = localization.UI("ui.hud.normal_02ef42b2")
 		}
 		draw(at.X+mailboxKindX, y, []byte(label), ink)
 		draw(at.X+mailboxTextX, y, MailPreview(l.Text), ink)
 		name := l.Name
 		if len(name) == 0 {
-			name = []byte(mailUnknownName)
+			name = []byte(localization.UI(mailUnknownName))
 		}
 		draw(at.X+mailboxNameX, y, name, ink)
 		draw(at.X+mailboxDateX, y, MailDate(l.Date), ink)
@@ -502,4 +504,10 @@ func MailName(name []byte) []byte {
 		name = name[:mailNameBytes]
 	}
 	return append([]byte(nil), name...)
+}
+
+func init() {
+	localization.Register(func() {
+		mailKindLabels = map[byte]string{MailKindFriend: localization.UI("ui.hud.friends_bd104d1b"), MailKindGuild: localization.UI("ui.hud.guild_298ffc49"), MailKindSystem: localization.UI("ui.hud.system_6725e7bb"), MailKindPet: localization.UI("ui.hud.pet_8f0d1b30")}
+	})
 }

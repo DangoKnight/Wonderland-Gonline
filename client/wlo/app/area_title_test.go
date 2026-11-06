@@ -144,9 +144,19 @@ func TestAreaTitleMapEntryLifecycle(t *testing.T) {
 	}
 	c.dispatch([]byte{5, 4})
 	c.areaTitleTick(*now)
+	if !c.areaTitle.started.IsZero() {
+		t.Fatal("title started behind the loading screen")
+	}
+	c.Sprites.WaitNative()
+	c.drawMapLoading(*now)
+	*now = now.Add(mapLoadingLeave + mapLoadingShow + mapLoadingHold)
+	c.drawMapLoading(*now)
+	*now = now.Add(mapLoadingHide + mapLoadingReveal)
+	c.drawMapLoading(*now)
+	c.areaTitleTick(*now)
 	started := c.areaTitle.started
 	if started.IsZero() {
-		t.Fatal("ready map did not start title")
+		t.Fatalf("ready map did not start title: ready=%v frozen=%v fade=%+v loading=%+v", c.mapReady, c.sceneFrozen(), c.sceneFade, c.mapLoading)
 	}
 	*now = now.Add(220 * time.Millisecond)
 	c.Frame()

@@ -1,9 +1,11 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
-	"errors"
 	"image"
+	"math"
 	"slices"
 	"sort"
 	"strconv"
@@ -13,6 +15,7 @@ import (
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/weather"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Screen layout of the static view, measured from the original's capture
@@ -57,7 +60,7 @@ type Player struct {
 	Blood, BirthYear, BirthMonth, BirthDay byte
 }
 
-var errShort = errors.New("AC3: packet too short")
+var errShort = localization.Error("ui.world.ac3_packet_too_short_c3d6c6fb")
 
 // ParseSelf reads AC3 after its command byte.
 func ParseSelf(p []byte) (Player, error) {
@@ -109,13 +112,16 @@ func (r *reader) str() []byte { return append([]byte(nil), r.take(int(r.u8()))..
 
 // World is the in-game state.
 type World struct {
-	Shapeshifts    map[uint32]PlayerShape
-	NPCExpressions map[uint16]Expression
-	Env            *seui.Env
-	Scene          *Scene
-	SceneName      string
-	Player         Player
-	Body           login.RoleView
+	// Logical scene viewport before scaling into the fixed 800x600 UI.
+	// Zero retains the native viewport, including cinematic views.
+	ViewWidth, ViewHeight int
+	Shapeshifts           map[uint32]PlayerShape
+	NPCExpressions        map[uint16]Expression
+	Env                   *seui.Env
+	Scene                 *Scene
+	SceneName             string
+	Player                Player
+	Body                  login.RoleView
 	// NPCs are the map's NPC objects by click ID (MapNPCs).
 	NPCs map[uint16]*NPC
 	// Questions are the map's event questions by click ID.
@@ -127,6 +133,7 @@ type World struct {
 	Mines         []Mine
 	lightsFrom    time.Time
 	exitIndicator *exitIndicator
+	gatewayLight  *gatewayLight
 	// OnLeg is called as each leg of a walk starts, with the facing and
 	// the waypoint (the client sends 6/1).
 	OnLeg  func(facing, x, y int)
@@ -140,7 +147,9 @@ type World struct {
 	hovered           *NPC
 	// CameraAt, when set, is the camera's top-left instead of the
 	// player-centred one.
-	CameraAt *image.Point
+	CameraAt      *image.Point
+	followCamera  cameraFollow
+	DeferOverlays bool // Composite screen-space overlays after camera filtering.
 	// Cinematic leaves out the location line and the walk marker (a
 	// movie's view).
 	Cinematic bool
@@ -194,18 +203,38 @@ func (w *World) Camera() (int, int) {
 	if w.CameraAt != nil {
 		return w.CameraAt.X, w.CameraAt.Y
 	}
+	if w.followCamera.ready {
+		return int(math.Round(w.followCamera.x)), int(math.Round(w.followCamera.y))
+	}
+	return w.cameraTarget()
+}
+
+func (w *World) cameraTarget() (int, int) {
 	mapW, mapH := w.Scene.Width, w.Scene.Height
+	width, height := w.ViewWidth, w.ViewHeight
+	if width == 0 || height == 0 {
+		width, height = screenW, screenH
+	}
 	// Apply the right-edge margin to the clamp itself, not only after the
 	// player crosses the unpadded map edge. Otherwise the camera travels
 	// twenty pixels past its resting limit before snapping back.
-	cx := max(0, min(w.Player.X-screenW/2, mapW-screenW-cameraRightMargin))
-	cy := max(0, min(w.Player.Y-screenH/2, mapH-screenH))
+	cx := max(0, min(w.Player.X-width/2, mapW-width-cameraRightMargin))
+	cy := max(0, min(w.Player.Y-height/2, mapH-height))
 	return cx, cy
 }
 
 // cameraRightMargin is FUN_003f94e8's 0x14 at the map's right edge.
 const cameraRightMargin = 0x14
 const nicknameRowSpacing = 20 // native name/nickname overlay row spacing
+
+// ScenePoint converts fixed-UI pointer coordinates into the zoomed map pass.
+// Scene picking and walking continue to operate in unscaled map pixels.
+func (w *World) ScenePoint(x, y int) (int, int) {
+	if w.ViewWidth == 0 || w.ViewHeight == 0 {
+		return x, y
+	}
+	return int(math.Floor(float64(x) * float64(w.ViewWidth) / screenW)), int(math.Floor(float64(y) * float64(w.ViewHeight) / screenH))
+}
 
 // NewView is a view of a map's scene with no player of its own, for a
 // movie: its actors are set as NPCs (and Player/Body when the player takes
@@ -338,9 +367,19 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	if w.Weather != nil {
 		w.Weather.Over(scr, w.WeatherKind, image.Pt(cx, cy))
 	}
-	if !w.Cinematic {
-		w.drawMarker(cx, cy, now)
-		w.drawLocation()
+	if !w.DeferOverlays {
+		w.DrawOverlays()
+	}
+}
+
+func (w *World) DrawOverlays() {
+	if w.Cinematic {
+		return
+	}
+	cx, cy := w.Camera()
+	w.drawMarker(cx, cy, w.Now())
+	if w.ViewWidth == 0 {
+		w.DrawLocation()
 	}
 }
 
@@ -379,10 +418,10 @@ func (w *World) drawNames(cx, cy, px int) {
 	txt.Draw(px-len(name)*charW/2, w.Player.Y-cy-lift, 0, false, true, scr, name, 0, len(name)*charW+charW, 0, nameInk, textStyle)
 }
 
-// drawLocation draws the name, scene and position line.
-func (w *World) drawLocation() {
+// DrawLocation draws the name, scene and position line at the fixed UI size.
+func (w *World) DrawLocation() {
 	scr, txt := w.Env.Screen, w.Env.Text
-	loc := []byte(string(w.Player.Name) + " " + w.SceneName + " X:" + strconv.Itoa(w.Player.X) + " Y:" + strconv.Itoa(w.Player.Y))
+	loc := []byte(string(w.Player.Name) + " " + string(clientassets.Big5Text(w.SceneName)) + " X:" + strconv.Itoa(w.Player.X) + " Y:" + strconv.Itoa(w.Player.Y))
 	txt.Draw(locationRight-len(loc)*charW, locationY, 0, false, true, scr, loc, 0, len(loc)*charW+charW, 0, locationInk, textStyle)
 }
 
@@ -391,4 +430,10 @@ func mountedNameLift(body any) int {
 		return mounted.NameLift()
 	}
 	return 0
+}
+
+func init() {
+	localization.Register(func() {
+		errShort = localization.Error("ui.world.ac3_packet_too_short_c3d6c6fb")
+	})
 }

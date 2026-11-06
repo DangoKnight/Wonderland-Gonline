@@ -1,5 +1,7 @@
 package role
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -36,14 +38,14 @@ func ParseMountPlacements(raw []byte) (map[uint16]MountPlacement, error) {
 		case "NpcPic":
 			n, err := strconv.ParseUint(value, 10, 16)
 			if err != nil || n == 0 {
-				return nil, fmt.Errorf("invalid mount picture")
+				return nil, fmt.Errorf("%s", localization.UI("ui.role.invalid_mount_picture_3295c67b"))
 			}
 			id = uint16(n)
 			body = -1
 		case "Sex":
 			n, err := strconv.Atoi(value)
 			if err != nil || n < 1 || n > 4 {
-				return nil, fmt.Errorf("invalid mount body")
+				return nil, fmt.Errorf("%s", localization.UI("ui.role.invalid_mount_body_babe367b"))
 			}
 			body = n - 1
 		case "Pose", "FixedPosOnFirst":
@@ -57,11 +59,11 @@ func ParseMountPlacements(raw []byte) (map[uint16]MountPlacement, error) {
 			out[id] = p
 		case "StandPosX", "StandPosY", "MovePosX", "MovePosY":
 			if id == 0 || body < 0 {
-				return nil, fmt.Errorf("mount offsets without picture/body")
+				return nil, fmt.Errorf("%s", localization.UI("ui.role.mount_offsets_without_picture_body_02d43359"))
 			}
 			parts := strings.Split(value, ",")
 			if len(parts) != nativeFacingDirections {
-				return nil, fmt.Errorf("mount requires eight facings")
+				return nil, fmt.Errorf("%s", localization.UI("ui.role.mount_requires_eight_facings_2c6858f7"))
 			}
 			p := out[id]
 			axis := 0

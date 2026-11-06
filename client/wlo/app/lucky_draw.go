@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"strconv"
@@ -12,9 +14,9 @@ import (
 const (
 	luckyDrawButton         = 10
 	luckyDrawNoticeDuration = 3 * time.Second
-	luckyDrawInventoryFull  = "Please free an inventory slot. Lucky Draw retained."
-	luckyDrawUnavailable    = "Lucky Draw rewards are unavailable."
-	luckyDrawDailyLimit     = "You have used all three Lucky Draws for today."
+	luckyDrawInventoryFull  = "ui.app.please_free_an_inventory_slot_lucky_draw_b9243187"
+	luckyDrawUnavailable    = "ui.app.lucky_draw_rewards_are_unavailable_8312ef38"
+	luckyDrawDailyLimit     = "ui.app.you_have_used_all_three_lucky_draws_for__6ae4b672"
 )
 
 func (c *Client) initLuckyDraw() {
@@ -25,7 +27,7 @@ func (c *Client) initLuckyDraw() {
 		if name := c.items[id].Definition.Name; name != "" {
 			return name
 		}
-		return fmt.Sprintf("Item %d", id)
+		return fmt.Sprintf(localization.UI("ui.app.item_d_c8edea5f"), id)
 	}
 	f.DrawItem = func(reward lottery.Reward, x, y int) {
 		picture := "Icon_UnKnow"
@@ -84,7 +86,7 @@ func (c *Client) luckyDrawTick() {
 		}
 	}
 	if timedOut {
-		c.Notices.Show([]byte("Lucky Draw result has not arrived. Check your inventory before trying again."), luckyDrawNoticeDuration, c.Now())
+		c.Notices.Show([]byte(localization.UI("ui.app.lucky_draw_result_has_not_arrived_check__c17658cb")), luckyDrawNoticeDuration, c.Now())
 	}
 	f.Refresh()
 	c.FuncButtons.Buttons[luckyDrawButton].Animating = f.State.Ready && f.State.Remaining() > 0 && len(f.State.Rewards) > 0
@@ -115,7 +117,7 @@ func (c *Client) luckyDrawNotice(text []byte) {
 		return
 	}
 	switch string(text) {
-	case luckyDrawInventoryFull, luckyDrawUnavailable, luckyDrawDailyLimit:
+	case localization.UI(luckyDrawInventoryFull), localization.UI(luckyDrawUnavailable), localization.UI(luckyDrawDailyLimit):
 		c.LuckyDraw.State.Fail()
 		c.LuckyDraw.Refresh()
 	}

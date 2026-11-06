@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"time"
@@ -168,7 +170,7 @@ func (c *Client) combatPacket(p []byte) {
 }
 
 func (c *Client) invalidCombat() {
-	c.disconnectText = []byte("Invalid combat communication")
+	c.disconnectText = []byte(localization.UI("ui.app.invalid_combat_communication_8a4215fb"))
 	c.Net.Close()
 	c.disconnected()
 }

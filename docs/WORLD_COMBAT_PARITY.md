@@ -104,6 +104,52 @@ is drawn opaque at the authored camera origin and cropped to the 800×600 game
 viewport. It does not reuse the current map or its objects. Owned pet speakers
 prefer their roster nickname. Verification is recorded in [TESTING.md](TESTING.md).
 
+Noa's introduction (movie 26005) names `JRole_5_80` directly, without a `JRP`
+prefix. The native movie loader distinguishes map backgrounds from registered
+illustrations; both direct image names and prefixed names now use the same JPEG
+lookup and empty world view. A rendering regression checks the 832×640 Noa
+illustration against the displayed scene so a fallback to the current map fails.
+
+Noa's Kelan puzzle (event 56) uses SQL-owned continuation policies to connect the
+last answer to result evaluation, the failed-result reset to the quiz invitation,
+and the successful marks to the recruitment movie and companion grant. These
+handoffs retain the interaction lock for both clients. Declining the invitation
+or cancelling still ends it. Native-script regressions cover a perfect attempt,
+a failed attempt followed by a successful retry, a previously failed score,
+and explicit decline/cancel, including mode-zero question acknowledgments.
+
+### Native continuation ownership (Noa investigation)
+
+The available aLogin decompilation does not choose the next server EVE branch
+after a dialogue line or question. The relevant native paths are:
+
+- `var/decompiled/aLogin_ca19ee087b60_full.c`, AC20 receive case at
+  `0x002e3dc0`: subcommands 1–6 copy the server frame into the event manager
+  and invoke `FUN_00304fd0`. Subcommand 7 marks a step complete; subcommand 8
+  closes the dialogue, clears the active/waiting flags and releases movement.
+- `FUN_00304fd0` (also `FUN_0031ee6c` in reference unit 213) interprets the
+  supplied step. Question mode 0 sets both step-done and awaiting-answer;
+  mode 1 sets only awaiting-answer. Neither chooses an EVE continuation.
+- `FUN_00307300` (`FUN_0032119c` in reference unit 213) sends AC20:6 once the
+  completed step has no outstanding dialogue, question, route or constellation
+  wait. It does not end the interaction or send another actor click.
+- `FUN_00307c4c`, `FUN_00307c78` and `FUN_00307ca4` send AC20:9 for Yes, No or
+  a selected option and clear the awaiting-answer flag. Mode-zero questions
+  subsequently also produce AC20:6. The server chooses which frame follows.
+
+These observations establish the client/server boundary, not a general rule
+for re-evaluating server EVE branches. The native Noa program has no explicit
+question operation after its last-answer branches 15/16; result branches 17/19
+and recruitment branch 21 are separate conditional entries. Its remaining raw
+operation metadata does not supply a verified continuation rule in the traced
+client paths. Do not infer an automatic loop over all eligible branches: that
+can repeat rewards or reminders and prevent intentional conversation endings.
+
+Consequently Noa's three SQL-owned continuation rules remain a scoped fallback,
+not a claim that they reproduce a decoded generic EVE continuation flag. Native
+operation bytes and conditions are unchanged. Replace the rules only when
+server-side semantics or further reference evidence establish the general rule.
+
 ## Starter storm and beach rescue
 
 The storm event frame precedes its AC186:12 movie trigger. AC186:9 arms completion;

@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/internal/assets"
@@ -32,7 +34,7 @@ func (c *Client) selectBattleItem(slot int, worn bool) bool {
 		return true
 	}
 	if _, ok := c.items[it.ID].BattleItem(); !ok {
-		c.Chat.Notice("This item cannot be used in battle.")
+		c.Chat.Notice(localization.UI("ui.app.this_item_cannot_be_used_in_battle_3d6ed871"))
 		return true
 	}
 	cell := clientbattle.Cell{X: actor.x, Y: actor.y}

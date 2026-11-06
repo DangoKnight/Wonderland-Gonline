@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 
@@ -95,7 +97,7 @@ func newChatResize(env *seui.Env, l *ChatLog) *chatResize {
 	r.InitComponent(r, env, l)
 	r.Name = "TSe_SizeBtn"
 	r.Init("Btn_Resize_1", l.Width-chatResizeRight, chatResizeSize, chatResizeSize, 0, 0, true, chatResizeSize, chatResizeSize, chatResizeTop)
-	r.SetHint([]byte("Resize chat window"))
+	r.BindLanguage("hint", func() { r.SetHint([]byte(localization.UI("ui.hud.resize_chat_window_7955794d"))) })
 	return r
 }
 func (r *chatResize) LeftDown(shift byte, x, y int) {

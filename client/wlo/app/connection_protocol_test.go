@@ -60,7 +60,7 @@ func TestConnectionHelloRespectsConfigAndMissingAssets(t *testing.T) {
 	_ = wire(t, c)
 	c.resources.battleBackdrops = nil
 	// Server has chains disabled and the client cannot resolve backdrops.
-	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 13, 0, 0, 0}) // Includes an unknown future bit, ignored by intersection.
+	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 21, 0, 0, 0}) // Includes an unknown future bit, ignored by intersection.
 	if c.connection.features != 1 {
 		t.Fatal("unavailable features selected", c.connection.features)
 	}
@@ -72,5 +72,19 @@ func TestConnectionHelloRespectsConfigAndMissingAssets(t *testing.T) {
 	c.dispatch([]byte{1, 246, 71, 76, 66, 68, 1, 0})
 	if c.combat.enabled || c.backdrops.enabled {
 		t.Fatal("legacy feature confirmation changed negotiated mode")
+	}
+}
+
+func TestConnectionHelloNegotiatesCompleteMapSnapshot(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	_ = wire(t, c)
+	// Existing features plus the new full-snapshot readiness guarantee.
+	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 9, 0, 0, 0})
+	if c.connection.features != 9 {
+		t.Fatal("map snapshot capability not selected", c.connection.features)
+	}
+	c.dispatch([]byte{1, 250, 71, 76, 79, 78, 1, 0, 9, 0, 0, 0})
+	if !c.connection.enabled {
+		t.Fatal("map snapshot capability not confirmed")
 	}
 }

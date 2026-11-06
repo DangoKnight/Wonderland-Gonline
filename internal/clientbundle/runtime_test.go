@@ -11,6 +11,7 @@ import (
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/localization"
 	"wonderland-gonline/internal/spritepack"
 )
 
@@ -30,6 +31,8 @@ func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	put(t, filepath.Join(source, "wem_data.json"), []byte(`{"entries":[{"name":"100.wem","decoded_hex":"000102"}]}`))
 	put(t, filepath.Join(source, "database_data.json"), []byte(`{"private":"do not ship"}`))
 	put(t, filepath.Join(source, "item_data.json"), []byte(`{"source_bytes":42,"items":[]}`))
+	markText := []byte(`{"records":[{"fields":{"id":10022},"name":{"text":"Story of Red Hood"}}]}`)
+	put(t, filepath.Join(source, "mark_data.json"), markText)
 	dir := filepath.Join(source, "sprites", "001")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
@@ -50,12 +53,22 @@ func TestRuntimePacksCompileEditAndReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer closePacks()
 
 	for _, archive := range []string{"odd", "odd_d01"} {
 		got, err := clientfs.ReadFile(filepath.Join(root, "audio", archive, "20038_1002.ogg"))
 		if err != nil || !bytes.Equal(got, voice) {
 			t.Fatalf("voice %s did not survive runtime packaging: %q %v", archive, got, err)
 		}
+	}
+	gotMarks, err := clientfs.ReadFile(filepath.Join(root, "mark_data.json"))
+	catalog, loadErr := localization.Load(root, localization.English)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	gotMarks, err = catalog.Expand(gotMarks)
+	if err != nil || !bytes.Contains(gotMarks, []byte(`"text":"Story of the Hood Girl"`)) {
+		t.Fatal("quest-mark text did not survive runtime packaging", err)
 	}
 	if _, err := clientfs.Stat(filepath.Join(root, "audio", "odd_index.json")); !os.IsNotExist(err) {
 		t.Fatal("source audio index shipped", err)

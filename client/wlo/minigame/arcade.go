@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -119,12 +121,12 @@ func (g *Arcade) Click(x, y int, now time.Time) {
 	// click confirms the visible purchase prompt; Start itself never purchases.
 	if !g.confirming {
 		g.confirming = true
-		g.status = "Spend arcade points? Click Play again to confirm."
+		g.status = localization.UI("ui.minigame.spend_arcade_points_click_play_again_to__6618a859")
 		return
 	}
 	g.confirming = false
 	g.pending = true
-	g.status = "Waiting for server..."
+	g.status = localization.UI("ui.minigame.waiting_for_server_7191ef8d")
 	p := []byte{protocol.CommandArcadeGame, g.Kind, arcadePoints}
 	switch g.Kind {
 	case ArcadeSlots, ArcadeSlots3:
@@ -145,7 +147,7 @@ func (g *Arcade) Receive(p []byte, now time.Time) bool {
 	}
 	if p[1] == arcadeInsufficientPoints {
 		g.pending = false
-		g.status = "Not enough Points!"
+		g.status = localization.UI("ui.minigame.not_enough_points_a0dd2336")
 		return true
 	}
 	required := 7
@@ -200,7 +202,7 @@ func (g *Arcade) Update(now time.Time) {
 		}
 	}
 	g.animating = false
-	g.status = fmt.Sprintf("Server reward: %d pcs (prize %d)", g.quantity, g.prize)
+	g.status = fmt.Sprintf(localization.UI("ui.minigame.server_reward_d_pcs_prize_d_da22799e"), g.quantity, g.prize)
 	g.sound("sound\\wav0152.wav")
 }
 func (g *Arcade) Draw(dst *surface.Surface, mx, my int, now time.Time) {
@@ -231,7 +233,7 @@ func (g *Arcade) Draw(dst *surface.Surface, mx, my int, now time.Time) {
 		if g.egg() {
 			g.picture(dst, "TrunEggItemDB", x, y)
 		}
-		label := fmt.Sprintf("Item %d", table[index])
+		label := fmt.Sprintf(localization.UI("ui.minigame.item_d_c8edea5f"), table[index])
 		if g.Item != nil {
 			if name := g.Item(dst, table[index], x+6, y+6); name != "" {
 				label = name
@@ -263,7 +265,7 @@ func (g *Arcade) Draw(dst *surface.Surface, mx, my int, now time.Time) {
 	}
 	if !g.strip(dst, g.buttonName(), r.Min.X, r.Min.Y, frame, rows) {
 		dst.Frame(r, arcadeWhite)
-		arcadeText(dst, r.Min.X+5, r.Min.Y+10, "Play")
+		arcadeText(dst, r.Min.X+5, r.Min.Y+10, localization.UI("ui.minigame.play_436e6101"))
 	}
 	if g.confirming {
 		dst.Frame(r, arcadeWhite)

@@ -1,5 +1,7 @@
 package login
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"os"
 	"strings"
@@ -26,8 +28,8 @@ const (
 // Notices of the account form. accountInvalid is the Big5 text at
 // DAT_00400404 ("帳號輸入不正確").
 var (
-	noticeIncorrectName = []byte("Incorrect name")
-	noticeNoPassword    = []byte("Pwd is empty")
+	noticeIncorrectName = []byte(localization.UI("ui.login.incorrect_name_85d9846b"))
+	noticeNoPassword    = []byte(localization.UI("ui.login.pwd_is_empty_613bc2b0"))
 	noticeAccount       = []byte("\xb1\x62\xb8\xb9\xbf\xe9\xa4\x4a\xa4\xa3\xa5\xbf\xbd\x54")
 )
 
@@ -71,9 +73,7 @@ func NewIDPassword(env *seui.Env, g *Globals, n *Net, a Assets) *IDPassword {
 func (f *IDPassword) build() {
 	env := f.Env
 	f.Init("", 0, 0x32, 0x32, 0, 0, true, 600, 800, 0)
-	if m, err := loadJPEG(f.Assets.SkinPicture("Menu", "Skins", "White", "Form_IdPassword_1.jpg")); err == nil {
-		f.Background = m
-	}
+	bindSkinBackground(f, "background", f.Assets, "Form_IdPassword_1.jpg", &f.Background)
 	f.Shown = false
 
 	a := seui.NewAccountList(env, f)
@@ -285,4 +285,11 @@ func (f *IDPassword) Paint() {
 	}
 	f.Panel.Paint()
 	f.Env.Pics.Draw(f.Env.Screen, f.RecordIcon, recordIconX, recordIconY, true)
+}
+
+func init() {
+	localization.Register(func() {
+		noticeIncorrectName = []byte(localization.UI("ui.login.incorrect_name_85d9846b"))
+		noticeNoPassword = []byte(localization.UI("ui.login.pwd_is_empty_613bc2b0"))
+	})
 }

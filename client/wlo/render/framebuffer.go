@@ -3,9 +3,12 @@
 // the GPU during normal play.
 package render
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -43,7 +46,7 @@ func Validate(mode string) error {
 	case "", Auto, GPU, CPU:
 		return nil
 	default:
-		return fmt.Errorf("unknown renderer %q: choose auto, gpu or cpu", mode)
+		return fmt.Errorf(localization.UI("ui.render.unknown_renderer_q_choose_auto_gpu_or_cp_617fd16f"), mode)
 	}
 }
 
@@ -61,6 +64,10 @@ type Presenter struct {
 	width, height int
 	initialized   bool
 	UploadedBytes int // Last frame's transfer size; unchanged frames upload zero.
+	scalingShader *ebiten.Shader
+	scalingSource *ebiten.Image
+	scalingEdges  *ebiten.Image
+	scalingError  error
 }
 
 func New(mode string) (*Presenter, error) {
@@ -109,6 +116,18 @@ func (p *Presenter) Attach(s *surface.Surface) {
 }
 
 func (p *Presenter) Close() {
+	if p.scalingEdges != nil {
+		p.scalingEdges.Deallocate()
+		p.scalingEdges = nil
+	}
+	if p.scalingSource != nil {
+		p.scalingSource.Deallocate()
+		p.scalingSource = nil
+	}
+	if p.scalingShader != nil {
+		p.scalingShader.Deallocate()
+		p.scalingShader = nil
+	}
 	if p.device != nil {
 		p.device.Close()
 		p.device = nil
@@ -128,9 +147,24 @@ func (p *Presenter) Close() {
 // Draw presents GPU targets directly. CPU buffers use dirty-region uploads
 // with either GPU expansion or the previous bit-exact CPU expansion.
 func (p *Presenter) Draw(dst *ebiten.Image, src *surface.Surface) {
+	p.draw(dst, src, ebiten.GeoM{})
+}
+
+// DrawFit rasterizes into the requested output framebuffer while retaining the
+// source canvas's aspect ratio. The remaining area is an opaque black border.
+func (p *Presenter) DrawFit(dst *ebiten.Image, src *surface.Surface) {
+	v := FitViewport(src.W, src.H, dst.Bounds().Dx(), dst.Bounds().Dy())
+	var transform ebiten.GeoM
+	transform.Scale(v.Scale, v.Scale)
+	transform.Translate(v.X, v.Y)
+	dst.Fill(color.Black)
+	p.draw(dst, src, transform)
+}
+
+func (p *Presenter) draw(dst *ebiten.Image, src *surface.Surface, transform ebiten.GeoM) {
 	if t, ok := src.Backend.(*target); ok {
 		p.UploadedBytes = 0
-		dst.DrawImage(t.image, &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy})
+		dst.DrawImage(t.image, &ebiten.DrawImageOptions{GeoM: transform, Blend: ebiten.BlendCopy})
 		return
 	}
 	if p.width != src.W || p.height != src.H {
@@ -157,9 +191,9 @@ func (p *Presenter) Draw(dst *ebiten.Image, src *surface.Surface) {
 	}
 	p.initialized = true
 	if p.mode == GPU {
-		dst.DrawRectShader(src.W, src.H, p.shader, &ebiten.DrawRectShaderOptions{Images: [4]*ebiten.Image{p.texture}, Blend: ebiten.BlendCopy})
+		dst.DrawRectShader(src.W, src.H, p.shader, &ebiten.DrawRectShaderOptions{GeoM: transform, Images: [4]*ebiten.Image{p.texture}, Blend: ebiten.BlendCopy})
 	} else {
-		dst.DrawImage(p.texture, &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy})
+		dst.DrawImage(p.texture, &ebiten.DrawImageOptions{GeoM: transform, Blend: ebiten.BlendCopy})
 	}
 }
 

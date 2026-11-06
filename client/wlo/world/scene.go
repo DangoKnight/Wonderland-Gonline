@@ -11,6 +11,8 @@
 // and the background pictures from the PNG export of pic\ (data/pictures).
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/hex"
 	"encoding/json"
@@ -71,7 +73,7 @@ func groundRecord(a login.Assets, mapID uint16) (*groundEntry, error) {
 		return nil, err
 	}
 	if _, e := clientfs.Stat(a.DataPath(clientruntime.GroundDir)); e == nil {
-		return nil, fmt.Errorf("map %d has no compiled terrain record", mapID)
+		return nil, fmt.Errorf(localization.UI("ui.world.map_d_has_no_compiled_terrain_record_ca4bc533"), mapID)
 	}
 
 	grounds.Lock()
@@ -96,7 +98,7 @@ func groundRecord(a login.Assets, mapID uint16) (*groundEntry, error) {
 	}
 	e, ok := grounds.entries[strconv.Itoa(int(mapID))+".map"]
 	if !ok {
-		return nil, fmt.Errorf("map %d has no terrain record", mapID)
+		return nil, fmt.Errorf(localization.UI("ui.world.map_d_has_no_terrain_record_90688a4a"), mapID)
 	}
 	return e, nil
 }
@@ -116,7 +118,7 @@ func loadScene(a login.Assets, mapID uint16) (*Scene, error) {
 		}
 	}
 	if len(cells) != int(t.GridWidth)*int(t.GridHeight) {
-		return nil, fmt.Errorf("invalid terrain grid for map %d", mapID)
+		return nil, fmt.Errorf(localization.UI("ui.world.invalid_terrain_grid_for_map_d_f098539e"), mapID)
 	}
 	g := clientassets.GroundPrefix{Width: t.Width, Height: t.Height, Layers: t.Layers,
 		GridWidth: t.GridWidth, GridHeight: t.GridHeight, Cells: cells}
@@ -152,7 +154,7 @@ func background(a login.Assets, resource uint16) (*surface.Surface, error) {
 		}
 		return surface.FromImage(m), nil
 	}
-	return nil, fmt.Errorf("background %s not found", name)
+	return nil, fmt.Errorf(localization.UI("ui.world.background_s_not_found_b882d253"), name)
 }
 
 // Draw draws the background layers with the camera's top-left corner at

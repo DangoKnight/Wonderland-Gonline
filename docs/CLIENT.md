@@ -13,6 +13,80 @@ Start with [GETTING_STARTED.md](GETTING_STARTED.md) for WLRI extraction, server
 setup and compiling/running both programs. Use [CONFIGURATION.md](CONFIGURATION.md)
 for connection settings and client overrides.
 
+Verified [IGG English text overrides](IGG_TRANSLATIONS.md) are baked into compiled
+assets for matching NPCs, items, skills, scenes and dialogue. Verified IGG text
+takes first priority; existing name corrections supply fallbacks. Unmatched modern content keeps its current
+translation. Recompile assets after editing text sources and restart to remount
+rebuilt bundles. Selecting an installed language in Settings takes effect live.
+For loose exports, `go run ./cmd/asset-build -data data -text-only` generates
+pretranslated documents under `data/runtime/text`. The game reads final text and
+does not carry or search the override tables.
+
+The workspace's **Settings** button or **F10** opens window-wide settings,
+including display controls and language selection.
+The first implementation supports windowed mode, Ebitengine fullscreen, and a
+desktop-sized borderless window. Windowed mode supports edge resizing and the
+normal maximize/restore controls. Resolution picking is temporarily disabled:
+the internal framebuffer is fixed at 1020x600 (the original 800x600 game plus
+220 pixels for session management). Previously saved render resolutions are
+retained but ignored while disabled. The read-only resolution field shows this
+fixed size. The output scales into the physical window with a static aspect
+ratio and letterboxing. Existing bitmap assets retain their native detail.
+Pointer input follows the same transform and ignores the borders.
+Fullscreen modes occupy the current monitor at desktop resolution; exclusive
+fullscreen and monitor video-mode switching are not implemented. See
+[Ebitengine's fullscreen contract](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#SetFullscreen).
+Frame limits are VSync, 30, 60, 90, 120, 144, 165, 240 FPS or unlimited.
+Mode, frame-limit and scaling-filter controls open dropdown lists. Click an entry, or
+use Up/Down and Enter; Escape or an outside click dismisses the open list.
+These control presentation; simulation and input updates remain at 60 TPS.
+**Apply** previews changes for 15 seconds. **Keep** saves them to `display.json`
+beside `workspace.json`; **Revert**, Escape, or timeout restores the previous
+settings. Display changes apply to all sessions and do not require a reconnect.
+Scaling choices are Native (nearest), Bilinear, Bicubic (Catmull-Rom), Edge-aware
+(Scale2x neighbourhood rules followed by linear scaling), and Edge-aware + Sharpen
+(a mild unsharp pass). The filter applies to the composed output, including UI
+and text. Native remains the default. Filters sample decoded RGBA, never packed
+RGB565 words, and clamp source edges to avoid black fringes. Edge-aware modes
+compute their neighbourhood pass at 2x native resolution rather than repeating
+it at every output pixel. Intermediate targets stay on the GPU and are reused;
+no client assets need to be re-extracted. See the original
+[Scale2x algorithm](https://www.scale2x.it/algorithm).
+While resolution picking is disabled, filtering runs in Ebitengine's final-screen
+pass, where the fixed native framebuffer is enlarged into the OS window. Thus
+bilinear/bicubic options remain effective when resizing or maximizing; they are
+not applied prematurely to an unchanged 1x intermediate image.
+Windows resize/maximize/restore and independent framebuffer resolution have a
+native graphics-context test. CPU/GPU pixel tests cover scaled presentation and
+letterboxing; persistence, rollback, pointer mapping and panel rendering also
+have automated coverage. Multi-monitor/DPI behavior and frame pacing still need
+manual testing. No client asset rebuild or database migration is required.
+
+Wheel zoom is temporarily disabled (`worldZoomEnabled` in `world_zoom.go`), and
+the client resets any previous map-zoom state to the standard 1x viewport.
+UI wheel scrolling continues normally. The dormant 0.75x–1.25x map-camera
+implementation remains available for later re-enabling; its limit/picking
+tests are skipped while disabled, and a dedicated reset test covers 1x.
+
+Map changes show the existing `Anim_load0` illustration with short fades and
+a minimum visible duration of about 800 ms. Slow map readiness holds the
+illustration longer. Networking and the native map-loaded acknowledgement remain
+immediate; this is presentation timing, with no blocking sleep. Map clicks,
+gameplay controls and automation wait until the reveal finishes, and area titles
+start afterward. Same-map repositioning does not trigger it. Story cinematics
+take precedence so their opening is never hidden behind the loading screen.
+The session sidebar remains available. No asset rebuild is required.
+
+The loading illustration has a bottom progress bar and uses the mushroom cursor.
+Completion waits for the destination's rendered assets, pending editable sprite
+palette decoding and the native AC5:4 map-ready reply. Failed optional palette
+archives settle using their existing painted-frame fallback. The bar represents
+preparation stages rather than a byte-download percentage and never completes
+solely because the minimum display time elapsed. The initial Gonline connection
+hello negotiates complete-map-snapshot readiness: updated servers send AC5:4 only
+after peers, vehicles, props, tents and other snapshot state have been sent.
+Legacy connections retain their original packet order and AC5:4 readiness behavior.
+
 Eligible area changes display the English scene name at the center of the game view.
 The Legacy title-group identity comes from SceneData.dat offset 94
 (`FUN_003075f0`); its `t10002` Kelan artwork contains seven animation frames.
@@ -44,7 +118,8 @@ Explicit `-assets ../data` reads loose exports. Without an override, discovery
 prefers a compiled bundle beside the executable or under `bin/` before falling
 back to `data/` or `../data`. Rebuild packs or select loose data to see artwork edits.
 The UI uses `media/menu` PNG skins/backgrounds, `media/font/TATPC1_TWN` PNG
-font atlases and `media/sound` PCM WAV files. Maps use `pictures/` and decoded
+font atlases and `media/sound` Ogg Vorbis files. Native WAV references resolve to
+the standardized OGG outputs; older WAV-only extractions also work. Maps use `pictures/` and decoded
 JSON. Picture lookups resolve logical paths through `pictures/manifest.json`
 and crop atlas rectangles; patch priority remains intact. Sprites load editable
 `sprites/` atlases without decoded JMA files. Saved accounts/settings go to
@@ -780,7 +855,7 @@ Story scenes (the shipwreck storm, the beach rescue) are `.sty` movies that the 
 
 - **Data**: `data/media/sty/style_data.json` (768 movies). The export's field split doesn't follow the records, so each section is joined back into bytes: an actor is four ints (template — 0xffff the player — start stage, keyframe count, initial direction) and count + 1 keyframes of 45 bytes (facing, x, y, a flag, speed class, pose, three ints, sound index, loop flag, channel), NPCs one more int; the camera ("Map10003": the map whose scene is drawn) and pictures use 33-byte keyframes (x, y, flag, speed …); lines are records 1…n of `[speaker, talk, stage, delay]` (+4, +8, +0xc, +0x10; the loader reads n + 1 records and record 0 is unused, so the export's rows start two ints into it); the timeline gives each stage a wait (ms) and operands (overlay, two flash tracks, music, four bytes). `TestAllMovies` decodes every movie.
 - **Playback**: a stage ends when its wait has passed and every active actor (start ≤ stage ≤ start + count) and the camera have reached their targets; then its line (if any) shows, at least for its delay and until the talk window closes; then every active actor takes its next keyframe (target, speed, pose, facing, sound) and the next stage begins; after the last stage the movie ends, the game mode returns, and the step is acknowledged with 20/6. Actors move at the speed class's rate (0.0008, 0.008, 0.08, 0.12, 0.4, 4, 40 px/ms; `FUN_00339598`) along the line to the target. The camera keeps its own keyframe counter and centres the screen on its keyframes (x − 400, y − 300).
-- **Drawing**: a separate view of the movie's map (`world.NewView`: the scene, objects and depth sorting, no names or location) with the movie's actors: the player (dressed as the player) and NPC templates. An actor's action is its pose plus its direction (`FUN_00339930`), the direction being the keyframe's facing or the movement's while moving (`FUN_00342948`), reduced to left/right for two-way pose groups (`FUN_00342af0`). The falling group (26/27) plays once and holds its last frame, lying (`FUN_004122ec`). Lines go to the talk window (the player's in the wide form); a click closes a line. Recorded voices use the original talk ID and speaker suffix (`FUN_0034d3e8`), looking in extracted `audio/odd` then `audio/odd_d01`; plain talk-ID recordings fall back to `odd`. Player voices follow `FUN_004855a8`, NPC/companion voices follow Npc.dat offset 104 (`FUN_00485688` / `FUN_004856cc`). OGG recordings replace the preceding voice without stopping sound effects. Optimized bundles include both extracted voice directories in their audio pack while omitting source indexes.
+- **Drawing**: a separate view of the movie's map (`world.NewView`: the scene, objects and depth sorting, no names or location) with the movie's actors: the player (dressed as the player) and NPC templates. An actor's action is its pose plus its direction (`FUN_00339930`), the direction being the keyframe's facing or the movement's while moving (`FUN_00342948`), reduced to left/right for two-way pose groups (`FUN_00342af0`). The falling group (26/27) plays once and holds its last frame, lying (`FUN_004122ec`). Lines go to the talk window (the player's in the wide form); a click closes a line. Recorded voices use the original talk ID and speaker suffix (`FUN_0034d3e8`), looking in extracted `audio/odd` then `audio/odd_d01`; plain talk-ID recordings search `odd` then `odd_d01`, including Noa's expansion recordings. Player voices follow `FUN_004855a8`, NPC/companion voices follow Npc.dat offset 104 (`FUN_00485688` / `FUN_004856cc`). OGG recordings replace the preceding voice without stopping sound effects. Optimized bundles include both extracted voice directories in their audio pack while omitting source indexes.
 - `TestBeachMovieEvent` plays 12008 through the event path (twelve lines, 20/6 at the end); the beach rescue matches the video `Screencast_20261002_224630.mp4` (Robinson kneeling by the lying player).
 
 - **Frames**: a keyframe's +0x19 fixes the actor's frame (n − 1, clamped to the action's last): Robinson kneels (1) while dragging the lying player (2). Otherwise the actor animates at its speed class's interval (500, 400, 300, 230, 100, 50, 1 ms; `FUN_00343068`, `FUN_0033984c`), wrapping.
@@ -1457,3 +1532,13 @@ combat round chains. The client uses its native map regions at the shared battle
 entry location. Legacy servers retain control of their own backdrop selectors.
 Runtime bundles include `runtime/battle_backdrops.bin`; older bundles decline
 this capability until rebuilt. See [the backdrop protocol](BATTLE_BACKDROPS.md).
+
+### Client language
+
+Settings (sidebar or F10) → Language selects English or Traditional Chinese;
+Apply (and Keep when previewing display changes) updates all open sessions immediately.
+Connections, gameplay state and typed input are retained. `go run . -language en` or
+`go run . -language zh-TW` overrides that preference. Compile the language catalogs
+with `go run ./cmd/asset-build -data data -text-only` after editing translation
+tables, or rebuild the client bundle. See [text compilation and Chinese source
+import](IGG_TRANSLATIONS.md). Server messages remain as received.

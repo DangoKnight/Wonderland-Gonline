@@ -50,8 +50,8 @@ func reviewedNPCNames() (map[uint16]NPCNamePatch, error) {
 	return result, nil
 }
 
-// NPCNamePatches supplies offline asset initialization and the compiled client
-// display patch. Server gameplay must use the resulting SQL NPC definitions.
+// NPCNamePatches supplies offline SQL initialization and client asset compilation.
+// Runtime gameplay uses the resulting definitions, without applying name patches.
 func NPCNamePatches() (map[uint16]NPCNamePatch, error) {
 	reviewed, err := reviewedNPCNames()
 	if err != nil {

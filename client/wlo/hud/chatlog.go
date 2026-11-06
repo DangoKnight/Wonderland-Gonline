@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"image"
@@ -196,10 +198,10 @@ func NewChatLog(env *seui.Env) *ChatLog {
 	l.Name = "TTalkMsgForm"
 	l.Draggable = false
 	l.Init("", chatLeft, 0, 0, 0, 0, false, chatHeight, chatWidth, chatTop)
-	l.Lock = newBarButton(env, l, "Btn_MsgLock_1", chatLockLeft, chatLockY, "Chatbox Lock")
-	l.Up = newBarButton(env, l, "Btn_ArrowUp_1", chatArrowLeft, chatUpTop, "")
-	l.Down = newBarButton(env, l, "Btn_ArrowDn_1", chatArrowLeft, chatHeight-chatDownFromBottom, "")
-	l.Switch = newBarButton(env, l, "Btn_Transition_1", chatSwitchLeft, chatHeight-chatSwitchFromBottom, "Chat Box Switch")
+	l.Lock = newBarButton(env, l, "Btn_MsgLock_1", chatLockLeft, chatLockY, func() string { return localization.UI("ui.hud.chatbox_lock_7ab908d9") })
+	l.Up = newBarButton(env, l, "Btn_ArrowUp_1", chatArrowLeft, chatUpTop, nil)
+	l.Down = newBarButton(env, l, "Btn_ArrowDn_1", chatArrowLeft, chatHeight-chatDownFromBottom, nil)
+	l.Switch = newBarButton(env, l, "Btn_Transition_1", chatSwitchLeft, chatHeight-chatSwitchFromBottom, func() string { return localization.UI("ui.hud.chat_box_switch_1e178753") })
 	l.Scroll = seui.NewScrollButton(env, l)
 	l.Scroll.Init("", chatScrollLeft, 0, 0, 0, 0, false, chatScrollH, chatScrollWidth, chatScrollTop)
 	l.Scroll.SetThumb("bar_H4", 0, 21, chatThumbWidth, 0)
@@ -448,9 +450,9 @@ func (l *ChatLog) SetLocked(locked bool) {
 		l.firstRow = max(len(l.Lines)-l.rows(), 0)
 	}
 	if l.Lock != nil {
-		picture, hint := "Btn_MsgLock_1", "Chatbox: Unlocked"
+		picture, hint := "Btn_MsgLock_1", localization.UI("ui.hud.chatbox_unlocked_0457341a")
 		if locked {
-			picture, hint = "Btn_MsgLock_2", "Chatbox: Locked"
+			picture, hint = "Btn_MsgLock_2", localization.UI("ui.hud.chatbox_locked_3bf494c5")
 		}
 		l.Lock.Image = l.Env.Pics.Find(picture)
 		l.Lock.SetHint([]byte(hint))

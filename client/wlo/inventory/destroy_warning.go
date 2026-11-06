@@ -1,10 +1,13 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"strings"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 )
 
@@ -22,9 +25,9 @@ func (f *Form) showDestroyWarning(item game.Item, count byte, confirm func()) {
 	}
 	name := f.State.Items[item.ID].Definition.Name
 	if name == "" {
-		name = fmt.Sprintf("Item %d", item.ID)
+		name = fmt.Sprintf(localization.Text("ui.inventory.item_d_c8edea5f"), item.ID)
 	}
-	w := &destroyWarning{owner: f, text: fmt.Sprintf("Destroy %d × %s?\nThis item cannot be dropped.\nIt will be permanently destroyed.", count, name)}
+	w := &destroyWarning{owner: f, text: fmt.Sprintf(localization.Text("ui.inventory.destroy_d_s_this_item_cannot_be_dropped__675aac37"), count, name)}
 	w.InitForm(w, f.Env)
 	w.AnimateMessage(f.Now)
 	w.Dockable = false
@@ -51,7 +54,8 @@ func (w *destroyWarning) Paint() {
 	}
 	w.Env.Screen.DrawStretch(w.MessageRect(), w.background, true)
 	for i, line := range strings.Split(w.text, "\n") {
-		w.Env.Text.Draw(w.Left+max(24, (w.Width-len(line)*8)/2), w.Top+30+i*22, 0, false, true, w.Env.Screen, []byte(line), 20, w.Width-48, 0, 0xffe0, 0)
+		encoded := clientassets.Big5Text(line)
+		w.Env.Text.Draw(w.Left+max(24, (w.Width-len(encoded)*8)/2), w.Top+30+i*22, 0, false, true, w.Env.Screen, encoded, 20, w.Width-48, 0, 0xffe0, 0)
 	}
 }
 

@@ -8,7 +8,7 @@ func (s *Server) offerConnectionProtocol(c *Session) error {
 	if c.connectionOffered != 0 || c.connectionNegotiated {
 		return nil
 	}
-	flags := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionClientBackdrops)
+	flags := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionClientBackdrops | protocol.ConnectionCompleteMapSnapshot)
 	if s.combatRoundChain {
 		flags |= protocol.ConnectionCombatRoundChain
 	}

@@ -9,6 +9,9 @@ import shutil
 from export import REPO, export_all, sha256, write_json
 from import_untracked import EXTERNAL_ASSET_DIRECTORIES, EXTERNAL_ASSET_FILES, EXTERNAL_IMPORT_FORMAT
 from media import export_media
+from media_formats import validate_output_formats
+from ui import skin_sources
+from text_languages import annotate_languages, native_rows, TABLE_FILES
 
 
 def preserve_server_exports(destination, server_exports):
@@ -43,11 +46,37 @@ def preserve_server_exports(destination, server_exports):
     write_json(manifest_path, manifest)
 
 
-def regenerate(destination, client):
+def regenerate(destination, client, ui_language=None, chinese_client=None, client_language='en'):
     destination = destination.resolve()
     client = client.resolve()
     if not client.is_dir():
         raise ValueError(f'missing original WLRI client: {client}')
+    if client_language not in ('en', 'zh-TW'):
+        raise ValueError('invalid client language')
+    if chinese_client is not None:
+        chinese_client = chinese_client.resolve()
+        if client_language != 'en':
+            raise ValueError('--chinese-client supplements an English --client; omit it for Chinese-only input')
+        if destination.is_relative_to(chinese_client):
+            raise ValueError('output must be outside the Chinese installation')
+        # Validate all companion text tables before creating any output.
+        for table in TABLE_FILES:
+            native_rows(chinese_client, table)
+    if ui_language is None:
+        ui_language = 'both' if chinese_client is not None else client_language
+    if client_language == 'zh-TW' and ui_language != 'zh-TW':
+        raise ValueError('Chinese-only input provides zh-TW UI; use --ui-language zh-TW')
+    if ui_language not in ('en','zh-TW','both'):
+        raise ValueError('invalid UI language selection')
+    if ui_language == 'both' and chinese_client is None:
+        raise ValueError('--chinese-client is required for both UI languages')
+    if client_language == 'en' and ui_language == 'zh-TW' and chinese_client is None:
+        raise ValueError('Chinese UI requires --chinese-client or --client-language zh-TW')
+    if ui_language != 'en':
+        chinese_source = (chinese_client or client).resolve()
+        if destination.is_relative_to(chinese_source):
+            raise ValueError('output must be outside the Chinese UI installation')
+        skin_sources(chinese_source)
     if destination.is_relative_to(client):
         raise ValueError('output must be outside the original client installation')
     for directory in (client / 'data', client / 'jma', client / 'pic'):
@@ -58,13 +87,19 @@ def regenerate(destination, client):
     if destination.exists():
         raise ValueError('export into a new directory to protect existing asset edits')
     export_all(client / 'data', None, destination)
+    annotate_languages(destination, client_language, chinese_client)
     preserve_server_exports(destination, REPO / 'data' / 'server')
     subprocess.run(['go', 'run', './cmd/sprite-export', '-editable',
                     '-input', str(client / 'jma'), '-client-exe', str(client / 'aLogin.exe'),
                     '-output', str(destination / 'sprites')], cwd=REPO, check=True)
     subprocess.run(['go', 'run', './cmd/pic-export', '-input', str(client / 'pic'),
                     '-output', str(destination / 'pictures')], cwd=REPO / 'client', check=True)
-    export_media(client, destination / 'media')
+    if ui_language == 'en' and chinese_client is None:
+        export_media(client, destination / 'media')
+    else:
+        export_media(client, destination / 'media', ui_language=ui_language, chinese_client=chinese_client)
+    formats = validate_output_formats(destination)
+    write_json(destination / 'media_formats.json', formats)
     write_json(destination / 'external_asset_import.json', {
         'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
         'source': str(client), 'directories': list(EXTERNAL_ASSET_DIRECTORIES),
@@ -79,5 +114,8 @@ if __name__ == '__main__':
                         help='WLRI (Wonderland Rhode Island) installation root, containing aLogin.exe')
     parser.add_argument('--output', type=Path, default=REPO / 'var' / 'asset-import',
                         help='new directory for source-derived external assets and their metadata')
+    parser.add_argument('--client-language', choices=('en', 'zh-TW'), default='en', help='Language of --client: manually translated English (default) or original Chinese')
+    parser.add_argument('--ui-language', choices=('en', 'zh-TW', 'both'), help='UI image sets to include; defaults to the supplied source language(s)')
+    parser.add_argument('--chinese-client', type=Path, help='Optional original Chinese installation supplying matching text and UI alongside English --client')
     args = parser.parse_args()
-    regenerate(args.output, args.client)
+    regenerate(args.output, args.client, args.ui_language, args.chinese_client, args.client_language)

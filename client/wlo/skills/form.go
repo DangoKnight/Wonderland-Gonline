@@ -1,5 +1,7 @@
 package skills
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -77,13 +79,13 @@ func NewForm(env *seui.Env, c *Catalog) *Form {
 	f.Name = "TRe_SkillForm"
 	f.Init("Form_Skill_2", (800-formWidth)/2, 0, 0, 0, 0, false, formHeight, formWidth, (600-formHeight)/2)
 	f.Dockable = false
-	f.SetHint([]byte("Skills [Ctrl+S]"))
+	f.BindLanguage("hint", func() { f.SetHint([]byte(localization.UI("ui.skills.skills_ctrl_s_d491b65c"))) })
 	button(env, f, "Btn_Close_s_1", 240, 24, 18, 18, f.Hide)
 	f.Close = button(env, f, "btn_Close_1", 116, 416, 56, 20, f.Hide)
 	f.Previous = button(env, f, "Btn_ArrowL_5", 73, 38, 17, 17, func() { f.turn(-1) })
 	f.Next = button(env, f, "Btn_ArrowR_5", 191, 38, 17, 17, func() { f.turn(1) })
-	f.Previous.SetHint([]byte("Previous"))
-	f.Next.SetHint([]byte("Next"))
+	f.Previous.BindLanguage("hint", func() { f.Previous.SetHint([]byte(localization.UI("ui.skills.previous_a57b08a4"))) })
+	f.Next.BindLanguage("hint", func() { f.Next.SetHint([]byte(localization.UI("ui.skills.next_1ff57a29"))) })
 	for i := range f.Tabs {
 		tab := i + 1
 		f.Tabs[i] = button(env, f, "Btn_SkillIcon_"+strconv.Itoa(tab), 23+i*38, 59, 38, 21, func() { f.SetTab(tab) })
@@ -114,7 +116,7 @@ func NewForm(env *seui.Env, c *Catalog) *Form {
 			return
 		}
 		if f.Notice != nil {
-			f.Notice("Skill targeting is not implemented in the Go client yet.")
+			f.Notice(localization.Text("ui.skills.skill_targeting_is_not_implemented_in_th_6b627093"))
 		}
 	}
 	l.OnSelect = func(i int) {
@@ -209,9 +211,9 @@ func (f *Form) definition(id uint16, t Target) Definition {
 	}
 	d := f.Catalog.Definitions[id]
 	if id == BasicAttack {
-		d.Name = "Basic Atk"
+		d.Name = localization.Text("ui.skills.basic_atk_9bb035dc")
 	} else if id == Defense {
-		d.Name = "Defense"
+		d.Name = localization.Text("ui.skills.defense_6d3b491c")
 	}
 	return d
 }
@@ -355,7 +357,7 @@ func (f *Form) Update(in *seui.Input) {
 		p := t.Skills[id]
 		f.drawText(28, 88+row*rowHeight+13, 24, strconv.Itoa(int(p.Grade)), gradeInk)
 		if d.SP != 0 {
-			f.drawText(190, 88+row*rowHeight+7, 52, fmt.Sprintf("%d sp", d.SP), textInk)
+			f.drawText(190, 88+row*rowHeight+7, 52, fmt.Sprintf(localization.Text("ui.skills.d_sp_e5072ea2"), d.SP), textInk)
 		}
 	}
 	i := f.List.IndexAt()
@@ -374,19 +376,19 @@ func (f *Form) Update(in *seui.Input) {
 	f.drawText(31, 339, 230, d.Description, detailInk)
 	p := t.Skills[id]
 	f.drawText(68, 375, 30, strconv.Itoa(int(p.Grade)), detailInk)
-	attack := "Assist"
+	attack := localization.Text("ui.skills.assist_ac9e2cac")
 	if d.EffectLayer == Physical || d.EffectLayer == Magical {
-		attack = "Nearby"
+		attack = localization.Text("ui.skills.nearby_a994cd47")
 		if d.Attack == nativeRangeRanged {
-			attack = "Ranged"
+			attack = localization.Text("ui.skills.ranged_3f0b51a2")
 		}
 	} else if d.EffectLayer == LifeLayer {
-		attack = "Life Skill"
+		attack = localization.Text("ui.skills.life_skill_201c756b")
 	}
 	f.drawText(175, 376, 100, attack, detailInk)
 	proficiency := fmt.Sprintf("%.2f%%", float64(p.Proficiency)/100)
 	if d.MaximumGrade != 0 && p.Grade >= d.MaximumGrade {
-		proficiency = "Max"
+		proficiency = localization.Text("ui.skills.max_a1a5936d")
 	}
 	f.drawText(80, 395, 78, proficiency, detailInk)
 	for i, allowed := range d.Weapons {
@@ -400,13 +402,13 @@ func requirements(a game.Attributes) string {
 	for _, r := range []struct {
 		name  string
 		value uint16
-	}{{"STR", a.Strength}, {"CON", a.Constitution}, {"INT", a.Intelligence}, {"WIS", a.Wisdom}, {"AGI", a.Agility}} {
+	}{{localization.Text("ui.skills.str_e1bad657"), a.Strength}, {localization.Text("ui.skills.con_a3dbc4b6"), a.Constitution}, {localization.Text("ui.skills.int_370fbb51"), a.Intelligence}, {localization.Text("ui.skills.wis_bf29e158"), a.Wisdom}, {localization.Text("ui.skills.agi_6a8b1f7a"), a.Agility}} {
 		if r.value != 0 {
 			parts = append(parts, fmt.Sprintf("%s %d", r.name, r.value))
 		}
 	}
 	if len(parts) == 0 {
-		return "None"
+		return localization.Text("ui.skills.none_dc937b59")
 	}
 	return strings.Join(parts, ", ")
 }

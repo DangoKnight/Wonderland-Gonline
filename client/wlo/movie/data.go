@@ -12,6 +12,8 @@
 // read with the record layouts of the loader.
 package movie
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"encoding/json"
@@ -197,7 +199,7 @@ func entry(a login.Assets, name string) (json.RawMessage, error) {
 	}
 	r, ok := styles.raw[name]
 	if !ok {
-		return nil, fmt.Errorf("movie %s not found", name)
+		return nil, fmt.Errorf(localization.UI("ui.movie.movie_s_not_found_251cda12"), name)
 	}
 	return r, nil
 }
@@ -319,7 +321,7 @@ func decode(raw json.RawMessage) (*Movie, error) {
 // ints, the keyframes, and for NPCs a trailing int.
 func actorOf(e exActor, npc bool) (*Actor, error) {
 	if len(e.Header) < 4 {
-		return nil, fmt.Errorf("short header")
+		return nil, fmt.Errorf("%s", localization.UI("ui.movie.short_header_afee48b0"))
 	}
 	b := appendInts(nil, e.Header[4:])
 	for _, f := range e.Frames {
@@ -328,7 +330,7 @@ func actorOf(e exActor, npc bool) (*Actor, error) {
 	a := &Actor{Template: uint32(e.Header[0]), Start: int(e.Header[1]), Count: int(e.Header[2]), Facing: int(e.Header[3])}
 	n := a.Count + 1
 	if len(b) < n*keyframeBytes {
-		return nil, fmt.Errorf("%d bytes for %d keyframes", len(b), n)
+		return nil, fmt.Errorf(localization.UI("ui.movie.d_bytes_for_d_keyframes_1ad9290d"), len(b), n)
 	}
 	for k := range n {
 		a.Keys = append(a.Keys, keyframe(b[k*keyframeBytes:]))

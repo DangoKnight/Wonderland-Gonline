@@ -15,6 +15,8 @@ import (
 
 	"wonderland-gonline/internal/clientimage"
 	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/clienttext"
+	"wonderland-gonline/internal/localization"
 	"wonderland-gonline/internal/spritepack"
 )
 
@@ -76,10 +78,50 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	for _, name := range c.files {
+		if clienttext.IsExport(name) {
+			continue
+		}
 		if !runtimeSource(name) {
 			continue
 		}
 		if err := c.link(name); err != nil {
+			return Result{}, err
+		}
+	}
+	var textSources []string
+	for _, name := range c.files {
+		if clienttext.IsExport(name) {
+			textSources = append(textSources, name)
+		}
+	}
+	if len(textSources) > 0 {
+		if err := c.generateBytes("localized-text-"+clienttext.Fingerprint(), textSources, func(write func(string, []byte) error) error {
+			catalogs := clienttext.NewCatalogs()
+			for _, name := range textSources {
+				raw, err := os.ReadFile(filepath.Join(c.source, name))
+				if err != nil {
+					return err
+				}
+				keyed, texts, err := clienttext.CompileLocalizedDocument(name, raw)
+				if err != nil {
+					return err
+				}
+				clienttext.MergeCatalogs(catalogs, texts)
+				if err := write(name, keyed); err != nil {
+					return err
+				}
+			}
+			for code, values := range catalogs {
+				raw, err := json.Marshal(localization.Document{Version: localization.Version, Language: code, Strings: values})
+				if err != nil {
+					return err
+				}
+				if err := write(localization.Directory+"/"+code+".json", raw); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
 			return Result{}, err
 		}
 	}
@@ -310,7 +352,7 @@ func runtimeSource(name string) bool {
 		return included(name) && !strings.HasSuffix(lower, ".png")
 	}
 	switch name {
-	case "item_data.json", "formula_data.json", "skill_data.json", "animation_data.json", "npc_data.json", "scene_data.json", "talk_data.json":
+	case "item_data.json", "formula_data.json", "skill_data.json", "animation_data.json", "npc_data.json", "scene_data.json", "talk_data.json", "mark_data.json":
 		return true
 	}
 	return false

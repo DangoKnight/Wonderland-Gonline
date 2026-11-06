@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 
@@ -120,7 +122,7 @@ func (m *MailRead) Paint() {
 	txt.Draw(at.X+mailReadDateX, at.Y+mailReadDateY, 0, false, true, scr, m.date, mailNameH, mailNameW, 0, m.Color, 0)
 	name := m.Mail.Name
 	if len(name) == 0 {
-		name = []byte(mailUnknownName)
+		name = []byte(localization.UI(mailUnknownName))
 	}
 	txt.Draw(at.X+mailReadNameX, at.Y+mailReadNameY, 0, false, true, scr, name, mailNameH, mailNameW, 0, m.Color, 0)
 	if m.DrawPortrait != nil {

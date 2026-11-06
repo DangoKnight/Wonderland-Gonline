@@ -5,11 +5,13 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"image"
 	"os"
 	"path/filepath"
 	"time"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/hud"
@@ -45,9 +47,9 @@ const (
 )
 
 var (
-	noticeTimeout       = []byte("Can't reach login server") // 0x4a2e48
-	noticeWrongPassword = []byte("Password wrong")           // 0x2f02c8
-	noticeConnection    = []byte("Connection lost")          // 0x4988d4
+	noticeTimeout       = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e")) // 0x4a2e48
+	noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))           // 0x2f02c8
+	noticeConnection    = []byte(localization.UI("ui.app.connection_lost_6c44751e"))          // 0x4988d4
 )
 
 // Client is the running login phase.
@@ -181,6 +183,7 @@ type Client struct {
 	sceneNames map[uint16]string
 	mapScenes  map[uint16]uint16
 	areaTitle  areaTitle
+	worldZoom  worldZoomState
 	// The weather layer (PTR_DAT_004ca2b0), shared by the maps and the
 	// movies, and each scene's weather byte.
 	weather      *weather.Layer
@@ -201,13 +204,15 @@ type Client struct {
 	Lost *LostForm
 	fade fadeState
 	// sceneFade is the battle entry/exit transition (transition.go).
-	sceneFade sceneFade
+	sceneFade  sceneFade
+	mapLoading mapLoading
 	// Unhandled receives packets the login phase does not handle.
 	Unhandled func(p []byte)
 }
 
 // Options configure New.
 type Options struct {
+	Language string // en or zh-TW; empty uses the saved local preference.
 	Renderer string // auto (default), gpu rasterization, or cpu compatibility rendering
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
@@ -230,6 +235,28 @@ func New(o Options) (*Client, error) {
 	}
 	c := &Client{Root: o.Root, Assets: login.NewAssets(o.Root), Now: time.Now, resources: r, options: o}
 	c.Assets.UserRoot = o.UserRoot
+	language := o.Language
+	if language == "" {
+		if prefs, err := loadDisplaySettings(applicationSettingsPath(o, c.Assets)); err == nil {
+			language = prefs.Language
+		}
+		if r.ready {
+			language = r.language
+		}
+	}
+	language, err := localization.Normalize(language)
+	if err != nil {
+		return nil, err
+	}
+	if r.ready && r.language != language {
+		return nil, fmt.Errorf("%s", localization.UI("ui.app.shared_resources_cannot_mix_languages_92b353fe"))
+	}
+	catalog, err := localization.Load(o.Root, language)
+	if err != nil {
+		return nil, err
+	}
+	localization.Install(catalog)
+	r.language = language
 	a := c.Assets
 	if err := r.prepare(a, o.SpritesRoot); err != nil {
 		return nil, err
@@ -375,6 +402,11 @@ func (c *Client) Frame() { c.frame(true) }
 func (c *Client) frame(draw bool) {
 	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
+	// Story cinematics take ownership immediately; do not play their opening
+	// seconds behind a decorative loading screen.
+	if c.mapLoading.active && c.movie != nil {
+		c.stopMapLoading()
+	}
 	if draw {
 		c.Screen.Fill(image.Rect(0, 0, ScreenWidth, ScreenHeight), 0)
 	}
@@ -386,6 +418,7 @@ func (c *Client) frame(draw bool) {
 	c.clinicTick()
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
+		c.syncWorldZoom()
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Step(c.Now())
 		c.waterTravelTick()
@@ -394,7 +427,8 @@ func (c *Client) frame(draw bool) {
 		if c.floorHovered != 0 || c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) {
 			c.World.Hover(-1, -1)
 		} else {
-			c.World.Hover(c.Input.X, c.Input.Y)
+			x, y := c.World.ScenePoint(c.Input.X, c.Input.Y)
+			c.World.Hover(x, y)
 		}
 		c.reachNPC()
 		c.reachFloorItem()
@@ -417,11 +451,9 @@ func (c *Client) frame(draw bool) {
 			if !c.clinicUntil.IsZero() {
 				c.World.HidePlayer = true
 			}
-			c.World.DrawWithSprites(append(c.floorItemSprites(), c.placedVehicleSprites()...))
+			c.drawWorldScene()
 			c.World.HidePlayer = hide
-			c.drawWorldItemGains(c.Now())
 			c.drawClinicRest()
-			c.drawVehicleEffects()
 			c.drawFloorItemName()
 			c.drawAreaTitle(c.Now())
 			dialogueOverlay = true
@@ -487,6 +519,7 @@ func (c *Client) frame(draw bool) {
 	c.uiHovered = c.Input.Hovered != nil
 	if draw {
 		c.drawConstellation(c.Now())
+		c.drawMapLoading(now)
 	}
 	c.updateCursor(now)
 }
@@ -709,7 +742,7 @@ func (c *Client) dispatchNative(p []byte) {
 				c.rememberVehiclePosition(id)
 				c.waterTravel = waterTravelState{}
 				c.World.Relocate(image.Pt(x, y))
-				c.World.MarkWalk()
+				c.groundHeld, c.groundSince = false, time.Time{}
 			} else if id != c.World.Player.ID {
 				c.rememberVehiclePosition(id)
 				c.World.PlacePeer(id, x, y)
@@ -863,3 +896,11 @@ func (c *Client) connectFailed() {
 }
 
 const statTargetOffset, statTargetEnd = 7, 11 // AC8:1 target after stat, kind and value; zero denotes self.
+
+func init() {
+	localization.Register(func() {
+		noticeConnection = []byte(localization.UI("ui.app.connection_lost_6c44751e"))
+		noticeTimeout = []byte(localization.UI("ui.app.can_t_reach_login_server_4b5afe9e"))
+		noticeWrongPassword = []byte(localization.UI("ui.app.password_wrong_4f29668a"))
+	})
+}

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientruntime"
+	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/login"
 )
@@ -21,6 +21,14 @@ const (
 // Talks maps talk IDs to their text (Talk.dat, looked up by FUN_00332eac;
 // the text is the record's +6).
 func Talks(a login.Assets) (map[uint32]string, error) {
+	texts, _, err := TalksWithReferences(a)
+	return texts, err
+}
+
+// TalksWithReferences retains canonical IDs for native file-offset aliases.
+// Presentation can change language without reopening the export or guessing
+// identity from a translated string shared by several dialogue records.
+func TalksWithReferences(a login.Assets) (map[uint32]string, map[uint32]uint32, error) {
 	var doc struct {
 		Records []struct {
 			FileOffset uint32 `json:"file_offset"`
@@ -33,20 +41,23 @@ func Talks(a login.Assets) (map[uint32]string, error) {
 		} `json:"records"`
 	}
 	if err := readJSON(a.DataPath(talkExport), &doc); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	out := make(map[uint32]string, len(doc.Records))
+	ids := make(map[uint32]uint32, len(doc.Records))
 	// Extended event operands can refer to original record offsets. Preserve the
 	// server's ID-first lookup precedence when an offset overlaps a real ID.
 	for _, r := range doc.Records {
 		if r.FileOffset != 0 {
 			out[r.FileOffset] = r.Text.Text
+			ids[r.FileOffset] = r.Fields.ID
 		}
 	}
 	for _, r := range doc.Records {
 		out[r.Fields.ID] = r.Text.Text
+		ids[r.Fields.ID] = r.Fields.ID
 	}
-	return out, nil
+	return out, ids, nil
 }
 
 // SceneNames maps scene IDs to their names.
@@ -194,7 +205,7 @@ func MapScenes(a login.Assets) (map[uint16]uint16, error) {
 }
 
 func readJSON(path string, v any) error {
-	raw, err := clientfs.ReadFile(path)
+	raw, err := localization.ReadAsset(path)
 	if err != nil {
 		return err
 	}

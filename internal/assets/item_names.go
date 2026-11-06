@@ -14,7 +14,7 @@ type ItemNamePatch struct{ OriginalName, Name string }
 //go:embed item_names.csv
 var itemNamePatchCSV string
 
-// ItemNamePatches supplies offline SQL initialization and compiled client names.
+// ItemNamePatches supplies offline SQL initialization and client asset compilation.
 // Runtime server definitions remain owned by the assets database.
 func ItemNamePatches() (map[uint16]ItemNamePatch, error) {
 	rows, err := csv.NewReader(strings.NewReader(itemNamePatchCSV)).ReadAll()
@@ -38,7 +38,7 @@ func ItemNamePatches() (map[uint16]ItemNamePatch, error) {
 	return patches, nil
 }
 
-// ApplyItemNamePatches is used by the client and offline server conversion only.
+// ApplyItemNamePatches is used by offline server conversion.
 // Native records and custom/full definition names remain untouched.
 func ApplyItemNamePatches(items map[uint16]NativeItem) error {
 	patches, err := ItemNamePatches()

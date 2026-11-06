@@ -112,6 +112,19 @@ func TestNPCTalk(t *testing.T) {
 	if len(*legs) != 0 {
 		t.Fatal("walked during the event")
 	}
+	// FUN_00307300 acknowledges one completed step, then waits for the
+	// server. It must neither release the conversation nor re-click the actor
+	// to guess which EVE branch follows (including Noa's puzzle/result handoff).
+	for range 3 {
+		c.eventTick()
+	}
+	if !c.event.active || len(sent()) != 2 {
+		t.Fatal("completed line guessed a continuation or ended the interaction")
+	}
+	c.dispatch(talkFrame(n.ClickID, 10002))
+	if !c.Talk.Shown() || !c.event.active {
+		t.Fatal("server's next line did not retain the conversation")
+	}
 	c.dispatch([]byte{protocol.CommandEvent, protocol.EventResume})
 	c.GroundClick(300, 350)
 	if len(*legs) == 0 {

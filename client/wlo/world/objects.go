@@ -1,5 +1,7 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/hex"
 	"fmt"
@@ -149,7 +151,7 @@ func objectPicture(a login.Assets, id uint32) (*surface.Surface, error) {
 		}
 		return keyed(m), nil
 	}
-	return nil, fmt.Errorf("object picture %s not found", name)
+	return nil, fmt.Errorf(localization.UI("ui.world.object_picture_s_not_found_879127d7"), name)
 }
 
 // keyed converts a picture with FUN_0047b274's key rules: pure green is

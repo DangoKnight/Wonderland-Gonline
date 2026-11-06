@@ -26,7 +26,7 @@ interaction or battle entry. See [the connection protocol](CONNECTION_PROTOCOL.m
 | Command / subcommand | U8 `1`, U8 `248` offer / `249` acceptance / `250` confirmation |
 | Signature | Four ASCII bytes `GLON` |
 | Version | U16 `1` |
-| Features | U32: bit 0 collection timing, bit 1 round chains, bit 2 local backdrops |
+| Features | U32: bit 0 collection timing, bit 1 round chains, bit 2 local backdrops, bit 3 complete map snapshot readiness |
 
 The server advertises round chains only when its captured startup
 `combat_round_chain` setting is enabled. The client accepts the supported subset

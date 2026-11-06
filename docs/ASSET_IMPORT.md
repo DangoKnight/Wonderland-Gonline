@@ -3,10 +3,12 @@
 Use this procedure after cloning the repository to restore the asset payloads
 that Git excludes. The client source is a **WLRI (Wonderland Rhode Island)**
 installation, including its matching `aLogin.exe`. Supply its root through
-`--client`. Wonderland-Private-Server is not required for this procedure.
+`--client`. Either the updated original Chinese client or its updated manually
+translated English edition is sufficient. You can also supply both.
+Neither an IGG installation nor Wonderland-Private-Server is required.
 Client-derived tables, JSON metadata, lossless sprite payloads and media are
-local generated files. Only server-specific definitions and documentation remain
-tracked under `data/`. This procedure restores the complete client-derived tree.
+local generated files. Server-specific definitions, documentation and compiled
+language catalogs are tracked under `data/`. This procedure restores the complete client-derived tree.
 The installation can be anywhere on disk and its directory can have any name.
 Supply its path explicitly; no sibling-directory layout is assumed.
 
@@ -66,7 +68,65 @@ required and has no default. The default output is the repository-relative
 On Windows, the source, output and system temporary directory may be on different
 drives; they do not need to share a volume.
 
-This creates the following media directories with matching JSON metadata and
+### Select UI artwork languages
+
+Choose the source setup explicitly. These commands run from the repository root;
+use the Python environment prepared above (`var/asset-import-venv/Scripts/python.exe`
+on Windows, `var/asset-import-venv/bin/python` on Linux):
+
+| Installations available | Import arguments | Default UI artwork |
+| --- | --- | --- |
+| Updated original Chinese only | `--client PATH --client-language zh-TW` | Chinese |
+| Updated manually translated English only | `--client PATH --client-language en` | English |
+| Both | `--client ENGLISH_PATH --client-language en --chinese-client CHINESE_PATH` | Both |
+
+For example:
+
+```powershell
+python tools/data_export/regenerate.py --client "PATH\TO\UPDATED_CHINESE_CLIENT" --client-language zh-TW --output var/import-chinese
+python tools/data_export/regenerate.py --client "PATH\TO\UPDATED_TRANSLATED_CLIENT" --client-language en --output var/import-english
+python tools/data_export/regenerate.py --client "PATH\TO\UPDATED_TRANSLATED_CLIENT" --client-language en --chinese-client "PATH\TO\UPDATED_CHINESE_CLIENT" --output var/import-bilingual
+```
+
+Run one command, then use its output as `$wlo_import_output` in the verification
+and restoration steps below. `--client-language en` remains the compatibility
+default; the importer does not guess a language from folder names.
+
+With both installations, non-text definitions, sprites, sounds, movies and maps
+come from `--client`. Chinese text is matched by native ID and record identity;
+the Chinese copy supplies matching language fields and UI artwork. It never
+replaces the primary installation's gameplay records. Native bytes and original
+source hashes are preserved, with separate provenance for companion text.
+
+The repository supplies previously imported English/Chinese translations and
+authored corrections as build inputs. They do not require their original IGG
+installation. Available matching English overrides also apply to known Chinese
+source text. New untranslated content falls back to its source text; a
+Chinese-only installation does not manufacture missing English artwork or
+translations. Chinese-only builds retain all Chinese source text, including
+entries newer than the repository's translation snapshot.
+
+With both sources, `--ui-language en`, `zh-TW` or `both` can restrict the artwork
+included independently of the two text catalogs. Build the bundle from the selected
+complete asset tree. When an image is unavailable in the chosen language, the
+client uses the installed alternative, including login and character-creation
+backgrounds. The selected text language remains independent of available images.
+
+UI images can also be imported separately:
+
+```powershell
+python tools/data_export/ui.py --english "PATH\TO\ENGLISH_UI_CLIENT" --output var/ui-english/media
+python tools/data_export/ui.py --chinese "PATH\TO\CHINESE_CLIENT" --output var/ui-chinese/media
+```
+
+Provide both source options in one command to import both sets. These commands
+produce `media/locales/en/menu/Skins` and/or `media/locales/zh-TW/menu/Skins`, with
+PNG-normalized images and source manifests. Selected locale directories must not
+already exist. Use a fresh asset tree for a strict single-language distribution;
+the restoration tool preserves existing artwork and does not remove another set
+that was imported earlier.
+
+A complete regeneration creates the following directories with matching JSON metadata and
 local payloads. `external_asset_import.json` records the restoration scope:
 
 | Output | Content |
@@ -76,7 +136,8 @@ local payloads. `external_asset_import.json` records the restoration scope:
 | `sprites/` | Decrypted sprite data, editable PNG atlases and animation metadata |
 | `pictures/` | PNG pictures and atlases from loose images and BMg/JMg archives |
 | `audio/odd/`, `audio/odd_d01/` | Individual original Ogg Vorbis tracks |
-| `media/` | UI PNGs, font atlases, cursor/GIF frames, PCM WAV sound and voice, styles and text |
+| `media/` | UI PNGs, font atlases, cursor/GIF frames, Ogg Vorbis sound/music/voice, styles and text |
+| `media_formats.json` | Standard media profile and validated image/audio/video counts |
 | `media/sty/WLOnline.avi` | Original video, preserved whole when present |
 
 No decoded JMA files or combined `odd.ogg` containers are retained. Atlas packing
@@ -85,6 +146,35 @@ databases and SQLite sidecars are excluded.
 The exporter copies the repository's server-only JSON definitions into the
 temporary tree and rebuilds their manifest entries. It does not require a
 Private Server installation or infer server policies from the client.
+
+The single regeneration command uses the `png-vorbis-v1` media profile:
+all extracted raster images are PNG, standalone audio is Ogg Vorbis, and AVI
+videos retain their original container and timing. Static source images, font
+atlases, animation frames, sprites and picture archives all follow the PNG
+output convention. Existing Vorbis streams are copied byte-for-byte. Other
+audio, including PCM/ADPCM WAV sound effects, music and loose voices, is encoded
+once with libvorbis quality 6 at 44.1 kHz stereo. This encoding is lossy;
+original installations and source fingerprints remain intact. Existing Vorbis
+recordings retain their source sample rates/channels to avoid re-encoding.
+`Mp3s/`, when populated, is included too. AVI's embedded streams remain part of
+the preserved video, separate from standalone audio assets.
+
+The client resolves native `.wav` resource names to `.ogg` at the loading
+boundary, for music, effects, ambience and battle voice fallbacks. Older
+WAV-only exports remain readable. Use a fresh extraction directory for a clean
+standardized tree; restoring only missing files into an older `data/` directory
+intentionally preserves its existing files and edits.
+
+PowerShell, from the repository root:
+
+```powershell
+python tools/data_export/regenerate.py --client "PATH\TO\UPDATED_CHINESE_CLIENT" --output var/asset-import-standard
+```
+
+The output directory must not already exist. All asset types come from that one
+installation, including its matching executable. Compiled bundles may later use
+the client's tiled image representation; that is a separate build stage from
+the editable PNG/Vorbis extraction.
 
 ## 3. Verify the regenerated tree
 
@@ -96,6 +186,7 @@ var/asset-import-venv/bin/python tools/data_export/extract_audio.py \
   --input "$wlo_client_source/data" --output "$wlo_import_output/audio" --verify-existing
 var/asset-import-venv/bin/python tools/data_export/verify_sprites.py "$wlo_import_output/sprites"
 var/asset-import-venv/bin/python tools/data_export/verify_media.py --data "$wlo_import_output/media"
+var/asset-import-venv/bin/python tools/data_export/media_formats.py --data "$wlo_import_output"
 go run ./cmd/sprite-export -verify-editable -compare-original -output "$wlo_import_output/sprites"
 ```
 

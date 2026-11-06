@@ -1,1 +1,4 @@
 # Client-derived exports remain local; no generated asset files use Git LFS.
+# Compiled language tables are an explicitly tracked text-asset exception.
+/data/runtime/locales/*.json text eol=lf
+/data/runtime/locales/README.md text eol=lf

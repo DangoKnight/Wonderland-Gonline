@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -29,7 +31,7 @@ var emoticonCodes = [chatEmoticons]string{
 func (b *InputBar) initEmoticons() {
 	b.Message.TokenWidth = chatUnit
 	b.Message.DrawText = b.drawMessageText
-	b.EmoteClose = newBarButton(b.Env, b, "Btn_Close_s_1", 733, -66, "Close Chat Emotes")
+	b.EmoteClose = newBarButton(b.Env, b, "Btn_Close_s_1", 733, -66, func() string { return localization.UI("ui.hud.close_chat_emotes_f974b7c2") })
 	b.EmoteClose.OnClick = func() { b.ShowEmoticons(false) }
 	for i, code := range emoticonCodes {
 		x, y := 500+(i%emoticonColumns)*23, -62+(i/emoticonColumns)*20

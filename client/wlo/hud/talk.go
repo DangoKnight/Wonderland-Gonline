@@ -80,6 +80,7 @@ type Talk struct {
 	fromW, fromH int       // size at the start of this transition
 	blinkAt      time.Time
 	blinkTo      time.Time
+	language     func()
 }
 
 // Face draws a speaker's face with its feet (anchor) at (x, y).
@@ -214,6 +215,7 @@ func NewTalk(env *seui.Env) *Talk {
 // Say shows one line, its markup applied with player as #n, and plays its
 // sound tags.
 func (t *Talk) Say(text []byte, who Speaker, player []byte) {
+	t.language = nil
 	if t.Env != nil && t.Env.UI != nil {
 		t.Env.UI.CancelMessageExit(t)
 	}
@@ -240,6 +242,20 @@ func (t *Talk) Say(text []byte, who Speaker, player []byte) {
 			t.Sound(soundDir + s + soundExt)
 		}
 	}
+}
+
+// BindLanguage carries presentation identity only; it cannot advance an event.
+func (t *Talk) BindLanguage(update func()) { t.language = update }
+func (t *Talk) RefreshLanguage() {
+	if !t.shown || t.language == nil {
+		return
+	}
+	update, sound, start := t.language, t.Sound, t.start
+	t.Sound = nil // Relayout must not replay dialogue sound tags.
+	update()
+	t.Sound, t.start, t.language = sound, start, update
+	t.cw, t.ch = t.w, t.h
+	t.fromW, t.fromH = t.w, t.h
 }
 
 // fit is FUN_0034ba20's size; the wide form keeps its own.

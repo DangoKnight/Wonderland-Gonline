@@ -1,10 +1,13 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"strings"
 
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // FUN_001cc7b8 lists learned skills endangered by a normal pill failure.
@@ -17,7 +20,7 @@ type potentialWarning struct {
 }
 
 func (d *useDialog) showSkillWarning(names []string) {
-	w := &potentialWarning{owner: d, text: "Failure will forget skill:\n" + strings.Join(names, "\n")}
+	w := &potentialWarning{owner: d, text: localization.Text("ui.inventory.failure_will_forget_skill_0d4edcfa") + strings.Join(names, "\n")}
 	w.InitForm(w, d.Env)
 	w.AnimateMessage(d.owner.Now)
 	w.Dockable = false
@@ -47,8 +50,9 @@ func (w *potentialWarning) Paint() {
 	}
 	w.Env.Screen.DrawStretch(w.MessageRect(), w.background, true)
 	for i, line := range strings.Split(w.text, "\n") {
-		x := w.Left + max(40, (w.Width-len(line)*8)/2)
-		w.Env.Text.Draw(x, w.Top+30+i*18, 0, false, true, w.Env.Screen, []byte(line), 18, w.Width-80, 0, 0xffe0, 0)
+		encoded := clientassets.Big5Text(line)
+		x := w.Left + max(40, (w.Width-len(encoded)*8)/2)
+		w.Env.Text.Draw(x, w.Top+30+i*18, 0, false, true, w.Env.Screen, encoded, 18, w.Width-80, 0, 0xffe0, 0)
 	}
 }
 

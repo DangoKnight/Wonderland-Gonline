@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"sort"
@@ -52,7 +54,7 @@ type battleResultsRuntime struct {
 func resultPet(p inventory.UsePet, slot int) battleResultActor {
 	name := string(p.Name)
 	if name == "" {
-		name = fmt.Sprintf("Pet %d", slot+1)
+		name = fmt.Sprintf(localization.UI("ui.app.pet_d_e4752948"), slot+1)
 	}
 	return battleResultActor{id: p.ID, name: name, exp: p.Stats.EXP, level: p.Stats.Level, amity: p.Amity}
 }
@@ -137,9 +139,9 @@ func resultDelta(label, name string, before, after uint32) string {
 		return ""
 	}
 	if after > before {
-		return fmt.Sprintf("%s%s gained: %d", name, label, uint64(after)-uint64(before))
+		return fmt.Sprintf(localization.UI("ui.app.s_s_gained_d_017912c4"), name, label, uint64(after)-uint64(before))
 	}
-	return fmt.Sprintf("%s%s lost: %d", name, label, uint64(before)-uint64(after))
+	return fmt.Sprintf(localization.UI("ui.app.s_s_lost_d_fd4b8928"), name, label, uint64(before)-uint64(after))
 }
 
 func (c *Client) battleResultLines() []string {
@@ -155,12 +157,12 @@ func (c *Client) battleResultLines() []string {
 		if name != "" {
 			name += " "
 		}
-		add(resultDelta("EXP", name, before.exp, after.exp))
+		add(resultDelta(localization.UI("ui.app.exp_06a1ad63"), name, before.exp, after.exp))
 		if after.level > before.level {
-			add(fmt.Sprintf("%slevel up: %d", name, after.level))
+			add(fmt.Sprintf(localization.UI("ui.app.slevel_up_d_a2fc5dd1"), name, after.level))
 		}
 		if amity {
-			add(resultDelta("Amity", name, uint32(before.amity), uint32(after.amity)))
+			add(resultDelta(localization.UI("ui.app.amity_56851ac2"), name, uint32(before.amity), uint32(after.amity)))
 		}
 	}
 	actor(r.before.player, r.after.player, false)
@@ -172,19 +174,19 @@ func (c *Client) battleResultLines() []string {
 	}
 	// Recruitment is announced immediately during combat by announceNewPets;
 	// do not repeat captures in the post-battle reward summary.
-	add(resultDelta("Gold", "", r.before.gold, r.after.gold))
+	add(resultDelta(localization.UI("ui.app.gold_6249df43"), "", r.before.gold, r.after.gold))
 	ids := make([]int, 0, len(r.items))
 	for id := range r.items {
 		ids = append(ids, int(id))
 	}
 	sort.Ints(ids)
 	if len(ids) > 0 {
-		add("Items obtained:")
+		add(localization.UI("ui.app.items_obtained_5386aa1d"))
 	}
 	for _, id := range ids {
 		name := string(clientassets.Big5Text(c.items[uint16(id)].Definition.Name))
 		if name == "" {
-			name = fmt.Sprintf("Item #%d", id)
+			name = fmt.Sprintf(localization.UI("ui.app.item_d_9d20bdc4"), id)
 		}
 		add(fmt.Sprintf("%s x%d", name, r.items[uint16(id)]))
 	}
@@ -253,7 +255,7 @@ func (l *battleResultsList) Paint() {
 func newBattleResultsForm(env *seui.Env) *battleResultsForm {
 	f := &battleResultsForm{}
 	f.InitForm(f, env)
-	f.Name = "Battle results"
+	f.Name = localization.UI("ui.app.battle_results_a0f88204")
 	f.Init("panel22", 0, 0xa8, 0x14c, 0, 0, true, 0, battleResultsMinWidth, battleResultsTop)
 	f.SetMargins(0x32, 0x20, 0x20, 0x3c)
 	f.Dockable, f.Draggable, f.PixelHit = false, false, false

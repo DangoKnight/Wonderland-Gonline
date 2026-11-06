@@ -1,5 +1,7 @@
 package inventory
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -26,18 +28,20 @@ func (f *CompoundForm) initTierSelector() {
 			f.SelectTier(game.AlchemyJunior)
 		}
 	})
-	f.Junior.SetHint([]byte("Use Junior Alchemy"))
+	f.Junior.BindLanguage("hint", func() { f.Junior.SetHint([]byte(localization.UI("ui.inventory.use_junior_alchemy_43f5ad51"))) })
 	f.TierButton = f.button("Btn_CompSk_1", compoundTierX, compoundTierY, compoundTierWidth, compoundTierHeight, func() {
 		if f.allowed() {
 			f.tierMenu = !f.tierMenu
 			f.refreshTierSelector()
 		}
 	})
-	f.TierButton.SetHint([]byte("Choose alchemy skill"))
+	f.TierButton.BindLanguage("hint", func() { f.TierButton.SetHint([]byte(localization.UI("ui.inventory.choose_alchemy_skill_65ae7f41"))) })
 	for i := range f.TierOptions {
 		tier := game.AlchemyTier(i)
 		f.TierOptions[i] = f.button(compoundTierArt(tier), compoundTierX, compoundTierMenuY+(len(f.TierOptions)-1-i)*compoundTierHeight, compoundTierWidth, compoundTierHeight, func() { f.SelectTier(tier) })
-		f.TierOptions[i].SetHint([]byte([]string{"Primary Alchemy", "Junior Alchemy", "Superior Alchemy"}[i]))
+		f.TierOptions[i].BindLanguage("hint", func() {
+			f.TierOptions[i].SetHint([]byte([]string{localization.UI("ui.inventory.primary_alchemy_f3aa477d"), localization.UI("ui.inventory.junior_alchemy_46fa2bf0"), localization.UI("ui.inventory.superior_alchemy_5b432b27")}[i]))
+		})
 	}
 }
 func compoundTierArt(tier game.AlchemyTier) string {

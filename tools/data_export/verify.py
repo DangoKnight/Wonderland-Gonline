@@ -8,6 +8,7 @@ import struct
 
 from export import (FORMATS, REPO, inventory, require, sha256, transform,
                     COPY_BUFFER_BYTES, EVE_HEADER_BYTES)
+from text_languages import verify_language_sources
 
 # Independent item wire map, retained as data for inverse verification of the
 # Go exporter. The native item golden tests separately check decoded meaning.
@@ -114,6 +115,7 @@ def verify(destination):
         output=destination/entry['output']
         require(sha256(output)==entry['output_sha256'] and output.stat().st_size==entry['output_bytes'],'export checksum mismatch: '+asset)
         document=json.loads(output.read_text())
+        verify_language_sources(document)
         require(document['source_sha256']==entry['source_sha256'],'embedded provenance mismatch')
         if asset in shadowed:
             require(sha256(shadowed[asset])==entry['overridden_server_source']['sha256'],'overridden source checksum mismatch')

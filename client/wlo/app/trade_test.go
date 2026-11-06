@@ -38,13 +38,13 @@ func TestTradeRequest(t *testing.T) {
 		t.Fatal("Business menu not shown")
 	}
 	c.Business.TradeItems.Click()
-	if c.tradeTarget || lastNotice(c) != noticeOnlineTime {
+	if c.tradeTarget || lastNotice(c) != "Not enough online time to use!" {
 		t.Fatalf("armed without 25/44 2: %q", lastNotice(c))
 	}
 	c.dispatch([]byte{protocol.CommandTrade, protocol.TradeOnlineTime, protocol.TradeOnlineTimeEnough})
 	c.Stats.Level = 24
 	c.Business.TradeItems.Click()
-	if c.tradeTarget || lastNotice(c) != noticeRequiresLevel {
+	if c.tradeTarget || lastNotice(c) != "Requires player LV25!" {
 		t.Fatal("armed below level 25")
 	}
 	c.Stats.Level = 30
@@ -56,7 +56,7 @@ func TestTradeRequest(t *testing.T) {
 	}
 	cx, cy := c.World.Camera()
 	c.GroundClick(low.X-cx, low.Y-cy-20)
-	if p := capture(); c.tradeTarget || len(p) != 0 || lastNotice(c) != noticeTargetLevel {
+	if p := capture(); c.tradeTarget || len(p) != 0 || lastNotice(c) != "Player is below LV25!" {
 		t.Fatalf("low-level target: %x %q", p, lastNotice(c))
 	}
 	c.FuncButtons.Buttons[tradeButton].Click()
@@ -69,7 +69,7 @@ func TestTradeRequest(t *testing.T) {
 	c.World.Player.Map = mapNoTradeA
 	c.FuncButtons.Buttons[tradeButton].Click()
 	c.Business.TradeItems.Click()
-	if c.tradeTarget || lastNotice(c) != noticeTradeHere {
+	if c.tradeTarget || lastNotice(c) != "Can't trade here" {
 		t.Fatal("armed on a no-trade map")
 	}
 }

@@ -7,11 +7,11 @@ import (
 
 func TestConnectionCapabilityGoldens(t *testing.T) {
 	for _, sub := range []byte{248, 249, 250} {
-		want := []byte{1, sub, 71, 76, 79, 78, 1, 0, 7, 0, 0, 0}
+		want := []byte{1, sub, 71, 76, 79, 78, 1, 0, 15, 0, 0, 0}
 		if !bytes.Equal(ConnectionCapabilities(sub, ConnectionKnownFeatures), want) {
 			t.Fatal("connection wire changed", sub)
 		}
-		if got, ok := ParseConnectionCapabilities(want, sub); !ok || got != 7 {
+		if got, ok := ParseConnectionCapabilities(want, sub); !ok || got != 15 {
 			t.Fatal(got, ok)
 		}
 		for i := range len(want) {

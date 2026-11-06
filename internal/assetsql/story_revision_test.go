@@ -103,3 +103,26 @@ func TestXaolanRecruitmentContinuationRevision(t *testing.T) {
 		t.Fatal("empty collection reseeded", err)
 	}
 }
+
+func TestNoaConversationContinuationRevision(t *testing.T) {
+	defs := assets.DefaultStoryDefinitions()
+	var before, expected []assets.StoryRule
+	for _, r := range defs.Rules {
+		if r.ID == "noa_quiz_result_continuation" || r.ID == "noa_quiz_retry_continuation" || r.ID == "noa_recruitment_continuation" {
+			expected = append(expected, r)
+		} else {
+			before = append(before, r)
+		}
+	}
+	got, changed, err := applyStoryRevision(before, nativeQuestRevisionV52)
+	if err != nil || !changed || len(expected) != 3 || !reflect.DeepEqual(got[len(before):], expected) {
+		t.Fatal("Noa migration differs from new defaults", err)
+	}
+	got[len(before)].TargetBranch = 3 // Keep administrator customization.
+	for _, rules := range [][]assets.StoryRule{got, nil} {
+		again, changed, err := applyStoryRevision(rules, nativeQuestRevisionV52)
+		if err != nil || changed || !reflect.DeepEqual(again, rules) {
+			t.Fatal("revision overwrote existing policies", err)
+		}
+	}
+}

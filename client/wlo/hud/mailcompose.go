@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import "wonderland-gonline/client/wlo/seui"
 
 // MailCompose is the letter form addressed by name, PTR_DAT_004ca6c8
@@ -28,9 +30,9 @@ const (
 	mailComposeNameInk = 0x1f
 	mailComposeNameMax = 10
 	mailComposeInk     = 0x0841
-	mailNoTarget       = "No target player"
-	mailNoContent      = "No mail content"
-	mailNeedMailbox    = "Need Mailbox to send"
+	mailNoTarget       = "ui.hud.no_target_player_a1cd475b"
+	mailNoContent      = "ui.hud.no_mail_content_7118a879"
+	mailNeedMailbox    = "ui.hud.need_mailbox_to_send_0b029d9c"
 )
 
 // NewMailCompose is FUN_001947d8.
@@ -84,11 +86,11 @@ func (m *MailCompose) send() {
 	}
 	switch {
 	case len(m.To.Text) == 0:
-		notice(mailNoTarget)
+		notice(localization.UI(mailNoTarget))
 	case len(m.Memo.Text) == 0:
-		notice(mailNoContent)
+		notice(localization.UI(mailNoContent))
 	case m.SendTo == nil || !m.SendTo(m.To.Text, m.Memo.Text):
-		notice(mailNeedMailbox)
+		notice(localization.UI(mailNeedMailbox))
 	default:
 		m.Hide()
 		m.Memo.SetText(nil)

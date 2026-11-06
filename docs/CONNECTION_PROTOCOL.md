@@ -25,6 +25,7 @@ The payload is exactly 12 bytes. Bits are:
 | 0 | Collection retries at server respawn expiry plus 10 seconds |
 | 1 | Full combat round chains and batched choices |
 | 2 | Client-side native backdrop resolution |
+| 3 | AC5:4 completes the entire initial map snapshot |
 
 The server includes bit 1 only when its captured startup `combat_round_chain`
 setting is enabled. The client intersects the offer with its supported features;
@@ -51,6 +52,13 @@ Interaction messages still carry their necessary data. For example, AC1:247
 GLBD map/X/Y specifies the shared battle-entry position used for local backdrop
 selection. It requires no response and does not renegotiate the connection.
 Round prompts, choices and result chains likewise use the mode already selected.
+
+With bit 3 selected, the server emits the existing AC5:4 map-ready reply after
+the complete destination snapshot, including peer positions, vehicle state,
+props, bazaars and tent furniture, before starting an arrival script. Without
+bit 3, its native packet ordering remains unchanged. No new per-map handshake
+or polling request is added. The client's loading screen also waits for local
+render preparation and pending sprite decoding; it does not block networking.
 
 New capabilities should be added as named bits in `internal/protocol`, selected
 through this common hello. Do not add a new per-feature offer/accept exchange.

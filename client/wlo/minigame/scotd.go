@@ -1,5 +1,7 @@
 package minigame
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -246,7 +248,7 @@ func (s *Scotd) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	} else {
 		dst.Fill(image.Rect(s.X-scotdActorHalfWidth, s.Y-scotdActorHeight, s.X+scotdActorHalfWidth, s.Y), 0x07e0)
 	}
-	arcadeText(dst, 100, 30, fmt.Sprintf("Lives %d   Defeated %d/%d", s.Lives, s.Kills, scotdWinKills))
-	arcadeText(dst, 140, 560, "Arrows: move/jump/duck   Space or click: strike")
+	arcadeText(dst, 100, 30, fmt.Sprintf(localization.UI("ui.minigame.lives_d_defeated_d_d_3f65a006"), s.Lives, s.Kills, scotdWinKills))
+	arcadeText(dst, 140, 560, localization.UI("ui.minigame.arrows_move_jump_duck_space_or_click_str_29da2f05"))
 	s.outcome(dst)
 }

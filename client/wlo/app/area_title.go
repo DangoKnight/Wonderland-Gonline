@@ -6,13 +6,16 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/gobolditalic"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/text"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 )
 
 // Native FUN_003075f0 compares SceneData's title groups and plays t<group>
@@ -86,13 +89,31 @@ func (c *Client) areaTitleTick(now time.Time) {
 		return
 	}
 	t.pending = false
-	if !t.makeArtwork() {
+	if !t.makeArtwork(c.Env.Text) {
 		return
 	}
 	t.started = now
 }
 
-func (t *areaTitle) makeArtwork() bool {
+func (t *areaTitle) makeArtwork(native ...*text.Renderer) bool {
+	if strings.ContainsFunc(t.name, func(r rune) bool { return unicode.Is(unicode.Han, r) }) && len(native) > 0 && native[0] != nil {
+		// The Latin title font has no Chinese glyphs. Reuse the installation's
+		// native bitmap font and feed its mask through the same ripple effect.
+		b := clientassets.Big5Text(t.name)
+		width := min(areaTitleMaxTextWidth, len(b)*16)
+		src := surface.New(max(1, len(b)*8), 20)
+		native[0].Draw(0, 0, 0, false, true, src, b, 20, src.W, 0, 0xffff, 0)
+		t.mask = image.NewAlpha(image.Rect(0, 0, width+2*areaTitleMargin, areaTitleHeight))
+		for y := 0; y < areaTitleFontSize; y++ {
+			for x := 0; x < width; x++ {
+				if src.Pix[(y*src.H/areaTitleFontSize)*src.W+x*src.W/width] != 0 {
+					t.mask.SetAlpha(areaTitleMargin+x, (areaTitleHeight-areaTitleFontSize)/2+y, color.Alpha{A: 255})
+				}
+			}
+		}
+		src.Close()
+		return t.prepareMask()
+	}
 	ttf, err := opentype.Parse(gobolditalic.TTF)
 	if err != nil {
 		return false
@@ -118,6 +139,10 @@ func (t *areaTitle) makeArtwork() bool {
 	baseline := (areaTitleHeight + metrics.Ascent.Ceil() - metrics.Descent.Ceil()) / 2
 	d := font.Drawer{Dst: t.mask, Src: image.NewUniform(color.White), Face: face, Dot: fixed.P(areaTitleMargin, baseline)}
 	d.DrawString(t.name)
+	return t.prepareMask()
+}
+
+func (t *areaTitle) prepareMask() bool {
 	t.canvas = surface.New(t.mask.Rect.Dx(), t.mask.Rect.Dy())
 	t.pixels = image.NewNRGBA(t.mask.Rect)
 	t.radii = make([]float64, len(t.canvas.Pix))

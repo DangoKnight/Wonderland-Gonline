@@ -1,9 +1,10 @@
 package world
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"time"
 
 	"wonderland-gonline/client/wlo/login"
@@ -25,7 +26,7 @@ type Peer struct {
 // EffectiveLevel is FUN_00485490 on the peer's level and rebirth.
 func (p *Peer) EffectiveLevel() int { return int(p.Level) + int(p.Rebirth)*rebirthLevels }
 
-var errShortOther = errors.New("AC4: packet too short")
+var errShortOther = localization.Error("ui.world.ac4_packet_too_short_4477210b")
 
 // ParseOther reads AC4 after its command byte: ID, body, element, level,
 // map, X, Y, a byte, head (a word), the colour values, the worn items, a
@@ -183,4 +184,10 @@ func (w *World) PeerByName(name []byte) (uint32, bool) {
 		}
 	}
 	return 0, false
+}
+
+func init() {
+	localization.Register(func() {
+		errShortOther = localization.Error("ui.world.ac4_packet_too_short_4477210b")
+	})
 }

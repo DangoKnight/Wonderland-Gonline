@@ -291,7 +291,7 @@ func (c *Client) battleVoice(a clientbattle.Action, prefix string, actor, body b
 	if body > 0 && body <= battleNativeMaximumBody && d.BattleVoice != 0 {
 		family := [...]string{"", "km", "kw", "am", "aw"}[body]
 		name := fmt.Sprintf("%s_%03d.wav", family, d.BattleVoice)
-		if _, err := clientfs.Stat(c.Assets.MediaPath("voice", name)); err == nil {
+		if _, err := clientfs.Stat(audioAssetPath(c.Assets.MediaPath("voice", name))); err == nil {
 			return `voice\` + name
 		}
 	}

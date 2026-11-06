@@ -1,11 +1,14 @@
 package team
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/internal/assets"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -92,7 +95,7 @@ func NewInstances(owner *Form) *Instances {
 	}
 	f.Info = f.label(f, 275, 59, 55, 20)
 	f.Leave = button(f, "Btn_LeaveTeam_1", 30, 385, 70, func() {
-		owner.Confirm("Leave this instance room?", 0, func() { f.Request([]byte{protocol.CommandInstance, protocol.InstanceLeaveRoom}) })
+		owner.Confirm(localization.UI("ui.team.leave_this_instance_room_02266824"), 0, func() { f.Request([]byte{protocol.CommandInstance, protocol.InstanceLeaveRoom}) })
 	})
 	f.Start = button(f, "Btn_Create", 260, 385, 56, func() { f.Request([]byte{protocol.CommandInstance, protocol.InstanceStartRoom}) })
 	f.New = &creationForm{owner: f}
@@ -185,7 +188,7 @@ func (f *Instances) Browse(page byte) {
 }
 func (f *Instances) ShowCreate() {
 	if f.Room != 0 {
-		f.Owner.Notice("Leave the current instance room first.")
+		f.Owner.Notice(localization.UI("ui.team.leave_the_current_instance_room_first_dda3987e"))
 		return
 	}
 	f.New.Show()
@@ -193,7 +196,7 @@ func (f *Instances) ShowCreate() {
 }
 func (f *Instances) Create() {
 	if f.Selected < 0 || f.Selected >= len(f.Definitions) {
-		f.Owner.Notice("Select an instance first.")
+		f.Owner.Notice(localization.UI("ui.team.select_an_instance_first_21ec3e27"))
 		return
 	}
 	p, err := protocol.Builder{protocol.CommandInstance, protocol.InstanceCreate}.U16(f.Definitions[f.Selected].ID).String(string(f.Name.Text))
@@ -210,11 +213,15 @@ func (f *Instances) Refresh() {
 		f.RoomRows[i].SetText(nil)
 		if f.Room != 0 && i < len(f.Members) {
 			m := f.Members[i]
-			f.RoomRows[i].SetText(fmt.Appendf(nil, "%s LV %d", m.Name, m.Level))
+			f.RoomRows[i].BindLanguage("text", func() {
+				f.RoomRows[i].SetText(fmt.Appendf(nil, localization.UI("ui.team.s_lv_d_80417c91"), m.Name, m.Level))
+			})
 		}
 		if f.Room == 0 && i < len(f.Listings) {
 			r := f.Listings[i]
-			f.RoomRows[i].SetText(fmt.Appendf(nil, "%s (%d players)\n%s", r.Name, r.Members, r.Creator))
+			f.RoomRows[i].BindLanguage("text", func() {
+				f.RoomRows[i].SetText(fmt.Appendf(nil, localization.UI("ui.team.s_d_players_s_c40bcaba"), r.Name, r.Members, r.Creator))
+			})
 		}
 	}
 	info := fmt.Sprintf("%d", f.Room)
@@ -226,7 +233,7 @@ func (f *Instances) Refresh() {
 		b.Visible = index < len(f.Definitions)
 		f.Labels[i].SetText(nil)
 		if index < len(f.Definitions) {
-			f.Labels[i].SetText([]byte(f.Definitions[index].Name))
+			f.Labels[i].SetText(clientassets.Big5Text(f.Definitions[index].Name))
 		}
 	}
 	f.PageLabel.SetText(fmt.Appendf(nil, "%d/%d", f.Page, f.Pages))
@@ -240,12 +247,12 @@ func (f *Instances) Refresh() {
 	}
 	if f.Selected >= 0 && f.Selected < len(f.Definitions) {
 		d := f.Definitions[f.Selected]
-		guild := "None"
+		guild := localization.UI("ui.team.none_dc937b59")
 		if d.GuildOnly {
-			guild = "Required"
+			guild = localization.UI("ui.team.required_4850b174")
 		}
-		f.Detail.SetText([]byte(d.Name))
-		for i, value := range []string{fmt.Sprint(d.Capacity), fmt.Sprint(d.MinimumLevel), guild, fmt.Sprintf("%d min", d.Minutes)} {
+		f.Detail.SetText(clientassets.Big5Text(d.Name))
+		for i, value := range []string{fmt.Sprint(d.Capacity), fmt.Sprint(d.MinimumLevel), guild, fmt.Sprintf(localization.UI("ui.team.d_min_9f6b1f6f"), d.Minutes)} {
 			f.Metadata[i].SetText([]byte(value))
 		}
 		// The native description wraps at the column edge, including long words.
@@ -329,10 +336,10 @@ func (f *Instances) Apply(p []byte) bool {
 		if r.Err() != nil || r.Remaining() != 0 {
 			return false
 		}
-		messages := map[byte]string{protocol.InstanceUnavailable: "This instance's dungeon content is pending verification.", protocol.InstanceLevelTooLow: "Level too low.", protocol.InstanceRoomsFull: "The instance room is full.", protocol.InstanceRejected: "Instance request rejected."}
+		messages := map[byte]string{protocol.InstanceUnavailable: localization.UI("ui.team.this_instance_s_dungeon_content_is_pendi_af7196a5"), protocol.InstanceLevelTooLow: localization.UI("ui.team.level_too_low_b586c2b0"), protocol.InstanceRoomsFull: localization.UI("ui.team.the_instance_room_is_full_fedac044"), protocol.InstanceRejected: localization.UI("ui.team.instance_request_rejected_da2557e5")}
 		message := messages[code]
 		if message == "" {
-			message = fmt.Sprintf("Instance status %d", code)
+			message = fmt.Sprintf(localization.UI("ui.team.instance_status_d_583bbb09"), code)
 		}
 		f.Owner.Notice(message)
 	default:

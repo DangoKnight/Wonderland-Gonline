@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"time"
 
@@ -55,18 +57,24 @@ func (c *Client) logoutConfirmation(exit bool) {
 	f.InitForm(f, c.Env)
 	f.AnimateMessage(func() time.Time { return c.Now() })
 	f.Dockable = false
-	f.Name = "Logout confirmation"
+	f.Name = localization.UI("ui.app.logout_confirmation_d9d7f0c2")
 	f.Init("panel22", 255, 168, 324, 0, 0, true, logoutHeight, logoutWidth, 30)
 	f.SetMargins(50, 32, 32, 60)
 	text := seui.NewEditor(c.Env, f)
 	text.Init("", 80, 0, 0, 0, 0, false, 30, 185, 30)
 	text.ReadOnly = true
 	text.Color = logoutPromptInk
-	message := "Want to log out?"
+	message := localization.UI("ui.app.want_to_log_out_ad0a6cfa")
 	if exit {
-		message = "Want to exit?"
+		message = localization.UI("ui.app.want_to_exit_79bf8048")
 	}
-	text.SetText([]byte(message))
+	text.BindLanguage("text", func() {
+		message = localization.UI("ui.app.want_to_log_out_ad0a6cfa")
+		if exit {
+			message = localization.UI("ui.app.want_to_exit_79bf8048")
+		}
+		text.SetText([]byte(message))
+	})
 	for i := range 2 {
 		confirm := i == 0
 		b := seui.NewFixedButton(c.Env, f)

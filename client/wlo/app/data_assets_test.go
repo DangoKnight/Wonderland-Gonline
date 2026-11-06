@@ -62,6 +62,10 @@ func TestCompiledBundleLoginAndSharedWorld(t *testing.T) {
 		}
 		t.Fatal("compiled world entry failed")
 	}
+	c.loadTalks()
+	if c.items[10034].Definition.Name != "Pure Iron Knife" || c.npcTemplates[17738].Name != "Half Beast Ghost" || c.talks[57166] != "Breillat" {
+		t.Fatal("bundle text fields were not translated during asset compilation")
+	}
 	c.Frame()
 	next, err := New(o)
 	if err != nil {

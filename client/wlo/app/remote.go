@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -91,11 +93,11 @@ func (c *Client) startRemote(o inventory.RemoteOptions) bool {
 		}
 	}
 	if !owned {
-		c.Chat.Notice("Remote Control is no longer available.")
+		c.Chat.Notice(localization.UI("ui.app.remote_control_is_no_longer_available_6b5fd856"))
 		return false
 	}
 	if c.remote.pending != nil {
-		c.Chat.Notice("Wait for the pending Remote request.")
+		c.Chat.Notice(localization.UI("ui.app.wait_for_the_pending_remote_request_be3bf337"))
 		return false
 	}
 	battle, pet, button := c.remote.battle, c.remote.activePet, c.remote.button
@@ -162,7 +164,7 @@ func (c *Client) remoteTick() {
 		} else if now.Sub(p.at) >= remoteRequestTimeout {
 			c.stopRemote()
 			r.pending = nil
-			c.Chat.Notice("Remote stopped: no item request receipt. No automatic retry was sent.")
+			c.Chat.Notice(localization.UI("ui.app.remote_stopped_no_item_request_receipt_n_d0450d74"))
 			return
 		}
 	}
@@ -179,22 +181,22 @@ func (c *Client) remoteTick() {
 	}
 	if !owned {
 		c.stopRemote()
-		c.Chat.Notice("Remote stopped: controller unavailable.")
+		c.Chat.Notice(localization.UI("ui.app.remote_stopped_controller_unavailable_d76ece5b"))
 		return
 	}
 	if c.World.Player.Map != r.mapID {
 		c.stopRemote()
-		c.Chat.Notice("Remote stopped after changing maps.")
+		c.Chat.Notice(localization.UI("ui.app.remote_stopped_after_changing_maps_f23c0ad4"))
 		return
 	}
 
 	o := r.options
 	if o.LeaveAfter && now.Sub(r.start) >= time.Duration(o.LeaveMinutes)*time.Minute {
-		c.remoteLeave("Remote leave timer reached.")
+		c.remoteLeave(localization.UI("ui.app.remote_leave_timer_reached_27ba47d8"))
 		return
 	}
 	if (o.LeavePlayerDeaths && r.playerDeaths >= o.PlayerDeaths) || (o.LeavePetDeaths && r.petDeaths >= o.PetDeaths) {
-		c.remoteLeave("Remote death limit reached.")
+		c.remoteLeave(localization.UI("ui.app.remote_death_limit_reached_15ce6459"))
 		return
 	}
 	if now.Before(r.nextTick) || c.sceneFrozen() || c.movie != nil || c.sport != nil || c.UI.Modal != nil {
@@ -294,7 +296,7 @@ func (c *Client) remoteSupply() bool {
 			return true
 		}
 		if o.LeaveNoSupplies {
-			c.remoteLeave("Remote has no supplies for the required recovery.")
+			c.remoteLeave(localization.UI("ui.app.remote_has_no_supplies_for_the_required__a186756e"))
 			return true
 		}
 	}
@@ -308,16 +310,16 @@ func (c *Client) remoteInformation() {
 	o := r.options
 	on := func(v bool) string {
 		if v {
-			return "On"
+			return localization.UI("ui.app.on_13001175")
 		}
-		return "Off"
+		return localization.UI("ui.app.off_ca7981b4")
 	}
-	lines := []string{"Auto Atk: " + on(o.AutoFight), "Adv Setting: Off", "Pets Adv Setting: Off", "Auto Walk: " + on(o.AutoMove), "Auto Heal: " + on(o.AutoSupply), "Auto Leave: " + on(o.LeaveNoSupplies), "On Player Die: " + on(o.LeavePlayerDeaths), "On Pet Die: " + on(o.LeavePetDeaths), fmt.Sprintf("Player HP: %d(%d%%)", uint64(c.Stats.MaxHP)*uint64(o.Thresholds[0])/remotePercentBase, o.Thresholds[0]), fmt.Sprintf("Player SP: %d(%d%%)", uint64(c.Stats.MaxSP)*uint64(o.Thresholds[1])/remotePercentBase, o.Thresholds[1])}
+	lines := []string{localization.UI("ui.app.auto_atk_ae4d734e") + on(o.AutoFight), localization.UI("ui.app.adv_setting_off_a37be97f"), localization.UI("ui.app.pets_adv_setting_off_0bb51a74"), localization.UI("ui.app.auto_walk_f3a24a8a") + on(o.AutoMove), localization.UI("ui.app.auto_heal_493a1915") + on(o.AutoSupply), localization.UI("ui.app.auto_leave_576dcd4a") + on(o.LeaveNoSupplies), localization.UI("ui.app.on_player_die_60376312") + on(o.LeavePlayerDeaths), localization.UI("ui.app.on_pet_die_f02bb024") + on(o.LeavePetDeaths), fmt.Sprintf(localization.UI("ui.app.player_hp_d_d_4c41c047"), uint64(c.Stats.MaxHP)*uint64(o.Thresholds[0])/remotePercentBase, o.Thresholds[0]), fmt.Sprintf(localization.UI("ui.app.player_sp_d_d_da6308b8"), uint64(c.Stats.MaxSP)*uint64(o.Thresholds[1])/remotePercentBase, o.Thresholds[1])}
 	var pet world.Stats
 	if slot := c.remotePetSlot(); slot != 0 {
 		pet = c.InventoryState.Pets[slot-1].Stats
 	}
-	lines = append(lines, fmt.Sprintf("Pet HP: %d(%d%%)", uint64(pet.MaxHP)*uint64(o.Thresholds[2])/remotePercentBase, o.Thresholds[2]), fmt.Sprintf("Pet SP: %d(%d%%)", uint64(pet.MaxSP)*uint64(o.Thresholds[3])/remotePercentBase, o.Thresholds[3]), fmt.Sprintf("Player Deaths: %d/%d", r.playerDeaths, o.PlayerDeaths), fmt.Sprintf("Pet Deaths: %d/%d", r.petDeaths, o.PetDeaths), "Leave Timer: "+on(o.LeaveAfter), "Auto Unequip: "+on(o.AutoUnequip), "Auto Discard: "+on(o.AutoDiscard))
+	lines = append(lines, fmt.Sprintf(localization.UI("ui.app.pet_hp_d_d_1eb1bcf2"), uint64(pet.MaxHP)*uint64(o.Thresholds[2])/remotePercentBase, o.Thresholds[2]), fmt.Sprintf(localization.UI("ui.app.pet_sp_d_d_cda0675e"), uint64(pet.MaxSP)*uint64(o.Thresholds[3])/remotePercentBase, o.Thresholds[3]), fmt.Sprintf(localization.UI("ui.app.player_deaths_d_d_78040c4f"), r.playerDeaths, o.PlayerDeaths), fmt.Sprintf(localization.UI("ui.app.pet_deaths_d_d_b3a32054"), r.petDeaths, o.PetDeaths), localization.UI("ui.app.leave_timer_a06795ec")+on(o.LeaveAfter), localization.UI("ui.app.auto_unequip_0541b7f5")+on(o.AutoUnequip), localization.UI("ui.app.auto_discard_b96da116")+on(o.AutoDiscard))
 	for i, line := range lines {
 		c.Env.Text.Draw(remoteStatusX, remoteStatusY+i*remoteStatusLine, 0, false, true, c.Screen, []byte(line), remoteStatusLine, 240, 0, 0xffff, 2)
 	}
@@ -342,7 +344,7 @@ func (c *Client) remoteAttack() {
 		for _, f := range b.fighters {
 			if f.kind == remoteFighterPlayer && f.id != c.World.Player.ID && f.side != ownRemoteSide(b, c.World.Player.ID) {
 				c.stopRemote()
-				c.Chat.Notice("Remote auto-fight only supports monster battles.")
+				c.Chat.Notice(localization.UI("ui.app.remote_auto_fight_only_supports_monster__46147dd8"))
 				break
 			}
 		}

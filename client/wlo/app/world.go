@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/binary"
+	"image"
+	"maps"
 	"time"
 
 	"wonderland-gonline/client/wlo/login"
@@ -24,6 +26,7 @@ func (c *Client) loadNPCs(w *world.World) {
 	if c.npcTemplates == nil {
 		if c.resources.npcTemplates == nil {
 			c.resources.npcTemplates, _ = world.NPCTemplates(c.Assets)
+			c.resources.npcTemplates = maps.Clone(c.resources.npcTemplates)
 		}
 		c.npcTemplates = c.resources.npcTemplates
 	}
@@ -67,6 +70,9 @@ func (c *Client) warp(p []byte) {
 		return
 	}
 	c.resetServices()
+	c.groundHeld, c.groundSince = false, time.Time{}
+	c.World.StopWalk()
+	c.World.Marker.Hide()
 	// Loading a map forgets the area last entered (FUN_00304898), and the
 	// map is not ready until 5/4.
 	c.areas.last = 0
@@ -86,6 +92,9 @@ func (c *Client) warp(p []byte) {
 	c.vehicleEffects = vehicleEffectState{}
 	pl := c.World.Player
 	mapChanged := binary.LittleEndian.Uint16(p[4:]) != pl.Map
+	if mapChanged {
+		c.startMapLoading()
+	}
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
 	if pl.Map != c.World.Player.Map {
@@ -96,6 +105,7 @@ func (c *Client) warp(p []byte) {
 		}
 		w, err := world.New(c.Env, c.Assets, pl, body, c.sceneNames, func(m uint16) uint16 { return c.mapScenes[m] })
 		if err != nil {
+			c.stopMapLoading()
 			c.Notices.Show([]byte(err.Error()), 3*time.Second, c.Now())
 			return
 		}
@@ -112,6 +122,7 @@ func (c *Client) warp(p []byte) {
 		c.MainStatus.Portrait = w.Body
 	} else {
 		c.World.Player = pl
+		c.World.Relocate(image.Pt(pl.X, pl.Y))
 	}
 	if mapChanged {
 		c.queueAreaTitle()
@@ -129,8 +140,9 @@ const movementCheckBytes = 8
 // (FUN_004a4248's FUN_00403954(400)); an arrow key aims 0x50 pixels away
 // on its axis.
 const (
-	walkRepeat   = 400 * time.Millisecond
-	walkKeyReach = 0x50
+	walkRepeat     = 400 * time.Millisecond
+	walkHoldRepeat = 100 * time.Millisecond
+	walkKeyReach   = 0x50
 )
 
 // GroundClick is a left click that no control took: on the map it starts
@@ -170,6 +182,7 @@ func (c *Client) GroundClick(x, y int) {
 	if c.held || c.event.active {
 		return
 	}
+	x, y = c.World.ScenePoint(x, y)
 	if c.boardPlacedVehicle(x, y) {
 		return
 	}
@@ -198,25 +211,40 @@ func (c *Client) walkTo(x, y int) {
 // walkToward plans the walk; mouse walks show the walk marker at its
 // destination (0x4a1d60), arrow-key walks don't.
 func (c *Client) walkToward(x, y int, marked bool) {
-	cx, cy := c.World.Camera()
 	now := c.Now()
+	// Consume elapsed movement before replacing its route. Otherwise every
+	// held replan discards one update's travel and produces a periodic hitch.
+	c.World.Step(now)
+	cx, cy := c.World.Camera()
 	c.nextWalk = now.Add(walkRepeat)
+	if c.groundHeld {
+		c.nextWalk = now.Add(walkHoldRepeat)
+	}
 	c.walkWaterAware(x+cx, y+cy, now)
 	if marked {
 		c.World.MarkWalk()
+		c.World.Marker.SetHeld(c.groundHeld, now)
 	}
 }
 
 // GroundHold is called while the left button stays down: a press that
-// started a walk re-aims it at the pointer every 400 ms. Release ends it.
+// started a walk re-aims it at the pointer every 100 ms. Release ends it.
 func (c *Client) GroundHold(held bool, x, y int) {
 	c.sportRelease(held, x, y)
-	if !held || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil {
+	if !held || c.mapLoading.active || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil {
+		if c.World != nil {
+			c.World.SyncHeldMarker()
+			c.World.Marker.SetHeld(false, c.Now())
+		}
 		c.groundHeld, c.groundSince = false, time.Time{}
 		return
 	}
-	if c.groundHeld && c.World != nil && !c.held && !c.event.active && !c.Now().Before(c.nextWalk) {
-		c.walkTo(x, y)
+	if c.groundHeld && c.World != nil && !c.held && !c.event.active {
+		x, y = c.World.ScenePoint(x, y)
+		if !c.Now().Before(c.nextWalk) {
+			c.walkTo(x, y)
+		}
+		c.World.TrackHeldMarker(x, y)
 	}
 }
 
@@ -224,7 +252,7 @@ func (c *Client) GroundHold(held bool, x, y int) {
 // focused, the player walks 0x50 pixels from its position on each held
 // axis, re-planned every 400 ms.
 func (c *Client) WalkKeys(left, up, right, down bool) {
-	if c.battle.state.Active || c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
+	if c.mapLoading.active || c.battle.state.Active || c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
 		return
 	}
 	if _, typing := c.Input.Focused.(*seui.Editor); typing {

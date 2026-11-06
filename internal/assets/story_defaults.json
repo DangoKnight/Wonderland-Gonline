@@ -2431,6 +2431,26 @@
       "pattern": {}
     },
     {
+      "id": "noa_quiz_result_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [15, 16], "allow_missing": true},
+      "pattern": {}
+    },
+    {
+      "id": "noa_quiz_retry_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [1, 17], "allow_missing": true},
+      "pattern": {},
+      "target_branch": 3
+    },
+    {
+      "id": "noa_recruitment_continuation",
+      "kind": "continue",
+      "scope": {"maps": [12000], "events": [56], "branches": [19], "allow_missing": true},
+      "pattern": {},
+      "target_branch": 21
+    },
+    {
       "id": "xaolan_recruitment_question_continuation",
       "kind": "continue",
       "scope": {

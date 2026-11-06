@@ -8,6 +8,14 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v52 keeps Noa's puzzle, result evaluation, retry invitation and recruitment
+in one conversation. Scoped continuation policies connect Kelan event 56's native
+branches without unlocking movement between stages. Decline and cancel still end
+the interaction. The migration preserves existing same-ID administrator rules,
+deliberately empty policy collections and character progress. Stop the server,
+run the offline migration below, then rebuild and restart the server. No client
+asset rebuild is required.
+
 Assets v51 keeps Xaolan's house recruitment dialogue and its following choice
 in one interaction. It adds a scoped continuation from event 9, branch 1 to
 branch 4, preserving existing same-ID administrator policies and deliberately

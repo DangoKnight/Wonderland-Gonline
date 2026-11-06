@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -38,7 +40,7 @@ func LoadBindings(path string) (Bindings, error) {
 	for page, rows := range b {
 		for slot, v := range rows {
 			if !v.Valid() || (page == 0 || slot == 0) && v != (Binding{}) {
-				return Bindings{}, fmt.Errorf("invalid hotbar binding %d/%d", page, slot)
+				return Bindings{}, fmt.Errorf(localization.UI("ui.hud.invalid_hotbar_binding_d_d_1a799026"), page, slot)
 			}
 		}
 	}

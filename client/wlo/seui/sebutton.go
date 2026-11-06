@@ -1,5 +1,7 @@
 package seui
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -147,7 +149,7 @@ func (b *Button) Paint() {
 type ElementIcon struct{ Panel }
 
 // elementNames are the hints at DAT_00479488.
-var elementNames = []string{"None", "Eart", "Watr", "Fire", "Wind"}
+var elementNames = []string{localization.UI("ui.seui.none_dc937b59"), localization.UI("ui.seui.eart_43cbcafb"), localization.UI("ui.seui.watr_6e44e640"), localization.UI("ui.seui.fire_c141faa8"), localization.UI("ui.seui.wind_d151346f")}
 
 func NewElementIcon(env *Env, owner Control) *ElementIcon {
 	e := &ElementIcon{}
@@ -158,6 +160,7 @@ func NewElementIcon(env *Env, owner Control) *ElementIcon {
 // SetElement is FUN_004792f0: Icon_Element_<n>_1 at the given position
 // (-1 keeps the current one) with the element's name as the hint.
 func (e *ElementIcon) SetElement(elem byte, left int, hover bool, cursor byte, hint []byte, height, width, top int) {
+	defaultHint := hint == nil && int(elem) < len(elementNames)
 	if hint == nil && int(elem) < len(elementNames) {
 		hint = []byte(elementNames[elem])
 	}
@@ -177,6 +180,15 @@ func (e *ElementIcon) SetElement(elem byte, left int, hover bool, cursor byte, h
 	e.Cursor = cursor
 	e.Hover = hover
 	e.SetHint(hint)
+	if defaultHint {
+		e.BindLanguage("hint", func() { e.SetHint([]byte(elementNames[elem])) })
+	}
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+func init() {
+	localization.Register(func() {
+		elementNames = []string{localization.UI("ui.seui.none_dc937b59"), localization.UI("ui.seui.eart_43cbcafb"), localization.UI("ui.seui.watr_6e44e640"), localization.UI("ui.seui.fire_c141faa8"), localization.UI("ui.seui.wind_d151346f")}
+	})
+}

@@ -81,6 +81,7 @@ func (*workbench) Layout(int, int) (int, int) { return 1024, 720 }
 
 func main() {
 	renderer := flag.String("renderer", "auto", "renderer: auto (GPU with CPU fallback), gpu or cpu (game only; snapshots use CPU)")
+	language := flag.String("language", "", "client text language: en or zh-TW (default: saved preference)")
 	sprites := flag.String("sprites", "", "optional sprite pack or editable directory override")
 	assets := flag.String("assets", defaultAssetDir(), "compiled client-assets.zip bundle, or editable data directory for development")
 	clientDir := flag.String("client", "", "original client directory for the workbench or -legacy (required)")
@@ -117,7 +118,7 @@ func main() {
 		return
 	}
 	if !*useWorkbench {
-		if err := runClientWithRenderer(*assets, *serverINI, *snapshot, *sprites, *renderer); err != nil {
+		if err := runClientWithRenderer(*assets, *serverINI, *snapshot, *sprites, *renderer, *language); err != nil {
 			log.Fatal(err)
 		}
 		return

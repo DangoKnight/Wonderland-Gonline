@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"strconv"
@@ -106,7 +108,7 @@ func (c *Client) marioForm(sp *sportPlay, g *minigame.Mario) {
 	f.Exit.OnClick = g.Exit
 	start := seui.NewFixedButton(c.Env, f)
 	start.Init(marioStartName, marioStartLeft, marioStartSide, marioStartSide, 0, 0, true, marioStartSide, marioStartSide, marioStartTop)
-	start.SetHint([]byte("Start"))
+	start.BindLanguage("hint", func() { start.SetHint([]byte(localization.UI("ui.app.start_e4bb9f1e"))) })
 	start.OnClick = func() {
 		if sp.talk == nil || !sp.talk.Shown() {
 			g.Press()

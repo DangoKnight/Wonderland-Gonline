@@ -1,5 +1,7 @@
 package render
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"container/list"
 	_ "embed"
@@ -27,6 +29,7 @@ const (
 	rasterSprite      = 4
 	rasterIndexed     = 5
 	rasterCutout      = 6
+	rasterSubpixel    = 7
 )
 
 //go:embed raster.kage
@@ -113,7 +116,7 @@ func (d *Device) cached(key textureKey, load func() (*ebiten.Image, error)) (*eb
 	if n > d.cacheLimit {
 		img.Deallocate()
 		delete(d.translucent, img)
-		return nil, fmt.Errorf("asset texture needs %d bytes, GPU cache limit is %d", n, d.cacheLimit)
+		return nil, fmt.Errorf(localization.UI("ui.render.asset_texture_needs_d_bytes_gpu_cache_li_789bafed"), n, d.cacheLimit)
 	}
 	for d.bytes+n > d.cacheLimit && d.order.Len() > 0 {
 		d.evict(d.order.Back())
@@ -287,6 +290,10 @@ func (t *target) DrawStretch(r image.Rectangle, s *surface.Surface, transparent 
 	}
 	t.paint(rasterBlit, r, r, src, t.device.source(s), nil, s.Key, transparent, 0, 0)
 }
+
+func (t *target) DrawSubpixel(r image.Rectangle, s *surface.Surface, sx, sy, fx, fy int) {
+	t.paint(rasterSubpixel, r, r, image.Rect(sx, sy, sx+r.Dx(), sy+r.Dy()), t.device.source(s), nil, 0, false, 0, fx+fy*256)
+}
 func (t *target) DrawLight(x, y int, r image.Rectangle, s *surface.Surface, level int) {
 	r = r.Intersect(image.Rect(0, 0, s.W, s.H))
 	dst := image.Rect(x, y, x+r.Dx(), y+r.Dy())
@@ -328,7 +335,7 @@ func (t *target) drawTiles(dst, r image.Rectangle, s *surface.Surface, transpare
 		pageOrigin := v.Source.Min.Sub(part.Min).Add(r.Min)
 		source := image.Rectangle{Min: pageOrigin, Max: pageOrigin.Add(r.Size())}
 		if !v.Source.In(img.Bounds()) {
-			return fmt.Errorf("GPU tile outside page")
+			return fmt.Errorf("%s", localization.UI("ui.render.gpu_tile_outside_page_867efde7"))
 		}
 		if op == rasterBlit && dst.Size() == r.Size() {
 			t.blit(at, dst, source, img, transparent)

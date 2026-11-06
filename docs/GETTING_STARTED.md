@@ -47,7 +47,12 @@ Obtain the full **WLRI (Wonderland Rhode Island)** installation. Its root must
 contain `aLogin.exe`, `data/`, `jma/`, `pic/` and its other media directories.
 Replace the example source path below with that installation's root. Its folder
 name and location are unrestricted; no sibling checkout is assumed. No
-Wonderland-Private-Server checkout is needed for this setup.
+Wonderland-Private-Server checkout is needed for this setup. Either the updated
+original Chinese edition or the updated manually translated English edition
+is sufficient; IGG is not required. For Chinese-only input, add
+`--client-language zh-TW` to the regeneration command below. For both editions,
+use the translated edition as `--client` and add `--chinese-client PATH_TO_CHINESE`.
+See [source language choices](ASSET_IMPORT.md#select-ui-artwork-languages).
 
 ```sh
 wlo_client_source="/absolute/path/to/WLRI-client"
@@ -79,8 +84,8 @@ var/asset-import-venv/bin/python tools/data_export/import_untracked.py \
 go run ./cmd/asset-build -data data
 ```
 
-The result includes root client tables, sprite JSON/atlases, manifests, OGG
-tracks, WAV sounds/voices and preserved video under `data/`. The importer fills
+The result includes root client tables, PNG sprite/image atlases, manifests,
+Ogg Vorbis music/sounds/voices and preserved AVI video under `data/`. The importer fills
 missing ignored files and preserves existing artwork and tracked definitions.
 Server-specific JSON remains tracked and is copied into the generated tree;
 client-derived tables and metadata are regenerated locally. The original database and
@@ -260,6 +265,12 @@ $wlo_python = '.\var\asset-import-venv\Scripts\python.exe'
 & $wlo_python -m pip install -r tools/data_export/requirements.txt
 & $wlo_python tools/data_export/regenerate.py --client $wlo_client_source --output $wlo_import_output
 ```
+
+That command assumes the manually translated English edition. With only the
+original Chinese edition, append `--client-language zh-TW`. With both editions,
+keep the translated edition in `$wlo_client_source` and append
+`--chinese-client 'C:/path/to/updated-Chinese-client'`; both UI sets and matching
+Chinese text are included automatically.
 
 Run the same verification and restoration scripts using `& $wlo_python` in place
 of `var/asset-import-venv/bin/python` before proceeding:

@@ -1,9 +1,12 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -18,7 +21,7 @@ func (c *Client) initSkills() {
 		catalog, err = skills.Load(c.Assets)
 	}
 	if err != nil {
-		c.Chat.Notice("Could not load skills: " + err.Error())
+		c.Chat.Notice(localization.UI("ui.app.could_not_load_skills_1b9ff6ec") + err.Error())
 		catalog = &skills.Catalog{Definitions: map[uint16]skills.Definition{}, Orders: map[uint16]uint16{}}
 	}
 	c.SkillState = skills.NewState(catalog)
@@ -93,7 +96,7 @@ func (c *Client) assignPetSkills() {
 		}
 		p.Stats.Element = t.Element
 		if len(p.Name) == 0 {
-			p.Name = []byte(t.Name)
+			p.Name = clientassets.Big5Text(t.Name)
 		}
 		for j, id := range t.Skills {
 			p.Skills[j].ID = id

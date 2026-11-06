@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -25,8 +27,8 @@ const (
 func (c *Client) welcome() {
 	c.Chat.Clear()
 	c.ChatBar.Reset()
-	line := append([]byte("Welcome to ["), c.G.ServerText...)
-	c.Chat.Say(c.World.Player.ID, nil, append(line, "] Server"...), hud.ChannelSystem)
+	line := append([]byte(localization.UI("ui.app.welcome_to_df0ddb3e")), c.G.ServerText...)
+	c.Chat.Say(c.World.Player.ID, nil, append(line, localization.UI("ui.app.server_166ab9dd")...), hud.ChannelSystem)
 }
 
 // receiveChat is 2/0..2/7 (the receive cases at 0x2df0fb…0x2dfa42): the
@@ -81,21 +83,21 @@ const (
 	// FUN_00452fc4 → FUN_003d1018) and 15 SP.
 	radioSlot      = 6
 	radioMinSP     = 0xf
-	noRadio        = "(System):World Channel requires Radio Set"
-	radioLowSP     = "(Alert):Not enough SP to use Radio Setq"
-	noTarget       = "No target"
-	targetOffline  = "Player is offline"
-	noSuchPerson   = "<<No such person online>>"
-	notInTeamChat  = "(System):Not in Team Chat anymore"
-	notInGuildChat = "(System):Not in Guild Chat anymore"
+	noRadio        = "ui.app.system_world_channel_requires_radio_set_9e7b6eef"
+	radioLowSP     = "ui.app.alert_not_enough_sp_to_use_radio_setq_b3ccaddf"
+	noTarget       = "ui.app.no_target_4b33d955"
+	targetOffline  = "ui.app.player_is_offline_8905a767"
+	noSuchPerson   = "ui.app.no_such_person_online_bd6eab35"
+	notInTeamChat  = "ui.app.system_not_in_team_chat_anymore_1d790ac1"
+	notInGuildChat = "ui.app.system_not_in_guild_chat_anymore_d9919d4e"
 	// Whisper is unavailable on map 0x29cd (a notice for 1.2 s).
 	noWhisperMap       = 0x29cd
-	noWhisperNotice    = "Temporary unavailable"
+	noWhisperNotice    = "ui.app.temporary_unavailable_21cbd418"
 	noWhisperNoticeFor = 0x4b0 * time.Millisecond
 	// "/msg <name> <text>" whispers (FUN_002687f0); the log notes it as
 	// a channel-4 line.
 	msgCommand = "/msg"
-	msgLine    = "Whisper "
+	msgLine    = "ui.app.whisper_18adfa72"
 	// The whisper target line of FUN_00269068.
 	whisperToOpen, whisperToClose = "Whisp to <<", ">>"
 )
@@ -123,11 +125,11 @@ func (c *Client) sendChat() {
 	switch bar.Channel {
 	case hud.InputWorld:
 		if !c.hasRadio() {
-			c.Chat.Notice(noRadio)
+			c.Chat.Notice(localization.UI(noRadio))
 			return
 		}
 		if c.Stats != nil && c.Stats.SP < radioMinSP {
-			c.Chat.Notice(radioLowSP)
+			c.Chat.Notice(localization.UI(radioLowSP))
 			return
 		}
 		sub = protocol.ChatWorldMessage
@@ -137,21 +139,21 @@ func (c *Client) sendChat() {
 		c.Chat.Say(self.ID, self.Name, text, hud.ChannelLocal)
 	case hud.InputWhisper:
 		if self.Map == noWhisperMap {
-			c.Notices.Show([]byte(noWhisperNotice), noWhisperNoticeFor, c.Now())
+			c.Notices.Show([]byte(localization.UI(noWhisperNotice)), noWhisperNoticeFor, c.Now())
 			return
 		}
 		if len(bar.Whisper.Text) == 0 {
-			c.Chat.Notice(noTarget)
+			c.Chat.Notice(localization.UI(noTarget))
 			bar.Target = 0
 			return
 		}
 		if bar.Target == 0 {
-			c.Chat.Notice(noTarget)
+			c.Chat.Notice(localization.UI(noTarget))
 			bar.Remember()
 			return
 		}
 		if c.playerName(bar.Target) == nil {
-			c.Chat.Notice(targetOffline)
+			c.Chat.Notice(localization.UI(targetOffline))
 			bar.Target = 0
 			return
 		}
@@ -161,14 +163,14 @@ func (c *Client) sendChat() {
 		return
 	case hud.InputTeam:
 		if !c.inTeam() {
-			c.Chat.Notice(notInTeamChat)
+			c.Chat.Notice(localization.UI(notInTeamChat))
 			bar.SelectChannel(hud.InputLocal)
 			return
 		}
 		sub = protocol.ChatTeamMessage
 	case hud.InputGuild:
 		if !c.inGuild() {
-			c.Chat.Notice(notInGuildChat)
+			c.Chat.Notice(localization.UI(notInGuildChat))
 			bar.SelectChannel(hud.InputLocal)
 			return
 		}
@@ -196,7 +198,7 @@ func (c *Client) msgCommand(text []byte) ([]byte, bool) {
 		return nil, false
 	}
 	c.ChatBar.Target = id
-	c.Chat.Say(0, nil, append([]byte(msgLine), name...), hud.ChannelGM)
+	c.Chat.Say(0, nil, append([]byte(localization.UI(msgLine)), name...), hud.ChannelGM)
 	return body, true
 }
 
@@ -208,13 +210,13 @@ func (c *Client) whisperEnter() {
 		return
 	}
 	if len(bar.Whisper.Text) == 0 {
-		c.Chat.Notice(noTarget)
+		c.Chat.Notice(localization.UI(noTarget))
 		bar.Target = 0
 		return
 	}
 	id, ok := c.playerByName(bar.Whisper.Text)
 	if !ok {
-		c.Chat.Notice(noSuchPerson)
+		c.Chat.Notice(localization.UI(noSuchPerson))
 		bar.Target = 0
 		bar.Whisper.Clear()
 		return

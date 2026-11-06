@@ -1,5 +1,7 @@
 package hud
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"image"
 	"strconv"
@@ -54,8 +56,8 @@ func NewHotKeyForm(env *seui.Env, screenW, screenH int) *HotKeyForm {
 	h.InitFixedForm(h, env)
 	h.Name = "TSe_HotKeyForm"
 	h.Init("Form_HotKey_V", screenW-hotKeyWidth, hotKeyHeight, hotKeyWidth, 0, 0, true, hotKeyHeight, hotKeyWidth, (screenH-hotKeyHeight)/2)
-	h.SetHint([]byte("Hot Bar"))
-	h.Minimize = newBarButton(env, h, "Btn_Minimize_1", hotKeyMinLeft, 0, "Toggle View")
+	h.BindLanguage("hint", func() { h.SetHint([]byte(localization.UI("ui.hud.hot_bar_b899a028"))) })
+	h.Minimize = newBarButton(env, h, "Btn_Minimize_1", hotKeyMinLeft, 0, func() string { return localization.UI("ui.hud.toggle_view_a4357da0") })
 	h.Minimize.OnClick = h.ToggleView
 	for i := 1; i <= hotKeySlots; i++ {
 		s := seui.NewComponent(env, h)
@@ -79,9 +81,9 @@ func NewHotKeyForm(env *seui.Env, screenW, screenH int) *HotKeyForm {
 		s.Tag = i
 		h.Slots[i] = s
 	}
-	h.Prev = newBarButton(env, h, "Btn_ArrowL_3", hotKeyPrevLeft, hotKeyArrowTop, "")
+	h.Prev = newBarButton(env, h, "Btn_ArrowL_3", hotKeyPrevLeft, hotKeyArrowTop, nil)
 	h.Prev.OnClick = func() { h.turn(-1) }
-	h.Next = newBarButton(env, h, "Btn_ArrowR_3", hotKeyNextLeft, hotKeyArrowTop, "")
+	h.Next = newBarButton(env, h, "Btn_ArrowR_3", hotKeyNextLeft, hotKeyArrowTop, nil)
 	h.Next.OnClick = func() { h.turn(1) }
 	for i := 1; i <= hotKeyPages; i++ {
 		h.pages[i] = env.Pics.Find("HotKeyPage_" + strconv.Itoa(i))
@@ -118,7 +120,45 @@ func (h *HotKeyForm) Update(in *seui.Input) {
 			h.Top = hotKeyKeepDown - h.Height
 		}
 	}
-	h.FixedForm.Update(in)
+	if h.Dragging && (in.Captured != h || h.Blocked()) {
+		h.CancelDrag()
+	}
+	// FixedForm.Update ends a drag whenever a child becomes hovered. Pointer
+	// capture owns this gesture instead, so crossing slots cannot release it.
+	h.Component.Update(in)
+}
+
+func (h *HotKeyForm) LeftDown(shift byte, x, y int) {
+	h.FixedForm.LeftDown(shift, x, y)
+	if h.Dragging {
+		h.Env.UI.Input.Captured = h
+	}
+}
+
+func (h *HotKeyForm) ExclusivePointerCapture() bool { return h.Dragging }
+
+func (h *HotKeyForm) MouseMove(_ byte, x, y int) {
+	if !h.Dragging {
+		return
+	}
+	h.Left = min(max(x-h.DragX, 0), max(0, hotKeyKeepRight-h.Width))
+	h.Top = min(max(y-h.DragY, 0), max(0, hotKeyKeepDown-h.Height))
+}
+
+func (h *HotKeyForm) CapturedMove(shift byte, x, y int) { h.MouseMove(shift, x, y) }
+
+func (h *HotKeyForm) LeftUp(shift byte, x, y int) {
+	h.MouseMove(shift, x, y)
+	h.CancelDrag()
+}
+func (h *HotKeyForm) LeftUpOutside(shift byte, x, y int) { h.LeftUp(shift, x, y) }
+
+func (h *HotKeyForm) CancelDrag() {
+	h.Dragging = false
+	h.DragX, h.DragY = 0, 0
+	if h.Env.UI.Input.Captured == h {
+		h.Env.UI.Input.Captured = nil
+	}
 }
 
 // Paint is FUN_00296870: the bar's picture, then the page number.

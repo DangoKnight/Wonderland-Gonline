@@ -17,7 +17,7 @@ func needAssets(t *testing.T) {
 	}
 }
 
-// TestShipDeck: map 10017 is scene 10001 "Ship Deck", a 2432×1792 scene
+// TestShipDeck: map 10017 is scene 10001 (IGG English "Deck"), a 2432×1792 scene
 // with one background picture.
 func TestShipDeck(t *testing.T) {
 	needAssets(t)
@@ -29,7 +29,7 @@ func TestShipDeck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if scene := maps[10017]; scene != 10001 || names[scene] != "Ship Deck" {
+	if scene := maps[10017]; scene != 10001 || names[scene] != "Deck" {
 		t.Fatalf("scene %d %q", scene, names[scene])
 	}
 	s, err := LoadScene(assets, 10017)
@@ -72,5 +72,23 @@ func TestCameraEdgesDoNotOvershootOrReverse(t *testing.T) {
 			}
 			previousX, previousY = x, y
 		}
+	}
+}
+
+func TestZoomedCameraAndScenePoint(t *testing.T) {
+	w := &World{Scene: &Scene{Width: 3000, Height: 2000}, Player: Player{X: 1500, Y: 1000}, ViewWidth: 640, ViewHeight: 480}
+	if x, y := w.Camera(); x != 1180 || y != 760 {
+		t.Fatal("zoomed camera", x, y)
+	}
+	if x, y := w.ScenePoint(400, 300); x != 320 || y != 240 {
+		t.Fatal("zoomed pointer", x, y)
+	}
+	w.Player.X, w.Player.Y = 3000, 2000
+	if x, y := w.Camera(); x != 2340 || y != 1520 {
+		t.Fatal("zoomed edge clamp", x, y)
+	}
+	w.ViewWidth, w.ViewHeight = 0, 0
+	if x, y := w.ScenePoint(123, 234); x != 123 || y != 234 {
+		t.Fatal("native pointer changed")
 	}
 }

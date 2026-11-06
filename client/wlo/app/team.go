@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"image"
@@ -9,6 +11,7 @@ import (
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/client/wlo/team"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -135,7 +138,7 @@ func (c *Client) toggleJoinTeam() {
 		return
 	}
 	if c.inTeam() {
-		c.Notices.Show([]byte("Leave your current party before joining another."), inventoryWarningDuration, c.Now())
+		c.Notices.Show([]byte(localization.UI("ui.app.leave_your_current_party_before_joining__c47308b7")), inventoryWarningDuration, c.Now())
 		return
 	}
 	c.Team.Hide()
@@ -251,7 +254,7 @@ func (c *Client) teamPacket(p []byte) bool {
 			if id == 0 || id == c.World.Player.ID {
 				return true
 			}
-			c.Team.Confirm(string(name)+": Please let me join you!", 0, func() {
+			c.Team.Confirm(string(name)+localization.UI("ui.app.please_let_me_join_you_d49b7c95"), 0, func() {
 				if c.Inventory.CanAct() {
 					if err := c.Net.Send(protocol.Builder{protocol.CommandTeam, protocol.TeamReply, 1}.U32(id)); err != nil {
 						c.Notices.Show([]byte(err.Error()), inventoryWarningDuration, c.Now())
@@ -400,7 +403,7 @@ func (c *Client) showCompanion(owner uint32, id uint16, name []byte) {
 		}
 	}
 	if len(name) == 0 {
-		name = []byte(t.Name)
+		name = clientassets.Big5Text(t.Name)
 	}
 	var painter world.NPCPainter
 	if c.lib != nil {

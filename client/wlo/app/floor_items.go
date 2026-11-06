@@ -1,5 +1,7 @@
 package app
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -44,7 +46,7 @@ type worldItemFlight struct {
 // the last clicked NPC (FUN_003dbdb8 -> FUN_00308e70). Event resume does not cancel it.
 func (c *Client) presentItemAcquisition(p []byte) {
 	id := binary.LittleEndian.Uint16(p[2:])
-	c.Notices.Show([]byte(fmt.Sprintf("Obtain %s x%d", clientassets.Big5Text(c.items[id].Definition.Name), p[4])), itemAcquisitionNoticeDuration, c.Now())
+	c.Notices.Show([]byte(fmt.Sprintf(localization.UI("ui.app.obtain_s_x_d_a8afa433"), clientassets.Big5Text(c.items[id].Definition.Name), p[4])), itemAcquisitionNoticeDuration, c.Now())
 	if c.sfx != nil {
 		c.sfx.Play(`sound\wav0152.wav`)
 	}
@@ -292,7 +294,8 @@ func (c *Client) updateFloorHover() {
 	if c.World == nil || c.uiHovered || c.Talk.Contains(c.Input.X, c.Input.Y) || c.movie != nil || c.sport != nil || c.battle.state.Active || c.held || c.event.active || c.sceneFrozen() || c.settingsPromptForm != nil {
 		return
 	}
-	c.floorHovered = c.floorItemAt(c.Input.X, c.Input.Y)
+	x, y := c.World.ScenePoint(c.Input.X, c.Input.Y)
+	c.floorHovered = c.floorItemAt(x, y)
 }
 
 func (c *Client) drawFloorItemName() {

@@ -12,6 +12,8 @@
 //	FUN_00477c9c  DrawRect: part of an image at a point
 package picdb
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"fmt"
 	"image"
@@ -63,7 +65,7 @@ const (
 
 func validateBitmapSize(width, height int) error {
 	if width <= 0 || height <= 0 || width > maxBitmapSide || height > maxBitmapSide || int64(width)*int64(height) > maxBitmapPixels {
-		return fmt.Errorf("UI bitmap dimensions exceed limits: %dx%d", width, height)
+		return fmt.Errorf(localization.UI("ui.picdb.ui_bitmap_dimensions_exceed_limits_dx_d_e82382be"), width, height)
 	}
 	return nil
 }

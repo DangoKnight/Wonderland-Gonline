@@ -8,7 +8,9 @@ const (
 	ConnectionCollectionTiming uint32 = 1 << 0
 	ConnectionCombatRoundChain uint32 = 1 << 1
 	ConnectionClientBackdrops  uint32 = 1 << 2
-	ConnectionKnownFeatures           = ConnectionCollectionTiming | ConnectionCombatRoundChain | ConnectionClientBackdrops
+	// Native AC5:4 follows the complete map snapshot, including props and vehicles.
+	ConnectionCompleteMapSnapshot uint32 = 1 << 3
+	ConnectionKnownFeatures              = ConnectionCollectionTiming | ConnectionCombatRoundChain | ConnectionClientBackdrops | ConnectionCompleteMapSnapshot
 )
 
 // One application hello after TCP connection establishment. Native framing and

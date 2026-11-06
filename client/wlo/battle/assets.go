@@ -1,5 +1,7 @@
 package battle
 
+import "wonderland-gonline/internal/localization"
+
 import (
 	"bytes"
 	"encoding/hex"
@@ -188,21 +190,21 @@ func ParseMotion(b []byte) (Motion, error) {
 	m.DamageMode = r.U8()
 	count := int(r.U8())
 	if count > nativeMotionMaximumFrames {
-		return m, fmt.Errorf("too many motion events")
+		return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_motion_events_3c09555a"))
 	}
 	for i := 0; i < count; i++ {
 		m.Events = append(m.Events, MotionEvent{r.U32(), r.U8()})
 	}
 	count = int(r.U8())
 	if count > nativeMotionMaximumFrames {
-		return m, fmt.Errorf("invalid frame count")
+		return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_frame_count_d33b4aee"))
 	}
 	for i := 0; i < count; i++ {
 		f := MotionFrame{Action: r.U8(), Frame: r.U8(), Speed: r.F64()}
 		hold := r.U32()
 		f.Hold = time.Duration(hold) * time.Millisecond
 		if math.IsNaN(f.Speed) || math.IsInf(f.Speed, 0) || f.Speed < 0 || hold > nativeMotionMaximumHold {
-			return m, fmt.Errorf("invalid motion timing")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_motion_timing_b0e7f267"))
 		}
 		m.Frames = append(m.Frames, f)
 	}
@@ -210,7 +212,7 @@ func ParseMotion(b []byte) (Motion, error) {
 	// FUN_00377060 still reads exactly one coordinate pair per frame.
 	coordinates := int(r.U8())
 	if coordinates > nativeMotionMaximumFrames {
-		return m, fmt.Errorf("invalid coordinate allocation")
+		return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_coordinate_allocation_b58f1002"))
 	}
 	for i := range m.Frames {
 		m.Frames[i].Offset = image.Pt(int(int32(r.U32())), int(int32(r.U32())))
@@ -220,7 +222,7 @@ func ParseMotion(b []byte) (Motion, error) {
 	// frames. FUN_00377060 then reads effectCount+1 anchor bytes.
 	effects := int(r.U8())
 	if effects > nativeMotionMaximumFrames {
-		return m, fmt.Errorf("too many visual effects")
+		return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_visual_effects_85543e7b"))
 	}
 	for i := 0; i < effects; i++ {
 		e := MotionEffect{ID: r.U32()}
@@ -235,14 +237,14 @@ func ParseMotion(b []byte) (Motion, error) {
 		e.Animate, e.Move, e.Repeat, e.Unresolved87, e.Direction = r.U8(), r.U8(), r.U8(), r.U8(), r.U8()
 		e.Unresolved8f = r.U32()
 		if math.IsNaN(e.Speed) || math.IsInf(e.Speed, 0) {
-			return m, fmt.Errorf("invalid effect speed")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_effect_speed_bf94b599"))
 		}
 		m.Effects = append(m.Effects, e)
 	}
 	r.Bytes(effects + 1)
 	sounds := int(r.U8())
 	if sounds > nativeMotionMaximumFrames {
-		return m, fmt.Errorf("too many sound cues")
+		return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_sound_cues_a906a76e"))
 	}
 	for i := 0; i < sounds; i++ {
 		m.Sounds = append(m.Sounds, SoundCue{r.U16(), r.U32(), r.U8()})
@@ -257,12 +259,12 @@ func ParseMotion(b []byte) (Motion, error) {
 		m.CameraMode = r.U8()
 		count := int(r.U8())
 		if count > nativeMotionMaximumFrames {
-			return m, fmt.Errorf("too many camera points")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_camera_points_9bd51078"))
 		}
 		for i := 0; i < count; i++ {
 			p := CameraPoint{At: image.Pt(int(int32(r.U32())), int(int32(r.U32()))), Speed: r.F64(), Trigger: r.U32(), Anchor: r.U8()}
 			if math.IsNaN(p.Speed) || math.IsInf(p.Speed, 0) || p.Speed < 0 {
-				return m, fmt.Errorf("invalid camera speed")
+				return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_camera_speed_b2be8a38"))
 			}
 			m.Camera = append(m.Camera, p)
 		}
@@ -271,17 +273,17 @@ func ParseMotion(b []byte) (Motion, error) {
 		r.U8()
 		count = int(r.U8())
 		if count > nativeMotionMaximumFrames {
-			return m, fmt.Errorf("too many secondary motion points")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_secondary_motion_points_d63b280e"))
 		}
 		r.Bytes(count * 8)
 		count = int(r.U8())
 		if count > nativeMotionMaximumFrames {
-			return m, fmt.Errorf("too many motion flags")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_motion_flags_3e1f7b23"))
 		}
 		r.Bytes(count * 2)
 		count = int(r.U8())
 		if count > nativeMotionMaximumFrames {
-			return m, fmt.Errorf("too many effect transitions")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.too_many_effect_transitions_83d814be"))
 		}
 		r.Bytes(count * 9)
 		tail := protocol.NewReader(r.Bytes(nativeMotionFixedTailBytes))
@@ -304,7 +306,7 @@ func ParseMotion(b []byte) (Motion, error) {
 		}
 		tail.Bytes(nativeMotionFixedTailBytes - nativeMotionBodyTriggerOffset - ActorSoundChannels*4)
 		if tail.Err() != nil || r.Remaining() != 0 {
-			return m, fmt.Errorf("invalid motion audio tail")
+			return m, fmt.Errorf("%s", localization.UI("ui.battle.invalid_motion_audio_tail_5c3b4329"))
 		}
 	}
 	if r.Err() != nil {
@@ -354,7 +356,7 @@ func Load(a login.Assets) (*Assets, error) {
 	for _, record := range scenes.Records {
 		b, err := hex.DecodeString(record.Hex)
 		if err != nil || len(b) != nativeBattleSceneRecordBytes {
-			return nil, fmt.Errorf("invalid scene record")
+			return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_scene_record_430f98c3"))
 		}
 		r := protocol.NewReader(b)
 		id := r.U16()

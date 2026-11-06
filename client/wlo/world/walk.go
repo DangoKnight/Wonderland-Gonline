@@ -341,6 +341,7 @@ func (w *World) Step(now time.Time) {
 			companion.step(p, now)
 		}
 	}
+	w.stepCamera(now)
 }
 
 // Water follows the native shore transition checks in FUN_0041897c.
@@ -426,7 +427,9 @@ func (s *Scene) PlanWater(fromX, fromY, toX, toY int) []image.Point {
 // Relocate resets interpolated walking before a native shore transition.
 func (w *World) Relocate(point image.Point) {
 	w.StopWalk()
+	w.Marker.Hide()
 	w.Player.X, w.Player.Y = point.X, point.Y
+	w.followCamera.ready = false
 }
 
 // SameCell compares points on the native walk grid.
