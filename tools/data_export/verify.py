@@ -76,7 +76,7 @@ def check_readable(document):
 
 
 def verify(destination):
-    manifest=json.loads((destination/'asset_manifest.json').read_text())
+    manifest=json.loads((destination/'asset_manifest.json').read_text(encoding='utf-8'))
     selected,shadowed=inventory(Path(manifest['client_source']),Path(manifest['server_source']) if manifest.get('server_source') else None)
     entries={entry['asset']:entry for entry in manifest['assets']}
     preserved = {key: row for key, row in entries.items() if manifest.get('server_exports_source') and row['origin'] in ('server', 'server-listdata')}
@@ -85,31 +85,31 @@ def verify(destination):
     for asset, entry in preserved.items():
         output = destination / entry['output']
         require(sha256(output) == entry['output_sha256'] and output.stat().st_size == entry['output_bytes'], 'preserved server export checksum mismatch: ' + asset)
-        document = json.loads(output.read_text())
+        document = json.loads(output.read_text(encoding='utf-8'))
         original = reconstruct(document, asset)
         require(hashlib.sha256(original).hexdigest() == entry['source_sha256'] and len(original) == entry['source_bytes'], 'preserved server source mismatch: ' + asset)
     if 'lucky_draw.json' in entries:
         from lucky_draw import RULES
         row = entries['lucky_draw.json']
         path = destination / row['output']
-        lucky = json.loads(path.read_text())
+        lucky = json.loads(path.read_text(encoding='utf-8'))
         require(sha256(path) == row['output_sha256'] and path.stat().st_size == row['output_bytes'], 'Lucky Draw export checksum mismatch')
         require(lucky['source_sha256'] == entries['item.dat']['source_sha256'] == row['source_sha256'], 'Lucky Draw source mismatch')
         require(lucky['policy_sha256'] == sha256(RULES), 'Lucky Draw policy changed; regenerate')
-        policy = json.loads(RULES.read_text())
-        items = {r['definition']['id']: r['definition'] for r in json.loads((destination / entries['item.dat']['output']).read_text())['items']}
+        policy = json.loads(RULES.read_text(encoding='utf-8'))
+        items = {r['definition']['id']: r['definition'] for r in json.loads((destination / entries['item.dat']['output']).read_text(encoding='utf-8'))['items']}
         expected = [{**reward, 'name': items[reward['item_id']]['name']} for reward in policy['rewards']]
         require(lucky['value'] == expected and lucky['format'] == 'lucky-draw-rewards', 'Lucky Draw reward projection differs from policy/source')
     if 'skill_effects.json' in entries:
         effect_entry = entries['skill_effects.json']
         effect_path = destination / effect_entry['output']
         require(sha256(effect_path) == effect_entry['output_sha256'] and effect_path.stat().st_size == effect_entry['output_bytes'], 'effect export checksum mismatch')
-        effects = json.loads(effect_path.read_text())
+        effects = json.loads(effect_path.read_text(encoding='utf-8'))
         require(effects['source_sha256'] == entries['skill.dat']['source_sha256'] == effect_entry['source_sha256'], 'effect source provenance mismatch')
         require(effects['schema_version'] == 1 and effects['format'] == 'skill-effect-definitions', 'unsupported effect definitions')
         ids = [r['id'] for r in effects['records']]
         require(len(ids) == len(set(ids)), 'duplicate effect identifiers')
-        skills = json.loads((destination / entries['skill.dat']['output']).read_text())
+        skills = json.loads((destination / entries['skill.dat']['output']).read_text(encoding='utf-8'))
         for row in skills['records']:
             require(all(ref in ids for ref in row['fields']['effect_refs']), 'dangling skill effect reference')
 
@@ -119,7 +119,7 @@ def verify(destination):
         require(sha256(source)==entry['source_sha256'],'source checksum mismatch: '+asset)
         output=destination/entry['output']
         require(sha256(output)==entry['output_sha256'] and output.stat().st_size==entry['output_bytes'],'export checksum mismatch: '+asset)
-        document=json.loads(output.read_text())
+        document=json.loads(output.read_text(encoding='utf-8'))
         verify_language_sources(document)
         require(document['source_sha256']==entry['source_sha256'],'embedded provenance mismatch')
         if asset in shadowed:

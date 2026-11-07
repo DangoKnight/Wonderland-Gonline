@@ -23,7 +23,7 @@ def digest(data):
 
 
 def verify(root):
-    manifest = json.loads((root / 'sprite_manifest.json').read_text())
+    manifest = json.loads((root / 'sprite_manifest.json').read_text(encoding='utf-8'))
     sprites = frames = decrypted = missing = missing_actions = 0
     archive_counts = {Path(source['source']).stem.lower(): source['sprites'] for source in manifest['sources'] if source['format'] == 'decompiled-sprites'}
     for source in manifest['sources']:
@@ -34,7 +34,7 @@ def verify(root):
             with path.open('rb') as stream:
                 assert hashlib.file_digest(stream, 'sha256').hexdigest() == output['sha256'], path
         metadata = next(root / out['path'] for out in source['outputs'] if out['path'].endswith('.json'))
-        document = json.loads(metadata.read_text())
+        document = json.loads(metadata.read_text(encoding='utf-8'))
         assert document['source_sha256'] == source['sha256'], metadata
         if source['format'] != 'decompiled-sprites':
             original = bytes.fromhex(document['header_hex']) + b''.join(bytes.fromhex(row['record_hex']) for row in document['records'])

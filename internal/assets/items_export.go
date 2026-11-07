@@ -16,15 +16,16 @@ const (
 // NativeItemExport preserves file order and the plaintext header. DecodedHex
 // retains every record byte, including unresolved fields and text padding.
 type NativeItemExport struct {
-	SchemaVersion int                      `json:"schema_version"`
-	Format        string                   `json:"format"`
-	Source        string                   `json:"source"`
-	SourceSHA256  string                   `json:"source_sha256"`
-	SourceBytes   int                      `json:"source_bytes"`
-	NativeVersion uint32                   `json:"native_version"`
-	RecordBytes   int                      `json:"record_bytes"`
-	HeaderHex     string                   `json:"header_hex"`
-	Items         []NativeItemExportRecord `json:"items"`
+	SchemaVersion  int                      `json:"schema_version"`
+	Format         string                   `json:"format"`
+	Source         string                   `json:"source"`
+	SourceSHA256   string                   `json:"source_sha256"`
+	SourceBytes    int                      `json:"source_bytes"`
+	SourceLanguage string                   `json:"source_language"`
+	NativeVersion  uint32                   `json:"native_version"`
+	RecordBytes    int                      `json:"record_bytes"`
+	HeaderHex      string                   `json:"header_hex"`
+	Items          []NativeItemExportRecord `json:"items"`
 }
 
 type NativeItemExportRecord struct {
