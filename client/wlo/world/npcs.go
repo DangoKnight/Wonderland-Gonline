@@ -255,9 +255,9 @@ func (n *NPC) paint() {
 }
 
 // FaceConversation is FUN_00304fd0 -> FUN_00307ae8: normal actors turn
-// to the player, but kind-6 props and special pose groups keep their artwork.
+// to the player, but kind-6 props, kind-8 guideposts and special pose groups keep their artwork.
 func (n *NPC) FaceConversation(x, y int) bool {
-	if n.Info.Kind == kindProp || n.Action < 0 || n.Action >= standingAction+facingCount {
+	if n.Info.Kind == kindProp || n.Info.Kind == kindUnnamedA || (n.Template >= 19020 && n.Template <= 19024) || n.Action < 0 || n.Action >= standingAction+facingCount {
 		return false
 	}
 	action := standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
