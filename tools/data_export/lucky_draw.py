@@ -11,12 +11,12 @@ RULES = REPO / 'internal/assets/lucky_draw_rules.json'
 
 def generate(source, destination):
     source_hash = sha256(source)
-    policy = json.loads(RULES.read_text())
+    policy = json.loads(RULES.read_text(encoding='utf-8'))
     with tempfile.TemporaryDirectory(prefix='wonderland-lucky-draw-') as temporary:
         items = Path(temporary) / 'items.json'
         subprocess.run(['go', 'run', './cmd/item-export', '-input', str(source),
                         '-output', str(items)], cwd=REPO, check=True, stdout=subprocess.DEVNULL)
-        decoded = json.loads(items.read_text())
+        decoded = json.loads(items.read_text(encoding='utf-8'))
     require(decoded['source_sha256'] == source_hash == sha256(source), 'Lucky Draw item source changed')
     definitions = {row['definition']['id']: row['definition'] for row in decoded['items']}
     rewards = []
@@ -38,13 +38,13 @@ def generate(source, destination):
 
 def entry(item_entry, destination):
     return {**{key: item_entry[key] for key in ('origin', 'source', 'source_bytes', 'source_sha256')},
-            'asset': ASSET, 'status': 'derived-compatibility-rewards', 'records': len(json.loads(destination.read_text())['value']),
+            'asset': ASSET, 'status': 'derived-compatibility-rewards', 'records': len(json.loads(destination.read_text(encoding='utf-8'))['value']),
             'output': destination.name, 'output_bytes': destination.stat().st_size,
             'output_sha256': sha256(destination)}
 
 def refresh(destination):
     manifest_path = destination / 'asset_manifest.json'
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     # Decode sibling input afresh; existing exported item data is never an input.
     selected, _ = inventory(REPO.parent / 'Wonderland-Client/data',
                             REPO.parent / 'Wonderland-Private-Server')

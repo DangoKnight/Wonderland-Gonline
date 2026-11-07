@@ -129,7 +129,7 @@ def extract(root, destination, verify_existing=False):
     # Its authoritative source hashes remain independently checked against the originals.
     inventory_path = destination.parent / 'asset_manifest.json'
     if verify_existing and inventory_path.exists():
-        inventory = json.loads(inventory_path.read_text())
+        inventory = json.loads(inventory_path.read_text(encoding='utf-8'))
         for entry in inventory['assets']:
             if entry['asset'] not in ('odd.dat', 'odd_d01.dat'):
                 continue
@@ -137,7 +137,7 @@ def extract(root, destination, verify_existing=False):
             if checksum(original) != entry['source_sha256']:
                 raise ValueError('global audio provenance differs from original source')
             index = destination / (original.stem.lower() + '_index.json')
-            document = json.loads(index.read_text())
+            document = json.loads(index.read_text(encoding='utf-8'))
             entry.pop('payload', None)
             entry['audio_tracks'] = {'directory': (destination / original.stem.lower()).relative_to(destination.parent).as_posix(),
                                      'bytes': document['payload_bytes'], 'sha256': document['payload_sha256']}

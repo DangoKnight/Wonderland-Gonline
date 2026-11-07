@@ -8,10 +8,10 @@ from export import REPO, FORMATS, export_records, inventory, sha256, write_json
 ASSET = 'skill_effects.json'
 
 def annotate(skills, effects):
-    original = json.loads(skills.read_text())
+    original = json.loads(skills.read_text(encoding='utf-8'))
     subprocess.run(['go', 'run', './cmd/skill-effects-export', '-skills', str(skills),
                     '-effects', str(effects)], cwd=REPO, check=True)
-    annotated = json.loads(skills.read_text())
+    annotated = json.loads(skills.read_text(encoding='utf-8'))
     for old, new in zip(original['records'], annotated['records'], strict=True):
         old['fields']['effect_refs'] = new['fields']['effect_refs']
     write_json(skills, original)
@@ -23,7 +23,7 @@ def entry(skills_entry, effects):
 
 def refresh(destination):
     manifest_path = destination / 'asset_manifest.json'
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     selected, _ = inventory(Path(manifest['client_source']), Path(manifest['server_source']))
     origin, source = selected['skill.dat']
     metadata = {'schema_version': 1, 'source': str(source), 'source_bytes': source.stat().st_size,

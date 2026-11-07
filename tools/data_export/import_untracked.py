@@ -57,7 +57,7 @@ def restore(source, repo=REPO, dry_run=False):
     scoped = external.is_file()
     scoped_files = ()
     if scoped:
-        scope = json.loads(external.read_text())
+        scope = json.loads(external.read_text(encoding='utf-8'))
         if scope.get('schema_version') != 1 or scope.get('format') != EXTERNAL_IMPORT_FORMAT or scope.get('directories') != list(EXTERNAL_ASSET_DIRECTORIES):
             raise ValueError('invalid external asset import scope')
         scoped_files = scope.get('files', [])
@@ -80,7 +80,7 @@ def restore(source, repo=REPO, dry_run=False):
             raise ValueError(f'regenerated tree is missing tracked metadata: {name}')
         if checksum(current) == checksum(generated):
             continue
-        if portable_metadata(json.loads(current.read_text())) != portable_metadata(json.loads(generated.read_text())):
+        if portable_metadata(json.loads(current.read_text(encoding='utf-8'))) != portable_metadata(json.loads(generated.read_text(encoding='utf-8'))):
             raise ValueError(f'metadata differs: {name}; use the complete regenerated tree as an alternate asset root')
     candidates = {}
     for item in sorted(source.rglob('*')):

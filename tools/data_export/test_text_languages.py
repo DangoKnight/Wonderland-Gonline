@@ -32,7 +32,7 @@ class LanguageSourcesTests(unittest.TestCase):
             self.assertEqual(doc['source_sha256'], 'native-hash')
             self.assertEqual(doc['text_languages'], {'zh-TW': {'talk.17.text': '\u4e2d\u6587'}})
             self.assertEqual(doc['text_language_sources']['zh-TW']['source_sha256'], sha256(source))
-            entry = json.loads((root / 'asset_manifest.json').read_text())['assets'][0]
+            entry = json.loads((root / 'asset_manifest.json').read_text(encoding='utf-8'))['assets'][0]
             self.assertEqual(entry['output_sha256'], sha256(output))
             self.assertEqual(entry['output_bytes'], output.stat().st_size)
             verify_language_sources(doc)
