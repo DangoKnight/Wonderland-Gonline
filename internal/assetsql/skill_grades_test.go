@@ -12,7 +12,7 @@ func TestSkillGradeMigrationWithoutClientPreservesEditsAndRollsBack(t *testing.T
 		t.Fatal(err)
 	}
 	defer assetdb.Close(db)
-	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}); err != nil {
+	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}, &catalogPresence{}); err != nil {
 		t.Fatal(err)
 	}
 	// Hagendis Beat has a native cap of 15; Flame Attack has a native cap of 5.

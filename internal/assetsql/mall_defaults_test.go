@@ -126,7 +126,7 @@ func TestMallMigrationPreservesCustomAndEmptyCatalog(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer assetdb.Close(db)
-			if err := db.AutoMigrate(&MallRow{}, &catalogSchema{}); err != nil {
+			if err := db.AutoMigrate(&MallRow{}, &catalogSchema{}, &catalogPresence{}); err != nil {
 				t.Fatal(err)
 			}
 			if err := db.Create(&catalogSchema{ID: catalogMetadataID, Version: 58}).Error; err != nil {

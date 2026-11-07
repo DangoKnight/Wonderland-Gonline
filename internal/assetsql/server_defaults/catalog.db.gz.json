@@ -3,10 +3,10 @@
   "version": 1,
   "schema_version": 62,
   "database_bytes": 50880512,
-  "database_sha256": "7144d16173308b12014816b6a3e762d18c1c35edbaf6f659047bb390b796b140",
-  "compressed_bytes": 9179177,
+  "database_sha256": "79102d0199d5826ba8f4c1ecf0960267a25fe6e2854d994270345dcc961dbe85",
+  "compressed_bytes": 9178967,
   "tables": 185,
-  "rows": 322957,
+  "rows": 322963,
   "definitions": {
     "forge_upgrade_items": 291,
     "point_forge_items": 1940,

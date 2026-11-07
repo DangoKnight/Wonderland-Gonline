@@ -13,7 +13,7 @@ func TestSkillContactsMigrationPreservesEditsAndRollsBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer assetdb.Close(db)
-	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}, &assetdb.Record{}); err != nil {
+	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}, &catalogPresence{}, &assetdb.Record{}); err != nil {
 		t.Fatal(err)
 	}
 	rows := []SkillsRow{{SkillsKey: 11016, ValueID: 11016, ValueName: "Edited name", ValueStatMultiplier: 1.2}, {SkillsKey: 11166, ValueID: 11166, ValueContactEvents: 7}, {SkillsKey: 65535, ValueID: 65535}}
@@ -66,7 +66,7 @@ func TestSkillContactColumnUpgradeFromMissingColumn(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer assetdb.Close(db)
-	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}); err != nil {
+	if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}, &catalogPresence{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Create(&SkillsRow{SkillsKey: 11016, ValueID: 11016, ValueName: "Keep"}).Error; err != nil {

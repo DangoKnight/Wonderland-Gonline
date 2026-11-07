@@ -179,9 +179,11 @@ func TestBattleItemBombTargetsEnemy(t *testing.T) {
 	c.Inventory.Use(1, false)
 	ally := (clientbattle.Cell{X: 4, Y: 2}).Position()
 	c.GroundClick(ally.X, ally.Y-30)
-	if len(sent()) != 0 || c.battle.item == nil {
-		t.Fatal("bomb accepted ally or lost selection")
+	if len(sent()) != 0 || c.battle.item != nil {
+		t.Fatal("invalid bomb target did not cancel selection")
 	}
+	c.chooseBattleCommand(battleCommandItems)
+	c.Inventory.Use(1, false)
 	enemy := (clientbattle.Cell{X: 2, Y: 2}).Position()
 	c.GroundClick(enemy.X, enemy.Y-30)
 	want := []byte{50, 2, 4, 2, 2, 2, 244, 128, 0, 0, 1, 0}

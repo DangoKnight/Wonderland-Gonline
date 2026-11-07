@@ -13,7 +13,7 @@ func TestItemCardChoiceIsTransactional(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			s, players, wires := gachaFixture(t)
 			c := players[0]
-			s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {Rewards: []assets.CardReward{{32176, 3}, {32177, 2}}}}
+			s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {Rewards: []assets.CardReward{{ItemID: 32176, Quantity: 3}, {ItemID: 32177, Quantity: 2}}}}
 			s.Assets.Items[32177] = game.ItemDefinition{ID: 32177, Name: "Second reward", Type: 23}
 			next := c.character.Clone()
 			next.Bag[8] = game.Item{ID: 34171, Count: 2}
@@ -91,7 +91,7 @@ func TestItemCardAutomaticGenderAndSingleReward(t *testing.T) {
 			t.Fatal(err)
 		}
 		s.Assets.Items[32177] = game.ItemDefinition{ID: 32177, Type: 23}
-		s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {MaleItem: 32176, FemaleItem: 32177, Rewards: []assets.CardReward{{32176, 1}, {32177, 1}}}}
+		s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {MaleItem: 32176, FemaleItem: 32177, Rewards: []assets.CardReward{{ItemID: 32176, Quantity: 1}, {ItemID: 32177, Quantity: 1}}}}
 		if err := s.dispatch(context.Background(), c, []byte{23, 133, 1, 9, 123, 133, 0}); err != nil {
 			t.Fatal(err)
 		}
@@ -105,7 +105,7 @@ func TestItemCardAutomaticGenderAndSingleReward(t *testing.T) {
 	}
 	s, players, _ := gachaFixture(t)
 	c := players[0]
-	s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {Rewards: []assets.CardReward{{32176, 3}}}}
+	s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {Rewards: []assets.CardReward{{ItemID: 32176, Quantity: 3}}}}
 	if err := s.dispatch(context.Background(), c, []byte{23, 15, 9, 1, 0, 0}); err != nil || c.character.Bag[0].Count != 3 {
 		t.Fatal("single reward", err, c.character.Bag)
 	}

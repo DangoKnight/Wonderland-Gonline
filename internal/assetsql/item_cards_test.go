@@ -28,7 +28,7 @@ func TestItemCardsDefaultsAndPreservingMigration(t *testing.T) {
 	if err != nil || len(cards) != 236 {
 		t.Fatal(len(cards), err)
 	}
-	if cards[50534].MaleItem != 35451 || cards[50534].FemaleItem != 35450 || !reflect.DeepEqual(cards[51609].Rewards, []assets.CardReward{{30908, 1}, {34707, 1}}) {
+	if cards[50534].MaleItem != 35451 || cards[50534].FemaleItem != 35450 || !reflect.DeepEqual(cards[51609].Rewards, []assets.CardReward{{ItemID: 30908, Quantity: 1}, {ItemID: 34707, Quantity: 1}}) {
 		t.Fatal("authored mappings")
 	}
 	if err := db.Where("item_cards_key = ?", 50534).Delete(&ItemCardsRewardsRow{}).Error; err != nil {
@@ -63,9 +63,9 @@ func TestItemCardsRepositoryDefinitions(t *testing.T) {
 		t.Fatal("repository card defaults differ from SQL")
 	}
 	for id, want := range map[uint16][]assets.CardReward{
-		50025: {{34123, 1}, {61080, 1}},                         // Pure Chaos Crystal, not the ordinary crystal.
-		51528: {{21726, 1}, {21727, 1}},                         // Strawberry/tangerine dresses, not fruit.
-		51215: {{34089, 1}, {34139, 1}, {34239, 1}, {61062, 1}}, // Jade Emperor is the quest name.
+		50025: {{ItemID: 34123, Quantity: 1}, {ItemID: 61080, Quantity: 1}},                                                             // Pure Chaos Crystal, not the ordinary crystal.
+		51528: {{ItemID: 21726, Quantity: 1}, {ItemID: 21727, Quantity: 1}},                                                             // Strawberry/tangerine dresses, not fruit.
+		51215: {{ItemID: 34089, Quantity: 1}, {ItemID: 34139, Quantity: 1}, {ItemID: 34239, Quantity: 1}, {ItemID: 61062, Quantity: 1}}, // Jade Emperor is the quest name.
 	} {
 		if !reflect.DeepEqual(parsed[id].Rewards, want) {
 			t.Fatal("partial-name match", id, parsed[id])

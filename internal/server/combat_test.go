@@ -716,7 +716,11 @@ func TestSQLVanishProtectsAndSavesProgress(t *testing.T) {
 	s, c, _ := battleFixture(t, 1000)
 	defer s.abandonBattle(c)
 	s.Assets.Skills = catalog.Skills
-	c.character.Skills = append(c.character.Skills, game.LearnedSkill{ID: 15190, Grade: 1})
+	next := c.character.Clone()
+	next.Skills = append(next.Skills, game.LearnedSkill{ID: 15190, Grade: 1})
+	if err := s.commit(context.Background(), c, next); err != nil {
+		t.Fatal(err)
+	}
 	run := c.battle
 	actor := run.members[0].self
 	actor.Char = c.character
@@ -740,8 +744,8 @@ func TestSQLVanishProtectsAndSavesProgress(t *testing.T) {
 	found := false
 	for _, sk := range stored[0].Skills {
 		if sk.ID == 15190 {
-			// A successful status cast awards 15 support EXP plus 25 buff EXP.
-			found = sk.EXP == 40
+			// Vanish is already at its native grade-one cap.
+			found = sk.EXP == 0
 		}
 	}
 	if !found {

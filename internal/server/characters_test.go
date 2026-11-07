@@ -641,7 +641,11 @@ func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
 				t.Fatal("native Goddess skill missing", skill)
 			}
 			s.Assets.Skills = catalog.Skills
-			c.character.Skills = append(c.character.Skills, game.LearnedSkill{ID: id, Grade: 1})
+			next := c.character.Clone()
+			next.Skills = append(next.Skills, game.LearnedSkill{ID: id, Grade: 1})
+			if err := s.commit(context.Background(), c, next); err != nil {
+				t.Fatal(err)
+			}
 			run := c.battle
 			actor := run.members[0].self
 			actor.Char = c.character
@@ -670,7 +674,12 @@ func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
 			for _, sk := range stored[0].Skills {
 				if sk.ID == id {
 					// A successful status cast awards 15 support EXP plus 25 buff EXP.
-					found = sk.EXP == 40
+					// Goddess skills are already at their native grade-one cap.
+					wantEXP := uint32(40)
+					if skill.GradeLimit() <= 1 {
+						wantEXP = 0
+					}
+					found = sk.EXP == wantEXP
 				}
 			}
 			if !found {

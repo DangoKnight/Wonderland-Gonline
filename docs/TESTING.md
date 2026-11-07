@@ -4170,3 +4170,46 @@ unrelated game exits do not open a previously closed mall.
 ```powershell
 go test ./internal/assets ./internal/assetsql ./internal/server ./internal/clientassets -run '^(TestMall|TestGacha|TestParse.*Gacha|TestChobits|TestRepositorySeed)' -count=1 -p 1
 ```
+
+### Full pre-push validation, 2026-11-07
+
+Validated the native mall, card redemption, notebook, quest-conversation and
+combat UI changes on Windows with Go 1.27.1. Logs and isolated outputs are in
+`var/validation/prepush-mall-notebook-20261107/`; live gameplay databases and the
+installed client bundle were not modified.
+
+- Executed all 43 server-module packages with `go test -race -count=1 -timeout=60m -p 1 ./...`.
+- Executed all 29 client-module packages with `go test -count=1 -timeout=60m -p 1 ./...`, the compiled bundle and GPU fixtures enabled. GPU parity passed.
+- Rebuilt all 74,841 runtime asset files from 6,041.4 MiB of extracted source.
+- Server/client vet, server/client/migration builds, Go formatting, whitespace,
+  protocol/EVE/native-item fuzzing (ten seconds each), web formatting and HTML
+  lint passed. SQL model regeneration produced no differences. Python exporter
+  checks passed (78 tests, one optional skip).
+
+The first complete runs exposed failures; these were corrected and the affected
+checks rerun successfully. The server run recorded 2,522 passing test events,
+and the client run 994, before corrective reruns. Corrections include:
+
+- Complete the repository seed's reward choices for four cards; verify all 236
+  authored card definitions against fresh SQL initialization.
+- Add presence metadata to minimal migration fixtures, retaining their rollback
+  and administrator-edit preservation assertions; use the original imported
+  fixture for the legacy document-decoding compatibility test.
+- Regenerate canonical tracked English/Chinese string tables and use keyed card
+  reward literals so vet checks remain meaningful.
+- Persist learned skills in SQL fixtures and honor the native grade-one cap for
+  Goddess skills and Vanish; ordinary durable proficiency checks still pass.
+- Keep initial pets out of switch-arrival presentation during a later battle's
+  immediate reveal. AUTO history, pet switching, scene transitions and bomb
+  targeting passed their focused rerun. Invalid bomb targets now explicitly test
+  selection cancellation before a fresh valid selection.
+
+`final-server-rerun.jsonl` records the consolidated passing server race rerun;
+`assetsql-rerun.jsonl` separately verifies the corrected seed definitions.
+`client-battle-rerun.log` records the passing affected-client integration group.
+An additional broader client race selection hit its default ten-minute timeout
+without a race report; the smaller affected selection passed with an explicit
+30-minute timeout (`client-focused-race.log`, 225 seconds), followed by client
+vet and build. No unresolved test failures remain. Optional live-account,
+reference-screenshot, font/media-source and platform-specific fixtures retained
+their normal skips (two server tests and 42 client tests).

@@ -341,7 +341,9 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 			delete(view.overkills, cell)
 			delete(view.departures, cell)
 			delete(view.shown, cell)
-			if f := view.state.At(cell); f != nil && f.Kind == clientbattle.Pet && view.state.Turn > 1 && !c.enteringBattle() {
+			// Turn numbers persist across battles; initial pets still belong to
+			// the formation while its battlefield reveal is running.
+			if f := view.state.At(cell); f != nil && f.Kind == clientbattle.Pet && view.state.Turn > 1 && !c.enteringBattle() && c.sceneFade.mode != sceneFadeRevealBattle {
 				if view.arrivals == nil {
 					view.arrivals = map[clientbattle.Cell]time.Time{}
 				}
