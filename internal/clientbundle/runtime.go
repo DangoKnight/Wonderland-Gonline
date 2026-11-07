@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"wonderland-gonline/internal/clientimage"
 	"wonderland-gonline/internal/clientruntime"
@@ -22,10 +26,39 @@ import (
 
 const PacksName = "_packs.json"
 const runtimeCompilerVersion = 2
-const compiledGroundLayoutVersion = 2 // Retain the native isometric scenery grid.
 const runtimePackDescriptorVersion = 1
 const compiledImageCodecVersion = 2
+const compiledGroundLayoutVersion = 2 // Retain the native isometric scenery grid.
 const compiledGroundMaxGridSide = 900
+
+// Parallel stage sizing. Every stage runs at most defaultWorkers goroutines
+// unless -workers asks for more, and no stage ever exceeds the core count.
+// Image decode stages are additionally bounded by physical memory: each
+// worker holds one fully decoded source canvas in RAM while encoding its
+// chunks, so the pool must stay a bounded fraction of installed memory
+// rather than a fixed number that fits only one machine class.
+const defaultWorkers = 4
+
+// imageDecodeMemoryDivisor keeps the decode stages within 1/divisor of
+// physical RAM for resident source canvases at peak.
+const imageDecodeMemoryDivisor = 4
+
+// decodeBudgets are per-worker resident-canvas allowances. The largest
+// shipped maps (64-72 MiB PNG sources) decode to ~300 MiB including the
+// normalized copy; small images stay within their tile-page footprint.
+const largeImageDecodeBudget = 300 << 20
+const smallImageDecodeBudget = 8 << 20
+
+// poolWorkers resolves the decode pool size: the requested bound, limited by
+// the core count and by how many per-worker budgets fit into the memory
+// fraction. When memory size is unknown the memory bound is skipped.
+func poolWorkers(requested int, budget uint64) int {
+	workers := max(1, min(requested, runtime.NumCPU()))
+	if total := memoryTotalBytes(); total > 0 && budget > 0 {
+		workers = min(workers, max(1, int(total/imageDecodeMemoryDivisor/budget)))
+	}
+	return workers
+}
 
 type runtimeCacheEntry struct {
 	Signature  string
@@ -39,6 +72,15 @@ type runtimeCompiler struct {
 	files           []string
 	wanted          map[string]bool
 	old, next       map[string]runtimeCacheEntry
+	// mu guards wanted/old/next/recompressed during compileImages, where
+	// independent image groups compile on a shared worker pool.
+	mu      sync.Mutex
+	verbose bool
+	// workers bounds every parallel stage; normalized to defaultWorkers.
+	workers int
+	// published tracks content-addressed chunks already claimed by a worker
+	// in this run, so concurrent publishers of identical content write once.
+	published map[string]bool
 }
 
 // BuildRuntime compiles heavy exports into independently readable binary records
@@ -49,7 +91,10 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	cache := filepath.Join(filepath.Dir(o.Output), ".client-runtime-"+digest([]byte(absolute))[:12])
-	c := runtimeCompiler{source: o.Source, root: cache, wanted: map[string]bool{}, old: map[string]runtimeCacheEntry{}, next: map[string]runtimeCacheEntry{}}
+	c := runtimeCompiler{source: o.Source, root: cache, wanted: map[string]bool{}, old: map[string]runtimeCacheEntry{}, next: map[string]runtimeCacheEntry{}, published: map[string]bool{}, verbose: o.Verbose, workers: o.Workers}
+	if c.workers <= 0 {
+		c.workers = defaultWorkers
+	}
 	if b, e := os.ReadFile(filepath.Join(cache, ".cache.json")); e == nil {
 		_ = json.Unmarshal(b, &c.old)
 	}
@@ -75,9 +120,14 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	sort.Strings(c.files)
+	phaseStart := time.Now()
+	defer phase(o.Verbose, "BuildRuntime total", phaseStart)
 	if err = c.validateImages(o); err != nil {
 		return Result{}, err
 	}
+	phase(o.Verbose, "validate-images", phaseStart)
+	linkStart := time.Now()
+	var linkNames []string
 	for _, name := range c.files {
 		if clienttext.IsExport(name) {
 			continue
@@ -85,10 +135,13 @@ func BuildRuntime(o Options) (Result, error) {
 		if !runtimeSource(name) {
 			continue
 		}
-		if err := c.link(name); err != nil {
-			return Result{}, err
-		}
+		linkNames = append(linkNames, name)
+		c.wanted[name] = true
 	}
+	if err = parallelEach(linkNames, c.workers, func(_ int, name string) error { return c.link(name) }); err != nil {
+		return Result{}, err
+	}
+	phase(o.Verbose, "link-runtime-sources", linkStart)
 	var textSources []string
 	for _, name := range c.files {
 		if clienttext.IsExport(name) {
@@ -126,9 +179,11 @@ func BuildRuntime(o Options) (Result, error) {
 			return Result{}, err
 		}
 	}
+	imagesStart := time.Now()
 	if err = c.compileImages(); err != nil {
 		return Result{}, err
 	}
+	phase(o.Verbose, "compile-images", imagesStart)
 	if contains(c.files, "ground_data.json") {
 		if err = c.generate("battle-backdrops", []string{"ground_data.json"}, func(write func(string, any) error) error {
 			var doc clientruntime.BackdropExport
@@ -285,34 +340,79 @@ func BuildRuntime(o Options) (Result, error) {
 		return Result{}, err
 	}
 	base := strings.TrimSuffix(o.Output, filepath.Ext(o.Output))
-	packPaths := []string{base + "-world.build.zip", base + "-sprites.build.zip", base + "-audio.build.zip"}
 	descriptor := struct {
 		Version int      `json:"version"`
 		Packs   []string `json:"packs"`
 	}{runtimePackDescriptorVersion, []string{}}
+	// The four pack builds read the same finished cache and write independent
+	// zips, so they run concurrently. Group builds skip contract validation and
+	// rewriting: the runtime compiler already validated every image against the
+	// contract, and concurrent identical contract writes would race.
+	packsStart := time.Now()
+	type packOutcome struct {
+		group, path string
+		result      Result
+		err         error
+	}
+	groups := []struct {
+		name, path string
+	}{
+		{"world", base + "-world.build.zip"},
+		{"sprites", base + "-sprites.build.zip"},
+		{"audio", base + "-audio.build.zip"},
+	}
+	outcomes := make([]packOutcome, len(groups)+1)
+	var packsWg sync.WaitGroup
+	for i, g := range groups {
+		packsWg.Add(1)
+		go func(i int, g struct{ name, path string }) {
+			defer packsWg.Done()
+			part := o
+			part.Source = cache
+			part.Output = g.path
+			part.Contract = ""
+			part.group = g.name
+			r, e := Build(part)
+			outcomes[i] = packOutcome{g.name, g.path, r, e}
+		}(i, g)
+	}
+	packsWg.Add(1)
+	go func() {
+		defer packsWg.Done()
+		core := o
+		core.Source = cache
+		core.group = "core"
+		r, e := Build(core)
+		outcomes[len(groups)] = packOutcome{"core", o.Output, r, e}
+	}()
+	packsWg.Wait()
 	var result Result
-	// Companion packs first; core is published after all builds succeed.
-	for i, group := range []string{"world", "sprites", "audio"} {
-		part := o
-		part.Source = cache
-		part.Output = packPaths[i]
-		part.group = group
-		r, e := Build(part)
+	for i := range outcomes {
+		if outcomes[i].err != nil {
+			return result, outcomes[i].err
+		}
+	}
+	phase(o.Verbose, "build-packs", packsStart)
+	publishStart := time.Now()
+	for _, outcome := range outcomes {
+		if outcome.group == "core" {
+			result.Files += outcome.result.Files
+			result.Reused += outcome.result.Reused
+			result.SourceBytes += outcome.result.SourceBytes
+			continue
+		}
+		result.Files += outcome.result.Files
+		result.Reused += outcome.result.Reused
+		result.SourceBytes += outcome.result.SourceBytes
+		sum, e := hashFile(outcome.path)
 		if e != nil {
 			return result, e
 		}
-		result.Files += r.Files
-		result.Reused += r.Reused
-		result.SourceBytes += r.SourceBytes
-		sum, e := hashFile(part.Output)
-		if e != nil {
-			return result, e
-		}
-		published := base + "-" + group + "-" + sum[:16] + ".zip"
+		published := base + "-" + outcome.group + "-" + sum[:16] + ".zip"
 		if _, e = os.Stat(published); os.IsNotExist(e) {
-			if e = os.Link(part.Output, published); e != nil {
+			if e = os.Link(outcome.path, published); e != nil {
 				// Copy on filesystems without hard links, then publish atomically.
-				if e = copyAtomic(part.Output, published); e != nil {
+				if e = copyAtomic(outcome.path, published); e != nil {
 					return result, e
 				}
 			}
@@ -321,6 +421,7 @@ func BuildRuntime(o Options) (Result, error) {
 		}
 		descriptor.Packs = append(descriptor.Packs, filepath.Base(published))
 	}
+	phase(o.Verbose, "publish-packs", publishStart)
 	b, err := json.Marshal(descriptor)
 	if err != nil {
 		return result, err
@@ -340,6 +441,49 @@ func BuildRuntime(o Options) (Result, error) {
 func contains(list []string, s string) bool {
 	i := sort.SearchStrings(list, s)
 	return i < len(list) && list[i] == s
+}
+
+// parallelEach runs work over names on a worker pool bounded by maxWorkers
+// (and the core count). Index ownership follows the input order, so callers
+// can write results[i] without locking; the first error cancels the
+// remaining jobs, and workers keep draining the queue to unblock the
+// producer.
+func parallelEach(names []string, maxWorkers int, work func(int, string) error) error {
+	if len(names) == 0 {
+		return nil
+	}
+	workers := max(1, min(len(names), min(maxWorkers, runtime.NumCPU())))
+	jobs := make(chan int)
+	errs := make([]error, workers)
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			for i := range jobs {
+				if errs[w] == nil {
+					errs[w] = work(i, names[i])
+				}
+			}
+		}(w)
+	}
+	for i := range names {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func phase(verbose bool, name string, start time.Time) {
+	if verbose {
+		log.Printf("clientbundle: %s took %v", name, time.Since(start))
+	}
 }
 func runtimeSource(name string) bool {
 	lower := strings.ToLower(name)
@@ -385,7 +529,6 @@ func (c *runtimeCompiler) readJSON(name string, v any) error {
 func (c *runtimeCompiler) link(name string) error {
 	target := filepath.Join(c.root, filepath.FromSlash(name))
 	source := filepath.Join(c.source, filepath.FromSlash(name))
-	c.wanted[name] = true
 	a, e := os.Stat(source)
 	if e != nil {
 		return e
@@ -435,7 +578,9 @@ func (c *runtimeCompiler) generateBytes(key string, deps []string, build func(fu
 	if err != nil {
 		return err
 	}
+	c.mu.Lock()
 	old := c.old[key]
+	c.mu.Unlock()
 	valid := old.Signature == signature && len(old.Outputs) > 0
 	if valid {
 		for name, sum := range old.Outputs {
@@ -447,29 +592,56 @@ func (c *runtimeCompiler) generateBytes(key string, deps []string, build func(fu
 		}
 	}
 	if valid {
+		c.mu.Lock()
 		for name := range old.Outputs {
 			c.wanted[name] = true
 		}
 		c.next[key] = old
+		c.mu.Unlock()
 		return nil
 	}
 	next := runtimeCacheEntry{Signature: signature, ImageCodec: compiledImageCodecVersion, Outputs: map[string]string{}}
 	err = build(func(name string, b []byte) error {
 		path := filepath.Join(c.root, filepath.FromSlash(name))
 		// Shared image tiles are written only once, even when multiple groups
-		// reference an identical content hash.
+		// reference an identical content hash. Chunk names are content-addressed,
+		// so an in-memory claim makes concurrent publishers skip the write; a
+		// matching file on disk (previous build or a just-finished rename) is
+		// accepted without rewriting.
 		if strings.HasSuffix(name, clientimage.ChunkSuffix) {
-			if sum, err := hashFile(path); err == nil && sum == digest(b) {
+			sum := digest(b)
+			c.mu.Lock()
+			if c.published[name] {
 				c.wanted[name] = true
 				next.Outputs[name] = sum
+				c.mu.Unlock()
 				return nil
 			}
+			c.published[name] = true
+			c.mu.Unlock()
+			if actual, err := hashFile(path); err == nil && actual == sum {
+				c.mu.Lock()
+				c.wanted[name] = true
+				next.Outputs[name] = sum
+				c.mu.Unlock()
+				return nil
+			}
+			if err := writeChunk(path, b, sum); err != nil {
+				return err
+			}
+			c.mu.Lock()
+			next.Outputs[name] = sum
+			c.wanted[name] = true
+			c.mu.Unlock()
+			return nil
 		}
 		if e := writeAtomic(path, b); e != nil {
 			return e
 		}
+		c.mu.Lock()
 		next.Outputs[name] = digest(b)
 		c.wanted[name] = true
+		c.mu.Unlock()
 		return nil
 	})
 	if err != nil {
@@ -482,8 +654,28 @@ func (c *runtimeCompiler) generateBytes(key string, deps []string, build func(fu
 	if current != signature {
 		return fmt.Errorf("sources changed during runtime compilation: %s; rebuild", key)
 	}
+	c.mu.Lock()
 	c.next[key] = next
+	c.mu.Unlock()
 	return nil
+}
+
+// writeChunk publishes a content-addressed image chunk, accepting an identical
+// file already on disk (previous build or a concurrent publisher that finished
+// its rename first) and retrying through transient locks such as real-time
+// antivirus scans on newly created files.
+func writeChunk(path string, data []byte, sum string) error {
+	var last error
+	for attempt := 0; attempt < 5; attempt++ {
+		if last = writeAtomic(path, data); last == nil {
+			return nil
+		}
+		if actual, err := hashFile(path); err == nil && actual == sum {
+			return nil
+		}
+		time.Sleep(time.Duration(50*(attempt+1)) * time.Millisecond)
+	}
+	return fmt.Errorf("publish %s: %w", filepath.ToSlash(path), last)
 }
 
 func copyAtomic(source, target string) error {
