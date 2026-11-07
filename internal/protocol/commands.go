@@ -774,13 +774,14 @@ const (
 	MallBadgeNew           = 1
 	MallBadgeHot           = 2
 	MallBadgeLimited       = 3
-	MallCategoryHot        = 1
-	MallCategoryArmory     = 2
-	MallCategoryWeaponry   = 3
-	MallCategoryGrocery    = 4
-	MallCategoryFurniture  = 5
-	MallCategoryGames      = 6
-	MallCategoryForging    = 7
+	// FUN_00240584: wire categories differ from the seven visible tab indices.
+	MallCategoryWeaponry  = 1
+	MallCategoryArmory    = 2
+	MallCategoryGrocery   = 3
+	MallCategoryProps     = 4 // Shares the Grocery list with category 3.
+	MallCategoryFurniture = 5
+	MallCategoryGames     = 6 // Existing compatibility value; native games use a separate path.
+	MallCategoryForging   = 7 // Existing compatibility value; native forging uses a separate path.
 )
 
 const MallCatalogHeaderBytes = 4
@@ -1040,10 +1041,13 @@ const (
 	InventoryVehicleStallPurchase = 68
 	InventoryPetStallBrowse       = 113
 	InventoryVehicleStallBrowse   = 133
-	InventoryStallMapState        = 31
-	InventoryStallDespawn         = 32
-	InventoryStallFormClose       = 165
-	StallItemShopType             = 1
+	// AC23:133 is gift-card exchange in this native build. The older outbound
+	// vehicle-stall compatibility value above is retained independently.
+	InventoryGiftCard       = 133
+	InventoryStallMapState  = 31
+	InventoryStallDespawn   = 32
+	InventoryStallFormClose = 165
+	StallItemShopType       = 1
 )
 
 // Guild gameplay (AC39), distinct from inbound chat AC2:6.

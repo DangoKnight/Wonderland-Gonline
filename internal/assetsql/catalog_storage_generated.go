@@ -4745,6 +4745,102 @@ func readBoxedItems(tx *gorm.DB) (map[uint16]assets.BoxedItem, error) {
 	return result, nil
 }
 
+type ItemCardsRow struct {
+	ItemCardsKey        uint16 `gorm:"column:item_cards_key;primaryKey;autoIncrement:false"`
+	ValueMaleItem       uint16
+	ValueFemaleItem     uint16
+	ValueRewardsPresent bool
+}
+
+func (ItemCardsRow) TableName() string { return "catalog_item_cards" }
+func writeItemCards(tx *gorm.DB, values map[uint16]assets.ItemCard) error {
+	var rows []ItemCardsRow
+	for key, value := range values {
+		row := ItemCardsRow{ItemCardsKey: key}
+		row.ValueMaleItem = value.MaleItem
+		row.ValueFemaleItem = value.FemaleItem
+		row.ValueRewardsPresent = value.Rewards != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeItemCardsRewards(tx, value.Rewards, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readItemCards(tx *gorm.DB) (map[uint16]assets.ItemCard, error) {
+	result := make(map[uint16]assets.ItemCard)
+	var rows []ItemCardsRow
+	query := tx
+	if err := query.Order("item_cards_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.ItemCard
+		value.MaleItem = row.ValueMaleItem
+		value.FemaleItem = row.ValueFemaleItem
+		if row.ValueRewardsPresent {
+			var err error
+			value.Rewards, err = readItemCardsRewards(tx, row.ItemCardsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result[row.ItemCardsKey] = value
+	}
+	return result, nil
+}
+
+type ItemCardsRewardsRow struct {
+	ItemCardsKey            uint16        `gorm:"column:item_cards_key;primaryKey;autoIncrement:false"`
+	ItemCardsRewardsOrdinal int           `gorm:"column:item_cards_rewards_ordinal;primaryKey;autoIncrement:false"`
+	Parent                  *ItemCardsRow `gorm:"belongsTo:Parent;foreignKey:ItemCardsKey;references:ItemCardsKey;constraint:OnDelete:CASCADE"`
+	ValueItemID             uint16
+	ValueQuantity           uint8
+}
+
+func (ItemCardsRewardsRow) TableName() string { return "catalog_item_cards_rewards" }
+func writeItemCardsRewards(tx *gorm.DB, values []assets.CardReward, ItemCardsKey uint16) error {
+	var rows []ItemCardsRewardsRow
+	for key, value := range values {
+		row := ItemCardsRewardsRow{ItemCardsKey: ItemCardsKey, ItemCardsRewardsOrdinal: key}
+		row.ValueItemID = value.ItemID
+		row.ValueQuantity = value.Quantity
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readItemCardsRewards(tx *gorm.DB, ItemCardsKey uint16) ([]assets.CardReward, error) {
+	result := make([]assets.CardReward, 0)
+	var rows []ItemCardsRewardsRow
+	query := tx
+	query = query.Where("item_cards_key = ?", ItemCardsKey)
+	if err := query.Order("item_cards_rewards_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.CardReward
+		value.ItemID = row.ValueItemID
+		value.Quantity = row.ValueQuantity
+		if row.ItemCardsRewardsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type SkillEvolutionsRow struct {
 	SkillEvolutionsOrdinal int `gorm:"column:skill_evolutions_ordinal;primaryKey;autoIncrement:false"`
 	ValueFromSkill         uint16
@@ -9249,6 +9345,193 @@ func readResourceRespawns(tx *gorm.DB) ([]assets.ResourceRespawn, error) {
 	return result, nil
 }
 
+type WorldPKRewardsRow struct {
+	WorldPKRewardsKey  int `gorm:"column:world_p_k_rewards_key;primaryKey;autoIncrement:false"`
+	ValueModel         string
+	ValueSource        string
+	ValueChestsPresent bool
+}
+
+func (WorldPKRewardsRow) TableName() string { return "catalog_world_p_k_rewards" }
+func writeWorldPKRewards(tx *gorm.DB, values assets.WorldPKRewardDefinitions) error {
+	var rows []WorldPKRewardsRow
+	{
+		key, value := 1, values
+		row := WorldPKRewardsRow{WorldPKRewardsKey: key}
+		row.ValueModel = value.Model
+		row.ValueSource = value.Source
+		row.ValueChestsPresent = value.Chests != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	{
+		key, value := 1, values
+		if err := writeWorldPKRewardsChests(tx, value.Chests, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readWorldPKRewards(tx *gorm.DB) (assets.WorldPKRewardDefinitions, error) {
+	var result assets.WorldPKRewardDefinitions
+	var rows []WorldPKRewardsRow
+	query := tx
+	if err := query.Order("world_p_k_rewards_key").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	if len(rows) != 1 {
+		return result, fmt.Errorf("missing singleton catalog row")
+	}
+	for _, row := range rows {
+		var value assets.WorldPKRewardDefinitions
+		value.Model = row.ValueModel
+		value.Source = row.ValueSource
+		if row.ValueChestsPresent {
+			var err error
+			value.Chests, err = readWorldPKRewardsChests(tx, row.WorldPKRewardsKey)
+			if err != nil {
+				return result, err
+			}
+		}
+		result = value
+	}
+	return result, nil
+}
+
+type WorldPKRewardsChestsRow struct {
+	WorldPKRewardsKey           int                `gorm:"column:world_p_k_rewards_key;primaryKey;autoIncrement:false"`
+	WorldPKRewardsChestsOrdinal int                `gorm:"column:world_p_k_rewards_chests_ordinal;primaryKey;autoIncrement:false"`
+	Parent                      *WorldPKRewardsRow `gorm:"belongsTo:Parent;foreignKey:WorldPKRewardsKey;references:WorldPKRewardsKey;constraint:OnDelete:CASCADE"`
+	ValueTier                   string
+	ValueWeight                 int
+	ValueRewardsPresent         bool
+}
+
+func (WorldPKRewardsChestsRow) TableName() string { return "catalog_world_p_k_rewards_chests" }
+func writeWorldPKRewardsChests(tx *gorm.DB, values []assets.WorldPKChestRewards, WorldPKRewardsKey int) error {
+	var rows []WorldPKRewardsChestsRow
+	for key, value := range values {
+		row := WorldPKRewardsChestsRow{WorldPKRewardsKey: WorldPKRewardsKey, WorldPKRewardsChestsOrdinal: key}
+		row.ValueTier = value.Tier
+		row.ValueWeight = value.Weight
+		row.ValueRewardsPresent = value.Rewards != nil
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	for key, value := range values {
+		if err := writeWorldPKRewardsChestsRewards(tx, value.Rewards, WorldPKRewardsKey, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readWorldPKRewardsChests(tx *gorm.DB, WorldPKRewardsKey int) ([]assets.WorldPKChestRewards, error) {
+	result := make([]assets.WorldPKChestRewards, 0)
+	var rows []WorldPKRewardsChestsRow
+	query := tx
+	query = query.Where("world_p_k_rewards_key = ?", WorldPKRewardsKey)
+	if err := query.Order("world_p_k_rewards_chests_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.WorldPKChestRewards
+		value.Tier = row.ValueTier
+		value.Weight = row.ValueWeight
+		if row.ValueRewardsPresent {
+			var err error
+			value.Rewards, err = readWorldPKRewardsChestsRewards(tx, row.WorldPKRewardsKey, row.WorldPKRewardsChestsOrdinal)
+			if err != nil {
+				return result, err
+			}
+		}
+		if row.WorldPKRewardsChestsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+type WorldPKRewardsChestsRewardsRow struct {
+	WorldPKRewardsKey                  int                      `gorm:"column:world_p_k_rewards_key;primaryKey;autoIncrement:false"`
+	WorldPKRewardsChestsOrdinal        int                      `gorm:"column:world_p_k_rewards_chests_ordinal;primaryKey;autoIncrement:false"`
+	WorldPKRewardsChestsRewardsOrdinal int                      `gorm:"column:world_p_k_rewards_chests_rewards_ordinal;primaryKey;autoIncrement:false"`
+	Parent                             *WorldPKRewardsChestsRow `gorm:"belongsTo:Parent;foreignKey:WorldPKRewardsKey,WorldPKRewardsChestsOrdinal;references:WorldPKRewardsKey,WorldPKRewardsChestsOrdinal;constraint:OnDelete:CASCADE"`
+	ValueKey                           string
+	ValueKind                          string
+	ValueItemID                        uint16
+	ValueCurrency                      string
+	ValueMinimum                       int
+	ValueMaximum                       int
+	ValueWeight                        int
+	ValueValueMinimum                  int
+	ValueValueMaximum                  int
+	ValueUnresolved                    string
+}
+
+func (WorldPKRewardsChestsRewardsRow) TableName() string {
+	return "catalog_world_p_k_rewards_chests_rewards"
+}
+func writeWorldPKRewardsChestsRewards(tx *gorm.DB, values []assets.WorldPKReward, WorldPKRewardsKey int, WorldPKRewardsChestsOrdinal int) error {
+	var rows []WorldPKRewardsChestsRewardsRow
+	for key, value := range values {
+		row := WorldPKRewardsChestsRewardsRow{WorldPKRewardsKey: WorldPKRewardsKey, WorldPKRewardsChestsOrdinal: WorldPKRewardsChestsOrdinal, WorldPKRewardsChestsRewardsOrdinal: key}
+		row.ValueKey = value.Key
+		row.ValueKind = value.Kind
+		row.ValueItemID = value.ItemID
+		row.ValueCurrency = value.Currency
+		row.ValueMinimum = value.Minimum
+		row.ValueMaximum = value.Maximum
+		row.ValueWeight = value.Weight
+		row.ValueValueMinimum = value.ValueMinimum
+		row.ValueValueMaximum = value.ValueMaximum
+		row.ValueUnresolved = value.Unresolved
+		rows = append(rows, row)
+	}
+	if len(rows) > 0 {
+		if err := tx.CreateInBatches(&rows, catalogWriteBatch).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func readWorldPKRewardsChestsRewards(tx *gorm.DB, WorldPKRewardsKey int, WorldPKRewardsChestsOrdinal int) ([]assets.WorldPKReward, error) {
+	result := make([]assets.WorldPKReward, 0)
+	var rows []WorldPKRewardsChestsRewardsRow
+	query := tx
+	query = query.Where("world_p_k_rewards_key = ?", WorldPKRewardsKey)
+	query = query.Where("world_p_k_rewards_chests_ordinal = ?", WorldPKRewardsChestsOrdinal)
+	if err := query.Order("world_p_k_rewards_chests_rewards_ordinal").Find(&rows).Error; err != nil {
+		return result, err
+	}
+	for _, row := range rows {
+		var value assets.WorldPKReward
+		value.Key = row.ValueKey
+		value.Kind = row.ValueKind
+		value.ItemID = row.ValueItemID
+		value.Currency = row.ValueCurrency
+		value.Minimum = row.ValueMinimum
+		value.Maximum = row.ValueMaximum
+		value.Weight = row.ValueWeight
+		value.ValueMinimum = row.ValueValueMinimum
+		value.ValueMaximum = row.ValueValueMaximum
+		value.Unresolved = row.ValueUnresolved
+		if row.WorldPKRewardsChestsRewardsOrdinal != len(result) {
+			return result, fmt.Errorf("invalid catalog ordinal")
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
 type TalksRow struct {
 	TalksKey             int `gorm:"column:talks_key;primaryKey;autoIncrement:false"`
 	ValueByIDPresent     bool
@@ -11209,6 +11492,7 @@ func readSalePrices(tx *gorm.DB) (map[uint16]assets.SalePrice, error) {
 
 type GachaPacksRow struct {
 	GachaPacksKey       uint16 `gorm:"column:gacha_packs_key;primaryKey;autoIncrement:false"`
+	ValueOpenAll        bool
 	ValueID             uint16
 	ValueRewardsPresent bool
 }
@@ -11218,6 +11502,7 @@ func writeGachaPacks(tx *gorm.DB, values map[uint16]assets.GachaPack) error {
 	var rows []GachaPacksRow
 	for key, value := range values {
 		row := GachaPacksRow{GachaPacksKey: key}
+		row.ValueOpenAll = value.OpenAll
 		row.ValueID = value.ID
 		row.ValueRewardsPresent = value.Rewards != nil
 		rows = append(rows, row)
@@ -11243,6 +11528,7 @@ func readGachaPacks(tx *gorm.DB) (map[uint16]assets.GachaPack, error) {
 	}
 	for _, row := range rows {
 		var value assets.GachaPack
+		value.OpenAll = row.ValueOpenAll
 		value.ID = row.ValueID
 		if row.ValueRewardsPresent {
 			var err error
@@ -11520,6 +11806,7 @@ type catalogPresence struct {
 	NPCShopDefaults       bool
 	TentSurfaces          bool
 	BoxedItems            bool
+	ItemCards             bool
 	SkillEvolutions       bool
 	NPCBuyPrices          bool
 	Instances             bool
@@ -11622,6 +11909,8 @@ func catalogTables() []any {
 		&NPCShopDefaultsValuesRow{},
 		&TentSurfacesRow{},
 		&BoxedItemsRow{},
+		&ItemCardsRow{},
+		&ItemCardsRewardsRow{},
 		&SkillEvolutionsRow{},
 		&EventGatheringRow{},
 		&EventGatheringTimersRow{},
@@ -11698,6 +11987,9 @@ func catalogTables() []any {
 		&CollectionSpotsMapCandidatesRow{},
 		&CollectionSpotsRewardsRow{},
 		&ResourceRespawnsRow{},
+		&WorldPKRewardsRow{},
+		&WorldPKRewardsChestsRow{},
+		&WorldPKRewardsChestsRewardsRow{},
 		&TalksRow{},
 		&TalksByIDRow{},
 		&TalksByIndexRow{},
@@ -11851,6 +12143,15 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&TalksRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&WorldPKRewardsChestsRewardsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&WorldPKRewardsChestsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&WorldPKRewardsRow{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Where("1 = 1").Delete(&ResourceRespawnsRow{}).Error; err != nil {
@@ -12081,6 +12382,12 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := tx.Where("1 = 1").Delete(&SkillEvolutionsRow{}).Error; err != nil {
 		return err
 	}
+	if err := tx.Where("1 = 1").Delete(&ItemCardsRewardsRow{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("1 = 1").Delete(&ItemCardsRow{}).Error; err != nil {
+		return err
+	}
 	if err := tx.Where("1 = 1").Delete(&BoxedItemsRow{}).Error; err != nil {
 		return err
 	}
@@ -12283,6 +12590,7 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	presence.NPCShopDefaults = c.NPCShopDefaults != nil
 	presence.TentSurfaces = c.TentSurfaces != nil
 	presence.BoxedItems = c.BoxedItems != nil
+	presence.ItemCards = c.ItemCards != nil
 	presence.SkillEvolutions = c.SkillEvolutions != nil
 	presence.NPCBuyPrices = c.NPCBuyPrices != nil
 	presence.Instances = c.Instances != nil
@@ -12341,6 +12649,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 		return err
 	}
 	if err := writeBoxedItems(tx, c.BoxedItems); err != nil {
+		return err
+	}
+	if err := writeItemCards(tx, c.ItemCards); err != nil {
 		return err
 	}
 	if err := writeSkillEvolutions(tx, c.SkillEvolutions); err != nil {
@@ -12427,6 +12738,9 @@ func writeCatalog(tx *gorm.DB, c *assets.Catalog) error {
 	if err := writeResourceRespawns(tx, c.ResourceRespawns); err != nil {
 		return err
 	}
+	if err := writeWorldPKRewards(tx, c.WorldPKRewards); err != nil {
+		return err
+	}
 	if err := writeTalks(tx, c.Talks); err != nil {
 		return err
 	}
@@ -12500,6 +12814,10 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 		return nil, err
 	}
 	c.BoxedItems, err = readBoxedItems(tx)
+	if err != nil {
+		return nil, err
+	}
+	c.ItemCards, err = readItemCards(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -12615,6 +12933,10 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.WorldPKRewards, err = readWorldPKRewards(tx)
+	if err != nil {
+		return nil, err
+	}
 	c.Talks, err = readTalks(tx)
 	if err != nil {
 		return nil, err
@@ -12688,6 +13010,9 @@ func readCatalog(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	if !presence.BoxedItems {
 		c.BoxedItems = nil
+	}
+	if !presence.ItemCards {
+		c.ItemCards = nil
 	}
 	if !presence.SkillEvolutions {
 		c.SkillEvolutions = nil

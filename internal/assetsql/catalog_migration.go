@@ -10,7 +10,12 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 57
+const catalogSchemaVersion = 62
+const itemCardsSchemaVersion = 62
+const mallFeaturedContainersSchemaVersion = 61
+const mallAdditionalPacksSchemaVersion = 60
+const mallDefaultsSchemaVersion = 59
+const worldPKRewardsSchemaVersion = 58
 const skillMaximumGradeSchemaVersion = 57
 const repositoryContactDefaultsSchemaVersion = 56
 const skillContactSchemaVersion = 55
@@ -65,6 +70,11 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		if schema.Version < mallAdditionalPacksSchemaVersion && tx.Migrator().HasTable(&GachaPacksRow{}) && !tx.Migrator().HasColumn(&GachaPacksRow{}, "ValueOpenAll") {
+			if err := tx.Migrator().AddColumn(&GachaPacksRow{}, "ValueOpenAll"); err != nil {
+				return err
+			}
 		}
 		// Older migrations read complete skill rows through the generated model.
 		if schema.Version < skillMaximumGradeSchemaVersion {
@@ -630,6 +640,34 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < worldPKRewardsSchemaVersion {
+			if err := migrateWorldPKRewards(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < mallDefaultsSchemaVersion {
+			if err := migrateMallDefaults(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < mallAdditionalPacksSchemaVersion {
+			if err := migrateMallPackDefaults(tx); err != nil {
+				return err
+			}
+			if err := migrateMallDefaults(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < mallFeaturedContainersSchemaVersion {
+			if err := migrateMallFeaturedContainers(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < itemCardsSchemaVersion {
+			if err := migrateItemCards(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -637,6 +675,14 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	c.Story = assets.DefaultStoryDefinitions()
+	c.Mall, err = updateDefaultMall(c.Mall)
+	if err != nil {
+		return err
+	}
+	c.WorldPKRewards, err = defaultWorldPKRewards()
+	if err != nil {
+		return err
+	}
 	if err := initializeEnabledWikiQuests(c); err != nil {
 		return err
 	}
@@ -735,6 +781,10 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	c.ItemCards, err = defaultItemCards()
+	if err != nil {
+		return err
+	}
 	c.SkillEvolutions, err = defaultSkillEvolutions()
 	if err != nil {
 		return err
@@ -764,6 +814,24 @@ func migrateCatalog(tx *gorm.DB) error {
 	if err = writeCatalog(tx, c); err != nil {
 		return err
 	}
+	if err := migrateMallFeaturedContainers(tx); err != nil {
+		return err
+	}
+	c.Mall, err = readMall(tx)
+	if err != nil {
+		return err
+	}
+	if err := migrateMallPackDefaults(tx); err != nil {
+		return err
+	}
+	c.GachaPacks, err = readGachaPacks(tx)
+	if err != nil {
+		return err
+	}
+	c.UnavailableGachaPacks, err = readUnavailableGachaPacks(tx)
+	if err != nil {
+		return err
+	}
 	// Reading the projection before committing also verifies ordered children,
 	// singleton rows and fixed-length protocol metadata.
 	projected, err := readCatalog(tx)
@@ -788,6 +856,9 @@ func LoadTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 	}
 	c, err := readCatalog(tx)
 	if err != nil {
+		return nil, err
+	}
+	if err = assets.ValidateWorldPKRewards(c.WorldPKRewards); err != nil {
 		return nil, err
 	}
 	if err = validatePetInitialStats(c.PetInitialStats); err != nil {

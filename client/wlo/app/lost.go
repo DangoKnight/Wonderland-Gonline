@@ -109,6 +109,12 @@ func (c *Client) disconnected() {
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Reset()
 	}
+	if c.WorldPK != nil {
+		c.WorldPK.Reset()
+	}
+	if c.Mall != nil {
+		c.Mall.Reset()
+	}
 	c.Login.LoginTime = time.Time{}
 	c.hotbar.drag = nil
 	c.closeHotbarTarget()
@@ -165,6 +171,14 @@ func (c *Client) lostPrev() {
 	c.stopMapLoading()
 	c.constellation = nil
 	c.constellations = [constellationLimit]bool{}
+	c.notebookState.Reset()
+	c.notebookOwner = 0
+	if c.Notebook != nil {
+		c.Notebook.CloseAll()
+	}
+	if c.starBook != nil {
+		c.starBook.Hide()
+	}
 	c.minigameResultAckPending = false
 	c.Lost.Hide()
 	if c.fade.frozen != nil {

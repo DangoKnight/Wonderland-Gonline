@@ -1,5 +1,69 @@
 # Testing and validation
 
+## World PK presentation — 2026-11-06
+
+The World PK toolbar opens a centered 356×493 window with native PVP, Top 300
+and Battle Settings assets and control positions from `FUN_002a9ccc`.
+Focused app checks cover tab visibility, four-row ranking pagination with a
+300-entry cap, local Allow/Disallow draft confirm/cancel, both close buttons,
+Escape, battle-entry cleanup and reset. Opening, browsing and settings controls
+send no packets. Start Battle and reward controls remain inactive. Rank/wins
+start at zero, rankings are empty and the ten-chance display is preview data.
+Offline settings are session-local presentation only; there is no server or
+database integration yet. `WORLD_PK_SNAPSHOT` renders all three tabs, with
+leaderboard fixtures only inside that opt-in test. The previews under
+`var/reports/world-pk` were visually compared with the supplied Legacy examples.
+The existing extracted UI artwork is reused; no asset extraction is required.
+
+## Field selection cancellation — 2026-11-06
+
+Join Team, Make Friends, Trade, battle Attack/Skills/Capture and battle-item
+targeting cancel on right click, including over UI controls. Invalid field
+left clicks cancel without walking, interacting, sending a combat choice or
+consuming an item. Field target modes take priority over NPC, floor-item and
+vehicle interactions. Valid target selection retains its existing validation.
+Focused tests cover empty/invalid social and combat targets, right clicks over
+UI/outside the field, valid friend/trade/capture/item targets and pose turning.
+
+## Immediate battle scene entry — 2026-11-06
+
+Battle formations now immediately own scene rendering, starting the battlefield
+reveal without darkening the map first. Transition tests verify first-frame
+battle ownership, reveal brightness and preserved exit fading. Action/audio
+queue tests still hold playback until reveal completes. World rendering tests
+verify that the local player's body never becomes a dust cloud, even if its
+participation packet precedes the battle roster. Other players retain clouds.
+
+## Map battle clouds — 2026-11-06
+
+Focused world/role tests cover native AC11:4 batches, malformed records,
+duplicate updates, spectators, exit/despawn cleanup, retained hidden pets,
+replacement of player bodies, native cloud origins and looping frames.
+Server regressions cover entrant snapshot ordering for an already-fighting peer,
+starter-map visibility and normal quest battle entry/exit. Client app battle
+selection/exit, previous-action and hidden team-pet checks pass. The imported
+`009/9000` cloud frames were inspected against the Legacy reference. No asset
+extraction or database changes are required.
+
+## Radial-center previous battle actions — 2026-11-06
+
+Added independent player/pet shortcuts for acknowledged Attack, Skills, Capture,
+Defend and Flee choices. Offensive repeats share AUTO's target scan and submit
+one action immediately without entering target selection or enabling AUTO.
+Defend/Flee submit directly; Capture and allied support skills retain targeting.
+The shortcut retains the original radial-center position (65,83). Only the
+selected actor's shortcut is visible; selecting player or pet changes its history.
+
+Focused app regressions exercise manually choosing enemy B then repeating against
+AUTO's enemy A, physical/magical/debuff skills, distinct player/pet actions in
+both native and round-chain wire formats, special-action command bytes, capture
+failure normalization, direct pointer clicks, unavailable/dead/waiting targets,
+low SP, forgotten/unknown skills and stale pet callbacks. Existing acknowledged
+history, AUTO, rapid input, skill selection and native/chain tests remain relevant.
+The opt-in `BATTLE_PREVIOUS_SNAPSHOT` render can verify radial-center placement.
+Native artwork and existing localization keys are reused; no asset
+extraction or server protocol changes are required.
+
 ## Signed scenery coordinates — 2026-11-06
 
 The Chicken Farm tree regression reproduced five missing edge-crossing placements
@@ -3966,3 +4030,143 @@ and runtime replay results are under `var/reports/skill-power-formulas/`.
 
 Validation used development scope, not the full pre-push battery. No push was
 requested.
+
+### World PK reward catalog — 2026-11-06
+
+Asset schema v58 adds structured mobile-reference chest/reward definitions and
+an embedded JSON initializer. Focused validation passed:
+
+```powershell
+go test ./internal/assetsql -run 'Test(WorldPKReward|SkillGradeMigration|StructuredCatalog|CatalogDefinition|RepositorySeed)' -count=1 -timeout=4m
+go test ./internal/dbmigration ./cmd/database-migrate -count=1 -timeout=3m
+go vet ./internal/assets ./internal/assetsql
+```
+
+SQLite checks used CGO and the installed WinLibs compiler. Coverage includes the
+85/10/5 authored chest weights, source quantity ranges, capsule denominations,
+rejection of malformed definitions, transactional migration rollback, SQL round
+trips, administrator edit/empty-pool preservation and fresh repository-only
+initialization from the regenerated server seed. The local running server's
+catalog was not migrated. Reward grants and World PK gameplay remain pending.
+
+### Native Item Mall catalog/cart — 2026-11-06
+
+Focused checks passed from `client/` (CGO disabled for the client):
+
+```powershell
+go test ./wlo/mall ./wlo/app -run '^TestMall' -count=1 -timeout=2m
+go test ./wlo/app -run '^Test(Mall|Mario|WorldPK|NPCServices)' -count=1 -timeout=3m
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^TestGPUClientParity$' -count=1 -timeout=4m
+go vet ./wlo/mall ./wlo/app
+```
+
+GPU/CPU parity now covers 92 stages, including the native mall catalog and
+separate cart. Optional `MALL_SNAPSHOT` (an absolute output directory) renders
+`catalog.png` and `cart.png`; local previews under `var/reports/mall` were
+visually inspected against the supplied screenshot and native skin assets.
+
+From the repository root, affected server/localization checks passed:
+
+```powershell
+go test ./internal/server ./internal/protocol -run '^TestMall' -count=1 -timeout=3m
+go test ./internal/localization -count=1
+go vet ./internal/server ./internal/protocol
+```
+
+Coverage includes independent decimal catalog/cart wire fixtures, the captured
+AC34/AC35 zero-balance preflight, points/bonus separation, quantity bounds and
+read-only native rows, category/badge grouping, malformed-frame atomicity,
+confirmed and failed receipts, duplicate-click guards, cancellation on close,
+late confirmations and uncertain write/timeout handling. Server tests retain
+SQL-authoritative balances, rollback and ownership gates. No successful live
+Legacy purchase was performed. Security Lock, fitting and dedicated mall
+slot/forging interfaces remain outside the catalog/cart implementation.
+
+### Screenshot mall assets (2026-11-06)
+
+Validated the 230 authored listings and repository SQL seed (asset schema 59),
+including screenshot category/Hot counts, bundle quantities, sale rounding,
+matching usable item definitions, preservation of custom/empty catalogs,
+transaction rollback and repeat migration. Focused checks:
+
+```powershell
+go test ./internal/assetsql ./internal/server -run '^(TestMall|TestWorldPKReward|TestRepositorySeed)' -count=1 -p 1
+cd client
+go test ./wlo/mall -count=1
+```
+
+Both pass. No live database was replaced; no full-suite push validation was
+requested or run for this asset update.
+
+### Mall bag contents previews
+
+The native Lbd decoder has independent raw-byte layout, truncation and quantity
+checks. Pet Upgrade Bag's 26-reward screenshot fixture verifies column order
+and Pet Return Scroll quantity three. Mall integration covers clicking the
+item, modal ownership, unchanged cart/network state, Cancel, Close, Escape and
+parent-hide cleanup. The rendered contents panel was visually checked against
+the supplied reference; the client CPU/GPU parity battery now covers 97 stages,
+including companion egg portraits and layered equipment fitting. Additional
+stages cover Weaponry's ready pose and Grocery's seated pose. Tab tests verify
+all seven native pose choices, the rendered action and Reset behavior. Smaller
+lower-right badges were visually reviewed in the catalog snapshot. Additional
+screenshots under `var/mall/bags` verify material-pack contents and expanded bag
+lists. A fitting regression reproduces +100 HP/+10 MAT/+12 DEF/+12 MDEF, checks
+same-slot replacement and Reset, and verifies no inventory, stats or network
+mutations. The tracked preview asset now contains 55 known lists.
+
+Passed focused checks:
+
+```powershell
+go test ./internal/clientassets ./internal/localization ./cmd/mall-previews -run 'TestParseMallContents|TestPetUpgrade|Test.*Catalog|Test.*UI' -count=1
+cd client
+$env:WONDERLAND_TEST_GPU='1'
+go test ./wlo/app ./wlo/mall -run '^TestMall|^TestGPUClientParity$' -count=1
+```
+
+Mall contents gesture checks exercise title dragging, release outside the
+window, outside dismissal over a catalog tab without click-through, and clicks
+inside the reward list. Catalog snapshots verify centered 40-pixel item icons
+and the larger NEW badge overhanging the lower-right corner.
+
+### Mall machines, forging and Thunder Spear
+
+Focused client tests cover raw AC75:4 machine requests, both menu pages,
+unsupported kinds, bonus-tab visibility and the AC57:1 instruction response
+without charging before Start. Forge checks cover raw AC75:3 requests,
+covered-slot selection, confirmation, failure, scroll upgrade inventory ordering,
+delayed success, malformed/wrong-slot/stale-item receipts and duplicate-attempt
+locks. Thunder Spear resolves a ready-pose frame for all four body families.
+CPU/GPU parity now includes 101 stages, adding both machine pages, the furnace
+panel and the layered Thunder Spear preview. Rendered menu/forge snapshots were
+visually checked against the native reference.
+
+```powershell
+go test ./internal/server -run '^(TestStrongScrollForge|TestPointForge|TestForge|TestMallGame)' -count=1
+cd client
+$env:CGO_ENABLED='0'
+$env:WONDERLAND_TEST_GPU='1'
+go test ./wlo/app ./wlo/mall ./wlo/role -run '^TestMall|^TestGPUClientParity$|^TestArchiveLookup|^TestWeaponPatchOrder|^TestMissingPatch|^TestNativeArcadeDispatchAndCleanup$|^TestMarioFlow$' -count=1
+```
+
+### Expanded mall containers
+
+Focused checks preserve the independent 230-row screenshot fixture and verify
+the new 251-row catalog, prices, NEW metadata, edited-catalog preservation,
+published EXP weights, near-equal fallback pools, deterministic three-item
+bundle definitions and blocked incomplete Winter Cloth Bag. Bundle integration
+checks successful SQL delivery, rollback when a later reward does not fit, and
+failed-save preservation without success packets. Client checks compare renders
+with all four promotional metadata values to prove no overlay is drawn.
+Chobits previews verify both complete bundles and explicit partial-list metadata.
+The v61 feature refresh additionally verifies old tags are removed, twenty
+enabled new containers appear in Hot and Grocery, original products remain in
+their category, the native Hot tab is retained, and custom prices survive.
+Machine-return coverage exercises explanation Leave/Close and in-game Exit,
+preserving the mall's selected page and cart without a paid play request;
+unrelated game exits do not open a previously closed mall.
+
+```powershell
+go test ./internal/assets ./internal/assetsql ./internal/server ./internal/clientassets -run '^(TestMall|TestGacha|TestParse.*Gacha|TestChobits|TestRepositorySeed)' -count=1 -p 1
+```

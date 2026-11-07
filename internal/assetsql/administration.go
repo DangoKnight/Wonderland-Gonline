@@ -12,7 +12,7 @@ import (
 )
 
 // Dataset names describe server definitions, rather than source filenames.
-var DefinitionNames = []string{"ResourceRespawns", "CollectionSpots", "Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "BattleBackdrops", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
+var DefinitionNames = []string{"ItemCards", "WorldPKRewards", "ResourceRespawns", "CollectionSpots", "Story", "MapTransitions", "TentToolHosts", "ChestPropCategories", "Travel", "NPCShopDefaults", "TentSurfaces", "BoxedItems", "SkillEvolutions", "EventGathering", "NPCBuyPrices", "Manufacturing", "RebornClasses", "Fishing", "Terrains", "BattleBackdrops", "Arcades", "Tents", "Economy", "NativeItems", "NPCs", "Skills", "SkillEffects", "Maps", "Talks", "Marks", "StarterItems", "Mall", "Drops", "SalePrices", "PetVouchers", "DisabledEvents", "Critical", "GachaPacks", "LuckyDraw", "Forging", "AlchemyRecipes", "AnimationTiming", "ChestPools", "CombatTrials", "QuestVisibility", "QuestDefinitions"}
 
 func definition(c *assets.Catalog, name string) (reflect.Value, error) {
 	for _, allowed := range DefinitionNames {
@@ -157,6 +157,23 @@ func validateDefinition(name string, c *assets.Catalog) error {
 		return validateTentSurfaces(c.TentSurfaces)
 	case "BoxedItems":
 		return validateBoxedItems(c.BoxedItems)
+	case "ItemCards":
+		rows := make([]struct {
+			ID uint16 `json:"card_id"`
+			assets.ItemCard
+		}, 0, len(c.ItemCards))
+		for id, card := range c.ItemCards {
+			rows = append(rows, struct {
+				ID uint16 `json:"card_id"`
+				assets.ItemCard
+			}{id, card})
+		}
+		raw, err := json.Marshal(rows)
+		if err != nil {
+			return err
+		}
+		_, err = assets.ParseItemCards(raw, c.Items)
+		return err
 	case "SkillEvolutions":
 		return validateSkillEvolutions(c.SkillEvolutions)
 	case "EventGathering":
@@ -212,6 +229,8 @@ func validateDefinition(name string, c *assets.Catalog) error {
 		return assets.ValidateCollectionSpots(c.CollectionSpots, c.Items, c.Maps)
 	case "ResourceRespawns":
 		return assets.ValidateResourceRespawns(c.ResourceRespawns, c.Maps)
+	case "WorldPKRewards":
+		return assets.ValidateWorldPKRewards(c.WorldPKRewards)
 	case "Skills", "SkillEffects":
 		for id, e := range c.SkillEffects {
 			if id != e.ID || id == "" {

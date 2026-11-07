@@ -20,8 +20,8 @@ func sceneBrightness(c *Client) float64 {
 	return float64(sum) / float64(3*area.Dx()*area.Dy())
 }
 
-// TestBattleTransitions: entering darkens the map (alpha 12 per frame to
-// 180), then reveals the battle field. Leaving shows the map at alpha 180
+// TestBattleTransitions: entering switches immediately to the battlefield
+// and reveals it. Leaving shows the map at alpha 180
 // and lightens it over 15 frames.
 func TestBattleTransitions(t *testing.T) {
 	c, now, _ := enteredClient(t)
@@ -34,24 +34,8 @@ func TestBattleTransitions(t *testing.T) {
 	enemy[2] = 2
 	c.dispatch(remoteRecord(250, 2, 4, 2, 10001, 0))
 	c.dispatch(enemy)
-	if !c.enteringBattle() {
-		t.Fatal("battle started without the entry transition")
-	}
-	c.Frame()
-	if got := sceneBrightness(c); !c.enteringBattle() || c.battleFrame(false) || !near(got, lit*(255-sceneFadeAlphaStep)/255) {
-		t.Fatalf("first entry frame %.1f, lit %.1f", got, lit)
-	}
-	for i := 1; i < sceneFadeSteps; i++ {
-		*now = now.Add(sceneFadeFrame)
-		c.Frame()
-	}
-	if got := sceneBrightness(c); c.sceneFade.step != sceneFadeSteps || !near(got, lit*(255-sceneFadeSteps*sceneFadeAlphaStep)/255) {
-		t.Fatalf("last entry frame step %d brightness %.1f", c.sceneFade.step, got)
-	}
-	*now = now.Add(sceneFadeFrame)
-	c.Frame()
 	if c.enteringBattle() || !c.battleFrame(false) {
-		t.Fatal("battle field did not follow the entry transition")
+		t.Fatal("battle field must own the first frame immediately")
 	}
 	if c.sceneFade.mode != sceneFadeRevealBattle || c.sceneFade.step != sceneFadeSteps {
 		t.Fatal("battle field skipped reveal")

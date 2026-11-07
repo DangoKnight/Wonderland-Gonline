@@ -86,11 +86,12 @@ func TestBattleActionsBeforeDrawingApplyOnce(t *testing.T) {
 }
 func TestBattleCaptureSelection(t *testing.T) {
 	c, _, sent := enterBattle(t)
-	c.chooseBattleCommand(3)
+	c.chooseBattleCommand(battleCommandCapture)
 	c.GroundClick(660, 370)
-	if len(sent()) != 0 {
-		t.Fatal("capture targeted ally")
+	if len(sent()) != 0 || c.battle.binding != nil {
+		t.Fatal("capture did not cancel on an ally")
 	}
+	c.chooseBattleCommand(battleCommandCapture)
 	c.GroundClick(230, 370)
 	if p := sent(); len(p) != 1 || !bytes.Equal(p[0], []byte{50, 1, 4, 2, 2, 2, 0x18, 0x27}) {
 		t.Fatalf("capture %x", p)
@@ -117,8 +118,12 @@ func TestBattlePreviousActionUsesAcknowledgedHistory(t *testing.T) {
 	c.dispatch([]byte{50, 6, 4, 2, 0})
 	c.dispatch([]byte{52, 1})
 	c.battleFrame(false)
-	if !c.battle.previous.Visible || c.battle.previous.Image != c.Pics.Find("Btn_Battle_1_1") || c.battle.previous.Left != 65 || c.battle.previous.Top != 83 {
-		t.Fatal("previous defense icon does not match native radial control")
+	if !c.battle.previous.Visible || c.battle.previous.Image != c.Pics.Find("Btn_Battle_1_1") {
+		t.Fatal("previous defense icon missing")
+	}
+	at := (clientbattle.Cell{X: 4, Y: 2}).Position()
+	if p := c.battle.previous.Abs(); p.X != at.X-battleCommandOriginX+65 || p.Y != at.Y-battleCommandOriginY+83 {
+		t.Fatal("previous defense icon is not in the radial center", p)
 	}
 	if path := os.Getenv("BATTLE_SNAPSHOT"); path != "" {
 		c.Frame()
@@ -140,8 +145,8 @@ func TestBattlePreviousActionUsesAcknowledgedHistory(t *testing.T) {
 		t.Fatal("executed action did not replace history")
 	}
 	c.chooseBattleCommand(battleCommandPrevious)
-	if c.battle.binding == nil || c.battle.binding.ID != 10001 || len(sent()) != 2 {
-		t.Fatal("repeating attack must request a fresh target")
+	if c.battle.binding != nil || len(sent()) != 3 || !bytes.Equal(sent()[2], []byte{50, 1, 4, 2, 2, 2, 0x11, 0x27}) {
+		t.Fatal("repeating attack must submit AUTO's current target", sent())
 	}
 	c.HotbarKey(27, 0)
 	c.InventoryState.Pets[0].ID = 17162

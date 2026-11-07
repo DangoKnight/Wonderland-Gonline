@@ -49,6 +49,7 @@ func (c *Client) initInventory() {
 		return c.npcTemplates[uint32(id)].Element
 	}
 	c.Inventory = inventory.NewForm(c.Env, c.InventoryState, c.Stats)
+	c.Inventory.LoadCardPictures = c.loadPictures
 	c.Inventory.Send = func(p []byte) {
 		if err := c.Net.Send(p); err != nil {
 			c.Chat.Notice(err.Error())
@@ -98,6 +99,16 @@ func (c *Client) initInventory() {
 }
 
 func (c *Client) resetInventory(p world.Player) {
+	if c.notebookOwner != p.ID {
+		c.notebookState.Reset()
+		c.notebookOwner = p.ID
+		if c.Notebook != nil {
+			c.Notebook.CloseAll()
+		}
+		if c.starBook != nil {
+			c.starBook.Hide()
+		}
+	}
 	c.inventoryPoints = inventoryPointAlert{}
 	c.vacuum = vacuumRuntime{}
 	if c.battleResults.owner != p.ID {
@@ -192,6 +203,9 @@ func (c *Client) refreshEquipment() {
 }
 
 func (c *Client) inventoryPacket(p []byte) {
+	if c.Inventory != nil && c.Inventory.CardPacket(p) {
+		return
+	}
 	if c.floorItemPacket(p) {
 		return
 	}

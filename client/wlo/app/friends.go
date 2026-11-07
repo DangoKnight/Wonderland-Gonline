@@ -111,13 +111,11 @@ func (c *Client) friendTargetAt(x, y int) bool {
 		c.setFriendTarget(false)
 		return true
 	}
-	// An empty click keeps the mode, as Join Team's does (the original
-	// ends it only on a click on something, FUN_00496ca4).
 	id := c.World.TeamTargetAt(x, y)
+	c.setFriendTarget(false)
 	if id == 0 {
 		return true
 	}
-	c.setFriendTarget(false)
 	if _, ok := c.friend(id); ok {
 		c.friendNotice(localization.UI(noticeAlreadyFriend), noticeFriendAnswer)
 		return true

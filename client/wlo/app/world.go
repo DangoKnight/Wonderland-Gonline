@@ -23,6 +23,9 @@ const warpPacketBytes = 10
 // loadNPCs creates the map's NPC objects (FUN_003030ec). A map without
 // event data simply has none.
 func (c *Client) loadNPCs(w *world.World) {
+	if c.lib != nil {
+		w.BattleCloud = c.lib.DrawBattleCloud
+	}
 	if c.npcTemplates == nil {
 		if c.resources.npcTemplates == nil {
 			c.resources.npcTemplates, _ = world.NPCTemplates(c.Assets)
@@ -70,6 +73,12 @@ func (c *Client) warp(p []byte) {
 		return
 	}
 	c.resetServices()
+	if c.Notebook != nil {
+		c.Notebook.CloseAll()
+	}
+	if c.starBook != nil {
+		c.starBook.Hide()
+	}
 	c.groundHeld, c.groundSince = false, time.Time{}
 	c.World.StopWalk()
 	c.World.Marker.Hide()
@@ -83,6 +92,12 @@ func (c *Client) warp(p []byte) {
 	c.mapReady = false
 	if c.LuckyDraw != nil {
 		c.LuckyDraw.Hide()
+	}
+	if c.WorldPK != nil {
+		c.WorldPK.Hide()
+	}
+	if c.Mall != nil {
+		c.Mall.Hide()
 	}
 	if c.Settings != nil {
 		c.Settings.Hide()
@@ -187,6 +202,10 @@ func (c *Client) GroundClick(x, y int) {
 		return
 	}
 	x, y = c.World.ScenePoint(x, y)
+	// Target modes own the click even over another kind of field object.
+	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
+		return
+	}
 	if c.boardPlacedVehicle(x, y) {
 		return
 	}
@@ -194,9 +213,6 @@ func (c *Client) GroundClick(x, y int) {
 		return
 	}
 	c.floorPendingPickup = 0
-	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
-		return
-	}
 	if n := c.World.NPCAt(x, y); n != nil {
 		c.waterTravel.goal = nil
 		c.clickNPC(n)

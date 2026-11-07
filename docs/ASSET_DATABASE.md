@@ -8,6 +8,33 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v61 removes the original mall items from Hot and retains the newly added
+containers in both Hot and Grocery. The tab remains named Hot. Only promotional
+fields change on matching authored rows; existing prices, quantities, categories
+and ordering are preserved. Use the same stop/migrate/rebuild/restart procedure.
+
+Assets v60 expands the default mall from 230 to 251 listings and seeds verified
+container contents, published EXP-pack probabilities and provisional near-equal
+odds for newly listed bags without published probabilities. Existing edited
+catalogs and pools are preserved. Snow Love Box and Viking Box grant all three
+contents transactionally; `catalog_gacha_packs.value_open_all` stores this mode.
+Winter Cloth Bag has a prepared listing/partial preview but the live mall filters
+it out and purchase/opening remains unavailable
+because its published featured rewards leave the other 98.8% unspecified.
+Stop the server, run `go run ./cmd/database-migrate -config config.local.json`,
+rebuild the server and restart it. Client assets do not need re-extraction.
+
+Assets v58 adds the structured `WorldPKRewards` definition, with separate
+`catalog_world_p_k_rewards`, `catalog_world_p_k_rewards_chests` and
+`catalog_world_p_k_rewards_chests_rewards` tables. The tracked
+[`world_pk_rewards_defaults.json`](../internal/assetsql/world_pk_rewards_defaults.json)
+seeds the provisional mobile pools during explicit migration/initial creation.
+Existing feature tables, including deliberately empty pools, are preserved.
+Administration reads and edits `WorldPKRewards` through the normal definition
+API; runtime reads SQL only. Editing the JSON changes future initialization
+defaults, not existing administrator data. Stop the server before upgrading.
+The repository server seed includes these tables without client extraction.
+
 Assets v57 stores each skill's native `maximum_grade`. The repository-owned
 `skill_grade_defaults.csv` supplies all 953 definitions without client extraction.
 The migration fills absent limits and preserves administrator

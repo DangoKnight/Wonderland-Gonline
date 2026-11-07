@@ -1,0 +1,191 @@
+[
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34174,
+    "name": "EXP Pack",
+    "point_cost": 35,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34248,
+    "reward_policy": "Published EXP effect/quantity distribution: var/slots/01.htm"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34193,
+    "name": "Water Pack",
+    "point_cost": 35,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34248,
+    "reward_policy": "Published EXP effect/quantity distribution: var/slots/01.htm"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34349,
+    "name": "Fortune Pack",
+    "point_cost": 54,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34192,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34365,
+    "name": "Potential Pack",
+    "point_cost": 58,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34199,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34366,
+    "name": "Chaos Pack",
+    "point_cost": 58,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34199,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34385,
+    "name": "Nost Love Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56652,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34386,
+    "name": "Nost Deco Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 57819,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34387,
+    "name": "Nost Cat Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 57819,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 34388,
+    "name": "Nost Rabbi Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 57819,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 55811,
+    "name": "Speedy Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 55940,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 56059,
+    "name": "G.Spirit Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 55940,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 56239,
+    "name": "D.Halberd Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56307,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 56573,
+    "name": "W.Cheong Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56652,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 56619,
+    "name": "Bl.Fox Ear Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 57819,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 57301,
+    "name": "GreenTeddy Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 55936,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 57884,
+    "name": "East Lance Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56681,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 57887,
+    "name": "Coldmist Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56652,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "internal/clientassets/mall_contents.json",
+    "item_id": 57921,
+    "name": "Soul Umbre Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56307,
+    "reward_policy": "Provisional near-equal weights, authorized by user"
+  },
+  {
+    "contents_source": "compiled Chinese item description; var/reference-web/items/34.htm",
+    "item_id": 35450,
+    "name": "Snow Love Box",
+    "point_cost": 132,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34020,
+    "reward_policy": "Deterministic three-item bundle"
+  },
+  {
+    "contents_source": "compiled Chinese item description; var/reference-web/items/34.htm",
+    "item_id": 35451,
+    "name": "Viking Box",
+    "point_cost": 132,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 34020,
+    "reward_policy": "Deterministic three-item bundle"
+  },
+  {
+    "contents_source": "compiled Chinese item description; var/reference-web/items/34.htm",
+    "item_id": 56276,
+    "name": "Wint Cloth Bag",
+    "point_cost": 32,
+    "price_policy": "Comparable existing listing; administrator may edit",
+    "price_reference_item_id": 56652,
+    "reward_policy": "Unavailable: only featured 1.2% of pool known"
+  }
+]

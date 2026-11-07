@@ -121,6 +121,45 @@ func (l *Library) lookup(base string, id int) (*archive, int) {
 	return l.open(base, firstID(base)), id + g.Shift
 }
 
+// resolve retains native patch selection, but an omitted patch may have its
+// sprites in an earlier installed family archive rather than the base archive.
+// The raw lookup rules/table remain unchanged for compatibility inspection.
+func (l *Library) resolve(base string, id int) (*archive, int) {
+	a, key := l.lookup(base, id)
+	if a != nil && a.sprite(key) != nil {
+		return a, key
+	}
+	g, ok := lookupGroups[base]
+	if !ok {
+		return a, key
+	}
+	type candidate struct {
+		name string
+		key  int
+	}
+	var candidates []candidate
+	shift := g.Shift
+	for _, m := range g.Members {
+		cmp := id
+		if m.MinusOne {
+			cmp--
+		}
+		if first := firstID(m.Name); first > 0 && first <= cmp {
+			if m.Reset {
+				shift = 0
+			}
+			candidates = append(candidates, candidate{m.Name, id + shift})
+		}
+	}
+	for i := len(candidates) - 1; i >= 0; i-- {
+		c := candidates[i]
+		if archive := l.open(c.name, firstID(c.name)); archive != nil && archive.sprite(c.key) != nil {
+			return archive, c.key
+		}
+	}
+	return a, key
+}
+
 // index is FUN_00302934: the sprite's entry in its archive.
 func (a *archive) index(id int) int {
 	if a.first > 0 {
@@ -193,7 +232,7 @@ func blendSpritePixel(source color.NRGBA, destination color.RGBA) color.NRGBA {
 
 // Image returns the original transparent frame, using normal archive patch rules.
 func (l *Library) Image(family string, id, action, frame int) (*image.NRGBA, error) {
-	a, mapped := l.lookup(family, id)
+	a, mapped := l.resolve(family, id)
 	if a == nil {
 		return nil, fmt.Errorf(localization.UI("ui.role.sprite_family_s_unavailable_f62bc637"), family)
 	}

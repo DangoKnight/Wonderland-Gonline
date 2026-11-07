@@ -5,6 +5,21 @@ simulation. This is a working core, **not complete native battle parity**.
 
 ## Implemented
 
+- Armed field choices (Attack, Skills, Capture and items) cancel on right click
+  anywhere, before UI dispatch, or on a left click with no valid target. The
+  radial menu returns without submitting a choice. World Join Team, Make
+  Friends and Trade use the same cancellation rules and consume invalid hits
+  before walking or other field interactions can run.
+- Map players in combat use the native `009` sprite `9000`, action zero,
+  instead of their body, equipment or shapeshift. The local player never uses
+  this map cloud, including before the battle roster arrives. `FUN_00412c50` selects this
+  cloud; its three frames loop on a 100 ms clock at the native sprite origin.
+  AC11:4 uses `FUN_0038ce18`'s batched eight-byte participation records.
+  Following pets hide without changing their battle eligibility. Idle/exit,
+  despawn and map replacement clear presentation; spectator status four keeps
+  the ordinary body. Entrant snapshots include already-fighting peers' native
+  participation packets after their appearances. Missing artwork falls back
+  to the ordinary player body rather than making the player disappear.
 - The radial Skills command opens the separate native battle selector
   (`TRe_BattleSkillForm`, constructor `FUN_0029b674`), using
   `Form_BattleSkill_1`: three recent skills, a five-row scrollable learned list,
@@ -62,13 +77,11 @@ simulation. This is a working core, **not complete native battle parity**.
   mutating state. Duplicate ready packets do not reset submitted actions.
 - Battle entry and exit transitions (`client/wlo/app/transition.go`), the
   screen transition `FUN_0049a2e8` run each game frame by `FUN_0049a484`
-  after the scene and before the forms. Entering (mode 1): the battle
-  constructor (func 0x38bcdc) starts the battle music, then the map keeps
-  running and darkens with black at alpha 12 × step for steps 1..15; after
-  step 15 the callback 0x38c8f0 runs and the frame loop draws the battle
-  field (+0x565). The port continues with a 15-step reveal of the field, using
-  the same alpha/clock; this requested presentation continuation avoids a cut
-  to full brightness and is not claimed as an additional native transition.
+  after the scene and before the forms. Legacy entry (mode 1) darkens the map
+  before callback 0x38c8f0 switches to the battle field (+0x565). Gonline
+  switches to the battlefield immediately on formation, skipping that map
+  darkening phase. Its 15-step battlefield reveal uses alpha 12 × step;
+  this presentation continuation is not an additional native transition.
   Actions and their sounds wait for the reveal to finish. Leaving (mode 2): when the player's battle
   state clears, the frame loop (0x4a2b12) shows the map again under black
   for steps 15 down to 1 and frees the battle (`FUN_0038fefc`) at the end;
@@ -109,12 +122,22 @@ simulation. This is a working core, **not complete native battle parity**.
   a defeated ally, and starter stunts use their resolved character skill. Escape
   cancels
   targeting. World mouse/key walking is blocked throughout a battle.
-- The radial center button shows the selected actor's last confirmed action,
-  using that action's native radial artwork. Selection/cancellation does not
-  overwrite history. AC53:5 confirms manual choices; executed AC50:1 records
-  also update history for Remote actions. Clicking the center repeats the
-  command with current SP/ownership/skill checks and fresh target selection.
-  History is separate for player/pet actors and cleared on battle exit.
+- The selected fighter shows its last confirmed action in the radial menu's
+  clickable 28-pixel center shortcut at (65,83), using native command artwork
+  for Attack, Skills, Capture, Defend or Flee. Selecting the player or pet
+  displays that actor's independent history in the same center position.
+  Selection/cancellation does not overwrite history. AC53:5 confirms manual
+  choices; executed AC50:1 records also update history for Remote actions.
+  Capture failure 10009 and escape failure 60046 retain their original commands.
+  Repeating Attack or an enemy-targeted skill submits immediately against the
+  same first eligible enemy AUTO would choose in native column/row order;
+  it neither reuses the original enemy nor enables AUTO. Capture and allied
+  support skills keep manual targeting; Defend and Flee submit directly.
+  Current ownership, learned skills, SP, target validity and duplicate-choice
+  checks apply. Buttons hide after submission and during playback/timeout,
+  incoming-pet waiting, or automatic combat, and are removed at battle exit.
+  History remains independent per actor and survives between battles during
+  the login. A stale pet shortcut cannot control another pet reusing its cell.
 - MBTM fighter action/frame records, actor-relative mirrored movement, return
   movement, directional action mirroring, damage cues and
   percentage distribution, native HP/SP digit sheets, outlined item recovery

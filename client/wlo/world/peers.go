@@ -128,6 +128,7 @@ func (w *World) PlacePeer(id uint32, x, y int) {
 
 // RemovePeer is AC12 to map 0: the player leaves.
 func (w *World) RemovePeer(id uint32) {
+	delete(w.battlePresence, id)
 	delete(w.Peers, id)
 	delete(w.Expressions, id)
 	delete(w.Companions, id)

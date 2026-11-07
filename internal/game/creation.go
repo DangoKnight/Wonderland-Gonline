@@ -35,6 +35,9 @@ type Appearance struct {
 // ItemTypeExotic is the native Exotic item category (FUN_00485a20).
 const ItemTypeExotic = 10
 
+// Native Item.dat gift exchange cards (TGiftExchangeCardForm).
+const ItemTypeRedemptionCard = 40
+
 type ItemDefinition struct {
 	EquipLevel uint16    `json:"equip_level"`
 	CellWidth  byte      `json:"cell_width"`

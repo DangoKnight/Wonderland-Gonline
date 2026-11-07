@@ -52,8 +52,6 @@ const (
 	battleCommandCapture    = 3
 	battleCommandFlee       = 4
 	battleCommandPrevious   = 5
-	battlePreviousX         = 65 // Native radial constructor 0x002974a0, button 8.
-	battlePreviousY         = 83
 	battleIconDefend        = 1
 	battleIconCapture       = 2
 	battleIconFlee          = 3
@@ -188,6 +186,7 @@ type battleView struct {
 	item                *battleItemSelection
 	itemActors          map[clientbattle.Cell]bool
 	previous            *seui.FixedButton
+	previousActions     map[clientbattle.Cell]battlePreviousControl
 	lastActions         map[clientbattle.Cell]battlePreviousAction
 	actionHistory       map[battleActionIdentity]uint16 // Per-login history, retained between battles.
 	pendingActions      map[clientbattle.Cell]battlePreviousAction
@@ -276,10 +275,24 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		view.pendingActions = nil
 	}
 	if view.state.Active && (!wasActive || p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateFormation) {
+		if c.Notebook != nil {
+			c.Notebook.CloseAll()
+		}
+		if c.starBook != nil {
+			c.starBook.Hide()
+		}
 		c.stopVacuum()
+		if c.WorldPK != nil {
+			c.WorldPK.Hide()
+		}
+		if c.Mall != nil {
+			c.Mall.Hide()
+		}
 		c.beginBattleResults()
 		c.closeBattleView()
-		c.startSceneFade(sceneFadeEnterBattle)
+		// Switch the rendered scene immediately. Reveal the battlefield itself;
+		// never leave the map visible while battle participation is published.
+		c.startSceneFade(sceneFadeRevealBattle)
 		c.World.StopWalk()
 		c.closeTeamTransfer()
 		c.groundHeld = false
@@ -375,7 +388,9 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 				continue
 			}
 			id := action.Skill
-			if id == battleFleeFailureSkill {
+			if id == battleCatchFailureSkill {
+				id = battleCatchSkill
+			} else if id == battleFleeFailureSkill {
 				id = battleFleeSkill
 			}
 			old := view.lastActions[action.Actor]
@@ -446,6 +461,11 @@ func (c *Client) closeBattleView() {
 		c.UI.Remove(v.autoForm)
 		v.autoForm = nil
 	}
+	for _, control := range v.previousActions {
+		control.form.Hide()
+		c.UI.Remove(control.form)
+	}
+	v.previousActions = nil
 	v.bodies = nil
 	v.playing = nil
 	v.reactions = nil
@@ -1033,6 +1053,7 @@ func (c *Client) battleMenu() {
 	v := &c.battle
 	actor, ok := c.battleActor()
 	show := ok && v.binding == nil && v.item == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
+	c.battlePreviousActions(show, actor)
 	if !show {
 		if c.BattleSkills != nil {
 			c.BattleSkills.Hide()
@@ -1066,28 +1087,7 @@ func (c *Client) battleMenu() {
 			b.SetHint([]byte(command.label))
 			b.OnClick = func() { c.chooseBattleCommand(choice) }
 		}
-		v.previous = seui.NewFixedButton(c.Env, f)
-		v.previous.Init("", battlePreviousX, battleCommandButtonSize, battleCommandButtonSize, 0, 0, true, battleCommandButtonSize, battleCommandButtonSize, battlePreviousY)
-		v.previous.Visible = false
-		v.previous.OnClick = func() { c.chooseBattleCommand(battleCommandPrevious) }
 		c.UI.Add(f)
-	}
-	last, known := v.lastActions[clientbattle.Cell{X: actor.x, Y: actor.y}]
-	v.previous.Visible = known && last.skill != 0 && last.id == actor.id && last.owner == actor.owner && last.kind == actor.kind
-	if v.previous.Visible {
-		icon := battleIconSkills // Native previous command uses its radial command artwork.
-		switch last.skill {
-		case skills.BasicAttack:
-			icon = battleIconAttack
-		case skills.Defense:
-			icon = battleIconDefend
-		case battleCatchSkill:
-			icon = battleIconCapture
-		case battleFleeSkill:
-			icon = battleIconFlee
-		}
-		v.previous.Image = c.Pics.Find(fmt.Sprintf("Btn_Battle_%d_1", icon))
-		v.previous.BindLanguage("hint", func() { v.previous.SetHint([]byte(localization.UI("ui.app.repeat_last_action_8d9336f7"))) })
 	}
 	at := (clientbattle.Cell{X: actor.x, Y: actor.y}).Position()
 	v.menu.Left = at.X - battleCommandOriginX
@@ -1128,19 +1128,7 @@ func (c *Client) chooseBattleCommand(command int) {
 		c.battle.auto = true
 		c.battleAutoTick()
 	case battleCommandPrevious:
-		last, ok := c.battle.lastActions[clientbattle.Cell{X: actor.x, Y: actor.y}]
-		if !ok || last.id != actor.id || last.owner != actor.owner || last.kind != actor.kind {
-			return
-		}
-		switch last.skill {
-		case battleCatchSkill:
-			b := c.battleBinding(last.skill, actor)
-			c.battle.binding = &b
-		case battleFleeSkill:
-			c.submitBattleSpecial(actor, actor, last.skill, protocol.BattleActionFleeRequest)
-		default:
-			c.useBinding(c.battleBinding(last.skill, actor))
-		}
+		c.repeatBattleAction(actor)
 	}
 }
 
@@ -1177,6 +1165,14 @@ func (c *Client) battleAnimating() bool {
 func (c *Client) battleClick(x, y int) bool {
 	if !c.battle.state.Active {
 		return false
+	}
+	if c.battle.binding != nil || c.battle.item != nil {
+		// A field selection is one click, including an empty or invalid hit.
+		// Submission validates the target before sending anything.
+		defer func() {
+			c.battle.binding, c.battle.item = nil, nil
+			c.battleMenu()
+		}()
 	}
 	if c.battleAnimating() {
 		return true
@@ -1371,24 +1367,7 @@ func (c *Client) battleAutoTick() {
 			continue
 		}
 		binding := c.battleAutoBinding(actor)
-		columns := []byte{4, 3}
-		if actor.x >= 3 {
-			columns = []byte{1, 2}
-		}
-		target, found := remoteFighter{}, false
-		for _, x := range columns {
-			for y := byte(1); y <= clientbattle.GridRows && !found; y++ {
-				for _, f := range c.remote.battle.fighters {
-					if f.x == x && f.y == y && f.hp > 0 && c.hotbarTargetAllowed(binding, actor, f) {
-						target, found = f, true
-						break
-					}
-				}
-			}
-			if found {
-				break
-			}
-		}
+		target, found := c.battleAutoTarget(binding, actor)
 		if !found {
 			return
 		}

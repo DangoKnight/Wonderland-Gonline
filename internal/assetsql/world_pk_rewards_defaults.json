@@ -1,0 +1,156 @@
+{
+    "model":  "mobile_provisional",
+    "source":  "var/world-pvp/PK - 飄流幻境(WonderlandONLINE)M　手機版 Wiki_.htm (2023-07-02); see docs/WORLD_PK_REFERENCE.md",
+    "chests":  [
+                   {
+                       "tier":  "wood",
+                       "weight":  85,
+                       "rewards":  [
+                                       {
+                                           "key":  "green_stones",
+                                           "kind":  "currency",
+                                           "item_id":  0,
+                                           "currency":  "green_stones",
+                                           "minimum":  1,
+                                           "maximum":  3,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Mobile currency mapping and per-reward selection weight are unverified."
+                                       },
+                                       {
+                                           "key":  "exp_capsule",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  0,
+                                           "maximum":  0,
+                                           "weight":  0,
+                                           "value_minimum":  500,
+                                           "value_maximum":  1000,
+                                           "unresolved":  "Exact item IDs, quantities and per-reward selection weights are unverified. EXP values denote capsule denominations, not quantities."
+                                       },
+                                       {
+                                           "key":  "training_doll",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  0,
+                                           "maximum":  0,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Exact item IDs, quantities and per-reward selection weights are unverified. EXP values denote capsule denominations, not quantities."
+                                       }
+                                   ]
+                   },
+                   {
+                       "tier":  "silver",
+                       "weight":  10,
+                       "rewards":  [
+                                       {
+                                           "key":  "green_stones",
+                                           "kind":  "currency",
+                                           "item_id":  0,
+                                           "currency":  "green_stones",
+                                           "minimum":  3,
+                                           "maximum":  5,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Mobile currency mapping and per-reward selection weight are unverified."
+                                       },
+                                       {
+                                           "key":  "potential_pill",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  1,
+                                           "maximum":  2,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Japanese Aura pill alias may refer to Potential Pill 34269; item identity and selection weight require confirmation."
+                                       },
+                                       {
+                                           "key":  "chaos_crystal",
+                                           "kind":  "item",
+                                           "item_id":  61062,
+                                           "currency":  "",
+                                           "minimum":  1,
+                                           "maximum":  2,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Per-reward selection weight is unverified."
+                                       },
+                                       {
+                                           "key":  "recovery_bottle",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  0,
+                                           "maximum":  0,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "HP/SP bottle variants, exact item IDs, quantities and selection weights are unverified."
+                                       }
+                                   ]
+                   },
+                   {
+                       "tier":  "gold",
+                       "weight":  5,
+                       "rewards":  [
+                                       {
+                                           "key":  "green_stones",
+                                           "kind":  "currency",
+                                           "item_id":  0,
+                                           "currency":  "green_stones",
+                                           "minimum":  5,
+                                           "maximum":  9,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Mobile currency mapping and per-reward selection weight are unverified."
+                                       },
+                                       {
+                                           "key":  "potential_pill",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  2,
+                                           "maximum":  3,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Japanese Aura pill alias may refer to Potential Pill 34269; item identity and selection weight require confirmation."
+                                       },
+                                       {
+                                           "key":  "chaos_crystal",
+                                           "kind":  "item",
+                                           "item_id":  61062,
+                                           "currency":  "",
+                                           "minimum":  3,
+                                           "maximum":  4,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "Per-reward selection weight is unverified."
+                                       },
+                                       {
+                                           "key":  "recovery_bottle",
+                                           "kind":  "item",
+                                           "item_id":  0,
+                                           "currency":  "",
+                                           "minimum":  0,
+                                           "maximum":  0,
+                                           "weight":  0,
+                                           "value_minimum":  0,
+                                           "value_maximum":  0,
+                                           "unresolved":  "HP/SP bottle variants, exact item IDs, quantities and selection weights are unverified."
+                                       }
+                                   ]
+                   }
+               ]
+}

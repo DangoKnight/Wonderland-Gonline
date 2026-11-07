@@ -889,6 +889,8 @@ func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Ch
 		slot := roster.slot(pet.ID)
 		deaths := m.pet.Deaths
 		if run.b.PvP {
+			// Gonline policy for every PvP mode, including disconnect/switch
+			// checkpoints: knockouts never cost amity or cause desertion.
 			deaths = 0
 		}
 		pet.Amity = byte(max(0, int(pet.Amity)-deaths))

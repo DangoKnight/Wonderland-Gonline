@@ -40,9 +40,11 @@ func mallCategory(entry assets.MallItem) byte {
 	switch {
 	case category == "2" || category == "armory" || category == "armor" || category == "armors" || contains("cloth", "shield", "helm", "boot"):
 		return protocol.MallCategoryArmory
-	case category == "3" || category == "weaponry" || category == "weapon" || category == "weapons" || contains("sword", "gun", "bow", "wand", "staff"):
+	case category == "1" || category == "weaponry" || category == "weapon" || category == "weapons" || contains("sword", "gun", "bow", "wand", "staff"):
 		return protocol.MallCategoryWeaponry
-	case category == "4" || category == "grocery" || category == "groceries" || category == "consumable" || category == "consumables" || contains("pot", "pill", "scroll", "gem", "spar", "oil", "diamond", "food", "rice"):
+	case category == "4":
+		return protocol.MallCategoryProps
+	case category == "3" || category == "grocery" || category == "groceries" || category == "consumable" || category == "consumables" || contains("pot", "pill", "scroll", "gem", "spar", "oil", "diamond", "food", "rice"):
 		return protocol.MallCategoryGrocery
 	case category == "5" || category == "furniture" || category == "furn" || category == "tent" || category == "house" || category == "vehic" || category == "mount":
 		return protocol.MallCategoryFurniture
@@ -51,7 +53,8 @@ func mallCategory(entry assets.MallItem) byte {
 	case category == "7" || contains("forg", "refin"):
 		return protocol.MallCategoryForging
 	default:
-		return protocol.MallCategoryHot
+		// Hot is assembled by badge in the client, not a catalog category.
+		return protocol.MallCategoryGrocery
 	}
 }
 func mallOrder(entry assets.MallItem) uint16 {
@@ -94,9 +97,19 @@ func (s *Server) mallCatalogPacket(bonus bool) []byte {
 				badge = protocol.MallBadgeLimited
 			}
 		}
-		p = p.U16(entry.ID).U8(entry.Count).U16(uint16(entry.Cost)).U8(protocol.MallNoDiscount).U8(byte(max(0, min(badge, math.MaxUint8)))).U8(mallCategory(entry)).U16(mallOrder(entry))
+		price, discount := mallAdvertisedPrice(entry)
+		p = p.U16(entry.ID).U8(entry.Count).U16(price).U8(discount).U8(byte(max(0, min(badge, math.MaxUint8)))).U8(mallCategory(entry)).U16(mallOrder(entry))
 	}
 	return p
+}
+
+// Cost is the authoritative amount charged per listing. Advertise a sale only
+// when native banker rounding reproduces it; older/custom rows may lack metadata.
+func mallAdvertisedPrice(entry assets.MallItem) (uint16, byte) {
+	if entry.OriginalPrice > 0 && entry.OriginalPrice <= math.MaxUint16 && entry.Discount > 0 && entry.Discount < protocol.MallNoDiscount && int(math.RoundToEven(float64(entry.OriginalPrice)*float64(entry.Discount)/100)) == entry.Cost {
+		return uint16(entry.OriginalPrice), byte(entry.Discount)
+	}
+	return uint16(entry.Cost), protocol.MallNoDiscount
 }
 
 func (s *Server) sendMallBalances(ctx context.Context, c *Session) error {
@@ -118,6 +131,9 @@ func (s *Server) sendMallCatalogs(ctx context.Context, c *Session, initial bool)
 	return s.sendMallBalances(ctx, c)
 }
 func (s *Server) sendInitialMallSync(ctx context.Context, c *Session) error {
+	if err := s.sendCardIndex(c); err != nil {
+		return err
+	}
 	return s.sendMallCatalogs(ctx, c, true)
 }
 
@@ -513,34 +529,44 @@ func (s *Server) openGachaPack(ctx context.Context, c *Session, slot byte) (bool
 	if !s.Assets.GachaAvailable(item.ID) {
 		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
 	}
-	// crypto/rand.Int uses rejection sampling: each weight slot is equally likely.
-	draw, err := rand.Int(rand.Reader, big.NewInt(game.GachaWeightTotal))
-	if err != nil {
-		return true, err
-	}
-	reward, ok := s.Assets.GachaPacks[item.ID].RewardForRoll(int(draw.Int64()))
-	if !ok {
-		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
-	}
-	limit, known := s.stackLimit(reward.ID)
-	if !known || reward.Quantity <= 0 || reward.Quantity > game.GachaMaxRewardQuantity {
-		return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+	pack := s.Assets.GachaPacks[item.ID]
+	rewards := pack.Rewards
+	if !pack.OpenAll {
+		// crypto/rand.Int uses rejection sampling: each weight slot is equally likely.
+		draw, err := rand.Int(rand.Reader, big.NewInt(game.GachaWeightTotal))
+		if err != nil {
+			return true, err
+		}
+		reward, ok := pack.RewardForRoll(int(draw.Int64()))
+		if !ok {
+			return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+		}
+		rewards = []assets.GachaReward{reward}
 	}
 	next := c.character.Clone()
 	if err := next.Bag.Remove(slot, game.GachaPacksPerOpening); err != nil {
 		return true, err
 	}
-	adds, err := next.Bag.Grant(game.Item{ID: reward.ID}, reward.Quantity, limit, s.Assets.Items)
-	if err != nil {
-		return true, c.send(serverwire.HeadBanner("Please free an inventory slot. Pack retained."))
+	var adds []game.Addition
+	var notices [][]byte
+	for _, reward := range rewards {
+		limit, known := s.stackLimit(reward.ID)
+		if !known || reward.Quantity <= 0 || reward.Quantity > game.GachaMaxRewardQuantity {
+			return true, c.send(serverwire.HeadBanner("This pack's rewards are unavailable. Pack retained."))
+		}
+		granted, err := next.Bag.Grant(game.Item{ID: reward.ID}, reward.Quantity, limit, s.Assets.Items)
+		if err != nil {
+			return true, c.send(serverwire.HeadBanner("Please free an inventory slot. Pack retained."))
+		}
+		adds = append(adds, granted...)
+		notices = append(notices, serverwire.HeadBanner(fmt.Sprintf("Gacha: received [%s] x%d.", s.itemName(reward.ID), reward.Quantity)))
 	}
 	if err := s.commit(ctx, c, next); err != nil {
 		return true, err
 	}
-	return true, s.sendAll(c, [][]byte{
+	return true, s.sendAll(c, append([][]byte{
 		{protocol.CommandInventory, protocol.InventoryRemove, slot, game.GachaPacksPerOpening},
 		next.Bag.AdditionPacket(adds),
 		{protocol.CommandInventory, protocol.InventoryItemUse},
-		serverwire.HeadBanner(fmt.Sprintf("Gacha: received [%s] x%d.", s.itemName(reward.ID), reward.Quantity)),
-	})
+	}, notices...))
 }

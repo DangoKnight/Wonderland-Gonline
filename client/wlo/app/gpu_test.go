@@ -26,7 +26,7 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 90
+const gpuParityStages = 101
 
 func isolateGPUFixture(t *testing.T) bool {
 	t.Helper()
@@ -142,6 +142,38 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 	for _, w := range []*Workspace{g.cpu, g.gpu} {
 		c := w.Current()
 		switch g.stage {
+		case 90:
+			c.stopMapLoading()
+			c.sceneFade.mode = sceneFadeNone
+			c.dispatch(mallCatalogFixture())
+			c.dispatch([]byte{75, 7, 1})
+			c.Mall.Show()
+		case 91:
+			c.Mall.AddRow(0)
+		case 92:
+			c.Mall.ShowCatalog()
+			c.Mall.ShowContents(55134)
+		case 93:
+			c.Mall.ShowContents(34172)
+		case 94:
+			c.Mall.ContentsForm.Hide()
+			c.Mall.TryOn(26017)
+			c.Mall.TryOn(26013)
+		case 95:
+			c.Mall.Tabs[2].Click()
+		case 96:
+			c.Mall.Tabs[3].Click()
+		case 97:
+			c.Mall.Tabs[5].Click()
+		case 98:
+			c.Mall.Next.Click()
+		case 99:
+			c.InventoryState.Bag[0] = game.Item{ID: 12101, Count: 1}
+			c.Mall.Tabs[6].Click()
+			c.Mall.LeftUp(0, c.Mall.Left+275, c.Mall.Top+51)
+		case 100:
+			c.Mall.Tabs[2].Click()
+			c.Mall.TryOn(12101)
 		case 86:
 			c.mapReady = false
 			c.startMapLoading()
@@ -396,7 +428,8 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			c.dispatch(remoteRecord(250, 2, 4, 2, 10001, 0))
 			c.dispatch(enemy)
 		case 34:
-			at := c.Now().Add(sceneFadeSteps * sceneFadeFrame)
+			// The battle field is already visible; sample its initial reveal.
+			at := c.Now()
 			c.Now = func() time.Time { return at }
 		case 35:
 			at := c.Now().Add(7 * sceneFadeFrame)

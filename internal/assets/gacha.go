@@ -12,6 +12,7 @@ type GachaReward struct {
 	Quantity int    `json:"quantity"`
 }
 type GachaPack struct {
+	OpenAll bool          `json:"open_all,omitempty"` // Deterministic bundle; grant every listed reward atomically.
 	ID      uint16        `json:"item_id"`
 	Rewards []GachaReward `json:"rewards"`
 }

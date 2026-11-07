@@ -66,6 +66,22 @@ switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
+Structured asset schema v62 adds typed item-card reward and gender mappings,
+initialized only when their tables are missing. Existing administrator edits and
+deletions remain authoritative. Card removal and reward delivery commit together.
+Structured asset schema v61 clears the original products' promotional flags so
+Hot features only the newly added containers, retaining them in their normal
+categories. This explicit metadata refresh preserves prices and quantities.
+Structured asset schema v60 adds 21 referenced containers to the unedited v59
+mall, preserving customized/empty catalogs and edited reward pools. Shared pools
+and deterministic bundle flags use typed SQL; initialization never reads client
+preview JSON. The incomplete Winter Cloth Bag pool remains unavailable.
+Structured asset schema v59 installs the screenshot-authored mall catalog only
+over the exact previous default catalog, preserving customized and empty catalogs.
+Schema v58 stores provisional World PK reward pools and their
+evidence in typed parent/child tables. The embedded JSON supplies offline defaults
+only; unresolved reward weights, quantities and identities remain explicit.
+
 Gameplay schema v21 stores character state in typed tables and owned child rows.
 v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
 Claims and rewards commit together; keys identify the resource kind, map and source,
@@ -1084,6 +1100,10 @@ walking; enforce a bounded batch context and report failures individually.
 Clinic rest includes the accompanying roster only. Broadcast accepted action
 ACKs inside the battle, never to map spectators. PvP reward suppression is an
 explicit owner decision; do not restore the source grant while porting handlers.
+Every PvP mode must preserve pet amity and player/pet equipment durability,
+including knockout, switching, escape and disconnect checkpoints. Keep the shared
+`Battle.PvP` policy set for all player-versus-player modes. See
+[traditional PK reference](TRADITIONAL_PK_REFERENCE.md).
 
 ### Administration and custom quest data
 

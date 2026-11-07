@@ -128,10 +128,10 @@ func (c *Client) tradeTargetAt(x, y int) bool {
 		return true
 	}
 	id := c.World.TeamTargetAt(x, y)
+	c.setTradeTarget(false)
 	if id == 0 {
 		return true
 	}
-	c.setTradeTarget(false)
 	switch m := c.World.Player.Map; {
 	case m == mapNoBusinessA || m == mapNoBusinessB:
 		c.friendNotice(localization.UI(noticeTradeHere), tradeHereNotice)

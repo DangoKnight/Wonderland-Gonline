@@ -48,6 +48,8 @@ type Form struct {
 	DrawPotentialPortrait                                           func(byte, image.Rectangle)
 	DrawPotentialPreview                                            func(byte, int, int)
 	LoadPotentialPictures                                           func()
+	LoadCardPictures                                                func(...string)
+	OpenNotebook                                                    func()
 	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
 	Status                                                          *login.Status
@@ -72,6 +74,7 @@ type Form struct {
 	itemInfo                                                        *seui.Panel
 	Dialog                                                          *actionDialog
 	UseDialog                                                       *useDialog
+	CardDialog                                                      *cardDialog
 	potentialRequest                                                *potentialRequest
 	Potential                                                       *seui.FixedButton
 	pointAnimationAt                                                time.Time
@@ -209,6 +212,9 @@ func (f *Form) Hide() {
 	}
 	if f.UseDialog != nil {
 		f.UseDialog.Hide()
+	}
+	if f.CardDialog != nil {
+		f.CardDialog.Hide()
 	}
 	f.Form.Hide()
 }

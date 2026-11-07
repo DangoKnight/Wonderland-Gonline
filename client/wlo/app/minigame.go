@@ -431,7 +431,11 @@ func (c *Client) hideHUD(sp *sportPlay) {
 	if c.Inventory != nil && c.Inventory.Dialog != nil {
 		c.Inventory.Dialog.Hide()
 	}
-	for _, f := range []seui.Control{c.MainStatus, c.FuncButtons, c.MainButtons, c.HotKeys, c.ChatBar, c.Chat, c.Inventory} {
+	forms := []seui.Control{c.MainStatus, c.FuncButtons, c.MainButtons, c.HotKeys, c.ChatBar, c.Chat, c.Inventory}
+	if c.Mall != nil {
+		forms = append(forms, c.Mall)
+	}
+	for _, f := range forms {
 		if f == nil || !f.Base().Visible {
 			continue
 		}
