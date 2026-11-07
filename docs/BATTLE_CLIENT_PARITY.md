@@ -474,6 +474,7 @@ scheduling margin; precise camera/movement synchronization remains pending.
 
 ## Validation
 
-See [battle validation history](TESTING.md#battle-validation-history) for raw-byte,
-CPU/GPU and recorded build/suite evidence. Current rendering limits above remain
-separate from those historical results.
+Use [subsystem checks](TESTING.md#subsystem-checks) and
+[GPU parity](TESTING.md#gpu-parity-and-snapshots) for current verification recipes.
+The same page retains recent full-suite results and observed live acceptance.
+Those results do not establish parity for the remaining limitations above.

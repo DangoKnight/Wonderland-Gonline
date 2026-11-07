@@ -13,6 +13,9 @@ The reference is sibling `Develop` at
 checkout had no untracked or ignored files. Review coverage is not a percentage
 of the port completed.
 
+The inventory below is a review of that specific reference revision, not a live
+count of current Go features. Feature guides and code define current behavior.
+
 [Source inventory](source-inventory.json) retains every file's finding, normalized
 source hash and Go evidence paths. `files` holds C# records; `supporting_files`
 holds project metadata, scripts, data, binaries and documentation. Evidence links identify implementations reviewed, not tests
@@ -119,10 +122,12 @@ below is complete; unfinished source systems and native acceptance remain on hol
 
 ## Focused migration verification — 2026-10-04
 
-The [recorded migration verification](TESTING.md#migration-verification-recorded-on-2026-10-04)
-contains the 175-test battery, source-hash checks, SQL census, historical schema
-versions and reproduction command. Those results are historical, not a current
-full-suite pass. Current behavior and outstanding work are summarized here.
+The original 175-test migration battery, source-hash checks and SQL census
+were recorded for that reference revision; their transcripts remain in Git
+history. Use [current coverage](TESTING.md#automated-coverage) and
+[recent validation records](TESTING.md#recent-validation-records) for today's
+checks. Neither historical source-review totals nor an old test count establish
+current native-client parity.
 
 ## Native trade and social compatibility follow-up
 

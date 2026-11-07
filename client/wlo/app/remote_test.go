@@ -12,9 +12,9 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-func remoteClient(t *testing.T) (*Client, *time.Time, inventory.RemoteOptions) {
+func remoteClient(t *testing.T, fixtures ...*clientFixture) (*Client, *time.Time, inventory.RemoteOptions) {
 	t.Helper()
-	c, now, _ := enteredClient(t)
+	c, now, _ := enteredClient(t, fixtures...)
 	c.mapReady = true
 	c.Stats.HP, c.Stats.MaxHP, c.Stats.SP, c.Stats.MaxSP = 100, 100, 100, 100
 	c.InventoryState.Bag[0] = game.Item{ID: 34058, Count: 1}
@@ -264,9 +264,10 @@ func TestRemoteBattleRoundActionsAndDeathCounts(t *testing.T) {
 }
 
 func TestRemoteLeaveAndSessionBoundaries(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, condition := range []string{"timer", "death", "no supplies", "map", "controller"} {
 		t.Run(condition, func(t *testing.T) {
-			c, now, o := remoteClient(t)
+			c, now, o := remoteClient(t, fixture)
 			wire(t, c)
 			switch condition {
 			case "timer":
@@ -302,7 +303,7 @@ func TestRemoteLeaveAndSessionBoundaries(t *testing.T) {
 			}
 		})
 	}
-	c, _, o := remoteClient(t)
+	c, _, o := remoteClient(t, fixture)
 	if !c.startRemote(o) {
 		t.Fatal("start")
 	}
@@ -373,9 +374,10 @@ func TestRemoteDiscardSelectionDoesNotConsume(t *testing.T) {
 }
 
 func TestRemoteWalkingPausesForServerLocks(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, pause := range []string{"loading", "held", "event", "recruitment", "dead", "battle"} {
 		t.Run(pause, func(t *testing.T) {
-			c, _, o := remoteClient(t)
+			c, _, o := remoteClient(t, fixture)
 			o.AutoMove = true
 			if !c.startRemote(o) {
 				t.Fatal("start")

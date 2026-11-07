@@ -157,6 +157,9 @@ func (g *parityGame) Draw(screen *ebiten.Image) {
 		if err := exerciseRaster(g.gpu.device); err != nil {
 			g.err = err
 		}
+		if err := exerciseDynamicTextures(); err != nil {
+			g.err = err
+		}
 		if err := exerciseFittedOutput(g.cpu, g.gpu); err != nil {
 			g.err = err
 		}

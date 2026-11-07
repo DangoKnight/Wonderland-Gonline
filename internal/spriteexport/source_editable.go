@@ -1,4 +1,4 @@
-package main
+package spriteexport
 
 import (
 	"fmt"
@@ -76,7 +76,9 @@ func exportEditableFromSource(input, executable, output, selected string, overwr
 	if err = exportEditable(temporary, selected, false); err != nil {
 		return err
 	}
-	if err = spritepack.OptimizeEditableAll(temporary, []string{selected}, nil); err != nil {
+	if err = spritepack.OptimizeEditableAll(temporary, []string{selected}, func(format string, args ...any) {
+		fmt.Printf(format+"\n", args...)
+	}); err != nil {
 		return err
 	}
 	return filepath.WalkDir(temporary, func(path string, entry fs.DirEntry, walkErr error) error {

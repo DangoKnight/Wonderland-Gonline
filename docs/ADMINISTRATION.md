@@ -143,11 +143,11 @@ separately. If startup used defaults, saving creates `config.admin.json`; start
 with `-config config.admin.json` to load it. This port uses SQLite with GORM;
 the original MySQL provider configuration is replaced by SQLite file paths.
 
-Current startup requires gameplay schema v19 and structured asset schema v17.
-The earlier v7 migration introduced IP bans, guilds, marriages and GM mail; use
-the preserving offline migration procedure for an existing installation. The
-[administration validation record](TESTING.md#administration-validation-history)
-describes the earlier smoke/API checks and their limits.
+Use the [current database versions and preserving migration](ASSET_DATABASE.md)
+for an existing installation. The earlier v7 migration introduced IP bans,
+guilds, marriages and GM mail; it is not the current schema requirement.
+[Automated coverage](TESTING.md#automated-coverage) describes the checks;
+[recent validation records](TESTING.md#recent-validation-records) record suite results.
 
 
 ## Optional quest actor visibility
@@ -364,4 +364,4 @@ cinematic sequences and rebirth checkpoints in asset schema v16. Native EVE rows
 uses the normal optimistic version, active-interaction gates, transactional SQL
 publication and reconnect flow. `/reload quests` also refreshes the compiled
 story policy index. See [STORY_SYSTEM.md](STORY_SYSTEM.md) for authoring examples
-and [verification](TESTING.md#story-system-migration--2026-11-01).
+and [verification](TESTING.md#automated-coverage).

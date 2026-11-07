@@ -115,18 +115,17 @@ The example uses loopback addresses and two separate databases:
 | `var/wonderland.db` | Go accounts, characters and settings | Server startup |
 | `data/` | Local client exports and tracked server-only definitions | Original client extraction plus checkout |
 
-Build the static catalog and check that it loads:
+Initialize a missing catalog and check that it loads without replacing an existing one:
 
 ```sh
 export CGO_ENABLED=1
-go run ./cmd/data-rebuild -config config.local.json
 go run ./cmd/wonderland -config config.local.json -inspect-data
 ```
 
 `-inspect-data` prints catalog counts and warnings without opening listeners or
 requiring an admin token. Missing-item warnings can disable individual gacha
 pools. The server creates a missing catalog from its embedded repository seed;
-the rebuild command above explicitly recreates that same seed with a backup.
+the inspection command above preserves an existing catalog.
 No extracted client tables or media are needed. Existing catalogs are preserved
 on normal startup; outdated schemas require the explicit migration procedure.
 
@@ -198,6 +197,11 @@ terminated there without restarting the server. See [Web administration](ADMINIS
 for character editing, GM tools, EXP tuning, gifts, content editors and maintenance.
 
 ## 6. Compile and run the Go client
+
+Distributed native clients can import and compile assets directly from a Legacy
+installation with `-extract-assets -client PATH`; see
+[standalone asset import](ASSET_IMPORT.md#import-with-a-compiled-client) for
+source languages, extraction-only prerequisites and output selection.
 
 The client is a separate Go module. The canonical build validates and compiles
 editable PNG/JSON assets before compiling Go. From the repository root:
@@ -283,7 +287,7 @@ alone, skip all extraction commands and start here:
 if (-not (Test-Path config.local.json)) { Copy-Item config.example.json config.local.json }
 $env:CGO_ENABLED = '1'
 New-Item -ItemType Directory -Force bin, var | Out-Null
-go run ./cmd/data-rebuild -config config.local.json
+go run ./cmd/wonderland -config config.local.json -inspect-data
 go build -o bin/wonderland.exe ./cmd/wonderland
 $env:WONDERLAND_ADMIN_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
 .\bin\wonderland.exe -config config.local.json -log-file var/server.jsonl
@@ -298,7 +302,7 @@ go run ./cmd/client-bundle -source data -output bin/client-assets.zip -contract 
 Push-Location client
 go build -o ../bin/wonderland-client.exe .
 Pop-Location
-.\bin\wonderland-client.exe -assets data
+.\bin\wonderland-client.exe
 ```
 
 Display `$env:WONDERLAND_ADMIN_TOKEN` in the server terminal to obtain the admin

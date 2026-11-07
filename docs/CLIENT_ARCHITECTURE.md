@@ -8,7 +8,7 @@ ownership boundaries.
 
 ## Build and edit
 
-The canonical client build runs the asset compiler before the Go compiler:
+The canonical checkout build runs the asset compiler before the Go compiler:
 
 ```sh
 make build-client
@@ -21,6 +21,12 @@ the core pack lists their exact filenames. Ship the executable, core pack and
 those three files together. The executable discovers the core beside itself
 and mounts the whole set directly without unpacking a second asset tree. `-assets /path/client-assets.zip` selects another bundle.
 `-assets data` still supports loose editable sources during development.
+The native executable can also perform extraction and runtime compilation itself
+with `-extract-assets -client PATH`, without a checkout or Go installation; see
+[standalone asset import](ASSET_IMPORT.md#import-with-a-compiled-client).
+Its default output is `assets/` beside the executable, discovered automatically
+on the next launch. Extraction-only Python/Pillow and FFmpeg dependencies are
+documented there; ordinary gameplay does not need them.
 
 Edit the PNGs and JSON under `data/`, then run `make build-client` again. The
 compiler hashes source content, reuses unchanged compressed entries and rebuilds
@@ -44,8 +50,9 @@ commands above to include edits in a distribution. `go generate` is not required
 
 Make variables `CLIENT_DATA`, `CLIENT_BUNDLE`, `CLIENT_OUTPUT` and
 `CLIENT_CONTRACT` select alternative source/output paths. Compiled bundles and
-runtime profiles under `bin/` are ignored by Git. Track the dimension contract,
-JSON metadata and code; keep the existing ignored-media policy for PNG/audio/video.
+runtime profiles under `bin/` are ignored by Git. Generated dimension contracts,
+client JSON metadata and media remain local and ignored. Track code, authored
+policies, server-only definitions and compiled language catalogs.
 
 ## Format and compatibility checks
 
@@ -134,9 +141,12 @@ continue to validate the data they consume.
 
 ## Measurements and remaining opportunities
 
-On the current WLRI data, the previous single bundle was approximately 4.5 GiB.
-The optimized deployment set totals approximately 3.0 GiB. Cache/build files are
-excluded from these totals. These are local measurements, not format guarantees.
+Deployment size depends on the extracted client version, selected UI languages
+and retained media. Measure the core plus the exact companions in `_packs.json`;
+exclude `*.build.zip`, unreferenced old packs and `.client-runtime-*` caches.
+Earlier single-bundle/optimized size estimates are not current release sizes.
+Use `cmd/client-bundle -verbose` for phase timings and `-workers` to select the
+build pool; the Makefile exposes this as `CLIENT_WORKERS`.
 
 Terrain benchmark results and reproduction commands are centralized in
 [benchmarks](TESTING.md#benchmarks).
@@ -374,6 +384,16 @@ loose large images use fixed 256 × 256 source tiles. Camera movement does not
 create viewport-specific textures. Missing offscreen pages stay unopened.
 A single asset exceeding the cache budget fails with an explicit error.
 
+Mutable CPU surfaces retain one texture per source/region/key combination and
+upload again only when their revision changes. Procedural RGBA effects use
+`surface.DynamicSprite` with a stable identity and increasing revision, so
+waypoints, exits and area titles replace their texture pixels instead of keeping
+old frames in the immutable LRU. Updates preserve queued drawing order, refresh
+alpha metadata and resize cache accounting when necessary. Upload conversion
+storage is reused. The gateway shares fixed ring calculations and computes
+plume parameters once per row; its reference RGB565 frames remain unchanged.
+See [runtime measurements](CLIENT_PERFORMANCE.md#implemented-rendering-optimizations).
+
 Each session retains its own 800 × 600 target and, when needed, same-sized scratch
 image (about 1.83 MiB each in RGBA8). The window owns its 1020 × 600 composition
 target. Frozen scenes retain an additional target until reset. Removing a session
@@ -452,7 +472,7 @@ actions retain their left/right variants. Camera offsets are applied before
 turning. Only changed facings send AC32:2; expressions keep their own animation.
 Window controls consume right-clicks first. Loading, walking, mounted vehicles,
 battles, movies, minigames, held interactions and modal/dialogue windows suppress
-scene turning. See [verification](TESTING.md#client-right-click-pose-facing--2026-11-02).
+scene turning. See [verification](TESTING.md#character-presentation-checks).
 
 Following pets mirror the owner's pose family while keeping their own facing,
 including when the owner turns through AC32:2. The pet retains its full facing
@@ -493,10 +513,16 @@ talk mode 2 preserves the NPC's direction. Question prompts turn eligible NPCs
 in both acknowledgment modes. The player also faces the NPC. Turning uses the
 native eight-direction slope thresholds already implemented by `world.Facing`.
 
-The native exceptions are template kind 6 (props such as chests) and actors whose
-pose group is neither walking nor standing (for example, sitting or lying).
-The exception is specifically kind 6, rather than all kinds that use fixed prop
-frames. Changes are session-local presentation state and send no new packets.
+The native facing helper excludes template kind 6; its dialogue caller also
+preserves actors whose pose group is neither walking nor standing (for example,
+sitting or lying). Gonline additionally respects the scene object's presentation
+metadata: frame-controlled prop kinds 6, 9 and 10 (`FUN_00482424`), unnamed
+scenery kind 8 (including guideposts), held frames and sprites with fewer than
+two available standing directions do not turn. There are no template-ID
+exceptions. Directional actors with sparse standing artwork retain the native
+forward lookup within the standing group. Explicit actor-animation packets can
+release a held pose so the actor becomes eligible again. The player still faces
+an exempt speaker. Changes are session-local presentation state and send no new packets.
 Original NPC actions are saved once per event and restored on AC20:8, matching
 `FUN_00307bc4`; subsequent dialogue lines do not replace the saved original.
 

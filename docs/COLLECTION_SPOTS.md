@@ -162,10 +162,11 @@ does not clear later operator disables. New imports apply the same validation.
 The imported `CollectionSpots` registry remains separate: it does not invent
 actor IDs or turn unresolved website coordinates into new gameplay nodes.
 
-Use a Client-compatible assets database and run its offline upgrade before
-starting the new binaries; the feature requires assets schema v30 and gameplay
-schema v21. Development validation upgrades isolated older catalog copies. The local
-quest-development v38 database and gameplay database are left untouched.
+Use the [current database versions and offline upgrade](ASSET_DATABASE.md)
+before deploying against an older installation. Collection changes were
+introduced in asset v30 and gameplay v21; that asset version is historical.
+The migrator supports the formerly separate Client/Quest catalogs. Do not
+replace or downgrade one branch's database with an older snapshot from another.
 
 ### Shared cooldowns and individual durations
 

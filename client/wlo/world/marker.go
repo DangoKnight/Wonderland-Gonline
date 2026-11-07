@@ -4,6 +4,7 @@ import (
 	"image"
 	"math"
 	"time"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Marker preserves FUN_0049bbf4's reachable destination and brief lifetime,
@@ -39,11 +40,6 @@ const (
 	markerSpinPeriod     = 1600 * time.Millisecond
 	markerGroundAspect   = .42
 )
-
-type markerFrame struct {
-	pixels   *image.NRGBA
-	revision uint64
-}
 
 // Show starts or restarts the marker at a scene point.
 func (m *Marker) Show(at image.Point) {
@@ -186,7 +182,7 @@ func (w *World) drawMarker(cx, cy int, now time.Time) {
 		return
 	}
 	_ = w.Env.Screen.DrawSprite(m.at.X-cx-markerSize/2, m.at.Y-cy-int(markerGroundY),
-		markerFrame{m.pixels, m.revision}, func() (*image.NRGBA, error) { return m.pixels, nil })
+		surface.DynamicSprite{Identity: m.pixels, Revision: m.revision}, func() (*image.NRGBA, error) { return m.pixels, nil })
 }
 
 // TrackHeldMarker retains screen coordinates so camera movement between input

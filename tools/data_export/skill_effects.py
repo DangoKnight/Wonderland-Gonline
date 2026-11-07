@@ -3,14 +3,14 @@ import argparse
 import json
 from pathlib import Path
 import subprocess
-from export import REPO, FORMATS, export_records, inventory, sha256, write_json
+from export import REPO, FORMATS, export_records, inventory, sha256, write_json, tool_command
 
 ASSET = 'skill_effects.json'
 
 def annotate(skills, effects):
     original = json.loads(skills.read_text(encoding='utf-8'))
-    subprocess.run(['go', 'run', './cmd/skill-effects-export', '-skills', str(skills),
-                    '-effects', str(effects)], cwd=REPO, check=True)
+    subprocess.run(tool_command('skill-effects-export', '-skills', str(skills),
+                    '-effects', str(effects)), cwd=REPO, check=True)
     annotated = json.loads(skills.read_text(encoding='utf-8'))
     for old, new in zip(original['records'], annotated['records'], strict=True):
         old['fields']['effect_refs'] = new['fields']['effect_refs']

@@ -200,8 +200,9 @@ Flee (60041) as the repeat command rather than submitting the failure motion ID.
 
 Implementation: `internal/protocol/combat_round.go`,
 `internal/server/combat_round.go`, and `client/wlo/app/combat_round.go`.
-Focused wire, compatibility, persistence, race and rendering checks are recorded
-in [TESTING.md](TESTING.md#negotiated-combat-round-transport---2026-11-02).
+Use the focused wire, compatibility, persistence, race and rendering recipes
+in [TESTING.md](TESTING.md#subsystem-checks); recent suite results are recorded
+separately on that page.
 
 ## Client-side backdrop resolution
 

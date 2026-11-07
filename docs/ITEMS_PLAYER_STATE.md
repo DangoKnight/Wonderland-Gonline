@@ -2,8 +2,8 @@
 
 ## Initialization
 
-Current server startup requires gameplay schema **v18** and structured assets
-schema **v16**. Tents were introduced in earlier schema versions.
+Use the current versions in the database guide. Tents were introduced in
+earlier schema versions; those versions are not the current runtime requirements.
 Follow the preserving upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before deploying against older databases. The upgrade replaces the configured
 databases in place; the originals remain in `backups/` for rollback.
@@ -225,7 +225,7 @@ The source Tradeable property and use-type metadata have no restriction callers
 in trade/wear, so they do not impose additional rules. Unverified special item
 effects remain on hold. AC8 allocation rejects invalid/overflowing entries without
 spending points; pet overflow matches the reference guard, and character overflow
-is deliberately rejected too. See [verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
+is deliberately rejected too. See [verification](TESTING.md#automated-coverage).
 
 Routine walking follows the buffered session policy in DEVELOPMENT.md.
 Furniture transfers, purchases, claims, item wear/consumption and inventory

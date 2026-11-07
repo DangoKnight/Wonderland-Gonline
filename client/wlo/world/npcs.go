@@ -42,9 +42,7 @@ const (
 	actorActionOffset = 13
 	actorPoseBytes    = 4
 	// frameFree is the state that animates a prop (+0x11f = 0xff).
-	frameFree                      = 0xff
-	legacyFixedFacingTemplateFirst = 19020 // Fixed-art templates retain their authored frame.
-	legacyFixedFacingTemplateLast  = 19024
+	frameFree = 0xff
 )
 
 // Template kinds (Npc.dat +0x0b). Props are FUN_00482424's kinds: AC22:4
@@ -256,14 +254,28 @@ func (n *NPC) paint() {
 	}
 }
 
-// FaceConversation is FUN_00304fd0 -> FUN_00307ae8: normal actors turn
-// to the player, but kind-6 props, kind-8 guideposts and special pose groups keep their artwork.
+// FaceConversation follows FUN_00304fd0 -> FUN_00307ae8 for directional
+// actors. Frame-controlled props (FUN_00482424), unnamed scenery, held
+// frames and special pose groups retain their authored artwork. Eligibility
+// depends on presentation metadata, never on a particular template ID.
 func (n *NPC) FaceConversation(x, y int) bool {
-	if n.Info.Kind == kindProp || n.Info.Kind == kindUnnamedA || (n.Template >= legacyFixedFacingTemplateFirst && n.Template <= legacyFixedFacingTemplateLast) || n.Action < 0 || n.Action >= standingAction+facingCount {
+	if n.Info.Prop() || n.Info.Kind == kindUnnamedA || n.Fixed || n.Action < 0 || n.Action >= standingAction+facingCount {
 		return false
 	}
 	action := standingAction + Facing(n.X, n.Y, x, y, n.Action%facingCount)
 	if painter, ok := n.Painter.(interface{ FrameSize(int) (int, int) }); ok {
+		// A single-view sprite is artwork, not a directional actor. In
+		// particular, do not reinterpret its sole action as another facing.
+		facings := 0
+		for facing := standingAction; facing < standingAction+facingCount; facing++ {
+			w, h := painter.FrameSize(facing)
+			if w > 0 && h > 0 {
+				facings++
+			}
+		}
+		if facings < 2 {
+			return false
+		}
 		// FUN_002fe570 indexes packed frames by the sum of preceding action
 		// counts. An empty facing therefore uses the next stored artwork.
 		// Resolve within the standing group; preserve the current pose when

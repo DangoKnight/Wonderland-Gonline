@@ -13,6 +13,10 @@ Start with [GETTING_STARTED.md](GETTING_STARTED.md) for WLRI extraction, server
 setup and compiling/running both programs. Use [CONFIGURATION.md](CONFIGURATION.md)
 for connection settings and client overrides.
 
+For measured runtime costs and optimization priorities, see the
+[client performance investigation](CLIENT_PERFORMANCE.md). Full test-suite
+timings are separate from interactive frame-time measurements.
+
 Verified [IGG English text overrides](IGG_TRANSLATIONS.md) are baked into compiled
 assets for matching NPCs, items, skills, scenes and dialogue. Verified IGG text
 takes first priority; existing name corrections supply fallbacks. Unmatched modern content keeps its current
@@ -87,7 +91,7 @@ hello negotiates complete-map-snapshot readiness: updated servers send AC5:4 onl
 after peers, vehicles, props, tents and other snapshot state have been sent.
 Legacy connections retain their original packet order and AC5:4 readiness behavior.
 
-Eligible area changes display the English scene name at the center of the game view.
+Eligible area changes display the localized scene name at the center of the game view.
 The Legacy title-group identity comes from SceneData.dat offset 94
 (`FUN_003075f0`); its `t10002` Kelan artwork contains seven animation frames.
 Gonline renders a continuous 2200 ms ripple effect instead. Ripple travel runs
@@ -161,7 +165,7 @@ Builds discover `client-assets.zip` beside the executable. Source runs can
 use `-assets ../data` for loose editable assets; `-assets <bundle.zip>` selects
 a compiled bundle. The collapsible panel beside the game manages independent sessions sharing
 decoded assets. See [Client architecture](CLIENT_ARCHITECTURE.md). The workbench requires `-client`
-pointing to the original sibling installation.
+pointing to an original installation; its location is unrestricted.
 
 ## Compile the client
 
@@ -550,7 +554,7 @@ Native AC63:4's optional XOR-encoded item-file size hint is fully consumed befor
 authentication; truncated or extra fields are rejected. The hint is not used as
 an authentication factor.
 
-### Character sprites (next)
+### Character sprites and native format reference
 
 `THuman` (VMT 0x40fa0c, constructor `FUN_00410e04`) draws bodies (`FUN_00412c50`) and portraits (`FUN_002586c8`) from `jma\*.jma` with `.Jxa` indexes (archive unit 0x2fdc40–0x302cf8). Known so far:
 
@@ -642,7 +646,7 @@ Creation snapshot, packet and live-account checks are in
 
 **Not ported**: stopping voices after 9/1 (`FUN_00405138(0)`).
 
-### World view (started: `client/wlo/world`, `client/wlo/app/world.go`)
+### World view (implemented core: `client/wlo/world`, `client/wlo/app/world.go`)
 
 **AC3** (receive case 0x2dfdb3) is the player's own character and opens the world. It is read field by field (`FUN_00113b14`) in the layout the server sends: ID, body type, map, X, Y, a byte, head and look, the two colour values, the worn items, a word and two bytes, then the name. The original reads more trailing fields; our server doesn't send them.
 
@@ -936,20 +940,17 @@ The sport manager (TSportManage, `PTR_DAT_004c9994`) runs the games the server s
 
 ### Next steps
 
-The long-term plan is [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md), and [ALOGIN_CATALOG.md](ALOGIN_CATALOG.md) catalogs every region of the original with its port status. The items below are the short-term list.
-
-1. **The game world**: event kinds 0 and 2, NPC walk-in areas and the remaining HUD actions/chat presentation. Server-driven NPC roaming and pursuit already animate through AC22:2; see [client roaming](CLIENT_ROAMING.md).
-   - **Remaining chat presentation**: alternate backgrounds and VIP marks (this build has no speech bubbles). Transparent mode now lets map clicks through; scroll arrows/thumb/wheel, lock, three modes, line/portrait whisper targets and the native emoticon picker, log rendering and animated editor preview work.
-2. **Remaining login-phase pieces**: the talk window's buttons and typing behind the notices.
-3. **Earlier startup**: the rest of FormCreate (`Transition`) and `Skins.Flst` parsing instead of the fixed white skin.
-4. **Remove the legacy front end**: drop `client/ui` and `client/frontend.go` once the port covers what they show.
+Use [CLIENT_ROADMAP.md](CLIENT_ROADMAP.md) for remaining work. The address-based
+[catalog](ALOGIN_CATALOG.md) is a reverse-engineering index, not a current feature
+completion counter. Keep the optional legacy front end and native workbench
+while they remain useful for comparison; neither is the normal game runtime.
 
 ### Social window (ported in part: `client/wlo/hud/social*.go`, `client/wlo/app/social.go`, `client/wlo/app/emotes.go`)
 
 Ordinary dialogue and confirmations render above the window forms, including
 Social, Inventory and Settings. Covered controls do not intercept dialogue
 clicks. The dialogue skin remains translucent; movie dialogue retains its
-separate scene/zoom pass. See [layering verification](TESTING.md#client-dialogue-layering--2026-11-02).
+separate scene/zoom pass. See [layering verification](TESTING.md#gpu-parity-and-snapshots).
 
 - **Opening**: the main menu's Social button (tag 5, `FUN_00295678` → `FUN_0027f8dc`) toggles the window held at `DAT_006c70d4` (constructor `FUN_0027c6a4`, class `TSe_EmotiomForm`, a `TSe_FixedForm`; paint `FUN_0027b41c`). It is 0x164 × 0x1ed and stands at (200, 31): the constructor centres it in the main form object's +0x2d0 → (+0x38, +0x3c) area, which every Social capture shows to be 756 × 555 (the fields are untraced). Tabs `Btn_FriendIcon_1`, `Btn_EmuationalIcon_1` and `Btn_setup_2` sit at y 0x2b from x 0x14, 0x55, 0x97; the selected one is drawn pressed (+0xf8). `Btn_Marry` (0xd9) shows only for a married player (+0x3ca4). Close buttons: `Btn_Close_1` at (0x98, 0x1ca) and `Btn_Close_s_1` at (0x130, 0x18).
 - **Friend tab** (`FUN_0027eeb4`, mode 2, picture `Form_Friend_2`; rows `FUN_0027b5e8`): five rows a page from the friend table (`DAT_0072a390`, 0x43-byte records). Labels, ticks and job icons step 0x41 down the rows; mail, element and presence icons step 0x42. Per row: the portrait at (0x38, 0x61 + row × 0x41) in action 1 (a player's face sprite; a body-0 entry draws face 0x1f94 of the `008` archive, the GM's cupid); the name at (0x57, 0x3d); "LV n" at (0xcd, 0x49) with `Num_White3_1` (`FUN_002627fc`); the element orb `Icon_Element_n_1` at 0x10e; presence at (0x104, 0x68): `Icon_online_1`, `Icon_Busy_1`, `Icon_inline_1` or `icon_offline_1`; the job icon at 0xb5 (`Icon_Asn` Killer … `Icon_Prophet` Prophet, with hints); nickname and guild values at x 0x84 (y 0x5f and 0x71); `icon_mail_1` over `icon_mailGary_1` at 0x131; a tick box at (0x131, 0x6b) for every friend but the GM. Page arrows `Btn_ArrowL_8`/`Btn_ArrowR_8` at y 0x188 and "page / pages" in `Num_MainInfo` at (0xa0, 400), the slash being its eleventh row.
@@ -1138,9 +1139,9 @@ This daily feature is separate from the Lucky sport and other lottery games.
 
 ## Verification and limitations
 
-Native archive census results, resource-test environment variables and the
-scope of historical inspection evidence are recorded in
-[archive validation history](TESTING.md#archive-validation-history).
+Use [native-format verification](TESTING.md#native-format-verification) for
+decoder checks and their fixture variables. Historical census/transcript details
+remain in Git history; they are not current gameplay acceptance.
 Current gameplay gaps are tracked in [the roadmap](CLIENT_ROADMAP.md).
 
 ### Editable sprite assets

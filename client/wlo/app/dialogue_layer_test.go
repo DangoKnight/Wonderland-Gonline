@@ -41,9 +41,10 @@ func TestRewardNoticesBelowDialogueAndClickDismiss(t *testing.T) {
 }
 
 func TestDialogueAbovePanels(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, name := range []string{"social", "inventory", "settings"} {
 		t.Run(name, func(t *testing.T) {
-			c, now, _ := enteredClient(t)
+			c, now, _ := enteredClient(t, fixture)
 			var panel seui.Control
 			switch name {
 			case "social":

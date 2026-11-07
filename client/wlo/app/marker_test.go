@@ -7,6 +7,7 @@ import (
 )
 
 func TestPlacementDoesNotShowWalkMarker(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, tc := range []struct {
 		name   string
 		packet []byte
@@ -16,7 +17,7 @@ func TestPlacementDoesNotShowWalkMarker(t *testing.T) {
 		{"map switch", []byte{12, 0x11, 0x27, 0, 0, 0x2b, 0x27, 0xa2, 2, 0x2b, 4, 0, 0, 0}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _, _ := enteredClient(t)
+			c, _, _ := enteredClient(t, fixture)
 			if c.World.Marker.Shown() {
 				t.Fatal("login showed a waypoint")
 			}

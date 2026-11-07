@@ -26,9 +26,14 @@ func TestNPCConversationSparseFacings(t *testing.T) {
 	if n.FaceConversation(10, 0) || n.Action != 11 {
 		t.Fatal("missing standing artwork changed the original pose")
 	}
-	n.Painter = conversationPainter{actions: map[int]bool{11: true}}
+	n.Painter = conversationPainter{actions: map[int]bool{9: true, 11: true}}
 	if n.FaceConversation(10, -10) || n.Action != 11 {
 		t.Fatal("missing final facing selected another action group")
+	}
+	n.Action = 8
+	n.Painter = conversationPainter{actions: map[int]bool{13: true}}
+	if n.FaceConversation(0, -10) || n.Action != 8 {
+		t.Fatal("single-view artwork was treated as directional")
 	}
 }
 
@@ -42,15 +47,18 @@ func TestNPCConversationFacing(t *testing.T) {
 	for _, tc := range []struct {
 		kind   byte
 		action int
-	}{{6, 11}, {2, 16}, {2, 26}, {2, 46}} {
+	}{{6, 11}, {8, 11}, {9, 11}, {10, 11}, {2, 16}, {2, 26}, {2, 46}} {
 		n := NPC{X: 100, Y: 100, Action: tc.action, Info: NPCTemplate{Kind: tc.kind}}
 		if n.FaceConversation(110, 100) || n.Action != tc.action {
 			t.Fatalf("changed native exception kind %d action %d", tc.kind, tc.action)
 		}
 	}
-	// Native code excludes exactly template kind 6, not every Prop() kind.
-	n := NPC{Action: 8, Info: NPCTemplate{Kind: 9}}
+	n := NPC{Action: 8, Fixed: true, Frame: 2, Info: NPCTemplate{Kind: 2}}
+	if n.FaceConversation(10, 0) || n.Action != 8 || n.Frame != 2 || !n.Fixed {
+		t.Fatal("held standing artwork changed")
+	}
+	n.Fixed = false
 	if !n.FaceConversation(10, 0) || n.Action != 14 {
-		t.Fatal("blanket prop filter exceeded the native exception")
+		t.Fatal("released directional actor did not turn")
 	}
 }

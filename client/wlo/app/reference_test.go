@@ -10,20 +10,60 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"wonderland-gonline/internal/clientfs"
 )
 
 var errNoNetwork = errors.New("network disabled in tests")
 
+// A group is explicitly owned by one sequential test, not a package-global
+// cache. Cases keep fresh UI/session state and close only their own network.
+// Language, artwork and definition-mutating tests retain independent fixtures.
+type clientFixture struct {
+	root      string
+	resources *Resources
+}
+
+func newClientFixture(t *testing.T) *clientFixture {
+	t.Helper()
+	f := &clientFixture{root: filepath.Join("..", "..", "..", "data"), resources: &Resources{}}
+	if bundle := os.Getenv("WONDERLAND_TEST_CLIENT_BUNDLE"); bundle != "" {
+		root, unmount, err := clientfs.Mount(bundle)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.root = root
+		t.Cleanup(func() {
+			if err := unmount(); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	t.Cleanup(func() {
+		if err := f.resources.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return f
+}
+
 // testClient builds the client over the local asset copy with a one-server
-// list and no network.
-func testClient(t *testing.T) *Client {
+// list and no network. An explicit group may reuse immutable resources and
+// select compiled packs; ungrouped tests retain independent loose-source checks.
+func testClient(t *testing.T, fixtures ...*clientFixture) *Client {
 	t.Helper()
 	root := filepath.Join("..", "..", "..", "data")
-	if _, err := os.Stat(root); err != nil {
+	var resources *Resources
+	if len(fixtures) != 0 && fixtures[0] != nil {
+		root, resources = fixtures[0].root, fixtures[0].resources
+	}
+	if _, err := clientfs.Stat(root); err != nil {
 		t.Skip("client assets not installed")
 	}
 	c, err := New(Options{
 		Root:         root,
+		Shared:       resources,
+		UserRoot:     t.TempDir(),
 		SettingsPath: filepath.Join(t.TempDir(), "settings.json"),
 		ServerINI:    filepath.Join(t.TempDir(), "SERVER.INI"),
 		FallbackINI:  []byte("01[Local]1\r\nLocal1*127.0.0.1\r\n"),
@@ -33,7 +73,14 @@ func testClient(t *testing.T) *Client {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { c.Sprites.Close() })
+	t.Cleanup(func() {
+		c.Net.Shutdown()
+		if resources == nil {
+			if err := c.Sprites.Close(); err != nil {
+				t.Error(err)
+			}
+		}
+	})
 	c.Net.Dial = func(string, string) (net.Conn, error) { return nil, errNoNetwork }
 	c.Input.X, c.Input.Y = -100, -100
 	return c

@@ -22,8 +22,8 @@ func TestHeldReplanPreservesElapsedMovement(t *testing.T) {
 
 // enteredClient is a test client standing on Ship Deck, with its sent
 // packets collected.
-func enteredClient(t *testing.T) (*Client, *time.Time, *[][]byte) {
-	c := testClient(t)
+func enteredClient(t *testing.T, fixtures ...*clientFixture) (*Client, *time.Time, *[][]byte) {
+	c := testClient(t, fixtures...)
 	now := time.Unix(0, 0)
 	c.Now = func() time.Time { return now }
 	c.dispatch(selfPacket(10001, 2, 10017, 1042, 1075, 0, 444444444, 444444444, nil, "Dango"))

@@ -25,11 +25,11 @@ administrator edits. Compiled growth formulas remain in code.
 | `status_server_ids` | `[1, 101]` | Status records advertised to launchers; 1–100 unique IDs, each 1–9999 |
 | `http_address` | `127.0.0.1:8080` | Web administration, `/healthz` and `/register` |
 | `database` | `var/wonderland.db` | Persistent Go accounts, characters, relationships, settings and audit |
-| `assets_database` | `var/assets.db` | Read-only static catalog loaded at startup; must already exist |
+| `assets_database` | `var/assets.db` | Static catalog loaded at startup; a missing file is initialized from the embedded repository seed |
 | `combo_damage_per_participant` | `false` | Replace fixed ×1.3 combo damage with `1 + 0.1 × actual attackers` (players and pets); restart required; see [combos](COMBOS.md) |
 | `combat_round_chain` | `false` | Offer full-round combat delivery and batched choices to compatible Gonline clients; restart required. Legacy clients always retain native delivery; see [combat transport](COMBAT_TRANSPORT.md) |
 | `battle_gold_enabled` | `true` | Award ordinary monster battle gold on victory. Set `false` to disable it; quest/trial gold and EXP/items are unaffected. Startup-only policy; restart required. |
-| `battle_exp_formula` | `simple` | `simple` retains full battle EXP for each player/current pet; `participation` divides each kill's multiplied pool among its killing combo and eligible assistants, favoring lower levels. Victory only; restart required. See [battle EXP](BATTLE_EXPERIENCE.md). |
+| `battle_exp_formula` | `simple` | `simple` retains full battle EXP for each player/current pet; `participation` divides each kill's multiplied pool among its killing combo, prior damaging contributors and eligible assistants, favoring lower levels. Victory only; restart required. See [battle EXP](BATTLE_EXPERIENCE.md). |
 | `pet_growth_formula` | `base_stats` | Automatic pet level-up weighting: `base_stats` or `combat_stats`; fixed until restart |
 | `max_connections` | `512` | Maximum concurrent TCP sessions across the game/status services; accepted range 1–100000 |
 | `idle_seconds` | `600` | Incoming-packet inactivity timeout during login, character selection and creation; 0 disables it, otherwise 1–86400 seconds |
@@ -265,7 +265,7 @@ GM rights are checked on every invocation and online revocations apply immediate
 | `pet <template ID> [name]` | Recruit a known NPC template and select it for battle. An owned companion keeps its progress; a reserved companion is restored; a hotel companion must first be retrieved. Optional names allow 1–16 printable bytes. |
 | `amity` (`petamity`) `[0-100]` | Set selected pet amity; default 100. |
 | `rebirth` (`petrebirth`) | Force selected pet rebirth, bypassing normal eligibility, resetting level/EXP and adding 50 points. Already reborn pets are refused. |
-| `reborn <Killer\|Warrior\|Knight\|Wit\|Priest\|Seer>` | Rebirth a level-100+ character once, deducting 99 levels and learning the class skill; optional `force` bypasses level eligibility; see [GM rebirth](MANUFACTURING_CHARACTER_STATE.md#gm-rebirth). |
+| `reborn <Killer\|Warrior\|Knight\|Wit\|Priest\|Seer>` | Rebirth a level-100+ character once, deducting 99 levels and learning the class skill; optional `force` bypasses level eligibility; see [GM rebirth](MANUFACTURING_CHARACTER_STATE.md#character-rebirth). |
 | `palace <stage>` | Start an operator-defined SQL Palace trial using its normal admission and reward rules. |
 | `petlvl` (`petlevel`) `<level>` | Set pet level to 1–199 and reset EXP. Increases grant normal level points; lowering does not reclaim points. |
 | `petexp <gain>` | Add pet EXP using normal level growth. |
@@ -442,7 +442,9 @@ See [CLIENT.md](CLIENT.md) for detailed inspection and packaging commands.
 progress. The Server operations view controls the same value. Midpoint-even
 rounding matches Private Server: positive rewards give at least one EXP, zero
 stays zero, and scaled rewards are capped at the native signed 32-bit maximum.
-Pets receive the same once-scaled reward as their owners. Direct GM progression
+The selected battle EXP mode determines player/pet shares before rate scaling;
+participation mode can award different amounts to each participant. See
+[battle EXP](BATTLE_EXPERIENCE.md). Direct GM progression
 edits and native EVE EXP assignments retain their authored values. This command
 requires a nonzero account GM level; HTTP operations require the administrator
 token. A failed database save leaves the active rate unchanged.

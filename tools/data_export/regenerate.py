@@ -6,7 +6,7 @@ import subprocess
 import json
 import shutil
 
-from export import REPO, export_all, sha256, write_json
+from export import REPO, export_all, sha256, write_json, tool_command
 from import_untracked import EXTERNAL_ASSET_DIRECTORIES, EXTERNAL_ASSET_FILES, EXTERNAL_IMPORT_FORMAT
 from media import export_media
 from media_formats import validate_output_formats
@@ -89,15 +89,20 @@ def regenerate(destination, client, ui_language=None, chinese_client=None, clien
     export_all(client / 'data', None, destination)
     annotate_languages(destination, client_language, chinese_client)
     preserve_server_exports(destination, REPO / 'data' / 'server')
-    subprocess.run(['go', 'run', './cmd/sprite-export', '-editable',
+    print('Exporting and optimizing native sprite archives...', flush=True)
+    subprocess.run(tool_command('sprite-export', '-editable',
                     '-input', str(client / 'jma'), '-client-exe', str(client / 'aLogin.exe'),
-                    '-output', str(destination / 'sprites')], cwd=REPO, check=True)
-    subprocess.run(['go', 'run', './cmd/pic-export', '-input', str(client / 'pic'),
-                    '-output', str(destination / 'pictures')], cwd=REPO / 'client', check=True)
+                    '-output', str(destination / 'sprites')), cwd=REPO, check=True)
+    # pic-export lives in the client module only for source-checkout execution.
+    print('Exporting native picture archives...', flush=True)
+    subprocess.run(tool_command('pic-export', '-input', str(client / 'pic'),
+                    '-output', str(destination / 'pictures')), cwd=REPO / 'client', check=True)
+    print('Exporting UI, fonts, cursors, sound and movie resources...', flush=True)
     if ui_language == 'en' and chinese_client is None:
         export_media(client, destination / 'media')
     else:
         export_media(client, destination / 'media', ui_language=ui_language, chinese_client=chinese_client)
+    print('Validating extracted media formats...', flush=True)
     formats = validate_output_formats(destination)
     write_json(destination / 'media_formats.json', formats)
     write_json(destination / 'external_asset_import.json', {

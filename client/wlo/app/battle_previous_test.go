@@ -19,6 +19,7 @@ func previousTestNextTurn(c *Client) {
 }
 
 func TestBattlePreviousOffenseChoosesAutoTargetInsteadOfOriginalTarget(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, tc := range []struct {
 		name  string
 		id    uint16
@@ -30,7 +31,7 @@ func TestBattlePreviousOffenseChoosesAutoTargetInsteadOfOriginalTarget(t *testin
 		{"debuff skill", autoTestAttackSkill, nativeDebuffLayer},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _, sent := enterBattle(t)
+			c, _, sent := enterBattleWith(t, fixture)
 			autoTestDefinition(c, tc.id, tc.layer, 0)
 			c.SkillState.Learned[tc.id] = skills.Progress{Grade: 1}
 			// The manually chosen target B is (2,2). AUTO's target A at (1,1)
@@ -122,6 +123,7 @@ func TestBattlePreviousPlayerAndPetHaveIndependentRadialActions(t *testing.T) {
 }
 
 func TestBattlePreviousSpecialActions(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, tc := range []struct {
 		name  string
 		skill uint16
@@ -133,7 +135,7 @@ func TestBattlePreviousSpecialActions(t *testing.T) {
 		{"capture", battleCatchSkill, "Btn_Battle_2_1", []byte{50, 1, 4, 2, 2, 2, 0x18, 0x27}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _, sent := enterBattle(t)
+			c, _, sent := enterBattleWith(t, fixture)
 			autoTestAcknowledge(c, clientbattle.Cell{X: 4, Y: 2}, tc.skill)
 			previousTestNextTurn(c)
 			if c.battle.previous.Image != c.Pics.Find(tc.icon) {
@@ -154,9 +156,10 @@ func TestBattlePreviousSpecialActions(t *testing.T) {
 }
 
 func TestBattlePreviousSkillValidationAndTargetAvailability(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, reason := range []string{"low SP", "forgotten", "unknown", "no enemies", "support", "playback"} {
 		t.Run(reason, func(t *testing.T) {
-			c, _, sent := enterBattle(t)
+			c, _, sent := enterBattleWith(t, fixture)
 			layer := byte(skills.Magical)
 			if reason == "support" {
 				layer = autoTestSupportLayer

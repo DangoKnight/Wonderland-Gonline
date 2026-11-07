@@ -12,6 +12,15 @@ import (
 	"wonderland-gonline/client/wlo/surface"
 )
 
+func BenchmarkGatewayLight(b *testing.B) {
+	p := newGatewayLight()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := range b.N {
+		p.render(time.Duration(i) * time.Second / 120)
+	}
+}
+
 func TestGatewayLightDoesNotRequireSpriteDatabase(t *testing.T) {
 	now := time.Unix(0, 0)
 	screen := surface.New(gatewayWidth, gatewayHeight)

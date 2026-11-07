@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
-from export import REPO, inventory, sha256, write_json, require
+from export import REPO, inventory, sha256, write_json, require, tool_command
 
 ASSET = 'lucky_draw.json'
 RULES = REPO / 'internal/assets/lucky_draw_rules.json'
@@ -14,8 +14,8 @@ def generate(source, destination):
     policy = json.loads(RULES.read_text(encoding='utf-8'))
     with tempfile.TemporaryDirectory(prefix='wonderland-lucky-draw-') as temporary:
         items = Path(temporary) / 'items.json'
-        subprocess.run(['go', 'run', './cmd/item-export', '-input', str(source),
-                        '-output', str(items)], cwd=REPO, check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(tool_command('item-export', '-input', str(source),
+                        '-output', str(items)), cwd=REPO, check=True, stdout=subprocess.DEVNULL)
         decoded = json.loads(items.read_text(encoding='utf-8'))
     require(decoded['source_sha256'] == source_hash == sha256(source), 'Lucky Draw item source changed')
     definitions = {row['definition']['id']: row['definition'] for row in decoded['items']}

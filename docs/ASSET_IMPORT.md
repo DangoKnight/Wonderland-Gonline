@@ -18,6 +18,56 @@ require an old checkout's `data/`, or modify the original installation.
 For the full path from checkout to a running server/client, see
 [GETTING_STARTED.md](GETTING_STARTED.md).
 
+## Import with a compiled client
+
+The native Gonline executable can extract and compile a Legacy WLRI installation
+without a repository checkout or Go toolchain. Install Python 3.11 or newer with
+Pillow (`python -m pip install "Pillow>=12,<13"`), and put FFmpeg and FFprobe on
+`PATH`. These tools are needed only for extraction; ordinary gameplay does not
+use them. The executable embeds the extraction scripts, authored inputs and
+translation policies, and contains the native sprite/picture/table exporters.
+No existing Gonline asset pack is required to enter extraction mode.
+Developers can build the importer executable first with
+`go build -o ../bin/wonderland-client.exe .` from `client/`; this does not need
+an extracted asset tree. The browser/WebAssembly build cannot perform this import.
+
+From the directory containing the compiled client, in PowerShell:
+
+```powershell
+.\wonderland-client.exe -extract-assets -client "C:\Games\WLRI" -extract-language zh-TW
+```
+
+For an updated manually translated English installation, use
+`-extract-language en`. To import both editions, supply the English installation
+with `-client` and the Chinese installation with `-extract-chinese-client PATH`.
+`-extract-ui-language en`, `zh-TW` or `both` can restrict artwork to available
+source languages. The language fallback and translation precedence are the same
+as the checkout workflow below.
+
+The default destination is a **new** `assets` directory beside the executable.
+`-extract-output PATH` selects another new directory; `-extract-python PATH`
+selects a Python environment containing Pillow. `-extract-workers N` bounds the
+parallel compilation workers. For example:
+
+```powershell
+.\wonderland-client.exe -extract-assets -client "C:\Games\WLRI English" -extract-language en -extract-chinese-client "C:\Games\WLRI Chinese" -extract-output "D:\Gonline Assets"
+.\wonderland-client.exe -assets "D:\Gonline Assets\client-assets.zip"
+```
+
+Extraction reports progress in the terminal and exits when finished. Its output
+contains editable PNG/JSON/Ogg assets under `editable/`, an image dimension
+contract and the optimized `client-assets.zip` core pack with companion packs.
+Keep the packs together. Normal startup automatically discovers
+`assets/client-assets.zip` beside the executable; other destinations use
+`-assets` as shown above. The editable directory is retained for later changes
+and rebuilding with `cmd/client-bundle` in a development checkout.
+
+The originals are read-only inputs. Existing destinations are rejected, including
+paths inside either source installation. Extraction and compilation take place
+in a separate staging directory; failed imports do not publish a partial asset
+installation. To replace an older import, build into a fresh directory and select
+it after completion. This mode does not initialize or modify server databases.
+
 ## 1. Prepare the originals and tools
 
 Run the following commands from this repository's root. The shell examples use

@@ -101,22 +101,16 @@ EVE player-expression mode 1 now sends the existing native AC32:1 expression pac
 
 ## Database upgrades and preservation
 
-The branch split reserves assets v28 for owner-reviewed translations. The first three quest contracts now migrate with v29 alongside the next batch, so a translation-only v28 installation receives them. Assets v38 also refreshes the guarded name patch for development catalogs that had already run the original quest-only v28–v37 upgrades; quest policies are not replayed or restored by that refresh.
+Use the [current offline migration](ASSET_DATABASE.md) with the configured asset
+and gameplay databases. The former translation/quest branch split and its
+v28–v38 deployment sequence are historical. They do not require intermediate
+branch checkouts or restoring old development backups.
 
-Runtime now requires structured assets schema **v38**; gameplay remains **v20**. Use the [offline preserving upgrade](ASSET_DATABASE.md). The local idle assets database was upgraded with backups:
-
-- `var/backups/pre-migrate-20261104-073214` — before v28.
-- `var/backups/pre-migrate-20261104-080024` — before v29.
-- `var/backups/pre-migrate-20261104-082129` — before v30/v31.
-- `var/backups/pre-migrate-20261104-082647` — before v32.
-- `var/backups/pre-migrate-20261104-084824` — before v33.
-- `var/backups/pre-migrate-20261104-085923` — before v34.
-- `var/backups/pre-migrate-20261104-093219` — before v35.
-- `var/backups/pre-migrate-20261104-101217` — before v36.
-- `var/backups/pre-migrate-20261104-102553` — before v37.
-- `var/backups/pre-migrate-20261104-141418` — before v38 / confirmed translation refresh.
-
-Defaults are embedded solely for initialization/versioned migration and stored in typed Story SQL tables. Existing policy IDs, edits, ordinals and deliberately empty rule collections survive. Each later batch only adds its own new defaults; it does not restore a policy deliberately removed after an earlier batch. Original native EVE programs and independent raw-byte golden tests remain intact.
+Versioned migrations preserve existing same-ID administrator policies, intentionally
+empty collections and owned quest progress. Later batches add their own defaults
+without replaying policies deliberately removed after an earlier batch. Native
+EVE programs, source evidence and independent raw-byte golden tests remain intact.
+Keep the complete backup printed by the migrator until acceptance finishes.
 
 ## Reproduce research and verification
 

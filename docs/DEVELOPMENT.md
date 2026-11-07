@@ -66,35 +66,9 @@ switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
-Structured asset schema v62 adds typed item-card reward and gender mappings,
-initialized only when their tables are missing. Existing administrator edits and
-deletions remain authoritative. Card removal and reward delivery commit together.
-Structured asset schema v61 clears the original products' promotional flags so
-Hot features only the newly added containers, retaining them in their normal
-categories. This explicit metadata refresh preserves prices and quantities.
-Structured asset schema v60 adds 21 referenced containers to the unedited v59
-mall, preserving customized/empty catalogs and edited reward pools. Shared pools
-and deterministic bundle flags use typed SQL; initialization never reads client
-preview JSON. The incomplete Winter Cloth Bag pool remains unavailable.
-Structured asset schema v59 installs the screenshot-authored mall catalog only
-over the exact previous default catalog, preserving customized and empty catalogs.
-Schema v58 stores provisional World PK reward pools and their
-evidence in typed parent/child tables. The embedded JSON supplies offline defaults
-only; unresolved reward weights, quantities and identities remain explicit.
-
-Gameplay schema v21 stores character state in typed tables and owned child rows.
-v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
-Claims and rewards commit together; keys identify the resource kind, map and source,
-independently of the character and native event timer ID. Per-source cooldown
-durations belong in the assets database's `ResourceRespawns` definitions.
-v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
-v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
-escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v57 stores native skill grade limits, with ten as the fallback; v56 includes repository-owned contact defaults; v55 stores animation-derived skill contact counts and runtime definitions
-in generated `catalog_*` tables. Migration retains legacy representations solely
-as snapshots/provenance;
-runtime and administration must not consult them. Use the offline upgrade procedure
-in [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade existing installations.
+Current schema versions and the preserving upgrade procedure are documented in
+[ASSET_DATABASE.md](ASSET_DATABASE.md). Do not treat historical schema notes as
+current gameplay formulas or branch-specific deployment requirements.
 Regenerate asset models after changing catalog types with
 `go run ./tools/asset-schema-generator`, bump the structured schema version and
 provide an explicit preserving migration for installations using earlier versions.
@@ -184,13 +158,10 @@ saves can extend that window. Runtime interval changes require restart. Tests co
 writes, transaction-result merging, narrow updates, failure/retry, stale warps,
 ownership/deletion, disconnects and concurrent sessions.
 
-For the current development installation, the owner has authorized backed-up
-rebuilds of `wonderland.db` and recreating `assets.db`; there is no requirement to
-retain its existing player data or reverse-migrate model changes. Take consistent
-backups before any deliberate rebuild, stop writers, and document regenerated
-asset inputs. This is permission for explicit development maintenance, not a
-normal-startup reset rule or permission to discard another installation's data.
-No database rebuild was needed for movement checkpointing.
+For deliberate development rebuilds, stop writers and take consistent backups.
+Do not assume permission to discard an installation's player data or definition
+edits. Normal startup must preserve both. Use the explicit database procedure
+for an intended reset.
 
 ## Give numeric values names
 
@@ -327,7 +298,10 @@ Use `client/cmd/pic-export` for offline BMg/JMg and loose picture conversion int
 patch archives separate. Preserve defined palette colors and record any fallback
 for undefined source colors. Protect edited PNGs by exporting to a new directory.
 Keep generated image and audio payloads under `data/` ignored by Git.
-Track JSON data, manifests, editable metadata and documentation. Client map pictures and login UI load PNG exports from a direct `data/` root.
+Keep client-derived JSON, manifests and editable metadata local and ignored.
+Track documentation, exporter code, authored policies, server-only definitions
+and compiled language catalogs. Client map pictures and login UI load PNG
+exports from a direct `data/` root.
 Keep original-format loaders for conversion and compatibility tests.
 See [data/pictures/README.md](../data/pictures/README.md).
 
@@ -402,14 +376,17 @@ from sibling source files and protect existing collections from replacement.
 
 ## One client asset tree
 
-Use repository `data/` for normal client rendering and gameplay data. Development
-runs reference repository `data/` directly without links or asset copies.
-`cmd/asset-build` only verifies it; standalone packaging copies the complete
-tree with `cmd/asset-build -copy`. Do not maintain duplicated
-`client/assets/spritepacks` or `client/assets/legacy` directories. Keep saved
-user state separate and preserve it during layout migrations. Missing exports
-must fail clearly rather than use original native files. Native inspection
-modes require an explicit sibling source directory.
+Keep editable client sources in repository `data/`, without links or duplicate
+asset trees. `go run . -assets ../data` from `client/` selects those loose sources;
+normal discovery prefers a compiled bundle when present. `cmd/asset-build`
+verifies exports and compiles final display text; `-text-only` compiles just
+text. Its optional `-copy` output is a loose distribution. Normal releases use
+`cmd/client-bundle` through `make build-client`, producing the core and named
+companion packs. See [client architecture](CLIENT_ARCHITECTURE.md).
+Do not maintain duplicated `client/assets/spritepacks` or `client/assets/legacy`
+directories. Keep saved user state separate and preserve it during migrations.
+Missing exports must fail clearly rather than use original native files. Native
+inspection modes require an explicit original installation path.
 
 ## Battle buffs and debuffs
 
@@ -1143,7 +1120,7 @@ with the rank/base model documented in [COMPOUNDING.md](COMPOUNDING.md).
 Its approved probability curves are compiled in `internal/game/compounding_policy.go`;
 all inventory consumption/output/proficiency must commit together from fresh SQL
 state. Invalidate the derived alchemy candidate index after catalog replacement.
-See [focused verification](TESTING.md#migration-verification-recorded-on-2026-10-04).
+See [focused verification](TESTING.md#automated-coverage).
 
 ## Inventory footprints
 
@@ -1363,4 +1340,4 @@ The global lock still serializes gameplay mutations and SQL work. This transport
 change isolates slow sockets; it does not remove database contention or establish
 concurrent-player capacity. Queue limits are compiled transport policy, with no
 new configuration keys or database schema changes. Verification is recorded in
-[TESTING.md](TESTING.md#outgoing-network-isolation--2026-11-01).
+[TESTING.md](TESTING.md#development-checks).

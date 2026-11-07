@@ -216,6 +216,8 @@ func main() {
 		fmt.Fprintf(&b, "func read%s(tx *gorm.DB%s)(%s,error){\n", n.name, args, n.typ)
 		if n.name == "Story" {
 			fmt.Fprintln(&b, "tx=storyReadSession(tx)")
+		} else if len(inherited) == 0 {
+			fmt.Fprintln(&b, "tx=catalogReadSession(tx)")
 		}
 		switch n.kind {
 		case "map":
@@ -242,7 +244,20 @@ func main() {
 			}
 			fmt.Fprintf(&b, "loaded,err:=storyReadRows(query,%q,storyParentKey{%s},func(row *%sRow)storyParentKey{return storyParentKey{%s}});if err!=nil{return result,err};rows=loaded\n", strings.Join(order, ","), strings.Join(parent, ","), n.name, strings.Join(rowParent, ","))
 		} else {
-			fmt.Fprintf(&b, "if err:=query.Order(%q).Find(&rows).Error;err!=nil{return result,err}\n", snake(last.name))
+			order := []string{}
+			fields := []string{}
+			parent := []string{}
+			rowParent := []string{}
+			for _, k := range n.keys {
+				order = append(order, snake(k.name))
+			}
+			for _, k := range inherited {
+				fields = append(fields, k.name+" "+k.typ)
+				parent = append(parent, k.name+":"+k.name)
+				rowParent = append(rowParent, k.name+":row."+k.name)
+			}
+			fmt.Fprintf(&b, "type parentKey struct{%s}\n", strings.Join(fields, ";"))
+			fmt.Fprintf(&b, "loaded,err:=catalogReadRows(query,%q,parentKey{%s},func(row *%sRow)parentKey{return parentKey{%s}});if err!=nil{return result,err};rows=loaded\n", strings.Join(order, ","), strings.Join(parent, ","), n.name, strings.Join(rowParent, ","))
 		}
 		if n.kind == "single" {
 			fmt.Fprintln(&b, "if len(rows)!=1{return result,fmt.Errorf(\"missing singleton catalog row\")}")

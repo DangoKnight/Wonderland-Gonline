@@ -82,9 +82,10 @@ func TestRightClickPoseFamiliesAndExpressions(t *testing.T) {
 }
 
 func TestRightClickPoseBlocked(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, name := range []string{"loading", "event", "held", "battle", "remote-battle", "vehicle", "movie", "minigame", "modal", "hovered", "dialogue", "frozen", "outside", "walking"} {
 		t.Run(name, func(t *testing.T) {
-			c, _, _ := enteredClient(t)
+			c, _, _ := enteredClient(t, fixture)
 			c.mapReady = true
 			c.World.Player.Direction = 46
 			sent := wire(t, c)

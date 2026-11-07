@@ -24,6 +24,29 @@ const (
 )
 
 type gatewayEnergy struct{ r, g, b float64 }
+
+type gatewayRingSample struct {
+	x, y              int
+	angle, ring, halo float64
+}
+
+// Geometry and Gaussian falloff are identical in every frame and every session.
+// Keep only the time-dependent shimmer in the animation loop.
+var gatewayRing = func() []gatewayRingSample {
+	var samples []gatewayRingSample
+	for y := int(gatewayGroundY) - 22; y < int(gatewayGroundY)+23; y++ {
+		for x := int(gatewayCenterX) - 40; x < int(gatewayCenterX)+41; x++ {
+			dx, dy := float64(x)+.5-gatewayCenterX, float64(y)+.5-gatewayGroundY
+			radius := math.Hypot(dx/gatewayRadiusX, dy/gatewayRadiusY)
+			angle := math.Atan2(dy/gatewayRadiusY, dx/gatewayRadiusX)
+			samples = append(samples, gatewayRingSample{x: x, y: y, angle: angle,
+				ring: math.Exp(-math.Pow((radius-1)*7, 2)) * .16,
+				halo: math.Exp(-(dx*dx/850 + dy*dy/90)) * .025})
+		}
+	}
+	return samples
+}()
+
 type gatewayLight struct {
 	pixels *surface.Surface
 	energy []gatewayEnergy
@@ -44,16 +67,9 @@ func (p *gatewayLight) render(elapsed time.Duration) {
 	phase := 2 * math.Pi * float64(elapsed%gatewayPeriod) / float64(gatewayPeriod)
 	// A faint continuous ground ring connects the scattered pools of light.
 	// Keep a steady baseline so its shimmer never breaks the ellipse apart.
-	for y := int(gatewayGroundY) - 22; y < int(gatewayGroundY)+23; y++ {
-		for x := int(gatewayCenterX) - 40; x < int(gatewayCenterX)+41; x++ {
-			dx, dy := float64(x)+.5-gatewayCenterX, float64(y)+.5-gatewayGroundY
-			radius := math.Hypot(dx/gatewayRadiusX, dy/gatewayRadiusY)
-			angle := math.Atan2(dy/gatewayRadiusY, dx/gatewayRadiusX)
-			shimmer := .8 + .2*math.Pow(.5+.5*math.Cos(7*angle-2*phase), 2)
-			ring := math.Exp(-math.Pow((radius-1)*7, 2)) * .16 * shimmer
-			halo := math.Exp(-(dx*dx/850 + dy*dy/90)) * .025
-			p.add(x, y, ring+halo, .18, .62, 1)
-		}
+	for _, sample := range gatewayRing {
+		shimmer := .8 + .2*math.Pow(.5+.5*math.Cos(7*sample.angle-2*phase), 2)
+		p.add(sample.x, sample.y, sample.ring*shimmer+sample.halo, .18, .62, 1)
 	}
 	// Uneven blue plumes swell above their feet and trail into fine vertical
 	// streaks. Slowly shifting roots and staggered pulses avoid a row of identical
@@ -71,20 +87,24 @@ func (p *gatewayLight) render(elapsed time.Duration) {
 			taper := math.Pow(max(0.0, 1-vertical), .65)
 			center := bx + 2.1*math.Sin(phase*2+seed+vertical*8)*math.Pow(taper, 3)
 			coreWidth := .22 + 2.5*math.Exp(-math.Pow((vertical-.13)/.15, 2))
+			baseFade := math.Exp(-math.Pow(max(0.0, -vertical)*height/5, 2))
+			lower := max(0.0, 1-vertical)
+			red, green := .06+.32*math.Pow(lower, 3), .25+.58*lower*lower
+			flareFalloff := math.Pow((float64(y)-flareY)/7, 2)
+			footFalloff := math.Pow((float64(y)-by)/5, 2)
+			poolFalloff := math.Pow((float64(y)-by)/8, 2)
 			for x := max(0, int(center)-13); x < min(gatewayWidth, int(center)+14); x++ {
 				dx := float64(x) + .5 - center
 				core := math.Exp(-dx * dx / (2 * coreWidth * coreWidth))
 				halo := math.Exp(-dx*dx/24) * .42
-				baseFade := math.Exp(-math.Pow(max(0.0, -vertical)*height/5, 2))
 				intensity := core * taper * baseFade * brightness
-				lower := max(0.0, 1-vertical)
-				p.add(x, y, intensity, .06+.32*math.Pow(lower, 3), .25+.58*lower*lower, 1)
+				p.add(x, y, intensity, red, green, 1)
 				p.add(x, y, halo*taper*baseFade*brightness, .04, .25, 1)
-				flare := math.Exp(-(dx*dx/7 + math.Pow((float64(y)-flareY)/7, 2))) * brightness
+				flare := math.Exp(-(dx*dx/7 + flareFalloff)) * brightness
 				p.add(x, y, flare, .36, .8, 1)
-				foot := math.Exp(-(dx*dx/20 + math.Pow((float64(y)-by)/5, 2))) * brightness * .9
+				foot := math.Exp(-(dx*dx/20 + footFalloff)) * brightness * .9
 				p.add(x, y, foot, .22, .7, 1)
-				p.add(x, y, math.Exp(-(dx*dx/48+math.Pow((float64(y)-by)/8, 2)))*.5*brightness, .06, .32, 1)
+				p.add(x, y, math.Exp(-(dx*dx/48+poolFalloff))*.5*brightness, .06, .32, 1)
 			}
 		}
 	}

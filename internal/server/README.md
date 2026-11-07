@@ -69,4 +69,4 @@ named. Independent raw-byte expectations and authored tables are preserved.
 
 See [development conventions](../../docs/DEVELOPMENT.md),
 [story authoring](../../docs/STORY_SYSTEM.md) and
-[testing commands and results](../../docs/TESTING.md#server-component-layout--2026-11-01).
+[testing commands and results](../../docs/TESTING.md#development-checks).

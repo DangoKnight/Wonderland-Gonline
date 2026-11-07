@@ -37,6 +37,7 @@ func autoTestAcknowledge(c *Client, cell clientbattle.Cell, id uint16) {
 }
 
 func TestBattleAutoRepeatsAttackAndFallsBack(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, tc := range []struct {
 		name               string
 		layer              byte
@@ -57,7 +58,7 @@ func TestBattleAutoRepeatsAttackAndFallsBack(t *testing.T) {
 		{name: "unknown", layer: skills.Physical, sp: 100, missing: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _, sent := enterBattle(t)
+			c, _, sent := enterBattleWith(t, fixture)
 			autoTestDefinition(c, autoTestAttackSkill, tc.layer, 6)
 			c.SkillState.Learned[autoTestAttackSkill] = skills.Progress{Grade: 1}
 			autoTestAcknowledge(c, clientbattle.Cell{X: 4, Y: 2}, autoTestAttackSkill)
@@ -175,9 +176,10 @@ func autoTestNextBattle(t *testing.T, c *Client, now *time.Time, pet uint32) {
 }
 
 func TestBattleAutoRemembersManualAndAutoAttackBetweenBattles(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, automatic := range []bool{false, true} {
 		t.Run(map[bool]string{false: "manual", true: "AUTO"}[automatic], func(t *testing.T) {
-			c, now, sent := enterBattle(t)
+			c, now, sent := enterBattleWith(t, fixture)
 			autoTestDefinition(c, autoTestAttackSkill, skills.Physical, 6)
 			c.SkillState.Learned[autoTestAttackSkill] = skills.Progress{Grade: 1}
 			autoTestAcknowledge(c, clientbattle.Cell{X: 4, Y: 2}, autoTestAttackSkill)

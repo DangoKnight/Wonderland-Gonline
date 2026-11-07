@@ -15,6 +15,15 @@ import xml.etree.ElementTree as ET
 from skill_fields import SKILL_FIELDS, annotate_skill_layout
 
 REPO = Path(__file__).resolve().parents[2]
+
+
+def tool_command(name, *args):
+    """Use the compiled client's linked exporters, or Go in a source checkout."""
+    executable = os.environ.get('WLO_ASSET_TOOL')
+    if executable:
+        return [executable, '-asset-tool', name, *args]
+    return ['go', 'run', './cmd/' + name, *args]
+
 SCHEMA_VERSION = 1
 NAMED_INDEX_BYTES = 29
 NAMED_NAME_BYTES = 21
@@ -537,8 +546,8 @@ def export_all(client,server,destination):
         payload_path=None
         if key=='item.dat':
             output=destination/'item_data.json'
-            subprocess.run(['go','run','./cmd/item-export','-input',str(source),'-output',str(output)],cwd=REPO,check=True,stdout=subprocess.DEVNULL)
-            result=json.loads(output.read_text())
+            subprocess.run(tool_command('item-export', '-input', str(source), '-output', str(output)),cwd=REPO,check=True,stdout=subprocess.DEVNULL)
+            result=json.loads(output.read_text(encoding='utf-8'))
             require(result['source_sha256']==source_hash,'item export checksum mismatch')
             status='decrypted';count=len(result['items'])
         elif key in ('odd.dat','odd_d01.dat'):

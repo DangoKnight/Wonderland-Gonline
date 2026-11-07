@@ -154,16 +154,17 @@ source working checkout was overwritten.
 
 ## Upgrade and verification
 
-Use the [offline database upgrade](ASSET_DATABASE.md) before running this version:
-asset v16 and gameplay v18 are required by the current server. The v15 story
-policy migration is described in [STORY_SYSTEM.md](STORY_SYSTEM.md). The installed databases remain unchanged;
-disposable upgraded copies are used for validation. Commands and results are
-centralized in [TESTING.md](TESTING.md#source-update-verification--2026-11-01).
-The two-commit story follow-up requires no schema/data changes; its focused
-checks are recorded [separately](TESTING.md#story-follow-up-verification--2026-11-01).
-The `0cb6915` follow-up adds the preserving asset v16 checkpoint migration;
-[its validation](TESTING.md#contact-movie-and-rebirth-follow-up--2026-11-01)
-uses disposable databases. Its source database has no schema or shared-content
+This section records evidence for the source revisions discussed above.
+Asset v16 and gameplay v18 were their historical requirements, not the current
+runtime versions. Use the [current offline upgrade procedure](ASSET_DATABASE.md)
+for deployment. The story policy migration is described in
+[STORY_SYSTEM.md](STORY_SYSTEM.md); current native-format checks are in
+[TESTING.md](TESTING.md#native-format-verification). Validation used disposable
+database copies and did not replace the installed databases.
+The two-commit story follow-up required no schema/data changes at that revision.
+The `0cb6915` follow-up added the preserving asset v16 checkpoint migration;
+its validation used disposable databases. Current recipes are listed under
+[subsystem checks](TESTING.md#subsystem-checks). Its source database has no schema or shared-content
 changes: player/operator rows changed, and all 28 chest-drop rows differ only in
 primary keys (2157–2184 became 2437–2464). Those changes are excluded.
 

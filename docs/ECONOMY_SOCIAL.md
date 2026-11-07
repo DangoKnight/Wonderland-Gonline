@@ -2,8 +2,8 @@
 
 ## Database upgrade
 
-Current server startup requires gameplay schema **v18** and structured assets
-schema **v16**. Economy/social tables were introduced in earlier versions.
+Use the current versions in the database guide. Economy/social tables were
+introduced in earlier versions; their introduction versions are not runtime requirements.
 Use the preserving offline upgrade procedure in [ASSET_DATABASE.md](ASSET_DATABASE.md)
 before starting an existing installation. Gameplay adds guild icons/ranks and
 parcel escrow; assets adds typed `catalog_economy*` tables. Existing characters,
@@ -237,7 +237,7 @@ overflow and reopen.
 Recipe lookup retains authored entries before Compound2 then Compound, including
 first-match priority when inputs have multiple outputs. Typed SQL reload preserves
 this order independently of import snapshots. Manufacturing keeps first matching
-workbench order. See [focused results](TESTING.md#migration-verification-recorded-on-2026-10-04).
+workbench order. See [automated coverage](TESTING.md#automated-coverage).
 
 ## Persistent administrator bazaars
 

@@ -11,6 +11,7 @@ __pycache__/
 # from the original installation. Keep local copies, documentation and the
 # server-only definitions that cannot be reconstructed from that client.
 /data/*
+!/data/import_resources.go
 !/data/README.md
 !/data/server/
 !/data/runtime/
@@ -38,3 +39,6 @@ __pycache__/
 .claude/
 
 *.pyc
+
+# Generated workbook inspections; keep the authored workbook itself.
+*.xlsx.inspect.ndjson

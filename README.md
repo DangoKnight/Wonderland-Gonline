@@ -43,7 +43,7 @@ edition, or both. No IGG or Private Server installation is required. See the
 | [Getting started](docs/GETTING_STARTED.md) | End-to-end setup, Linux/macOS and Windows commands, troubleshooting |
 | [WLRI asset import](docs/ASSET_IMPORT.md) | Source layout, extraction, verification and safe restoration |
 | [Configuration](docs/CONFIGURATION.md) | Server JSON, flags, admin settings, gameplay tuning and client overrides |
-| [Database operations](docs/ASSET_DATABASE.md) | Asset rebuilds, SQL authority, backups and explicit gameplay reset |
+| [Database operations](docs/ASSET_DATABASE.md) | Preserving upgrades, repository seeds, SQL authority, backups and deliberate resets |
 | [Items and player state](docs/ITEMS_PLAYER_STATE.md) | Tent controls, furniture, item reservations and recovery |
 | [Client](docs/CLIENT.md) | Graphics requirements, asset layout, inspection and packaging |
 | [Story system](docs/STORY_SYSTEM.md) | SQL story policies, event execution, authoring and recovery |
@@ -337,16 +337,22 @@ checkout or particular directory layout is required.
 Client-derived tables, sprite payloads, editable metadata and manifests are
 excluded from Git; their existing local copies remain usable. The setup exporter
 regenerates them from the original client and retains repository-owned server data.
-Regenerate with `python3 tools/data_export/export.py`, then verify with
-`python3 tools/data_export/verify.py`. The manifest accounts for 40 selected
-assets and every source file can be reconstructed byte for byte. Audio payloads remain local and ignored by Git. Original account databases
-are excluded from export and asset import.
+Regenerate with the complete `tools/data_export/regenerate.py --client` procedure
+in the import guide, then verify the selected output tree. The manifest records
+the files supplied by that installation; unresolved fields remain lossless rather
+than being claimed as fully decoded. Media stays local and ignored by Git.
+Original account databases are excluded from export and asset import.
 See [the data directory documentation](data/README.md) for formats, source
 selection, regeneration and the scope of current runtime loading.
 
-## Rebuild databases from extracted data
+## Database upgrades and deliberate rebuilds
 
-Run `go run ./cmd/data-rebuild` to recreate the separate SQL asset catalog from
+For an existing installation, stop the server and run
+`go run ./cmd/database-migrate -config config.local.json` before restarting the
+rebuilt executable. This preserves gameplay and content edits. See the
+[database procedure](docs/ASSET_DATABASE.md) for current versions and recovery.
+
+Use `go run ./cmd/data-rebuild` only to deliberately recreate the separate SQL asset catalog from
 tracked server definitions at `var/assets.db`, without client exports. To also erase and recreate gameplay storage, stop the server
 and run `go run ./cmd/data-rebuild -reset-gameplay -config config.local.json`.
 Existing databases are preserved as timestamped backups. Audio bytes stay

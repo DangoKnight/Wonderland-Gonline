@@ -41,13 +41,28 @@ func TestConversationFrameTurningAndRestoration(t *testing.T) {
 	if n.Action != 9 {
 		t.Fatal("question end did not restore facing")
 	}
-	n.Info.Kind = 6
+	for _, kind := range []byte{6, 8, 9, 10} {
+		n.Info.Kind = kind
+		for _, frame := range [][]byte{p, questionFrame(2, 1)} {
+			c.World.Player.Direction = 8
+			c.dispatch(frame)
+			if n.Action != 9 || c.World.Player.Direction != 14 || !n.Conversation {
+				t.Fatalf("scenery kind %d: artwork changed or conversation facing failed", kind)
+			}
+			c.dispatch([]byte{20, 8})
+			if n.Action != 9 || n.Conversation {
+				t.Fatalf("scenery kind %d: conversation did not restore cleanly", kind)
+			}
+		}
+	}
+	n.Info.Kind = 2
+	n.Fixed, n.Frame = true, 2
 	c.dispatch(p)
-	if n.Action != 9 {
-		t.Fatal("type-6 prop turned")
+	if n.Action != 9 || !n.Fixed || n.Frame != 2 {
+		t.Fatal("dialogue changed held standing artwork")
 	}
 	c.dispatch([]byte{20, 8})
-	n.Info.Kind = 2
+	n.Fixed = false
 	n.Action = 16
 	c.dispatch(p)
 	if n.Action != 16 {

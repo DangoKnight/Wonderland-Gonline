@@ -14,7 +14,7 @@ probabilities or override authored event conditions. Existing transactional
 resource-node grants retain their configured cooldowns.
 
 Gameplay schema v15 introduced `map_props.frame`, preserving old implicit broken
-frames with default one. Current startup requires gameplay v18 and assets v16.
+frames with default one. Current schema versions are listed in the database guide.
 Use the preserving in-place upgrade in [ASSET_DATABASE.md](ASSET_DATABASE.md);
 installation data is not reset.
 

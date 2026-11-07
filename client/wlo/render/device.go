@@ -16,29 +16,29 @@ import (
 )
 
 const (
-	TextureCacheBytes = 128 << 20
-	textureSurface    = 1
-	textureSprite     = 2
-	textureIndices    = 3
-	texturePalette    = 4
-	texturePage       = 5
-	rasterBlit        = 0
-	rasterFill        = 1
-	rasterAlphaFill   = 2
-	rasterLight       = 3
-	rasterSprite      = 4
-	rasterIndexed     = 5
-	rasterCutout      = 6
-	rasterSubpixel    = 7
+	TextureCacheBytes    = 128 << 20
+	textureSurface       = 1
+	textureSprite        = 2
+	textureIndices       = 3
+	texturePalette       = 4
+	texturePage          = 5
+	textureDynamicSprite = 6
+	rasterBlit           = 0
+	rasterFill           = 1
+	rasterAlphaFill      = 2
+	rasterLight          = 3
+	rasterSprite         = 4
+	rasterIndexed        = 5
+	rasterCutout         = 6
+	rasterSubpixel       = 7
 )
 
 //go:embed raster.kage
 var rasterSource []byte
 
 type textureKey struct {
-	Kind     int
-	Source   any
-	Revision uint64
+	Kind   int
+	Source any
 }
 type nativeKey struct {
 	Source      any
@@ -48,9 +48,16 @@ type nativeKey struct {
 }
 
 type textureEntry struct {
-	key   textureKey
-	image *ebiten.Image
-	bytes int
+	key      textureKey
+	image    *ebiten.Image
+	bytes    int
+	revision uint64
+}
+
+type textureUpload struct {
+	width, height int
+	pixels        []byte
+	translucent   bool
 }
 type paletteKey struct {
 	Pixels [256]uint16
@@ -68,6 +75,7 @@ type Device struct {
 	targets                           map[*target]bool
 	bytes                             int
 	translucent                       map[*ebiten.Image]bool
+	upload                            []byte
 	Uploads, UploadedBytes, Readbacks int
 }
 
@@ -94,6 +102,7 @@ func (d *Device) Close() {
 		d.evict(e)
 	}
 	d.shader.Deallocate()
+	d.upload = nil
 }
 func (d *Device) evict(e *list.Element) {
 	v := e.Value.(textureEntry)
@@ -121,11 +130,92 @@ func (d *Device) cached(key textureKey, load func() (*ebiten.Image, error)) (*eb
 	for d.bytes+n > d.cacheLimit && d.order.Len() > 0 {
 		d.evict(d.order.Back())
 	}
-	d.cache[key] = d.order.PushFront(textureEntry{key, img, n})
+	d.cache[key] = d.order.PushFront(textureEntry{key: key, image: img, bytes: n})
 	d.bytes += n
 	d.Uploads++
 	d.UploadedBytes += n
 	return img, nil
+}
+
+// Mutable sources keep one resident texture per identity. WritePixels preserves
+// Ebitengine's queued draw order, including draws before an in-place update.
+// Immutable artwork continues through cached and is never rewritten.
+func (d *Device) revisedTexture(key textureKey, revision uint64, load func() (textureUpload, error)) (*ebiten.Image, error) {
+	e := d.cache[key]
+	if e != nil && e.Value.(textureEntry).revision == revision {
+		d.order.MoveToFront(e)
+		return e.Value.(textureEntry).image, nil
+	}
+	u, err := load()
+	if err != nil || len(u.pixels) == 0 {
+		return nil, err
+	}
+	n := u.width * u.height * texturePixelBytes
+	if n > d.cacheLimit {
+		return nil, fmt.Errorf(localization.UI("ui.render.asset_texture_needs_d_bytes_gpu_cache_li_789bafed"), n, d.cacheLimit)
+	}
+	if e != nil && e.Value.(textureEntry).image.Bounds().Size() != image.Pt(u.width, u.height) {
+		d.evict(e)
+		e = nil
+	}
+	var img *ebiten.Image
+	if e == nil {
+		img, err = d.cached(key, func() (*ebiten.Image, error) {
+			return d.newUploadedTexture(u), nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		e = d.cache[key]
+	} else {
+		img = e.Value.(textureEntry).image
+		d.writeTexture(img, u)
+		d.order.MoveToFront(e)
+		d.Uploads++
+		d.UploadedBytes += n
+	}
+	entry := e.Value.(textureEntry)
+	entry.revision = revision
+	e.Value = entry
+	return img, nil
+}
+
+func (d *Device) uploadPixels(n int) []byte {
+	if cap(d.upload) < n {
+		d.upload = make([]byte, n)
+	}
+	return d.upload[:n]
+}
+func (d *Device) writeTexture(img *ebiten.Image, u textureUpload) {
+	img.WritePixels(u.pixels)
+	delete(d.translucent, img)
+	if u.translucent {
+		d.translucent[img] = true
+	}
+}
+func (d *Device) newUploadedTexture(u textureUpload) *ebiten.Image {
+	img := ebiten.NewImage(u.width, u.height)
+	d.writeTexture(img, u)
+	return img
+}
+func (d *Device) spriteUpload(load func() (*image.NRGBA, error)) (textureUpload, error) {
+	m, err := load()
+	if err != nil || m == nil {
+		return textureUpload{}, err
+	}
+	b := m.Bounds()
+	data := d.uploadPixels(b.Dx() * b.Dy() * texturePixelBytes)
+	for y := 0; y < b.Dy(); y++ {
+		copy(data[y*b.Dx()*texturePixelBytes:(y+1)*b.Dx()*texturePixelBytes], m.Pix[m.PixOffset(b.Min.X, b.Min.Y+y):m.PixOffset(b.Min.X, b.Min.Y+y)+b.Dx()*texturePixelBytes])
+	}
+	u := textureUpload{width: b.Dx(), height: b.Dy(), pixels: data}
+	for i := 3; i < len(data); i += texturePixelBytes {
+		if data[i] != 0 && data[i] != 255 {
+			u.translucent = true
+			break
+		}
+	}
+	return u, nil
 }
 func nativeTexture(pix []uint16, w, h int) *ebiten.Image {
 	data := make([]byte, w*h*texturePixelBytes)
@@ -352,29 +442,19 @@ func (t *target) DrawSprite(x, y int, key any, load func() (*image.NRGBA, error)
 	return t.DrawSpriteScaled(x, y, 1, key, load)
 }
 func (t *target) DrawSpriteScaled(x, y, scale int, key any, load func() (*image.NRGBA, error)) error {
-	img, err := t.device.cached(textureKey{Kind: textureSprite, Source: key}, func() (*ebiten.Image, error) {
-		m, err := load()
-		if err != nil || m == nil {
-			return nil, err
-		}
-		b := m.Bounds()
-		data := make([]byte, b.Dx()*b.Dy()*texturePixelBytes)
-		for y := 0; y < b.Dy(); y++ {
-			copy(data[y*b.Dx()*texturePixelBytes:(y+1)*b.Dx()*texturePixelBytes], m.Pix[m.PixOffset(b.Min.X, b.Min.Y+y):m.PixOffset(b.Min.X, b.Min.Y+y)+b.Dx()*texturePixelBytes])
-		}
-		img := ebiten.NewImage(b.Dx(), b.Dy())
-		img.WritePixels(data)
-		for y := 0; y < b.Dy(); y++ {
-			for x := 0; x < b.Dx(); x++ {
-				a := data[(y*b.Dx()+x)*texturePixelBytes+3]
-				if a != 0 && a != 255 {
-					t.device.translucent[img] = true
-					break
-				}
+	var img *ebiten.Image
+	var err error
+	if dynamic, ok := key.(surface.DynamicSprite); ok {
+		img, err = t.device.revisedTexture(textureKey{Kind: textureDynamicSprite, Source: dynamic.Identity}, dynamic.Revision, func() (textureUpload, error) { return t.device.spriteUpload(load) })
+	} else {
+		img, err = t.device.cached(textureKey{Kind: textureSprite, Source: key}, func() (*ebiten.Image, error) {
+			u, err := t.device.spriteUpload(load)
+			if err != nil || len(u.pixels) == 0 {
+				return nil, err
 			}
-		}
-		return img, nil
-	})
+			return t.device.newUploadedTexture(u), nil
+		})
+	}
 	if err != nil || img == nil {
 		return err
 	}
@@ -432,12 +512,20 @@ func (t *target) DrawIndexedScaled(x, y, scale int, key any, m *image.Gray, lut 
 // map cannot allocate a whole-map GPU texture or create camera-specific entries.
 func (d *Device) nativeSource(s *surface.Surface, r image.Rectangle, transparent bool) *ebiten.Image {
 	key := nativeKey{Source: s, Rect: r, Transparent: transparent, Key: s.Key}
-	img, err := d.cached(textureKey{Kind: textureSurface, Source: key, Revision: s.Revision}, func() (*ebiten.Image, error) {
-		pix := make([]uint16, r.Dx()*r.Dy())
-		for y := 0; y < r.Dy(); y++ {
-			copy(pix[y*r.Dx():(y+1)*r.Dx()], s.Pix[(r.Min.Y+y)*s.W+r.Min.X:(r.Min.Y+y)*s.W+r.Max.X])
+	img, err := d.revisedTexture(textureKey{Kind: textureSurface, Source: key}, s.Revision, func() (textureUpload, error) {
+		data := d.uploadPixels(r.Dx() * r.Dy() * texturePixelBytes)
+		encode(data, s.Pix, s.W, r, false)
+		if transparent {
+			for y := 0; y < r.Dy(); y++ {
+				for x := 0; x < r.Dx(); x++ {
+					if s.Pix[(r.Min.Y+y)*s.W+r.Min.X+x] == s.Key {
+						i := (y*r.Dx() + x) * texturePixelBytes
+						clear(data[i : i+texturePixelBytes])
+					}
+				}
+			}
 		}
-		return keyedTexture(pix, r.Dx(), r.Dy(), transparent, s.Key), nil
+		return textureUpload{width: r.Dx(), height: r.Dy(), pixels: data}, nil
 	})
 	if err != nil {
 		panic(err)

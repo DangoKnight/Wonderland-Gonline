@@ -4127,12 +4127,16 @@ func writeMapTransitions(tx *gorm.DB, values []assets.MapTransition) error {
 	return nil
 }
 func readMapTransitions(tx *gorm.DB) ([]assets.MapTransition, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.MapTransition, 0)
 	var rows []MapTransitionsRow
 	query := tx
-	if err := query.Order("map_transitions_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "map_transitions_ordinal", parentKey{}, func(row *MapTransitionsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.MapTransition
 		value.FromMap = row.ValueFromMap
@@ -4194,9 +4198,14 @@ func readMapTransitionsItems(tx *gorm.DB, MapTransitionsOrdinal int) ([]assets.B
 	var rows []MapTransitionsItemsRow
 	query := tx
 	query = query.Where("map_transitions_ordinal = ?", MapTransitionsOrdinal)
-	if err := query.Order("map_transitions_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapTransitionsOrdinal int }
+	loaded, err := catalogReadRows(query, "map_transitions_ordinal,map_transitions_items_ordinal", parentKey{MapTransitionsOrdinal: MapTransitionsOrdinal}, func(row *MapTransitionsItemsRow) parentKey {
+		return parentKey{MapTransitionsOrdinal: row.MapTransitionsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.BoxedItem
 		value.ItemID = row.ValueItemID
@@ -4238,9 +4247,14 @@ func readMapTransitionsSkipIfOwned(tx *gorm.DB, MapTransitionsOrdinal int) ([]ui
 	var rows []MapTransitionsSkipIfOwnedRow
 	query := tx
 	query = query.Where("map_transitions_ordinal = ?", MapTransitionsOrdinal)
-	if err := query.Order("map_transitions_skip_if_owned_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapTransitionsOrdinal int }
+	loaded, err := catalogReadRows(query, "map_transitions_ordinal,map_transitions_skip_if_owned_ordinal", parentKey{MapTransitionsOrdinal: MapTransitionsOrdinal}, func(row *MapTransitionsSkipIfOwnedRow) parentKey {
+		return parentKey{MapTransitionsOrdinal: row.MapTransitionsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -4273,12 +4287,16 @@ func writeTentToolHosts(tx *gorm.DB, values []uint16) error {
 	return nil
 }
 func readTentToolHosts(tx *gorm.DB) ([]uint16, error) {
+	tx = catalogReadSession(tx)
 	result := make([]uint16, 0)
 	var rows []TentToolHostsRow
 	query := tx
-	if err := query.Order("tent_tool_hosts_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "tent_tool_hosts_ordinal", parentKey{}, func(row *TentToolHostsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -4311,12 +4329,16 @@ func writeChestPropCategories(tx *gorm.DB, values map[uint16]string) error {
 	return nil
 }
 func readChestPropCategories(tx *gorm.DB) (map[uint16]string, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]string)
 	var rows []ChestPropCategoriesRow
 	query := tx
-	if err := query.Order("chest_prop_categories_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "chest_prop_categories_key", parentKey{}, func(row *ChestPropCategoriesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -4368,12 +4390,16 @@ func writeTravel(tx *gorm.DB, values assets.TravelRules) error {
 	return nil
 }
 func readTravel(tx *gorm.DB) (assets.TravelRules, error) {
+	tx = catalogReadSession(tx)
 	var result assets.TravelRules
 	var rows []TravelRow
 	query := tx
-	if err := query.Order("travel_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "travel_key", parentKey{}, func(row *TravelRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -4445,9 +4471,12 @@ func readTravelReturnScrolls(tx *gorm.DB, TravelKey int) (map[uint16]assets.Trav
 	var rows []TravelReturnScrollsRow
 	query := tx
 	query = query.Where("travel_key = ?", TravelKey)
-	if err := query.Order("travel_return_scrolls_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TravelKey int }
+	loaded, err := catalogReadRows(query, "travel_key,travel_return_scrolls_key", parentKey{TravelKey: TravelKey}, func(row *TravelReturnScrollsRow) parentKey { return parentKey{TravelKey: row.TravelKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.TravelDestination
 		value.Name = row.ValueName
@@ -4486,9 +4515,12 @@ func readTravelBambooItems(tx *gorm.DB, TravelKey int) ([]uint16, error) {
 	var rows []TravelBambooItemsRow
 	query := tx
 	query = query.Where("travel_key = ?", TravelKey)
-	if err := query.Order("travel_bamboo_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ TravelKey int }
+	loaded, err := catalogReadRows(query, "travel_key,travel_bamboo_items_ordinal", parentKey{TravelKey: TravelKey}, func(row *TravelBambooItemsRow) parentKey { return parentKey{TravelKey: row.TravelKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -4527,9 +4559,12 @@ func readTravelScrolls(tx *gorm.DB, TravelKey int) (map[uint16]uint8, error) {
 	var rows []TravelScrollsRow
 	query := tx
 	query = query.Where("travel_key = ?", TravelKey)
-	if err := query.Order("travel_scrolls_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TravelKey int }
+	loaded, err := catalogReadRows(query, "travel_key,travel_scrolls_key", parentKey{TravelKey: TravelKey}, func(row *TravelScrollsRow) parentKey { return parentKey{TravelKey: row.TravelKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint8
 		value = row.Value
@@ -4571,9 +4606,12 @@ func readTravelDestinations(tx *gorm.DB, TravelKey int) (map[uint8]assets.Travel
 	var rows []TravelDestinationsRow
 	query := tx
 	query = query.Where("travel_key = ?", TravelKey)
-	if err := query.Order("travel_destinations_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TravelKey int }
+	loaded, err := catalogReadRows(query, "travel_key,travel_destinations_key", parentKey{TravelKey: TravelKey}, func(row *TravelDestinationsRow) parentKey { return parentKey{TravelKey: row.TravelKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.TravelDestination
 		value.Name = row.ValueName
@@ -4611,12 +4649,16 @@ func writeNPCShopDefaults(tx *gorm.DB, values map[uint16][]uint16) error {
 	return nil
 }
 func readNPCShopDefaults(tx *gorm.DB) (map[uint16][]uint16, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16][]uint16)
 	var rows []NPCShopDefaultsRow
 	query := tx
-	if err := query.Order("n_p_c_shop_defaults_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "n_p_c_shop_defaults_key", parentKey{}, func(row *NPCShopDefaultsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value []uint16
 		if row.ValuePresent {
@@ -4658,9 +4700,14 @@ func readNPCShopDefaultsValues(tx *gorm.DB, NPCShopDefaultsKey uint16) ([]uint16
 	var rows []NPCShopDefaultsValuesRow
 	query := tx
 	query = query.Where("n_p_c_shop_defaults_key = ?", NPCShopDefaultsKey)
-	if err := query.Order("n_p_c_shop_defaults_values_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ NPCShopDefaultsKey uint16 }
+	loaded, err := catalogReadRows(query, "n_p_c_shop_defaults_key,n_p_c_shop_defaults_values_ordinal", parentKey{NPCShopDefaultsKey: NPCShopDefaultsKey}, func(row *NPCShopDefaultsValuesRow) parentKey {
+		return parentKey{NPCShopDefaultsKey: row.NPCShopDefaultsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -4693,12 +4740,16 @@ func writeTentSurfaces(tx *gorm.DB, values map[uint16]uint8) error {
 	return nil
 }
 func readTentSurfaces(tx *gorm.DB) (map[uint16]uint8, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]uint8)
 	var rows []TentSurfacesRow
 	query := tx
-	if err := query.Order("tent_surfaces_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "tent_surfaces_key", parentKey{}, func(row *TentSurfacesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint8
 		value = row.Value
@@ -4730,12 +4781,16 @@ func writeBoxedItems(tx *gorm.DB, values map[uint16]assets.BoxedItem) error {
 	return nil
 }
 func readBoxedItems(tx *gorm.DB) (map[uint16]assets.BoxedItem, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.BoxedItem)
 	var rows []BoxedItemsRow
 	query := tx
-	if err := query.Order("boxed_items_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "boxed_items_key", parentKey{}, func(row *BoxedItemsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.BoxedItem
 		value.ItemID = row.ValueItemID
@@ -4775,12 +4830,16 @@ func writeItemCards(tx *gorm.DB, values map[uint16]assets.ItemCard) error {
 	return nil
 }
 func readItemCards(tx *gorm.DB) (map[uint16]assets.ItemCard, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.ItemCard)
 	var rows []ItemCardsRow
 	query := tx
-	if err := query.Order("item_cards_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "item_cards_key", parentKey{}, func(row *ItemCardsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ItemCard
 		value.MaleItem = row.ValueMaleItem
@@ -4826,9 +4885,12 @@ func readItemCardsRewards(tx *gorm.DB, ItemCardsKey uint16) ([]assets.CardReward
 	var rows []ItemCardsRewardsRow
 	query := tx
 	query = query.Where("item_cards_key = ?", ItemCardsKey)
-	if err := query.Order("item_cards_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ ItemCardsKey uint16 }
+	loaded, err := catalogReadRows(query, "item_cards_key,item_cards_rewards_ordinal", parentKey{ItemCardsKey: ItemCardsKey}, func(row *ItemCardsRewardsRow) parentKey { return parentKey{ItemCardsKey: row.ItemCardsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.CardReward
 		value.ItemID = row.ValueItemID
@@ -4866,12 +4928,16 @@ func writeSkillEvolutions(tx *gorm.DB, values []assets.SkillEvolution) error {
 	return nil
 }
 func readSkillEvolutions(tx *gorm.DB) ([]assets.SkillEvolution, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.SkillEvolution, 0)
 	var rows []SkillEvolutionsRow
 	query := tx
-	if err := query.Order("skill_evolutions_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "skill_evolutions_ordinal", parentKey{}, func(row *SkillEvolutionsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SkillEvolution
 		value.FromSkill = row.ValueFromSkill
@@ -4918,12 +4984,16 @@ func writeEventGathering(tx *gorm.DB, values assets.EventGatheringRules) error {
 	return nil
 }
 func readEventGathering(tx *gorm.DB) (assets.EventGatheringRules, error) {
+	tx = catalogReadSession(tx)
 	var result assets.EventGatheringRules
 	var rows []EventGatheringRow
 	query := tx
-	if err := query.Order("event_gathering_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "event_gathering_key", parentKey{}, func(row *EventGatheringRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -4975,9 +5045,14 @@ func readEventGatheringTimers(tx *gorm.DB, EventGatheringKey int) ([]uint16, err
 	var rows []EventGatheringTimersRow
 	query := tx
 	query = query.Where("event_gathering_key = ?", EventGatheringKey)
-	if err := query.Order("event_gathering_timers_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ EventGatheringKey int }
+	loaded, err := catalogReadRows(query, "event_gathering_key,event_gathering_timers_ordinal", parentKey{EventGatheringKey: EventGatheringKey}, func(row *EventGatheringTimersRow) parentKey {
+		return parentKey{EventGatheringKey: row.EventGatheringKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -5025,9 +5100,14 @@ func readEventGatheringPools(tx *gorm.DB, EventGatheringKey int) ([]assets.Event
 	var rows []EventGatheringPoolsRow
 	query := tx
 	query = query.Where("event_gathering_key = ?", EventGatheringKey)
-	if err := query.Order("event_gathering_pools_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ EventGatheringKey int }
+	loaded, err := catalogReadRows(query, "event_gathering_key,event_gathering_pools_ordinal", parentKey{EventGatheringKey: EventGatheringKey}, func(row *EventGatheringPoolsRow) parentKey {
+		return parentKey{EventGatheringKey: row.EventGatheringKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.EventGatheringPool
 		value.Type = row.ValueType
@@ -5076,9 +5156,17 @@ func readEventGatheringPoolsItems(tx *gorm.DB, EventGatheringKey int, EventGathe
 	query := tx
 	query = query.Where("event_gathering_key = ?", EventGatheringKey)
 	query = query.Where("event_gathering_pools_ordinal = ?", EventGatheringPoolsOrdinal)
-	if err := query.Order("event_gathering_pools_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		EventGatheringKey          int
+		EventGatheringPoolsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "event_gathering_key,event_gathering_pools_ordinal,event_gathering_pools_items_ordinal", parentKey{EventGatheringKey: EventGatheringKey, EventGatheringPoolsOrdinal: EventGatheringPoolsOrdinal}, func(row *EventGatheringPoolsItemsRow) parentKey {
+		return parentKey{EventGatheringKey: row.EventGatheringKey, EventGatheringPoolsOrdinal: row.EventGatheringPoolsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -5111,12 +5199,16 @@ func writeNPCBuyPrices(tx *gorm.DB, values map[uint16]uint32) error {
 	return nil
 }
 func readNPCBuyPrices(tx *gorm.DB) (map[uint16]uint32, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]uint32)
 	var rows []NPCBuyPricesRow
 	query := tx
-	if err := query.Order("n_p_c_buy_prices_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "n_p_c_buy_prices_key", parentKey{}, func(row *NPCBuyPricesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -5166,12 +5258,16 @@ func writeInstances(tx *gorm.DB, values []assets.InstanceDefinition) error {
 	return nil
 }
 func readInstances(tx *gorm.DB) ([]assets.InstanceDefinition, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.InstanceDefinition, 0)
 	var rows []InstancesRow
 	query := tx
-	if err := query.Order("instances_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "instances_ordinal", parentKey{}, func(row *InstancesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.InstanceDefinition
 		value.ID = row.ValueID
@@ -5313,12 +5409,16 @@ func writeQuestDefinitions(tx *gorm.DB, values map[uint32]assets.QuestDefinition
 	return nil
 }
 func readQuestDefinitions(tx *gorm.DB) (map[uint32]assets.QuestDefinition, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint32]assets.QuestDefinition)
 	var rows []QuestDefinitionsRow
 	query := tx
-	if err := query.Order("quest_definitions_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "quest_definitions_key", parentKey{}, func(row *QuestDefinitionsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestDefinition
 		value.ID = row.ValueID
@@ -5445,9 +5545,14 @@ func readQuestDefinitionsAllLinkedMarkIDs(tx *gorm.DB, QuestDefinitionsKey uint3
 	var rows []QuestDefinitionsAllLinkedMarkIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_all_linked_mark_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_all_linked_mark_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsAllLinkedMarkIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -5492,9 +5597,14 @@ func readQuestDefinitionsRequiredItems(tx *gorm.DB, QuestDefinitionsKey uint32) 
 	var rows []QuestDefinitionsRequiredItemsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_required_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_required_items_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsRequiredItemsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestItem
 		value.ItemID = row.ValueItemID
@@ -5541,9 +5651,14 @@ func readQuestDefinitionsRewardItems(tx *gorm.DB, QuestDefinitionsKey uint32) ([
 	var rows []QuestDefinitionsRewardItemsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_reward_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_reward_items_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsRewardItemsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestItem
 		value.ItemID = row.ValueItemID
@@ -5586,9 +5701,14 @@ func readQuestDefinitionsPrerequisiteQuestIDs(tx *gorm.DB, QuestDefinitionsKey u
 	var rows []QuestDefinitionsPrerequisiteQuestIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_prerequisite_quest_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_prerequisite_quest_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsPrerequisiteQuestIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -5629,9 +5749,14 @@ func readQuestDefinitionsDespawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uin
 	var rows []QuestDefinitionsDespawnNPCClickIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_despawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_despawn_n_p_c_click_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsDespawnNPCClickIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -5672,9 +5797,14 @@ func readQuestDefinitionsSpawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey uint3
 	var rows []QuestDefinitionsSpawnNPCClickIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_spawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_spawn_n_p_c_click_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsSpawnNPCClickIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -5715,9 +5845,14 @@ func readQuestDefinitionsDespawnNPCTemplateIDs(tx *gorm.DB, QuestDefinitionsKey 
 	var rows []QuestDefinitionsDespawnNPCTemplateIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_despawn_n_p_c_template_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_despawn_n_p_c_template_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsDespawnNPCTemplateIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -5758,9 +5893,14 @@ func readQuestDefinitionsSpawnNPCTemplateIDs(tx *gorm.DB, QuestDefinitionsKey ui
 	var rows []QuestDefinitionsSpawnNPCTemplateIDsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_spawn_n_p_c_template_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_spawn_n_p_c_template_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsSpawnNPCTemplateIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -5852,9 +5992,14 @@ func readQuestDefinitionsSteps(tx *gorm.DB, QuestDefinitionsKey uint32) ([]asset
 	var rows []QuestDefinitionsStepsRow
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
-	if err := query.Order("quest_definitions_steps_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestDefinitionsKey uint32 }
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey}, func(row *QuestDefinitionsStepsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestStep
 		value.Index = row.ValueIndex
@@ -5949,9 +6094,17 @@ func readQuestDefinitionsStepsRequiredItems(tx *gorm.DB, QuestDefinitionsKey uin
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
 	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
-	if err := query.Order("quest_definitions_steps_required_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestDefinitionsKey          uint32
+		QuestDefinitionsStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal,quest_definitions_steps_required_items_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal}, func(row *QuestDefinitionsStepsRequiredItemsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: row.QuestDefinitionsStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestItem
 		value.ItemID = row.ValueItemID
@@ -6000,9 +6153,17 @@ func readQuestDefinitionsStepsGrantItems(tx *gorm.DB, QuestDefinitionsKey uint32
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
 	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
-	if err := query.Order("quest_definitions_steps_grant_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestDefinitionsKey          uint32
+		QuestDefinitionsStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal,quest_definitions_steps_grant_items_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal}, func(row *QuestDefinitionsStepsGrantItemsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: row.QuestDefinitionsStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestItem
 		value.ItemID = row.ValueItemID
@@ -6051,9 +6212,17 @@ func readQuestDefinitionsStepsRewardItems(tx *gorm.DB, QuestDefinitionsKey uint3
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
 	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
-	if err := query.Order("quest_definitions_steps_reward_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestDefinitionsKey          uint32
+		QuestDefinitionsStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal,quest_definitions_steps_reward_items_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal}, func(row *QuestDefinitionsStepsRewardItemsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: row.QuestDefinitionsStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestItem
 		value.ItemID = row.ValueItemID
@@ -6098,9 +6267,17 @@ func readQuestDefinitionsStepsSpawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKey 
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
 	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
-	if err := query.Order("quest_definitions_steps_spawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestDefinitionsKey          uint32
+		QuestDefinitionsStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal,quest_definitions_steps_spawn_n_p_c_click_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal}, func(row *QuestDefinitionsStepsSpawnNPCClickIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: row.QuestDefinitionsStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -6143,9 +6320,17 @@ func readQuestDefinitionsStepsDespawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKe
 	query := tx
 	query = query.Where("quest_definitions_key = ?", QuestDefinitionsKey)
 	query = query.Where("quest_definitions_steps_ordinal = ?", QuestDefinitionsStepsOrdinal)
-	if err := query.Order("quest_definitions_steps_despawn_n_p_c_click_i_ds_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestDefinitionsKey          uint32
+		QuestDefinitionsStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_definitions_key,quest_definitions_steps_ordinal,quest_definitions_steps_despawn_n_p_c_click_i_ds_ordinal", parentKey{QuestDefinitionsKey: QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: QuestDefinitionsStepsOrdinal}, func(row *QuestDefinitionsStepsDespawnNPCClickIDsRow) parentKey {
+		return parentKey{QuestDefinitionsKey: row.QuestDefinitionsKey, QuestDefinitionsStepsOrdinal: row.QuestDefinitionsStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -6210,12 +6395,16 @@ func writeManufacturing(tx *gorm.DB, values map[uint16]assets.ManufacturingFormu
 	return nil
 }
 func readManufacturing(tx *gorm.DB) (map[uint16]assets.ManufacturingFormula, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.ManufacturingFormula)
 	var rows []ManufacturingRow
 	query := tx
-	if err := query.Order("manufacturing_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "manufacturing_key", parentKey{}, func(row *ManufacturingRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ManufacturingFormula
 		value.ID = row.ValueID
@@ -6267,12 +6456,16 @@ func writeRebornClasses(tx *gorm.DB, values []assets.RebornClass) error {
 	return nil
 }
 func readRebornClasses(tx *gorm.DB) ([]assets.RebornClass, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.RebornClass, 0)
 	var rows []RebornClassesRow
 	query := tx
-	if err := query.Order("reborn_classes_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "reborn_classes_ordinal", parentKey{}, func(row *RebornClassesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.RebornClass
 		value.Job = row.ValueJob
@@ -6341,12 +6534,16 @@ func writeFishing(tx *gorm.DB, values assets.FishingRules) error {
 	return nil
 }
 func readFishing(tx *gorm.DB) (assets.FishingRules, error) {
+	tx = catalogReadSession(tx)
 	var result assets.FishingRules
 	var rows []FishingRow
 	query := tx
-	if err := query.Order("fishing_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "fishing_key", parentKey{}, func(row *FishingRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -6422,9 +6619,12 @@ func readFishingSkills(tx *gorm.DB, FishingKey int) ([]uint16, error) {
 	var rows []FishingSkillsRow
 	query := tx
 	query = query.Where("fishing_key = ?", FishingKey)
-	if err := query.Order("fishing_skills_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ FishingKey int }
+	loaded, err := catalogReadRows(query, "fishing_key,fishing_skills_ordinal", parentKey{FishingKey: FishingKey}, func(row *FishingSkillsRow) parentKey { return parentKey{FishingKey: row.FishingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -6463,9 +6663,12 @@ func readFishingCatchRequirements(tx *gorm.DB, FishingKey int) ([]uint32, error)
 	var rows []FishingCatchRequirementsRow
 	query := tx
 	query = query.Where("fishing_key = ?", FishingKey)
-	if err := query.Order("fishing_catch_requirements_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ FishingKey int }
+	loaded, err := catalogReadRows(query, "fishing_key,fishing_catch_requirements_ordinal", parentKey{FishingKey: FishingKey}, func(row *FishingCatchRequirementsRow) parentKey { return parentKey{FishingKey: row.FishingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -6506,9 +6709,12 @@ func readFishingRods(tx *gorm.DB, FishingKey int) ([]assets.FishingRod, error) {
 	var rows []FishingRodsRow
 	query := tx
 	query = query.Where("fishing_key = ?", FishingKey)
-	if err := query.Order("fishing_rods_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ FishingKey int }
+	loaded, err := catalogReadRows(query, "fishing_key,fishing_rods_ordinal", parentKey{FishingKey: FishingKey}, func(row *FishingRodsRow) parentKey { return parentKey{FishingKey: row.FishingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.FishingRod
 		value.ItemID = row.ValueItemID
@@ -6548,9 +6754,12 @@ func readFishingMaps(tx *gorm.DB, FishingKey int) ([]uint16, error) {
 	var rows []FishingMapsRow
 	query := tx
 	query = query.Where("fishing_key = ?", FishingKey)
-	if err := query.Order("fishing_maps_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ FishingKey int }
+	loaded, err := catalogReadRows(query, "fishing_key,fishing_maps_ordinal", parentKey{FishingKey: FishingKey}, func(row *FishingMapsRow) parentKey { return parentKey{FishingKey: row.FishingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -6593,9 +6802,12 @@ func readFishingRewards(tx *gorm.DB, FishingKey int) ([]assets.FishingReward, er
 	var rows []FishingRewardsRow
 	query := tx
 	query = query.Where("fishing_key = ?", FishingKey)
-	if err := query.Order("fishing_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ FishingKey int }
+	loaded, err := catalogReadRows(query, "fishing_key,fishing_rewards_ordinal", parentKey{FishingKey: FishingKey}, func(row *FishingRewardsRow) parentKey { return parentKey{FishingKey: row.FishingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.FishingReward
 		value.ItemID = row.ValueItemID
@@ -6640,12 +6852,16 @@ func writeTerrains(tx *gorm.DB, values map[uint16]assets.Terrain) error {
 	return nil
 }
 func readTerrains(tx *gorm.DB) (map[uint16]assets.Terrain, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.Terrain)
 	var rows []TerrainsRow
 	query := tx
-	if err := query.Order("terrains_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "terrains_key", parentKey{}, func(row *TerrainsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Terrain
 		value.Width = row.ValueWidth
@@ -6688,12 +6904,16 @@ func writeBattleBackdrops(tx *gorm.DB, values map[uint16]assets.BattleBackdrop) 
 	return nil
 }
 func readBattleBackdrops(tx *gorm.DB) (map[uint16]assets.BattleBackdrop, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.BattleBackdrop)
 	var rows []BattleBackdropsRow
 	query := tx
-	if err := query.Order("battle_backdrops_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "battle_backdrops_key", parentKey{}, func(row *BattleBackdropsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.BattleBackdrop
 		value.Default = row.ValueDefault
@@ -6744,9 +6964,14 @@ func readBattleBackdropsRegions(tx *gorm.DB, BattleBackdropsKey uint16) ([]asset
 	var rows []BattleBackdropsRegionsRow
 	query := tx
 	query = query.Where("battle_backdrops_key = ?", BattleBackdropsKey)
-	if err := query.Order("battle_backdrops_regions_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ BattleBackdropsKey uint16 }
+	loaded, err := catalogReadRows(query, "battle_backdrops_key,battle_backdrops_regions_ordinal", parentKey{BattleBackdropsKey: BattleBackdropsKey}, func(row *BattleBackdropsRegionsRow) parentKey {
+		return parentKey{BattleBackdropsKey: row.BattleBackdropsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.BattleBackdropRegion
 		value.Selector = row.ValueSelector
@@ -6798,12 +7023,16 @@ func writeArcades(tx *gorm.DB, values []assets.ArcadeGame) error {
 	return nil
 }
 func readArcades(tx *gorm.DB) ([]assets.ArcadeGame, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.ArcadeGame, 0)
 	var rows []ArcadesRow
 	query := tx
-	if err := query.Order("arcades_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "arcades_ordinal", parentKey{}, func(row *ArcadesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ArcadeGame
 		value.Kind = row.ValueKind
@@ -6861,9 +7090,12 @@ func readArcadesRewards(tx *gorm.DB, ArcadesOrdinal int) ([]assets.ArcadeReward,
 	var rows []ArcadesRewardsRow
 	query := tx
 	query = query.Where("arcades_ordinal = ?", ArcadesOrdinal)
-	if err := query.Order("arcades_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ ArcadesOrdinal int }
+	loaded, err := catalogReadRows(query, "arcades_ordinal,arcades_rewards_ordinal", parentKey{ArcadesOrdinal: ArcadesOrdinal}, func(row *ArcadesRewardsRow) parentKey { return parentKey{ArcadesOrdinal: row.ArcadesOrdinal} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ArcadeReward
 		value.Index = row.ValueIndex
@@ -6918,12 +7150,16 @@ func writeTents(tx *gorm.DB, values assets.TentRules) error {
 	return nil
 }
 func readTents(tx *gorm.DB) (assets.TentRules, error) {
+	tx = catalogReadSession(tx)
 	var result assets.TentRules
 	var rows []TentsRow
 	query := tx
-	if err := query.Order("tents_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "tents_key", parentKey{}, func(row *TentsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -6980,9 +7216,12 @@ func readTentsFurniture(tx *gorm.DB, TentsKey int) ([]assets.TentFurnitureDefaul
 	var rows []TentsFurnitureRow
 	query := tx
 	query = query.Where("tents_key = ?", TentsKey)
-	if err := query.Order("tents_furniture_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ TentsKey int }
+	loaded, err := catalogReadRows(query, "tents_key,tents_furniture_ordinal", parentKey{TentsKey: TentsKey}, func(row *TentsFurnitureRow) parentKey { return parentKey{TentsKey: row.TentsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.TentFurnitureDefault
 		value.ItemID = row.ValueItemID
@@ -7048,12 +7287,16 @@ func writeEconomy(tx *gorm.DB, values assets.Economy) error {
 	return nil
 }
 func readEconomy(tx *gorm.DB) (assets.Economy, error) {
+	tx = catalogReadSession(tx)
 	var result assets.Economy
 	var rows []EconomyRow
 	query := tx
-	if err := query.Order("economy_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "economy_key", parentKey{}, func(row *EconomyRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -7126,9 +7369,12 @@ func readEconomySynthesisRates(tx *gorm.DB, EconomyKey int) ([]assets.SynthesisR
 	var rows []EconomySynthesisRatesRow
 	query := tx
 	query = query.Where("economy_key = ?", EconomyKey)
-	if err := query.Order("economy_synthesis_rates_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ EconomyKey int }
+	loaded, err := catalogReadRows(query, "economy_key,economy_synthesis_rates_ordinal", parentKey{EconomyKey: EconomyKey}, func(row *EconomySynthesisRatesRow) parentKey { return parentKey{EconomyKey: row.EconomyKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SynthesisRate
 		value.Input1 = row.ValueInput1
@@ -7191,9 +7437,12 @@ func readEconomyManufacturing(tx *gorm.DB, EconomyKey int) ([]assets.Manufacturi
 	var rows []EconomyManufacturingRow
 	query := tx
 	query = query.Where("economy_key = ?", EconomyKey)
-	if err := query.Order("economy_manufacturing_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ EconomyKey int }
+	loaded, err := catalogReadRows(query, "economy_key,economy_manufacturing_ordinal", parentKey{EconomyKey: EconomyKey}, func(row *EconomyManufacturingRow) parentKey { return parentKey{EconomyKey: row.EconomyKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ManufacturingRecipe
 		if row.ValueSuccessPercentPresent {
@@ -7252,9 +7501,12 @@ func readEconomyGathering(tx *gorm.DB, EconomyKey int) ([]assets.GatheringPool, 
 	var rows []EconomyGatheringRow
 	query := tx
 	query = query.Where("economy_key = ?", EconomyKey)
-	if err := query.Order("economy_gathering_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ EconomyKey int }
+	loaded, err := catalogReadRows(query, "economy_key,economy_gathering_ordinal", parentKey{EconomyKey: EconomyKey}, func(row *EconomyGatheringRow) parentKey { return parentKey{EconomyKey: row.EconomyKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.GatheringPool
 		value.Kind = row.ValueKind
@@ -7303,9 +7555,17 @@ func readEconomyGatheringItems(tx *gorm.DB, EconomyKey int, EconomyGatheringOrdi
 	query := tx
 	query = query.Where("economy_key = ?", EconomyKey)
 	query = query.Where("economy_gathering_ordinal = ?", EconomyGatheringOrdinal)
-	if err := query.Order("economy_gathering_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		EconomyKey              int
+		EconomyGatheringOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "economy_key,economy_gathering_ordinal,economy_gathering_items_ordinal", parentKey{EconomyKey: EconomyKey, EconomyGatheringOrdinal: EconomyGatheringOrdinal}, func(row *EconomyGatheringItemsRow) parentKey {
+		return parentKey{EconomyKey: row.EconomyKey, EconomyGatheringOrdinal: row.EconomyGatheringOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -7352,12 +7612,16 @@ func writeCombatTrials(tx *gorm.DB, values []assets.CombatTrial) error {
 	return nil
 }
 func readCombatTrials(tx *gorm.DB) ([]assets.CombatTrial, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.CombatTrial, 0)
 	var rows []CombatTrialsRow
 	query := tx
-	if err := query.Order("combat_trials_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "combat_trials_ordinal", parentKey{}, func(row *CombatTrialsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.CombatTrial
 		value.Stage = row.ValueStage
@@ -7416,12 +7680,16 @@ func writeQuestVisibility(tx *gorm.DB, values []assets.QuestVisibility) error {
 	return nil
 }
 func readQuestVisibility(tx *gorm.DB) ([]assets.QuestVisibility, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.QuestVisibility, 0)
 	var rows []QuestVisibilityRow
 	query := tx
-	if err := query.Order("quest_visibility_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal", parentKey{}, func(row *QuestVisibilityRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestVisibility
 		value.ID = row.ValueID
@@ -7484,9 +7752,14 @@ func readQuestVisibilityQuestActorsSpawn(tx *gorm.DB, QuestVisibilityOrdinal int
 	var rows []QuestVisibilityQuestActorsSpawnRow
 	query := tx
 	query = query.Where("quest_visibility_ordinal = ?", QuestVisibilityOrdinal)
-	if err := query.Order("quest_visibility_quest_actors_spawn_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestVisibilityOrdinal int }
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal,quest_visibility_quest_actors_spawn_ordinal", parentKey{QuestVisibilityOrdinal: QuestVisibilityOrdinal}, func(row *QuestVisibilityQuestActorsSpawnRow) parentKey {
+		return parentKey{QuestVisibilityOrdinal: row.QuestVisibilityOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -7527,9 +7800,14 @@ func readQuestVisibilityQuestActorsDespawn(tx *gorm.DB, QuestVisibilityOrdinal i
 	var rows []QuestVisibilityQuestActorsDespawnRow
 	query := tx
 	query = query.Where("quest_visibility_ordinal = ?", QuestVisibilityOrdinal)
-	if err := query.Order("quest_visibility_quest_actors_despawn_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestVisibilityOrdinal int }
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal,quest_visibility_quest_actors_despawn_ordinal", parentKey{QuestVisibilityOrdinal: QuestVisibilityOrdinal}, func(row *QuestVisibilityQuestActorsDespawnRow) parentKey {
+		return parentKey{QuestVisibilityOrdinal: row.QuestVisibilityOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -7580,9 +7858,14 @@ func readQuestVisibilitySteps(tx *gorm.DB, QuestVisibilityOrdinal int) ([]assets
 	var rows []QuestVisibilityStepsRow
 	query := tx
 	query = query.Where("quest_visibility_ordinal = ?", QuestVisibilityOrdinal)
-	if err := query.Order("quest_visibility_steps_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ QuestVisibilityOrdinal int }
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal,quest_visibility_steps_ordinal", parentKey{QuestVisibilityOrdinal: QuestVisibilityOrdinal}, func(row *QuestVisibilityStepsRow) parentKey {
+		return parentKey{QuestVisibilityOrdinal: row.QuestVisibilityOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.QuestVisibilityStep
 		value.Index = row.ValueIndex
@@ -7639,9 +7922,17 @@ func readQuestVisibilityStepsQuestActorsSpawn(tx *gorm.DB, QuestVisibilityOrdina
 	query := tx
 	query = query.Where("quest_visibility_ordinal = ?", QuestVisibilityOrdinal)
 	query = query.Where("quest_visibility_steps_ordinal = ?", QuestVisibilityStepsOrdinal)
-	if err := query.Order("quest_visibility_steps_quest_actors_spawn_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestVisibilityOrdinal      int
+		QuestVisibilityStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal,quest_visibility_steps_ordinal,quest_visibility_steps_quest_actors_spawn_ordinal", parentKey{QuestVisibilityOrdinal: QuestVisibilityOrdinal, QuestVisibilityStepsOrdinal: QuestVisibilityStepsOrdinal}, func(row *QuestVisibilityStepsQuestActorsSpawnRow) parentKey {
+		return parentKey{QuestVisibilityOrdinal: row.QuestVisibilityOrdinal, QuestVisibilityStepsOrdinal: row.QuestVisibilityStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -7684,9 +7975,17 @@ func readQuestVisibilityStepsQuestActorsDespawn(tx *gorm.DB, QuestVisibilityOrdi
 	query := tx
 	query = query.Where("quest_visibility_ordinal = ?", QuestVisibilityOrdinal)
 	query = query.Where("quest_visibility_steps_ordinal = ?", QuestVisibilityStepsOrdinal)
-	if err := query.Order("quest_visibility_steps_quest_actors_despawn_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		QuestVisibilityOrdinal      int
+		QuestVisibilityStepsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "quest_visibility_ordinal,quest_visibility_steps_ordinal,quest_visibility_steps_quest_actors_despawn_ordinal", parentKey{QuestVisibilityOrdinal: QuestVisibilityOrdinal, QuestVisibilityStepsOrdinal: QuestVisibilityStepsOrdinal}, func(row *QuestVisibilityStepsQuestActorsDespawnRow) parentKey {
+		return parentKey{QuestVisibilityOrdinal: row.QuestVisibilityOrdinal, QuestVisibilityStepsOrdinal: row.QuestVisibilityStepsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -7730,12 +8029,16 @@ func writeChestPools(tx *gorm.DB, values []assets.ChestPool) error {
 	return nil
 }
 func readChestPools(tx *gorm.DB) ([]assets.ChestPool, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.ChestPool, 0)
 	var rows []ChestPoolsRow
 	query := tx
-	if err := query.Order("chest_pools_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "chest_pools_ordinal", parentKey{}, func(row *ChestPoolsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ChestPool
 		value.MapID = row.ValueMapID
@@ -7791,9 +8094,12 @@ func readChestPoolsRewards(tx *gorm.DB, ChestPoolsOrdinal int) ([]assets.ChestRe
 	var rows []ChestPoolsRewardsRow
 	query := tx
 	query = query.Where("chest_pools_ordinal = ?", ChestPoolsOrdinal)
-	if err := query.Order("chest_pools_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ ChestPoolsOrdinal int }
+	loaded, err := catalogReadRows(query, "chest_pools_ordinal,chest_pools_rewards_ordinal", parentKey{ChestPoolsOrdinal: ChestPoolsOrdinal}, func(row *ChestPoolsRewardsRow) parentKey { return parentKey{ChestPoolsOrdinal: row.ChestPoolsOrdinal} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ChestReward
 		value.Gold = row.ValueGold
@@ -7839,12 +8145,16 @@ func writeLuckyDraw(tx *gorm.DB, values assets.LuckyDrawPool) error {
 	return nil
 }
 func readLuckyDraw(tx *gorm.DB) (assets.LuckyDrawPool, error) {
+	tx = catalogReadSession(tx)
 	var result assets.LuckyDrawPool
 	var rows []LuckyDrawRow
 	query := tx
-	if err := query.Order("lucky_draw_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "lucky_draw_key", parentKey{}, func(row *LuckyDrawRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -7896,9 +8206,12 @@ func readLuckyDrawRewards(tx *gorm.DB, LuckyDrawKey int) ([]assets.LuckyDrawRewa
 	var rows []LuckyDrawRewardsRow
 	query := tx
 	query = query.Where("lucky_draw_key = ?", LuckyDrawKey)
-	if err := query.Order("lucky_draw_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ LuckyDrawKey int }
+	loaded, err := catalogReadRows(query, "lucky_draw_key,lucky_draw_rewards_ordinal", parentKey{LuckyDrawKey: LuckyDrawKey}, func(row *LuckyDrawRewardsRow) parentKey { return parentKey{LuckyDrawKey: row.LuckyDrawKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.LuckyDrawReward
 		value.ID = row.ValueID
@@ -7946,12 +8259,16 @@ func writeForging(tx *gorm.DB, values assets.Forging) error {
 	return nil
 }
 func readForging(tx *gorm.DB) (assets.Forging, error) {
+	tx = catalogReadSession(tx)
 	var result assets.Forging
 	var rows []ForgingRow
 	query := tx
-	if err := query.Order("forging_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "forging_key", parentKey{}, func(row *ForgingRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -8005,9 +8322,12 @@ func readForgingUpgrades(tx *gorm.DB, ForgingKey int) (map[uint16]assets.ForgeUp
 	var rows []ForgingUpgradesRow
 	query := tx
 	query = query.Where("forging_key = ?", ForgingKey)
-	if err := query.Order("forging_upgrades_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ ForgingKey int }
+	loaded, err := catalogReadRows(query, "forging_key,forging_upgrades_key", parentKey{ForgingKey: ForgingKey}, func(row *ForgingUpgradesRow) parentKey { return parentKey{ForgingKey: row.ForgingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ForgeUpgrade
 		value.Next = row.ValueNext
@@ -8044,9 +8364,12 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 	var rows []ForgingPointItemsRow
 	query := tx
 	query = query.Where("forging_key = ?", ForgingKey)
-	if err := query.Order("forging_point_items_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ ForgingKey int }
+	loaded, err := catalogReadRows(query, "forging_key,forging_point_items_key", parentKey{ForgingKey: ForgingKey}, func(row *ForgingPointItemsRow) parentKey { return parentKey{ForgingKey: row.ForgingKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value bool
 		value = row.Value
@@ -8114,12 +8437,16 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	return nil
 }
 func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.NativeItem)
 	var rows []NativeItemsRow
 	query := tx
-	if err := query.Order("native_items_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "native_items_key", parentKey{}, func(row *NativeItemsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.NativeItem
 		value.Definition.EquipLevel = row.ValueDefinitionEquipLevel
@@ -8173,12 +8500,16 @@ func writeStarterItems(tx *gorm.DB, values []game.StarterGrant) error {
 	return nil
 }
 func readStarterItems(tx *gorm.DB) ([]game.StarterGrant, error) {
+	tx = catalogReadSession(tx)
 	result := make([]game.StarterGrant, 0)
 	var rows []StarterItemsRow
 	query := tx
-	if err := query.Order("starter_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "starter_items_ordinal", parentKey{}, func(row *StarterItemsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value game.StarterGrant
 		value.ID = row.ValueID
@@ -8281,12 +8612,16 @@ func writeSkills(tx *gorm.DB, values map[uint16]assets.Skill) error {
 	return nil
 }
 func readSkills(tx *gorm.DB) (map[uint16]assets.Skill, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.Skill)
 	var rows []SkillsRow
 	query := tx
-	if err := query.Order("skills_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "skills_key", parentKey{}, func(row *SkillsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Skill
 		if row.ValueTargetingPresent {
@@ -8383,9 +8718,12 @@ func readSkillsTargeting(tx *gorm.DB, SkillsKey uint16) ([]assets.SkillTargeting
 	var rows []SkillsTargetingRow
 	query := tx
 	query = query.Where("skills_key = ?", SkillsKey)
-	if err := query.Order("skills_targeting_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ SkillsKey uint16 }
+	loaded, err := catalogReadRows(query, "skills_key,skills_targeting_ordinal", parentKey{SkillsKey: SkillsKey}, func(row *SkillsTargetingRow) parentKey { return parentKey{SkillsKey: row.SkillsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SkillTargeting
 		value.MinGrade = row.ValueMinGrade
@@ -8437,9 +8775,17 @@ func readSkillsTargetingOffsets(tx *gorm.DB, SkillsKey uint16, SkillsTargetingOr
 	query := tx
 	query = query.Where("skills_key = ?", SkillsKey)
 	query = query.Where("skills_targeting_ordinal = ?", SkillsTargetingOrdinal)
-	if err := query.Order("skills_targeting_offsets_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		SkillsKey              uint16
+		SkillsTargetingOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "skills_key,skills_targeting_ordinal,skills_targeting_offsets_ordinal", parentKey{SkillsKey: SkillsKey, SkillsTargetingOrdinal: SkillsTargetingOrdinal}, func(row *SkillsTargetingOffsetsRow) parentKey {
+		return parentKey{SkillsKey: row.SkillsKey, SkillsTargetingOrdinal: row.SkillsTargetingOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.FormationOffset
 		value.X = row.ValueX
@@ -8479,9 +8825,12 @@ func readSkillsEffectRefs(tx *gorm.DB, SkillsKey uint16) ([]string, error) {
 	var rows []SkillsEffectRefsRow
 	query := tx
 	query = query.Where("skills_key = ?", SkillsKey)
-	if err := query.Order("skills_effect_refs_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ SkillsKey uint16 }
+	loaded, err := catalogReadRows(query, "skills_key,skills_effect_refs_ordinal", parentKey{SkillsKey: SkillsKey}, func(row *SkillsEffectRefsRow) parentKey { return parentKey{SkillsKey: row.SkillsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -8555,9 +8904,12 @@ func readSkillsEffects(tx *gorm.DB, SkillsKey uint16) ([]assets.SkillEffect, err
 	var rows []SkillsEffectsRow
 	query := tx
 	query = query.Where("skills_key = ?", SkillsKey)
-	if err := query.Order("skills_effects_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ SkillsKey uint16 }
+	loaded, err := catalogReadRows(query, "skills_key,skills_effects_ordinal", parentKey{SkillsKey: SkillsKey}, func(row *SkillsEffectsRow) parentKey { return parentKey{SkillsKey: row.SkillsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SkillEffect
 		value.Target = row.ValueTarget
@@ -8624,9 +8976,17 @@ func readSkillsEffectsModifiers(tx *gorm.DB, SkillsKey uint16, SkillsEffectsOrdi
 	query := tx
 	query = query.Where("skills_key = ?", SkillsKey)
 	query = query.Where("skills_effects_ordinal = ?", SkillsEffectsOrdinal)
-	if err := query.Order("skills_effects_modifiers_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		SkillsKey            uint16
+		SkillsEffectsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "skills_key,skills_effects_ordinal,skills_effects_modifiers_ordinal", parentKey{SkillsKey: SkillsKey, SkillsEffectsOrdinal: SkillsEffectsOrdinal}, func(row *SkillsEffectsModifiersRow) parentKey {
+		return parentKey{SkillsKey: row.SkillsKey, SkillsEffectsOrdinal: row.SkillsEffectsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.StatModifier
 		value.Stat = row.ValueStat
@@ -8670,12 +9030,16 @@ func writeSkillEffects(tx *gorm.DB, values map[string]assets.EffectDefinition) e
 	return nil
 }
 func readSkillEffects(tx *gorm.DB) (map[string]assets.EffectDefinition, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[string]assets.EffectDefinition)
 	var rows []SkillEffectsRow
 	query := tx
-	if err := query.Order("skill_effects_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "skill_effects_key", parentKey{}, func(row *SkillEffectsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.EffectDefinition
 		value.ID = row.ValueID
@@ -8754,9 +9118,12 @@ func readSkillEffectsEffects(tx *gorm.DB, SkillEffectsKey string) ([]assets.Skil
 	var rows []SkillEffectsEffectsRow
 	query := tx
 	query = query.Where("skill_effects_key = ?", SkillEffectsKey)
-	if err := query.Order("skill_effects_effects_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ SkillEffectsKey string }
+	loaded, err := catalogReadRows(query, "skill_effects_key,skill_effects_effects_ordinal", parentKey{SkillEffectsKey: SkillEffectsKey}, func(row *SkillEffectsEffectsRow) parentKey { return parentKey{SkillEffectsKey: row.SkillEffectsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SkillEffect
 		value.Target = row.ValueTarget
@@ -8825,9 +9192,17 @@ func readSkillEffectsEffectsModifiers(tx *gorm.DB, SkillEffectsKey string, Skill
 	query := tx
 	query = query.Where("skill_effects_key = ?", SkillEffectsKey)
 	query = query.Where("skill_effects_effects_ordinal = ?", SkillEffectsEffectsOrdinal)
-	if err := query.Order("skill_effects_effects_modifiers_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		SkillEffectsKey            string
+		SkillEffectsEffectsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "skill_effects_key,skill_effects_effects_ordinal,skill_effects_effects_modifiers_ordinal", parentKey{SkillEffectsKey: SkillEffectsKey, SkillEffectsEffectsOrdinal: SkillEffectsEffectsOrdinal}, func(row *SkillEffectsEffectsModifiersRow) parentKey {
+		return parentKey{SkillEffectsKey: row.SkillEffectsKey, SkillEffectsEffectsOrdinal: row.SkillEffectsEffectsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.StatModifier
 		value.Stat = row.ValueStat
@@ -8862,12 +9237,16 @@ func writeAnimationTiming(tx *gorm.DB, values map[uint16]int) error {
 	return nil
 }
 func readAnimationTiming(tx *gorm.DB) (map[uint16]int, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]int)
 	var rows []AnimationTimingRow
 	query := tx
-	if err := query.Order("animation_timing_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "animation_timing_key", parentKey{}, func(row *AnimationTimingRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value int
 		value = row.Value
@@ -8939,12 +9318,16 @@ func writeNPCs(tx *gorm.DB, values map[uint16]assets.NPC) error {
 	return nil
 }
 func readNPCs(tx *gorm.DB) (map[uint16]assets.NPC, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.NPC)
 	var rows []NPCsRow
 	query := tx
-	if err := query.Order("n_p_cs_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "n_p_cs_key", parentKey{}, func(row *NPCsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.NPC
 		value.CaptureRestriction = row.ValueCaptureRestriction
@@ -9017,12 +9400,16 @@ func writePetInitialStats(tx *gorm.DB, values map[uint32]game.PetInitialStats) e
 	return nil
 }
 func readPetInitialStats(tx *gorm.DB) (map[uint32]game.PetInitialStats, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint32]game.PetInitialStats)
 	var rows []PetInitialStatsRow
 	query := tx
-	if err := query.Order("pet_initial_stats_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "pet_initial_stats_key", parentKey{}, func(row *PetInitialStatsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value game.PetInitialStats
 		value.Minimum.Strength = row.ValueMinimumStrength
@@ -9068,12 +9455,16 @@ func writePetFoods(tx *gorm.DB, values map[uint16]assets.PetFood) error {
 	return nil
 }
 func readPetFoods(tx *gorm.DB) (map[uint16]assets.PetFood, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.PetFood)
 	var rows []PetFoodsRow
 	query := tx
-	if err := query.Order("pet_foods_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "pet_foods_key", parentKey{}, func(row *PetFoodsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.PetFood
 		if row.ValueTargetsPresent {
@@ -9115,9 +9506,12 @@ func readPetFoodsTargets(tx *gorm.DB, PetFoodsKey uint16) ([]uint32, error) {
 	var rows []PetFoodsTargetsRow
 	query := tx
 	query = query.Where("pet_foods_key = ?", PetFoodsKey)
-	if err := query.Order("pet_foods_targets_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ PetFoodsKey uint16 }
+	loaded, err := catalogReadRows(query, "pet_foods_key,pet_foods_targets_ordinal", parentKey{PetFoodsKey: PetFoodsKey}, func(row *PetFoodsTargetsRow) parentKey { return parentKey{PetFoodsKey: row.PetFoodsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint32
 		value = row.Value
@@ -9176,12 +9570,16 @@ func writeCollectionSpots(tx *gorm.DB, values map[uint16]assets.CollectionSpot) 
 	return nil
 }
 func readCollectionSpots(tx *gorm.DB) (map[uint16]assets.CollectionSpot, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.CollectionSpot)
 	var rows []CollectionSpotsRow
 	query := tx
-	if err := query.Order("collection_spots_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "collection_spots_key", parentKey{}, func(row *CollectionSpotsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.CollectionSpot
 		value.Location = row.ValueLocation
@@ -9240,9 +9638,14 @@ func readCollectionSpotsMapCandidates(tx *gorm.DB, CollectionSpotsKey uint16) ([
 	var rows []CollectionSpotsMapCandidatesRow
 	query := tx
 	query = query.Where("collection_spots_key = ?", CollectionSpotsKey)
-	if err := query.Order("collection_spots_map_candidates_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ CollectionSpotsKey uint16 }
+	loaded, err := catalogReadRows(query, "collection_spots_key,collection_spots_map_candidates_ordinal", parentKey{CollectionSpotsKey: CollectionSpotsKey}, func(row *CollectionSpotsMapCandidatesRow) parentKey {
+		return parentKey{CollectionSpotsKey: row.CollectionSpotsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -9283,9 +9686,14 @@ func readCollectionSpotsRewards(tx *gorm.DB, CollectionSpotsKey uint16) ([]asset
 	var rows []CollectionSpotsRewardsRow
 	query := tx
 	query = query.Where("collection_spots_key = ?", CollectionSpotsKey)
-	if err := query.Order("collection_spots_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ CollectionSpotsKey uint16 }
+	loaded, err := catalogReadRows(query, "collection_spots_key,collection_spots_rewards_ordinal", parentKey{CollectionSpotsKey: CollectionSpotsKey}, func(row *CollectionSpotsRewardsRow) parentKey {
+		return parentKey{CollectionSpotsKey: row.CollectionSpotsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.CollectionSpotReward
 		value.ItemID = row.ValueItemID
@@ -9325,12 +9733,16 @@ func writeResourceRespawns(tx *gorm.DB, values []assets.ResourceRespawn) error {
 	return nil
 }
 func readResourceRespawns(tx *gorm.DB) ([]assets.ResourceRespawn, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.ResourceRespawn, 0)
 	var rows []ResourceRespawnsRow
 	query := tx
-	if err := query.Order("resource_respawns_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "resource_respawns_ordinal", parentKey{}, func(row *ResourceRespawnsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.ResourceRespawn
 		value.Kind = row.ValueKind
@@ -9377,12 +9789,16 @@ func writeWorldPKRewards(tx *gorm.DB, values assets.WorldPKRewardDefinitions) er
 	return nil
 }
 func readWorldPKRewards(tx *gorm.DB) (assets.WorldPKRewardDefinitions, error) {
+	tx = catalogReadSession(tx)
 	var result assets.WorldPKRewardDefinitions
 	var rows []WorldPKRewardsRow
 	query := tx
-	if err := query.Order("world_p_k_rewards_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "world_p_k_rewards_key", parentKey{}, func(row *WorldPKRewardsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -9438,9 +9854,14 @@ func readWorldPKRewardsChests(tx *gorm.DB, WorldPKRewardsKey int) ([]assets.Worl
 	var rows []WorldPKRewardsChestsRow
 	query := tx
 	query = query.Where("world_p_k_rewards_key = ?", WorldPKRewardsKey)
-	if err := query.Order("world_p_k_rewards_chests_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ WorldPKRewardsKey int }
+	loaded, err := catalogReadRows(query, "world_p_k_rewards_key,world_p_k_rewards_chests_ordinal", parentKey{WorldPKRewardsKey: WorldPKRewardsKey}, func(row *WorldPKRewardsChestsRow) parentKey {
+		return parentKey{WorldPKRewardsKey: row.WorldPKRewardsKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.WorldPKChestRewards
 		value.Tier = row.ValueTier
@@ -9509,9 +9930,17 @@ func readWorldPKRewardsChestsRewards(tx *gorm.DB, WorldPKRewardsKey int, WorldPK
 	query := tx
 	query = query.Where("world_p_k_rewards_key = ?", WorldPKRewardsKey)
 	query = query.Where("world_p_k_rewards_chests_ordinal = ?", WorldPKRewardsChestsOrdinal)
-	if err := query.Order("world_p_k_rewards_chests_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		WorldPKRewardsKey           int
+		WorldPKRewardsChestsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "world_p_k_rewards_key,world_p_k_rewards_chests_ordinal,world_p_k_rewards_chests_rewards_ordinal", parentKey{WorldPKRewardsKey: WorldPKRewardsKey, WorldPKRewardsChestsOrdinal: WorldPKRewardsChestsOrdinal}, func(row *WorldPKRewardsChestsRewardsRow) parentKey {
+		return parentKey{WorldPKRewardsKey: row.WorldPKRewardsKey, WorldPKRewardsChestsOrdinal: row.WorldPKRewardsChestsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.WorldPKReward
 		value.Key = row.ValueKey
@@ -9570,12 +9999,16 @@ func writeTalks(tx *gorm.DB, values assets.Talks) error {
 	return nil
 }
 func readTalks(tx *gorm.DB) (assets.Talks, error) {
+	tx = catalogReadSession(tx)
 	var result assets.Talks
 	var rows []TalksRow
 	query := tx
-	if err := query.Order("talks_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "talks_key", parentKey{}, func(row *TalksRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -9634,9 +10067,12 @@ func readTalksByID(tx *gorm.DB, TalksKey int) (map[uint32]string, error) {
 	var rows []TalksByIDRow
 	query := tx
 	query = query.Where("talks_key = ?", TalksKey)
-	if err := query.Order("talks_by_i_d_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TalksKey int }
+	loaded, err := catalogReadRows(query, "talks_key,talks_by_i_d_key", parentKey{TalksKey: TalksKey}, func(row *TalksByIDRow) parentKey { return parentKey{TalksKey: row.TalksKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -9672,9 +10108,12 @@ func readTalksByIndex(tx *gorm.DB, TalksKey int) (map[uint32]string, error) {
 	var rows []TalksByIndexRow
 	query := tx
 	query = query.Where("talks_key = ?", TalksKey)
-	if err := query.Order("talks_by_index_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TalksKey int }
+	loaded, err := catalogReadRows(query, "talks_key,talks_by_index_key", parentKey{TalksKey: TalksKey}, func(row *TalksByIndexRow) parentKey { return parentKey{TalksKey: row.TalksKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -9710,9 +10149,12 @@ func readTalksByOffset(tx *gorm.DB, TalksKey int) (map[uint32]string, error) {
 	var rows []TalksByOffsetRow
 	query := tx
 	query = query.Where("talks_key = ?", TalksKey)
-	if err := query.Order("talks_by_offset_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ TalksKey int }
+	loaded, err := catalogReadRows(query, "talks_key,talks_by_offset_key", parentKey{TalksKey: TalksKey}, func(row *TalksByOffsetRow) parentKey { return parentKey{TalksKey: row.TalksKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -9845,12 +10287,16 @@ func writeMaps(tx *gorm.DB, values map[uint16]assets.Map) error {
 	return nil
 }
 func readMaps(tx *gorm.DB) (map[uint16]assets.Map, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.Map)
 	var rows []MapsRow
 	query := tx
-	if err := query.Order("maps_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "maps_key", parentKey{}, func(row *MapsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Map
 		if row.ValueSections0Present {
@@ -10017,9 +10463,12 @@ func readMapsEntries(tx *gorm.DB, MapsKey uint16) ([]assets.AreaEntry, error) {
 	var rows []MapsEntriesRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_entries_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_entries_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsEntriesRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.AreaEntry
 		value.ClickID = row.ValueClickID
@@ -10091,9 +10540,12 @@ func readMapsMining(tx *gorm.DB, MapsKey uint16) ([]assets.AreaEntry, error) {
 	var rows []MapsMiningRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_mining_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_mining_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsMiningRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.AreaEntry
 		value.ClickID = row.ValueClickID
@@ -10157,9 +10609,12 @@ func readMapsGroups(tx *gorm.DB, MapsKey uint16) ([]assets.Group, error) {
 	var rows []MapsGroupsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_groups_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_groups_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsGroupsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Group
 		value.ClickID = row.ValueClickID
@@ -10218,9 +10673,12 @@ func readMapsInteractive(tx *gorm.DB, MapsKey uint16) ([]assets.Group, error) {
 	var rows []MapsInteractiveRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_interactive_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_interactive_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsInteractiveRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Group
 		value.ClickID = row.ValueClickID
@@ -10281,9 +10739,12 @@ func readMapsBattles(tx *gorm.DB, MapsKey uint16) ([]assets.BattleEntry, error) 
 	var rows []MapsBattlesRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_battles_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_battles_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsBattlesRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.BattleEntry
 		value.ClickID = row.ValueClickID
@@ -10346,9 +10807,12 @@ func readMapsExtendedGroups(tx *gorm.DB, MapsKey uint16) ([]assets.Group, error)
 	var rows []MapsExtendedGroupsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_extended_groups_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_extended_groups_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsExtendedGroupsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Group
 		value.ClickID = row.ValueClickID
@@ -10441,9 +10905,12 @@ func readMapsNPCs(tx *gorm.DB, MapsKey uint16) ([]assets.MapNPC, error) {
 	var rows []MapsNPCsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_n_p_cs_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_n_p_cs_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsNPCsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.MapNPC
 		value.ClickID = row.ValueClickID
@@ -10521,9 +10988,17 @@ func readMapsNPCsWalkSteps(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int) ([]
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_n_p_cs_ordinal = ?", MapsNPCsOrdinal)
-	if err := query.Order("maps_n_p_cs_walk_steps_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey         uint16
+		MapsNPCsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_n_p_cs_ordinal,maps_n_p_cs_walk_steps_ordinal", parentKey{MapsKey: MapsKey, MapsNPCsOrdinal: MapsNPCsOrdinal}, func(row *MapsNPCsWalkStepsRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsNPCsOrdinal: row.MapsNPCsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.WalkStep
 		value.X = row.ValueX
@@ -10571,9 +11046,17 @@ func readMapsNPCsRoutes(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int) (map[u
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_n_p_cs_ordinal = ?", MapsNPCsOrdinal)
-	if err := query.Order("maps_n_p_cs_routes_key").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey         uint16
+		MapsNPCsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_n_p_cs_ordinal,maps_n_p_cs_routes_key", parentKey{MapsKey: MapsKey, MapsNPCsOrdinal: MapsNPCsOrdinal}, func(row *MapsNPCsRoutesRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsNPCsOrdinal: row.MapsNPCsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value []assets.RoutePoint
 		if row.ValuePresent {
@@ -10621,9 +11104,18 @@ func readMapsNPCsRoutesValues(tx *gorm.DB, MapsKey uint16, MapsNPCsOrdinal int, 
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_n_p_cs_ordinal = ?", MapsNPCsOrdinal)
 	query = query.Where("maps_n_p_cs_routes_key = ?", MapsNPCsRoutesKey)
-	if err := query.Order("maps_n_p_cs_routes_values_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey           uint16
+		MapsNPCsOrdinal   int
+		MapsNPCsRoutesKey uint8
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_n_p_cs_ordinal,maps_n_p_cs_routes_key,maps_n_p_cs_routes_values_ordinal", parentKey{MapsKey: MapsKey, MapsNPCsOrdinal: MapsNPCsOrdinal, MapsNPCsRoutesKey: MapsNPCsRoutesKey}, func(row *MapsNPCsRoutesValuesRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsNPCsOrdinal: row.MapsNPCsOrdinal, MapsNPCsRoutesKey: row.MapsNPCsRoutesKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.RoutePoint
 		value.X = row.ValueX
@@ -10675,9 +11167,12 @@ func readMapsItems(tx *gorm.DB, MapsKey uint16) ([]assets.GroundItem, error) {
 	var rows []MapsItemsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_items_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsItemsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.GroundItem
 		value.ClickID = row.ValueClickID
@@ -10732,9 +11227,12 @@ func readMapsWarps(tx *gorm.DB, MapsKey uint16) ([]assets.Warp, error) {
 	var rows []MapsWarpsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_warps_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_warps_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsWarpsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Warp
 		value.ClickID = row.ValueClickID
@@ -10792,9 +11290,12 @@ func readMapsEvents(tx *gorm.DB, MapsKey uint16) ([]assets.Event, error) {
 	var rows []MapsEventsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_events_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_events_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsEventsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Event
 		value.ClickID = row.ValueClickID
@@ -10853,9 +11354,17 @@ func readMapsEventsBranches(tx *gorm.DB, MapsKey uint16, MapsEventsOrdinal int) 
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_events_ordinal = ?", MapsEventsOrdinal)
-	if err := query.Order("maps_events_branches_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey           uint16
+		MapsEventsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_events_ordinal,maps_events_branches_ordinal", parentKey{MapsKey: MapsKey, MapsEventsOrdinal: MapsEventsOrdinal}, func(row *MapsEventsBranchesRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsEventsOrdinal: row.MapsEventsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Branch
 		value.Index = row.ValueIndex
@@ -10913,9 +11422,18 @@ func readMapsEventsBranchesOperations(tx *gorm.DB, MapsKey uint16, MapsEventsOrd
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_events_ordinal = ?", MapsEventsOrdinal)
 	query = query.Where("maps_events_branches_ordinal = ?", MapsEventsBranchesOrdinal)
-	if err := query.Order("maps_events_branches_operations_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey                   uint16
+		MapsEventsOrdinal         int
+		MapsEventsBranchesOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_events_ordinal,maps_events_branches_ordinal,maps_events_branches_operations_ordinal", parentKey{MapsKey: MapsKey, MapsEventsOrdinal: MapsEventsOrdinal, MapsEventsBranchesOrdinal: MapsEventsBranchesOrdinal}, func(row *MapsEventsBranchesOperationsRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsEventsOrdinal: row.MapsEventsOrdinal, MapsEventsBranchesOrdinal: row.MapsEventsBranchesOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Operation
 		value.Index = row.ValueIndex
@@ -10969,9 +11487,12 @@ func readMapsPreEvents(tx *gorm.DB, MapsKey uint16) ([]assets.Event, error) {
 	var rows []MapsPreEventsRow
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
-	if err := query.Order("maps_pre_events_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ MapsKey uint16 }
+	loaded, err := catalogReadRows(query, "maps_key,maps_pre_events_ordinal", parentKey{MapsKey: MapsKey}, func(row *MapsPreEventsRow) parentKey { return parentKey{MapsKey: row.MapsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Event
 		value.ClickID = row.ValueClickID
@@ -11030,9 +11551,17 @@ func readMapsPreEventsBranches(tx *gorm.DB, MapsKey uint16, MapsPreEventsOrdinal
 	query := tx
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_pre_events_ordinal = ?", MapsPreEventsOrdinal)
-	if err := query.Order("maps_pre_events_branches_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey              uint16
+		MapsPreEventsOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_pre_events_ordinal,maps_pre_events_branches_ordinal", parentKey{MapsKey: MapsKey, MapsPreEventsOrdinal: MapsPreEventsOrdinal}, func(row *MapsPreEventsBranchesRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsPreEventsOrdinal: row.MapsPreEventsOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Branch
 		value.Index = row.ValueIndex
@@ -11090,9 +11619,18 @@ func readMapsPreEventsBranchesOperations(tx *gorm.DB, MapsKey uint16, MapsPreEve
 	query = query.Where("maps_key = ?", MapsKey)
 	query = query.Where("maps_pre_events_ordinal = ?", MapsPreEventsOrdinal)
 	query = query.Where("maps_pre_events_branches_ordinal = ?", MapsPreEventsBranchesOrdinal)
-	if err := query.Order("maps_pre_events_branches_operations_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct {
+		MapsKey                      uint16
+		MapsPreEventsOrdinal         int
+		MapsPreEventsBranchesOrdinal int
+	}
+	loaded, err := catalogReadRows(query, "maps_key,maps_pre_events_ordinal,maps_pre_events_branches_ordinal,maps_pre_events_branches_operations_ordinal", parentKey{MapsKey: MapsKey, MapsPreEventsOrdinal: MapsPreEventsOrdinal, MapsPreEventsBranchesOrdinal: MapsPreEventsBranchesOrdinal}, func(row *MapsPreEventsBranchesOperationsRow) parentKey {
+		return parentKey{MapsKey: row.MapsKey, MapsPreEventsOrdinal: row.MapsPreEventsOrdinal, MapsPreEventsBranchesOrdinal: row.MapsPreEventsBranchesOrdinal}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Operation
 		value.Index = row.ValueIndex
@@ -11159,12 +11697,16 @@ func writeMall(tx *gorm.DB, values []assets.MallItem) error {
 	return nil
 }
 func readMall(tx *gorm.DB) ([]assets.MallItem, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.MallItem, 0)
 	var rows []MallRow
 	query := tx
-	if err := query.Order("mall_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "mall_ordinal", parentKey{}, func(row *MallRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.MallItem
 		value.ID = row.ValueID
@@ -11212,12 +11754,16 @@ func writeMarks(tx *gorm.DB, values map[uint16]uint16) error {
 	return nil
 }
 func readMarks(tx *gorm.DB) (map[uint16]uint16, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]uint16)
 	var rows []MarksRow
 	query := tx
-	if err := query.Order("marks_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "marks_key", parentKey{}, func(row *MarksRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -11247,12 +11793,16 @@ func writeDisabledEvents(tx *gorm.DB, values map[uint32]string) error {
 	return nil
 }
 func readDisabledEvents(tx *gorm.DB) (map[uint32]string, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint32]string)
 	var rows []DisabledEventsRow
 	query := tx
-	if err := query.Order("disabled_events_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "disabled_events_key", parentKey{}, func(row *DisabledEventsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value
@@ -11287,12 +11837,16 @@ func writeDrops(tx *gorm.DB, values map[uint32][]assets.Drop) error {
 	return nil
 }
 func readDrops(tx *gorm.DB) (map[uint32][]assets.Drop, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint32][]assets.Drop)
 	var rows []DropsRow
 	query := tx
-	if err := query.Order("drops_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "drops_key", parentKey{}, func(row *DropsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value []assets.Drop
 		if row.ValuePresent {
@@ -11342,9 +11896,12 @@ func readDropsValues(tx *gorm.DB, DropsKey uint32) ([]assets.Drop, error) {
 	var rows []DropsValuesRow
 	query := tx
 	query = query.Where("drops_key = ?", DropsKey)
-	if err := query.Order("drops_values_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ DropsKey uint32 }
+	loaded, err := catalogReadRows(query, "drops_key,drops_values_ordinal", parentKey{DropsKey: DropsKey}, func(row *DropsValuesRow) parentKey { return parentKey{DropsKey: row.DropsKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.Drop
 		value.Item = row.ValueItem
@@ -11390,12 +11947,16 @@ func writeCritical(tx *gorm.DB, values game.CriticalHits) error {
 	return nil
 }
 func readCritical(tx *gorm.DB) (game.CriticalHits, error) {
+	tx = catalogReadSession(tx)
 	var result game.CriticalHits
 	var rows []CriticalRow
 	query := tx
-	if err := query.Order("critical_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "critical_key", parentKey{}, func(row *CriticalRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	if len(rows) != 1 {
 		return result, fmt.Errorf("missing singleton catalog row")
 	}
@@ -11441,9 +12002,12 @@ func readCriticalChances(tx *gorm.DB, CriticalKey int) (map[uint16]int, error) {
 	var rows []CriticalChancesRow
 	query := tx
 	query = query.Where("critical_key = ?", CriticalKey)
-	if err := query.Order("critical_chances_key").Find(&rows).Error; err != nil {
+	type parentKey struct{ CriticalKey int }
+	loaded, err := catalogReadRows(query, "critical_key,critical_chances_key", parentKey{CriticalKey: CriticalKey}, func(row *CriticalChancesRow) parentKey { return parentKey{CriticalKey: row.CriticalKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value int
 		value = row.Value
@@ -11475,12 +12039,16 @@ func writeSalePrices(tx *gorm.DB, values map[uint16]assets.SalePrice) error {
 	return nil
 }
 func readSalePrices(tx *gorm.DB) (map[uint16]assets.SalePrice, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.SalePrice)
 	var rows []SalePricesRow
 	query := tx
-	if err := query.Order("sale_prices_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "sale_prices_key", parentKey{}, func(row *SalePricesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.SalePrice
 		value.Price = row.ValuePrice
@@ -11520,12 +12088,16 @@ func writeGachaPacks(tx *gorm.DB, values map[uint16]assets.GachaPack) error {
 	return nil
 }
 func readGachaPacks(tx *gorm.DB) (map[uint16]assets.GachaPack, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.GachaPack)
 	var rows []GachaPacksRow
 	query := tx
-	if err := query.Order("gacha_packs_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "gacha_packs_key", parentKey{}, func(row *GachaPacksRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.GachaPack
 		value.OpenAll = row.ValueOpenAll
@@ -11573,9 +12145,12 @@ func readGachaPacksRewards(tx *gorm.DB, GachaPacksKey uint16) ([]assets.GachaRew
 	var rows []GachaPacksRewardsRow
 	query := tx
 	query = query.Where("gacha_packs_key = ?", GachaPacksKey)
-	if err := query.Order("gacha_packs_rewards_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ GachaPacksKey uint16 }
+	loaded, err := catalogReadRows(query, "gacha_packs_key,gacha_packs_rewards_ordinal", parentKey{GachaPacksKey: GachaPacksKey}, func(row *GachaPacksRewardsRow) parentKey { return parentKey{GachaPacksKey: row.GachaPacksKey} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.GachaReward
 		value.ID = row.ValueID
@@ -11617,12 +12192,16 @@ func writeUnavailableGachaPacks(tx *gorm.DB, values map[uint16]assets.GachaPackI
 	return nil
 }
 func readUnavailableGachaPacks(tx *gorm.DB) (map[uint16]assets.GachaPackIssue, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]assets.GachaPackIssue)
 	var rows []UnavailableGachaPacksRow
 	query := tx
-	if err := query.Order("unavailable_gacha_packs_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "unavailable_gacha_packs_key", parentKey{}, func(row *UnavailableGachaPacksRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.GachaPackIssue
 		value.ID = row.ValueID
@@ -11667,9 +12246,14 @@ func readUnavailableGachaPacksMissingItems(tx *gorm.DB, UnavailableGachaPacksKey
 	var rows []UnavailableGachaPacksMissingItemsRow
 	query := tx
 	query = query.Where("unavailable_gacha_packs_key = ?", UnavailableGachaPacksKey)
-	if err := query.Order("unavailable_gacha_packs_missing_items_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{ UnavailableGachaPacksKey uint16 }
+	loaded, err := catalogReadRows(query, "unavailable_gacha_packs_key,unavailable_gacha_packs_missing_items_ordinal", parentKey{UnavailableGachaPacksKey: UnavailableGachaPacksKey}, func(row *UnavailableGachaPacksMissingItemsRow) parentKey {
+		return parentKey{UnavailableGachaPacksKey: row.UnavailableGachaPacksKey}
+	})
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -11706,12 +12290,16 @@ func writeAlchemyRecipes(tx *gorm.DB, values []assets.AlchemyRecipe) error {
 	return nil
 }
 func readAlchemyRecipes(tx *gorm.DB) ([]assets.AlchemyRecipe, error) {
+	tx = catalogReadSession(tx)
 	result := make([]assets.AlchemyRecipe, 0)
 	var rows []AlchemyRecipesRow
 	query := tx
-	if err := query.Order("alchemy_recipes_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "alchemy_recipes_ordinal", parentKey{}, func(row *AlchemyRecipesRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value assets.AlchemyRecipe
 		value.Input1 = row.ValueInput1
@@ -11746,12 +12334,16 @@ func writePetVouchers(tx *gorm.DB, values map[uint16]uint16) error {
 	return nil
 }
 func readPetVouchers(tx *gorm.DB) (map[uint16]uint16, error) {
+	tx = catalogReadSession(tx)
 	result := make(map[uint16]uint16)
 	var rows []PetVouchersRow
 	query := tx
-	if err := query.Order("pet_vouchers_key").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "pet_vouchers_key", parentKey{}, func(row *PetVouchersRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value uint16
 		value = row.Value
@@ -11781,12 +12373,16 @@ func writeWarnings(tx *gorm.DB, values []string) error {
 	return nil
 }
 func readWarnings(tx *gorm.DB) ([]string, error) {
+	tx = catalogReadSession(tx)
 	result := make([]string, 0)
 	var rows []WarningsRow
 	query := tx
-	if err := query.Order("warnings_ordinal").Find(&rows).Error; err != nil {
+	type parentKey struct{}
+	loaded, err := catalogReadRows(query, "warnings_ordinal", parentKey{}, func(row *WarningsRow) parentKey { return parentKey{} })
+	if err != nil {
 		return result, err
 	}
+	rows = loaded
 	for _, row := range rows {
 		var value string
 		value = row.Value

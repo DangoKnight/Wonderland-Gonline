@@ -6,7 +6,8 @@ import (
 )
 
 // Backend receives ordered raster operations. It owns a render target rather
-// than a CPU shadow framebuffer. Image loaders are called only on cache misses.
+// than a CPU shadow framebuffer. Image loaders run on cache misses or when a
+// DynamicSprite revision changes.
 // GPU implementations and drawing calls belong to the Ebitengine game thread.
 type Backend interface {
 	DrawRect(int, int, image.Rectangle, *Surface, bool)
@@ -50,8 +51,16 @@ func (s *Surface) CPUCopy() *Surface {
 	return out
 }
 
+// DynamicSprite identifies mutable artwork without retaining obsolete frames.
+// Identity must be stable and comparable; increment Revision after changing its
+// pixels. Backends consume updates in drawing order on the game thread.
+type DynamicSprite struct {
+	Identity any
+	Revision uint64
+}
+
 // DrawSprite preserves straight-alpha PNG blending and native quantization.
-// key must be a stable, comparable identity for the immutable source artwork.
+// key is a comparable immutable artwork identity, or a DynamicSprite version.
 func (s *Surface) DrawSprite(x, y int, key any, load func() (*image.NRGBA, error)) error {
 	return s.DrawSpriteScaled(x, y, 1, key, load)
 }

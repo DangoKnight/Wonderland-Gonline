@@ -11,9 +11,17 @@ import (
 	"wonderland-gonline/internal/assets"
 )
 
+// Each case owns its database. Bound concurrent schema creation to avoid
+// multiplying memory and SQLite setup costs on machines with many CPUs.
+const questMigrationParallelism = 2
+
 func TestQuestBranchMigrationFromTranslationAndDevelopmentSchemas(t *testing.T) {
+	workers := make(chan struct{}, questMigrationParallelism)
 	for _, version := range []int{28, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
+			t.Parallel()
+			workers <- struct{}{}
+			defer func() { <-workers }()
 			path := runtimeDatabaseFixture(t)
 			if err := MigrateDatabase(path); err != nil {
 				t.Fatal(err)

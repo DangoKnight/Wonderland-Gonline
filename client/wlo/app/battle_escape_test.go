@@ -73,6 +73,7 @@ func TestBattleEscapeFailurePlaysNativeFall(t *testing.T) {
 }
 
 func TestBattleEscapeOwnerPetAndPeerScope(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, own := range []bool{false, true} {
 		for _, bundled := range []bool{false, true} {
 			owner := uint32(10002)
@@ -81,7 +82,7 @@ func TestBattleEscapeOwnerPetAndPeerScope(t *testing.T) {
 				owner = 10001
 				y = 2
 			}
-			c, now, _ := enterBattle(t, remoteRecord(5, 2, 4, 3, 10002, 0), remoteRecord(5, 4, 3, y, 14162, owner))
+			c, now, _ := enterBattleWith(t, fixture, remoteRecord(5, 2, 4, 3, 10002, 0), remoteRecord(5, 4, 3, y, 14162, owner))
 			c.battleFrame(false)
 			packets := [][]byte{{11, 1, 3, y}, {11, 1, 4, y}}
 			if bundled {

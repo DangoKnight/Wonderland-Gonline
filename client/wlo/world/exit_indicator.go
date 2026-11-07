@@ -29,10 +29,6 @@ type exitIndicator struct {
 	pixels   *image.NRGBA
 	revision uint64
 }
-type exitIndicatorFrame struct {
-	pixels   *image.NRGBA
-	revision uint64
-}
 
 func newExitIndicator() *exitIndicator {
 	return &exitIndicator{pixels: image.NewNRGBA(image.Rect(0, 0, exitIndicatorWidth, exitIndicatorHeight))}
@@ -55,5 +51,5 @@ func (p *exitIndicator) render(elapsed time.Duration) {
 }
 
 func (p *exitIndicator) draw(dst *surface.Surface, x, y int) {
-	_ = dst.DrawSprite(x-exitIndicatorWidth/2, y-exitIndicatorAnchorY, exitIndicatorFrame{p.pixels, p.revision}, func() (*image.NRGBA, error) { return p.pixels, nil })
+	_ = dst.DrawSprite(x-exitIndicatorWidth/2, y-exitIndicatorAnchorY, surface.DynamicSprite{Identity: p.pixels, Revision: p.revision}, func() (*image.NRGBA, error) { return p.pixels, nil })
 }

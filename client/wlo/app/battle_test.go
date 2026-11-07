@@ -17,7 +17,12 @@ import (
 
 func enterBattle(t *testing.T, participants ...[]byte) (*Client, *time.Time, func() [][]byte) {
 	t.Helper()
-	c, now, _ := enteredClient(t)
+	return enterBattleWith(t, nil, participants...)
+}
+
+func enterBattleWith(t *testing.T, fixture *clientFixture, participants ...[]byte) (*Client, *time.Time, func() [][]byte) {
+	t.Helper()
+	c, now, _ := enteredClient(t, fixture)
 	c.mapReady = true
 	sent := wire(t, c)
 	enemy := remoteRecord(5, 7, 2, 2, 20001, 0)

@@ -64,6 +64,19 @@ func TestTranslatedClientEncryptedSprites(t *testing.T) {
 	if root == "" {
 		root = filepath.Join("..", "..", "..", "Wonderland-Client")
 	}
+	testInstalledEncryptedSprites(t, root)
+}
+
+func TestChineseClientEncryptedSprites(t *testing.T) {
+	root := os.Getenv("WONDERLAND_CHINESE_SPRITE_CLIENT")
+	if root == "" {
+		t.Skip("set WONDERLAND_CHINESE_SPRITE_CLIENT for the untranslated installation")
+	}
+	testInstalledEncryptedSprites(t, root)
+}
+
+func testInstalledEncryptedSprites(t *testing.T, root string) {
+	t.Helper()
 	executable, err := os.ReadFile(filepath.Join(root, "aLogin.exe"))
 	if os.IsNotExist(err) {
 		t.Skip("translated client not installed")

@@ -4,11 +4,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"image/color"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,6 +18,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/clientimport"
 )
 
 type workbench struct {
@@ -80,11 +83,21 @@ func (g *workbench) Draw(screen *ebiten.Image) {
 func (*workbench) Layout(int, int) (int, int) { return 1024, 720 }
 
 func main() {
+	if runAssetTool() {
+		return
+	}
+	extractAssets := flag.Bool("extract-assets", false, "extract a Legacy installation and compile ready-to-use client packs, then exit")
+	extractOutput := flag.String("extract-output", "", "new import directory (default: assets beside the executable)")
+	extractLanguage := flag.String("extract-language", "en", "Legacy source language: en or zh-TW")
+	extractChinese := flag.String("extract-chinese-client", "", "optional matching Chinese installation alongside an English source")
+	extractUI := flag.String("extract-ui-language", "", "UI artwork: en, zh-TW or both (default: supplied languages)")
+	extractPython := flag.String("extract-python", "python", "Python 3.11+ executable with Pillow installed")
+	extractWorkers := flag.Int("extract-workers", 0, "asset compilation workers (0 = default)")
 	renderer := flag.String("renderer", "auto", "renderer: auto (GPU with CPU fallback), gpu or cpu (game only; snapshots use CPU)")
 	language := flag.String("language", "", "client text language: en or zh-TW (default: saved preference)")
 	sprites := flag.String("sprites", "", "optional sprite pack or editable directory override")
 	assets := flag.String("assets", defaultAssetDir(), "compiled client-assets.zip bundle, or editable data directory for development")
-	clientDir := flag.String("client", "", "original client directory for the workbench or -legacy (required)")
+	clientDir := flag.String("client", "", "Legacy installation for -extract-assets, the workbench or -legacy")
 	archive := flag.String("archive", "map.JMG", "BMg/JMg filename under the client pic directory")
 	name := flag.String("name", "", "resource filename; defaults to first entry")
 	list := flag.Bool("list", false, "list indexed image resources without opening a window")
@@ -97,6 +110,21 @@ func main() {
 	serverINI := flag.String("serverini", "", "server list; defaults to SERVER.INI in the client directory (the working directory with -legacy); a single local server is used when missing")
 	legacy := flag.Bool("legacy", false, "run the earlier screenshot-based front end instead of the decompile port")
 	flag.Parse()
+	if *extractAssets {
+		if *extractOutput == "" {
+			executable, err := os.Executable()
+			if err != nil {
+				log.Fatal(err)
+			}
+			*extractOutput = filepath.Join(filepath.Dir(executable), "assets")
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		if err := clientimport.Run(ctx, clientimport.Options{Source: *clientDir, ChineseSource: *extractChinese, Output: *extractOutput, Language: *extractLanguage, UILanguage: *extractUI, Python: *extractPython, Workers: *extractWorkers, Log: os.Stdout}); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	// Any workbench option selects the workbench.
 	flag.Visit(func(f *flag.Flag) {
 		switch f.Name {
@@ -105,7 +133,7 @@ func main() {
 		}
 	})
 	if (*useWorkbench || *legacy) && *clientDir == "" {
-		log.Fatal("-client must point to an original sibling client directory for inspection modes")
+		log.Fatal("-client must point to an original client installation for inspection modes")
 	}
 	if !*useWorkbench && *legacy {
 		if *serverINI == "" {
@@ -167,6 +195,10 @@ func defaultAssetDir() string {
 	// Installed distributions keep assets beside the executable. Source runs
 	// accept either the module directory or repository root as working directory.
 	if exe, err := os.Executable(); err == nil {
+		imported := filepath.Join(filepath.Dir(exe), "assets", clientimport.BundleName)
+		if info, err := os.Stat(imported); err == nil && !info.IsDir() {
+			return imported
+		}
 		bundle := filepath.Join(filepath.Dir(exe), "client-assets.zip")
 		if info, err := os.Stat(bundle); err == nil && !info.IsDir() {
 			return bundle

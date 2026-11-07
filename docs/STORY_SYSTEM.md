@@ -284,9 +284,9 @@ current behavior; this migration does not invent missing NPC bindings/rewards or
 activate its dormant acceptance/completion workflow. New verified mechanics can
 add reusable capabilities without adding map-specific story switches.
 
-Focused checks and the installed-data migration/parity results are recorded in
-[TESTING.md](TESTING.md#story-system-migration--2026-11-01); optimization benchmarks
-and regression checks follow in the same document. Native script and wire checks
+Current coverage and recipes are in
+[TESTING.md](TESTING.md#automated-coverage), with optimization
+[benchmarks](TESTING.md#benchmarks) and recent validation records on that page. Native script and wire checks
 remain distinct from live native-client acceptance.
 
 ### Visit-scoped actor visibility

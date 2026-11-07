@@ -87,7 +87,9 @@ func NativeSpriteKey(executable []byte) ([]byte, error) {
 	switch fmt.Sprintf("%x", sha256.Sum256(executable)) {
 	case "ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61":
 		rva = nativeTranslatedKeyLiteralAddress - header.ImageBase
-	case "190dae510151d80fdbc276f16dd9a33acb5dd9d7a2af3fe953343f8ac148c6cc":
+	// Updated English and original Chinese builds share this literal location.
+	case "190dae510151d80fdbc276f16dd9a33acb5dd9d7a2af3fe953343f8ac148c6cc",
+		"d566f3cfeabafb1ce0e1d6a74d71d256c2b21d45429bb8498ce7b70d2bbbc78a":
 		rva = nativeUpdatedKeyLiteralAddress - header.ImageBase
 	}
 	for _, section := range file.Sections {

@@ -235,11 +235,6 @@ func areaTitleTextOpacity(wave float64) float64 {
 	return max(0.0, min(1.0, -wave/((areaTitleRippleCount-1)*areaTitleRippleSpacing)))
 }
 
-type areaTitleFrame struct {
-	pixels   *image.NRGBA
-	revision uint64
-}
-
 func areaTitleMaskCoverage(mask *image.Alpha, x, y float64) float64 {
 	if x < 0 || y < 0 || x >= float64(mask.Rect.Dx()-1) || y >= float64(mask.Rect.Dy()-1) {
 		return 0
@@ -258,6 +253,6 @@ func (c *Client) drawAreaTitle(now time.Time) {
 		return
 	}
 	if canvas := t.render(now.Sub(t.started)); canvas != nil {
-		_ = c.Screen.DrawSprite((ScreenWidth-canvas.W)/2, (ScreenHeight-canvas.H)/2, areaTitleFrame{t.pixels, canvas.Revision}, func() (*image.NRGBA, error) { return t.pixels, nil })
+		_ = c.Screen.DrawSprite((ScreenWidth-canvas.W)/2, (ScreenHeight-canvas.H)/2, surface.DynamicSprite{Identity: t.pixels, Revision: canvas.Revision}, func() (*image.NRGBA, error) { return t.pixels, nil })
 	}
 }

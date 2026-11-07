@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
 	"testing"
@@ -17,9 +18,16 @@ import (
 	"wonderland-gonline/internal/protocol"
 )
 
-func clientItemFixture(t *testing.T) (*Client, func() [][]byte) {
+func clientItemFixture(t *testing.T, fixtures ...*clientFixture) (*Client, func() [][]byte) {
 	t.Helper()
-	c, _, sent := enterBattle(t, remoteRecord(5, 4, 3, 2, 14162, 10001))
+	var fixture *clientFixture
+	if len(fixtures) != 0 {
+		fixture = fixtures[0]
+	}
+	c, _, sent := enterBattleWith(t, fixture, remoteRecord(5, 4, 3, 2, 14162, 10001))
+	// This fixture authors an item; never edit the shared catalog in place.
+	c.items = maps.Clone(c.items)
+	c.InventoryState.Items = c.items
 	c.items[32003] = assets.NativeItem{Definition: game.ItemDefinition{ID: 32003, Type: 23, EquipSlot: 8, Status: [2]uint16{25, 26}, Values: [2]int32{180, 120}}}
 	c.InventoryState.Bag[0] = game.Item{ID: 32003, Count: 2}
 	c.InventoryState.Pets[0] = inventory.UsePet{ID: 14162}
@@ -138,6 +146,7 @@ func TestBattleItemInventorySelectionAndNativeRequest(t *testing.T) {
 }
 
 func TestBattleItemClickAnyTeammateAtFullVitals(t *testing.T) {
+	fixture := newClientFixture(t)
 	// All four allied owners and their pets, including fighters we cannot command.
 	for y := byte(1); y <= 4; y++ {
 		for _, x := range []byte{3, 4} {
@@ -151,7 +160,9 @@ func TestBattleItemClickAnyTeammateAtFullVitals(t *testing.T) {
 					}
 					participants = append(participants, remoteRecord(5, kind, x, y, id, owner))
 				}
-				c, _, sent := enterBattle(t, participants...)
+				c, _, sent := enterBattleWith(t, fixture, participants...)
+				c.items = maps.Clone(c.items)
+				c.InventoryState.Items = c.items
 				c.items[32003] = assets.NativeItem{Definition: game.ItemDefinition{ID: 32003, Type: 23, EquipSlot: 8, Status: [2]uint16{25, 26}, Values: [2]int32{180, 120}}}
 				c.InventoryState.Bag[0] = game.Item{ID: 32003, Count: 2}
 				c.chooseBattleCommand(battleCommandItems)
@@ -272,9 +283,10 @@ func TestBattleItemPlayerAndPetSubmitBothChoices(t *testing.T) {
 }
 
 func TestBattleItemCancelStaleAndUnsupported(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, test := range []string{"escape", "changed item", "locked", "equipment", "animation", "timeout", "hotbar"} {
 		t.Run(test, func(t *testing.T) {
-			c, sent := clientItemFixture(t)
+			c, sent := clientItemFixture(t, fixture)
 			c.Inventory.Show()
 			switch test {
 			case "locked":

@@ -7,9 +7,9 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-func vacuumClient(t *testing.T, gonline bool, timer []byte) (*Client, *time.Time, func() [][]byte) {
+func vacuumClient(t *testing.T, gonline bool, timer []byte, fixtures ...*clientFixture) (*Client, *time.Time, func() [][]byte) {
 	t.Helper()
-	c, now, _ := enteredClient(t)
+	c, now, _ := enteredClient(t, fixtures...)
 	c.dispatch(selfPacket(10001, 2, 60000, 1282, 1315, 0, 444444444, 444444444, nil, "Dango"))
 	c.mapReady = true
 	c.InventoryState.Equipment[5] = game.Item{ID: 34077, Count: 1}
@@ -30,11 +30,12 @@ func vacuumClient(t *testing.T, gonline bool, timer []byte) (*Client, *time.Time
 }
 
 func TestVacuumServerSpecificRetryTiming(t *testing.T) {
+	fixture := newClientFixture(t)
 	// Independent raw AC66:2 timer: native ID 11020, 30 seconds.
 	timer := []byte{66, 2, 1, 12, 43, 0, 0, 0, 0, 0, 0, 62, 64}
 	for _, gonline := range []bool{false, true} {
 		t.Run(map[bool]string{false: "Legacy fixed interval", true: "Gonline respawn plus grace"}[gonline], func(t *testing.T) {
-			c, now, sent := vacuumClient(t, gonline, timer)
+			c, now, sent := vacuumClient(t, gonline, timer, fixture)
 			wait := 190 * time.Second
 			if gonline {
 				wait = 40 * time.Second
@@ -71,9 +72,10 @@ func TestVacuumServerSpecificRetryTiming(t *testing.T) {
 }
 
 func TestVacuumStopsAndConnectionIsolation(t *testing.T) {
+	fixture := newClientFixture(t)
 	for _, reason := range []string{"movement", "unequip", "map", "battle"} {
 		t.Run(reason, func(t *testing.T) {
-			c, _, sent := vacuumClient(t, true, []byte{66, 2, 1, 12, 43, 0, 0, 0, 0, 0, 128, 102, 64})
+			c, _, sent := vacuumClient(t, true, []byte{66, 2, 1, 12, 43, 0, 0, 0, 0, 0, 128, 102, 64}, fixture)
 			switch reason {
 			case "movement":
 				c.sendLeg(1, 1300, 1315)
@@ -92,7 +94,7 @@ func TestVacuumStopsAndConnectionIsolation(t *testing.T) {
 			}
 		})
 	}
-	c, _, _ := enteredClient(t)
+	c, _, _ := enteredClient(t, fixture)
 	for _, p := range [][]byte{{1, 243, 1}, {1, 243, 71, 76, 67, 84, 2, 0}, {1, 243, 71, 76, 67, 84, 1, 0, 0}} {
 		c.dispatch(p)
 		if c.gonlineCollectionTiming {

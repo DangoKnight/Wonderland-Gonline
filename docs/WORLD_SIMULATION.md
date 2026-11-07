@@ -132,8 +132,8 @@ catalog retain legacy unrestricted movement. There is no runtime file fallback.
 
 ## Upgrade and tuning
 
-The current server requires asset schema **v16**; terrain tables were introduced
-in v5. Stop the server, then follow
+Terrain tables were introduced in asset v5. Use the current schema versions in
+the database guide rather than deploying that historical version. Stop the server, then follow
 [ASSET_DATABASE.md](ASSET_DATABASE.md) to upgrade the databases in place:
 
 ```sh

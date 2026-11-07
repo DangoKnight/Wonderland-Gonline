@@ -81,7 +81,7 @@ Character rebirth is represented by optional saved `reborn` metadata; pets use
 their existing flag. Missing flags mean non-reborn. The same metadata also participates in the implemented GM `/reborn` workflow,
 class stat modifiers and normalized reborn EXP progression. Player/pet snapshots
 replay rebirth, potential and class; remaining native class/HUD acceptance is
-tracked in [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md#gm-rebirth).
+tracked in [manufacturing and character state](MANUFACTURING_CHARACTER_STATE.md#character-rebirth).
 
 
 ## Optional participant damage bonus
