@@ -344,10 +344,11 @@ func BuildRuntime(o Options) (Result, error) {
 		Version int      `json:"version"`
 		Packs   []string `json:"packs"`
 	}{runtimePackDescriptorVersion, []string{}}
-	// The four pack builds read the same finished cache and write independent
+	// Companion pack builds read the same finished cache and write independent
 	// zips, so they run concurrently. Group builds skip contract validation and
 	// rewriting: the runtime compiler already validated every image against the
-	// contract, and concurrent identical contract writes would race.
+	// contract, and concurrent identical contract writes would race. Build the
+	// published core only after every companion and its descriptor are ready.
 	packsStart := time.Now()
 	type packOutcome struct {
 		group, path string
@@ -361,7 +362,7 @@ func BuildRuntime(o Options) (Result, error) {
 		{"sprites", base + "-sprites.build.zip"},
 		{"audio", base + "-audio.build.zip"},
 	}
-	outcomes := make([]packOutcome, len(groups)+1)
+	outcomes := make([]packOutcome, len(groups))
 	var packsWg sync.WaitGroup
 	for i, g := range groups {
 		packsWg.Add(1)
@@ -376,15 +377,6 @@ func BuildRuntime(o Options) (Result, error) {
 			outcomes[i] = packOutcome{g.name, g.path, r, e}
 		}(i, g)
 	}
-	packsWg.Add(1)
-	go func() {
-		defer packsWg.Done()
-		core := o
-		core.Source = cache
-		core.group = "core"
-		r, e := Build(core)
-		outcomes[len(groups)] = packOutcome{"core", o.Output, r, e}
-	}()
 	packsWg.Wait()
 	var result Result
 	for i := range outcomes {
@@ -395,12 +387,6 @@ func BuildRuntime(o Options) (Result, error) {
 	phase(o.Verbose, "build-packs", packsStart)
 	publishStart := time.Now()
 	for _, outcome := range outcomes {
-		if outcome.group == "core" {
-			result.Files += outcome.result.Files
-			result.Reused += outcome.result.Reused
-			result.SourceBytes += outcome.result.SourceBytes
-			continue
-		}
 		result.Files += outcome.result.Files
 		result.Reused += outcome.result.Reused
 		result.SourceBytes += outcome.result.SourceBytes
