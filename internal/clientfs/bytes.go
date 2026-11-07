@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -32,8 +33,9 @@ func MountBytes(name string, data []byte, companions map[string][]byte) (string,
 // MountSources mounts the main bundle and its companion packs. Validation
 // matches Mount.
 func MountSources(name string, main ZipSource, companions map[string]ZipSource) (string, func() error, error) {
-	if name == "" || strings.ContainsAny(name, `\/:`) {
-		return "", nil, fmt.Errorf("invalid bundle name %q", name)
+	base, err := sourceMountName(name)
+	if err != nil {
+		return "", nil, err
 	}
 	z, err := zip.NewReader(main.R, main.Size)
 	if err != nil {
@@ -90,7 +92,7 @@ func MountSources(name string, main ZipSource, companions map[string]ZipSource) 
 		return "", nil, fmt.Errorf("bundle already mounted: %s", name)
 	}
 	mounts.serial++
-	root := fmt.Sprintf("/%s.assets-%d", name, mounts.serial)
+	root := fmt.Sprintf("%s.assets-%d", base, mounts.serial)
 	mounts.bundles[name] = root
 	mounts.roots[root] = combined
 	mounts.Unlock()
@@ -104,4 +106,11 @@ func MountSources(name string, main ZipSource, companions map[string]ZipSource) 
 		})
 		return nil
 	}, nil
+}
+
+func sourceMountName(name string) (string, error) {
+	if name == "." || !fs.ValidPath(name) || strings.ContainsAny(name, `\/:`) {
+		return "", fmt.Errorf("invalid bundle name %q", name)
+	}
+	return filepath.Abs("/" + name)
 }

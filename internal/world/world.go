@@ -189,6 +189,7 @@ func groundItem(p protocol.Builder, slot byte, item, x, y uint16, depth int32) p
 // scene state and records the actors concealed from this character.
 func (w *World) MapInfo(c *game.Character, v *View, players []uint32) [][]byte {
 	v.Reset()
+	v.HiddenMap = c.Map
 	packets := [][]byte{{protocol.CommandInventory, protocol.InventorySceneBegin}}
 	m, ok := w.maps[c.Map]
 	if ok && len(m.NPCs) > 0 {

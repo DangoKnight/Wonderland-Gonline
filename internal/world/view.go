@@ -40,6 +40,7 @@ func NewView() *View {
 
 // Reset clears the scene state for a new map entry.
 func (v *View) Reset() {
+	v.HiddenMap = 0
 	v.MissionVariables = map[uint16]int32{}
 	v.CompanionRebirthOpen = false
 	v.RebornFormOpen = false

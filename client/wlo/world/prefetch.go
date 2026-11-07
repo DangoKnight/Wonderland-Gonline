@@ -49,6 +49,9 @@ const prefetchRings = 0 // prefetch disabled: only the current map is loaded
 // prefetchRings steps away, skipping scenes that are already cached. The queue
 // survives map changes, so warming continues in the background while playing.
 func PrefetchNeighbors(a login.Assets, mapID uint16) {
+	if prefetchRings == 0 {
+		return
+	}
 	prefetch.Lock()
 	defer prefetch.Unlock()
 	frontier := []uint16{mapID}
@@ -99,6 +102,9 @@ var prefetchTiming struct {
 // blocks the frame it runs in, so this keeps the pauses rare and short-spaced.
 // Call it once per frame with the player's walker state and the current time.
 func PrefetchStep(a login.Assets, walking bool, now time.Time) {
+	if prefetchRings == 0 {
+		return
+	}
 	if walking {
 		prefetchTiming.moving = true
 		return

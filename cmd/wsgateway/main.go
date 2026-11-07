@@ -28,9 +28,23 @@ const (
 	opcodePing   = 9
 	opcodePong   = 10
 
-	closeNormalClosure = 1000
-	closeProtocolError = 1002
-	closeMessageTooBig = 1009
+	closeNormalClosure      = 1000
+	closeProtocolError      = 1002
+	closeMessageTooBig      = 1009
+	wsFinalFlag             = 0x80
+	wsMaskFlag              = 0x80
+	wsReservedMask          = 0x70
+	wsOpcodeMask            = 0x0f
+	wsPayloadMask           = 0x7f
+	wsLength16              = 126
+	wsLength64              = 127
+	wsPayload16Maximum      = 65535
+	wsControlPayloadMaximum = 125
+	wsProtocolVersion       = "13"
+	wsHandshakeKeyBytes     = 16
+	gatewayPortFirst        = 6000
+	gatewayPortLast         = 6999
+	gatewayCopyBytes        = 32 << 10
 )
 
 // Config configures the gateway handler.
@@ -63,7 +77,7 @@ func DefaultValidateTarget(target string) error {
 		return fmt.Errorf("disallowed target host %q: only 127.0.0.1 and localhost allowed", host)
 	}
 	port, err := strconv.Atoi(portStr)
-	if err != nil || port < 6000 || port > 6999 {
+	if err != nil || port < gatewayPortFirst || port > gatewayPortLast {
 		return fmt.Errorf("disallowed target port %q: must be between 6000 and 6999", portStr)
 	}
 	return nil
@@ -85,19 +99,19 @@ func headerContainsToken(headerValue, token string) bool {
 }
 
 func encodeFrameHeader(opcode byte, length int) []byte {
-	b0 := byte(0x80) | (opcode & 0x0F) // FIN = 1
-	if length < 126 {
+	b0 := byte(wsFinalFlag) | (opcode & wsOpcodeMask)
+	if length < wsLength16 {
 		return []byte{b0, byte(length)}
-	} else if length <= 65535 {
+	} else if length <= wsPayload16Maximum {
 		buf := make([]byte, 4)
 		buf[0] = b0
-		buf[1] = 126
+		buf[1] = wsLength16
 		binary.BigEndian.PutUint16(buf[2:4], uint16(length))
 		return buf
 	} else {
 		buf := make([]byte, 10)
 		buf[0] = b0
-		buf[1] = 127
+		buf[1] = wsLength64
 		binary.BigEndian.PutUint64(buf[2:10], uint64(length))
 		return buf
 	}
@@ -147,11 +161,11 @@ func (w *wsConn) ReadClientFrame() ([]byte, byte, error) {
 	if _, err := io.ReadFull(w.br, b[:]); err != nil {
 		return nil, 0, err
 	}
-	fin := (b[0] & 0x80) != 0
-	rsv := b[0] & 0x70
-	opcode := b[0] & 0x0F
-	masked := (b[1] & 0x80) != 0
-	lenByte := b[1] & 0x7F
+	fin := (b[0] & wsFinalFlag) != 0
+	rsv := b[0] & wsReservedMask
+	opcode := b[0] & wsOpcodeMask
+	masked := (b[1] & wsMaskFlag) != 0
+	lenByte := b[1] & wsPayloadMask
 
 	if rsv != 0 {
 		_ = w.SendClose(closeProtocolError)
@@ -172,13 +186,13 @@ func (w *wsConn) ReadClientFrame() ([]byte, byte, error) {
 
 	var payloadLen int64
 	switch lenByte {
-	case 126:
+	case wsLength16:
 		var ext [2]byte
 		if _, err := io.ReadFull(w.br, ext[:]); err != nil {
 			return nil, opcode, err
 		}
 		payloadLen = int64(binary.BigEndian.Uint16(ext[:]))
-	case 127:
+	case wsLength64:
 		var ext [8]byte
 		if _, err := io.ReadFull(w.br, ext[:]); err != nil {
 			return nil, opcode, err
@@ -192,7 +206,7 @@ func (w *wsConn) ReadClientFrame() ([]byte, byte, error) {
 		payloadLen = int64(lenByte)
 	}
 
-	if opcode >= 8 && payloadLen > 125 {
+	if opcode >= opcodeClose && payloadLen > wsControlPayloadMaximum {
 		_ = w.SendClose(closeProtocolError)
 		return nil, opcode, errors.New("control frame payload exceeds 125 bytes")
 	}
@@ -291,7 +305,7 @@ func proxyConnection(remoteAddr, target string, ws *wsConn, tcpConn net.Conn) {
 			wg.Done()
 		}()
 
-		buf := make([]byte, 32768)
+		buf := make([]byte, gatewayCopyBytes)
 		for {
 			n, err := tcpConn.Read(buf)
 			if n > 0 {
@@ -347,13 +361,18 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, cfg Config) {
 		http.Error(w, "missing or invalid Connection header", http.StatusBadRequest)
 		return
 	}
-	if r.Header.Get("Sec-WebSocket-Version") != "13" {
+	if r.Header.Get("Sec-WebSocket-Version") != wsProtocolVersion {
 		http.Error(w, "unsupported Sec-WebSocket-Version", http.StatusBadRequest)
 		return
 	}
 	key := strings.TrimSpace(r.Header.Get("Sec-WebSocket-Key"))
 	if key == "" {
 		http.Error(w, "missing Sec-WebSocket-Key header", http.StatusBadRequest)
+		return
+	}
+	decodedKey, err := base64.StdEncoding.DecodeString(key)
+	if err != nil || len(decodedKey) != wsHandshakeKeyBytes {
+		http.Error(w, "invalid Sec-WebSocket-Key header", http.StatusBadRequest)
 		return
 	}
 

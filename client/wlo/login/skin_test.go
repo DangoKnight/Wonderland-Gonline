@@ -107,3 +107,22 @@ func TestCachedSkinBackgroundChangesWithoutReplacingInput(t *testing.T) {
 	}
 	background.Close()
 }
+
+func TestSkinBackgroundFallbackRetainsNativeLayoutWhenAvailable(t *testing.T) {
+	a := NewAssets(t.TempDir())
+	right := a.MediaPath("menu", "Skins", "white", "Form_Right.jpg.png")
+	skinFixture(t, right, color.RGBA{R: 200, A: 255})
+	env := &seui.Env{Pics: picdb.New()}
+	var fallback, preferred *surface.Surface
+	bindSkinBackground(seui.NewForm(env), "background", a, "Form_Left.jpg", &fallback, "Form_Right.jpg")
+	if fallback == nil {
+		t.Fatal("available right-hand background not used")
+	}
+	skinFixture(t, a.MediaPath("menu", "Skins", "white", "Form_Left.jpg.png"), color.RGBA{G: 200, A: 255})
+	bindSkinBackground(seui.NewForm(env), "background", a, "Form_Left.jpg", &preferred, "Form_Right.jpg")
+	if preferred == nil || preferred.Pix[0] == fallback.Pix[0] {
+		t.Fatal("fallback replaced an available native background")
+	}
+	fallback.Close()
+	preferred.Close()
+}

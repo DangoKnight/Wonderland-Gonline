@@ -12,8 +12,9 @@ import (
 // MountPacks mounts several independent ZIP packs as one virtual root. Entry
 // names must be unique across packs; metadata files are skipped.
 func MountPacks(name string, packs []ZipSource) (string, func() error, error) {
-	if name == "" || strings.ContainsAny(name, `\/:`) {
-		return "", nil, fmt.Errorf("invalid bundle name %q", name)
+	base, err := sourceMountName(name)
+	if err != nil {
+		return "", nil, err
 	}
 	combined := &zip.Reader{}
 	seen := map[string]bool{}
@@ -40,7 +41,7 @@ func MountPacks(name string, packs []ZipSource) (string, func() error, error) {
 		return "", nil, fmt.Errorf("bundle already mounted: %s", name)
 	}
 	mounts.serial++
-	root := fmt.Sprintf("/%s.assets-%d", name, mounts.serial)
+	root := fmt.Sprintf("%s.assets-%d", base, mounts.serial)
 	mounts.bundles[name] = root
 	mounts.roots[root] = combined
 	mounts.Unlock()

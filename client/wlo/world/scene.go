@@ -211,6 +211,10 @@ func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
 // large parse happens while the login screens load rather than on entering a
 // map. It uses the same cache as groundRecord.
 func WarmTerrain(a login.Assets) error {
+	// Compiled installations already load an independent record per map.
+	if _, err := clientfs.Stat(a.DataPath(clientruntime.GroundDir)); err == nil {
+		return nil
+	}
 	grounds.Lock()
 	defer grounds.Unlock()
 	path := a.DataPath(groundExport)

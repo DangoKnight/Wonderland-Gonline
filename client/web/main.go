@@ -78,6 +78,8 @@ func fetchBlock(name string, start, n int64) ([]byte, error) {
 		return nil
 	})
 	promise.Call("then", ok, bad)
+	defer ok.Release()
+	defer bad.Release()
 	select {
 	case buf := <-done:
 		return buf, nil
@@ -171,6 +173,8 @@ func decodeViaBrowser(raw []byte) (image.Image, error) {
 		return nil
 	})
 	promise.Call("then", ok, bad)
+	defer ok.Release()
+	defer bad.Release()
 	r := <-done
 	return r.img, r.err
 }
@@ -203,12 +207,10 @@ func run() error {
 		log.Printf("terrain warm-up: %v", err)
 	}
 	c, err := app.New(app.Options{
-		Renderer: render.Auto,
-		Root:     root,
-		// The browser build has no jma archive to size the layout from; use the level the desktop install resolves to.
-		ContentLevel: 5,
-		FallbackINI:  localServerINI,
-		Dial:         wsdial.Dial,
+		Renderer:    render.Auto,
+		Root:        root,
+		FallbackINI: localServerINI,
+		Dial:        wsdial.Dial,
 	})
 	if err != nil {
 		return err

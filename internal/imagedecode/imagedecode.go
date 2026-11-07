@@ -5,7 +5,6 @@
 package imagedecode
 
 import (
-	"bytes"
 	"image"
 	"image/png"
 	"io"
@@ -16,15 +15,15 @@ var Hook func(raw []byte) (image.Image, error)
 
 // Decode decodes one encoded picture (PNG, JPEG, ...) from r.
 func Decode(r io.Reader) (image.Image, error) {
+	if Hook == nil {
+		img, _, err := image.Decode(r)
+		return img, err
+	}
 	raw, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	if Hook != nil {
-		return Hook(raw)
-	}
-	img, _, err := image.Decode(bytes.NewReader(raw))
-	return img, err
+	return Hook(raw)
 }
 
 // DecodePNG decodes a PNG from r, through the Hook when one is installed.

@@ -13,7 +13,11 @@
 	--warn: #f59e0b;
 	--bad: #ef4444;
 	--radius: 10px;
-	font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+	font:
+		14px/1.5 system-ui,
+		-apple-system,
+		"Segoe UI",
+		sans-serif;
 }
 * {
 	box-sizing: border-box;

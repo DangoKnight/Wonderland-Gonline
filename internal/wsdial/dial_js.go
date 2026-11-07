@@ -16,14 +16,23 @@ import (
 )
 
 type conn struct {
-	ws      js.Value
-	in      chan []byte
-	closed  chan struct{}
-	once    sync.Once
-	mu      sync.Mutex
-	pending []byte
-	remote  string
+	ws        js.Value
+	in        chan []byte
+	closed    chan struct{}
+	once      sync.Once
+	mu        sync.Mutex
+	pending   []byte
+	remote    string
+	callbacks []js.Func
 }
+
+const (
+	webSocketOpen          = 1
+	webSocketFrameLimit    = 1 << 20
+	webSocketBufferedLimit = 2 << 20
+)
+
+var socketEvents = [...]string{"open", "message", "close", "error"}
 
 // Dial opens a WebSocket to /ws?target=address and waits for it to open.
 func Dial(network, address string) (net.Conn, error) {
@@ -50,11 +59,18 @@ func Dial(network, address string) (net.Conn, error) {
 	onOpen := js.FuncOf(func(js.Value, []js.Value) any { signal(nil); return nil })
 	onMessage := js.FuncOf(func(_ js.Value, args []js.Value) any {
 		data := args[0].Get("data")
+		if !data.InstanceOf(js.Global().Get("ArrayBuffer")) || data.Get("byteLength").Int() > webSocketFrameLimit {
+			c.Close()
+			return nil
+		}
 		b := make([]byte, data.Get("byteLength").Int())
 		js.CopyBytesToGo(b, js.Global().Get("Uint8Array").New(data))
 		select {
 		case c.in <- b:
 		case <-c.closed:
+		default:
+			// Never block the browser event loop on a stalled receiver.
+			c.Close()
 		}
 		return nil
 	})
@@ -65,8 +81,10 @@ func Dial(network, address string) (net.Conn, error) {
 	})
 	onError := js.FuncOf(func(js.Value, []js.Value) any {
 		signal(errors.New("wsdial: websocket error"))
+		c.Close()
 		return nil
 	})
+	c.callbacks = []js.Func{onOpen, onMessage, onClose, onError}
 	ws.Call("addEventListener", "open", onOpen)
 	ws.Call("addEventListener", "message", onMessage)
 	ws.Call("addEventListener", "close", onClose)
@@ -75,18 +93,25 @@ func Dial(network, address string) (net.Conn, error) {
 	select {
 	case err := <-opened:
 		if err != nil {
-			ws.Call("close")
+			c.Close()
 			return nil, err
 		}
 	case <-time.After(10 * time.Second):
-		ws.Call("close")
+		c.Close()
 		return nil, errors.New("wsdial: connect timeout")
 	}
 	return c, nil
 }
 
 func (c *conn) shutdown() {
-	c.once.Do(func() { close(c.closed) })
+	c.once.Do(func() {
+		close(c.closed)
+		for i, callback := range c.callbacks {
+			c.ws.Call("removeEventListener", socketEvents[i], callback)
+			callback.Release()
+		}
+		c.callbacks = nil
+	})
 }
 
 func (c *conn) take(p []byte, b []byte) int {
@@ -129,6 +154,13 @@ func (c *conn) Write(p []byte) (int, error) {
 	case <-c.closed:
 		return 0, net.ErrClosed
 	default:
+	}
+	if c.ws.Get("readyState").Int() != webSocketOpen {
+		return 0, net.ErrClosed
+	}
+	if len(p) > webSocketBufferedLimit || c.ws.Get("bufferedAmount").Int() > webSocketBufferedLimit-len(p) {
+		c.Close()
+		return 0, errors.New("wsdial: outgoing buffer exceeded")
 	}
 	arr := js.Global().Get("Uint8Array").New(len(p))
 	js.CopyBytesToJS(arr, p)

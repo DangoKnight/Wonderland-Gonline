@@ -319,22 +319,32 @@ function updateTopBar(data) {
 		h = String(Math.floor(up / 3600)).padStart(2, "0"),
 		m = String(Math.floor((up % 3600) / 60)).padStart(2, "0"),
 		s = String(Math.floor(up % 60)).padStart(2, "0");
-	const services = data.services || {},
-		online = Object.values(services).every(Boolean);
+	const services = Object.values(data.services || {}),
+		online = services.length > 0 && services.every(Boolean),
+		ports = services.filter(Boolean).map((address) => String(address).split(":").pop());
 	pill.textContent = online ? "● ONLINE" : "● PARTIAL";
 	pill.className = "pill" + (online ? " online" : "");
 	stats.textContent =
-		"Connections " + (data.connections || 0) +
-		" · Uptime " + h + ":" + m + ":" + s +
-		" · Packets " + (data.packets_received || 0) +
-		" · Ports 6414 / 6415 / 6416";
+		"Connections " +
+		(data.connections || 0) +
+		" · Uptime " +
+		h +
+		":" +
+		m +
+		":" +
+		s +
+		" · Packets " +
+		(data.packets_received || 0) +
+		" · Ports " +
+		ports.join(" / ");
 }
 async function loadTopBar() {
 	if (!token) return;
 	try {
 		updateTopBar(await api("status"));
 	} catch (e) {
-		/* the top bar is informational; keep the last value */
+		$("#pill").textContent = "● OFFLINE";
+		$("#pill").className = "pill";
 	}
 }
 $("#login-form").onsubmit = async (e) => {
