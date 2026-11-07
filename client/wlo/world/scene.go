@@ -206,3 +206,31 @@ func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
 	out.Zones = append([]SoundZone(nil), s.Zones...)
 	return &out, nil
 }
+
+// WarmTerrain parses the terrain export ahead of the first map change, so the
+// large parse happens while the login screens load rather than on entering a
+// map. It uses the same cache as groundRecord.
+func WarmTerrain(a login.Assets) error {
+	grounds.Lock()
+	defer grounds.Unlock()
+	path := a.DataPath(groundExport)
+	if grounds.path == path {
+		return nil
+	}
+	raw, err := clientfs.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var doc struct {
+		Entries []*groundEntry `json:"entries"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return fmt.Errorf("%s: %w", groundExport, err)
+	}
+	grounds.entries = map[string]*groundEntry{}
+	for _, e := range doc.Entries {
+		grounds.entries[strings.ToLower(e.Name)] = e
+	}
+	grounds.path = path
+	return nil
+}

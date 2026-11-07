@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -236,6 +237,10 @@ type Options struct {
 	SettingsPath string // optional local preference file override
 	ServerINI    string // SERVER.INI override
 	FallbackINI  []byte // used when SERVER.INI cannot be read
+	// Dial replaces the TCP dialer for login sockets (the browser build uses a WebSocket). Nil means TCP.
+	Dial func(network, address string) (net.Conn, error)
+	// ContentLevel overrides the create-character layout (1..5). Zero derives it from the 001 archive size.
+	ContentLevel byte
 }
 
 // New is the login part of FormCreate: the picture database with the
@@ -288,6 +293,9 @@ func New(o Options) (*Client, error) {
 
 	c.G = login.NewGlobals()
 	c.Net = login.NewNet()
+	if o.Dial != nil {
+		c.Net.Dial = o.Dial
+	}
 	c.Servers = login.NewSelectServer(c.Env, c.G, c.Net, a)
 	c.Servers.INI, c.Servers.FallbackINI = o.ServerINI, o.FallbackINI
 	c.Servers.OnExit = func() { c.Exit = true }
@@ -321,6 +329,9 @@ func New(o Options) (*Client, error) {
 		jma001 = a.SourceBytes
 	}
 	content := login.ContentLevel(jma001)
+	if o.ContentLevel != 0 {
+		content = o.ContentLevel
+	}
 	c.Chars = login.NewSelectCharacter(c.Env, c.G, c.Net, a, login.NewStatus(c.Env, formula), content)
 	c.Stats = &world.Stats{Formula: formula}
 	c.MainStatus = hud.NewMainStatus(c.Env, formula, c.Stats)
@@ -439,6 +450,7 @@ func (c *Client) frame(draw bool) {
 		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
+		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
 		c.waterTravelTick()
 		c.remoteTick()
 		c.updateFloorHover()

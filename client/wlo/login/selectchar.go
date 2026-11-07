@@ -166,13 +166,11 @@ func NewSelectCharacter(env *seui.Env, g *Globals, n *Net, a Assets, status *Sta
 	s := &SelectCharacter{G: g, Net: n, Assets: a, Status: status, Now: time.Now}
 	s.InitForm(s, env)
 	s.Name = "SelectCharacter"
-	side := "_L"
-	if content != 0 {
-		side = "_R"
-	}
-	bindSkinBackground(s, "empty", a, "Form_SelectRole_Empty"+side+".jpg", &s.EmptyBack)
+	// The install ships only the "_R" panels ("_L" never exists), and with the
+	// jma size unknown in the browser build content is 0; both cases use "_R".
+	bindSkinBackground(s, "empty", a, "Form_SelectRole_Empty_R.jpg", &s.EmptyBack)
 	bindSkinBackground(s, "empty-right", a, "Form_SelectRole_Empty_R.jpg", &s.EmptyBack2)
-	bindSkinBackground(s, "info", a, "Form_SelectRole_Info"+side+".jpg", &s.InfoBack)
+	bindSkinBackground(s, "info", a, "Form_SelectRole_Info_R.jpg", &s.InfoBack)
 	bindSkinBackground(s, "info-right", a, "Form_SelectRole_Info_R.jpg", &s.InfoBack2)
 	s.EmptyIcon = env.Pics.Find("Icon_Empty")
 	s.SelectIcon = -1

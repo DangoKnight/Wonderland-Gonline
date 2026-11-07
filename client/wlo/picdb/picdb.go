@@ -25,6 +25,7 @@ import (
 	"strings"
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientimage"
+	"wonderland-gonline/internal/imagedecode"
 
 	_ "golang.org/x/image/bmp"
 	_ "image/png"
@@ -248,7 +249,7 @@ func decodeBMP(path string) (image.Image, error) {
 		return nil, err
 	}
 	defer f.Close()
-	img, _, err := image.Decode(f)
+	img, err := imagedecode.Decode(f)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}

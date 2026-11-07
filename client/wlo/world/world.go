@@ -182,6 +182,7 @@ func New(env *seui.Env, a login.Assets, p Player, body login.RoleView, names map
 	if err != nil {
 		return nil, err
 	}
+	PrefetchNeighbors(a, p.Map)
 	w := &World{Env: env, Scene: s, Player: p, Body: body, Now: time.Now}
 	if sceneOf != nil {
 		w.SceneName = names[sceneOf(p.Map)]
