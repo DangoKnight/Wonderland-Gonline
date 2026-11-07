@@ -13,12 +13,15 @@ import (
 // and the server serializes access. AdminActors, Hidden, Markers, Props and Actors reset on each map
 // entry (Player.CurMap and SendMapInfo in C#); Marks spans the whole login.
 type View struct {
-	AdminActors map[uint16]bool  // Explicit live administrator show/hide decisions.
-	Hidden      map[uint16]bool  // HiddenNpcClickIDs
-	Markers     map[uint32]byte  // SentQuestMinimapMarkers, keyed (kind-1)<<16 | target
-	Props       map[uint16]int32 // NativePropStates on mechanism maps
-	Actors      map[uint16]bool  // NativeActorVisibility on mechanism maps
-	Marks       map[uint16]bool  // SentNotebookMarks
+	AdminActors map[uint16]bool // Explicit live administrator show/hide decisions.
+	Hidden      map[uint16]bool // HiddenNpcClickIDs
+	// HiddenMap is the map Hidden was recorded on. Click IDs are not unique
+	// across maps, so entering another map starts with no hidden actors.
+	HiddenMap uint16
+	Markers   map[uint32]byte  // SentQuestMinimapMarkers, keyed (kind-1)<<16 | target
+	Props     map[uint16]int32 // NativePropStates on mechanism maps
+	Actors    map[uint16]bool  // NativeActorVisibility on mechanism maps
+	Marks     map[uint16]bool  // SentNotebookMarks
 	// Mission variables belong to this scene visit, never to the durable character.
 	MissionVariables     map[uint16]int32
 	CompanionRebirthOpen bool
