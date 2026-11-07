@@ -64,6 +64,7 @@ async function refresh() {
 	const id = ++requestID,
 		target = view;
 	message("");
+	loadTopBar();
 	try {
 		if (typeof renderAdminTool === "function" && toolViews.has(target)) {
 			await renderAdminTool(target, id);
@@ -311,11 +312,36 @@ async function act(path, body = {}) {
 		message(e.message);
 	}
 }
+function updateTopBar(data) {
+	const pill = $("#pill"),
+		stats = $("#stats");
+	const up = Number(data.uptime_seconds || 0),
+		h = String(Math.floor(up / 3600)).padStart(2, "0"),
+		m = String(Math.floor((up % 3600) / 60)).padStart(2, "0"),
+		s = String(Math.floor(up % 60)).padStart(2, "0");
+	const services = data.services || {},
+		online = Object.values(services).every(Boolean);
+	pill.textContent = online ? "● ONLINE" : "● PARTIAL";
+	pill.className = "pill" + (online ? " online" : "");
+	stats.textContent =
+		"Connections " + (data.connections || 0) +
+		" · Uptime " + h + ":" + m + ":" + s +
+		" · Packets " + (data.packets_received || 0) +
+		" · Ports 6414 / 6415 / 6416";
+}
+async function loadTopBar() {
+	if (!token) return;
+	try {
+		updateTopBar(await api("status"));
+	} catch (e) {
+		/* the top bar is informational; keep the last value */
+	}
+}
 $("#login-form").onsubmit = async (e) => {
 	e.preventDefault();
 	token = $("#token").value;
 	try {
-		await api("status");
+		updateTopBar(await api("status"));
 		$("#token").value = "";
 		$("#login").hidden = true;
 		content.hidden = false;
