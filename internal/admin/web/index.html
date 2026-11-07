@@ -3,82 +3,106 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>Wonderland Gonline Server · Administration</title>
+		<title>WLO Private Server · Administrator Console</title>
 		<link rel="stylesheet" href="/style.css" />
 		<script src="/app.js" defer></script>
 		<script src="/tools.js" defer></script>
 	</head>
 	<body>
-		<aside>
-			<a class="brand" href="/"
-				>W<span>Wonderland Gonline Server<small>SERVER ADMINISTRATION</small></span></a
-			>
-			<nav aria-label="Administration">
-				<button data-view="overview" class="active">Overview</button
-				><button data-view="sessions">Sessions</button
-				><button data-view="accounts">Accounts</button
-				><button data-view="npcs">NPC library</button
-				><button data-view="maps">World maps</button
-				><button data-view="catalog">Item mall catalog</button
-				><button data-view="settings">Settings</button>
-				<button data-view="operations">Server operations</button>
-				<button data-view="characters">Characters</button>
-				<button data-view="studio">GM studio</button>
-				<button data-view="inventory">Inventory &amp; equipment</button>
-				<button data-view="stats">Stats &amp; skills</button>
-				<button data-view="player_settings">Player settings</button>
-				<button data-view="character_quests">Character quests</button>
-				<button data-view="quest_definitions">Quest definitions</button>
-				<button data-view="friends">Friendships</button>
-				<button data-view="guilds">Guilds</button>
-				<button data-view="marriages">Marriages</button>
-				<button data-view="mail">GM mail &amp; gifts</button>
-				<button data-view="bans">IP bans</button>
-				<button data-view="battles">Live battles</button>
-				<button data-view="portals">Portals &amp; destinations</button>
-				<button data-view="drops">Monster drops</button>
-				<button data-view="chest">Chest loot</button>
-				<button data-view="starters">Starter items</button>
-				<button data-view="talks">Dialogue resolver</button>
-				<button data-view="assets_editor">SQL asset editor</button>
-				<button data-view="configuration">Startup configuration</button>
-				<button data-view="logs">Live logs</button>
-				<button data-view="audit">Audit history</button>
-			</nav>
-			<div class="foot">
-				Wonderland Gonline Server<br /><span>Migration in progress</span>
+		<header class="topbar">
+			<div class="brand">
+				<strong>WLO PRIVATE SERVER</strong>
+				<span>Administrator Console v2.0</span>
 			</div>
-		</aside>
-		<main>
-			<header>
-				<div>
-					<p class="eyebrow">CONTROL ROOM</p>
-					<h1 id="heading">Overview</h1>
-				</div>
+			<div class="pill" id="pill">● OFFLINE</div>
+			<div class="stats" id="stats">Connections 0 · Uptime 00:00:00 · Packets 0 · Ports 6414 / 6415 / 6416</div>
+			<div class="actions">
 				<button id="refresh" class="secondary">Refresh</button>
-			</header>
-			<div id="message" role="status" aria-live="polite"></div>
-			<section id="login" class="panel">
-				<p class="eyebrow">ADMINISTRATOR ACCESS</p>
-				<h2>Connect to your server</h2>
-				<p>Creating a player account? <a href="/register">Register here</a>.</p>
-				<p>
-					Enter the administrator token configured for this server. It stays in memory
-					until you close or reload this page.
-				</p>
-				<form id="login-form">
-					<label
-						>Administrator token<input
-							id="token"
-							type="password"
-							autocomplete="off"
-							required
-							minlength="24" /></label
-					><button>Connect</button>
-				</form>
-			</section>
-			<div id="content" hidden></div>
-		</main>
+			</div>
+		</header>
+
+		<div class="shell">
+			<aside class="sidebar">
+				<nav aria-label="Administration">
+					<div class="group">
+						<h4>General</h4>
+						<button data-view="overview" class="active">Overview</button>
+						<button data-view="sessions">Sessions</button>
+						<button data-view="accounts">Accounts</button>
+						<button data-view="configuration">Startup configuration</button>
+					</div>
+					<div class="group">
+						<h4>Players</h4>
+						<button data-view="characters">Characters</button>
+						<button data-view="player_settings">Player settings</button>
+						<button data-view="stats">Stats &amp; skills</button>
+						<button data-view="inventory">Inventory &amp; equipment</button>
+						<button data-view="character_quests">Character quests</button>
+						<button data-view="friends">Friendships</button>
+						<button data-view="guilds">Guilds</button>
+						<button data-view="marriages">Marriages</button>
+						<button data-view="mail">GM mail &amp; gifts</button>
+						<button data-view="bans">IP bans</button>
+					</div>
+					<div class="group">
+						<h4>Game data</h4>
+						<button data-view="npcs">NPC library</button>
+						<button data-view="maps">World maps</button>
+						<button data-view="portals">Portals &amp; destinations</button>
+						<button data-view="catalog">Item mall catalog</button>
+						<button data-view="drops">Monster drops</button>
+						<button data-view="chest">Chest loot</button>
+						<button data-view="starters">Starter items</button>
+						<button data-view="quest_definitions">Quest definitions</button>
+						<button data-view="talks">Dialogue resolver</button>
+						<button data-view="assets_editor">SQL asset editor</button>
+					</div>
+					<div class="group">
+						<h4>Operations</h4>
+						<button data-view="operations">Server operations</button>
+						<button data-view="studio">GM studio</button>
+						<button data-view="battles">Live battles</button>
+						<button data-view="settings">Settings</button>
+						<button data-view="logs">Live logs</button>
+						<button data-view="audit">Audit history</button>
+					</div>
+				</nav>
+				<div class="foot">
+					Wonderland Gonline Server<br /><span>Migration in progress</span>
+				</div>
+			</aside>
+
+			<main>
+				<div class="page-head">
+					<div>
+						<p class="eyebrow">CONTROL ROOM</p>
+						<h1 id="heading">Overview</h1>
+					</div>
+				</div>
+				<div id="message" role="status" aria-live="polite"></div>
+				<section id="login" class="panel login">
+					<p class="eyebrow">ADMINISTRATOR ACCESS</p>
+					<h2>Connect to your server</h2>
+					<p>Creating a player account? <a href="/register">Register here</a>.</p>
+					<p>
+						Enter the administrator token configured for this server. It stays in memory
+						until you close or reload this page.
+					</p>
+					<form id="login-form">
+						<label
+							>Administrator token<input
+								id="token"
+								type="password"
+								autocomplete="off"
+								required
+								minlength="24" /></label
+						><button>Connect</button>
+					</form>
+				</section>
+				<div id="content" hidden></div>
+			</main>
+		</div>
+
 		<template id="overview"
 			><div class="notice">
 				Character creation and initial map synchronization are available. Gameplay migration
