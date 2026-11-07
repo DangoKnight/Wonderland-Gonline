@@ -256,6 +256,7 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 			c.battle.state.Active = false
 			c.resetBattleResults()
 			c.dispatch(selfPacket(10001, 2, 11016, 562, 635, 0, 444444444, 444444444, nil, "Dango"))
+			freezeGPUFixtureAnimations(c)
 			c.dispatch([]byte{5, 4})
 			c.dispatch([]byte{23, 4, 3, 1, 0, 106, 160, 0, 0, 174, 5, 103, 3, 160, 0, 0, 0, 3, 2, 0, 106, 160, 0, 0, 206, 1, 26, 2, 170, 0, 0, 0})
 			c.dispatch([]byte{20, 8})

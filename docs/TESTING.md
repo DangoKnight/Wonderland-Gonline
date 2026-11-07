@@ -4213,3 +4213,51 @@ without a race report; the smaller affected selection passed with an explicit
 vet and build. No unresolved test failures remain. Optional live-account,
 reference-screenshot, font/media-source and platform-specific fixtures retained
 their normal skips (two server tests and 42 client tests).
+
+### PR #10: parallel asset compilation and atomic publication (2026-11-07)
+
+The worker pool still compiles independent images and companion ZIPs in parallel.
+Only the final core publication waits for all content-addressed companions and
+`_packs.json`. Failed companion builds preserve the previous complete core, and
+failed first builds leave no core. The core is built once, so result counters no
+longer count an intermediate core archive twice.
+
+Validation logs are in `var/validation/pr10-merge/`, with initial focused review
+logs in `var/validation/pr10-review/`. No installed bundle or live database was
+replaced. The validation used Go 1.27.1 on Windows, a migrated imported SQL
+fixture, original native sources, extracted client fixtures and GPU opt-ins.
+
+- Full server race validation executed all 43 root-module packages with
+  `go test -json -race -count=1 -timeout=60m -p 2 ./...`; it recorded 2,542 passing
+  test/subtest events before the corrective fixture reruns.
+- Full client validation executed all 29 packages with GPU fixtures enabled;
+  it recorded 992 passing test/subtest events before corrective reruns.
+- Restored missing ignored exports in the isolated checkout and reran the full
+  asset package successfully under the race detector. Original-source skill and
+  sprite comparisons and the three legacy UI interaction tests also passed after
+  restoring the sibling client fixture path. Optional live-account, reference
+  capture, source-font and platform-specific fixtures retained their normal skips.
+- GPU parity exposed an unfrozen character clock after the stage-69 map change.
+  Freezing the replacement character with the existing fixture clock prevents its
+  face changing between CPU and GPU draws; five repeated parity runs passed.
+  This changes test setup only, with no renderer or tolerance changes.
+- Complete `clientbundle`, `clientimage` and `assets` race tests passed. New
+  failure-injection coverage tests each companion on cold builds and rebuilds;
+  worker-count coverage compares archive bytes using one and four workers.
+- Server/client vet, server/client/bundle-compiler builds, Go formatting and
+  whitespace checks passed. All 78 Python exporter tests passed with UTF-8 mode
+  enabled and disabled (one optional skip in each run).
+
+The corrected compiler completed a cold build of all 74,841 asset files from
+6,041.4 MiB of source in 16m8s using four workers while the full suites ran.
+An unchanged rebuild took 4m1s, reused all 74,841 files and preserved the core's
+SHA-256. These are loaded validation-machine timings, not a controlled benchmark.
+The fresh bundle passed GPU parity, compiled-world/editable-world comparison,
+compiled-sprite comparison and compiled login/shared-world integration.
+
+Comparison with the prior sequential build found 74,837 byte-identical file
+entries, including every image descriptor and chunk. Three existing map-valued
+binary records (backdrops, event index and world objects) had different encoded
+hashes but identical decoded values; their world-pack hash accounts for the
+remaining core descriptor difference. Do not infer whole-pack byte determinism
+for those existing map encodings. No unresolved test failures remain.
