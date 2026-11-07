@@ -167,6 +167,11 @@ func loadLegacyTransaction(tx *gorm.DB) (*assets.Catalog, error) {
 		if err != nil {
 			return err
 		}
+		contacts, err := assets.ParseAnimationContacts(data)
+		if err != nil {
+			return err
+		}
+		assets.ApplySkillContacts(c.Skills, contacts)
 		for _, asset := range []string{"alchemy_recipes.txt", "starter_items.json", "pet_vouchers.json", "disabled_quest_events.csv", "monster_drops.txt", "npc_sale_prices.csv", "critical_hits.json", "item_mall.json", "gacha_packs.json", "lucky_draw.json", "mall_forging.json"} {
 			doc, err := read(asset)
 			if err != nil {

@@ -919,7 +919,7 @@ func (f *ServiceForm) hotelList(p []byte) bool {
 		}
 		for i := range pet.Skills {
 			at := prefix + n + i*5
-			if r[at] > game.MaxSkillGrade {
+			if r[at] > f.Inventory.State.petSkillGradeLimit(pet.ID, i) {
 				return false
 			}
 			pet.Skills[i] = game.PetSkill{Grade: r[at], Exp: binary.LittleEndian.Uint32(r[at+1:])}

@@ -62,7 +62,7 @@ func ParseEffectCatalog(raw []byte) (map[string]EffectDefinition, error) {
 // Runtime effects come exclusively from explicit SQL inline effects or references.
 // An empty reference list deliberately disables effects for that skill.
 func ResolveSkillEffects(s *Skill, definitions map[string]EffectDefinition) error {
-	if err := ValidateSkillTargeting(s.Targeting); err != nil {
+	if err := ValidateSkillTargeting(s.Targeting, s.GradeLimit()); err != nil {
 		return fmt.Errorf("skill %d: %w", s.ID, err)
 	}
 	if s.EffectRefs != nil {

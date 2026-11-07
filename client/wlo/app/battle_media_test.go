@@ -171,10 +171,8 @@ func TestBattleRevealQueuesActionsAndAudio(t *testing.T) {
 	var played []string
 	c.Env.Sound = func(path string) { played = append(played, path) }
 	c.Frame()
-	*now = now.Add(sceneFadeSteps * sceneFadeFrame)
-	c.Frame()
 	if c.sceneFade.mode != sceneFadeRevealBattle || len(c.battle.playing) != 0 || len(c.battle.state.Actions) != 1 || len(played) != 0 {
-		t.Fatal("action/audio ran behind entry fade", played)
+		t.Fatal("action/audio ran before battlefield reveal", played)
 	}
 	*now = now.Add(sceneFadeSteps * sceneFadeFrame)
 	c.Frame()

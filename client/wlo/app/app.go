@@ -19,6 +19,8 @@ import (
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/lottery"
+	"wonderland-gonline/client/wlo/mall"
+	"wonderland-gonline/client/wlo/notebook"
 	"wonderland-gonline/client/wlo/picdb"
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/settings"
@@ -29,6 +31,7 @@ import (
 	"wonderland-gonline/client/wlo/team"
 	"wonderland-gonline/client/wlo/weather"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/client/wlo/worldpk"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/protocol"
 )
@@ -99,6 +102,13 @@ type Client struct {
 	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
 	Business             *hud.Business
 	LuckyDraw            *lottery.Form
+	WorldPK              *worldpk.Form
+	Mall                 *mall.Form
+	Notebook             *notebook.Form
+	notebookState        notebook.State
+	notebookLanguage     string
+	notebookOwner        uint32
+	starBook             *starBookForm
 	Trade                *inventory.TradeForm
 	Services             *inventory.ServiceForm
 	clinicPrompt         *clinicPrompt
@@ -391,6 +401,7 @@ func New(o Options) (*Client, error) {
 		c.Create.Role.Painter = role.NewCreator(c.lib, c.items)
 	}
 	c.initInventory()
+	c.initNotebook()
 	c.initCompound()
 	c.initSkills()
 	c.initTeam()
@@ -399,6 +410,8 @@ func New(o Options) (*Client, error) {
 	c.initTrade()
 	c.initServices()
 	c.initLuckyDraw()
+	c.initWorldPK()
+	c.initMall()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
 	c.UI.Add(c.Chars)
@@ -600,7 +613,13 @@ func (c *Client) dispatchNative(p []byte) {
 	if c.skillPacket(p) {
 		return
 	}
+	if c.World != nil && c.World.ApplyBattlePresence(p, c.Now()) {
+		return
+	}
 	if c.remoteBattlePacket(p) {
+		return
+	}
+	if c.mallPacket(p) {
 		return
 	}
 	s := p[1:]
@@ -642,6 +661,10 @@ func (c *Client) dispatchNative(p []byte) {
 		c.BattleSkills.Refresh()
 	case p[0] == protocol.CommandSettings:
 		c.settingsPacket(p)
+	case p[0] == protocol.CommandQuest || p[0] == protocol.CommandMonsterBook:
+		if !c.notebookState.Apply(p) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationList:
 		c.receiveConstellations(p)
 	case p[0] == protocol.CommandStoryConstellation && sub == protocol.StoryConstellationAcquire:

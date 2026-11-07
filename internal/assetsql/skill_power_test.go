@@ -23,7 +23,7 @@ func TestSkillPowerDefaultsAndPreservingMigration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}); err != nil {
+		if err := db.AutoMigrate(&SkillsRow{}, &catalogSchema{}, &catalogPresence{}); err != nil {
 			t.Fatal(err)
 		}
 		rows := []SkillsRow{

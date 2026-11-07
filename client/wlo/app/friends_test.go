@@ -27,9 +27,10 @@ func TestMakeFriends(t *testing.T) {
 		t.Fatal("Make Friends did not arm with cursor 5")
 	}
 	c.GroundClick(10, 400)
-	if !c.friendTarget || len(capture()) != 0 {
-		t.Fatal("an empty click ended the mode or sent")
+	if c.friendTarget || len(capture()) != 0 {
+		t.Fatal("an empty click did not cancel cleanly")
 	}
+	button.Click()
 	cx, cy := c.World.Camera()
 	c.GroundClick(peer.X-cx, peer.Y-cy-20)
 	want := protocol.Builder{protocol.CommandFriends, protocol.FriendsRequest}.U32(20002)

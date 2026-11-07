@@ -22,14 +22,17 @@ in progress. See [port status](docs/PORTING.md) and
 
 Follow [the setup guide](docs/GETTING_STARTED.md) in this order:
 
-1. Install Git, Go, CGO tooling, Python/Pillow and FFmpeg.
-2. Extract and verify the ignored assets from a matching WLRI installation.
-3. Create `config.local.json` and build the separate SQL assets database.
-4. Compile the server and start it with an admin token.
-5. Register an account, then build and run the Go client.
+1. Install Git, Go and CGO tooling for the server.
+2. Create `config.local.json` from `config.example.json` if you need overrides.
+3. Build and start the server with an admin token; first startup initializes a missing SQL assets database from tracked server definitions.
+4. Register an account.
+5. For the Go client, separately install Python/Pillow and FFmpeg, extract its WLRI assets, then build and run it.
 
-The WLRI installation supplies generated client tables, metadata and media;
-server-only definitions remain tracked. The native WLRI executable
+The server needs no client installation or extraction. Its complete shared
+catalog and contact-count table ship in the repository. Existing SQL databases
+and administrator edits remain authoritative; use the explicit migration tool
+when upgrading them. The WLRI installation supplies the Go client's generated
+tables, metadata and media. The native WLRI executable
 supplies extraction keys and is separate from the Go client.
 Use the updated original Chinese installation, its manually translated English
 edition, or both. No IGG or Private Server installation is required. See the
@@ -48,7 +51,7 @@ edition, or both. No IGG or Private Server installation is required. See the
 
 ## Build and run
 
-After completing asset/database setup, run from the repository root:
+Run from the repository root; a missing assets database is initialized automatically:
 
 ### Linux/macOS (Bash)
 
@@ -70,9 +73,8 @@ make build-client
 ### Windows (PowerShell)
 
 Install Go and a GCC/MinGW-w64 toolchain matching Go's target architecture,
-with both `go` and `gcc` available on `PATH`. After completing the
-[Windows asset/database setup](docs/GETTING_STARTED.md#windows-powershell),
-build and start the server from the repository root:
+with both `go` and `gcc` available on `PATH`. Build and start the server from
+the repository root. Client asset extraction is not required:
 
 ```powershell
 $env:CGO_ENABLED = '1'
@@ -308,10 +310,10 @@ events, animation timings, recipes and authored gameplay settings are read in a
 single transaction at startup and cached for packet handlers. Missing or invalid
 required assets stop startup. No runtime fallback reads JSON or native files.
 
-The maintained `data/` exports are offline import inputs. Items originate from
-`data/item_data.json`, containing 7,312 translated-client items; readable
-properties and all decoded bytes remain in SQL. Regenerate exports with the
-offline tools, then run `go run ./cmd/data-rebuild` to import them. Restart the
+The tracked server catalog includes item, NPC, skill, map, dialogue, terrain and
+event definitions. `go run ./cmd/data-rebuild` rebuilds it from the repository
+seed, keeping a backup. Optional extracted `data/` exports can refresh definitions
+with `go run ./cmd/data-rebuild -data data`. Restart the
 server to load changes. Remove the old `item_catalog` and `data_directory`
 configuration fields and use `assets_database` instead. Accounts and characters
 continue to use the separate `database` setting.
@@ -326,7 +328,7 @@ export format and remaining field interpretation.
 
 ## Complete data exports
 
-To restore ignored client tables, JSON metadata, images, audio and video after cloning, follow the
+For the Go client, restore ignored tables, JSON metadata, images, audio and video after cloning using the
 [asset import procedure](docs/ASSET_IMPORT.md), using the path to your
 original WLRI installation. Supply its location explicitly; no private-server
 checkout or particular directory layout is required.
@@ -344,8 +346,8 @@ selection, regeneration and the scope of current runtime loading.
 
 ## Rebuild databases from extracted data
 
-Run `go run ./cmd/data-rebuild` to recreate the separate SQL asset catalog at
-`var/assets.db`. To also erase and recreate gameplay storage, stop the server
+Run `go run ./cmd/data-rebuild` to recreate the separate SQL asset catalog from
+tracked server definitions at `var/assets.db`, without client exports. To also erase and recreate gameplay storage, stop the server
 and run `go run ./cmd/data-rebuild -reset-gameplay -config config.local.json`.
 Existing databases are preserved as timestamped backups. Audio bytes stay
 outside SQL. See [the database procedure](docs/ASSET_DATABASE.md) for query

@@ -8,12 +8,9 @@ import (
 // The battle transitions are FUN_0049a2e8's modes 1 and 2, run each game
 // frame by FUN_0049a484 after the scene is drawn (FUN_004a1d60).
 //
-// Entering (mode 1): the battle constructor (func 0x38bcdc) starts the
-// battle music, then darkens the still-running map with black at alpha
-// 12 × step for steps 1..15; after step 15 it calls 0x38c8f0 and the frame
-// loop draws the battle field instead of the map (+0x565). A presentation
-// continuation reveals that field over the same 15 steps, avoiding an abrupt
-// switch to a fully bright background. Queued actions wait for the reveal.
+// Legacy entry (mode 1) darkens the map before switching scenes. Gonline
+// switches immediately to the battlefield and starts its reveal directly,
+// avoiding a visible map battle cloud. Queued actions wait for the reveal.
 //
 // Leaving (mode 2): when the player's battle state clears (+0x1f16), the
 // frame loop (0x4a2b12) starts mode 2 with FUN_0038fefc as its callback:

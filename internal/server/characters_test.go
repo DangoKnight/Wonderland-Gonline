@@ -641,7 +641,11 @@ func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
 				t.Fatal("native Goddess skill missing", skill)
 			}
 			s.Assets.Skills = catalog.Skills
-			c.character.Skills = append(c.character.Skills, game.LearnedSkill{ID: id, Grade: 1})
+			next := c.character.Clone()
+			next.Skills = append(next.Skills, game.LearnedSkill{ID: id, Grade: 1})
+			if err := s.commit(context.Background(), c, next); err != nil {
+				t.Fatal(err)
+			}
 			run := c.battle
 			actor := run.members[0].self
 			actor.Char = c.character
@@ -670,7 +674,12 @@ func TestSQLGoddessEffectsAndDurableProficiency(t *testing.T) {
 			for _, sk := range stored[0].Skills {
 				if sk.ID == id {
 					// A successful status cast awards 15 support EXP plus 25 buff EXP.
-					found = sk.EXP == 40
+					// Goddess skills are already at their native grade-one cap.
+					wantEXP := uint32(40)
+					if skill.GradeLimit() <= 1 {
+						wantEXP = 0
+					}
+					found = sk.EXP == wantEXP
 				}
 			}
 			if !found {
@@ -728,6 +737,29 @@ func TestBattlePetSkillProgressWithoutClientSlot(t *testing.T) {
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)
 	if err != nil || stored[0].Pets[0].Skills[0].Grade != 10 || stored[0].Pets[0].Skills[0].Exp != 0 {
 		t.Fatal(stored, err)
+	}
+}
+
+func TestBattleNativeSkillGradeProgressPersistsBeyondTen(t *testing.T) {
+	s, c, _ := battleFixture(t, 1000)
+	defer s.abandonBattle(c)
+	const skillID = 50000
+	s.Assets.Skills[skillID] = assets.Skill{ID: skillID, MaximumGrade: assets.GradeLimit(15)}
+	c.character.Skills = []game.LearnedSkill{{ID: skillID, Grade: 10, EXP: 999}}
+	pet := game.Pet{ID: 10501, Skills: []game.PetSkill{{ID: skillID, Grade: 14, Exp: 1399}}}
+	c.character.Pets = []game.Pet{pet}
+	run := c.battle
+	run.members[0].pet = battle.PetFighter(pet, c.character.ID, nil, 0)
+	_, err := s.commitSkillUses(c, run, []battle.Action{
+		{Actor: run.members[0].self, Skill: skillID, SkillEXP: 1},
+		{Actor: run.members[0].pet, Skill: skillID, SkillEXP: 1},
+	})
+	if err != nil || c.character.Skills[0].Grade != 11 || c.character.Pets[0].Skills[0].Grade != 15 {
+		t.Fatal("native player/pet progression", c.character.Skills, c.character.Pets, err)
+	}
+	stored, err := s.Store.Characters(context.Background(), c.account.ID)
+	if err != nil || len(stored) == 0 || stored[0].Skills[0].Grade != 11 || stored[0].Pets[0].Skills[0].Grade != 15 || stored[0].Pets[0].Skills[0].Exp != 0 {
+		t.Fatal("high native grades were not persisted", stored, err)
 	}
 }
 

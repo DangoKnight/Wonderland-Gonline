@@ -84,10 +84,11 @@ func (s *Server) gmProgress(ctx context.Context, c *Session, name string, words 
 				return nil
 			}
 		}
-		if grade < game.MinSkillGrade || grade > uint64(game.SkillGradeLimit(uint16(id))) {
+		limit := s.Assets.Skills[uint16(id)].GradeLimit()
+		if grade < game.MinSkillGrade || grade > uint64(limit) {
 			return nil
 		}
-		packets = next.SetSkillGrade(uint16(id), byte(grade))
+		packets = next.SetSkillGrade(uint16(id), byte(grade), limit)
 	default:
 		return nil
 	}
@@ -123,9 +124,9 @@ func (s *Server) gmPlayerEdit(ctx context.Context, c *Session, command string, a
 		if len(args) == 1 {
 			n, err := strconv.ParseUint(args[0], 10, 8)
 			if err != nil {
-				return s.chatFeedback(c, "Grade must be a number from 1 to 10.")
+				return s.chatFeedback(c, "Grade must be a number from 1 to 255; each skill uses its own maximum.")
 			}
-			grade = min(max(n, game.MinSkillGrade), game.MaxSkillGrade)
+			grade = max(n, game.MinSkillGrade)
 		}
 		for _, id := range next.GMElementSkillIDs() {
 			wireID := id
@@ -135,7 +136,8 @@ func (s *Server) gmPlayerEdit(ctx context.Context, c *Session, command string, a
 			if _, ok := s.Assets.Skills[wireID]; !ok {
 				return s.chatFeedback(c, fmt.Sprintf("Skill %d is missing from the assets catalog; no skills changed.", wireID))
 			}
-			next.SetSkillGrade(id, byte(grade))
+			limit := s.Assets.Skills[wireID].GradeLimit()
+			next.SetSkillGrade(id, byte(min(grade, uint64(limit))), limit)
 		}
 	} else {
 		if len(args) != 0 {

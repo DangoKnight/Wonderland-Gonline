@@ -53,6 +53,12 @@ Opening displays the native sign and reserves that bag slot. Native AC65:1 enter
 an open home by owner character ID, :2 packs up the caller's home, and :3 exits.
 The client sees native map 63507; server scene identity also includes its owner.
 Different owners' homes cannot share local player visibility or interactions.
+Exit uses each visitor's saved overworld return point. If that point is missing,
+unknown or refers to the tent interior, the host's open sign supplies the fallback.
+The destination commits before departure; with neither usable point, exit reports
+an error rather than silently leaving an occupant stranded. Interior map identity
+determines validity, so an outdoor position coinciding with the interior spawn's
+coordinates is still a valid return.
 
 The owner can place furniture with native AC62:1 (`slot:u8`, X/Y/Z UInt32,
 optional floor byte), pick it up with AC62:2 and move/rotate it with AC62:3.

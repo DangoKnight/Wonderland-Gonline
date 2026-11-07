@@ -21,6 +21,37 @@ import (
 	"wonderland-gonline/internal/world"
 )
 
+func TestWorldSnapshotIncludesFightingPeerPresence(t *testing.T) {
+	s, players, wires := worldFixture(t)
+	peer, observer := players[0], players[1]
+	if err := s.acknowledgeWorld(peer); err != nil {
+		t.Fatal(err)
+	}
+	peer.battle = &battleRun{}
+	if err := s.acknowledgeWorld(observer); err != nil {
+		t.Fatal(err)
+	}
+	id := peer.character.ID
+	want := []byte{11, 4, 2, byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24), 0, 0, 1}
+	packets := wires[1].packets(t)
+	if !contains(packets, want) {
+		t.Fatal("entrant missing fighting peer's native presence")
+	}
+	appearance, presence := -1, -1
+	for i, p := range packets {
+		if len(p) > 0 && p[0] == 4 {
+			appearance = i
+		}
+		if bytes.Equal(p, want) {
+			presence = i
+		}
+	}
+	if appearance < 0 || presence <= appearance {
+		t.Fatal("presence must follow peer appearance")
+	}
+	peer.battle = nil
+}
+
 func TestEventWarpRestoresUIOnMapAcknowledgment(t *testing.T) {
 	for _, tc := range []struct {
 		name            string

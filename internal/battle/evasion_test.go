@@ -197,7 +197,7 @@ func TestWaterShieldReducesOnlyMagicalAttackDamage(t *testing.T) {
 			r.attack(b, []Action{a}, map[int]bool{})
 			want := damage
 			if tc.layer == 2 {
-				want = max(1, damage/2)
+				want = max(1, (damage-1)/2) + 1 // The fixed random roll is added after shielding.
 			}
 			if got := 1000 - f.HP; got != want {
 				t.Fatal("wrong attack-type reduction", got, want)
@@ -258,7 +258,7 @@ func TestShieldDefenseBuffsDefenseAgainstAllAttackCategories(t *testing.T) {
 			if tc.name == "staff" {
 				enemy.Weapon = 5
 			}
-			r.Skills[tc.skill] = assets.Skill{ID: tc.skill, EffectLayer: tc.layer, StatMultiplier: 2, AreaAttack: &tc.area}
+			r.Skills[tc.skill] = assets.Skill{ID: tc.skill, EffectLayer: tc.layer, StatMultiplier: 1, AreaAttack: &tc.area}
 			a := Action{Actor: enemy, Kind: "attack", Skill: tc.skill, TX: 4, TY: 2}
 			r.attack(b, []Action{a}, map[int]bool{})
 			damage := 1000 - f.HP
@@ -273,10 +273,12 @@ func TestShieldDefenseBuffsDefenseAgainstAllAttackCategories(t *testing.T) {
 			}
 			r.attack(b, []Action{a}, map[int]bool{})
 			want := 41 // Low-ATK physical branch against DEF 110.
+			unshielded := 43
 			if tc.layer == 2 || tc.name == "staff" {
-				want = 33 // Magic continues to use 1.4*MATK - .98*MDEF.
+				want = 35 // Magical baseline plus the fading stat correction.
+				unshielded = 45
 			}
-			if damage != 43 {
+			if damage != unshielded {
 				t.Fatal("unshielded reference damage", damage)
 			}
 			if f.Def != 100 || f.Mdef != 100 || f.defense() != 110 || f.magicDefense() != 110 {

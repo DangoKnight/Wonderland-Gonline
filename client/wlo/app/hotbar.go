@@ -443,8 +443,18 @@ func (c *Client) hotbarTargetAllowed(b hud.Binding, actor, target remoteFighter)
 	if d.TargetKnown {
 		return d.AllowsTarget(target.side == actor.side, target.x == actor.x && target.y == actor.y)
 	}
-	enemy := b.ID == skills.BasicAttack || d.EffectLayer == skills.Physical || d.EffectLayer == skills.Magical || d.EffectLayer == nativeControlLayer || d.EffectLayer == nativeDebuffLayer || d.EffectLayer == nativeDebuffAlternateLayer
+	enemy := c.battleBindingTargetsEnemy(b)
 	return (enemy && target.side != actor.side) || (!enemy && target.side == actor.side)
+}
+
+// Shared target-domain policy for manual shortcuts and fresh-target repeats.
+func (c *Client) battleBindingTargetsEnemy(b hud.Binding) bool {
+	d := c.SkillState.Catalog.Definitions[c.bindingSkillID(b)]
+	if d.TargetKnown {
+		return d.AllowsTarget(false, false)
+	}
+	return b.ID == skills.BasicAttack || d.EffectLayer == skills.Physical || d.EffectLayer == skills.Magical ||
+		d.EffectLayer == nativeControlLayer || d.EffectLayer == nativeDebuffLayer || d.EffectLayer == nativeDebuffAlternateLayer
 }
 
 func (c *Client) bindingSkillID(b hud.Binding) uint16 {

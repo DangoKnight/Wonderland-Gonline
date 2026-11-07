@@ -16,7 +16,8 @@ type RebuildOptions struct {
 	AssetsDB      string
 	GameplayDB    string // Empty leaves the gameplay database untouched.
 	Progress      func(string)
-	PrepareAssets func(string) error // Validate/migrate the staged catalog before publication.
+	PrepareAssets func(string) error            // Validate/migrate the staged catalog before publication.
+	BuildAssets   func(string) (Summary, error) // Optional repository seed; nil imports DataDirectory.
 }
 type RebuildResult struct {
 	Summary
@@ -28,13 +29,16 @@ type RebuildResult struct {
 // renamed to unique backups; publication errors restore previously replaced
 // files. The caller must stop the server and close database clients first.
 func Rebuild(options RebuildOptions) (result RebuildResult, err error) {
-	root, err := filepath.Abs(options.DataDirectory)
-	if err != nil {
-		return result, err
-	}
-	root, err = filepath.EvalSymlinks(root)
-	if err != nil {
-		return result, err
+	root := ""
+	if options.BuildAssets == nil {
+		root, err = filepath.Abs(options.DataDirectory)
+		if err != nil {
+			return result, err
+		}
+		root, err = filepath.EvalSymlinks(root)
+		if err != nil {
+			return result, err
+		}
 	}
 	targets := []string{options.AssetsDB}
 	if options.GameplayDB != "" {
@@ -65,12 +69,14 @@ func Rebuild(options RebuildOptions) (result RebuildResult, err error) {
 			return result, err
 		}
 		target = filepath.Join(parent, filepath.Base(target))
-		relative, err := filepath.Rel(root, target)
-		if err != nil {
-			return result, err
-		}
-		if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return result, fmt.Errorf("database destination must be outside exported data: %s", target)
+		if root != "" {
+			relative, err := filepath.Rel(root, target)
+			if err != nil {
+				return result, err
+			}
+			if relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+				return result, fmt.Errorf("database destination must be outside exported data: %s", target)
+			}
 		}
 		if index > 0 && target == targets[0] {
 			return result, fmt.Errorf("assets and gameplay destinations must differ")
@@ -113,7 +119,11 @@ func Rebuild(options RebuildOptions) (result RebuildResult, err error) {
 			return result, e
 		}
 	}
-	result.Summary, err = Build(root, staged[0], options.Progress)
+	if options.BuildAssets != nil {
+		result.Summary, err = options.BuildAssets(staged[0])
+	} else {
+		result.Summary, err = Build(root, staged[0], options.Progress)
+	}
 	if err != nil {
 		return result, err
 	}

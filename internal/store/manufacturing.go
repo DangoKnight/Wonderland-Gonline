@@ -13,7 +13,6 @@ import (
 var ErrManufacturingBusy = errors.New("a manufacturing job already exists")
 var ErrManufacturingNotDue = errors.New("manufacturing is paused or not complete")
 
-const manufacturedFurnitureCoordinate = 42
 const maxManufacturingOutputCount = 255
 
 type ManufactureJob struct {
@@ -309,23 +308,11 @@ func (s *Store) CompleteManufacturing(ctx context.Context, ref CharacterRef, now
 				return game.ErrInventoryFull
 			}
 			for i := 0; i < int(job.Count); i++ {
-				row := TentItem{OwnerID: ref.ID, Slot: slot + uint16(i), ItemID: job.ItemID, Count: 1, Metadata: make([]byte, game.ItemMetadataBytes), X: manufacturedFurnitureCoordinate, Y: manufacturedFurnitureCoordinate, Floor: job.Floor}
-				if job.Native {
-					found := false
-					for y := tentGridMinY; y <= tentGridMaxY && !found; y++ {
-						for x := tentGridMinX; x <= tentGridMaxX; x++ {
-							row.X, row.Y = uint16(x), uint16(y)
-							if tentPlacementAvailable(tent, row, items, nil) {
-								found = true
-								break
-							}
-						}
-					}
-					if !found {
-						return game.ErrInventoryFull
-					}
-					tent.Items = append(tent.Items, row)
+				row, found := findTentFurnitureSpot(tent, TentItem{OwnerID: ref.ID, Slot: slot + uint16(i), ItemID: job.ItemID, Count: 1, Metadata: make([]byte, game.ItemMetadataBytes), Floor: job.Floor}, items)
+				if !found {
+					return game.ErrInventoryFull
 				}
+				tent.Items = append(tent.Items, row)
 				if err = tx.Create(&row).Error; err != nil {
 					return err
 				}

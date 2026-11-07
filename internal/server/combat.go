@@ -500,7 +500,7 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 		gain = uint32(ScaleExperience(uint64(gain), s.expRateMultiplier))
 		if use.Actor == m.self {
 			before := append([]game.LearnedSkill(nil), next.Skills...)
-			updates := next.AddSkillEXP(use.Skill, gain)
+			updates := next.AddSkillEXP(use.Skill, gain, s.Assets.Skills[use.Skill].GradeLimit())
 			changed = changed || len(updates) > 0
 			packets = append(packets, updates...)
 			for i, skill := range next.Skills {
@@ -512,11 +512,11 @@ func (s *Server) commitSkillUses(c *Session, run *battleRun, uses []battle.Actio
 		} else if m.pet != nil && use.Actor == m.pet {
 			if i := battlePetIndex(next, m); i >= 0 {
 				for _, skill := range next.Pets[i].Skills {
-					if skill.ID == use.Skill && skill.Grade > 0 && skill.Grade < 10 {
+					if skill.ID == use.Skill && skill.Grade > 0 && skill.Grade < s.Assets.Skills[use.Skill].GradeLimit() {
 						changed = true
 					}
 				}
-				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, gain, c.pets.slot(next.Pets[i].ID))...)
+				packets = append(packets, next.Pets[i].AddSkillEXP(use.Skill, gain, c.pets.slot(next.Pets[i].ID), s.Assets.Skills[use.Skill].GradeLimit())...)
 			}
 		}
 	}
@@ -889,6 +889,8 @@ func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Ch
 		slot := roster.slot(pet.ID)
 		deaths := m.pet.Deaths
 		if run.b.PvP {
+			// Gonline policy for every PvP mode, including disconnect/switch
+			// checkpoints: knockouts never cost amity or cause desertion.
 			deaths = 0
 		}
 		pet.Amity = byte(max(0, int(pet.Amity)-deaths))

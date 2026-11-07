@@ -28,7 +28,6 @@ type Definition struct {
 	assets.Skill
 	Description  string
 	Icon         uint16
-	MaximumGrade byte
 	Weapons      [WeaponKinds]bool
 	NativeTarget byte
 	TargetKnown  bool
@@ -115,7 +114,10 @@ func Parse(raw []byte) (*Catalog, error) {
 		if _, exists := c.Definitions[r.Fields.ID]; exists {
 			return nil, fmt.Errorf(localization.UI("ui.skills.duplicate_skill_d_feaf3561"), r.Fields.ID)
 		}
-		d := Definition{Skill: r.Fields, Description: r.Description.Text, Icon: uint16(b[nativeIconField]) | uint16(b[nativeIconField+1])<<8, MaximumGrade: b[nativeMaximumGradeField]}
+		d := Definition{Skill: r.Fields, Description: r.Description.Text, Icon: uint16(b[nativeIconField]) | uint16(b[nativeIconField+1])<<8}
+		if d.MaximumGrade == nil {
+			d.MaximumGrade = assets.GradeLimit(b[nativeMaximumGradeField])
+		}
 		d.NativeTarget, d.TargetKnown = b[nativeTargetField], true
 		if len(b) >= nativeBattleVoiceField+2 {
 			d.BattleVoice = uint16(b[nativeBattleVoiceField]) | uint16(b[nativeBattleVoiceField+1])<<8

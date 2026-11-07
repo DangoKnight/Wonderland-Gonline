@@ -1,5 +1,22 @@
 # Development conventions
 
+## Repository-only server builds
+
+The server must build and run from a fresh checkout without a client installation
+or client asset extraction. Ship every required shared definition in tracked,
+server-only seed assets. This includes newly decoded metadata such as animation
+contacts. Keep regeneration tools and portable source hashes with those assets;
+an ignored local export or validation database is not a distributable dependency.
+Client images, audio and editable rendering exports may remain separately extracted.
+
+`internal/assetsql/server_defaults/catalog.db.gz` contains only shared catalog
+tables; its manifest records schema, checksum and census. The command bootstrap
+creates a missing SQL catalog atomically from that seed. Existing databases are
+never replaced or silently upgraded. Normal gameplay still reads SQL exclusively.
+Explicit `data-rebuild` uses the repository seed by default and retains backups;
+`-data` opts into an extracted-data rebuild. New data-dependent schema changes
+must update the seed and preserving migrations before being considered complete.
+
 ## Server data ownership and initialization
 
 All persistent server data must be managed through the databases. Shared game
@@ -49,6 +66,22 @@ switch and `combo_damage_per_participant` switch as server
 initialization parameters. Capture combo damage selection at startup; only actual
 successful chain participants count, including pets, and singles receive no bonus.
 
+Structured asset schema v62 adds typed item-card reward and gender mappings,
+initialized only when their tables are missing. Existing administrator edits and
+deletions remain authoritative. Card removal and reward delivery commit together.
+Structured asset schema v61 clears the original products' promotional flags so
+Hot features only the newly added containers, retaining them in their normal
+categories. This explicit metadata refresh preserves prices and quantities.
+Structured asset schema v60 adds 21 referenced containers to the unedited v59
+mall, preserving customized/empty catalogs and edited reward pools. Shared pools
+and deterministic bundle flags use typed SQL; initialization never reads client
+preview JSON. The incomplete Winter Cloth Bag pool remains unavailable.
+Structured asset schema v59 installs the screenshot-authored mall catalog only
+over the exact previous default catalog, preserving customized and empty catalogs.
+Schema v58 stores provisional World PK reward pools and their
+evidence in typed parent/child tables. The embedded JSON supplies offline defaults
+only; unresolved reward weights, quantities and identities remain explicit.
+
 Gameplay schema v21 stores character state in typed tables and owned child rows.
 v21 adds shared collection and ground-item expiry timestamps in `resource_cooldowns`.
 Claims and rewards commit together; keys identify the resource kind, map and source,
@@ -57,7 +90,7 @@ durations belong in the assets database's `ResourceRespawns` definitions.
 v20 adds each pet's lifetime stat-food use counter; v19 adds owned cinematic-completion receipts independently of native quest marks.
 v18 adds owned Teleport Scroll points, attached tent tools, manufacturing input
 escrow/batch metadata and typed persistent bazaars; v17 separated Party Invites from Joining
-Battle while preserving earlier invitation restrictions. Structured asset schema v54 stores runtime definitions
+Battle while preserving earlier invitation restrictions. Structured asset schema v57 stores native skill grade limits, with ten as the fallback; v56 includes repository-owned contact defaults; v55 stores animation-derived skill contact counts and runtime definitions
 in generated `catalog_*` tables. Migration retains legacy representations solely
 as snapshots/provenance;
 runtime and administration must not consult them. Use the offline upgrade procedure
@@ -480,6 +513,11 @@ Definitions reflect decoded native classes and the documented compatibility
 policy; they are not a claim that unknown native semantics have been recovered.
 JSON schemas live in `schemas/skill_data.schema.json` and
 `schemas/skill_effects.schema.json`.
+
+Skill.dat field labels, disk/native offset conventions, evidence levels and
+preserved compatibility aliases are documented in [Skill.dat fields](SKILL_DAT.md).
+Unknown field meanings must remain explicitly unresolved; native coefficients
+must not be relabelled as verified authored skill power.
 
 Use either inline `fields.effects` or `fields.effect_refs`; mixing them is an
 error. Empty lists intentionally disable effects. Reference lists concatenate
@@ -1062,6 +1100,10 @@ walking; enforce a bounded batch context and report failures individually.
 Clinic rest includes the accompanying roster only. Broadcast accepted action
 ACKs inside the battle, never to map spectators. PvP reward suppression is an
 explicit owner decision; do not restore the source grant while porting handlers.
+Every PvP mode must preserve pet amity and player/pet equipment durability,
+including knockout, switching, escape and disconnect checkpoints. Keep the shared
+`Battle.PvP` policy set for all player-versus-player modes. See
+[traditional PK reference](TRADITIONAL_PK_REFERENCE.md).
 
 ### Administration and custom quest data
 

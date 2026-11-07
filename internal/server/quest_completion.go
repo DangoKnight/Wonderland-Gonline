@@ -58,7 +58,7 @@ func (s *Server) completeNativeQuest(ctx context.Context, c *Session, es *eventS
 			companionChanges = append(companionChanges, change)
 		}
 		for _, id := range plan.Skills {
-			skillPackets = append(skillPackets, current.LearnSkill(id)...)
+			skillPackets = append(skillPackets, current.LearnSkill(id, s.Assets.Skills[id].GradeLimit())...)
 		}
 		return applyStoryMarks(current, plan.Marks, time.Now().UTC())
 	}, *c.character)

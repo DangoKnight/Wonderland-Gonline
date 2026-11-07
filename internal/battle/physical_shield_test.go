@@ -49,7 +49,8 @@ func TestPhysicalShieldProtectsAgainstMonsterAndRedirectedMonster(t *testing.T) 
 
 func TestPhysicalShieldReducesOnlyPhysicalRecordInPlayerPetCombo(t *testing.T) {
 	b, r, actions := comboFixture(100, 70)
-	r.Skills = map[uint16]assets.Skill{50000: {ID: 50000, EffectLayer: 1, StatMultiplier: 2}, 50001: {ID: 50001, EffectLayer: 2, StatMultiplier: 2}}
+	// Both records in the independent wire golden use Fire affinity.
+	r.Skills = map[uint16]assets.Skill{50000: {ID: 50000, Element: 3, EffectLayer: 1, StatMultiplier: 1}, 50001: {ID: 50001, Element: 3, EffectLayer: 2, StatMultiplier: 1}}
 	actions[0].Skill = 50000
 	actions[0].Actor.Char.Skills = []game.LearnedSkill{{ID: 50000, Grade: 1}}
 	actions[1].Skill = 50001
@@ -62,6 +63,7 @@ func TestPhysicalShieldReducesOnlyPhysicalRecordInPlayerPetCombo(t *testing.T) {
 	}
 	target := b.Defenders[0]
 	target.Def, target.Mdef = 20, 20
+	pet.Matk = 99 // Preserve the independent 193-damage magical wire record.
 	target.ApplyEffect(50002, 0, assets.SkillEffect{Target: assets.EffectAlly, Rounds: 2, Modifiers: []assets.StatModifier{{Stat: assets.EffectPhysicalDamageTaken, Percent: -50}}})
 	steps, _ := r.attack(b, b.order(r, actions)[0], map[int]bool{})
 	if len(steps) != 1 || len(steps[0].SkillUses) != 2 || target.HP != 9710 {

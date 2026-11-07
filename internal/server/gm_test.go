@@ -582,9 +582,14 @@ func TestGMAllSkillsInstalledCatalog(t *testing.T) {
 			s.Assets = catalog
 			say(t, s, c, "/allskills 10")
 			for _, id := range c.character.GMElementSkillIDs() {
+				wireID := id
+				if id == game.StarterStunt(c.character.Body, c.character.Head) {
+					wireID = game.StarterStuntClientID
+				}
+				wantGrade := min(byte(10), catalog.Skills[wireID].GradeLimit())
 				found := false
 				for _, sk := range c.character.Skills {
-					if sk.ID == id && sk.Grade == 10 {
+					if sk.ID == id && sk.Grade == wantGrade {
 						found = true
 					}
 				}

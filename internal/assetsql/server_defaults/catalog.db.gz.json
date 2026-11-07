@@ -1,0 +1,38 @@
+{
+  "format": "wonderland-server-catalog-sqlite-gzip",
+  "version": 1,
+  "schema_version": 62,
+  "database_bytes": 50880512,
+  "database_sha256": "79102d0199d5826ba8f4c1ecf0960267a25fe6e2854d994270345dcc961dbe85",
+  "compressed_bytes": 9178967,
+  "tables": 185,
+  "rows": 322963,
+  "definitions": {
+    "forge_upgrade_items": 291,
+    "point_forge_items": 1940,
+    "native_items": 7312,
+    "items": 7312,
+    "starter_items": 8,
+    "skills": 953,
+    "animation_timings": 1808,
+    "npcs": 4930,
+    "dialogues": 17493,
+    "maps": 1119,
+    "map_npcs": 8181,
+    "events": 10644,
+    "pre_events": 1412,
+    "warps": 2791,
+    "ground_items": 209,
+    "mall_items": 251,
+    "gacha_packs": 31,
+    "alchemy_recipes": 877,
+    "marks": 2158,
+    "disabled_events": 1042,
+    "warnings": [
+      "gacha_packs.json: gacha pack 34381 disabled: missing item definitions [34381 24210 24211 22517 22518 21303 21304 50003]",
+      "gacha_packs.json: gacha pack 34382 disabled: missing item definitions [34382 24212 24213 22519 22520 21305 21306 50004]",
+      "gacha_packs.json: gacha pack 34383 disabled: missing item definitions [34383 24214 24215 22521 22522 21307 21308 50005]",
+      "gacha_packs.json: gacha pack 34384 disabled: missing item definitions [34384 24216 24217 22523 22524 21309 21310 50006]"
+    ]
+  }
+}

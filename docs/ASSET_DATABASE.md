@@ -8,6 +8,59 @@ audit records and persistent server settings live in `database`. Defaults are
 
 ## Upgrade an existing installation
 
+Assets v61 removes the original mall items from Hot and retains the newly added
+containers in both Hot and Grocery. The tab remains named Hot. Only promotional
+fields change on matching authored rows; existing prices, quantities, categories
+and ordering are preserved. Use the same stop/migrate/rebuild/restart procedure.
+
+Assets v60 expands the default mall from 230 to 251 listings and seeds verified
+container contents, published EXP-pack probabilities and provisional near-equal
+odds for newly listed bags without published probabilities. Existing edited
+catalogs and pools are preserved. Snow Love Box and Viking Box grant all three
+contents transactionally; `catalog_gacha_packs.value_open_all` stores this mode.
+Winter Cloth Bag has a prepared listing/partial preview but the live mall filters
+it out and purchase/opening remains unavailable
+because its published featured rewards leave the other 98.8% unspecified.
+Stop the server, run `go run ./cmd/database-migrate -config config.local.json`,
+rebuild the server and restart it. Client assets do not need re-extraction.
+
+Assets v58 adds the structured `WorldPKRewards` definition, with separate
+`catalog_world_p_k_rewards`, `catalog_world_p_k_rewards_chests` and
+`catalog_world_p_k_rewards_chests_rewards` tables. The tracked
+[`world_pk_rewards_defaults.json`](../internal/assetsql/world_pk_rewards_defaults.json)
+seeds the provisional mobile pools during explicit migration/initial creation.
+Existing feature tables, including deliberately empty pools, are preserved.
+Administration reads and edits `WorldPKRewards` through the normal definition
+API; runtime reads SQL only. Editing the JSON changes future initialization
+defaults, not existing administrator data. Stop the server before upgrading.
+The repository server seed includes these tables without client extraction.
+
+Assets v57 stores each skill's native `maximum_grade`. The repository-owned
+`skill_grade_defaults.csv` supplies all 953 definitions without client extraction.
+The migration fills absent limits and preserves administrator
+values. Progression, damage, targeting and grade validation use this limit;
+missing definitions fall back to ten, while explicit zero limits remain zero.
+An independent presence flag distinguishes these states in SQL. The embedded server seed is updated
+to v57. Stop the server, migrate, rebuild and restart using the procedure below.
+
+Assets v56 supplies repository-owned contact defaults and a complete server-only
+seed. No client installation, exported manifest or retained MBTM archive is
+required to build, initialize, run or migrate the server. Contact migration fills
+only missing/zero counts and preserves administrator edits. Normal startup
+initializes only a missing catalog, never replacing or silently upgrading one.
+`go run ./cmd/data-rebuild -config config.local.json` explicitly rebuilds from
+the repository seed with backups; `-data data` opts into extracted inputs.
+
+Assets v55 adds `contact_events` to the structured skill catalog. The offline
+migration originally derived counts from retained SkillData.MBTM records; v56
+uses the tracked extracted contact table instead. It preserves existing
+nonzero administrator counts and leaves missing records at the one-contact
+compatibility fallback. Damage now uses
+`P = (AdditionalDamage + PowerPerLevel * Grade) * ContactEvents`, with
+`StatMultiplier` scaling only the relevant ATK/MATK term. Wiki BasePower values
+remain stored as references. Stop the server, migrate, rebuild and restart as
+below; no gameplay database or client protocol change is required.
+
 Assets v54 adds 71 verified character, pet and quest skill powers from the saved
 unique-skill reference. Native NPC ownership, SP costs, descriptions and Chinese
 actor names identify the skills independently of unreliable icon filenames.
@@ -18,12 +71,10 @@ and explicit zero. Stop the server, migrate, rebuild and restart as below.
 
 Assets v53 adds an editable nullable base skill power to `catalog_skills` and
 seeds 153 verified elemental skill powers from the saved Japanese wiki tables.
-Blast Attack and Flame Attack both use power 20. Existing explicit powers,
-including zero, and all native coefficients remain intact. Unlisted skills use
-the documented [damage compatibility fallback](DAMAGE.md). Stop the server, run
-the offline migration below, rebuild and restart. No client asset rebuild or
-gameplay-state change is required. Grade scaling is provisional +5% of base per
-grade above grade 1, compiled in the battle engine.
+Blast Attack and Flame Attack both have reference power 20. Existing explicit
+powers, including zero, and all native coefficients remain intact. The former
+wiki-power fallback and provisional five-percent grade curve were superseded
+by the v55 [native-coefficient formula](DAMAGE.md).
 
 Assets v52 keeps Noa's puzzle, result evaluation, retry invitation and recruitment
 in one conversation. Scoped continuation policies connect Kelan event 56's native

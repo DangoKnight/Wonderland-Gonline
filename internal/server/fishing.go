@@ -241,6 +241,9 @@ func (s *Server) catchFishing(ctx context.Context, c *Session, now time.Time) er
 	return nil
 }
 func (s *Server) fishingCommand(ctx context.Context, c *Session, p []byte) error {
+	if len(p) > 2 {
+		return s.cardCatalog(c, p)
+	}
 	if len(p) != 2 {
 		return protocol.ErrMalformed
 	}

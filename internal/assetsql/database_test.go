@@ -215,8 +215,9 @@ func TestInstalledSQLCatalogMatchesClientData(t *testing.T) {
 		got := catalog.Skills[id]
 		got.Name = ""
 		want.Name = ""
-		got.EffectRefs = nil // Export annotation has no native byte equivalent.
-		got.BasePower = nil  // Authored wiki power is independent of native Skill.dat coefficients.
+		got.EffectRefs = nil  // Export annotation has no native byte equivalent.
+		got.BasePower = nil   // Authored wiki power is independent of native Skill.dat coefficients.
+		got.ContactEvents = 0 // Compared independently against MBTM below, not Skill.dat.
 		if len(got.Effects) == 0 {
 			got.Effects = nil
 		}
@@ -244,6 +245,15 @@ func TestInstalledSQLCatalogMatchesClientData(t *testing.T) {
 	}
 	if !reflect.DeepEqual(timings, catalog.AnimationTiming) {
 		t.Fatal("SQL animation timings differ from native archive")
+	}
+	contacts, err := assets.ParseAnimationContacts(read("SkillData.MBTM"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, skill := range catalog.Skills {
+		if skill.ContactEvents != contacts[id] {
+			t.Fatalf("skill %d contact count: SQL %d native %d", id, skill.ContactEvents, contacts[id])
+		}
 	}
 }
 

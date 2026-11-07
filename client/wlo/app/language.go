@@ -112,6 +112,9 @@ func (w *Workspace) prepareLanguage(language string) (func(), error) {
 				}
 			}
 			c.UI.RefreshLanguage()
+			if c.Notebook != nil && c.notebookState.Marks != nil {
+				c.loadNotebook()
+			}
 			if c.Skills != nil {
 				c.Skills.Refresh()
 			}

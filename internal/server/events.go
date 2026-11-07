@@ -17,21 +17,25 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
-	transitions        int
-	chestReward        *assets.ChestReward
-	mapID, click       uint16
-	ev                 *assets.Event
-	branch             int
-	index              int
-	transition         bool
-	cinematicPosture   bool
-	onComplete         func() error
-	onChoice           func(byte) error
-	onMinigame         func(byte) error
-	choiceAcknowledged bool // Mode-zero questions send AC20:6 after their answer.
-	ignoreChoiceAck    bool
-	shopCart           bool   // Native item-picker question owns a purchase.
-	bankOwner          uint32 // Queued service belongs to this event and character.
+	conversationBefore  *game.Character
+	conversationSource  *assets.Event
+	conversationBranch  int
+	conversationVisited map[questConversationBranch]bool
+	transitions         int
+	chestReward         *assets.ChestReward
+	mapID, click        uint16
+	ev                  *assets.Event
+	branch              int
+	index               int
+	transition          bool
+	cinematicPosture    bool
+	onComplete          func() error
+	onChoice            func(byte) error
+	onMinigame          func(byte) error
+	choiceAcknowledged  bool // Mode-zero questions send AC20:6 after their answer.
+	ignoreChoiceAck     bool
+	shopCart            bool   // Native item-picker question owns a purchase.
+	bankOwner           uint32 // Queued service belongs to this event and character.
 }
 
 const clickResume = 1500 * time.Millisecond
@@ -274,8 +278,10 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 	}
 	ev = s.World.PrepareStory(c.character, c.view, mapID, ev, branch)
 	s.Log.Debug("story event", "map", mapID, "event", ev.ClickID, "branch", ev.Branches[branch].Index, "actor", click)
+	previous := c.event
 	s.endEvent(c)
 	es := &eventSession{transitions: transitions, mapID: mapID, click: click, ev: ev, branch: branch, transition: transition}
+	prepareQuestConversation(c.character, previous, es)
 	c.event = es
 	if e := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); e != nil {
 		return e
@@ -576,6 +582,9 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 	if handled, err := s.storyContinuation(ctx, c, es); handled || err != nil {
 		return err
 	}
+	if handled, err := s.continueQuestConversation(ctx, c, es); handled || err != nil {
+		return err
+	}
 	// A pure mark change may enable the next branch of the same event.
 	if es.transition {
 		pure := true
@@ -850,7 +859,7 @@ func (s *Server) execute(ctx context.Context, c *Session, es *eventSession, op w
 			return false, nil
 		}
 		next := c.character.Clone()
-		packets := next.LearnSkill(op.D1)
+		packets := next.LearnSkill(op.D1, s.Assets.Skills[op.D1].GradeLimit())
 		if len(packets) == 0 {
 			return true, nil
 		}

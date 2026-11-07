@@ -30,6 +30,13 @@ owned tent position. Wallpaper/floor recipes apply one surface and deliver spare
 copies to the bag. SQL failures retain the recoverable job. Buffered walking is
 merged back into the session after resource transactions.
 
+Furniture placement prefers the desktop port's (42,42) anchor, then searches
+every allowed cell on the selected floor, including enlarged/grand tent rows.
+Both native and older manufacturing requests use the same collision checks.
+Each batch piece reserves its footprint before the next piece is placed; if the
+whole batch cannot fit, all output inserts roll back and the job remains for
+retry. No overlapping fallback is used when the floor is full.
+
 Native formulas store build time in minutes; offline conversion produces seconds.
 Timer animation and native-client acceptance are tracked in [TESTING.md](TESTING.md).
 

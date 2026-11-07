@@ -39,6 +39,16 @@ func (f *Form) useBag(slot byte) {
 		return
 	}
 	def := f.State.Items[it.ID].Definition
+	if it.ID == game.NotepadItemID && f.OpenNotebook != nil {
+		f.send([]byte{protocol.CommandInventory, protocol.InventoryUse, slot})
+		f.Hide()
+		f.OpenNotebook()
+		return
+	}
+	if def.Type == game.ItemTypeRedemptionCard {
+		f.requestCard(slot, it)
+		return
+	}
 	if def.Type == game.VehicleType {
 		f.send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlPlaceVehicleManual, slot}.U16(it.ID))
 		return
@@ -161,7 +171,12 @@ func (f *Form) itemUseTime() time.Time {
 	return time.Now()
 }
 
-func (f *Form) ResetUse() { f.potentialRequest = nil }
+func (f *Form) ResetUse() {
+	f.potentialRequest = nil
+	if f.CardDialog != nil {
+		f.CardDialog.Hide()
+	}
+}
 
 // PotentialReply's processed flag means an attempt was committed, including a
 // failed roll. It must never be interpreted as a success flag.
@@ -263,7 +278,7 @@ func (s *State) ApplyPetList(p []byte) bool {
 		pet.Amity = r[petListAmity]
 		for i := range pet.Skills {
 			at := petListPrefixBytes + nameLen + i*petSkillRecordBytes
-			if r[at] > game.MaxSkillGrade {
+			if r[at] > s.petSkillGradeLimit(pet.ID, i) {
 				return false
 			}
 			pet.Skills[i] = game.PetSkill{Grade: r[at], Exp: binary.LittleEndian.Uint32(r[at+1:])}

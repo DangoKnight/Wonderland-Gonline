@@ -1,0 +1,12 @@
+{
+  "format": "server-skill-contact-counts",
+  "version": 1,
+  "source": "SkillData.MBTM",
+  "source_sha256": "3178dcae72613a2aa19620167b556fd4ccfd88297b086d46e436a5f4ffd2f184",
+  "export_sha256": "16a190b75cebe901ed437412f3274a672a0f79377a2f41de72cf9d4fe640ae5c",
+  "table_sha256": "a02e52b17fdd1b2815e7f09fdd22d92a1b02e1410227b4348d6178019891c25e",
+  "records": 1832,
+  "decoder": "FUN_00377060; disk offsets 24 (damage mode), 25 (event count)",
+  "single_damage_mode": 0,
+  "missing_or_empty_contacts": 1
+}

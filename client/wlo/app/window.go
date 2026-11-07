@@ -132,9 +132,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 			g.leftPress(mouse, x, y)
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-			if !ui.MouseDown(seui.ButtonRight, mouse, x, y) {
-				g.C.GroundRightClick(x, y)
-			}
+			g.rightPress(mouse, x, y)
 		}
 		g.C.GroundHold(held, x, y)
 		if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
@@ -177,7 +175,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 		d := inpututil.KeyPressDuration(k)
 		if d == 1 || d > keyRepeatDelayTicks && (d-keyRepeatDelayTicks)%keyRepeatEveryTicks == 0 {
-			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.TeamKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.LuckyDrawKey(vk) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
+			if !g.C.SportKey(int(vk), true) && !g.C.EmoteKey(vk, keys) && !g.C.HotbarKey(vk, keys) && !g.C.TeamKey(vk, keys) && !g.C.CompoundKey(vk, keys) && !g.C.SkillsKey(vk, keys) && !g.C.LuckyDrawKey(vk) && !g.C.WorldPKKey(vk) && !g.C.MallKey(vk) && !g.C.SettingsKey(vk) && !g.C.InventoryKey(vk) {
 				ui.KeyDown(vk, keys)
 			}
 		}
@@ -200,6 +198,16 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 		}
 	}
 	return nil
+}
+
+func (g *Game) rightPress(mouse byte, x, y int) {
+	if g.C.cancelFieldSelection() {
+		g.lastDown = time.Time{}
+		return
+	}
+	if !g.C.UI.MouseDown(seui.ButtonRight, mouse, x, y) {
+		g.C.GroundRightClick(x, y)
+	}
 }
 
 func (g *Game) leftPress(mouse byte, x, y int) {

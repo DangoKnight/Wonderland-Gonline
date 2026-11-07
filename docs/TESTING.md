@@ -1,5 +1,232 @@
 # Testing and validation
 
+## World PK presentation — 2026-11-06
+
+The World PK toolbar opens a centered 356×493 window with native PVP, Top 300
+and Battle Settings assets and control positions from `FUN_002a9ccc`.
+Focused app checks cover tab visibility, four-row ranking pagination with a
+300-entry cap, local Allow/Disallow draft confirm/cancel, both close buttons,
+Escape, battle-entry cleanup and reset. Opening, browsing and settings controls
+send no packets. Start Battle and reward controls remain inactive. Rank/wins
+start at zero, rankings are empty and the ten-chance display is preview data.
+Offline settings are session-local presentation only; there is no server or
+database integration yet. `WORLD_PK_SNAPSHOT` renders all three tabs, with
+leaderboard fixtures only inside that opt-in test. The previews under
+`var/reports/world-pk` were visually compared with the supplied Legacy examples.
+The existing extracted UI artwork is reused; no asset extraction is required.
+
+## Field selection cancellation — 2026-11-06
+
+Join Team, Make Friends, Trade, battle Attack/Skills/Capture and battle-item
+targeting cancel on right click, including over UI controls. Invalid field
+left clicks cancel without walking, interacting, sending a combat choice or
+consuming an item. Field target modes take priority over NPC, floor-item and
+vehicle interactions. Valid target selection retains its existing validation.
+Focused tests cover empty/invalid social and combat targets, right clicks over
+UI/outside the field, valid friend/trade/capture/item targets and pose turning.
+
+## Immediate battle scene entry — 2026-11-06
+
+Battle formations now immediately own scene rendering, starting the battlefield
+reveal without darkening the map first. Transition tests verify first-frame
+battle ownership, reveal brightness and preserved exit fading. Action/audio
+queue tests still hold playback until reveal completes. World rendering tests
+verify that the local player's body never becomes a dust cloud, even if its
+participation packet precedes the battle roster. Other players retain clouds.
+
+## Map battle clouds — 2026-11-06
+
+Focused world/role tests cover native AC11:4 batches, malformed records,
+duplicate updates, spectators, exit/despawn cleanup, retained hidden pets,
+replacement of player bodies, native cloud origins and looping frames.
+Server regressions cover entrant snapshot ordering for an already-fighting peer,
+starter-map visibility and normal quest battle entry/exit. Client app battle
+selection/exit, previous-action and hidden team-pet checks pass. The imported
+`009/9000` cloud frames were inspected against the Legacy reference. No asset
+extraction or database changes are required.
+
+## Radial-center previous battle actions — 2026-11-06
+
+Added independent player/pet shortcuts for acknowledged Attack, Skills, Capture,
+Defend and Flee choices. Offensive repeats share AUTO's target scan and submit
+one action immediately without entering target selection or enabling AUTO.
+Defend/Flee submit directly; Capture and allied support skills retain targeting.
+The shortcut retains the original radial-center position (65,83). Only the
+selected actor's shortcut is visible; selecting player or pet changes its history.
+
+Focused app regressions exercise manually choosing enemy B then repeating against
+AUTO's enemy A, physical/magical/debuff skills, distinct player/pet actions in
+both native and round-chain wire formats, special-action command bytes, capture
+failure normalization, direct pointer clicks, unavailable/dead/waiting targets,
+low SP, forgotten/unknown skills and stale pet callbacks. Existing acknowledged
+history, AUTO, rapid input, skill selection and native/chain tests remain relevant.
+The opt-in `BATTLE_PREVIOUS_SNAPSHOT` render can verify radial-center placement.
+Native artwork and existing localization keys are reused; no asset
+extraction or server protocol changes are required.
+
+## Signed scenery coordinates — 2026-11-06
+
+The Chicken Farm tree regression reproduced five missing edge-crossing placements
+before the fix, including the northern trees at (811, -91) and (988, -70).
+Alogin's `FUN_003f830c` explicitly sign-extends the native X/Y words before
+creating each scenery object. The scene loader now follows that behavior for
+all maps while preserving the raw export/compiled coordinate bits.
+
+Focused world tests pass for independent WEM bytes and signed-coordinate extrema,
+negative-border pixel clipping, all five Chicken Farm placements, native terrain
+coordinates, Ship Deck scenery, scene-sprite occlusion and shadow reconstruction.
+Compiled-versus-editable parity now includes Chicken Farm alongside Ship Deck
+and Newbie Island and passes with the installed bundle. The before/after viewport
+renders at the reference location are under `var/reports/chicken-farm-trees/`;
+visual inspection confirms the restored northern trees. No asset rebuild or
+re-extraction is required. These are affected rendering checks, not a full
+pre-push battery or live-server acceptance.
+
+## Low-MAT magical stat floor — 2026-11-06
+
+The missing low-MAT grade-1 Blast cases are now explicit battle regressions.
+At MAT25, Straw Chicken changes from 6–10 to 18–22 (recorded 22/22), and
+Hyperkinetic Chicken from 8–12 to 14–18 (recorded 16/19). Single-target magic now
+floors the combined stat term plus Q at zero before adding unchanged P. This is
+an empirical general rule, with no skill/enemy exceptions. Area and physical
+stat formulas retain their established behavior.
+
+The battle package passes, including the independent packet goldens and high-stat
+source cases. Damage-analysis tests compare the previous formula and floor rule;
+the full 91-cast metrics expose the controlled grade-2/3 tradeoff rather than
+relying solely on aggregate improvement. All 54 research tests pass, as do focused
+server combat integrations and `go vet ./internal/battle`. All 455 updated
+expectations match Battle.Round across 91 casts and five random rolls. These
+checks establish implementation consistency, not proof of the original Legacy
+formula. See [DAMAGE.md](DAMAGE.md) for scores and limitations. No migration or
+asset extraction is needed; the server needs rebuilding to apply the code.
+
+## Saved damage references — 2026-11-06
+
+The saved Japanese/Bahamut audit retains P and the MDEF-only policy, corrects
+native skill element 0 (neutral) versus 7 (caster affinity), restores neutral
+damage's 10% Earth reduction, and fades the bounded magic correction beyond its
+upper measurement range. The fade is an extrapolation policy, not a claimed
+Legacy constant. Shared asset definitions and native bytes are unchanged.
+
+The complete battle package and focused server combat integrations pass.
+Regressions cover neutral attacks across caster/target elements, caster-dependent
+physical/magical skills, fixed affinity, basic/unknown fallbacks, and monotonic
+stats around the fit and fade boundaries. Three independent high-stat article
+means fall within runtime damage ranges when the article's P is supplied.
+Existing independent packet goldens are preserved by explicitly marking their
+synthetic Fire-skill fixtures. The expected shield totals reflect the faded
+correction at MDEF 100/110.
+
+All 51 damage-analysis tests pass. The actual `Battle.Round` replay still matches
+all 455 checks across the 91 normal user observations and five random rolls.
+`go vet ./internal/battle` passes. Reports and provenance are under ignored
+`var/reports/damage-references/`; [DAMAGE.md](DAMAGE.md) records accepted and
+conflicting source claims. No full pre-push battery, live acceptance, migration
+or asset rebuild was performed.
+
+## Native skill grade limits — 2026-11-06
+
+Schema v57 stores an optional native maximum grade and a separate SQL presence
+flag. Missing metadata uses ten; an explicit zero remains zero. The repository
+includes all 953 Skill.dat limits and an updated server-only seed. Migration
+fills absent limits without replacing administrator edits, including zero.
+
+Focused race-enabled asset, gameplay, battle, legacy-import and asset SQL tests
+passed. Coverage includes independent encoded grade bytes, JSON missing/null/zero
+semantics, zero-disabled learning/progression, lower and higher caps, grade 255,
+player/pet damage, high-grade targeting, durable battle proficiency, GM limits,
+SQL rollback, absent-column upgrades and bundled catalog parity. Existing
+alchemy fixtures explicitly supply the native thirty-grade limit. The installed
+GM integration now expects each skill's native cap rather than ten for every skill.
+
+Focused client skills, inventory and app tests passed, including grades above
+thirty, zero versus missing limits and high-grade pet roster packets. Both grade
+extractor tests, affected server vet checks and the server executable build pass.
+The validation database was an isolated copy; live databases and player progress
+were unchanged. Logs are under `var/validation/repository-server/grade-zero-*`.
+No full pre-push battery or live gameplay acceptance was performed.
+
+## Repository-only server catalog — 2026-11-06
+
+The tracked server seed contains 180 structured definition tables and 322,126
+rows, compressed to 9,162,228 bytes. Export verification compares every shared
+catalog value with the source SQL database after stripping client archives,
+import paths and non-catalog tables. A separate tracked table supplies 1,832
+animation contact counts; schema v56 fills only missing/zero skill counts.
+
+Focused asset SQL tests passed under the race detector, covering seed creation
+without client assets, definition/contact parity, preservation of existing
+administrator edits and invalid files, rebuild backups, untouched gameplay
+storage and transactional contact migration rollback. The complete assetdb
+package passed with `-race`; both contact extractor tests and affected Go vet
+checks passed.
+
+An isolated source tree containing only server Go sources, module files and the
+tracked seed built both `wonderland` and `data-rebuild`. With no `data/`, Go
+client or original client installation in that tree or working directory, the
+binary initialized a missing catalog, printed its census, rebuilt it with a
+backup and started all services on temporary loopback ports. The live HTTP
+`/healthz` returned `status: ok`. Validation used disposable databases only;
+live assets, accounts and character progress were unchanged. Logs and binaries
+are under ignored `var/validation/repository-server/`. This is affected-module
+validation, not a new full pre-push run or live gameplay acceptance.
+
+## Native-coefficient damage and contacts — 2026-11-06
+
+Combat now uses `(AdditionalDamage + PowerPerLevel * Grade) * ContactEvents`
+for P and applies StatMultiplier only to the ATK/MATK contribution. Independent
+arithmetic fixtures cover grade changes, contact scaling, explicit zero stat
+multiplier, missing-contact fallback, physical high/low-defense branches,
+magical defense and learned pet grades. Shield fixtures use explicit neutral
+stat multipliers to retain their independent category and packet goldens;
+the existing full-party damage expectation follows the revised coefficient math.
+
+Complete battle and asset unit suites passed under `-race`, along with focused
+SQL schema/contact migration and native-parity checks. Migration tests exercise
+v54 without the new column, missing animation records, authored edits, repeated
+initialization and transactional rollback on failed SQL updates. An isolated
+copy of the previously verified v54 snapshot migrated to v55 and matched native
+skill/contact data. Live databases were unchanged. Selected server battle,
+combat, round, shield/support/skill and disconnect integrations also passed
+under `-race`. Logs and the isolated snapshot are under ignored
+`var/validation/skill-field-labels/`. These are affected-module checks, not a new
+full pre-push run or interactive Legacy-client acceptance.
+
+## PR #9 tent reconciliation — 2026-11-06
+
+Reconciled the desktop tent port (`edb3995`) with main (`b03f895`), retaining
+schema v21, structured tool instances, SQL surface/host definitions and existing
+native packet goldens. Added regressions for preferred-anchor placement, rotated
+footprints, separate floors, enlarged/grand rows, whole-batch rollback/retry and
+exactly-once furniture delivery through both manufacturing adapters. Exit tests
+cover visitor precedence, invalid/missing return maps, host-sign fallback and
+durable departure without confusing outdoor coordinates with the tent interior.
+
+Focused `go test -json -race -count=1 -timeout=15m -p 1 ./internal/store
+./internal/server -run 'Tent|Manufactur'` passed. Full pre-push validation used
+`go test -json -race -count=1 -timeout=60m -p 1 ./...` with the installed-data
+opt-ins and the previously verified isolated schema-v54 assets snapshot.
+The initial native-assets package failed because checking out the older PR
+removed ignored JSON exports that its historical tree still tracked. Restored
+the missing exports from the existing matching extraction backup, without
+overwriting remaining assets, and reran the entire native-assets package under
+`-race`. The final audit combines that explicit rerun with the full run: all
+40 packages accounted for, 30 package passes, 10 packages with no tests,
+**2,446 passing test/subtest results**, two optional skips and no unresolved
+failures or race reports.
+
+Also passed full server/client vet, server/client/database-migrate builds, all
+three ten-second fuzz checks, 69 Python exporter tests (one optional skip), web
+formatting, HTML lint, Go formatting and whitespace checks. After restoring the
+exports, client `TestCompiledWorldMatchesEditable` and
+`TestCompiledBundleLoginAndSharedWorld` passed. No live databases or compiled
+asset packs were changed. No schema migration is required. Interactive Legacy
+acceptance remains separate from these automated results.
+
+Logs, restoration inventory, package inventory and the final audit remain under
+ignored `var/validation/pr9-tents-20261106/`.
+
 ## Full synchronized-branch pre-push validation — 2026-11-06
 
 Validated native teams/leadership/map following, generalized roaming enemies,
@@ -3762,3 +3989,227 @@ snapshot and platform tests remain skipped; golangci-lint is unavailable.
 Logs, validation binaries and the strict package audit are retained under
 ignored `var/validation/prepush-merged-20261105/`, including `final-summary.json`.
 These automated results do not establish live gameplay acceptance.
+
+## Selected magical stat correction, 2026-11-06
+
+The selected bounded quadratic changes the single-target magical stat remainder;
+P and physical/area formulas retain their existing rules. Independent packet
+goldens remain unchanged, with explicit fixture stats adjusted where needed.
+The shield test now accounts for the fixed noise roll being added after damage
+reduction instead of relying on even-numbered fixture damage.
+
+The battle package passes, including measured low/MAT238/high-MAT regressions,
+pet grade limits, area coefficients, fixed P, shields, combos and monotonicity at
+the saturation bounds and extreme stats. The selected comparison replays 91
+normal observations at all five random rolls (455 matching `Battle.Round`
+checks). `go vet ./internal/battle` and a repository-only server executable build
+pass. The executable is retained under ignored
+`var/validation/damage-selected-20261106/`, without replacing the running server.
+No database migration or asset extraction is needed.
+
+## Damage approximation, 2026-11-06
+
+The whole-attack model in [DAMAGE.md](DAMAGE.md) passed the complete battle
+package, focused asset/skill metadata tests, and affected server combat tests
+(damage, combos, native/chain playback, PvP, pet actions, persistence and overkill).
+`go vet ./internal/battle` and a repository-only `./cmd/wonderland` executable
+build passed. The validation executable is under ignored
+`var/validation/damage-formula-20261106/`; it does not replace the running server.
+Five exporter field-label tests also passed; raw data and protocol goldens are
+preserved. No concurrency behavior or database schema changed.
+
+Eighty-one usable Legacy observations were replayed through `Battle.Round` with
+each random roll from one through five (405 matching checks). Mean absolute
+percentage error versus sampled damage fell from 29.67% to 7.83%; median error
+fell from 25.93% to 1.69%. The physical coefficient fit uses some of these
+observations, so these are fit/validation comparisons, not entirely independent
+held-out accuracy. Independent authored single-target P references and area P
+references were also compared; live AoE validation remains pending. The uncertain
+Sheet3 target and flagged critical hit were excluded. Ignored detailed comparisons
+and runtime replay results are under `var/reports/skill-power-formulas/`.
+
+Validation used development scope, not the full pre-push battery. No push was
+requested.
+
+### World PK reward catalog — 2026-11-06
+
+Asset schema v58 adds structured mobile-reference chest/reward definitions and
+an embedded JSON initializer. Focused validation passed:
+
+```powershell
+go test ./internal/assetsql -run 'Test(WorldPKReward|SkillGradeMigration|StructuredCatalog|CatalogDefinition|RepositorySeed)' -count=1 -timeout=4m
+go test ./internal/dbmigration ./cmd/database-migrate -count=1 -timeout=3m
+go vet ./internal/assets ./internal/assetsql
+```
+
+SQLite checks used CGO and the installed WinLibs compiler. Coverage includes the
+85/10/5 authored chest weights, source quantity ranges, capsule denominations,
+rejection of malformed definitions, transactional migration rollback, SQL round
+trips, administrator edit/empty-pool preservation and fresh repository-only
+initialization from the regenerated server seed. The local running server's
+catalog was not migrated. Reward grants and World PK gameplay remain pending.
+
+### Native Item Mall catalog/cart — 2026-11-06
+
+Focused checks passed from `client/` (CGO disabled for the client):
+
+```powershell
+go test ./wlo/mall ./wlo/app -run '^TestMall' -count=1 -timeout=2m
+go test ./wlo/app -run '^Test(Mall|Mario|WorldPK|NPCServices)' -count=1 -timeout=3m
+$env:WONDERLAND_TEST_GPU = '1'
+go test ./wlo/app -run '^TestGPUClientParity$' -count=1 -timeout=4m
+go vet ./wlo/mall ./wlo/app
+```
+
+GPU/CPU parity now covers 92 stages, including the native mall catalog and
+separate cart. Optional `MALL_SNAPSHOT` (an absolute output directory) renders
+`catalog.png` and `cart.png`; local previews under `var/reports/mall` were
+visually inspected against the supplied screenshot and native skin assets.
+
+From the repository root, affected server/localization checks passed:
+
+```powershell
+go test ./internal/server ./internal/protocol -run '^TestMall' -count=1 -timeout=3m
+go test ./internal/localization -count=1
+go vet ./internal/server ./internal/protocol
+```
+
+Coverage includes independent decimal catalog/cart wire fixtures, the captured
+AC34/AC35 zero-balance preflight, points/bonus separation, quantity bounds and
+read-only native rows, category/badge grouping, malformed-frame atomicity,
+confirmed and failed receipts, duplicate-click guards, cancellation on close,
+late confirmations and uncertain write/timeout handling. Server tests retain
+SQL-authoritative balances, rollback and ownership gates. No successful live
+Legacy purchase was performed. Security Lock, fitting and dedicated mall
+slot/forging interfaces remain outside the catalog/cart implementation.
+
+### Screenshot mall assets (2026-11-06)
+
+Validated the 230 authored listings and repository SQL seed (asset schema 59),
+including screenshot category/Hot counts, bundle quantities, sale rounding,
+matching usable item definitions, preservation of custom/empty catalogs,
+transaction rollback and repeat migration. Focused checks:
+
+```powershell
+go test ./internal/assetsql ./internal/server -run '^(TestMall|TestWorldPKReward|TestRepositorySeed)' -count=1 -p 1
+cd client
+go test ./wlo/mall -count=1
+```
+
+Both pass. No live database was replaced; no full-suite push validation was
+requested or run for this asset update.
+
+### Mall bag contents previews
+
+The native Lbd decoder has independent raw-byte layout, truncation and quantity
+checks. Pet Upgrade Bag's 26-reward screenshot fixture verifies column order
+and Pet Return Scroll quantity three. Mall integration covers clicking the
+item, modal ownership, unchanged cart/network state, Cancel, Close, Escape and
+parent-hide cleanup. The rendered contents panel was visually checked against
+the supplied reference; the client CPU/GPU parity battery now covers 97 stages,
+including companion egg portraits and layered equipment fitting. Additional
+stages cover Weaponry's ready pose and Grocery's seated pose. Tab tests verify
+all seven native pose choices, the rendered action and Reset behavior. Smaller
+lower-right badges were visually reviewed in the catalog snapshot. Additional
+screenshots under `var/mall/bags` verify material-pack contents and expanded bag
+lists. A fitting regression reproduces +100 HP/+10 MAT/+12 DEF/+12 MDEF, checks
+same-slot replacement and Reset, and verifies no inventory, stats or network
+mutations. The tracked preview asset now contains 55 known lists.
+
+Passed focused checks:
+
+```powershell
+go test ./internal/clientassets ./internal/localization ./cmd/mall-previews -run 'TestParseMallContents|TestPetUpgrade|Test.*Catalog|Test.*UI' -count=1
+cd client
+$env:WONDERLAND_TEST_GPU='1'
+go test ./wlo/app ./wlo/mall -run '^TestMall|^TestGPUClientParity$' -count=1
+```
+
+Mall contents gesture checks exercise title dragging, release outside the
+window, outside dismissal over a catalog tab without click-through, and clicks
+inside the reward list. Catalog snapshots verify centered 40-pixel item icons
+and the larger NEW badge overhanging the lower-right corner.
+
+### Mall machines, forging and Thunder Spear
+
+Focused client tests cover raw AC75:4 machine requests, both menu pages,
+unsupported kinds, bonus-tab visibility and the AC57:1 instruction response
+without charging before Start. Forge checks cover raw AC75:3 requests,
+covered-slot selection, confirmation, failure, scroll upgrade inventory ordering,
+delayed success, malformed/wrong-slot/stale-item receipts and duplicate-attempt
+locks. Thunder Spear resolves a ready-pose frame for all four body families.
+CPU/GPU parity now includes 101 stages, adding both machine pages, the furnace
+panel and the layered Thunder Spear preview. Rendered menu/forge snapshots were
+visually checked against the native reference.
+
+```powershell
+go test ./internal/server -run '^(TestStrongScrollForge|TestPointForge|TestForge|TestMallGame)' -count=1
+cd client
+$env:CGO_ENABLED='0'
+$env:WONDERLAND_TEST_GPU='1'
+go test ./wlo/app ./wlo/mall ./wlo/role -run '^TestMall|^TestGPUClientParity$|^TestArchiveLookup|^TestWeaponPatchOrder|^TestMissingPatch|^TestNativeArcadeDispatchAndCleanup$|^TestMarioFlow$' -count=1
+```
+
+### Expanded mall containers
+
+Focused checks preserve the independent 230-row screenshot fixture and verify
+the new 251-row catalog, prices, NEW metadata, edited-catalog preservation,
+published EXP weights, near-equal fallback pools, deterministic three-item
+bundle definitions and blocked incomplete Winter Cloth Bag. Bundle integration
+checks successful SQL delivery, rollback when a later reward does not fit, and
+failed-save preservation without success packets. Client checks compare renders
+with all four promotional metadata values to prove no overlay is drawn.
+Chobits previews verify both complete bundles and explicit partial-list metadata.
+The v61 feature refresh additionally verifies old tags are removed, twenty
+enabled new containers appear in Hot and Grocery, original products remain in
+their category, the native Hot tab is retained, and custom prices survive.
+Machine-return coverage exercises explanation Leave/Close and in-game Exit,
+preserving the mall's selected page and cart without a paid play request;
+unrelated game exits do not open a previously closed mall.
+
+```powershell
+go test ./internal/assets ./internal/assetsql ./internal/server ./internal/clientassets -run '^(TestMall|TestGacha|TestParse.*Gacha|TestChobits|TestRepositorySeed)' -count=1 -p 1
+```
+
+### Full pre-push validation, 2026-11-07
+
+Validated the native mall, card redemption, notebook, quest-conversation and
+combat UI changes on Windows with Go 1.27.1. Logs and isolated outputs are in
+`var/validation/prepush-mall-notebook-20261107/`; live gameplay databases and the
+installed client bundle were not modified.
+
+- Executed all 43 server-module packages with `go test -race -count=1 -timeout=60m -p 1 ./...`.
+- Executed all 29 client-module packages with `go test -count=1 -timeout=60m -p 1 ./...`, the compiled bundle and GPU fixtures enabled. GPU parity passed.
+- Rebuilt all 74,841 runtime asset files from 6,041.4 MiB of extracted source.
+- Server/client vet, server/client/migration builds, Go formatting, whitespace,
+  protocol/EVE/native-item fuzzing (ten seconds each), web formatting and HTML
+  lint passed. SQL model regeneration produced no differences. Python exporter
+  checks passed (78 tests, one optional skip).
+
+The first complete runs exposed failures; these were corrected and the affected
+checks rerun successfully. The server run recorded 2,522 passing test events,
+and the client run 994, before corrective reruns. Corrections include:
+
+- Complete the repository seed's reward choices for four cards; verify all 236
+  authored card definitions against fresh SQL initialization.
+- Add presence metadata to minimal migration fixtures, retaining their rollback
+  and administrator-edit preservation assertions; use the original imported
+  fixture for the legacy document-decoding compatibility test.
+- Regenerate canonical tracked English/Chinese string tables and use keyed card
+  reward literals so vet checks remain meaningful.
+- Persist learned skills in SQL fixtures and honor the native grade-one cap for
+  Goddess skills and Vanish; ordinary durable proficiency checks still pass.
+- Keep initial pets out of switch-arrival presentation during a later battle's
+  immediate reveal. AUTO history, pet switching, scene transitions and bomb
+  targeting passed their focused rerun. Invalid bomb targets now explicitly test
+  selection cancellation before a fresh valid selection.
+
+`final-server-rerun.jsonl` records the consolidated passing server race rerun;
+`assetsql-rerun.jsonl` separately verifies the corrected seed definitions.
+`client-battle-rerun.log` records the passing affected-client integration group.
+An additional broader client race selection hit its default ten-minute timeout
+without a race report; the smaller affected selection passed with an explicit
+30-minute timeout (`client-focused-race.log`, 225 seconds), followed by client
+vet and build. No unresolved test failures remain. Optional live-account,
+reference-screenshot, font/media-source and platform-specific fixtures retained
+their normal skips (two server tests and 42 client tests).

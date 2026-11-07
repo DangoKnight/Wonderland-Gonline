@@ -6,18 +6,74 @@ import (
 	"wonderland-gonline/internal/protocol"
 )
 
+const (
+	nativeAnimationDamageModeOffset   = 24
+	nativeAnimationContactCountOffset = 25
+	nativeAnimationContactHeaderBytes = 26
+	nativeAnimationContactBytes       = 5
+	nativeAnimationSingleDamage       = 0
+	MaxSkillContactEvents             = 50
+)
+
+// AnimationContactCount matches the client's Motion.HitCount. Damage mode zero
+// produces one contact; other modes use the authored event count.
+func AnimationContactCount(record []byte) (byte, error) {
+	if len(record) <= nativeAnimationContactCountOffset {
+		return 0, fmt.Errorf("MBTM: truncated contact header")
+	}
+	count := record[nativeAnimationContactCountOffset]
+	if count > MaxSkillContactEvents || len(record) < nativeAnimationContactHeaderBytes+int(count)*nativeAnimationContactBytes+1 {
+		return 0, fmt.Errorf("MBTM: invalid contact events")
+	}
+	if record[nativeAnimationDamageModeOffset] == nativeAnimationSingleDamage || count == 0 {
+		return 1, nil
+	}
+	return count, nil
+}
+
+func ParseAnimationContacts(data []byte) (map[uint16]byte, error) {
+	result := map[uint16]byte{}
+	err := walkAnimations(data, func(id uint16, record []byte) error {
+		count, err := AnimationContactCount(record)
+		if err == nil {
+			result[id] = count
+		}
+		return err
+	})
+	return result, err
+}
+
+func ApplySkillContacts(skills map[uint16]Skill, contacts map[uint16]byte) {
+	for id, count := range contacts {
+		if s, ok := skills[id]; ok && s.ContactEvents == 0 {
+			s.ContactEvents = count
+			skills[id] = s
+		}
+	}
+}
+
 // ParseAnimationTiming ports SkillAnimationTiming.Read. Unknown movement modes
 // are excluded, so callers keep their configured fallback duration.
 func ParseAnimationTiming(data []byte) (map[uint16]int, error) {
+	out := map[uint16]int{}
+	err := walkAnimations(data, func(id uint16, record []byte) error {
+		if estimate, ok := estimateAnimation(record); ok {
+			out[id] = estimate
+		}
+		return nil
+	})
+	return out, err
+}
+
+func walkAnimations(data []byte, visit func(uint16, []byte) error) error {
 	if len(data) < 2 || len(data) > 64<<20 {
-		return nil, fmt.Errorf("MBTM: invalid length")
+		return fmt.Errorf("MBTM: invalid length")
 	}
 	count := int(le.Uint16(data[len(data)-2:]))
 	start := len(data) - 2 - count*10
 	if count == 0 || start < 0 {
-		return nil, fmt.Errorf("MBTM: invalid index")
+		return fmt.Errorf("MBTM: invalid index")
 	}
-	out := map[uint16]int{}
 	ids := map[uint16]bool{}
 	previous := 0
 	for i := 0; i < count; i++ {
@@ -25,18 +81,18 @@ func ParseAnimationTiming(data []byte) (map[uint16]int, error) {
 		id := le.Uint16(h)
 		offset, size := int(le.Uint32(h[2:])), int(le.Uint32(h[6:]))
 		if ids[id] || offset != previous || size < 27 || offset > start-size {
-			return nil, fmt.Errorf("MBTM: invalid record %d", id)
+			return fmt.Errorf("MBTM: invalid record %d", id)
 		}
 		ids[id] = true
 		previous = offset + size
-		if estimate, ok := estimateAnimation(data[offset : offset+size]); ok {
-			out[id] = estimate
+		if err := visit(id, data[offset:offset+size]); err != nil {
+			return fmt.Errorf("MBTM %d: %w", id, err)
 		}
 	}
 	if previous != start {
-		return nil, fmt.Errorf("MBTM: incomplete index")
+		return fmt.Errorf("MBTM: incomplete index")
 	}
-	return out, nil
+	return nil
 }
 func estimateAnimation(b []byte) (int, bool) {
 	r := protocol.NewReader(b)

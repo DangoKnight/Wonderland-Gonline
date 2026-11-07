@@ -1,0 +1,19 @@
+[
+  {"item_id":35450,"evidence":"Chinese item description 35450; item identities 21366/24259/22593","rewards":[{"item_id":21366,"quantity":1},{"item_id":24259,"quantity":1},{"item_id":22593,"quantity":1}]},
+  {"item_id":35451,"evidence":"Chinese item description 35451; item identities 21364/24257/22593","rewards":[{"item_id":21364,"quantity":1},{"item_id":24257,"quantity":1},{"item_id":22593,"quantity":1}]},
+  {"item_id":56276,"incomplete":true,"evidence":"var/reference-web/items/34.htm W.Clothes bag; compiled description 56276 also mentions unspecified practical props","rewards":[{"item_id":22593,"quantity":1},{"item_id":50707,"quantity":1},{"item_id":50706,"quantity":1}]},
+  {"item_id":34172,"companion_icons":true,"evidence":"var/mall/bags/Captura de pantalla 2026-11-07 001923.png"},
+  {
+    "item_id": 57819,
+    "evidence": "var/mall/bags/Captura de pantalla 2026-11-07 001329.png",
+    "rewards": [
+      {"item_id":35135,"quantity":1}, {"item_id":35136,"quantity":1},
+      {"item_id":34102,"quantity":1}, {"item_id":34016,"quantity":1},
+      {"item_id":34143,"quantity":1}, {"item_id":33031,"quantity":1},
+      {"item_id":33030,"quantity":1}, {"item_id":33054,"quantity":1},
+      {"item_id":34181,"quantity":1}, {"item_id":30556,"quantity":1},
+      {"item_id":34246,"quantity":1}, {"item_id":61079,"quantity":1},
+      {"item_id":63114,"quantity":1}, {"item_id":63115,"quantity":1}
+    ]
+  }
+]

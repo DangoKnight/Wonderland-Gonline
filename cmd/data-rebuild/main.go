@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	data := flag.String("data", "data", "directory containing asset_manifest.json and exports")
+	data := flag.String("data", "", "optional extracted export directory; defaults to repository server definitions")
 	assetsDB := flag.String("assets-db", "", "SQL asset database to recreate; existing file is backed up")
 	configPath := flag.String("config", "", "server config selecting assets and gameplay databases")
 	resetGameplay := flag.Bool("reset-gameplay", false, "also erase accounts, characters, settings and audit; existing DB is backed up; stop the server first")
@@ -25,6 +25,9 @@ func main() {
 		*assetsDB = settings.AssetsDatabase
 	}
 	options := assetdb.RebuildOptions{DataDirectory: *data, AssetsDB: *assetsDB, PrepareAssets: assetsql.MigrateDatabase, Progress: func(asset string) { fmt.Println("Imported", asset) }}
+	if *data == "" {
+		options.BuildAssets = assetsql.BuildRepositoryDatabase
+	}
 	if *resetGameplay {
 		options.GameplayDB = settings.Database
 	}

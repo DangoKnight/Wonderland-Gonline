@@ -145,7 +145,7 @@ func (w *World) companionPosition(owner uint32) (int, int, int, bool) {
 	}
 	// FUN_004274cc hides following NPCs for both party roles. Selection and
 	// combat ownership remain independent of this world presentation rule.
-	if p.VehicleID != 0 || w.inTeam(owner) {
+	if p.VehicleID != 0 || w.inTeam(owner) || w.fighting(owner) {
 		c.initialized = false
 		return 0, 0, 0, false
 	}

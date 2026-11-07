@@ -4,7 +4,7 @@ import "wonderland-gonline/internal/protocol"
 
 // LearnSkill is EVE opcode 11 and SkillManager.UnlockSkill. Replayed learning
 // leaves trained grade/proficiency intact; a new reward starts at grade one.
-func (c *Character) LearnSkill(id uint16) [][]byte {
+func (c *Character) LearnSkill(id uint16, maximumGrade ...byte) [][]byte {
 	if id == 0 {
 		return nil
 	}
@@ -13,14 +13,14 @@ func (c *Character) LearnSkill(id uint16) [][]byte {
 			return nil
 		}
 	}
-	return c.SetSkillGrade(id, MinSkillGrade)
+	return c.SetSkillGrade(id, MinSkillGrade, maximumGrade...)
 }
 
 // SetSkillGrade ports SkillManager.UnlockSkill for an explicit grade override.
 // Unlike quest learning, it resets proficiency even when the grade is unchanged.
 // The caller validates catalog membership and commits before emitting packets.
-func (c *Character) SetSkillGrade(id uint16, grade byte) [][]byte {
-	if id == 0 || grade < MinSkillGrade || grade > SkillGradeLimit(id) {
+func (c *Character) SetSkillGrade(id uint16, grade byte, maximumGrade ...byte) [][]byte {
+	if id == 0 || grade < MinSkillGrade || grade > SkillGradeLimit(maximumGrade...) {
 		return nil
 	}
 	old := byte(0)

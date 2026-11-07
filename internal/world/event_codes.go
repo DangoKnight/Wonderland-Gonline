@@ -37,6 +37,11 @@ const (
 // Action 7 operands below this boundary identify NPC services, not maps.
 const ServiceTeleportMinimumMapID = 1000
 
+const (
+	MovieActionPlay          = 1
+	MovieActionPlayAlternate = 2
+)
+
 // Mission operations have no client presentation of their own.
 const (
 	ActionMissionMarker   = 10
@@ -137,12 +142,13 @@ const (
 
 // Reward kinds and quest checkpoint modes are separate EVE operand namespaces.
 const (
-	PlayerRewardItem       = 1
-	PlayerRewardGold       = 2
-	PlayerRewardExperience = 5
-	PlayerExperienceValue  = 1
-	QuestMarkAdvance       = 1
-	QuestMarkComplete      = 2
+	PlayerRewardItem              = 1
+	PlayerRewardItemCompatibility = 7 // Native item-delivery alternate accepted by the existing interpreter.
+	PlayerRewardGold              = 2
+	PlayerRewardExperience        = 5
+	PlayerExperienceValue         = 1
+	QuestMarkAdvance              = 1
+	QuestMarkComplete             = 2
 )
 
 // Companion actions 3/4 are temporary quest escorts. They require an authored

@@ -19,6 +19,11 @@ func (s *Server) combatRules(run *battleRun) battle.Rules {
 		return s.commitCombatLoot(run, target, actors)
 	}
 	r.PrepareCapture = func(a battle.Action) (int, bool) {
+		// No PvP mode may consume equipment durability, even if a future caller
+		// reaches this hook without the engine's normal capture rejection.
+		if run.b.PvP {
+			return 0, false
+		}
 		for _, member := range run.active() {
 			if member.self.ID != a.Player {
 				continue

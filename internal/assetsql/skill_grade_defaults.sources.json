@@ -1,0 +1,12 @@
+{
+  "format": "server-skill-maximum-grades",
+  "version": 1,
+  "source": "Skill.dat",
+  "source_sha256": "c06a7edfdeeebabd6f2a22b743ec955e9fd9dad119eff7a178a8a227987b19ad",
+  "export_sha256": "6a078d1cded81718a5f2467bd03b9a0f7493cbb170282c62f3d1bc644e96b35a",
+  "table_sha256": "3406de97995594d3022fa56614b9be194997ffa49c93756226d874f635d2dac1",
+  "records": 953,
+  "decoded_maximum_grade_offset": 105,
+  "missing_grade_limit": 10,
+  "explicit_zero_grade_limit": 0
+}

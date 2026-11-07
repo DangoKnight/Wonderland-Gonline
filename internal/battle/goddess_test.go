@@ -74,12 +74,12 @@ func TestShrinkRefreshAndDamagePaths(t *testing.T) {
 		t.Fatal("physical defense ignored", got)
 	}
 	f.Weapon = 5
-	if got := r.baseDamage(f, m, 10001, 1); got != 107 {
+	if got := r.baseDamage(f, m, 10001, 1); got != 108 {
 		t.Fatal("staff magic defense ignored", got)
 	}
 	f.Weapon = 0
 	r.Skills[20001] = assets.Skill{ID: 20001, EffectLayer: 2, StatMultiplier: 2}
-	if got := r.baseDamage(f, m, 20001, 1); got != 107 {
+	if got := r.baseDamage(f, m, 20001, 1); got != 108 {
 		t.Fatal("magic skill defense ignored", got)
 	}
 	m.RemoveEffects(15188)

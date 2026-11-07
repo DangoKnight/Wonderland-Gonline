@@ -90,6 +90,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		if peer.fishing != nil {
 			packets = append(packets, fishingStartedPacket(peer))
 		}
+		if peer.battle != nil {
+			packets = append(packets, battleState(peer.character.ID, true))
+		}
 		if peer.emote != 0 {
 			// SendMapInfo replays a peer's held pose.
 			packets = append(packets, protocol.Builder{protocol.CommandPose, protocol.PoseBroadcast}.U32(peer.character.ID).U8(peer.emote))

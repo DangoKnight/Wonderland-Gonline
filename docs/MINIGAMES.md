@@ -168,7 +168,9 @@ every reward; weight 0 excludes a reward. Selection uses cryptographic randomnes
 against the total positive weight. Native prize-index/item identities are fixed
 and validated because aLogin displays a compiled table.
 
-**Balance assumptions:** original server odds and award quantities are unavailable.
+**Balance assumptions:** the initial implementation did not have original server
+odds and award quantities. The subsequently supplied official-site snapshots in
+`var/slots` publish rewards and probabilities; see the investigation below.
 Initial quantities are one; reel patterns are provisional presentation outcomes,
 not recovered original server rules. Initial throttles are 3 seconds for eggs
 and fruit machines, and 4.5 seconds for slots; SQL permits 1–60 seconds. The wire has no purchase ID,
@@ -332,6 +334,137 @@ Steps 2 and 4 compare a pair (`FUN_0016a44c`), and step 4 ends the round with
 `57, 9, 4`. Leaving sends `57, 9, 2`; leaving after a pair is answered by a
 consolation item with AC71 16/4. The client never holds the faces or a prize
 table: the server deals and rewards with raw item IDs. Claw (7) and Boxing (9)
-likewise receive raw item IDs (`FUN_00141cd0`, `FUN_001435f0`). Their client
-ports wait for authored server rules, since inventing odds and prizes would
-fabricate rewards.
+likewise receive raw item IDs (`FUN_00141cd0`, `FUN_001435f0`). Published reward
+names and probabilities are now available in `var/slots/02.htm`; the missing
+ports still require verified item mappings and interactive server rules.
+
+## Published mall probabilities: local `var/slots` investigation
+
+Investigated 2026-11-07. These saved ChineseGamer Wonderland pages are Big5/CP950,
+not UTF-8. Decode them before matching Chinese names. The accompanying image
+folders mostly contain site artwork; the HTML tables contain the useful data.
+This investigation records evidence only; it does not alter live SQL catalogs,
+default rewards, odds or game availability.
+
+| Saved source | Content | SHA-256 |
+| --- | --- | --- |
+| `var/slots/01.htm` | Bag/box/chest/wishing rewards, forging, Chaos Crystal and Potential probabilities | `fd5ba9547557200afdbd783fba4f3bcad475e229a936087b9f0811fe627100f6` |
+| `var/slots/02.htm` | All ten displayed mall games' prize tables and probabilities | `b356d8d19f89aa2b737860ee9e2f5e8626d2940d63fe7734544378a83630e649` |
+| `var/slots/飄流幻境 Wonderland Online.htm` | Another saved rendering of the product-content page; overlaps `01.htm`, not independent corroboration | `38e69a373a26d1bf8d2c57bee5be547b7346be041a2082c86fb731e7d29ef0e9` |
+
+The tables have names, descriptions, quantities and probabilities, but no numeric
+item IDs. Match definitions by identity and effects against the untranslated
+Chinese catalog, then cross-check the executable's prize-index tables. Page order
+is not a wire prize index. Regional/version differences and source typos must be
+resolved rather than replacing the native table to fit a translated name.
+For example, the first egg table's vehicle voucher names and descriptions disagree
+about the vehicle; names alone are insufficient.
+There is also a concrete compatibility conflict: the Potion Box page lists a
+Lottery Ticket for unmatched reels, but the current executable's kind-10 index
+zero maps to item 32095, Fugu Hot Pot. Kinds 8 and 19 instead map index zero to
+30063, Lottery Ticket. Preserve these native identities until version/protocol
+evidence resolves the mismatch; importing the page's ticket into kind 10 would
+make the client display a different item from the actual server grant.
+
+### Coverage and probability meanings
+
+| Mall game | Native kind | Evidence in `02.htm` |
+| --- | ---: | --- |
+| Baby Dolls / 抓娃娃機 | 7 | Seven doll categories; each has five prizes at 60%, 20%, 16%, 3%, 1%. These are conditional prize probabilities for that category, not the chance of catching that doll. |
+| Fortune Egg / 轉蛋機 | 6 | Ten individual rewards at 35%, 24%, 20%, 12%, 4%, then five at 1%. |
+| Diamond Hit / 爆擊彩鑽機 | 19 | Eight symbol probabilities and eleven combination outcomes, including a consolation ticket. Critical diamonds span 8% to 32%. |
+| Diamond Cast / 彩鑽拉霸機 | 8 | Same symbol probabilities/combination rules; enhancement diamonds from +14 through +50, plus a consolation ticket. |
+| Potion Box / 藥水拉霸機 | 10 | Same symbol probabilities/combination rules; 1.5x through 8x EXP potions, plus a consolation ticket. |
+| Jigsaw / 拼拼樂 | 14 | Eight picture-category probabilities and eleven outcomes, including partial matches and a consolation ticket. |
+| Lucky Wheel / 轉轉樂 | 21 | Four prize tiers: 1%, 2%, 8%, 89%, spanning 5, 10, 10 and 20 items respectively. Within-tier item probabilities are not specified. |
+| Lucky Cards / 戳戳樂 | 16 | Thirty-two reward rows under a single explicit equal-probability cell; quantities vary by row. |
+| Golden Glove / 拳擊樂 | 9 | Twenty-seven explicitly weighted rewards. First three: healing potion 20%, pizza 12%, phoenix feather 10%; remaining entries are pet armlets at 1–4%. |
+| Fortune Egg 2 / 轉蛋機二代 | 22 | Ten individual rewards with the same 35/24/20/12/4/1/1/1/1/1 percentages as the first egg; different identities. |
+
+The page additionally lists 翻翻樂, a separate fourteen-reward table with weights
+19, 14, 13, 11, 9, 7, 7, 6, 5, 3, 2, 2, 1, 1 percent. It is not automatically
+the same as Lucky Cards or Lucky Wheel. Its native entry point remains unresolved;
+do not assign it to either kind from the similar English names.
+
+Fortune Egg's first outcomes are pizza 35%, phoenix feather 24%, hot sweet potato
+20%, and a player stat-return scroll 12%. Fortune Egg 2 substitutes a selectable
+glaze-stone voucher at 24%, with hot sweet potato still 20%. All egg quantities
+listed are one. Verify each mapped ID before importing these weights.
+
+The seven claw categories are little monkey, Labrador, Persian cat, Shiba Inu,
+rice chicken, chick beast and Taiwan macaque. Their common 60% result is a pet
+1% EXP pill; the other four outcomes are category-specific companion vouchers.
+Their 60/20/16/3/1 probabilities each total 100%, but the page supplies neither
+category-selection odds nor the mechanical success rate of the crane controls.
+
+### Reel rules
+
+For the three slot machines, the page gives angel 9%, crab 10%, tabby cat 11%,
+frog 12%, sheep 13%, squirrel 14%, jellyfish 15%, starfish 16%. The lowest prize
+requires the right reel to be a starfish; the next requires middle and right
+starfish; three starfish award the next tier. Higher awards require three of
+another matching symbol; all other combinations yield a ticket. Evaluate triples
+before partial starfish matches. The page does not establish numerical reel
+positions or whether the reels are statistically independent.
+
+If the three reels are independent, the inferred mutually exclusive weights are
+as follows. These are derived probabilities, not additional published percentages:
+
+| Outcome | Probability |
+| --- | ---: |
+| Right starfish, middle not starfish | 13.44% |
+| Middle/right starfish, left not starfish | 2.1504% |
+| Three starfish | 0.4096% |
+| Three jellyfish | 0.3375% |
+| Three squirrels | 0.2744% |
+| Three sheep | 0.2197% |
+| Three frogs | 0.1728% |
+| Three tabby cats | 0.1331% |
+| Three crabs | 0.1000% |
+| Three angels | 0.0729% |
+| Consolation ticket | 82.6896% |
+
+Jigsaw instead lists angel, jellyfish, frog, snail, chicken, Shiba, mushroom and
+cactus with probabilities 9% through 16%. Its partial-match rules are same-category
+middle/bottom, and cactus middle/bottom; full matching pictures take precedence.
+The page does not explain how picture categories map to the three stop positions
+or which differently drawn pieces complete a picture. Confirm that with the
+native Mario3 code/assets before deriving weights or manufacturing reel patterns.
+
+### Differences from Gonline and remaining work
+
+`internal/assetsql/arcade_defaults.json` currently assigns weight one to every
+reward. Fresh catalogs therefore give each egg prize 10%, and each three-slot
+prize 1/11, rather than the published distributions. Fruit-machine seeds likewise
+use equal weights and omit consolation index zero. Administrators can already
+set SQL-owned weights, quantities and reel positions; existing edited catalogs
+must be preserved by any future default migration. The supplied pages substantially
+improve reward evidence but do not prove the currently connected regional server
+uses identical odds. No live database was inspected in this investigation.
+
+The client should continue to animate server-selected outcomes. Published names
+and odds do not replace missing interactive protocol/state machines for kinds 7,
+9, 16 and 21. The existing decompilation remains the source for controls, payment
+requests, step replies, cancellation and animation. The page does not publish
+point/token costs, timing or handling of interrupted paid rounds. Kind 16's equal
+reward-row weights also do not establish the faces/deal distribution of its
+interactive card game. Kind 21's four HTML probability cells use `rowspan`; treating
+them as per-item odds would multiply the intended tier rates. Equal selection
+inside those tiers would be an explicit policy assumption, not a recovered rule.
+
+`01.htm` provides additional enhancement evidence: point-forging attempts at
+levels 1/2/3/10/50/100/200 are respectively
+100/17.24/10.88/2.17/0.19/0.06/0.02 percent (the full table has 200 rows, rounded
+to two decimal places). `internal/server/crafting.go:forgeRoll` currently uses a
+flat coin flip, independent of progress. This is a substantial remaining mismatch;
+retain the published table rather than fitting an invented curve. Scroll-family
+upgrades are a separate mechanism and should not inherit the point-forging odds.
+The Potential table, in contrast, matches `game.PotentialSuccessPercent` for
+ordinary pills: 100/100/100/70/60/55/55/50/35/20/18/15 percent for attempts +1…+12.
+
+The same product page publishes bag contents with probabilities, including
+Pet Upgrade Bag (夥伴強化福袋). Its older list is not identical to the updated
+client's 26-entry preview. Keep the screenshot/native Lbd display evidence and
+these published probability tables separately until every differing item and
+version is reconciled. Other useful sections include gold chests, the Kelan
+wishing pool, Chaos Crystal ranks, and Kyoto lottery/fortune rewards.

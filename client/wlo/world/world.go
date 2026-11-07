@@ -140,6 +140,8 @@ type World struct {
 	walker Walker
 	// Peers are the other players on the map, by ID (peers.go).
 	Peers               map[uint32]*Peer
+	battlePresence      map[uint32]battlePresence
+	BattleCloud         func(*surface.Surface, int, int, time.Duration) bool
 	Teams               map[uint32][]uint32
 	TeamFollowingPaused bool
 	teamTrails          map[uint32]*teamTrail
@@ -322,6 +324,9 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	for _, p := range w.Peers {
 		if p.Role != nil {
 			figures = append(figures, figure{p.Y, func() {
+				if w.drawBattleCloud(p.ID, p.X-cx, p.Y-cy, now) {
+					return
+				}
 				w.drawSmallShadow(p.X-cx, p.Y-cy)
 				if lit, ok := p.Role.(interface{ SetLit(bool) }); ok {
 					lit.SetLit(w.JoinTeamSelection && w.teamHover.owner == p.ID)
@@ -348,6 +353,9 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	if w.Body != nil && !w.HidePlayer {
 		i := sort.Search(len(figures), func(i int) bool { return figures[i].y > w.Player.Y })
 		figures = slices.Insert(figures, i, figure{w.Player.Y, func() {
+			if w.drawBattleCloud(w.Player.ID, px, py, now) {
+				return
+			}
 			w.drawSmallShadow(px, py)
 			if !w.drawShapeshift(scr, w.Player.ID, px, py, w.Player.Direction) {
 				w.Body.DrawBody(scr, px, py, w.Player.Direction)

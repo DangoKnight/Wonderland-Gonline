@@ -110,11 +110,11 @@ func (c Character) AlchemySkill() (tier AlchemyTier, level byte, id uint16) {
 	return
 }
 
-// SkillGradeLimit preserves combat limits while allowing native alchemy grades.
-func SkillGradeLimit(id uint16) byte {
-	switch id {
-	case AlchemyPrimarySkill, AlchemyJuniorSkill, AlchemySuperiorSkill:
-		return AlchemySkillMaximum
+// SkillGradeLimit accepts catalog metadata without making gameplay depend on
+// asset loading. Old callers and definitions without a native limit use ten.
+func SkillGradeLimit(maximumGrade ...byte) byte {
+	if len(maximumGrade) > 0 {
+		return maximumGrade[0]
 	}
-	return MaxSkillGrade
+	return DefaultSkillGrade
 }

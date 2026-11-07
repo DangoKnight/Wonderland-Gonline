@@ -105,7 +105,7 @@ func baseID(body byte) int { return idsPerFamily * (int(body) + 1) }
 
 // layerSprite draws one sprite of a family at the action and frame.
 func (h *Human) layerSprite(dst *surface.Surface, base string, id int, action, frame, x, y int) {
-	arc, key := h.Lib.lookup(base, id)
+	arc, key := h.Lib.resolve(base, id)
 	if arc == nil {
 		return
 	}

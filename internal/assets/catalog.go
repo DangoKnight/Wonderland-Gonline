@@ -143,6 +143,7 @@ type Catalog struct {
 	NPCShopDefaults     map[uint16][]uint16
 	TentSurfaces        map[uint16]byte
 	BoxedItems          map[uint16]BoxedItem
+	ItemCards           map[uint16]ItemCard
 	SkillEvolutions     []SkillEvolution
 	EventGathering      EventGatheringRules
 	NPCBuyPrices        map[uint16]uint32
@@ -175,6 +176,7 @@ type Catalog struct {
 	PetFoods              map[uint16]PetFood
 	CollectionSpots       map[uint16]CollectionSpot
 	ResourceRespawns      []ResourceRespawn
+	WorldPKRewards        WorldPKRewardDefinitions
 	Talks                 Talks
 	Maps                  map[uint16]Map
 	Mall                  []MallItem
@@ -287,6 +289,11 @@ func Load(dir, itemCatalog string) (*Catalog, error) {
 		v, e := ParseAnimationTiming(b)
 		if e == nil {
 			c.AnimationTiming = v
+			contacts, err := ParseAnimationContacts(b)
+			if err != nil {
+				return err
+			}
+			ApplySkillContacts(c.Skills, contacts)
 		}
 		return e
 	})

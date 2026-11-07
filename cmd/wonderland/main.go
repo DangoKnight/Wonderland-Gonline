@@ -51,6 +51,13 @@ func run() error {
 		level = slog.LevelDebug
 	}
 	log := slog.New(slog.NewJSONHandler(logOutput, &slog.HandlerOptions{Level: level}))
+	created, e := assetsql.InitializeRepositoryDatabase(c.AssetsDatabase)
+	if e != nil {
+		return e
+	}
+	if created {
+		log.Info("initialized server definitions from repository seed", "database", c.AssetsDatabase)
+	}
 	a, e := assetsql.LoadDatabase(c.AssetsDatabase)
 	if e != nil {
 		return e

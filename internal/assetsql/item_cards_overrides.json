@@ -1,0 +1,284 @@
+[
+  {
+    "card_id": 50008,
+    "rewards": [
+      {
+        "item_id": 25639,
+        "quantity": 1
+      },
+      {
+        "item_id": 25640,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 50534,
+    "male_item": 35451,
+    "female_item": 35450,
+    "rewards": [
+      {
+        "item_id": 35451,
+        "quantity": 1
+      },
+      {
+        "item_id": 35450,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 50559,
+    "rewards": [
+      {
+        "item_id": 14186,
+        "quantity": 1
+      },
+      {
+        "item_id": 22626,
+        "quantity": 1
+      },
+      {
+        "item_id": 21388,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 50706,
+    "male_item": 21364,
+    "female_item": 21366,
+    "rewards": [
+      {
+        "item_id": 21364,
+        "quantity": 1
+      },
+      {
+        "item_id": 21366,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 50707,
+    "male_item": 24257,
+    "female_item": 24259,
+    "rewards": [
+      {
+        "item_id": 24257,
+        "quantity": 1
+      },
+      {
+        "item_id": 24259,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51267,
+    "male_item": 22912,
+    "female_item": 22911,
+    "rewards": [
+      {
+        "item_id": 22912,
+        "quantity": 1
+      },
+      {
+        "item_id": 22911,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51268,
+    "male_item": 21715,
+    "female_item": 21714,
+    "rewards": [
+      {
+        "item_id": 21715,
+        "quantity": 1
+      },
+      {
+        "item_id": 21714,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51359,
+    "rewards": [
+      {
+        "item_id": 27000,
+        "quantity": 1
+      },
+      {
+        "item_id": 27001,
+        "quantity": 1
+      },
+      {
+        "item_id": 27002,
+        "quantity": 1
+      },
+      {
+        "item_id": 27003,
+        "quantity": 1
+      },
+      {
+        "item_id": 27004,
+        "quantity": 1
+      },
+      {
+        "item_id": 27005,
+        "quantity": 1
+      },
+      {
+        "item_id": 27006,
+        "quantity": 1
+      },
+      {
+        "item_id": 27007,
+        "quantity": 1
+      },
+      {
+        "item_id": 27008,
+        "quantity": 1
+      },
+      {
+        "item_id": 27009,
+        "quantity": 1
+      },
+      {
+        "item_id": 27010,
+        "quantity": 1
+      },
+      {
+        "item_id": 27011,
+        "quantity": 1
+      },
+      {
+        "item_id": 27012,
+        "quantity": 1
+      },
+      {
+        "item_id": 27013,
+        "quantity": 1
+      },
+      {
+        "item_id": 27014,
+        "quantity": 1
+      },
+      {
+        "item_id": 27015,
+        "quantity": 1
+      },
+      {
+        "item_id": 27016,
+        "quantity": 1
+      },
+      {
+        "item_id": 27017,
+        "quantity": 1
+      },
+      {
+        "item_id": 27018,
+        "quantity": 1
+      },
+      {
+        "item_id": 27019,
+        "quantity": 1
+      },
+      {
+        "item_id": 27020,
+        "quantity": 1
+      },
+      {
+        "item_id": 27021,
+        "quantity": 1
+      },
+      {
+        "item_id": 27022,
+        "quantity": 1
+      },
+      {
+        "item_id": 27025,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51381,
+    "male_item": 22902,
+    "female_item": 22903,
+    "rewards": [
+      {
+        "item_id": 22902,
+        "quantity": 1
+      },
+      {
+        "item_id": 22903,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51382,
+    "male_item": 21704,
+    "female_item": 21705,
+    "rewards": [
+      {
+        "item_id": 21704,
+        "quantity": 1
+      },
+      {
+        "item_id": 21705,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51609,
+    "rewards": [
+      {
+        "item_id": 30908,
+        "quantity": 1
+      },
+      {
+        "item_id": 34707,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Exact named reward phrases in compiled English/Chinese item descriptions; unspecified premium props are not invented"
+  },
+  {
+    "card_id": 51215,
+    "rewards": [
+      {
+        "item_id": 34089,
+        "quantity": 1
+      },
+      {
+        "item_id": 34139,
+        "quantity": 1
+      },
+      {
+        "item_id": 34239,
+        "quantity": 1
+      },
+      {
+        "item_id": 61062,
+        "quantity": 1
+      }
+    ],
+    "evidence": "Blessing Lantern description explicitly lists Forgotten Scroll, Pet Return Scroll, Demon Scroll and Chaos Crystal; resolve Chinese scroll spelling variants"
+  }
+]

@@ -32,6 +32,7 @@ type SessionInfo struct {
 }
 
 type Session struct {
+	itemCard              *pendingItemCard
 	pendingMail           map[deliveryKey]*transport.Receipt // Guarded by worldMu.
 	textMailPending       bool
 	adminMailPending      bool

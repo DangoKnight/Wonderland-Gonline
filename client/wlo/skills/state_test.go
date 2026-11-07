@@ -105,7 +105,7 @@ func TestCatalogDecodedMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := c.Definitions[11016]
-	if d.Icon != 4612 || d.MaximumGrade != 5 || d.Name != "Flame Attack" || d.EffectLayer != 1 || c.Orders[94] != 11016 {
+	if d.Icon != 4612 || d.GradeLimit() != 5 || d.Name != "Flame Attack" || d.EffectLayer != 1 || c.Orders[94] != 11016 {
 		t.Fatal("decoded metadata", d)
 	}
 	tail := make([]byte, 198)
@@ -129,7 +129,7 @@ func TestInstalledSkillCatalog(t *testing.T) {
 	}
 	flame := c.Definitions[11016]
 	slow := c.Definitions[11056]
-	if flame.EffectLayer != 1 || flame.Icon != 12036 || flame.MaximumGrade != 5 || flame.Weapons != ([5]bool{true, true, true, false, false}) {
+	if flame.EffectLayer != 1 || flame.Icon != 12036 || flame.GradeLimit() != 5 || flame.Weapons != ([5]bool{true, true, true, false, false}) {
 		t.Fatal("physical catalog", flame)
 	}
 	if slow.Weapons != ([5]bool{true, true, true, true, true}) || c.Orders[130] != 11056 {
@@ -139,7 +139,7 @@ func TestInstalledSkillCatalog(t *testing.T) {
 
 func TestAlchemyThirtyLevelSnapshot(t *testing.T) {
 	id := uint16(game.AlchemySuperiorSkill)
-	c := &Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id}, MaximumGrade: 30}}, Orders: map[uint16]uint16{194: id}}
+	c := &Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id, MaximumGrade: assets.GradeLimit(30)}}}, Orders: map[uint16]uint16{194: id}}
 	s := NewState(c)
 	if !s.Snapshot(snapshot([]byte{194, 0, 30, 0, 0, 0, 0})) || s.Learned[id].Grade != 30 {
 		t.Fatal("native alchemy grade 30 rejected")
@@ -152,9 +152,29 @@ func TestAlchemyThirtyLevelSnapshot(t *testing.T) {
 	}
 }
 
+func TestNativeSkillLimitAboveThirtyAndMissingFallback(t *testing.T) {
+	const id = 50000
+	c := &Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id, MaximumGrade: assets.GradeLimit(50)}}}, Orders: map[uint16]uint16{1: id}}
+	s := NewState(c)
+	if !s.Snapshot(snapshot([]byte{1, 0, 50, 0, 0, 0, 0})) || s.Learned[id].Grade != 50 {
+		t.Fatal("native grade above old global caps rejected")
+	}
+	if s.Apply([]byte{5, 12, 80, 195, 51}) || !s.Apply([]byte{5, 12, 80, 195, 49}) {
+		t.Fatal("native grade update validation")
+	}
+	c.Definitions[id] = Definition{Skill: assets.Skill{ID: id}}
+	if s.Apply([]byte{5, 12, 80, 195, 11}) || !s.Apply([]byte{5, 12, 80, 195, 10}) {
+		t.Fatal("missing maximum must use ten")
+	}
+	c.Definitions[id] = Definition{Skill: assets.Skill{ID: id, MaximumGrade: assets.GradeLimit(0)}}
+	if s.Apply([]byte{5, 12, 80, 195, 1}) || !s.Apply([]byte{5, 12, 80, 195, 0}) {
+		t.Fatal("explicit zero maximum did not stay zero")
+	}
+}
+
 func TestAlchemyCumulativeExperienceSnapshotAndUpdates(t *testing.T) {
 	id := uint16(game.AlchemyJuniorSkill)
-	s := NewState(&Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id}, MaximumGrade: 30}}, Orders: map[uint16]uint16{193: id}})
+	s := NewState(&Catalog{Definitions: map[uint16]Definition{id: {Skill: assets.Skill{ID: id, MaximumGrade: assets.GradeLimit(30)}}}, Orders: map[uint16]uint16{193: id}})
 	if !s.Snapshot(snapshot([]byte{193, 0, 2, 22, 0, 0, 0})) {
 		t.Fatal("snapshot")
 	}

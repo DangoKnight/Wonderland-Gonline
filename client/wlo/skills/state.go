@@ -52,7 +52,7 @@ func (s *State) Snapshot(p []byte) bool {
 	for o := snapshotCountOffset + 2; o < tail; o += snapshotRecordBytes {
 		order := binary.LittleEndian.Uint16(p[o:])
 		grade := p[o+2]
-		if order == 0 || orders[order] || grade > game.AlchemySkillMaximum {
+		if order == 0 || orders[order] {
 			return false
 		}
 		orders[order] = true
@@ -60,7 +60,7 @@ func (s *State) Snapshot(p []byte) bool {
 		if !known {
 			continue
 		}
-		if grade > game.SkillGradeLimit(id) {
+		if grade > s.Catalog.Definitions[id].GradeLimit() {
 			return false
 		}
 		// Native AC5:3 includes zero-grade records to clear forgotten skills
@@ -107,7 +107,7 @@ func (s *State) Apply(p []byte) bool {
 	default:
 		return false
 	}
-	if id == 0 || id > 65535 || (grade && value > uint32(game.SkillGradeLimit(uint16(id)))) || (!grade && !experience && value > game.SkillProficiencyScale) {
+	if id == 0 || id > 65535 || (grade && value > uint32(s.Catalog.Definitions[uint16(id)].GradeLimit())) || (!grade && !experience && value > game.SkillProficiencyScale) {
 		return false
 	}
 	key := uint16(id)
