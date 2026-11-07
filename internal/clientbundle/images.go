@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 	"wonderland-gonline/internal/clientimage"
 )
 
@@ -31,21 +33,40 @@ func (c *runtimeCompiler) validateImages(o Options) error {
 			return err
 		}
 	}
-	images := map[string]Dimensions{}
+	pngNames := []string{}
 	for _, name := range c.files {
-		if !strings.EqualFold(filepath.Ext(name), ".png") {
-			continue
+		if strings.EqualFold(filepath.Ext(name), ".png") {
+			pngNames = append(pngNames, name)
 		}
+	}
+	type imageConfig struct {
+		dim Dimensions
+		err error
+	}
+	configs := make([]imageConfig, len(pngNames))
+	if err := parallelEach(pngNames, c.workers, func(i int, name string) error {
 		f, err := os.Open(filepath.Join(c.source, filepath.FromSlash(name)))
 		if err != nil {
-			return err
+			configs[i].err = err
+			return nil
 		}
 		cfg, err := png.DecodeConfig(f)
 		f.Close()
 		if err != nil {
-			return fmt.Errorf("%s: %w", name, err)
+			configs[i].err = err
+			return nil
 		}
-		dim := Dimensions{cfg.Width, cfg.Height}
+		configs[i].dim = Dimensions{cfg.Width, cfg.Height}
+		return nil
+	}); err != nil {
+		return err
+	}
+	images := map[string]Dimensions{}
+	for i, name := range pngNames {
+		if configs[i].err != nil {
+			return fmt.Errorf("%s: %w", name, configs[i].err)
+		}
+		dim := configs[i].dim
 		if dim.Width <= 0 || dim.Height <= 0 || dim.Width > maxImageSide || dim.Height > maxImageSide {
 			return fmt.Errorf("invalid image dimensions: %s", name)
 		}
@@ -81,15 +102,25 @@ func (c *runtimeCompiler) validateImages(o Options) error {
 func trimEmpty(m *image.NRGBA) image.Rectangle {
 	b := m.Bounds()
 	left, top, right, bottom := b.Max.X, b.Max.Y, b.Min.X, b.Min.Y
+	pix := m.Pix
+	stride := m.Stride
 	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			p := m.NRGBAAt(x, y)
-			if p.R != 0 || p.G != 0 || p.B != 0 || p.A != 0 {
-				left = min(left, x)
-				top = min(top, y)
-				right = max(right, x+1)
-				bottom = max(bottom, y+1)
+		base := (y - b.Min.Y) * stride
+		first, last := -1, -1
+		for x := 0; x < b.Dx(); x++ {
+			o := base + x*4
+			if pix[o] != 0 || pix[o+1] != 0 || pix[o+2] != 0 || pix[o+3] != 0 {
+				if first < 0 {
+					first = x
+				}
+				last = x
 			}
+		}
+		if first >= 0 {
+			top = min(top, y)
+			bottom = max(bottom, y+1)
+			left = min(left, first+b.Min.X)
+			right = max(right, last+1+b.Min.X)
 		}
 	}
 	if right <= left || bottom <= top {
@@ -116,6 +147,9 @@ type pagePlacement struct {
 
 // compileImages groups small images by their source directory. Larger images
 // remain independent tiled canvases, rather than decoding one enormous atlas.
+// Large images from every directory compile on a shared worker pool: source
+// directories in pictures/ typically hold a single huge map each, so a
+// directory-at-a-time pipeline leaves most cores idle for the bulk of the run.
 func (c *runtimeCompiler) compileImages() error {
 	groups := map[string][]string{}
 	for _, name := range c.files {
@@ -131,6 +165,19 @@ func (c *runtimeCompiler) compileImages() error {
 	}
 	sort.Strings(dirs)
 
+	type largeTask struct {
+		key, name, group string
+		warm             bool
+		legacy           runtimeCacheEntry
+	}
+	var largeTasks []largeTask
+	type smallJob struct {
+		key, group string
+		names      []string
+		warm       bool
+		legacy     runtimeCacheEntry
+	}
+	var smallJobs []smallJob
 	for _, dir := range dirs {
 		names := groups[dir]
 		group := "core"
@@ -152,33 +199,76 @@ func (c *runtimeCompiler) compileImages() error {
 				small = append(small, name)
 				continue
 			}
-			key := "image:" + name
-			if warm {
-				c.warmImageCache(key, []string{name}, legacy)
-			}
-			if err := c.optimizeImageCache(key, []string{name}); err != nil {
-				return err
-			}
-			if err := c.compileImageGroup(key, []string{name}, group); err != nil {
-				return err
-			}
+			largeTasks = append(largeTasks, largeTask{"image:" + name, name, group, warm, legacy})
 		}
 		if len(small) > 0 {
-			key := "images-small:" + dir
-			if warm {
-				c.warmImageCache(key, small, legacy)
-			}
-			if err := c.optimizeImageCache(key, small); err != nil {
-				return err
-			}
-			if err := c.compileImageGroup(key, small, group); err != nil {
-				return err
-			}
+			smallJobs = append(smallJobs, smallJob{"images-small:" + dir, group, small, warm, legacy})
 		}
 	}
+
+	// Longest decodes first keeps the pool saturated: pixel area is the proxy
+	// for decode cost since file sizes are not read here.
+	sort.SliceStable(largeTasks, func(i, j int) bool {
+		di := c.imageDimensions[largeTasks[i].name]
+		dj := c.imageDimensions[largeTasks[j].name]
+		return di.Width*di.Height > dj.Width*dj.Height
+	})
+	largeStart := time.Now()
+	workers := min(len(largeTasks), poolWorkers(c.workers, largeImageDecodeBudget))
+	jobs := make(chan int)
+	errs := make([]error, workers)
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			for i := range jobs {
+				if errs[w] != nil {
+					continue
+				}
+				task := &largeTasks[i]
+				if task.warm {
+					c.warmImageCache(task.key, []string{task.name}, task.legacy)
+				}
+				if err := c.optimizeImageCache(task.key, []string{task.name}); err != nil {
+					errs[w] = err
+					continue
+				}
+				if err := c.compileImageGroup(task.key, []string{task.name}, task.group); err != nil {
+					errs[w] = err
+				}
+			}
+		}(w)
+	}
+	for i := range largeTasks {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	phase(c.verbose, "compile-large-images", largeStart)
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	smallStart := time.Now()
+	for _, job := range smallJobs {
+		if job.warm {
+			c.warmImageCache(job.key, job.names, job.legacy)
+		}
+		if err := c.optimizeImageCache(job.key, job.names); err != nil {
+			return err
+		}
+		if err := c.compileImageGroup(job.key, job.names, job.group); err != nil {
+			return err
+		}
+	}
+	phase(c.verbose, "compile-small-images", smallStart)
 	return nil
 }
 func (c *runtimeCompiler) warmImageCache(key string, names []string, legacy runtimeCacheEntry) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if _, ok := c.old[key]; ok {
 		return
 	}
@@ -208,12 +298,30 @@ func (c *runtimeCompiler) warmImageCache(key string, names []string, legacy runt
 	}
 	c.old[key] = runtimeCacheEntry{Signature: signature, Outputs: outputs}
 }
+
+// compileImageGroup decodes one cache-valid image group on a bounded worker
+// pool while keeping compiled bytes identical to the sequential build.
 func (c *runtimeCompiler) compileImageGroup(key string, names []string, group string) error {
 	return c.generateBytes(key, names, func(write func(string, []byte) error) error {
-		// Decode sequentially: keep only small pictures and one source canvas in RAM.
-		descriptors := make([]clientimage.Descriptor, len(names))
-		small := []pendingImage{}
-		for i, name := range names {
+		// Decode concurrently across the group: PNG decode, normalization, trim
+		// scans, and chunk encoding are CPU-bound and independent per source.
+		// The compiler state behind write is serialized with writeMu; each
+		// results[i] slot is owned by the single worker that processed index i,
+		// and chunk emission keeps per-image tile order, so compiled bytes stay
+		// identical to the previous sequential build.
+		type tileOut struct {
+			rect image.Rectangle
+			data []byte
+		}
+		type decodedImage struct {
+			desc  clientimage.Descriptor
+			small *pendingImage
+			tiles []tileOut
+		}
+		results := make([]decodedImage, len(names))
+		var writeMu sync.Mutex
+		decode := func(i int) error {
+			name := names[i]
 			f, err := os.Open(filepath.Join(c.source, filepath.FromSlash(name)))
 			if err != nil {
 				return err
@@ -224,15 +332,16 @@ func (c *runtimeCompiler) compileImageGroup(key string, names []string, group st
 				return err
 			}
 			m := normalized(img)
-			d := clientimage.Descriptor{Version: clientimage.Version, Source: name, Width: m.Bounds().Dx(), Height: m.Bounds().Dy()}
-			descriptors[i] = d
+			out := decodedImage{desc: clientimage.Descriptor{Version: clientimage.Version, Source: name, Width: m.Bounds().Dx(), Height: m.Bounds().Dy()}}
 			trim := trimEmpty(m)
 			if trim.Empty() {
-				continue
+				results[i] = out
+				return nil
 			}
 			if trim.Dx() <= clientimage.SmallImageSide && trim.Dy() <= clientimage.SmallImageSide {
-				small = append(small, pendingImage{normalized(m.SubImage(trim)), trim, i})
-				continue
+				out.small = &pendingImage{normalized(m.SubImage(trim)), trim, i}
+				results[i] = out
+				return nil
 			}
 			for y := trim.Min.Y; y < trim.Max.Y; y += clientimage.TileSide {
 				for x := trim.Min.X; x < trim.Max.X; x += clientimage.TileSide {
@@ -245,12 +354,52 @@ func (c *runtimeCompiler) compileImageGroup(key string, names []string, group st
 					if err != nil {
 						return err
 					}
-					file := clientimage.ChunkPath(group, data)
-					if err = write(file, data); err != nil {
-						return err
-					}
-					descriptors[i].Tiles = append(descriptors[i].Tiles, clientimage.Tile{Rect: rect, Page: image.Rect(0, 0, rect.Dx(), rect.Dy()), File: file})
+					out.tiles = append(out.tiles, tileOut{rect, data})
 				}
+			}
+			writeMu.Lock()
+			defer writeMu.Unlock()
+			for _, t := range out.tiles {
+				file := clientimage.ChunkPath(group, t.data)
+				if err = write(file, t.data); err != nil {
+					return err
+				}
+				out.desc.Tiles = append(out.desc.Tiles, clientimage.Tile{Rect: t.rect, Page: image.Rect(0, 0, t.rect.Dx(), t.rect.Dy()), File: file})
+			}
+			results[i] = out
+			return nil
+		}
+		workers := min(len(names), poolWorkers(c.workers, smallImageDecodeBudget))
+		jobs := make(chan int)
+		errs := make([]error, workers)
+		var wg sync.WaitGroup
+		for w := 0; w < workers; w++ {
+			wg.Add(1)
+			go func(w int) {
+				defer wg.Done()
+				for i := range jobs {
+					if errs[w] == nil {
+						errs[w] = decode(i)
+					}
+				}
+			}(w)
+		}
+		for i := range names {
+			jobs <- i
+		}
+		close(jobs)
+		wg.Wait()
+		for _, err := range errs {
+			if err != nil {
+				return err
+			}
+		}
+		descriptors := make([]clientimage.Descriptor, len(names))
+		small := []pendingImage{}
+		for i := range results {
+			descriptors[i] = results[i].desc
+			if results[i].small != nil {
+				small = append(small, *results[i].small)
 			}
 		}
 		// Taller entries first makes shelf packing stable and reduces page padding.
@@ -331,6 +480,8 @@ type optimizedImagePage struct{ file, sum string }
 // Cached source pixels can be recompressed without re-decoding whole PNG maps.
 // New addresses are published only with a complete set of rewritten descriptors.
 func (c *runtimeCompiler) optimizeImageCache(key string, names []string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	old, ok := c.old[key]
 	if !ok || old.ImageCodec >= compiledImageCodecVersion {
 		return nil

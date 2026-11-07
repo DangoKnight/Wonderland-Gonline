@@ -23,15 +23,15 @@ class ImportTests(unittest.TestCase):
         self.repo.mkdir()
         self.source.mkdir()
         subprocess.run(['git', 'init', '-q', str(self.repo)], check=True)
-        (self.repo / '.gitignore').write_text('/data/**/*.png\n')
+        (self.repo / '.gitignore').write_text('/data/**/*.png\n', encoding='utf-8')
         (self.repo / 'data').mkdir()
         doc = {'source': '/old/Wonderland-Client/aLogin.exe', 'source_sha256': 'verified-build', 'sprites': [{'frame': 'sprite.png'}]}
-        (self.repo / 'data' / 'editable.json').write_text(json.dumps(doc))
+        (self.repo / 'data' / 'editable.json').write_text(json.dumps(doc), encoding='utf-8')
         subprocess.run(['git', 'add', '.gitignore', 'data/editable.json'], cwd=self.repo, check=True)
         doc['source'] = '/new/Wonderland-Client/aLogin.exe'
-        (self.source / 'editable.json').write_text(json.dumps(doc))
+        (self.source / 'editable.json').write_text(json.dumps(doc), encoding='utf-8')
         (self.source / 'sprite.png').write_bytes(b'original-pixels')
-        (self.source / 'untracked.json').write_text('{}')
+        (self.source / 'untracked.json').write_text('{}', encoding='utf-8')
 
     def test_restore_only_missing_ignored_files_and_preserve_edits(self):
         metadata = (self.repo / 'data' / 'editable.json').read_bytes()
@@ -49,8 +49,8 @@ class ImportTests(unittest.TestCase):
         with (self.repo / '.gitignore').open('a') as ignored:
             ignored.write('/data/server/database_data.json\n/data/server/database.override.json\n')
         (self.source / 'server').mkdir()
-        (self.source / 'server' / 'database_data.json').write_text('{"private": "account data"}')
-        (self.source / 'server' / 'database.override.json').write_text('{}')
+        (self.source / 'server' / 'database_data.json').write_text('{"private": "account data"}', encoding='utf-8')
+        (self.source / 'server' / 'database.override.json').write_text('{}', encoding='utf-8')
         self.assertEqual(restore(self.source, self.repo), 1)
         self.assertFalse((self.repo / 'data' / 'server' / 'database_data.json').exists())
         self.assertFalse((self.repo / 'data' / 'server' / 'database.override.json').exists())
@@ -60,50 +60,50 @@ class ImportTests(unittest.TestCase):
             (self.source / directory).mkdir()
         scope = {'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
                  'directories': list(EXTERNAL_ASSET_DIRECTORIES)}
-        (self.source / 'external_asset_import.json').write_text(json.dumps(scope))
+        (self.source / 'external_asset_import.json').write_text(json.dumps(scope), encoding='utf-8')
         (self.repo / 'data' / 'server').mkdir()
-        (self.repo / 'data' / 'server' / 'starter_items.json').write_text('[42]')
+        (self.repo / 'data' / 'server' / 'starter_items.json').write_text('[42]', encoding='utf-8')
         (self.repo / 'data' / 'media').mkdir()
         metadata = '{"source_sha256":"same-build","image":"sprite.png"}'
-        (self.repo / 'data' / 'media' / 'editable.json').write_text(metadata)
-        (self.source / 'media' / 'editable.json').write_text(metadata)
+        (self.repo / 'data' / 'media' / 'editable.json').write_text(metadata, encoding='utf-8')
+        (self.source / 'media' / 'editable.json').write_text(metadata, encoding='utf-8')
         (self.source / 'media' / 'sprite.png').write_bytes(b'pixels')
         subprocess.run(['git', 'add', 'data/server', 'data/media/editable.json'], cwd=self.repo, check=True)
         self.assertEqual(restore(self.source, self.repo), 1)
         self.assertEqual((self.repo / 'data' / 'media' / 'sprite.png').read_bytes(), b'pixels')
-        self.assertEqual((self.repo / 'data' / 'server' / 'starter_items.json').read_text(), '[42]')
+        self.assertEqual((self.repo / 'data' / 'server' / 'starter_items.json').read_text(encoding='utf-8'), '[42]')
         self.assertFalse((self.repo / 'data' / 'sprite.png').exists())
 
     def test_reject_different_build_before_copying(self):
-        document = json.loads((self.source / 'editable.json').read_text())
+        document = json.loads((self.source / 'editable.json').read_text(encoding='utf-8'))
         document['source_sha256'] = 'different-build'
-        (self.source / 'editable.json').write_text(json.dumps(document))
+        (self.source / 'editable.json').write_text(json.dumps(document), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'metadata differs'):
             restore(self.source, self.repo)
         self.assertFalse((self.repo / 'data' / 'sprite.png').exists())
 
     def test_client_tables_and_metadata_restore_without_tracked_exports(self):
-        (self.repo / '.gitignore').write_text('/data/*\n!/data/server/\n')
+        (self.repo / '.gitignore').write_text('/data/*\n!/data/server/\n', encoding='utf-8')
         subprocess.run(['git', 'rm', '--cached', 'data/editable.json'], cwd=self.repo, check=True, stdout=subprocess.DEVNULL)
         for directory in EXTERNAL_ASSET_DIRECTORIES:
             (self.source / directory).mkdir()
-        (self.source / 'item_data.json').write_text('{"items": []}')
-        (self.source / 'sprites' / 'sprites.json').write_text('{"decoded_archive_zlib_base64":"payload"}')
+        (self.source / 'item_data.json').write_text('{"items": []}', encoding='utf-8')
+        (self.source / 'sprites' / 'sprites.json').write_text('{"decoded_archive_zlib_base64":"payload"}', encoding='utf-8')
         scope = {'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
                  'directories': list(EXTERNAL_ASSET_DIRECTORIES), 'files': list(EXTERNAL_ASSET_FILES)}
-        (self.source / 'external_asset_import.json').write_text(json.dumps(scope))
+        (self.source / 'external_asset_import.json').write_text(json.dumps(scope), encoding='utf-8')
         self.assertEqual(restore(self.source, self.repo), 2)
         self.assertTrue((self.repo / 'data' / 'item_data.json').exists())
         self.assertTrue((self.repo / 'data' / 'sprites' / 'sprites.json').exists())
         self.assertFalse((self.repo / 'data' / 'untracked.json').exists())
-        (self.repo / 'data' / 'item_data.json').write_text('edited')
+        (self.repo / 'data' / 'item_data.json').write_text('edited', encoding='utf-8')
         self.assertEqual(restore(self.source, self.repo), 0)
-        self.assertEqual((self.repo / 'data' / 'item_data.json').read_text(), 'edited')
+        self.assertEqual((self.repo / 'data' / 'item_data.json').read_text(encoding='utf-8'), 'edited')
 
     def test_reject_scope_with_unapproved_root_file(self):
         scope = {'schema_version': 1, 'format': EXTERNAL_IMPORT_FORMAT,
                  'directories': list(EXTERNAL_ASSET_DIRECTORIES), 'files': ['server/database_data.json']}
-        (self.source / 'external_asset_import.json').write_text(json.dumps(scope))
+        (self.source / 'external_asset_import.json').write_text(json.dumps(scope), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'file scope'):
             restore(self.source, self.repo)
 
@@ -155,7 +155,7 @@ class RegenerationTests(unittest.TestCase):
             tables.assert_called_once_with(client / 'data', None, output)
             languages.assert_called_once_with(output, 'en', None)
             server.assert_called_once_with(output, regenerate.REPO / 'data' / 'server')
-            scope = json.loads((output / 'external_asset_import.json').read_text())
+            scope = json.loads((output / 'external_asset_import.json').read_text(encoding='utf-8'))
             self.assertEqual(scope['format'], EXTERNAL_IMPORT_FORMAT)
             self.assertEqual(scope['directories'], list(EXTERNAL_ASSET_DIRECTORIES))
             self.assertEqual(scope['files'], list(EXTERNAL_ASSET_FILES))
@@ -180,10 +180,10 @@ class RegenerationTests(unittest.TestCase):
             document = {'source': 'Z:/absent-private-server/Data/rules.txt',
                         'source_sha256': hashlib.sha256(payload).hexdigest(),
                         'source_bytes': len(payload), 'source_hex': payload.hex(), 'format': 'plaintext-text'}
-            (server / 'rules.json').write_text(json.dumps(document))
+            (server / 'rules.json').write_text(json.dumps(document), encoding='utf-8')
             manifest = {'client_source': str(client), 'server_source': None,
                         'priority': 'client-over-server', 'assets': []}
-            (output / 'asset_manifest.json').write_text(json.dumps(manifest))
+            (output / 'asset_manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
             regenerate.preserve_server_exports(output, server)
             self.assertEqual((output / 'server' / 'rules.json').read_bytes(), (server / 'rules.json').read_bytes())
             verify(output)

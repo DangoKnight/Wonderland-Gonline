@@ -48,7 +48,11 @@ type Manifest struct {
 }
 type Options struct {
 	Source, Output, Contract string
-	group                    string
+	Verbose                  bool
+	// Workers bounds the parallel compile stages (image decode, asset
+	// staging, validation). Values <= 0 use defaultWorkers.
+	Workers int
+	group   string
 }
 type Result struct {
 	Files, Reused int

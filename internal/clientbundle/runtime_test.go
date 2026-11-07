@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientfs"
@@ -237,5 +238,21 @@ func TestRuntimeRejectsFrameOutsideSheetWithoutNativeSource(t *testing.T) {
 	put(t, filepath.Join(dir, "editable.json"), []byte(`{"version":1,"sprites":[{"index":0,"name":"1.jmp","frames":[{"sheet":"sheet.png","rect":{"x":0,"y":0,"width":3,"height":2},"canvas_width":3,"canvas_height":2}],"animations":[]}]}`))
 	if _, err := BuildRuntime(o); err == nil {
 		t.Fatal("out of bounds frame accepted without native source")
+	}
+}
+
+func TestPoolWorkersRespectsRequestCoresAndMemory(t *testing.T) {
+	cores := runtime.NumCPU()
+	for _, request := range []int{0, 1, defaultWorkers, 1 << 20} {
+		if got := poolWorkers(request, largeImageDecodeBudget); got < 1 || got > cores {
+			t.Fatalf("poolWorkers(%d) = %d, want 1..%d", request, got, cores)
+		}
+	}
+	if got := poolWorkers(1, largeImageDecodeBudget); got != 1 {
+		t.Fatalf("poolWorkers(1) = %d, want 1", got)
+	}
+	// An oversized per-worker budget must still leave one worker.
+	if got := poolWorkers(cores, 1<<40); got != 1 {
+		t.Fatalf("poolWorkers with oversized budget = %d, want 1", got)
 	}
 }

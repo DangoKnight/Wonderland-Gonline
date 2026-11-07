@@ -58,9 +58,11 @@ CLIENT_DATA ?= data
 CLIENT_BUNDLE ?= bin/client-assets.zip
 CLIENT_OUTPUT ?= bin/wonderland-client
 CLIENT_CONTRACT ?= client/asset-contract.json
+# Parallel build stages default to a small pool; 0 selects the package default.
+CLIENT_WORKERS ?= 0
 .PHONY: client-assets build-client
 client-assets:
-	$(GO) run ./cmd/client-bundle -source "$(CLIENT_DATA)" -output "$(CLIENT_BUNDLE)" -contract "$(CLIENT_CONTRACT)"
+	$(GO) run ./cmd/client-bundle -source "$(CLIENT_DATA)" -output "$(CLIENT_BUNDLE)" -contract "$(CLIENT_CONTRACT)" -workers "$(CLIENT_WORKERS)"
 
 build-client: client-assets
 	cd client && $(GO) build -o "$(abspath $(CLIENT_OUTPUT))" .
