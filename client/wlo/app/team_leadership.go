@@ -22,6 +22,9 @@ func (c *Client) applyTeamFormation(p []byte) bool {
 			roster = roster.U32(id)
 		}
 		c.TeamState.ApplyRoster(roster)
+		if c.TeamState.Leader != c.World.Player.ID {
+			c.setPKTarget(false)
+		}
 		c.setJoinTeamTarget(false)
 	} else if wasMember || p[1] == protocol.TeamLeave && len(p) == protocol.TeamIDPacketBytes && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID || p[1] == protocol.TeamRoster && len(p) == protocol.TeamRosterHeaderBytes && binary.LittleEndian.Uint32(p[2:]) == c.World.Player.ID {
 		c.TeamState.ClearParty()

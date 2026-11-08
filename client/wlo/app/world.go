@@ -79,7 +79,8 @@ func (c *Client) warp(p []byte) {
 	if c.starBook != nil {
 		c.starBook.Hide()
 	}
-	c.groundHeld, c.groundSince = false, time.Time{}
+	c.resetGroundHold()
+	c.setPKTarget(false)
 	c.World.StopWalk()
 	c.World.Marker.Hide()
 	// Loading a map forgets the area last entered (FUN_00304898), and the
@@ -168,6 +169,9 @@ const (
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
+	if c.exitMovementMode() {
+		return
+	}
 	if c.Notices.dismissAt(c.Env, c.Now(), x, y) {
 		return
 	}
@@ -203,7 +207,7 @@ func (c *Client) GroundClick(x, y int) {
 	}
 	x, y = c.World.ScenePoint(x, y)
 	// Target modes own the click even over another kind of field object.
-	if c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
+	if c.pkTargetAt(x, y) || c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}
 	if c.boardPlacedVehicle(x, y) {
@@ -247,16 +251,42 @@ func (c *Client) walkToward(x, y int, marked bool) {
 	}
 }
 
-// GroundHold is called while the left button stays down: a press that
-// started a walk re-aims it at the pointer every 100 ms. Release ends it.
+const movementModeHoldDuration = 3 * time.Second
+
+// resetGroundHold also drops latched movement when another action takes control.
+func (c *Client) resetGroundHold() {
+	c.groundHeld, c.groundSince, c.movementMode = false, time.Time{}, false
+	if c.World != nil {
+		c.World.SyncHeldMarker()
+		c.World.Marker.SetHeld(false, c.Now())
+	}
+}
+
+// exitMovementMode consumes its cancelling click, including clicks over UI.
+func (c *Client) exitMovementMode() bool {
+	if !c.movementMode {
+		return false
+	}
+	c.resetGroundHold()
+	if c.World != nil {
+		c.World.StopWalk()
+	}
+	return true
+}
+
+// GroundHold re-aims a ground walk. After three seconds it stays active on release;
+// only movement is repeated, never the entity interaction under the pointer.
 func (c *Client) GroundHold(held bool, x, y int) {
 	c.sportRelease(held, x, y)
-	if !held || c.mapLoading.active || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil {
-		if c.World != nil {
-			c.World.SyncHeldMarker()
-			c.World.Marker.SetHeld(false, c.Now())
-		}
-		c.groundHeld, c.groundSince = false, time.Time{}
+	if c.mapLoading.active || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil || c.World == nil || c.held || c.event.active || c.sceneFrozen() || c.Talk.Shown() || !c.clinicUntil.IsZero() || c.Services != nil && c.Services.Visible {
+		c.resetGroundHold()
+		return
+	}
+	if c.groundHeld && held && c.Now().Sub(c.groundSince) >= movementModeHoldDuration {
+		c.movementMode = true
+	}
+	if !held && !c.movementMode {
+		c.resetGroundHold()
 		return
 	}
 	if c.groundHeld && c.World != nil && !c.held && !c.event.active {

@@ -15,7 +15,7 @@ func TestFieldSelectionSocialInvalidClickCancelsWithoutWalking(t *testing.T) {
 	c, _, _ := enteredClient(t)
 	c.mapReady = true
 	sent := wire(t, c)
-	for _, mode := range []string{"team", "friend", "trade"} {
+	for _, mode := range []string{"pk", "team", "friend", "trade"} {
 		for _, npc := range []bool{false, true} {
 			c.World.NPCs = nil
 			if npc {
@@ -23,6 +23,8 @@ func TestFieldSelectionSocialInvalidClickCancelsWithoutWalking(t *testing.T) {
 				c.World.NPCs = map[uint16]*world.NPC{1: {ClickID: 1, Shown: true, X: cx + 100, Y: cy + 100}}
 			}
 			switch mode {
+			case "pk":
+				c.setPKTarget(true)
 			case "team":
 				c.setJoinTeamTarget(true)
 			case "friend":
@@ -31,7 +33,7 @@ func TestFieldSelectionSocialInvalidClickCancelsWithoutWalking(t *testing.T) {
 				c.setTradeTarget(true)
 			}
 			c.GroundClick(100, 100)
-			if c.joinTeamTarget || c.friendTarget || c.tradeTarget || c.World.JoinTeamSelection || c.World.Walking() || c.pendingNPC != nil || len(sent()) != 0 {
+			if c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget || c.World.JoinTeamSelection || c.World.Walking() || c.pendingNPC != nil || len(sent()) != 0 {
 				t.Fatal("invalid click leaked from selection", mode, npc, sent())
 			}
 		}
@@ -41,8 +43,10 @@ func TestFieldSelectionSocialInvalidClickCancelsWithoutWalking(t *testing.T) {
 func TestFieldSelectionRightClickCancelsOverUIAndOutsideField(t *testing.T) {
 	c, _, sent := enterBattle(t)
 	g := &Game{C: c}
-	for _, mode := range []string{"team", "friend", "trade", "attack", "capture", "skill", "item", "chooser"} {
+	for _, mode := range []string{"pk", "team", "friend", "trade", "attack", "capture", "skill", "item", "chooser"} {
 		switch mode {
+		case "pk":
+			c.setPKTarget(true)
 		case "team":
 			c.setJoinTeamTarget(true)
 		case "friend":
@@ -65,7 +69,7 @@ func TestFieldSelectionRightClickCancelsOverUIAndOutsideField(t *testing.T) {
 		}
 		c.Input.Hovered = c.MainButtons.Buttons[mainTeamButton]
 		g.rightPress(0, -10, -10)
-		if c.joinTeamTarget || c.friendTarget || c.tradeTarget || c.battle.binding != nil || c.battle.item != nil || c.hotbar.target != nil || c.UI.Modal != nil || len(sent()) != 0 {
+		if c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget || c.battle.binding != nil || c.battle.item != nil || c.hotbar.target != nil || c.UI.Modal != nil || len(sent()) != 0 {
 			t.Fatal("right click failed to cancel", mode, sent())
 		}
 	}

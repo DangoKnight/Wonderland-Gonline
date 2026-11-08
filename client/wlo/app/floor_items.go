@@ -237,7 +237,7 @@ func (c *Client) pickupFloorItem(x, y int) bool {
 	}
 	c.pendingNPC = nil
 	c.waterTravel.goal = nil
-	c.groundHeld, c.groundSince = false, time.Time{}
+	c.resetGroundHold()
 	c.stopWalkForFloorPickup()
 	c.floorPendingPickup = 0
 	item := c.floorItems[selected]

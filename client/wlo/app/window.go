@@ -124,6 +124,12 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
 		mouse |= shiftRight
 	}
+	// Movement-mode cancellation owns the entire press, even outside the game
+	// viewport or over a control. It must not become a second interaction.
+	if (inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)) && g.C.exitMovementMode() {
+		g.lastDown = time.Time{}
+		return nil
+	}
 	if !pointerBlocked {
 		if x != g.C.Input.X || y != g.C.Input.Y {
 			ui.MouseMove(mouse, x, y, held)
@@ -160,7 +166,7 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 				g.C.zoomWorld(false)
 			}
 		}
-	} else {
+	} else if !g.C.movementMode {
 		g.C.GroundHold(false, x, y)
 	}
 	keyHeld := func(key ebiten.Key) bool { return ebiten.IsKeyPressed(key) && !g.suppressedKeys[key] }
@@ -201,6 +207,10 @@ func (g *Game) updateInput(pointerBlocked bool) error {
 }
 
 func (g *Game) rightPress(mouse byte, x, y int) {
+	if g.C.exitMovementMode() {
+		g.lastDown = time.Time{}
+		return
+	}
 	if g.C.cancelFieldSelection() {
 		g.lastDown = time.Time{}
 		return
@@ -211,6 +221,10 @@ func (g *Game) rightPress(mouse byte, x, y int) {
 }
 
 func (g *Game) leftPress(mouse byte, x, y int) {
+	if g.C.exitMovementMode() {
+		g.lastDown = time.Time{}
+		return
+	}
 	if g.C.Notices.dismissAt(g.C.Env, g.C.Now(), x, y) {
 		g.lastDown = time.Time{}
 		return
@@ -285,6 +299,12 @@ func (g *Game) Update() error {
 	g.C = g.Workspace.Current()
 	if g.C == nil {
 		return ErrExit
+	}
+	// Consume exit before Settings and the session sidebar handle the press.
+	if (inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)) && g.C.exitMovementMode() {
+		g.lastDown = time.Time{}
+		g.Workspace.Tick()
+		return nil
 	}
 	if g.displayInput(time.Now()) {
 		if g.suppressedKeys == nil {

@@ -36,6 +36,8 @@ func (c *Client) updateCursor(now time.Time) {
 	shape := cursor.Shape(state)
 	if state == 0 && c.battleCursor() != 0 {
 		shape = c.battleCursor()
+	} else if state == 0 && c.pkTarget {
+		shape = cursor.ShapeSword // FUN_003a9020 selects native targeting mode 1.
 	} else if state == 0 && c.joinTeamTarget {
 		shape = cursor.ShapePoint
 	} else if state == 0 && c.friendTarget {

@@ -62,3 +62,13 @@ func (w *World) pickTeamTarget(x, y int) teamTarget {
 	return hit
 }
 func (w *World) TeamTargetAt(x, y int) uint32 { return w.pickTeamTarget(x, y).owner }
+
+// PKTargetAt uses opaque player/companion picking but excludes fighting players,
+// whose map body has been replaced by a battle cloud.
+func (w *World) PKTargetAt(x, y int) uint32 {
+	id := w.pickTeamTarget(x, y).owner
+	if w.fighting(id) {
+		return 0
+	}
+	return id
+}

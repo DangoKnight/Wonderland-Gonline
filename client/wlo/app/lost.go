@@ -126,6 +126,7 @@ func (c *Client) disconnected() {
 		c.Team.Reset()
 		c.teamAppearances = nil
 		c.setJoinTeamTarget(false)
+		c.setPKTarget(false)
 		c.setFriendTarget(false)
 	}
 	if c.Trade != nil {

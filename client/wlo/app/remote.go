@@ -102,7 +102,7 @@ func (c *Client) startRemote(o inventory.RemoteOptions) bool {
 	}
 	battle, pet, button := c.remote.battle, c.remote.activePet, c.remote.button
 	c.remote = remoteRuntime{active: true, options: o, start: c.Now(), anchor: image.Pt(c.World.Player.X, c.World.Player.Y), mapID: c.World.Player.Map, battle: battle, activePet: pet, button: button}
-	c.groundHeld = false
+	c.resetGroundHold()
 	if c.World.Walking() {
 		c.World.StopWalk()
 	}

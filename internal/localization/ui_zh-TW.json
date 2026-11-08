@@ -2,6 +2,9 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+    "ui.pk.leader_only": "只有隊長可以發起PK",
+    "ui.pk.disabled": "你的PK功能已關閉",
+    "ui.pk.same_team": "無法與同隊成員PK",
     "ui.notebook.scroll": "使用滑鼠滾輪捲動",
     "ui.mall.game_unavailable": "此遊戲尚未開放。",
     "ui.mall.game_notice": "請選擇遊戲機。消費將在遊戲內確認。",

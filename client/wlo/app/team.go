@@ -148,6 +148,9 @@ func (c *Client) initTeam() {
 // Join Team is a world selection tool: clicking the toolbar arms it;
 // the next player click sends the native AC13:1 invitation request.
 func (c *Client) setJoinTeamTarget(active bool) {
+	if active {
+		c.setPKTarget(false)
+	}
 	c.joinTeamTarget = active
 	c.syncTargetSelection()
 	if c.FuncButtons != nil && c.FuncButtons.Buttons[joinTeamButton] != nil {
@@ -168,7 +171,7 @@ func (c *Client) toggleJoinTeam() {
 	}
 	c.Team.Hide()
 	c.World.StopWalk()
-	c.groundHeld = false
+	c.resetGroundHold()
 	c.setFriendTarget(false)
 	c.setTradeTarget(false)
 	c.setJoinTeamTarget(true)
@@ -181,6 +184,10 @@ func (c *Client) toggleTeam() {
 	}
 }
 func (c *Client) TeamKey(key uint16, shift byte) bool {
+	if key == escapeKey && c.pkTarget {
+		c.setPKTarget(false)
+		return true
+	}
 	if key == 'T' && shift&shiftCtrl != 0 {
 		c.toggleTeam()
 		return true

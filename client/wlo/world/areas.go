@@ -93,6 +93,16 @@ func MapAreas(rec native.Map) []Area {
 // indicators procedurally. Each animation is generated once per world frame.
 func (w *World) drawLights(cx, cy int, now time.Time) {
 	var pointerDrawn, gatewayDrawn bool
+	var hits []func(int, int) bool
+	prepared := false
+	overModel := func(x, y int) bool {
+		for _, hit := range hits {
+			if hit(x, y) {
+				return true
+			}
+		}
+		return false
+	}
 	for _, a := range w.Areas {
 		if a.Light == NoLight {
 			continue
@@ -104,6 +114,10 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 		if sx < 0 || sx > w.Env.Screen.W || sy < 0 || sy > w.Env.Screen.H {
 			continue
 		}
+		if !prepared {
+			hits = w.transitionModelHits(cx, cy)
+			prepared = true
+		}
 		if a.Light == SmallLight {
 			if w.exitIndicator == nil {
 				w.exitIndicator = newExitIndicator()
@@ -112,7 +126,11 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 				w.exitIndicator.render(now.Sub(w.lightsFrom))
 				pointerDrawn = true
 			}
-			w.exitIndicator.draw(w.Env.Screen, sx, sy)
+			if len(hits) == 0 {
+				w.exitIndicator.draw(w.Env.Screen, sx, sy)
+			} else {
+				w.exitIndicator.drawOverModels(w.Env.Screen, sx, sy, overModel)
+			}
 			continue
 		}
 		if w.gatewayLight == nil {
@@ -122,6 +140,10 @@ func (w *World) drawLights(cx, cy int, now time.Time) {
 			w.gatewayLight.render(now.Sub(w.lightsFrom))
 			gatewayDrawn = true
 		}
-		w.gatewayLight.draw(w.Env.Screen, sx, sy)
+		if len(hits) == 0 {
+			w.gatewayLight.draw(w.Env.Screen, sx, sy)
+		} else {
+			w.gatewayLight.drawOverModels(w.Env.Screen, sx, sy, overModel)
+		}
 	}
 }

@@ -164,7 +164,7 @@ func (c *Client) cancelSessionInput() {
 			c.Compound.CancelDrag()
 		}
 	}
-	c.groundHeld = false
+	c.resetGroundHold()
 	c.uiHovered = false
 	c.WalkKeys(false, false, false, false)
 }

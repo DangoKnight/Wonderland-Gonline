@@ -97,6 +97,7 @@ type Client struct {
 	teamTransferDeadline time.Time
 	teamTransferClose    func()
 	joinTeamTarget       bool
+	pkTarget             bool
 	friendTarget         bool // Make Friends' target mode 5 (friends.go)
 	tradeTarget          bool // Trade Items' target mode 9 (trade.go)
 	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
@@ -128,6 +129,7 @@ type Client struct {
 	HotKeys              *hud.HotKeyForm // the F1–F8 bar
 	ChatBar              *hud.InputBar   // the chat bar
 	groundHeld           bool            // the left button went down on the ground
+	movementMode         bool            // cursor-follow walking latched after a long hold
 	groundSince          time.Time       // when it went down
 	uiHovered            bool            // a control was under the pointer last frame
 	nextWalk             time.Time       // next re-plan while a button or arrow is held
@@ -411,6 +413,7 @@ func New(o Options) (*Client, error) {
 	c.initServices()
 	c.initLuckyDraw()
 	c.initWorldPK()
+	c.initPK()
 	c.initMall()
 	c.initSettings(o.SettingsPath)
 	c.Chars.Notify = c.Login.Notify
@@ -447,7 +450,7 @@ func (c *Client) frame(draw bool) {
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.syncWorldZoom()
-		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.JoinTeamSelection = c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
 		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
@@ -782,7 +785,7 @@ func (c *Client) dispatchNative(p []byte) {
 				c.rememberVehiclePosition(id)
 				c.waterTravel = waterTravelState{}
 				c.World.Relocate(image.Pt(x, y))
-				c.groundHeld, c.groundSince = false, time.Time{}
+				c.resetGroundHold()
 			} else if id != c.World.Player.ID {
 				c.rememberVehiclePosition(id)
 				c.World.PlacePeer(id, x, y)

@@ -93,11 +93,14 @@ func (c *Client) makeFriends() {
 	c.setJoinTeamTarget(false)
 	c.setTradeTarget(false)
 	c.World.StopWalk()
-	c.groundHeld = false
+	c.resetGroundHold()
 	c.setFriendTarget(true)
 }
 
 func (c *Client) setFriendTarget(active bool) {
+	if active {
+		c.setPKTarget(false)
+	}
 	c.friendTarget = active
 	c.syncTargetSelection()
 }

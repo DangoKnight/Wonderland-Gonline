@@ -100,7 +100,7 @@ func (c *Client) waterTravelTick() {
 		t.origin = image.Pt(w.Player.X, w.Player.Y)
 		w.Relocate(shore)
 		t.goal = nil // Landing ends this click at the dismount point.
-		c.groundHeld = false
+		c.resetGroundHold()
 		// Ordinary landing sends dismount before land movement. On Starter
 		// Beach, Robinson's raft remains mounted until the server observes land
 		// and sends the scripted removal/break/dismount sequence.
@@ -215,7 +215,7 @@ func (c *Client) vehiclePacket(p []byte) {
 	t := &c.waterTravel
 	if id == 0 && t.landing {
 		t.goal = nil
-		c.groundHeld = false
+		c.resetGroundHold()
 	}
 	if id != 0 {
 		delete(c.placedVehicles, vehicleKey{owner, slot})

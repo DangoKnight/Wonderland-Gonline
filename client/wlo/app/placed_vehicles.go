@@ -112,7 +112,7 @@ func (c *Client) requestPlacedVehicle(key vehicleKey) bool {
 	c.World.StopWalk()
 	c.floorPendingPickup = 0
 	c.pendingNPC, c.waterTravel.goal = nil, nil
-	c.groundHeld = false
+	c.resetGroundHold()
 	c.waterTravel.requestID, c.waterTravel.requestSlot = v.id, key.slot
 	c.waterTravel.stage, c.waterTravel.requested = protocol.PetControlBoardVehicle, c.Now()
 	c.waterTravel.origin.X, c.waterTravel.origin.Y = c.World.Player.X, c.World.Player.Y

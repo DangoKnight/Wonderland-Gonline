@@ -10,17 +10,18 @@ import (
 // Native DoorLight uses a 120x234 frame, anchored three quarters down its
 // height. Retain that footprint and additive light blending without its sprites.
 const (
-	gatewayWidth      = 120
-	gatewayHeight     = 234
-	gatewayAnchorY    = 176
-	gatewayCenterX    = 60.0
-	gatewayGroundY    = 186.0
-	gatewayRadiusX    = 26.0
-	gatewayRadiusY    = 9.0
-	gatewayPeriod     = 3900 * time.Millisecond
-	gatewayPillars    = 7
-	gatewayParticles  = 9
-	gatewayLightLevel = 24
+	gatewayWidth           = 120
+	gatewayHeight          = 234
+	gatewayAnchorY         = 176
+	gatewayCenterX         = 60.0
+	gatewayGroundY         = 186.0
+	gatewayRadiusX         = 26.0
+	gatewayRadiusY         = 9.0
+	gatewayPeriod          = 3900 * time.Millisecond
+	gatewayPillars         = 7
+	gatewayParticles       = 9
+	gatewayLightLevel      = 18 // Original glow over terrain and items.
+	gatewayModelLightLevel = 12 // Extra transparency only over actor silhouettes.
 )
 
 type gatewayEnergy struct{ r, g, b float64 }
@@ -48,8 +49,9 @@ var gatewayRing = func() []gatewayRingSample {
 }()
 
 type gatewayLight struct {
-	pixels *surface.Surface
-	energy []gatewayEnergy
+	modelPixels *surface.Surface
+	pixels      *surface.Surface
+	energy      []gatewayEnergy
 }
 
 func newGatewayLight() *gatewayLight {
@@ -132,4 +134,26 @@ func (p *gatewayLight) render(elapsed time.Duration) {
 
 func (p *gatewayLight) draw(dst *surface.Surface, x, y int) {
 	dst.DrawLight(x-gatewayWidth/2, y-gatewayAnchorY, image.Rect(0, 0, gatewayWidth, gatewayHeight), p.pixels, gatewayLightLevel)
+}
+
+func (p *gatewayLight) drawOverModels(dst *surface.Surface, x, y int, overModel func(int, int) bool) {
+	if p.modelPixels == nil {
+		p.modelPixels = surface.New(gatewayWidth, gatewayHeight)
+	}
+	x, y = x-gatewayWidth/2, y-gatewayAnchorY
+	copy(p.modelPixels.Pix, p.pixels.Pix)
+	for row := 0; row < gatewayHeight; row++ {
+		for col := 0; col < gatewayWidth; col++ {
+			i := row*gatewayWidth + col
+			v := p.modelPixels.Pix[i]
+			if v != 0 && overModel(x+col, y+row) {
+				r := (int(v>>11) * gatewayModelLightLevel / gatewayLightLevel)
+				g := (int(v>>5&63) * gatewayModelLightLevel / gatewayLightLevel)
+				b := (int(v&31) * gatewayModelLightLevel / gatewayLightLevel)
+				p.modelPixels.Pix[i] = uint16(r<<11 | g<<5 | b)
+			}
+		}
+	}
+	p.modelPixels.Revision++
+	dst.DrawLight(x, y, image.Rect(0, 0, gatewayWidth, gatewayHeight), p.modelPixels, gatewayLightLevel)
 }

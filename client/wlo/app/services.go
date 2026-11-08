@@ -193,7 +193,7 @@ func (c *Client) servicePacket(p []byte) bool {
 			c.clinicUntil = c.Now().Add(clinicAnimationDuration)
 			c.loadPictures(clinicBedPicture, clinicSleepPicture)
 			c.World.StopWalk()
-			c.groundHeld = false
+			c.resetGroundHold()
 			if c.sfx != nil {
 				c.sfx.Play(`sound\wav0149.wav`)
 			}

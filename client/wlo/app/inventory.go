@@ -128,6 +128,7 @@ func (c *Client) resetInventory(p world.Player) {
 	c.TeamState.Reset(p.ID)
 	c.teamAppearances = nil
 	c.setJoinTeamTarget(false)
+	c.setPKTarget(false)
 	c.setFriendTarget(false)
 	c.resetTrade()
 	if c.Services != nil {

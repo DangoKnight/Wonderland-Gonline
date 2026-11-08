@@ -198,6 +198,14 @@ automation and render buffer. Only the selected session receives platform input.
 Switching cancels held mouse/key gestures so they cannot affect another session.
 The panel consumes its own input even when a game's modal window is open.
 
+Holding a ground movement press for three seconds latches cursor-follow movement.
+Releasing the button then keeps the waypoint and routing attached to the pointer,
+using the same walkable-ground clamping as held walking. Hover highlights remain
+active without activating entities. Either mouse button exits and stops walking;
+that press is consumed before game controls, Settings or the session sidebar can
+handle it. Map placement, battle entry, session changes and interaction locks
+cancel the latch together with held input.
+
 Every session processes sockets, world movement and Remote automation on each
 60 Hz game tick, including while the platform window is unfocused. Inactive previews normally redraw at 4 Hz. Movies and minigames
 retain their normal frame processing because their current implementations
@@ -394,6 +402,14 @@ storage is reused. The gateway shares fixed ring calculations and computes
 plume parameters once per row; its reference RGB565 frames remain unchanged.
 See [runtime measurements](CLIENT_PERFORMANCE.md#implemented-rendering-optimizations).
 
+Transition pyramids and gateway effects (including their base rings) draw above
+players, companions and NPCs, independently of actor depth. Opaque actor pixels
+reduce pyramid alpha from 65% to 40% and reduce gateway light from 18/32 to
+12/32 strength. Terrain, items and transparent gaps retain the ordinary effect.
+The mask uses source-frame picking, without GPU readback; animation buffers are
+reused and remain independent of each marker's model overlap. Foreground scenery
+and names retain precedence over these effects.
+
 Each session retains its own 800 × 600 target and, when needed, same-sized scratch
 image (about 1.83 MiB each in RGBA8). The window owns its 1020 × 600 composition
 target. Frozen scenes retain an additional target until reset. Removing a session
@@ -525,6 +541,18 @@ release a held pose so the actor becomes eligible again. The player still faces
 an exempt speaker. Changes are session-local presentation state and send no new packets.
 Original NPC actions are saved once per event and restored on AC20:8, matching
 `FUN_00307bc4`; subsequent dialogue lines do not replace the saved original.
+
+### Traditional PK targeting
+
+The toolbar's PK button arms native sword targeting (`FUN_003a9020`), highlights
+players and sends AC11:2:3 with the chosen player's ID and a zero NPC click ID
+(`FUN_0038d3e8`). The client checks party leadership, its synchronized PK
+permission, same-party membership and the native 270-pixel limit on each axis.
+Fighting players cannot be selected. Server permission and availability checks
+remain authoritative. Right-click, Escape, a second PK-button click, an invalid
+field target, map placement and battle entry clear the mode. Join Team, Make
+Friends and Trade replace it. World PK remains a separate
+toolbar module.
 
 ### Compound window
 

@@ -344,7 +344,7 @@ func (c *Client) startSport(s []byte) {
 	if c.World != nil {
 		c.World.StopWalk()
 	}
-	c.groundHeld, c.groundSince = false, time.Time{}
+	c.resetGroundHold()
 	c.pendingNPC = nil
 	sp.start.Show()
 	c.sport = sp

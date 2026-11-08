@@ -89,7 +89,7 @@ func (c *Client) tradeItems() {
 		c.setJoinTeamTarget(false)
 		c.setFriendTarget(false)
 		c.World.StopWalk()
-		c.groundHeld = false
+		c.resetGroundHold()
 		c.setTradeTarget(true)
 		c.Business.Hide()
 	}
@@ -105,15 +105,18 @@ func (c *Client) resetTrade() {
 }
 
 func (c *Client) setTradeTarget(active bool) {
+	if active {
+		c.setPKTarget(false)
+	}
 	c.tradeTarget = active
 	c.syncTargetSelection()
 }
 
 // syncTargetSelection lights hovered players while a player target mode
-// (Join Team, Make Friends, Trade) is armed.
+// (PK, Join Team, Make Friends, Trade) is armed.
 func (c *Client) syncTargetSelection() {
 	if c.World != nil {
-		c.World.JoinTeamSelection = c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.JoinTeamSelection = c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Hover(-1, -1)
 	}
 }

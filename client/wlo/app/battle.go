@@ -295,12 +295,13 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.startSceneFade(sceneFadeRevealBattle)
 		c.World.StopWalk()
 		c.closeTeamTransfer()
-		c.groundHeld = false
+		c.resetGroundHold()
 		c.pendingNPC = nil
 		c.floorPendingPickup, c.floorHovered = 0, 0
 		c.joinTeamTarget = false
 		c.friendTarget = false
 		c.tradeTarget = false
+		c.setPKTarget(false)
 		view.loadAttempted = false
 		view.bodies = nil
 		view.playing = nil

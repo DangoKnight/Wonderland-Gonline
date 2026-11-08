@@ -371,6 +371,12 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 	for _, f := range figures {
 		f.draw()
 	}
+	// Translucent transition effects overlay every actor, including pets,
+	// while foreground scenery and labels retain their normal precedence.
+	if w.lightsFrom.IsZero() {
+		w.lightsFrom = now
+	}
+	w.drawLights(cx, cy, now)
 	for i := range objects {
 		if objects[i].Kind > ObjectSorted {
 			objects[i].Draw(scr, cx, cy, now)
@@ -380,12 +386,7 @@ func (w *World) DrawWithSprites(sprites []SceneSprite) {
 		w.drawNames(cx, cy, px)
 	}
 	w.drawExpressions(cx, cy, now)
-	// The effects list (FUN_00403b8c) follows the map paint.
-	if w.lightsFrom.IsZero() {
-		w.lightsFrom = now
-	}
-	w.drawLights(cx, cy, now)
-	// Its over pass (FUN_003346e8) follows the effects list.
+	// The weather's over pass (FUN_003346e8) follows actors and scenery.
 	if w.Weather != nil {
 		w.Weather.Over(scr, w.WeatherKind, image.Pt(cx, cy))
 	}
