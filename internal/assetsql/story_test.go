@@ -318,7 +318,7 @@ func TestStoryInstalledMigration(t *testing.T) {
 	// and may occur before or after unrelated wiki rules in old installations.
 	// Preserve their own order and every other executable rule's relative order.
 	canonical := func(rules []assets.StoryRule) []assets.StoryRule {
-		var ordered, constellations, visits, backgrounds, noa, xaolan []assets.StoryRule
+		var ordered, constellations, visits, backgrounds, noa, xaolan, ground []assets.StoryRule
 		for _, rule := range rules {
 			if rule.ID == "xaolan_recruitment_question_continuation" {
 				xaolan = append(xaolan, rule)
@@ -329,6 +329,10 @@ func TestStoryInstalledMigration(t *testing.T) {
 				continue
 			}
 			switch rule.Kind {
+			case assets.StoryAccountGroundOnce:
+				// This independent lookup policy is appended by preserving
+				// migrations but appears earlier in the fresh authored seed.
+				ground = append(ground, rule)
 			case assets.StoryConstellation:
 				constellations = append(constellations, rule)
 			case assets.StoryVisitVisibility:
@@ -344,6 +348,7 @@ func TestStoryInstalledMigration(t *testing.T) {
 		ordered = append(ordered, backgrounds...)
 		ordered = append(ordered, xaolan...)
 		ordered = append(ordered, noa...)
+		ordered = append(ordered, ground...)
 		return append(ordered, constellations...)
 	}
 	actual := got.Story

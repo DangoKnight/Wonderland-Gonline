@@ -1,11 +1,27 @@
 package assetsql
 
 import (
+	"path/filepath"
 	"reflect"
 	"slices"
 	"testing"
+	"wonderland-gonline/internal/assetdb"
 	"wonderland-gonline/internal/assets"
 )
+
+func TestAccountGroundMigrationPreservesAbsentStory(t *testing.T) {
+	db, err := assetdb.Open(filepath.Join(t.TempDir(), "partial.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer assetdb.Close(db)
+	if err := db.Transaction(migrateAccountGroundStory); err != nil {
+		t.Fatal(err)
+	}
+	if db.Migrator().HasTable(&StoryRow{}) {
+		t.Fatal("migration initialized an absent dataset")
+	}
+}
 
 func TestAccountGroundPolicyMigrationPreservesEdits(t *testing.T) {
 	before := assets.DefaultStoryDefinitions()

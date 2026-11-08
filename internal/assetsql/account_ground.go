@@ -7,6 +7,11 @@ import (
 
 // Add only the new policy, preserving all existing rules and administrator edits.
 func migrateAccountGroundStory(tx *gorm.DB) error {
+	// Partial catalogs used by older installations may not own Story yet.
+	// Leave absent datasets absent, just as intentionally empty rules stay empty.
+	if !tx.Migrator().HasTable(&StoryRow{}) {
+		return nil
+	}
 	defs, err := readStory(tx)
 	if err != nil {
 		return err
