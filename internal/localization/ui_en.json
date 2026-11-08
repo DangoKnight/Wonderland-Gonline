@@ -2,6 +2,11 @@
   "version": 1,
   "language": "en",
   "strings": {
+	"ui.remote.save_failed": "Could not save Remote settings: ",
+	"ui.remote.load_failed": "Could not load Remote settings: ",
+	"ui.remote.clear_assignment": "Clear assignment",
+	"ui.remote.player_advanced": "Adv Setting: ",
+	"ui.remote.pet_advanced": "Pets Adv Setting: ",
     "ui.pk.leader_only": "Only team leader can PK",
     "ui.pk.disabled": "Your PK is turned off",
     "ui.pk.same_team": "Cannot PK a member of your team",

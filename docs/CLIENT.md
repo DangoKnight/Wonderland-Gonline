@@ -1340,7 +1340,8 @@ Implemented main options:
   loading, server movement locks, events, battles and dead characters. The radius
   is a documented Go fallback of 160 pixels per axis until the native offset table
   is verified. Changing maps stops automation.
-- **Auto Atk:** submits basic attacks (skill 10001) for the player and their own
+- **Auto Atk:** evaluates advanced settings, falling back to basic attacks
+  (skill 10001), for the player and their own
   living battle pet in existing monster encounters. Native fighter records,
   turn prompts and round-ready packets gate submissions; duplicate ready packets
   do not repeat attacks. It does not initiate battles or automate PvP.
@@ -1364,8 +1365,17 @@ Implemented main options:
 
 The runtime is transient and stops at disconnect/character entry or controller
 loss. Supply requests use the Go server's transactional AC23:15 path, rather than
-native AC23:82. Advanced Remote skill assignment remains pending; Auto Atk uses
-basic attacks only. Native battle-scene rendering and manual direct targeting
+native AC23:82. Advanced assignments support separate player/pet defaults,
+three opening actions, absolute HP/SP recovery thresholds, enemy-HP conditions
+and party-death recovery. Left-click a cell to cycle Attack/Defend/Flee,
+right-click to clear it, or drag a learned skill or battle item onto it. Confirm advanced changes,
+then Confirm the main Remote window to activate them. Closing the advanced
+window discards unconfirmed edits. Main Confirm saves a local
+`remote-<character ID>.json` profile beside `settings.json`; login restores
+configuration without starting automation. Runtime counters and pending actions
+are never saved.
+See [advanced Remote](REMOTE_ADVANCED.md) for native evidence and priorities.
+Native battle-scene rendering and manual direct targeting
 are implemented; see [battle parity](BATTLE_CLIENT_PARITY.md).
 
 AC23 replies alone update the bag and equipment. Addition records are additive,

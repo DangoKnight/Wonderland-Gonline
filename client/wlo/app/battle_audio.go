@@ -77,6 +77,9 @@ func battleVictoryVoiceSuffix(roll int) string {
 }
 
 func (c *Client) battleVictoryVoiceTick(state clientbattle.State) {
+	if state.Spectating {
+		return
+	}
 	v := &c.battle
 	if v.victorySide == 0 || v.victoryVoiced || len(v.playing) > 0 || len(state.Actions) > 0 || len(v.overkills) > 0 {
 		return

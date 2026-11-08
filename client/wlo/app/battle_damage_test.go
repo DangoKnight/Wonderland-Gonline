@@ -7,6 +7,7 @@ import (
 	"time"
 	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -107,6 +108,19 @@ func TestBattleDamageNativeMotionFamilies(t *testing.T) {
 	for i, expected := range [][]uint64{{25, 25, 25, 25}, {33, 33, 34}, {100}} {
 		if len(plays[i].damage) != 1 || !reflect.DeepEqual(plays[i].damage[0].parts, expected) {
 			t.Fatalf("native mixed family %d: %v", i, plays[i].damage)
+		}
+	}
+}
+
+func TestBattleDamageNativeHPDigits(t *testing.T) {
+	c := &Client{}
+	at := time.Unix(100, 0)
+	for _, critical := range []bool{false, true} {
+		c.battleDamagePopup(clientbattle.Cell{X: 2, Y: 2}, 1, game.StatCurrentHP, critical, 10, at, at, 0, 1)
+	}
+	for _, popup := range c.battle.floats {
+		if popup.font != "Num_YellowRed10_2" {
+			t.Fatalf("native HP damage must use slanted digits: %q", popup.font)
 		}
 	}
 }

@@ -35,3 +35,6 @@ const (
 )
 
 const MaxNativeGuildID = 65535
+
+// PostBattleRevivalHP restores knocked-out combatants when leaving combat.
+const PostBattleRevivalHP = 1

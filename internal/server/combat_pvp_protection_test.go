@@ -47,7 +47,11 @@ func TestPvPProtectsPetAmityAndEquipmentAtEveryCheckpoint(t *testing.T) {
 			if got.Equipment != before.Equipment || got.Pets[0].Equipment != before.Pets[0].Equipment {
 				t.Fatal("PvP damaged equipment")
 			}
-			if got.Pets[0].HP != 0 || got.Pets[0].SP != 7 {
+			wantHP := int32(1)
+			if scenario == "switch" || scenario == "disconnect" {
+				wantHP = 0
+			}
+			if got.Pets[0].HP != wantHP || got.Pets[0].SP != 7 {
 				t.Fatal("protection discarded resolved vitals", got.Pets[0])
 			}
 		})

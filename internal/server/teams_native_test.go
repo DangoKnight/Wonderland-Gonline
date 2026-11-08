@@ -37,13 +37,13 @@ func TestPartyNativeTransferRequiresCandidateAcceptance(t *testing.T) {
 	if leader.party.leader() != leader || !hasPacket(w[1].packets(t), protocol.Builder{13, 15, 1}.U32(leader.character.ID)) {
 		t.Fatal("offer did not await candidate")
 	}
-	if err := s.partyCommand(ctx, outsider, []byte{13, 10, 2, 3}); err != nil {
+	if err := s.partyCommand(ctx, outsider, []byte{13, 10, 3}); err != nil {
 		t.Fatal(err)
 	}
 	if leader.party.leader() != leader {
 		t.Fatal("outsider accepted transfer")
 	}
-	if err := s.partyCommand(ctx, candidate, []byte{13, 10, 2, 3}); err != nil {
+	if err := s.partyCommand(ctx, candidate, []byte{13, 10, 3}); err != nil {
 		t.Fatal(err)
 	}
 	if leader.party.leader() != candidate || leader.party.transfer != nil {
@@ -55,14 +55,14 @@ func TestPartyNativeTransferRequiresCandidateAcceptance(t *testing.T) {
 		}
 	}
 	// A replay cannot transfer leadership back.
-	s.partyCommand(ctx, candidate, []byte{13, 10, 2, 3})
+	s.partyCommand(ctx, candidate, []byte{13, 10, 3})
 	if leader.party.leader() != candidate {
 		t.Fatal("replayed acceptance changed leader")
 	}
 }
 
 func TestPartyNativeTransferRefusalExpiryAndDeparture(t *testing.T) {
-	for _, kind := range []string{"refuse", "client timeout", "server timeout", "disconnect", "warp", "battle"} {
+	for _, kind := range []string{"refuse", "client timeout", "server timeout", "late confirmation", "disconnect", "warp", "battle"} {
 		t.Run(kind, func(t *testing.T) {
 			s, p, w := nativeParty(t)
 			ctx := context.Background()
@@ -72,9 +72,14 @@ func TestPartyNativeTransferRefusalExpiryAndDeparture(t *testing.T) {
 			case "refuse":
 				s.partyCommand(ctx, p[1], []byte{13, 10, 2, 2})
 			case "client timeout":
-				s.partyCommand(ctx, p[1], []byte{13, 10, 3})
+				s.partyCommand(ctx, p[1], []byte{13, 10, 2, 3})
 			case "server timeout":
 				s.expirePartyLeadership(time.Now().Add(6 * time.Second))
+			case "late confirmation":
+				party.transfer.deadline = time.Now().Add(-time.Second)
+				if err := s.partyCommand(ctx, p[1], []byte{13, 10, 3}); err != nil {
+					t.Fatal(err)
+				}
 			case "disconnect":
 				s.partyLeave(p[1], false)
 			case "warp":
@@ -96,8 +101,14 @@ func TestPartyNativeTransferRefusalExpiryAndDeparture(t *testing.T) {
 			if len(party.members) > 0 && party.leader() != p[0] {
 				t.Fatal("cancel changed leadership")
 			}
-			if countPrefix(w[0].packets(t), 13, 15, 2) == 0 {
+			leaderPackets := w[0].packets(t)
+			if countPrefix(leaderPackets, 13, 15, 2) == 0 {
 				t.Fatal("leader was not notified")
+			}
+			if kind == "client timeout" || kind == "late confirmation" || kind == "server timeout" {
+				if !hasPacket(leaderPackets, []byte{13, 15, 2, 3}) || !hasPacket(w[1].packets(t), []byte{13, 15, 2, 3}) {
+					t.Fatal("timeout did not notify both participants")
+				}
 			}
 		})
 	}
@@ -153,6 +164,46 @@ func TestPartyNativeLeaveScopeAndObserverSnapshot(t *testing.T) {
 	}
 }
 
+func TestPartyArrivalUsesSilentRosterInEitherLoadOrder(t *testing.T) {
+	for _, followerFirst := range []bool{false, true} {
+		t.Run(map[bool]string{false: "leader first", true: "follower first"}[followerFirst], func(t *testing.T) {
+			s, p, w := nativeParty(t)
+			ctx := context.Background()
+			if err := s.commandTeleport(ctx, p[0], world.Destination{Map: 20000, X: 500, Y: 600}); err != nil {
+				t.Fatal(err)
+			}
+			// An observer is already present on the destination map.
+			p[2].character.Map = 20000
+			p[2].ready = true
+			for _, wire := range w {
+				wire.Reset()
+			}
+			order := []*Session{p[0], p[1]}
+			if followerFirst {
+				order[0], order[1] = order[1], order[0]
+			}
+			for _, member := range order {
+				if err := s.worldCommand(ctx, member, []byte{12, 1}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			roster := protocol.Builder{13, 6}.U32(p[0].character.ID).U8(1).U32(p[1].character.ID)
+			for i, wire := range w {
+				packets := wire.packets(t)
+				if countPrefix(packets, 13, 5) != 0 || countPrefix(packets, 13, 3) != 0 {
+					t.Fatal("map arrival replayed a team join", i, packets)
+				}
+				if !hasPacket(packets, roster) {
+					t.Fatal("map arrival lost the team roster", i)
+				}
+			}
+			if p[0].party == nil || p[0].party != p[1].party || p[0].party.leader() != p[0] || p[2].party != nil {
+				t.Fatal("map arrival changed team membership")
+			}
+		})
+	}
+}
+
 func TestPartyNativeConcurrentOfferReplyAndExpiry(t *testing.T) {
 	s, p, _ := nativeParty(t)
 	ctx := context.Background()
@@ -167,7 +218,7 @@ func TestPartyNativeConcurrentOfferReplyAndExpiry(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 30; i++ {
-			s.partyCommand(ctx, p[i%2], []byte{13, 10, 2, 3})
+			s.partyCommand(ctx, p[i%2], []byte{13, 10, 3})
 		}
 	}()
 	go func() {
@@ -197,7 +248,7 @@ func TestPartyRequestToFollowerAndTransferFormationOrder(t *testing.T) {
 	if err := s.partyCommand(ctx, p[0], protocol.Builder{13, 10, 1}.U32(p[2].character.ID)); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.partyCommand(ctx, p[2], []byte{13, 10, 2, 3}); err != nil {
+	if err := s.partyCommand(ctx, p[2], []byte{13, 10, 3}); err != nil {
 		t.Fatal(err)
 	}
 	members := p[0].party.members
@@ -210,7 +261,7 @@ func TestTeamBattleCellsFollowTransferredLeaderEvenWhenFollowerStarts(t *testing
 	s, p, _ := nativeParty(t)
 	ctx := context.Background()
 	s.partyCommand(ctx, p[0], protocol.Builder{13, 10, 1}.U32(p[1].character.ID))
-	s.partyCommand(ctx, p[1], []byte{13, 10, 2, 3})
+	s.partyCommand(ctx, p[1], []byte{13, 10, 3})
 	run := &battleRun{}
 	if err := s.startBattle(p[0], run, []battle.Enemy{{Template: 10500, Level: 5, HP: 1}}); err != nil {
 		t.Fatal(err)

@@ -14,6 +14,7 @@ import (
 const (
 	BasicAttack                   = 10001
 	Defense                       = 60021
+	Flee                          = 60041
 	LifeLayer                     = 13
 	nativeIconField               = 100
 	nativeTargetField             = 99 // FUN_00481640: TSkillDat +0x67, after four-byte prefix.

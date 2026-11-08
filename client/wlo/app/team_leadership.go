@@ -45,7 +45,7 @@ func (c *Client) closeTeamTransfer() {
 }
 
 func (c *Client) teamLeadershipPacket(p []byte) bool {
-	if len(p) < protocol.TeamLeaderTimeoutBytes {
+	if len(p) < protocol.TeamLeaderConfirmBytes {
 		return true
 	}
 	switch p[2] {
@@ -66,12 +66,16 @@ func (c *Client) teamLeadershipPacket(p []byte) bool {
 			valid := c.Now().Before(c.teamTransferDeadline) && c.TeamState.Leader == leader && c.inTeam() && !c.battle.state.Active && c.Inventory.CanAct()
 			c.closeTeamTransfer()
 			if !valid {
-				c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferTimeout})
+				c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferResponse, protocol.TeamTransferExpired})
 				return
 			}
-			c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferResponse, result})
+			if result == protocol.TeamTransferConfirmed {
+				c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferConfirmed})
+			} else {
+				c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferResponse, result})
+			}
 		}
-		c.teamTransferClose = c.Team.Confirm(localization.UI("ui.team.leadership_offer"), 0, func() { reply(protocol.TeamTransferAccepted) }, func() { reply(protocol.TeamTransferDeclined) })
+		c.teamTransferClose = c.Team.Confirm(localization.UI("ui.team.leadership_offer"), 0, func() { reply(protocol.TeamTransferConfirmed) }, func() { reply(protocol.TeamTransferDeclined) })
 	case protocol.TeamLeadershipChanged:
 		if len(p) == protocol.TeamLeaderChangeNoticeBytes {
 			c.applyTeamFormation(p)
@@ -110,6 +114,6 @@ func (c *Client) teamTransferTick() {
 	}
 	if !c.Now().Before(c.teamTransferDeadline) {
 		c.closeTeamTransfer()
-		c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferTimeout})
+		c.Net.Send([]byte{protocol.CommandTeam, protocol.TeamTransferLeadership, protocol.TeamTransferResponse, protocol.TeamTransferExpired})
 	}
 }

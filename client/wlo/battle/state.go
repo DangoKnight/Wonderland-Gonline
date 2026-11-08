@@ -61,7 +61,8 @@ type Fighter struct {
 	Level, Element     byte
 	Submitted, Removed bool
 	Overkilled         bool
-	Waiting            bool   // Native participant unavailable flag, cleared by AC52:1.
+	Waiting            bool // Native participant unavailable flag, cleared by AC52:1.
+	Spectator          bool
 	Generation         uint64 // Local roster identity; participant replacement can reuse a cell/ID.
 }
 type StatResult struct {
@@ -85,6 +86,7 @@ type Action struct {
 }
 type State struct {
 	Active, Ready, Finished bool
+	Spectating              bool
 	Background              uint16
 	Self                    uint32
 	Side                    byte
@@ -124,14 +126,14 @@ func (s *State) At(cell Cell) *Fighter {
 	return nil
 }
 func (s *State) Owned(f *Fighter) bool {
-	return f != nil && (f.Kind == Player && f.ID == s.Self || f.Kind == Pet && f.Owner == s.Self)
+	return !s.Spectating && f != nil && !f.Spectator && (f.Kind == Player && f.ID == s.Self || f.Kind == Pet && f.Owner == s.Self)
 }
 func (s *State) CanChoose(cell Cell) bool {
 	f := s.At(cell)
 	return s.Active && s.Ready && !s.Finished && s.Owned(f) && f.HP > 0 && !f.Submitted && !f.Removed && !f.Waiting
 }
 func parseFighters(p []byte) ([]Fighter, error) {
-	if len(p) == 0 || len(p)%FighterRecordBytes != 0 || len(p)/FighterRecordBytes > MaximumFighters {
+	if len(p) == 0 || len(p)%FighterRecordBytes != 0 || len(p)/FighterRecordBytes > MaximumFighters+1 {
 		return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_fighter_records_34c9ec23"))
 	}
 	var out []Fighter
@@ -140,6 +142,18 @@ func parseFighters(p []byte) ([]Fighter, error) {
 		v := p[:FighterRecordBytes]
 		p = p[FighterRecordBytes:]
 		f := Fighter{Cell: Cell{v[12], v[13]}, Side: v[0], Kind: v[1], ID: binary.LittleEndian.Uint32(v[2:]), Click: binary.LittleEndian.Uint16(v[6:]), Owner: binary.LittleEndian.Uint32(v[8:]), MaxHP: binary.LittleEndian.Uint32(v[14:]), MaxSP: binary.LittleEndian.Uint16(v[18:]), HP: binary.LittleEndian.Uint32(v[20:]), SP: binary.LittleEndian.Uint16(v[24:]), Level: v[26], Element: v[27]}
+		if f.Side == protocol.BattlePresenceSpectator {
+			if f.Kind != Player || f.X != protocol.BattleSpectatorCoordinate || f.Y != protocol.BattleSpectatorCoordinate {
+				return nil, fmt.Errorf("invalid spectator record")
+			}
+			f.Spectator, f.Removed, f.Side = true, true, Attacker
+		}
+		if f.Side == protocol.BattleParticipantEnemySnapshot || f.Side == Attacker && f.X <= 2 {
+			f.Side = Defender
+			if f.X > 2 {
+				f.Side = Attacker
+			}
+		}
 		if f.Side == protocol.BattleParticipantWaitNextTurn {
 			f.Waiting = true
 			if f.X <= 2 {
@@ -148,11 +162,20 @@ func parseFighters(p []byte) ([]Fighter, error) {
 				f.Side = Attacker
 			}
 		}
-		if !f.Cell.Valid() || seen[f.Cell] || f.ID == 0 || f.HP > f.MaxHP || f.SP > f.MaxSP || f.Side != Attacker && f.Side != Defender || f.Kind != Player && f.Kind != Pet && f.Kind != Monster {
+		if (!f.Cell.Valid() && !f.Spectator) || seen[f.Cell] || f.ID == 0 || f.HP > f.MaxHP || f.SP > f.MaxSP || f.Side != Attacker && f.Side != Defender || f.Kind != Player && f.Kind != Pet && f.Kind != Monster {
 			return nil, fmt.Errorf("%s", localization.UI("ui.battle.invalid_fighter_8e58bea6"))
 		}
 		seen[f.Cell] = true
 		out = append(out, f)
+	}
+	grid := 0
+	for _, f := range out {
+		if !f.Spectator {
+			grid++
+		}
+	}
+	if grid > MaximumFighters {
+		return nil, fmt.Errorf("too many grid fighters")
 	}
 	return out, nil
 }
@@ -231,10 +254,12 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 			next.Fighters = append([]Fighter(nil), s.Fighters...)
 			if p[1] == protocol.BattleStateFormation {
 				own := false
+				watch := false
 				for _, f := range roster {
 					if f.Kind == Player && f.ID == s.Self {
 						own = true
 						next.Side = f.Side
+						watch = f.Spectator
 					}
 				}
 				if !own {
@@ -242,7 +267,7 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 				}
 				// FUN_0038e4f4 passes only the first header byte to the scene
 				// selector. The following byte is independent formation metadata.
-				next = State{Self: s.Self, Side: next.Side, Active: true, Background: uint16(p[2]), Turn: s.Turn + 1}
+				next = State{Self: s.Self, Side: next.Side, Spectating: watch, Active: true, Background: uint16(p[2]), Turn: s.Turn + 1}
 			} else if !s.Active {
 				return true, false
 			}
@@ -255,7 +280,13 @@ func (s *State) Apply(p []byte) (handled, valid bool) {
 					next.Fighters = append(next.Fighters, f)
 				}
 			}
-			if len(next.Fighters) > MaximumFighters {
+			grid := 0
+			for _, f := range next.Fighters {
+				if !f.Spectator {
+					grid++
+				}
+			}
+			if grid > MaximumFighters {
 				return true, false
 			}
 			*s = next

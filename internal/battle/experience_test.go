@@ -13,6 +13,64 @@ func experienceParty() (*Fighter, *Fighter, *Fighter) {
 		&Fighter{Kind: Pet, ID: 10501, Owner: 1, Side: Attacker, Level: 30, HP: 100, MaxHP: 100, X: 3, Y: 1}
 }
 
+func TestParticipationExperienceWholeTeamContributors(t *testing.T) {
+	for _, lowLevelContributes := range []bool{false, true} {
+		t.Run(map[bool]string{false: "six_contributors_idle_teammate", true: "seven_contributors"}[lowLevelContributes], func(t *testing.T) {
+			var team []*Fighter
+			var actors []Action
+			for owner := uint32(1); owner <= 3; owner++ {
+				player := &Fighter{Kind: Player, ID: owner, Side: Attacker, Level: 100}
+				// Identical pet templates still represent three independent owned pets.
+				pet := &Fighter{Kind: Pet, ID: 10501, Owner: owner, Side: Attacker, Level: 100}
+				team = append(team, player, pet)
+				actors = append(actors, Action{Actor: player}, Action{Actor: pet})
+			}
+			lowLevel := &Fighter{Kind: Player, ID: 4, Side: Attacker, Level: 1}
+			team = append(team, lowLevel)
+			if lowLevelContributes {
+				actors = append(actors, Action{Actor: lowLevel})
+			}
+			var contributors []*Fighter
+			for _, action := range actors {
+				contributors = append(contributors, action.Actor)
+			}
+			shares := divideWeightedKillExperience(150, contributors, nil, len(actors))
+			var pool uint64
+			for _, share := range shares {
+				pool += share
+			}
+			wantPool, wantLowLevel := uint64(1620), uint64(0) // 6 * 150 * 1.80.
+			if lowLevelContributes {
+				wantPool, wantLowLevel = 1995, 332 // 7 * 150 * 1.90; inverse-level sharing.
+			}
+			if pool != wantPool || shares[lowLevel.experienceID()] != wantLowLevel || len(shares) != len(actors) {
+				t.Fatalf("pool=%d low-level=%d recipients=%d", pool, shares[lowLevel.experienceID()], len(shares))
+			}
+			b := &Battle{Attackers: team}
+			b.recordKillExperience(&Fighter{Kind: Monster, Side: Defender, Level: 100}, actors)
+			for _, fighter := range team[:6] {
+				want := uint64(270)
+				if lowLevelContributes {
+					want = 277
+					if fighter == team[0] {
+						want = 278 // Stable identity breaks equal fractional remainders.
+					}
+				}
+				if got := b.ParticipantEXP(fighter); got != want {
+					t.Fatalf("fighter %v: EXP=%d want=%d", fighter.experienceID(), got, want)
+				}
+			}
+			wantEarnedLowLevel := uint64(0)
+			if lowLevelContributes {
+				wantEarnedLowLevel = 996 // Apply the existing individual level multiplier after sharing.
+			}
+			if got := b.ParticipantEXP(lowLevel); got != wantEarnedLowLevel {
+				t.Fatalf("low-level EXP=%d want=%d", got, wantEarnedLowLevel)
+			}
+		})
+	}
+}
+
 func TestEarlierDamageHalfParticipationAndUpgrade(t *testing.T) {
 	for _, full := range []bool{false, true} {
 		a, killer, _ := experienceParty()

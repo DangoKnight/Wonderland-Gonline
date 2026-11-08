@@ -69,6 +69,7 @@ func (s *Server) publishBattleDisconnect(run *battleRun, m *battleMember) {
 	for _, other := range run.active() {
 		s.sendOrClose(other.c, packets...)
 	}
+	s.sendBattleSpectators(run, packets...)
 }
 
 func (s *Server) flushBattleDisconnects(run *battleRun) {
@@ -77,4 +78,5 @@ func (s *Server) flushBattleDisconnects(run *battleRun) {
 	for _, other := range run.active() {
 		s.sendOrClose(other.c, packets...)
 	}
+	s.sendBattleSpectators(run, packets...)
 }

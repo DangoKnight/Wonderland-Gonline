@@ -210,3 +210,28 @@ Backdrop resolution is bit 2 of the connection-wide GLON hello and remains
 available with round-chain mode disabled. Negotiated clients receive the battle entry
 map/coordinates and choose scenery locally; Legacy clients retain the native
 server-selected backdrop. See [backdrop protocol](BATTLE_BACKDROPS.md#gonline-client-resolution-protocol).
+
+## Knockout recovery and equipment wear
+
+At ordinary defeat settlement, players return with 1 HP and retain their resolved
+SP. A knocked-out active pet returns with 1 HP when its owner's battle ends;
+previously switched-out knockouts also revive at the end, not during the switch.
+The same one-HP rule applies to an overkilled player's spawn-point return.
+Knockout amity penalties and the existing PvP amity/durability exemptions remain.
+
+Successful HP-damaging monster contacts can wear equipped player and pet gear.
+There is no roll against an enemy below the wearer's level. Each eligible item
+has a 1% chance to lose one point at equal level, increasing linearly to 20% at
+an enemy level advantage of 20, capped thereafter. Multi-contact attacks roll
+per contact, capped by their positive damage amount. Misses, zero damage,
+periodic status damage and allied damage do not cause combat wear. Damage is
+capped at 100; indestructible and unknown item definitions are excluded. This
+curve is a Gonline policy approximation, not a proven Legacy rate.
+
+Wear is calculated after the authoritative round and committed once per owner
+(player plus active pet) before playback, with SQL ownership/equipment checks.
+Private equipment receipts go only to the owner. Disconnects or repeated playback
+do not apply wear a second time. SQL item definitions own indestructibility;
+missing databases bootstrap from the updated repository catalog without client
+extraction. The migration/default list covers creation outfits and rebirth capes;
+additional exemptions can be edited through the typed item column.

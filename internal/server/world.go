@@ -91,7 +91,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 			packets = append(packets, fishingStartedPacket(peer))
 		}
 		if peer.battle != nil {
-			packets = append(packets, battleState(peer.character.ID, true))
+			packets = append(packets, battlePresenceState(peer))
 		}
 		if peer.emote != 0 {
 			// SendMapInfo replays a peer's held pose.

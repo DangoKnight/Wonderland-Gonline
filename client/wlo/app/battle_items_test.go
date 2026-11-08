@@ -36,6 +36,20 @@ func clientItemFixture(t *testing.T, fixtures ...*clientFixture) (*Client, func(
 	return c, sent
 }
 
+func TestBattleItemRemoteOpensWhileAutoIsActive(t *testing.T) {
+	c, sent := clientItemFixture(t)
+	c.InventoryState.Bag[0] = game.Item{ID: 34058, Count: 1}
+	c.remote.active, c.remote.options.AutoFight = true, true
+	c.Inventory.Show()
+	c.Inventory.Use(1, false)
+	if c.Inventory.Remote == nil || !c.Inventory.Remote.Visible || c.Inventory.Visible {
+		t.Fatal("Remote item did not open its settings during battle AUTO")
+	}
+	if c.battle.item != nil || c.InventoryState.Bag[0].Count != 1 || len(sent()) != 0 {
+		t.Fatal("opening Remote consumed an item or submitted a combat action")
+	}
+}
+
 func TestBattleItemTwoVitalsRecoverAtContact(t *testing.T) {
 	c, now, _ := enterBattle(t)
 	cell := clientbattle.Cell{X: 4, Y: 2}

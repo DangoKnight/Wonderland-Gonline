@@ -6,6 +6,17 @@ The [2026-11-06 Legacy team capture](TEAM_PROTOCOL.md) records native join,
 following, leadership transfer, battle formation and disband exchanges, and
 documents the compatibility fixes and their native decompilation references.
 
+Dialogues, events and cutscenes protect players from ambient battle entry and
+enemy pursuit. A follower is also protected while their leader is occupied.
+Direct battle joins and PK requests respect these locks. A quest can explicitly
+close its own dialogue and transition into its authored fight; unrelated events
+cannot interrupt it.
+
+Traditional PK against any available team member includes that member's entire
+team in party order, with their active battle pets. If any member is unavailable,
+in another scene, or blocks PK, the request is rejected instead of starting a
+partial-team fight. The same validation applies to the challenging team.
+
 - Pet rows do not select pets or change the selection in Inventory and Skills.
   Following pets use their roster nickname when assigned; rename replies update
   the active follower immediately. Template names are only a fallback.
@@ -54,6 +65,9 @@ Private Server's previous mapping displayed a level-1 teammate with 181 HP as
 level 181. Rebirth, CON/WIS and corrected growth bonuses also reach native clients.
 
 Party removal detaches the old visible formation before resetting the HUD.
+Map arrivals refresh members and nearby observers with silent AC13:6 roster
+snapshots. AC13:5 is reserved for an actual join: replaying it during a warp
+duplicates native formation entries and displays a spurious "joined team" notice.
 A solo AC13:6 roster must be followed by AC13:4 for that character: the native
 client otherwise retains a leader role. Both characters receive this reset when
 a two-person party ends, including after a kick or disconnect. Larger parties

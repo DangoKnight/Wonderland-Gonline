@@ -279,7 +279,7 @@ func (s *Server) partyTransfer(c *Session, id uint32) error {
 }
 
 func (s *Server) partyLeadershipCommand(c *Session, packet []byte) error {
-	if len(packet) < protocol.TeamLeaderTimeoutBytes {
+	if len(packet) < protocol.TeamLeaderConfirmBytes {
 		return protocol.ErrMalformed
 	}
 	switch packet[2] {
@@ -289,11 +289,11 @@ func (s *Server) partyLeadershipCommand(c *Session, packet []byte) error {
 		}
 		return s.partyTransfer(c, protocol.NewReader(packet[3:]).U32())
 	case protocol.TeamTransferResponse:
-		if len(packet) != protocol.TeamLeaderResponseBytes || packet[3] != protocol.TeamTransferAccepted && packet[3] != protocol.TeamTransferDeclined {
+		if len(packet) != protocol.TeamLeaderResponseBytes || packet[3] != protocol.TeamTransferExpired && packet[3] != protocol.TeamTransferDeclined {
 			return protocol.ErrMalformed
 		}
-	case protocol.TeamTransferTimeout:
-		if len(packet) != protocol.TeamLeaderTimeoutBytes {
+	case protocol.TeamTransferConfirmed:
+		if len(packet) != protocol.TeamLeaderConfirmBytes {
 			return protocol.ErrMalformed
 		}
 	default:
@@ -304,11 +304,11 @@ func (s *Server) partyLeadershipCommand(c *Session, packet []byte) error {
 		return nil
 	}
 	t := p.transfer
-	if !time.Now().Before(t.deadline) || packet[2] == protocol.TeamTransferTimeout {
+	if !time.Now().Before(t.deadline) || packet[2] == protocol.TeamTransferResponse && packet[3] == protocol.TeamTransferExpired {
 		s.cancelPartyLeadership(p, protocol.TeamLeadershipTimedOut)
 		return nil
 	}
-	if packet[3] == protocol.TeamTransferDeclined {
+	if packet[2] == protocol.TeamTransferResponse && packet[3] == protocol.TeamTransferDeclined {
 		s.cancelPartyLeadership(p, protocol.TeamLeadershipRefused)
 		return nil
 	}
@@ -464,19 +464,21 @@ func (s *Server) partySync(c *Session) {
 	}
 }
 
-// partyArrival is Map.Warp_In's party sync: the formation is replayed to the map,
-// except the leader, and the team is refreshed. Caller holds worldMu.
+// partyArrival refreshes existing membership without replaying an AC13:5 join.
+// Native FUN_00420ca8 appends a follower and displays "joined team" for that
+// packet; AC13:6 replaces the roster silently. Caller holds worldMu.
 func (s *Server) partyArrival(c *Session) {
 	p := c.party
 	if p == nil {
 		return
 	}
 	leader := p.leader()
-	for _, m := range p.members {
-		if m == leader || !s.samePlayerScene(leader, m) || !m.ready || !leader.ready || (c != leader && m != c) {
+	for _, peer := range s.world {
+		if peer.party == p || !peer.ready || !s.samePlayerScene(c, peer) {
 			continue
 		}
-		s.sendMap(leader.character.Map, protocol.Builder{protocol.CommandTeam, protocol.TeamFormation}.U32(leader.character.ID).U32(m.character.ID), leader)
+		// Apply the same ready/visibility rules as a newly entering observer.
+		s.partySceneSnapshot(peer, []*Session{leader})
 	}
 	s.partyUpdate(p)
 }

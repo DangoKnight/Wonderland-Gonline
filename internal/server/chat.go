@@ -397,6 +397,9 @@ func (s *Server) emote(c *Session, p []byte) error {
 	if c.emote == pose {
 		return nil
 	}
+	if restingPose(c.emote) != restingPose(pose) {
+		resetRestClock(c)
+	}
 	c.emote = pose
 	s.broadcastWorld(c, protocol.Builder{protocol.CommandPose, sub}.U32(c.character.ID).U8(pose))
 	return nil

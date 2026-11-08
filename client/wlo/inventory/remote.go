@@ -32,12 +32,20 @@ type remoteForm struct {
 	Fields                [5]*seui.Editor
 	Discard               [5]uint16
 	DiscardCells          [5]*seui.Component
+	advanced              [2]RemoteAdvanced
 }
 
 type remotePlusForm struct {
 	seui.Form
-	tab  int
-	Tabs [remoteTabs]*seui.FixedButton
+	tab         int
+	Tabs        [remoteTabs]*seui.FixedButton
+	owner       *remoteForm
+	draft       [2]RemoteAdvanced
+	Checks      [6]*seui.FixedButton
+	Assignments [RemoteAssignmentCount]*remoteAssignmentButton
+	Targets     [6]*seui.FixedButton
+	Fields      [3]*seui.Editor
+	Compare     *seui.FixedButton
 }
 
 func remoteButton(env *seui.Env, owner seui.Control, asset string, x, y, w, h int, click func()) *seui.FixedButton {
@@ -111,6 +119,9 @@ func (f *Form) openRemote(slot byte) {
 		}
 		f.Env.UI.Add(d)
 		f.Remote = d
+		if f.remoteOptions != nil {
+			d.restoreOptions(*f.remoteOptions)
+		}
 	}
 	// Only opening Remote closes inventory. Either window may subsequently
 	// be opened, dragged and closed without changing the other's visibility.
@@ -150,7 +161,7 @@ func (d *remoteForm) KeyDown(key uint16, _ byte) {
 }
 func (d *remoteForm) openSettings() {
 	if d.Plus == nil {
-		p := &remotePlusForm{}
+		p := &remotePlusForm{owner: d}
 		p.InitForm(p, d.Env)
 		p.Init("Form_AutoPlayerPlus_1", min(d.Left+remoteWidth+36, 800-remotePlusWidth), 0, 0, 0, 0, false, remotePlusHeight, remotePlusWidth, d.Top)
 		p.Dockable = false
@@ -161,17 +172,23 @@ func (d *remoteForm) openSettings() {
 			p.Tabs[i] = remoteButton(d.Env, p, fmt.Sprintf("Icon_AutoTab_%d", i+1), 19+i*66, 41, 66, 21, func() { p.selectTab(tab) })
 		}
 		remoteButton(d.Env, p, "Btn_OK_2", 51, 453, 39, 20, func() {
-			d.owner.notice(localization.UI("ui.inventory.advanced_skill_assignment_is_not_impleme_60124be1"))
+			if p.saveFields() {
+				d.advanced = p.draft
+				p.Hide()
+			}
 		})
+		p.initAdvanced()
 		d.Env.UI.Add(p)
 		d.Plus = p
 	}
+	d.Plus.draft = d.advanced
 	d.Plus.selectTab(0)
 	d.Plus.Show()
 }
 
 // ResetRemote is a character/session boundary, unlike closing Inventory.
 func (f *Form) ResetRemote() {
+	f.remoteOptions = nil
 	if f.StopRemote != nil {
 		f.StopRemote()
 	}
@@ -181,9 +198,15 @@ func (f *Form) ResetRemote() {
 	f.Remote.Hide()
 	if f.Remote.Plus != nil {
 		f.Remote.Plus.Hide()
+		f.Env.UI.Remove(f.Remote.Plus)
 	}
+	f.Env.UI.Remove(f.Remote)
+	f.Remote = nil
 }
 func (d *remotePlusForm) selectTab(tab int) {
+	if d.Visible && !d.saveFields() {
+		return
+	}
 	d.tab = tab
 	skin := "Form_AutoPlayerPlus_1"
 	if tab == remoteTabs-1 {
@@ -193,6 +216,7 @@ func (d *remotePlusForm) selectTab(tab int) {
 	for i, b := range d.Tabs {
 		b.Sticky = i == tab
 	}
+	d.refreshAdvanced()
 }
 func (d *remotePlusForm) KeyDown(key uint16, _ byte) {
 	if key == remoteEscapeKey {

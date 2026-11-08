@@ -143,6 +143,9 @@ func (c *Client) dropHotbar(x, y int) bool {
 	if c.UI.Modal != nil || c.sceneFrozen() {
 		return true
 	}
+	if d.binding.Kind == protocol.HotbarSkill && c.Inventory.AssignRemoteSkill(d.binding.ID, d.binding.Target != 0, x, y) {
+		return true
+	}
 	slot := c.HotKeys.SlotAt(x, y)
 	if slot != 0 && c.assignBinding(c.HotKeys.Page, slot, d.binding) && d.sourceSlot != 0 && (d.sourceSlot != slot || d.sourcePage != c.HotKeys.Page) {
 		c.assignBinding(d.sourcePage, d.sourceSlot, hud.Binding{})

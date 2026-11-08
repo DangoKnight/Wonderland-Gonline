@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/binary"
 	"image"
 	"time"
 
@@ -80,6 +81,9 @@ func (c *Client) drawFriendPortrait(f hud.Friend, x, y int) {
 // friendPresence is FUN_0027b5e8's presence for a row: a known player's
 // status byte (registry +0x94), otherwise offline.
 func (c *Client) friendPresence(id uint32) byte {
+	if status, ok := c.friendStatuses[id]; ok {
+		return status
+	}
 	if c.World != nil {
 		if p := c.World.Peers[id]; p != nil && p.Presence <= hud.PresenceOffline {
 			return p.Presence
@@ -92,9 +96,9 @@ func (c *Client) friendPresence(id uint32) byte {
 // name, six bytes (level, job, +0x17, element, body, head), two colours,
 // nickname, guild and the VIP byte. IDs 100 and 101 restart the count,
 // so they become the GM entry, which the client fills itself.
-func (c *Client) receiveFriendList(s []byte) bool {
+func decodeFriendRecords(data []byte, tabs bool) ([]hud.Friend, bool) {
 	var list []hud.Friend
-	r := protocol.NewReader(s[1:])
+	r := protocol.NewReader(data)
 	for r.Remaining() > 0 {
 		var f hud.Friend
 		f.ID = r.U32()
@@ -102,10 +106,12 @@ func (c *Client) receiveFriendList(s []byte) bool {
 		b := r.Bytes(6)
 		f.Color1, f.Color2 = r.U32(), r.U32()
 		f.Nickname = append([]byte(nil), r.Bytes(int(r.U8()))...)
-		f.Guild = append([]byte(nil), r.Bytes(int(r.U8()))...)
-		f.VIP = r.U8()
+		if !tabs {
+			f.Guild = append([]byte(nil), r.Bytes(int(r.U8()))...)
+			f.VIP = r.U8()
+		}
 		if r.Err() != nil {
-			return false
+			return nil, false
 		}
 		f.Level, f.Job, f.Field17, f.Element, f.Body, f.Head = b[0], b[1], b[2], b[3], b[4], b[5]
 		if f.ID == hud.GMFriendID || f.ID == hud.GMFriendID+1 {
@@ -114,7 +120,94 @@ func (c *Client) receiveFriendList(s []byte) bool {
 		}
 		list = append(list, f)
 	}
+	return list, true
+}
+
+func (c *Client) receiveFriendList(s []byte) bool {
+	list, ok := decodeFriendRecords(s[1:], false)
+	if !ok {
+		return false
+	}
+	keep := map[uint32]bool{}
+	for i := range list {
+		keep[list[i].ID] = true
+		if old, exists := c.friend(list[i].ID); exists {
+			list[i].Mail = old.Mail
+		}
+	}
+	for id := range c.friendStatuses {
+		if !keep[id] {
+			delete(c.friendStatuses, id)
+		}
+	}
 	c.Social.SetFriends(list)
+	return true
+}
+
+// Native AC14:8 refreshes an existing profile; AC14:11 upserts profiles.
+func (c *Client) receiveFriendProfiles(p []byte) bool {
+	list, ok := decodeFriendRecords(p[2:], p[1] == protocol.FriendsTabs)
+	if !ok {
+		return false
+	}
+	friends := append([]hud.Friend(nil), c.Social.Friends[1:]...)
+	for _, f := range list {
+		found := false
+		for i, old := range friends {
+			if old.ID == f.ID {
+				f.Mail, f.Ticked = old.Mail, old.Ticked
+				if p[1] == protocol.FriendsTabs {
+					f.Guild, f.VIP = old.Guild, old.VIP
+				}
+				friends[i] = f
+				found = true
+				break
+			}
+		}
+		if !found && p[1] == protocol.FriendsTabs {
+			friends = append(friends, f)
+		}
+		c.rememberPlayer(f.ID, f.Name)
+	}
+	c.Social.SetFriends(friends)
+	return true
+}
+
+func (c *Client) removeReceivedFriend(id uint32) {
+	if id == hud.GMFriendID || id == mailSystemSenderAlt {
+		return
+	}
+	var friends []hud.Friend
+	for _, f := range c.Social.Friends[1:] {
+		if f.ID != id {
+			friends = append(friends, f)
+		}
+	}
+	c.Social.SetFriends(friends)
+	delete(c.friendStatuses, id)
+	delete(c.friendFaces, id)
+}
+
+func (c *Client) receiveFriendPresence(p []byte) bool {
+	const presenceRecordBytes = 5 // Native U32 character followed by status byte.
+	if (len(p)-2)%presenceRecordBytes != 0 {
+		return false
+	}
+	for at := 2; at < len(p); at += presenceRecordBytes {
+		if p[at+4] > hud.PresenceOffline {
+			return false
+		}
+	}
+	if c.friendStatuses == nil {
+		c.friendStatuses = map[uint32]byte{}
+	}
+	for at := 2; at < len(p); at += presenceRecordBytes {
+		id := binary.LittleEndian.Uint32(p[at:])
+		if _, ok := c.friend(id); ok {
+			c.friendStatuses[id] = p[at+4]
+		}
+	}
+	c.Social.Refresh()
 	return true
 }
 
@@ -149,6 +242,29 @@ func (c *Client) friendsPacket(p []byte) bool {
 		return false
 	}
 	switch p[1] {
+	case protocol.FriendsGuildUpdate:
+		r := protocol.NewReader(p[2:])
+		id, guild := r.U32(), r.String()
+		if r.Err() != nil || r.Remaining() != 0 {
+			return false
+		}
+		for i := range c.Social.Friends {
+			if c.Social.Friends[i].ID == id {
+				c.Social.Friends[i].Guild = []byte(guild)
+			}
+		}
+		c.Social.Refresh()
+		return true
+	case protocol.FriendsRemove:
+		if len(p) != 6 {
+			return false
+		}
+		c.removeReceivedFriend(binary.LittleEndian.Uint32(p[2:]))
+		return true
+	case protocol.FriendsPresence:
+		return c.receiveFriendPresence(p)
+	case protocol.FriendsProfileUpdate, protocol.FriendsTabs:
+		return c.receiveFriendProfiles(p)
 	case protocol.FriendsList:
 		return c.receiveFriendList(p[1:])
 	case protocol.FriendsTextMail:

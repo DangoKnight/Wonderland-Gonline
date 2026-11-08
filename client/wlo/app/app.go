@@ -98,9 +98,11 @@ type Client struct {
 	teamTransferClose    func()
 	joinTeamTarget       bool
 	pkTarget             bool
-	friendTarget         bool // Make Friends' target mode 5 (friends.go)
-	tradeTarget          bool // Trade Items' target mode 9 (trade.go)
-	tradeAllowed         bool // the player's +0x5791, set by 25/44 2
+	battleEntryTarget    byte
+	friendStatuses       map[uint32]byte // AC14:9 presence survives map changes.
+	friendTarget         bool            // Make Friends' target mode 5 (friends.go)
+	tradeTarget          bool            // Trade Items' target mode 9 (trade.go)
+	tradeAllowed         bool            // the player's +0x5791, set by 25/44 2
 	Business             *hud.Business
 	LuckyDraw            *lottery.Form
 	WorldPK              *worldpk.Form
@@ -453,7 +455,7 @@ func (c *Client) frame(draw bool) {
 	dialogueOverlay := false
 	if c.World != nil && c.fade.frozen == nil {
 		c.syncWorldZoom()
-		c.World.JoinTeamSelection = c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.JoinTeamSelection = c.battleEntryTarget != 0 || c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
 		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())

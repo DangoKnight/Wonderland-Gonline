@@ -1,10 +1,10 @@
 {
   "format": "wonderland-server-catalog-sqlite-gzip",
   "version": 1,
-  "schema_version": 63,
+  "schema_version": 64,
   "database_bytes": 50880512,
-  "database_sha256": "04a07f13f3f118a5dd79697da74657697a436126b8f157bf046f43c9b2a5b554",
-  "compressed_bytes": 9179151,
+  "database_sha256": "119c83da98210679e67d7fd211935e511d81eba860f7b42af5593736498ccf99",
+  "compressed_bytes": 9179188,
   "tables": 185,
   "rows": 322975,
   "definitions": {

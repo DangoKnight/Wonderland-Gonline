@@ -208,16 +208,22 @@ const (
 // BattleState subcommands (AC11).
 const (
 	// Unresolved wire meaning; retain the numeric code until verified.
-	BattleStateWireCode0     = 0
-	BattleStateExit          = 1
-	BattleStateChallenge     = 2
-	BattleChallengePlayer    = 3
-	BattleStateParticipation = 4
-	BattleStateParticipant   = 5
-	BattleStateInitialize    = 10
-	BattleStateFinish        = 12
-	BattleStateFormation     = 250
-	BattleExitRequest        = 3 // Inbound AC11:1:3, an escape command rather than an escape result.
+	BattleStateWireCode0           = 0
+	BattleStateExit                = 1
+	BattleStateChallenge           = 2
+	BattleChallengePlayer          = 3
+	BattleWatchPlayer              = 4 // FUN_0038dfe0: observe an existing battle.
+	BattleJoinPlayer               = 5 // FUN_0038e1d4: join the target's fighting side.
+	BattlePresenceSpectator        = 4
+	BattlePresenceJoined           = 5
+	BattleParticipantEnemySnapshot = 100 // Captured existing-enemy mode in a late-entry snapshot.
+	BattleSpectatorCoordinate      = 255
+	BattleStateParticipation       = 4
+	BattleStateParticipant         = 5
+	BattleStateInitialize          = 10
+	BattleStateFinish              = 12
+	BattleStateFormation           = 250
+	BattleExitRequest              = 3 // Inbound AC11:1:3, an escape command rather than an escape result.
 )
 
 // AC11:5 entry mode, FUN_0039108c: native clients hide the participant and reject direct selection
@@ -237,13 +243,15 @@ const (
 )
 
 // Native AC13 transfer serializer (002c4f3c) and receiver (00407304).
+// Confirm invokes the form's +0x2c0 callback: [13,10,3]. Closing on
+// expiration invokes +0x2e0: [13,10,2,3]. Callback order matters here.
 const (
 	TeamMaximumMembers      = 4
 	TeamTransferOffer       = 1
 	TeamTransferResponse    = 2
-	TeamTransferTimeout     = 3
+	TeamTransferConfirmed   = 3
 	TeamTransferDeclined    = 2
-	TeamTransferAccepted    = 3
+	TeamTransferExpired     = 3
 	TeamLeadershipOffered   = 1
 	TeamLeadershipStatus    = 2
 	TeamLeadershipChanged   = 3
@@ -260,7 +268,7 @@ const (
 	TeamRosterHeaderBytes        = 7
 	TeamLeaderOfferRequestBytes  = 7
 	TeamLeaderResponseBytes      = 4
-	TeamLeaderTimeoutBytes       = 3
+	TeamLeaderConfirmBytes       = 3
 	TeamLeaderOfferNoticeBytes   = 7
 	TeamLeaderChangeNoticeBytes  = 11
 	TeamLeaderStatusNoticeBytes  = 4
@@ -285,19 +293,25 @@ const (
 // Native text mail shares AC14 with friendship operations.
 const (
 	FriendsTextMail            = 1
-	FriendsMailSent            = 9
+	FriendsMailSent            = 9 // Compatibility alias for FriendsPresence; not a mail receipt.
 	FriendsMailSentSuccess     = 0
 	TextMailRequestHeaderBytes = 7 // Command, subcommand, type and uint32 recipient.
 )
 
 // Friends subcommands (AC14).
 const (
-	FriendsRequest  = 2
-	FriendsAccept   = 3
-	FriendsRemove   = 4
-	FriendsList     = 5
-	FriendsAccepted = 7
-	// Unresolved wire meaning; retain the numeric code until verified.
+	FriendsRequest         = 2
+	FriendsAccept          = 3
+	FriendsRemove          = 4
+	FriendsList            = 5
+	FriendsAccepted        = 7 // Compatibility alias: native guild-name update, not login.
+	FriendsGuildUpdate     = 7
+	FriendsProfileUpdate   = 8
+	FriendsPresence        = 9
+	FriendsPresenceOnline  = 0
+	FriendsPresenceOffline = 3
+	// Compatibility aliases retained for older callers; native AC14:8 is a
+	// full profile and AC14:9 carries presence (FUN_00280034).
 	FriendsWireCode8         = 8
 	FriendsAcceptanceReply   = 9
 	FriendsAcceptanceSuccess = 0

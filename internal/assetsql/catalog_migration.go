@@ -10,7 +10,8 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 63
+const catalogSchemaVersion = 64
+const equipmentDurabilitySchemaVersion = 64
 const accountGroundSchemaVersion = 63
 const itemCardsSchemaVersion = 62
 const mallFeaturedContainersSchemaVersion = 61
@@ -71,6 +72,11 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < 1 || schema.Version > catalogSchemaVersion {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
+		}
+		if schema.Version < equipmentDurabilitySchemaVersion && !tx.Migrator().HasColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible") {
+			if err := tx.Migrator().AddColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible"); err != nil {
+				return err
+			}
 		}
 		if schema.Version < mallAdditionalPacksSchemaVersion && tx.Migrator().HasTable(&GachaPacksRow{}) && !tx.Migrator().HasColumn(&GachaPacksRow{}, "ValueOpenAll") {
 			if err := tx.Migrator().AddColumn(&GachaPacksRow{}, "ValueOpenAll"); err != nil {
@@ -674,6 +680,11 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < equipmentDurabilitySchemaVersion {
+			if err := seedIndestructibleEquipment(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -708,6 +719,9 @@ func migrateCatalog(tx *gorm.DB) error {
 		return err
 	}
 	if err := initializeNPCNames(c); err != nil {
+		return err
+	}
+	if err := initializeIndestructibleEquipment(c); err != nil {
 		return err
 	}
 	c.PetFoods = defaultPetFoods(c.NativeItems)

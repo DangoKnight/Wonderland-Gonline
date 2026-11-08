@@ -30,7 +30,7 @@ type boardEntry struct {
 	date        float64
 }
 type messageBoardForm struct {
-	seui.Form
+	boardWindow
 	c               *Client
 	entries         []boardEntry
 	page            byte
@@ -41,13 +41,34 @@ type messageBoardForm struct {
 	detail, compose *boardTextForm
 }
 type boardTextForm struct {
-	seui.Form
+	boardWindow
 	board                 *messageBoardForm
 	title                 *seui.Editor
 	body                  *seui.Memo
 	remove, mail, confirm *seui.FixedButton
 	editing               bool
 }
+
+// Keep a board drag owned by its window even when crossing fields or buttons.
+type boardWindow struct{ seui.Form }
+
+func (f *boardWindow) LeftDown(shift byte, x, y int) {
+	f.Form.LeftDown(shift, x, y)
+	if f.Dragging {
+		f.Env.UI.Input.Captured = f.Root()
+	}
+}
+func (f *boardWindow) ExclusivePointerCapture() bool      { return f.Dragging }
+func (f *boardWindow) CapturedMove(shift byte, x, y int)  { f.Form.MouseMove(shift, x, y) }
+func (f *boardWindow) LeftUpOutside(shift byte, x, y int) { f.Form.LeftUp(shift, x, y) }
+func (f *boardWindow) Update(in *seui.Input) {
+	if f.Dragging && in.Captured == f.Root() {
+		f.Component.Update(in)
+		return
+	}
+	f.Form.Update(in)
+}
+
 type boardRow struct {
 	seui.Component
 	board *messageBoardForm
@@ -99,7 +120,7 @@ func (c *Client) initMessageBoard() {
 		b.compose.title.SetText(nil)
 		b.compose.body.SetText(nil)
 		b.compose.Show()
-		c.Input.Focused = b.compose.title
+		c.UI.Focus(b.compose.title)
 	})
 	for i := 0; i < protocol.MessageBoardPageSize; i++ {
 		r := &boardRow{board: b, index: i}
@@ -116,26 +137,37 @@ func (c *Client) newBoardText(b *messageBoardForm, editing bool) *boardTextForm 
 	f.InitForm(f, c.Env)
 	f.Dockable = false
 	f.Init("notice2", (ScreenWidth-418)/2, 0, 0, 0, 0, false, 275, 418, (ScreenHeight-275)/2)
+	// FUN_001fe600: the writing form uses notice1 (417 x 251), not
+	// the taller notice2 read form. Both templates include their field labels.
+	if editing {
+		f.Init("notice1", (ScreenWidth-417)/2, 0, 0, 0, 0, false, 251, 417, (ScreenHeight-251)/2)
+	}
 	f.title = seui.NewEditor(c.Env, f)
-	f.title.Init("", 23, 0, 0, 0, 0, false, 24, 372, 62)
+	f.title.Init("", 76, 0, 0, 0, 0, false, 20, 314, 60)
+	f.title.PixelHit = false // Image-free fields must use rectangular hit testing.
+	f.title.TabStop = editing
 	f.title.ReadOnly = !editing
 	f.title.Color = 0xffff
 	f.title.Color3 = 0xffff
 	f.title.Limit = true
 	f.title.MaxLen = protocol.MessageBoardTitleMaxBytes
-	f.title.BindLanguage("label", func() { f.title.SetLabel([]byte(localization.UI("ui.board.subject"))) })
 	f.body = seui.NewMemo(c.Env, f)
-	f.body.SetBounds(25, 101, 372, 100)
+	f.body.SetBounds(25, 105, 370, 100)
 	f.body.Color = 0xffff
+	f.body.TextStyle = 0
 	f.body.ReadOnly = !editing
 	f.body.MaxLen = protocol.MessageBoardContentMaxBytes
 	if !editing {
 		f.body.MaxLen = boardMaxStoredContent
 	}
 	boardButton(c, f, "Btn_Close_S_1", 368, 24, f.Hide).Init("Btn_Close_S_1", 368, 18, 18, 0, 0, true, 18, 18, 24)
-	boardButton(c, f, "Btn_Close_1", 270, 228, f.Hide)
+	closeX, buttonY := 270, 228
 	if editing {
-		f.confirm = boardButton(c, f, "Btn_confirm_1", 130, 228, func() {
+		closeX, buttonY = 220, 220
+	}
+	boardButton(c, f, "Btn_Close_1", closeX, buttonY, f.Hide)
+	if editing {
+		f.confirm = boardButton(c, f, "Btn_confirm_1", 130, buttonY, func() {
 			if !b.pending.IsZero() {
 				return
 			}
@@ -241,8 +273,6 @@ func (b *messageBoardForm) Paint() {
 }
 func (f *boardTextForm) Paint() {
 	f.Form.Paint()
-	at := f.Abs()
-	f.board.c.Screen.Fill(image.Rect(at.X+15, at.Y+54, at.X+402, at.Y+207), boardGreen)
 }
 func boardDate(date float64) string {
 	if math.IsNaN(date) || math.IsInf(date, 0) || date < 0 || date > 3000000 {
@@ -272,7 +302,7 @@ func (c *Client) messageBoardPacket(p []byte) bool {
 		if len(p) != 2 || c.World == nil {
 			return true
 		}
-		c.loadPictures("Notice", "notice2", "Btn_Close_S_1", "Btn_Close_1", "Btn_UPdata_1", "Btn_PrePage_1", "Btn_NextPage_1", "Btn_AddNew_1", "Btn_deleteMail_1", "Btn_sendMail_2", "Btn_Del_B", "btn_Send_B", "Btn_confirm_1")
+		c.loadPictures("Notice", "notice1", "notice2", "Btn_Close_S_1", "Btn_Close_1", "Btn_UPdata_1", "Btn_PrePage_1", "Btn_NextPage_1", "Btn_AddNew_1", "Btn_deleteMail_1", "Btn_sendMail_2", "Btn_Del_B", "btn_Send_B", "Btn_confirm_1")
 		// The controls are created before these optional pictures are loaded.
 		c.reloadBoardPictures()
 		c.resetGroundHold()
@@ -370,6 +400,8 @@ func (c *Client) reloadBoardPictures() {
 		pic := "notice2"
 		if f == &b.Form {
 			pic = "Notice"
+		} else if f == &b.compose.Form {
+			pic = "notice1"
 		}
 		f.Image = c.Pics.Find(pic)
 	}

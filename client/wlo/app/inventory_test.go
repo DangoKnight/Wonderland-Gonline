@@ -537,8 +537,9 @@ func TestInventoryRemoteOpensLocally(t *testing.T) {
 		t.Fatal("closing Remote changed Inventory visibility")
 	}
 	c.Inventory.Remote.Show()
+	oldRemote := c.Inventory.Remote
 	c.Inventory.ResetRemote()
-	if c.Inventory.Remote.Visible || c.Inventory.Remote.Plus.Visible {
+	if c.Inventory.Remote != nil || oldRemote.Visible || oldRemote.Plus.Visible {
 		t.Fatal("character boundary retained Remote windows")
 	}
 }

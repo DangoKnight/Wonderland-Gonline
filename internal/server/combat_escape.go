@@ -12,6 +12,7 @@ func (s *Server) finishEmptyEscapeBattle(run *battleRun) bool {
 		return false
 	}
 	run.b.Finished = true
+	s.closeBattleObservers(run)
 	if run.timer != nil {
 		run.timer.Stop()
 	}
@@ -24,7 +25,7 @@ func (s *Server) finishEmptyEscapeBattle(run *battleRun) bool {
 func (s *Server) captureEscapeLeaders(run *battleRun) {
 	run.b.EscapeLeaders = map[uint32]bool{}
 	for _, m := range run.active() {
-		if m.c.party == nil || m.c.party.leader() == m.c {
+		if !m.joined && (m.c.party == nil || m.c.party.leader() == m.c) {
 			run.b.EscapeLeaders[m.self.ID] = true
 		}
 	}
@@ -95,6 +96,7 @@ func (s *Server) completeMemberEscape(run *battleRun, result memberResult) {
 	run.b.Leave(m.self.ID)
 	c.encounter.battleOver()
 	closePacket := protocol.Builder{protocol.CommandBattleState, protocol.BattleStateWireCode0}.U32(m.self.ID).U16(0)
+	s.sendBattleSpectators(run, closePacket)
 	for _, other := range run.active() {
 		if !other.roundBundled {
 			s.sendOrClose(other.c, closePacket)

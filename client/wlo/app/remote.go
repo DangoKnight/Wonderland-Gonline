@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image"
-	"strconv"
 	"time"
 	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/inventory"
@@ -31,9 +30,14 @@ const (
 	remoteRecoveryBase   = 100
 	remotePercentBase    = 100
 	remoteControllerItem = 34058
-	remoteStatusX        = 5
-	remoteStatusY        = 200
-	remoteStatusLine     = 15
+	// FUN_0026348c: a 49-pixel shortcut panel uses AutoplayTool_1,
+	// whose native artwork is 42 x 42 (not the inventory item icon).
+	remoteShortcutSize    = 49
+	remoteShortcutArtSize = 42
+	remoteShortcutPicture = "AutoplayTool_1"
+	remoteStatusX         = 5
+	remoteStatusY         = 200
+	remoteStatusLine      = 15
 )
 
 // remoteRuntime owns transient client automation. Every resource request waits
@@ -49,6 +53,8 @@ type remoteRuntime struct {
 	pending                   *remoteRequest
 	battle                    remoteBattle
 	activePet                 uint32
+	sequence                  [2]int
+	reservedItems             map[byte]uint16 // Choices in the current round; no optimistic bag edits.
 	button                    *seui.FixedButton
 }
 type remoteRequest struct {
@@ -71,15 +77,7 @@ type remoteBattle struct {
 }
 
 func (c *Client) startRemote(o inventory.RemoteOptions) bool {
-	if o.SupplyFirst < 1 || o.SupplyLast < o.SupplyFirst || o.SupplyLast > game.BagSize {
-		return false
-	}
-	for _, percent := range o.Thresholds {
-		if percent < 0 || percent > remotePercentBase {
-			return false
-		}
-	}
-	if (o.LeaveAfter && o.LeaveMinutes <= 0) || (o.LeavePlayerDeaths && o.PlayerDeaths <= 0) || (o.LeavePetDeaths && o.PetDeaths <= 0) {
+	if !o.Valid() {
 		return false
 	}
 	if c.World == nil || !c.mapReady || c.sceneFrozen() || c.held || c.event.active || c.petAnnouncement || c.sport != nil || c.movie != nil || c.Stats.HP == 0 {
@@ -100,6 +98,11 @@ func (c *Client) startRemote(o inventory.RemoteOptions) bool {
 		c.Chat.Notice(localization.UI("ui.app.wait_for_the_pending_remote_request_be3bf337"))
 		return false
 	}
+	if err := saveRemoteProfile(c.remoteProfilePath(), o); err != nil {
+		c.Chat.Notice(localization.UI("ui.remote.save_failed") + err.Error())
+		return false
+	}
+	c.Inventory.RestoreRemoteOptions(o)
 	battle, pet, button := c.remote.battle, c.remote.activePet, c.remote.button
 	c.remote = remoteRuntime{active: true, options: o, start: c.Now(), anchor: image.Pt(c.World.Player.X, c.World.Player.Y), mapID: c.World.Player.Map, battle: battle, activePet: pet, button: button}
 	c.resetGroundHold()
@@ -107,6 +110,10 @@ func (c *Client) startRemote(o inventory.RemoteOptions) bool {
 		c.World.StopWalk()
 	}
 	c.remoteButton()
+	if o.AutoFight && c.battle.state.Active && !c.battle.state.Spectating {
+		c.battle.auto = true
+		c.battleAutoCancel()
+	}
 	return true
 }
 func (c *Client) stopRemote() {
@@ -122,7 +129,7 @@ func (c *Client) stopRemote() {
 func (c *Client) remoteButton() {
 	if c.remote.button == nil {
 		b := seui.NewFixedButton(c.Env, nil)
-		b.Init("", ScreenWidth-42, 0, 0, 0, 0, false, 32, 32, ScreenHeight-110)
+		b.Init("", ScreenWidth-remoteShortcutSize, 0, 0, 0, 0, false, remoteShortcutSize, remoteShortcutSize, ScreenHeight-110)
 		b.OnTop = true
 		b.OnClick = func() {
 			for i, item := range c.InventoryState.Bag {
@@ -136,11 +143,10 @@ func (c *Client) remoteButton() {
 		c.remote.button = b
 	}
 	b := c.remote.button
-	name := strconv.Itoa(int(c.items[remoteControllerItem].Icon))
-	c.loadPictures(name)
+	c.loadPictures(remoteShortcutPicture)
 	// A single-frame animation paints at the button origin; native Icon
 	// drawing adds Left/Top twice for controls away from their parent origin.
-	b.SetAnimation(name, 0, 1, 1, time.Hour, 32, 32, 0)
+	b.SetAnimation(remoteShortcutPicture, 0, 1, 1, time.Hour, remoteShortcutArtSize, remoteShortcutArtSize, 0)
 	b.StartAnimation()
 	b.Show()
 }
@@ -314,7 +320,7 @@ func (c *Client) remoteInformation() {
 		}
 		return localization.UI("ui.app.off_ca7981b4")
 	}
-	lines := []string{localization.UI("ui.app.auto_atk_ae4d734e") + on(o.AutoFight), localization.UI("ui.app.adv_setting_off_a37be97f"), localization.UI("ui.app.pets_adv_setting_off_0bb51a74"), localization.UI("ui.app.auto_walk_f3a24a8a") + on(o.AutoMove), localization.UI("ui.app.auto_heal_493a1915") + on(o.AutoSupply), localization.UI("ui.app.auto_leave_576dcd4a") + on(o.LeaveNoSupplies), localization.UI("ui.app.on_player_die_60376312") + on(o.LeavePlayerDeaths), localization.UI("ui.app.on_pet_die_f02bb024") + on(o.LeavePetDeaths), fmt.Sprintf(localization.UI("ui.app.player_hp_d_d_4c41c047"), uint64(c.Stats.MaxHP)*uint64(o.Thresholds[0])/remotePercentBase, o.Thresholds[0]), fmt.Sprintf(localization.UI("ui.app.player_sp_d_d_da6308b8"), uint64(c.Stats.MaxSP)*uint64(o.Thresholds[1])/remotePercentBase, o.Thresholds[1])}
+	lines := []string{localization.UI("ui.app.auto_atk_ae4d734e") + on(o.AutoFight), localization.UI("ui.remote.player_advanced") + on(o.Advanced[0].Active()), localization.UI("ui.remote.pet_advanced") + on(o.Advanced[1].Active()), localization.UI("ui.app.auto_walk_f3a24a8a") + on(o.AutoMove), localization.UI("ui.app.auto_heal_493a1915") + on(o.AutoSupply), localization.UI("ui.app.auto_leave_576dcd4a") + on(o.LeaveNoSupplies), localization.UI("ui.app.on_player_die_60376312") + on(o.LeavePlayerDeaths), localization.UI("ui.app.on_pet_die_f02bb024") + on(o.LeavePetDeaths), fmt.Sprintf(localization.UI("ui.app.player_hp_d_d_4c41c047"), uint64(c.Stats.MaxHP)*uint64(o.Thresholds[0])/remotePercentBase, o.Thresholds[0]), fmt.Sprintf(localization.UI("ui.app.player_sp_d_d_da6308b8"), uint64(c.Stats.MaxSP)*uint64(o.Thresholds[1])/remotePercentBase, o.Thresholds[1])}
 	var pet world.Stats
 	if slot := c.remotePetSlot(); slot != 0 {
 		pet = c.InventoryState.Pets[slot-1].Stats
@@ -328,7 +334,9 @@ func (c *Client) remoteInformation() {
 // Track native fighter cells and round readiness even with Remote off. Auto
 // attack never starts a battle and only serves an existing monster encounter.
 func (c *Client) remoteAttack() {
+	c.remoteRearmBattleAuto()
 	b := &c.remote.battle
+	c.remote.reservedItems = map[byte]uint16{}
 	b.ready = false
 	c.battle.state.Ready = false
 	var target *remoteFighter
@@ -354,6 +362,15 @@ func (c *Client) remoteAttack() {
 		if f.hp == 0 || !((f.kind == remoteFighterPlayer && f.id == c.World.Player.ID) || (f.kind == remoteFighterPet && f.owner == c.World.Player.ID)) {
 			continue
 		}
+		if native := c.battle.state.At(clientbattle.Cell{X: f.x, Y: f.y}); native == nil || native.Waiting || native.Removed {
+			continue
+		}
+		if c.remoteAdvancedAction(f) {
+			if !c.remote.active {
+				return
+			}
+			continue
+		}
 		p := []byte{protocol.CommandBattleAction, remoteBattleAttack, f.x, f.y, target.x, target.y}
 		p = binary.LittleEndian.AppendUint16(p, remoteBasicAttack)
 		if err := c.sendCombatChoice(p); err != nil {
@@ -362,6 +379,18 @@ func (c *Client) remoteAttack() {
 			return
 		}
 	}
+}
+
+// Remote re-arms AUTO only while choices are being accepted. Cancelling AUTO
+// during playback leaves it off until the next decision stage; this does not
+// submit a command or consume AUTO's once-per-turn submission marker.
+func (c *Client) remoteRearmBattleAuto() {
+	v := &c.battle
+	if !c.remote.active || !c.remote.options.AutoFight || !v.state.Active || !v.state.Ready || v.state.Spectating || v.state.Finished || v.closing || v.timedOut || c.battleAnimating() {
+		return
+	}
+	v.auto = true
+	c.battleAutoCancel()
 }
 
 const remoteWornOutDamage = 200

@@ -5,8 +5,66 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/internal/protocol"
 )
+
+func TestMessageBoardComposeFocusAndWindowDragging(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.dispatch([]byte{82, 9})
+	b := c.messageBoard
+	b.pending = time.Time{}
+	for _, child := range b.Children {
+		if button, ok := child.(*seui.FixedButton); ok && button.Name == "Btn_AddNew_1" {
+			button.Click()
+		}
+	}
+	f := b.compose
+	if !f.Visible || f.Image != c.Pics.Find("notice1") || f.Width != 417 || f.Height != 251 || c.Input.Focused != f.title {
+		t.Fatal("wrong composer template or initial focus")
+	}
+	click := func(control seui.Control) {
+		at := control.Base().Abs()
+		c.Input.X, c.Input.Y = at.X+8, at.Y+8
+		c.Input.Hovered = nil
+		c.UI.Draw()
+		if c.Input.Hovered != control {
+			t.Fatalf("input not selectable: %T", c.Input.Hovered)
+		}
+		c.UI.MouseDown(seui.ButtonLeft, 0, c.Input.X, c.Input.Y)
+		c.UI.MouseUp(seui.ButtonLeft, 0, c.Input.X, c.Input.Y)
+	}
+	click(f.title)
+	c.UI.Char('S')
+	click(f.body)
+	c.UI.Char('B')
+	if string(f.title.Text) != "S" || string(f.body.Text) != "B" || f.Dragging {
+		t.Fatal("typing did not reach the selected field")
+	}
+	for _, window := range []seui.Control{b, b.detail, b.compose} {
+		c.closeMessageBoard()
+		window.Show()
+		base := window.Base()
+		x, y := base.Left+100, base.Top+30
+		c.Input.X, c.Input.Y, c.Input.Hovered = x, y, nil
+		c.UI.Draw()
+		left, top := base.Left, base.Top
+		c.UI.MouseDown(seui.ButtonLeft, 0, x, y)
+		if c.Input.Captured != window {
+			t.Fatal("window did not capture drag")
+		}
+		c.Input.Hovered = f.body // Crossing a child must not release the gesture.
+		c.UI.MouseMove(0, x+12, y+8, true)
+		if base.Left != left+12 || base.Top != top+8 {
+			t.Fatal("window did not move")
+		}
+		c.UI.MouseUp(seui.ButtonLeft, 0, x+12, y+8)
+		if c.Input.Captured != nil {
+			t.Fatal("window retained drag after release")
+		}
+	}
+}
 
 func TestMessageBoardWindowsAndNativePackets(t *testing.T) {
 	c, _, _ := enteredClient(t)

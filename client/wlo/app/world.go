@@ -213,7 +213,7 @@ func (c *Client) GroundClick(x, y int) {
 	}
 	x, y = c.World.ScenePoint(x, y)
 	// Target modes own the click even over another kind of field object.
-	if c.pkTargetAt(x, y) || c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
+	if c.battleEntryTargetAt(x, y) || c.pkTargetAt(x, y) || c.teamTargetAt(x, y) || c.friendTargetAt(x, y) || c.tradeTargetAt(x, y) {
 		return
 	}
 	if c.boardPlacedVehicle(x, y) {

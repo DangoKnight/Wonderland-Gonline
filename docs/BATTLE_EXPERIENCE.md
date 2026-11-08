@@ -25,6 +25,13 @@ killing contributor. Assisters count once even if they helped multiple comboers
 or also attacked. Pets are independent entities for both the pool and shares;
 their EXP is awarded to the pet, not added to the owner's personal EXP.
 
+The pool spans contributors across the whole team, rather than being calculated
+separately for each owner and pet. Three level-100 players with three level-100
+pets and a level-1 player count as seven entities if all seven contribute.
+Team membership alone grants no credit: if the level-1 player does not contribute,
+only the six contributors enter the pool, level sum and distribution. The existing
+half credit for earlier damage and full credit for qualifying support still apply.
+
 For each monster, let `BASE = max(1, monster level) * 1.5`, `N` be the number
 of unique eligible participants, `COMBO_UNITS` the number of distinct attacking
 units that landed hits in the killing combo, and `LEVEL_SUM` the sum of all

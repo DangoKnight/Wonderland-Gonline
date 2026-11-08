@@ -114,6 +114,7 @@ func (r Rules) areaAttack(b *Battle, a Action, defending map[int]bool) []Step {
 			if r.ExperienceFormula == game.BattleEXPParticipation {
 				b.recordExperienceDamage(target, a.Actor, result.amount)
 			}
+			b.recordGearHit(a.Actor, target, result.amount, int(r.Skills[a.Skill].ContactEvents))
 			target.hurt(result.amount)
 			r.applyHitEffects(a.Actor, target, a.Skill)
 			if target.Overkilled {

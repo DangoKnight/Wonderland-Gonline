@@ -52,6 +52,7 @@ type Form struct {
 	OpenNotebook                                                    func()
 	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
+	remoteOptions                                                   *RemoteOptions
 	Status                                                          *login.Status
 	Send                                                            func([]byte)
 	CanAct                                                          func() bool
@@ -60,6 +61,7 @@ type Form struct {
 	Warning                                                         func(string)
 	StartRemote                                                     func(RemoteOptions) bool
 	StopRemote                                                      func()
+	RemoteChoices                                                   func(pet bool) []RemoteChoice
 	Close, CloseTitle, RotateLeft, RotateRight, StatusOnly, BagOnly *seui.FixedButton
 	Slots                                                           [game.BagSize]*slotControl
 	Worn                                                            [EquipmentSlots]*slotControl

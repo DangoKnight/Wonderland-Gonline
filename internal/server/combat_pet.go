@@ -93,6 +93,12 @@ func (s *Server) battlePetCommand(ctx context.Context, c *Session, p []byte) err
 	}
 	changes[0].OwnerPackets = map[uint32][][]byte{next.ID: {selection}}
 	run.petChanges = append(run.petChanges, changes...)
+	if m.pet != nil && m.pet.HP <= 0 {
+		if m.knockedOutPets == nil {
+			m.knockedOutPets = map[uint32]bool{}
+		}
+		m.knockedOutPets[m.pet.ID] = true
+	}
 	m.pet, m.choiceToken = incoming, 0
 	for _, peer := range peers {
 		s.broadcastWorld(c, peer)

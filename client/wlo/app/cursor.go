@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/internal/protocol"
 )
 
 // The cursor (Tjo_Cursor, FUN_003bab68 each frame): a control under the
@@ -38,6 +39,10 @@ func (c *Client) updateCursor(now time.Time) {
 		shape = c.battleCursor()
 	} else if state == 0 && c.pkTarget {
 		shape = cursor.ShapeSword // FUN_003a9020 selects native targeting mode 1.
+	} else if state == 0 && c.battleEntryTarget == protocol.BattleWatchPlayer {
+		shape = cursor.ShapeLook
+	} else if state == 0 && c.battleEntryTarget == protocol.BattleJoinPlayer {
+		shape = cursor.ShapeSwordDown
 	} else if state == 0 && c.joinTeamTarget {
 		shape = cursor.ShapePoint
 	} else if state == 0 && c.friendTarget {

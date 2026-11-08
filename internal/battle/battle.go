@@ -175,6 +175,7 @@ type Rules struct {
 
 // Battle owns both sides of a PvE or PvP encounter.
 type Battle struct {
+	GearHits             map[*Fighter][]GearHit // Resolved enemy hits, consumed transactionally before playback.
 	reviveSupport        map[experienceIdentity]map[*Fighter]bool
 	experience           map[experienceIdentity]uint64
 	experienceKills      map[*Fighter]bool
@@ -733,6 +734,7 @@ func (r Rules) spend(f *Fighter, skill uint16) []byte {
 // Round is ExecuteTurn: it applies one round and returns its steps. A non-Continue
 // outcome ends the battle; the caller then runs the matching ending.
 func (b *Battle) Round(r Rules) ([]Step, Outcome) {
+	b.GearHits = nil
 	defer func() {
 		for _, f := range b.all() {
 			f.Joining = false
@@ -1103,6 +1105,7 @@ func (r Rules) attack(b *Battle, group []Action, defending map[int]bool) ([]Step
 				landed = append(landed, a)
 				guarded := defending[target.key()]
 				dmg, mode := r.strikeDamage(a, target, guarded, len(combo))
+				b.recordGearHit(actor, target, dmg, int(r.Skills[a.Skill].ContactEvents))
 				if r.ExperienceFormula == game.BattleEXPParticipation {
 					b.recordExperienceDamage(target, actor, dmg)
 				}
@@ -1162,6 +1165,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 			}
 			dmg, mode := r.strikeDamage(Action{Actor: m, Skill: basicAttackSkill, Kind: "attack"}, t, defending[t.key()], 1)
 			anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, defending[t.key()], 0x19, dmg, mode)
+			b.recordGearHit(m, t, dmg, 1)
 			t.hurt(dmg)
 			steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}
 			steps = b.appendOverkill(steps, t)
@@ -1175,6 +1179,7 @@ func (r Rules) monster(b *Battle, m *Fighter, defending map[int]bool) []Step {
 	guarded := defending[t.key()]
 	dmg, mode := r.strikeDamage(Action{Actor: m, Skill: basicAttackSkill, Kind: "attack"}, t, guarded, 1)
 	anim := hitRecord(protocol.Builder{protocol.CommandBattleAction, protocol.BattleActionAnimation}, m, t, basicAttackSkill, guarded, 0x19, dmg, mode)
+	b.recordGearHit(m, t, dmg, 1)
 	t.hurt(dmg)
 
 	steps := []Step{{Packets: [][]byte{turnPacket(m), anim}, Delay: r.Delay(basicAttackSkill, "attack")}}

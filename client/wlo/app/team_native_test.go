@@ -107,7 +107,7 @@ func TestTeamNativeLeadershipAcceptanceAndTimeout(t *testing.T) {
 	c.Now = func() time.Time { return now }
 	c.dispatch([]byte{13, 15, 1, 199, 117, 70, 0})
 	acceptTeamPrompt(t, c)
-	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{13, 10, 2, 3}) {
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{13, 10, 3}) {
 		t.Fatal("native transfer acceptance", got)
 	}
 	if c.TeamState.Leader != 4617671 {
@@ -123,7 +123,7 @@ func TestTeamNativeLeadershipAcceptanceAndTimeout(t *testing.T) {
 	now = now.Add(5 * time.Second)
 	c.teamTransferTick()
 	got := sent()
-	if len(got) != 2 || !bytes.Equal(got[1], []byte{13, 10, 3}) || c.UI.Modal != nil {
+	if len(got) != 2 || !bytes.Equal(got[1], []byte{13, 10, 2, 3}) || c.UI.Modal != nil {
 		t.Fatal("transfer timeout", got)
 	}
 	// Delayed UI actions cannot send a second answer after cancellation.

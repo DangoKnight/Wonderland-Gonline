@@ -22,6 +22,15 @@ func (c *Client) selectBattleItem(slot int, worn bool) bool {
 	if !c.battle.state.Active {
 		return false
 	}
+	// Remote configures client automation; it neither consumes an item nor
+	// submits a fighter action. Keep it available during playback and AUTO.
+	if !worn && slot >= 1 && slot <= game.BagSize {
+		item := c.InventoryState.Bag[slot-1]
+		if item.ID == remoteControllerItem && !item.Empty() && !item.Locked {
+			c.Inventory.OpenRemote(byte(slot))
+			return true
+		}
+	}
 	if worn || slot < 1 || slot > game.BagSize || c.battleAnimating() || c.remote.active && c.remote.options.AutoFight {
 		return true
 	}

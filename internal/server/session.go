@@ -56,6 +56,7 @@ type Session struct {
 	emote                byte        // Current AC32 pose; guarded by worldMu.
 	shapeshift           uint16      // Cosmetic NPC disguise, guarded by worldMu.
 	restedAt             time.Time   // Last resting recovery while sitting or lying; guarded by worldMu.
+	restingLeader        *Session    // Recovery source; changes restart the interval. Guarded by worldMu.
 	view                 *world.View
 	pets                 *petRoster
 	event                *eventSession

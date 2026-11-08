@@ -187,7 +187,7 @@ func (f battleFloat) displacement(now time.Time) image.Point {
 func (c *Client) battleDamagePopup(target clientbattle.Cell, generation uint64, stat byte, critical bool, amount uint64, now, at time.Time, hit, hits int) {
 	ink, font := uint16(battleDamageInk), battleDamageDigits
 	if critical {
-		ink = battleCriticalInk
+		ink, font = battleCriticalInk, battleCriticalDigits
 	}
 	if stat == game.StatCurrentSP {
 		ink, font = battleSPInk, battleSPDigits

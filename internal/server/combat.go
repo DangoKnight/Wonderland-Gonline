@@ -39,9 +39,13 @@ type battleRun struct {
 	rewarded         map[*battle.Fighter]bool
 	b                *battle.Battle
 	members          []*battleMember // members[0] started the battle and owns its event and loot.
-	event            *eventSession   // The suspended event, if a quest action started the battle.
-	source           uint16          // The battle action's d1: the callback branch's source.
-	flee             bool            // The authored flee continuation (EveEventInterpreter OnFlee list).
+	spectators       map[*Session]bool
+	spectatorBundled map[*Session]bool
+	admissions       map[*Session]battleAdmission
+	admissionOrder   uint64
+	event            *eventSession // The suspended event, if a quest action started the battle.
+	source           uint16        // The battle action's d1: the callback branch's source.
+	flee             bool          // The authored flee continuation (EveEventInterpreter OnFlee list).
 	timer            *time.Timer
 	turn             int // Increments per round so a stale timer cannot fire into a new round.
 	// encounter is the visible overworld actor reserved for this battle.
@@ -56,12 +60,14 @@ type battleRun struct {
 
 // battleMember is one participant: its character fighter and battle pet, if any.
 type battleMember struct {
-	c            *Session
-	self         *battle.Fighter
-	pet          *battle.Fighter
-	choiceToken  uint32
-	roundBundled bool // This recipient already has this round's native steps.
-	resultSaved  bool // Final vitals/pet consequences committed; do not settle twice on disconnect.
+	c              *Session
+	self           *battle.Fighter
+	pet            *battle.Fighter
+	choiceToken    uint32
+	roundBundled   bool            // This recipient already has this round's native steps.
+	resultSaved    bool            // Final vitals/pet consequences committed; do not settle twice on disconnect.
+	knockedOutPets map[uint32]bool // Previously switched-out knockouts revive only at battle end.
+	joined         bool            // Helping an existing battle does not replace its original escape leader.
 }
 
 func (run *battleRun) member(c *Session) *battleMember {
@@ -111,6 +117,12 @@ func fleeContinues(mapID, event uint16) bool {
 // questBattle is ExecuteOpcode 4/6: the formation (opcode 4) or a template operand names
 // the enemies. It returns false when no battle can be built. Caller holds worldMu.
 func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, error) {
+	if !battleInteractionAvailable(c, es) {
+		if c.event == es {
+			return true, s.cancelInteraction(c)
+		}
+		return true, nil
+	}
 	var formation []uint32
 	var members []world.FormationMember
 	if op.Code == world.ActionBattle {
@@ -179,13 +191,17 @@ func battleState(id uint32, in bool) []byte {
 // battleTeam is GetTeamMembers: the character, then its teammates on the same
 // map, at most four. Teammates already fighting or in an event stay out.
 // Caller holds worldMu.
-func (s *Server) battleTeam(c *Session) []*Session {
+func (s *Server) battleTeam(c *Session, ownEvent ...*eventSession) []*Session {
+	var permitted *eventSession
+	if len(ownEvent) > 0 {
+		permitted = ownEvent[0]
+	}
 	team := []*Session{c}
 	if c.party == nil {
 		return team
 	}
 	for _, m := range c.party.members {
-		if m != c && len(team) < partyMax && m.ready && m.battle == nil && m.event == nil && s.samePlayerScene(m, c) {
+		if m != c && len(team) < partyMax && m.battle == nil && battleInteractionAvailable(m, permitted) && s.samePlayerScene(m, c) {
 			team = append(team, m)
 		}
 	}
@@ -195,6 +211,9 @@ func (s *Server) battleTeam(c *Session) []*Session {
 // startBattle is InitializeAndStartBattle for a character and its team. Caller
 // holds worldMu.
 func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy) error {
+	if c.battle != nil || !battleInteractionAvailable(c, run.event) {
+		return nil
+	}
 	s.cancelPartyLeadership(c.party, protocol.TeamLeadershipBusy)
 	for i := range enemies {
 		e := &enemies[i]
@@ -210,7 +229,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 		}
 	}
 	var fighters []*battle.Fighter
-	for i, m := range s.battleTeam(c) {
+	for i, m := range s.battleTeam(c, run.event) {
 		// Native cells follow party order, even when an enemy contacts a
 		// follower first. Keep run.members[0] as the event/loot initiator.
 		slot := i
@@ -321,6 +340,12 @@ func (s *Server) armTurnTimer(run *battleRun) {
 // holds worldMu.
 func (s *Server) battleCommand(c *Session, p []byte) error {
 	run := c.battle
+	if run.member(c) == nil {
+		if len(p) == 3 && p[0] == protocol.CommandBattleState && p[1] == protocol.BattleStateExit && p[2] == protocol.BattleExitRequest {
+			s.leaveBattleObserver(c)
+		}
+		return nil // Observers and queued entrants never submit combat commands.
+	}
 	switch p[0] {
 	case protocol.CommandBattleAction:
 		if len(p) < 2 {
@@ -333,6 +358,7 @@ func (s *Server) battleCommand(c *Session, p []byte) error {
 		for _, member := range run.active() {
 			s.sendOrClose(member.c, ack)
 		}
+		s.sendBattleSpectators(run, ack)
 		s.tryRound(run)
 	case protocol.CommandBattleState:
 		if len(p) == 3 && p[1] == protocol.BattleStateExit && p[2] == protocol.BattleExitRequest {
@@ -368,6 +394,14 @@ func (s *Server) tryRound(run *battleRun) {
 	steps, outcome := run.b.Round(s.combatRules(run))
 	if run.rewardError != nil {
 		s.Log.Warn("combat acquisition not committed", "error", run.rewardError)
+		for _, m := range run.active() {
+			s.abandonBattle(m.c)
+			m.c.conn.Close()
+		}
+		return
+	}
+	if err := s.commitCombatGearWear(run); err != nil {
+		s.Log.Warn("combat equipment wear not committed", "error", err)
 		for _, m := range run.active() {
 			s.abandonBattle(m.c)
 			m.c.conn.Close()
@@ -421,6 +455,7 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 			}
 		}
 		alive := len(run.active()) > 0
+		s.sendBattleSpectatorStep(run, step.Packets...)
 		s.worldMu.Unlock()
 		if !alive {
 			return false
@@ -466,6 +501,7 @@ func (s *Server) play(run *battleRun, steps []battle.Step) bool {
 			alive := len(run.active()) > 0
 			if !alive {
 				run.b.Finished = true
+				s.closeBattleObservers(run)
 				if run.timer != nil {
 					run.timer.Stop()
 				}
@@ -551,12 +587,14 @@ func (s *Server) playRound(run *battleRun, steps []battle.Step, outcome battle.O
 		return
 	}
 	run.b.Processing = false
+	s.admitWaitingBattleClients(run)
 	for _, m := range run.active() {
 		prompt, err := s.combatPrompt(m, run.b.NextRound(m.c.character.ID))
 		if err != nil || s.sendAll(m.c, prompt) != nil {
 			m.c.conn.Close()
 		}
 	}
+	s.sendBattleSpectators(run, []byte{protocol.CommandBattleReady, protocol.BattleReadyReady})
 	s.armTurnTimer(run)
 }
 
@@ -591,13 +629,14 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		delay = s.rules().Delay(0, "flee")
 	}
 	exp, gold := run.b.Rewards()
+	s.closeBattleObservers(run, departure...)
 	exp = ScaleExperience(exp, s.expRateMultiplier)
 	var results []memberResult
 	for _, m := range run.active() {
 		c := m.c
 		previousQuests := c.character.Quests
 		next := c.character.Clone()
-		next.HP, next.SP = uint32(max(0, m.self.HP)), uint32(max(0, m.self.SP))
+		next.HP, next.SP = uint32(max(game.PostBattleRevivalHP, m.self.HP)), uint32(max(0, m.self.SP))
 		var first, last [][]byte
 		memberOutcome := outcome
 		if run.b.PvP && m.self.Side == battle.Defender {
@@ -661,9 +700,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			// C# adds the gold without telling the client; send the new balance.
 			first = append(first, protocol.Builder{protocol.CommandGold, protocol.GoldBalance}.U32(next.Gold))
 		case battle.Defeat:
-			full := next.Combat(s.Assets.Items)
-			next.HP = uint32(max(10, int(full.MaxHP)/2))
-			next.MaxHP = max(next.MaxHP, next.HP)
+			next.HP = game.PostBattleRevivalHP
 		}
 		next.HP, next.SP = min(next.HP, next.MaxHP), min(next.SP, next.MaxSP)
 		roster := newPetRoster()
@@ -788,6 +825,10 @@ func (s *Server) abandonBattle(c *Session) {
 	if run == nil {
 		return
 	}
+	if run.member(c) == nil {
+		s.leaveBattleObserver(c)
+		return
+	}
 	m := run.member(c)
 	if m != nil && m.self.Overkilled {
 		// A disconnect during the flight must not bypass the saved return.
@@ -812,6 +853,7 @@ func (s *Server) abandonBattle(c *Session) {
 		s.publishBattleDisconnect(run, m)
 	}
 	if len(run.active()) == 0 {
+		s.closeBattleObservers(run)
 		if run.encounter != 0 {
 			s.World.ReleaseEncounter(run.encounterMap, run.encounter, time.Now())
 		}
@@ -849,6 +891,16 @@ func battlePetIndex(char game.Character, m *battleMember) int {
 // changed here; the caller adopts it and publishes packets after a durable save.
 func (s *Server) petResults(run *battleRun, m *battleMember, next *game.Character, outcome battle.Outcome, roster *petRoster) ([][]byte, [][]byte) {
 	packets, peerPackets := s.activePetResults(run, m, next, outcome, roster)
+	for i := range next.Pets {
+		pet := &next.Pets[i]
+		if pet.HP <= 0 && m.knockedOutPets[game.BroadcastID(pet.ID)] {
+			pet.HP = game.PostBattleRevivalHP
+			if slot := roster.slot(pet.ID); slot != 0 {
+				packets = append(packets, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
+			}
+		}
+	}
+
 	for _, catch := range run.b.Captures {
 		if catch.Committed {
 			continue
@@ -884,6 +936,9 @@ func (s *Server) activePetResults(run *battleRun, m *battleMember, next *game.Ch
 		pet := &next.Pets[i]
 		if outcome != battle.Victory || run.b.PvP {
 			pet.HP = int32(max(0, m.pet.HP))
+		}
+		if outcome != battle.Continue {
+			pet.HP = max(game.PostBattleRevivalHP, pet.HP)
 		}
 		pet.SP = int32(max(0, m.pet.SP))
 		slot := roster.slot(pet.ID)
@@ -944,6 +999,9 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 	if len(p) != 9 {
 		return protocol.ErrMalformed
 	}
+	if p[2] == protocol.BattleWatchPlayer || p[2] == protocol.BattleJoinPlayer {
+		return s.requestBattleEntry(c, p)
+	}
 	if p[2] != protocol.BattleChallengePlayer {
 		return nil
 	}
@@ -951,7 +1009,7 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 	target := s.friendSessions[targetID]
 	if target == nil || target == c || target.character == nil || !s.samePlayerScene(target, c) || c.tentOwner != 0 ||
 		!c.character.Preferences().PKAllowed || !target.character.Preferences().PKAllowed ||
-		!gmIdle(c) || !gmIdle(target) || (c.party != nil && c.party == target.party) {
+		!gmIdle(c) || !gmIdle(target) || !battleInteractionAvailable(c, nil) || !battleInteractionAvailable(target, nil) || (c.party != nil && c.party == target.party) {
 		return c.send(serverwire.HeadBanner("The player is unavailable for PK."))
 	}
 	return s.startPvP(c, target)
@@ -961,11 +1019,12 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 // Caller holds worldMu, so no participant can join two battles during setup.
 func (s *Server) startPvP(attacker, defender *Session) error {
 	run := &battleRun{}
-	teams := [][]*Session{s.battleTeam(attacker), s.battleTeam(defender)}
+	teams := [][]*Session{pkTeam(attacker), pkTeam(defender)}
 	seen := map[*Session]bool{}
-	for _, team := range teams {
+	for side, team := range teams {
+		anchor := []*Session{attacker, defender}[side]
 		for _, c := range team {
-			if seen[c] || !gmIdle(c) || !c.character.Preferences().PKAllowed {
+			if seen[c] || !battleInteractionAvailable(c, nil) || !gmIdle(c) || !s.samePlayerScene(c, anchor) || !c.character.Preferences().PKAllowed {
 				return attacker.send(serverwire.HeadBanner("A party member is unavailable for PK."))
 			}
 			seen[c] = true

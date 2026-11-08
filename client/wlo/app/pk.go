@@ -15,9 +15,14 @@ const (
 
 func (c *Client) initPK() {
 	c.FuncButtons.Buttons[pkButton].OnClick = c.togglePK
+	c.FuncButtons.Buttons[joinBattleButton].OnClick = func() { c.toggleBattleEntry(protocol.BattleJoinPlayer) }
+	c.FuncButtons.Buttons[watchBattleButton].OnClick = func() { c.toggleBattleEntry(protocol.BattleWatchPlayer) }
 }
 
 func (c *Client) setPKTarget(active bool) {
+	if active {
+		c.setBattleEntryTarget(0)
+	}
 	c.pkTarget = active
 	if c.FuncButtons != nil && c.FuncButtons.Buttons[pkButton] != nil {
 		c.FuncButtons.Buttons[pkButton].IconDown = active

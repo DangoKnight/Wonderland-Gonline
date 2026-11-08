@@ -99,6 +99,7 @@ func (c *Client) makeFriends() {
 
 func (c *Client) setFriendTarget(active bool) {
 	if active {
+		c.setBattleEntryTarget(0)
 		c.setPKTarget(false)
 	}
 	c.friendTarget = active
@@ -133,6 +134,9 @@ func (c *Client) askFriend(p []byte) bool {
 		return false
 	}
 	id := binary.LittleEndian.Uint32(p[1:])
+	if c.friendAsk != nil && c.friendAsk.id == id {
+		return true // A repeated prompt must not cancel its pending acceptance.
+	}
 	if c.sport != nil {
 		// A minigame (PTR_DAT_004c9994 +4) refuses at once.
 		c.answerFriend(id, friendAnswerRefuse)
@@ -140,6 +144,7 @@ func (c *Client) askFriend(p []byte) bool {
 	}
 	if c.friendAsk != nil && c.friendAsk.dismiss != nil {
 		c.friendAsk.dismiss()
+		c.answerFriend(c.friendAsk.id, friendAnswerIgnore)
 	}
 	name := c.peerName(id)
 	ask := &friendAsk{id: id, until: c.Now().Add(friendAskTimeout)}
@@ -185,7 +190,7 @@ func (c *Client) friendAnswered(p []byte) bool {
 		return false
 	}
 	id := binary.LittleEndian.Uint32(p[1:])
-	name := string(c.peerName(id))
+	name := string(c.playerName(id))
 	switch p[5] {
 	case friendAnswerAccept:
 		c.addFriend(id)

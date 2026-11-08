@@ -103,6 +103,11 @@ func (c *Client) disconnected() {
 	c.minigameResultAckPending = false
 	c.resetBattleResults()
 	c.combat = combatRuntime{}
+	c.friendStatuses = nil
+	if c.friendAsk != nil && c.friendAsk.dismiss != nil {
+		c.friendAsk.dismiss()
+	}
+	c.friendAsk = nil
 	c.vacuum = vacuumRuntime{}
 	c.gonlineCollectionTiming = false
 	c.backdrops = backdropRuntime{}
@@ -128,6 +133,7 @@ func (c *Client) disconnected() {
 		c.teamAppearances = nil
 		c.setJoinTeamTarget(false)
 		c.setPKTarget(false)
+		c.setBattleEntryTarget(0)
 		c.setFriendTarget(false)
 	}
 	if c.Trade != nil {

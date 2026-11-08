@@ -43,7 +43,9 @@ const (
 	battleCatchFailureSkill = 10009
 	battleFleeSkill         = 60041
 	battleFleeFailureSkill  = 60046               // Native run/trip/recover result; repeat still submits Flee.
-	battleDamageDigits      = "Num_YellowRed10_2" // FUN_0039e884.
+	battleDamageDigits      = "Num_YellowRed10_2" // Native ordinary HP damage uses slanted digits too.
+	battleCriticalDigits    = "Num_YellowRed10_2" // Critical results share the native HP digit sheet.
+	battleRecoveryDigits    = "Num_YellowRed10_2" // HP recovery retains its existing native artwork.
 	battleSPDigits          = "Num_Blue10_1"
 	battleDigitStyle        = 4 // FUN_003b9c00: 20-pixel advance, centered.
 	battleCommandAttack     = 0
@@ -302,6 +304,7 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 		c.friendTarget = false
 		c.tradeTarget = false
 		c.setPKTarget(false)
+		c.setBattleEntryTarget(0)
 		view.loadAttempted = false
 		view.bodies = nil
 		view.playing = nil
@@ -437,6 +440,13 @@ func (c *Client) remoteBattlePacket(p []byte) bool {
 			counted = false
 		}
 		b.fighters = append(b.fighters, remoteFighter{side: f.Side, kind: f.Kind, x: f.X, y: f.Y, id: f.ID, owner: f.Owner, hp: f.HP, maxHP: f.MaxHP, sp: f.SP, maxSP: f.MaxSP, countedDeath: counted})
+	}
+	if b.active && !c.remote.battle.active {
+		c.remote.sequence = [2]int{}
+	}
+	if b.active && !wasActive && !view.state.Spectating && c.remote.active && c.remote.options.AutoFight {
+		view.auto = true
+		c.battleAutoCancel()
 	}
 	c.remote.battle = b
 	return true
@@ -831,7 +841,7 @@ func (c *Client) battleFrame(draw bool) bool {
 	}
 	sort.SliceStable(fighters, func(i, j int) bool { return positions[fighters[i].Cell].Y < positions[fighters[j].Cell].Y })
 	for _, f := range fighters {
-		if f.Removed || f.Waiting && !v.petPresented(f) {
+		if f.Removed || f.Kind == clientbattle.Pet && f.Waiting && !v.petPresented(f) {
 			continue
 		}
 		b := c.battleBody(f)
@@ -1002,7 +1012,7 @@ func (c *Client) battleHit(play *battlePlay, now, cueAt time.Time, motion client
 				continue
 			}
 			ink := uint16(battleDamageInk)
-			font := battleDamageDigits
+			font := battleRecoveryDigits
 			if result.Mode == protocol.BattleStatCriticalDamage {
 				ink = battleCriticalInk
 			}
@@ -1054,6 +1064,21 @@ func (c *Client) battleBinding(id uint16, actor remoteFighter) hud.Binding {
 }
 func (c *Client) battleMenu() {
 	v := &c.battle
+	if v.state.Spectating {
+		if v.menu == nil {
+			f := seui.NewForm(c.Env)
+			f.Dockable, f.Draggable = false, false
+			f.Init("", ScreenWidth-50, 0, 0, 0, 0, false, battleCommandButtonSize, battleCommandButtonSize, ScreenHeight-80)
+			b := seui.NewFixedButton(c.Env, f)
+			b.Init("Btn_Battle_3_1", 0, battleCommandButtonSize, battleCommandButtonSize, 0, 0, true, battleCommandButtonSize, battleCommandButtonSize, 0)
+			b.SetHint([]byte(localization.UI("ui.app.close_7d9eb7ac")))
+			b.OnClick = c.leaveSpectatedBattle
+			v.menu = f
+			c.UI.Add(f)
+		}
+		v.menu.Visible = !v.closing
+		return
+	}
 	actor, ok := c.battleActor()
 	show := ok && v.binding == nil && v.item == nil && !c.battleAnimating() && !v.timedOut && !v.auto && !(c.remote.active && c.remote.options.AutoFight)
 	c.battlePreviousActions(show, actor)
@@ -1361,7 +1386,13 @@ func (c *Client) battleOverlay() {
 // Targets retain the native column/row scan order (FUN_0039a5b8).
 func (c *Client) battleAutoTick() {
 	v := &c.battle
+	c.remoteRearmBattleAuto()
 	c.battleAutoCancel()
+	// Remote owns submissions while enabled. Keep the independent AUTO flag
+	// armed so stopping Remote can hand control to AUTO without double choices.
+	if c.remote.active && c.remote.options.AutoFight {
+		return
+	}
 	if !v.auto || !v.state.Ready || v.autoTurn == v.state.Turn || c.battleAnimating() {
 		return
 	}

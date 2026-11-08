@@ -56,6 +56,9 @@ func NewHotKeyForm(env *seui.Env, screenW, screenH int) *HotKeyForm {
 	h.InitFixedForm(h, env)
 	h.Name = "TSe_HotKeyForm"
 	h.Init("Form_HotKey_V", screenW-hotKeyWidth, hotKeyHeight, hotKeyWidth, 0, 0, true, hotKeyHeight, hotKeyWidth, (screenH-hotKeyHeight)/2)
+	// The blue panel uses colour-keyed gaps for translucency. Treat its
+	// background as a continuous drag surface; children still own slot/buttons.
+	h.PixelHit = false
 	h.BindLanguage("hint", func() { h.SetHint([]byte(localization.UI("ui.hud.hot_bar_b899a028"))) })
 	h.Minimize = newBarButton(env, h, "Btn_Minimize_1", hotKeyMinLeft, 0, func() string { return localization.UI("ui.hud.toggle_view_a4357da0") })
 	h.Minimize.OnClick = h.ToggleView

@@ -530,7 +530,7 @@ func TestQuestBattleDefeat(t *testing.T) {
 	if !contains(got, []byte{11, 12, 2}) {
 		t.Fatal("defender victory side missing", got)
 	}
-	if !bytes.Equal(got[len(got)-1], serverwire.EventFrame(1, 3, 5, 1, 0, 10003, 1, 3)) || c.character.HP < 10 {
+	if !bytes.Equal(got[len(got)-1], serverwire.EventFrame(1, 3, 5, 1, 0, 10003, 1, 3)) || c.character.HP != game.PostBattleRevivalHP {
 		t.Fatal("defeat branch", got[len(got)-1], c.character.HP)
 	}
 }

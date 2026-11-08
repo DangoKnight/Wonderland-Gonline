@@ -165,7 +165,7 @@ func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 
 // Ambient aggression must not interrupt an owned interaction or target a ghost.
 func ambientEncounterAvailable(c *Session, now time.Time) bool {
-	return commandTravelAvailable(c) && !c.invisible && c.tentOwner == 0 &&
+	return commandTravelAvailable(c) && battleInteractionAvailable(c, nil) && !c.invisible && c.tentOwner == 0 &&
 		c.trade == nil && c.stall == nil && c.fishing == nil && c.gathering == nil &&
 		c.manufacturing == nil && c.arcade == nil && !c.encounter.restingAt(now)
 }
@@ -225,7 +225,7 @@ func (s *Server) npcStats(template uint32) (level int, element byte, name string
 // stepEncounter runs after a move that started no region event. Caller holds worldMu.
 func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 	char, enc := c.character, &c.encounter
-	if c.battle != nil || c.event != nil || (char.X == prevX && char.Y == prevY) || enc.resting() || s.World.SafeTown(char.Map) {
+	if c.battle != nil || !battleInteractionAvailable(c, nil) || (char.X == prevX && char.Y == prevY) || enc.resting() || s.World.SafeTown(char.Map) {
 		return nil
 	}
 	m, ok := s.World.Map(char.Map)
@@ -262,6 +262,9 @@ func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 // proximityEncounter fights one to four copies of a nearby monster; a native roaming
 // encounter runs its event instead.
 func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
+	if !battleInteractionAvailable(c, nil) || c.battle != nil {
+		return nil
+	}
 	if s.World.RoamingBattle(c.character.Map, n.ClickID) {
 		_, e := s.runNPCEvent(context.Background(), c, n.ClickID)
 		return e
@@ -281,6 +284,9 @@ func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
 
 // randomEncounter fights one to four monsters drawn from the map's wild actors.
 func (s *Server) randomEncounter(c *Session, m *world.Map) error {
+	if !battleInteractionAvailable(c, nil) || c.battle != nil {
+		return nil
+	}
 	var pool []world.NPC
 	for _, n := range m.NPCs {
 		if s.World.Wild(m.ID, n) && !s.World.Defeated(m.ID, n.ClickID) && !s.World.RoamingBattle(m.ID, n.ClickID) {
@@ -309,6 +315,12 @@ func (s *Server) wildClick(c *Session, n world.NPC) (bool, error) {
 	mapID := c.character.Map
 	if !s.World.Wild(mapID, n) {
 		return false, nil
+	}
+	if !battleInteractionAvailable(c, nil) || c.battle != nil {
+		if c.event == nil && c.battle == nil {
+			return true, c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+		}
+		return true, nil
 	}
 	if s.World.Defeated(mapID, n.ClickID) {
 		return true, c.send([]byte{protocol.CommandEvent, protocol.EventResume})
@@ -373,7 +385,9 @@ func shapeshiftPacket(c *Session) []byte {
 
 // Resting recovery is a server rule of this port: neither aLogin nor the
 // reference server defines one. A character holding a sitting or lying
-// pose outside battles and events and their active pet recover
+// pose outside battles and events and their active pet recover. A team's
+// leader supplies that pose for every member, regardless of followers' poses.
+// Each eligible player and active pet recovers
 // restRecoveryPercent of their own maximum HP/SP (at least one point)
 // every restRecoveryInterval.
 const (
@@ -399,12 +413,23 @@ func (s *Server) restCharacters(now time.Time) {
 
 // rest recovers one session. Caller holds worldMu.
 func (s *Server) rest(c *Session, now time.Time) {
-	if !c.ready || c.character == nil || c.battle != nil || c.event != nil || !restingPose(c.emote) {
+	leader := c
+	if c.party != nil {
+		leader = nil
+		if len(c.party.members) > 0 {
+			leader = c.party.leader()
+		}
+	}
+	if !c.ready || c.character == nil || c.battle != nil || c.event != nil ||
+		leader == nil || !leader.ready || leader.character == nil || leader.battle != nil || leader.event != nil ||
+		!sameScene(c, leader) || !restingPose(leader.emote) {
 		c.restedAt = time.Time{}
+		c.restingLeader = nil
 		return
 	}
-	if c.restedAt.IsZero() {
+	if c.restedAt.IsZero() || c.restingLeader != leader {
 		c.restedAt = now
+		c.restingLeader = leader
 		return
 	}
 	if now.Sub(c.restedAt) < restRecoveryInterval {
@@ -463,4 +488,22 @@ func (s *Server) rest(c *Session, now time.Time) {
 	if err := s.sendAll(c, packets); err != nil {
 		s.Log.Debug("resting recovery report failed", "session", c.info.ID, "error", err)
 	}
+}
+
+// A leader leaving/re-entering rest resets the team's interval even if both
+// pose packets arrive between world ticks. A follower's pose cannot reset it.
+// Caller holds worldMu.
+func resetRestClock(c *Session) {
+	if c.party != nil && len(c.party.members) > 0 {
+		if c.party.leader() != c {
+			return
+		}
+		for _, m := range c.party.members {
+			m.restedAt = time.Time{}
+			m.restingLeader = nil
+		}
+		return
+	}
+	c.restedAt = time.Time{}
+	c.restingLeader = nil
 }

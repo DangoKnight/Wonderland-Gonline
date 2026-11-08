@@ -149,6 +149,7 @@ func (c *Client) initTeam() {
 // the next player click sends the native AC13:1 invitation request.
 func (c *Client) setJoinTeamTarget(active bool) {
 	if active {
+		c.setBattleEntryTarget(0)
 		c.setPKTarget(false)
 	}
 	c.joinTeamTarget = active

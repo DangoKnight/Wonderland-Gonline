@@ -8379,27 +8379,28 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 }
 
 type NativeItemsRow struct {
-	NativeItemsKey            uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
-	ValueDefinitionEquipLevel uint16
-	ValueDefinitionCellWidth  uint8
-	ValueDefinitionCellHeight uint8
-	ValueDefinitionID         uint16
-	ValueDefinitionName       string
-	ValueDefinitionType       uint8
-	ValueDefinitionEquipSlot  uint16
-	ValueDefinitionLevel      uint16
-	ValueDefinitionStatus0    uint16
-	ValueDefinitionStatus1    uint16
-	ValueDefinitionValues0    int32
-	ValueDefinitionValues1    int32
-	ValueDescription          string
-	ValueIcon                 uint16
-	ValueLargeIcon            uint16
-	ValueSprites0             uint16
-	ValueSprites1             uint16
-	ValueSprites2             uint16
-	ValueSprites3             uint16
-	ValueRecord               []byte
+	NativeItemsKey                uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
+	ValueDefinitionIndestructible bool
+	ValueDefinitionEquipLevel     uint16
+	ValueDefinitionCellWidth      uint8
+	ValueDefinitionCellHeight     uint8
+	ValueDefinitionID             uint16
+	ValueDefinitionName           string
+	ValueDefinitionType           uint8
+	ValueDefinitionEquipSlot      uint16
+	ValueDefinitionLevel          uint16
+	ValueDefinitionStatus0        uint16
+	ValueDefinitionStatus1        uint16
+	ValueDefinitionValues0        int32
+	ValueDefinitionValues1        int32
+	ValueDescription              string
+	ValueIcon                     uint16
+	ValueLargeIcon                uint16
+	ValueSprites0                 uint16
+	ValueSprites1                 uint16
+	ValueSprites2                 uint16
+	ValueSprites3                 uint16
+	ValueRecord                   []byte
 }
 
 func (NativeItemsRow) TableName() string { return "catalog_native_items" }
@@ -8407,6 +8408,7 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	var rows []NativeItemsRow
 	for key, value := range values {
 		row := NativeItemsRow{NativeItemsKey: key}
+		row.ValueDefinitionIndestructible = value.Definition.Indestructible
 		row.ValueDefinitionEquipLevel = value.Definition.EquipLevel
 		row.ValueDefinitionCellWidth = value.Definition.CellWidth
 		row.ValueDefinitionCellHeight = value.Definition.CellHeight
@@ -8449,6 +8451,7 @@ func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
 	rows = loaded
 	for _, row := range rows {
 		var value assets.NativeItem
+		value.Definition.Indestructible = row.ValueDefinitionIndestructible
 		value.Definition.EquipLevel = row.ValueDefinitionEquipLevel
 		value.Definition.CellWidth = row.ValueDefinitionCellWidth
 		value.Definition.CellHeight = row.ValueDefinitionCellHeight

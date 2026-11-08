@@ -115,7 +115,7 @@ func (s *Server) challengeTrial(c *Session, stage byte, native bool) error {
 			break
 		}
 	}
-	accepted := trial != nil && gmIdle(c) && c.character.Map == trial.Map
+	accepted := trial != nil && battleInteractionAvailable(c, nil) && gmIdle(c) && c.character.Map == trial.Map
 	if accepted {
 		// Reserve enough space before admission for every participant. Reward is
 		// still checked again at settlement before the durable character save.

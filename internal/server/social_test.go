@@ -335,11 +335,11 @@ func TestFriendPresenceOfflineAndReconnect(t *testing.T) {
 	}
 	s.leaveWorld(b)
 	packets := w[0].packets(t)
-	if !contains(packets, protocol.Builder{14, 8}.U32(b.character.ID)) || !contains(packets, protocol.Builder{14, 5}.Bytes(serverwire.FriendEntry(*b.character, false, false))) {
+	if !contains(packets, protocol.Builder{14, 9}.U32(b.character.ID).U8(3)) || !contains(packets, protocol.Builder{14, 5}.Bytes(serverwire.FriendEntry(*b.character, false, false))) {
 		t.Fatal("offline presence wrong", packets)
 	}
 	tradeDo(t, s, b, []byte{12, 1})
-	online, _ := protocol.Builder{14, 7}.U32(b.character.ID).String(b.character.Name)
+	online := protocol.Builder{14, 9}.U32(b.character.ID).U8(0)
 	if !contains(w[0].packets(t), online) {
 		t.Fatal("friend reconnect missing")
 	}
@@ -356,7 +356,7 @@ func TestFriendPresenceOfflineAndReconnect(t *testing.T) {
 		t.Fatal("map loading appeared offline")
 	}
 	s.leaveWorld(b)
-	if !contains(w[0].packets(t), protocol.Builder{14, 8}.U32(b.character.ID)) {
+	if !contains(w[0].packets(t), protocol.Builder{14, 9}.U32(b.character.ID).U8(3)) {
 		t.Fatal("disconnect during warp failed to report offline")
 	}
 }
@@ -461,6 +461,23 @@ func TestFriendRefusalAndIgnore(t *testing.T) {
 	}
 }
 
+func TestFriendInvalidAnswerKeepsInvitation(t *testing.T) {
+	s, p, _ := friendFixture(t)
+	a, b := p[0], p[1]
+	tradeDo(t, s, a, protocol.Builder{14, 2}.U32(b.character.ID))
+	if err := s.friendCommand(context.Background(), b, protocol.Builder{14, 3}.U32(a.character.ID).U8(255)); err != protocol.ErrMalformed {
+		t.Fatal("invalid answer accepted", err)
+	}
+	if _, pending := b.friendRequests[a.character.ID]; !pending {
+		t.Fatal("invalid answer consumed invitation")
+	}
+	tradeDo(t, s, b, protocol.Builder{14, 3}.U32(a.character.ID).U8(1))
+	friends, err := s.Store.Friends(context.Background(), b.character.ID)
+	if err != nil || len(friends) != 1 {
+		t.Fatal(friends, err)
+	}
+}
+
 func nativeMailRequest(recipient uint32, body []byte) []byte {
 	return protocol.Builder{14, 1, 0}.U32(recipient).Bytes(body)
 }
@@ -499,6 +516,9 @@ func TestTextMailDeferredUntilLoginAndWarpAcknowledgment(t *testing.T) {
 	w[0].Reset()
 	w[2].Reset()
 	tradeDo(t, s, a, nativeMailRequest(b.character.ID, []byte("offline")))
+	if !contains(w[0].packets(t), protocol.Builder{14, 9}.U32(b.character.ID).U8(3)) {
+		t.Fatal("offline mail incorrectly advertised online presence")
+	}
 	if w[2].Len() != 0 {
 		t.Fatal("delivered offline")
 	}
@@ -668,7 +688,7 @@ func TestSocialAddReplyListAndRemoval(t *testing.T) {
 		wire          *captureConn
 	}{{a, b, w[0]}, {b, a, w[1]}} {
 		packets := pair.wire.packets(t)
-		online, _ := protocol.Builder{14, 7}.U32(pair.friend.character.ID).String(pair.friend.character.Name)
+		online := protocol.Builder{14, 11}.Bytes(serverwire.FriendEntry(*pair.friend.character, true, true))
 		status, _ := protocol.Builder{10, 1}.U32(pair.friend.character.ID).U8(1).String(pair.friend.character.Name)
 		if len(packets) != 3 || !contains(packets, protocol.Builder{14, 9}.U32(pair.friend.character.ID).U8(0)) || !contains(packets, online) || !contains(packets, status) {
 			t.Fatal(packets)
@@ -692,7 +712,7 @@ func TestSocialAddReplyListAndRemoval(t *testing.T) {
 	for _, request := range [][]byte{{10, 3}, {10, 6}, protocol.Builder{10, 6}.U32(b.character.ID)} {
 		tradeDo(t, s, a, request)
 		packets := w[0].packets(t)
-		if len(packets) != 2 || !contains(packets, protocol.Builder{14, 11}.Bytes(serverwire.FriendEntry(*b.character, true, true))) || !contains(packets, protocol.Builder{14, 5}.Bytes(serverwire.FriendEntry(*b.character, false, true))) {
+		if len(packets) != 3 || !contains(packets, protocol.Builder{14, 11}.Bytes(serverwire.FriendEntry(*b.character, true, true))) || !contains(packets, protocol.Builder{14, 5}.Bytes(serverwire.FriendEntry(*b.character, false, true))) {
 			t.Fatal(packets)
 		}
 	}
@@ -704,7 +724,7 @@ func TestSocialAddReplyListAndRemoval(t *testing.T) {
 	tradeDo(t, s, b, protocol.Builder{10, 2}.U32(a.character.ID).U8(1))
 	for _, wire := range w[:2] {
 		packets := wire.packets(t)
-		if len(packets) != 2 || packets[0][0] != 14 || packets[0][1] != 9 || packets[1][0] != 14 || packets[1][1] != 7 {
+		if len(packets) != 2 || packets[0][0] != 14 || packets[0][1] != 9 || packets[1][0] != 14 || packets[1][1] != 11 {
 			t.Fatal(packets)
 		}
 	}

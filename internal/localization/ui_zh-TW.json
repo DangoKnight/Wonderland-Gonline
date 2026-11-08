@@ -2,6 +2,11 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+	"ui.remote.save_failed": "無法儲存遙控器設定：",
+	"ui.remote.load_failed": "無法載入遙控器設定：",
+	"ui.remote.clear_assignment": "清除設定",
+	"ui.remote.player_advanced": "人物進階設定：",
+	"ui.remote.pet_advanced": "寵物進階設定：",
     "ui.pk.leader_only": "只有隊長可以發起PK",
     "ui.pk.disabled": "你的PK功能已關閉",
     "ui.pk.same_team": "無法與同隊成員PK",

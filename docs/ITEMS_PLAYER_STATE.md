@@ -148,7 +148,17 @@ current HP (25) and SP (26) only. The active following/battle pet recovers by th
 same percentage of its own equipped maxima, even when the player's vitals are
 already full. Inactive party, reserve and hotel pets do not recover. Pet updates
 use native AC8:2 with the pet's per-login client slot. Pet recovery depends on the
-owner resting, not on the pet having a matching sprite animation.
+resting eligibility, not on the pet having a matching sprite animation.
+
+For a team, only the current leader's sitting/lying pose enables recovery for
+all eligible members and their active battle pets, including hidden pets.
+Followers recover even while standing; a sitting follower cannot recover while
+the leader stands. Each member must still be ready, in the leader's scene, and
+outside combat/events. An unavailable leader pauses recovery for the whole team.
+Changing the recovery leader (joining, transferring leadership or leaving a team)
+starts a fresh interval where the source changes. Leader stand/sit transitions
+reset the team's recovery clocks even between world ticks; followers changing
+poses do not reset those clocks. Solo characters use their own resting pose.
 Native clients end a held pose by walking
 without an AC32 report, so a position change clears the server's held pose;
 this also lets a player sit again after walking.

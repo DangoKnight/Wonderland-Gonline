@@ -28,10 +28,21 @@ not a list of outstanding work.
   and checkpoint through the existing autosave path. Client trail positions are
   visual; they are not additional database writes or per-frame network commands.
 - The serializer jump table at `002c49b8` and branch `002c4f3c` resolve transfer
-  requests: offer `[13,10,1,target U32]`, accept `[13,10,2,3]`, refusal
-  `[13,10,2,2]`, timeout `[13,10,3]`. Callback entries `0040760c`, `00407624`
-  and `0040763c` set refusal/acceptance/timeout respectively. They were checked
+  requests: offer `[13,10,1,target U32]`, confirm `[13,10,3]`, refusal
+  `[13,10,2,2]`, expiration `[13,10,2,3]`. Callback entries `0040760c`,
+  `00407624` and `0040763c` send refusal, expiration and confirmation respectively.
+  Confirm button handler `0034c6b4` calls the form's `+0x2c0` callback;
+  expiration closes the form and invokes `+0x2e0`. Inferring these roles from
+  the team-manager callback order alone previously reversed confirmation and
+  expiration. The 2026-11-08 mixed-client capture recorded `[13,10,3]` when
+  Confirm was clicked, 2.974 seconds after the offer. They were checked
   against executable SHA-256 `ca19ee087b601182e872235e58e6bf367f4bb21879226dfe3cc96f1c99624f61`.
+  The installed capture build, SHA-256
+  `190dae510151d80fdbc276f16dd9a33acb5dd9d7a2af3fe953343f8ac148c6cc`,
+  has the corresponding team callbacks at `00451378`, `00451390` and `004513a8`;
+  wrapper `0034dca4` assigns the same callback slots and serializer `002c5411`
+  appends the response byte for the four-byte form. A three-byte confirmation
+  must never be interpreted as expiration or bypass candidate/deadline checks.
 - The native five-second leadership prompt is implemented on both ends, with
   refusal, expiry, busy, map-change, battle-entry and departure cancellation.
   Accepted transfers swap the new and old leader's formation slots. Pending

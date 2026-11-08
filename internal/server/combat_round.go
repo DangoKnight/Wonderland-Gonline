@@ -89,6 +89,7 @@ func (s *Server) combatChoicesCommand(c *Session, p []byte) error {
 	for _, other := range run.active() {
 		s.sendOrClose(other.c, acknowledgments...)
 	}
+	s.sendBattleSpectators(run, acknowledgments...)
 	s.tryRound(run)
 	return nil
 }
@@ -97,6 +98,7 @@ func (s *Server) combatChoicesCommand(c *Session, p []byte) error {
 // its success packets enter the complete chain. A bounded oversized chain can
 // fall back to native delivery without awarding progress a second time.
 func (s *Server) prepareCombatRounds(run *battleRun, steps []battle.Step) map[*Session][][][]byte {
+	s.prepareSpectatorRounds(run, steps)
 	prepared := map[*Session][][][]byte{}
 	for _, m := range run.active() {
 		m.roundBundled = false

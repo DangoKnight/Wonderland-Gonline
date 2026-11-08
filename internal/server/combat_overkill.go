@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"wonderland-gonline/internal/battle"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 	"wonderland-gonline/internal/world"
 )
@@ -26,11 +27,9 @@ func (s *Server) returnOverkilledPlayer(run *battleRun, m *battleMember, notifyO
 		return fmt.Errorf("overkill return map %d unavailable", dst.Map)
 	}
 	next := c.character.Clone()
-	// Retain the existing defeat recovery rule. This changes the destination
+	// Use the ordinary one-HP revival rule. This changes the destination
 	// only for overkills; ordinary knockouts remain on the battle field.
-	full := next.Combat(s.Assets.Items)
-	next.HP = uint32(max(10, int(full.MaxHP)/2))
-	next.MaxHP = max(next.MaxHP, next.HP)
+	next.HP = game.PostBattleRevivalHP
 	next.SP = uint32(max(0, m.self.SP))
 	next.HP, next.SP = min(next.HP, next.MaxHP), min(next.SP, next.MaxSP)
 	next.Map, next.X, next.Y = dst.Map, dst.X, dst.Y
@@ -55,6 +54,10 @@ func (s *Server) returnOverkilledPlayer(run *battleRun, m *battleMember, notifyO
 	run.b.Leave(next.ID)
 	c.encounter.battleOver()
 	closePacket := protocol.Builder{protocol.CommandBattleState, protocol.BattleStateWireCode0}.U32(next.ID).U16(0)
+	if m.pet != nil && !m.pet.Overkilled {
+		s.sendBattleSpectators(run, []byte{protocol.CommandBattleState, protocol.BattleStateExit, m.pet.X, m.pet.Y, 0})
+	}
+	s.sendBattleSpectators(run, closePacket)
 	// The owner has finished its overkill flight. Remaining clients also
 	// withdraw the owner's pet and clear its participant/world battle flag.
 	for _, other := range run.active() {

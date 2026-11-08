@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/binary"
+	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -75,6 +76,15 @@ func (c *Client) receivePresence(p []byte) {
 		if p[0] == protocol.PresenceOnline && p[presenceIDEnd] == protocol.PresenceMapAvailable {
 			if known := c.teamAppearances[id]; known != nil {
 				c.rememberPlayer(id, known.Name)
+			}
+		}
+		if p[presenceIDEnd] <= hud.PresenceOffline {
+			if _, ok := c.friend(id); ok {
+				if c.friendStatuses == nil {
+					c.friendStatuses = map[uint32]byte{}
+				}
+				c.friendStatuses[id] = p[presenceIDEnd]
+				c.Social.Refresh()
 			}
 		}
 		if id == c.World.Player.ID {

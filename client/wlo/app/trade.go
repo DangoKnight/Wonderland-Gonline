@@ -106,6 +106,7 @@ func (c *Client) resetTrade() {
 
 func (c *Client) setTradeTarget(active bool) {
 	if active {
+		c.setBattleEntryTarget(0)
 		c.setPKTarget(false)
 	}
 	c.tradeTarget = active
@@ -116,7 +117,7 @@ func (c *Client) setTradeTarget(active bool) {
 // (PK, Join Team, Make Friends, Trade) is armed.
 func (c *Client) syncTargetSelection() {
 	if c.World != nil {
-		c.World.JoinTeamSelection = c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
+		c.World.JoinTeamSelection = c.battleEntryTarget != 0 || c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.Hover(-1, -1)
 	}
 }

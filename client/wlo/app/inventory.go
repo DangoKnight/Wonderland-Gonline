@@ -85,6 +85,7 @@ func (c *Client) initInventory() {
 	c.Inventory.Notice = c.Chat.Notice
 	c.Inventory.StartRemote = c.startRemote
 	c.Inventory.StopRemote = c.stopRemote
+	c.Inventory.RemoteChoices = c.remoteChoices
 	c.Inventory.Warning = func(message string) {
 		c.Notices.Show([]byte(message), inventoryWarningDuration, c.Now())
 	}
@@ -156,6 +157,7 @@ func (c *Client) resetInventory(p world.Player) {
 	}
 	c.refreshEquipment()
 	c.loadHotbar()
+	c.loadRemoteProfile()
 	c.loadEmotes()
 	c.loadMail()
 }

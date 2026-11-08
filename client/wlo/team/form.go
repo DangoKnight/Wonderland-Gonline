@@ -325,7 +325,7 @@ func (f *Form) memberAction(row int, leader bool) {
 		message = localization.UI("ui.team.appoint_this_teammate_as_leader_30ce278b")
 		code = protocol.TeamTransferLeadership
 	}
-	f.Confirm(message, 0, func() {
+	confirm := func() {
 		if f.State.Leader != f.State.Self || f.CanAct != nil && !f.CanAct() {
 			return
 		}
@@ -339,7 +339,16 @@ func (f *Form) memberAction(row int, leader bool) {
 				return
 			}
 		}
-	})
+	}
+	if leader {
+		var name []byte
+		if f.NameOf != nil {
+			name = f.NameOf(id)
+		}
+		f.ConfirmApplicant(id, name, message, confirm)
+	} else {
+		f.Confirm(message, 0, confirm)
+	}
 }
 func (f *Form) Refresh() {
 	can := f.allowed()

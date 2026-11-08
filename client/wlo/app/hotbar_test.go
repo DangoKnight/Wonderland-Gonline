@@ -75,6 +75,57 @@ func TestHotbarPanelDragCancelledWithSessionInput(t *testing.T) {
 	}
 }
 
+func TestHotbarTranslucentBackgroundStartsDrag(t *testing.T) {
+	for _, horizontal := range []bool{false, true} {
+		name := "vertical"
+		if horizontal {
+			name = "horizontal"
+		}
+		t.Run(name, func(t *testing.T) {
+			c, _, _ := enteredClient(t)
+			h := c.HotKeys
+			if horizontal {
+				h.ToggleView()
+			}
+			h.Left, h.Top = 300, 120
+			// Find a real colour-keyed hole in the blue strip outside the slots.
+			left, top, right, bottom := 8, 30, 20, 240
+			if horizontal {
+				left, top, right, bottom = 32, 8, 240, 20
+			}
+			px, py := -1, -1
+			for y := top; y < bottom && px < 0; y++ {
+				for x := left; x < right; x++ {
+					if !c.Env.Pics.Opaque(h.Image, x, y) {
+						px, py = x, y
+						break
+					}
+				}
+			}
+			if px < 0 {
+				t.Fatal("fixture has no translucent background pixels")
+			}
+			x, y := h.Left+px, h.Top+py
+			c.Input.X, c.Input.Y = x, y
+			c.Frame()
+			if c.Input.Hovered != h {
+				t.Fatal("blue background passed pointer through hotbar")
+			}
+			if !c.UI.MouseDown(seui.ButtonLeft, 0, x, y) || c.Input.Captured != h {
+				t.Fatal("blue background did not capture drag")
+			}
+			c.UI.MouseMove(1, x+70, y+50, true)
+			if h.Left != 370 || h.Top != 170 {
+				t.Fatal("hotbar did not follow drag", h.Left, h.Top)
+			}
+			c.UI.MouseUp(seui.ButtonLeft, 0, x+70, y+50)
+			if h.Dragging || c.Input.Captured != nil || c.hotbar.drag != nil {
+				t.Fatal("panel release retained drag or selected a binding")
+			}
+		})
+	}
+}
+
 func TestHotbarDragPagesPersistenceAndRemoval(t *testing.T) {
 	c, _, _ := enteredClient(t)
 	c.mapReady = true

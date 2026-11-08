@@ -212,7 +212,7 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	if alice.party.leader() != alice {
 		t.Fatal("leadership changed without acceptance")
 	}
-	if err := s.partyCommand(ctx, bobby, []byte{13, 10, 2, 3}); err != nil {
+	if err := s.partyCommand(ctx, bobby, []byte{13, 10, 3}); err != nil {
 		t.Fatal(err)
 	}
 	if alice.party.leader() != bobby || !hasPacket(wires[0].packets(t), protocol.Builder{13, 6}.U32(b).U8(1).U32(a)) {
@@ -279,9 +279,9 @@ func TestPartyLimitFollowAndLogout(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	follow := protocol.Builder{13, 5}.U32(alice.character.ID).U32(bobby.character.ID)
-	if !hasPacket(wires[1].packets(t), follow) {
-		t.Fatal("formation not replayed on arrival")
+	arrivalRoster := protocol.Builder{13, 6}.U32(alice.character.ID).U8(2).U32(bobby.character.ID).U32(carol.character.ID)
+	if packets := wires[1].packets(t); !hasPacket(packets, arrivalRoster) || countPrefix(packets, 13, 5) != 0 {
+		t.Fatal("arrival did not restore the roster silently")
 	}
 
 	// A disconnected member leaves the team.

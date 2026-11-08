@@ -93,6 +93,9 @@ func (s *Server) requestFriend(ctx context.Context, c *Session, id uint32) error
 // acceptFriend answers a pending request. Any answer but acceptance is
 // reported to the asker with the same result byte, and no friendship forms.
 func (s *Server) acceptFriend(ctx context.Context, c *Session, id uint32, answer byte) error {
+	if answer < protocol.FriendsAnswerAccept || answer > protocol.FriendsAnswerIgnore {
+		return protocol.ErrMalformed
+	}
 	at, pending := c.friendRequests[id]
 	delete(c.friendRequests, id)
 	other := s.friendPlayer(id)
@@ -112,8 +115,8 @@ func (s *Server) acceptFriend(ctx context.Context, c *Session, id uint32, answer
 	// Publish only after the shared relationship is durable.
 	for _, pair := range [][2]*Session{{other, c}, {c, other}} {
 		owner, friend := pair[0], pair[1]
-		online, _ := protocol.Builder{protocol.CommandFriends, protocol.FriendsAccepted}.U32(friend.character.ID).String(friend.character.Name)
-		s.sendOrClose(owner, protocol.Builder{protocol.CommandFriends, protocol.FriendsAccept}.U32(friend.character.ID).U8(protocol.FriendsAnswerAccept), protocol.Builder{protocol.CommandFriends, protocol.FriendsAcceptanceReply}.U32(friend.character.ID).U8(0), online, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(friend.character.ID).U8(255))
+		online := protocol.Builder{protocol.CommandFriends, protocol.FriendsTabs}.Bytes(serverwire.FriendEntry(*friend.character, true, true))
+		s.sendOrClose(owner, protocol.Builder{protocol.CommandFriends, protocol.FriendsAccept}.U32(friend.character.ID).U8(protocol.FriendsAnswerAccept), protocol.Builder{protocol.CommandFriends, protocol.FriendsPresence}.U32(friend.character.ID).U8(protocol.FriendsPresenceOnline), online, protocol.Builder{protocol.CommandPresence, protocol.PresenceOnline}.U32(friend.character.ID).U8(255))
 		if err := s.sendFriendList(ctx, owner); err != nil {
 			return err
 		}
@@ -151,6 +154,7 @@ func (s *Server) sendFriendList(ctx context.Context, c *Session) error {
 }
 func (s *Server) sendFriends(c *Session, friends []game.Character) error {
 	tab, list := protocol.Builder{protocol.CommandFriends, protocol.FriendsTabs}, protocol.Builder{protocol.CommandFriends, protocol.FriendsList}
+	presence := protocol.Builder{protocol.CommandFriends, protocol.FriendsPresence}
 	for _, f := range friends {
 		peer := s.friendPlayer(f.ID)
 		if peer != nil {
@@ -158,8 +162,17 @@ func (s *Server) sendFriends(c *Session, friends []game.Character) error {
 		}
 		tab = tab.Bytes(serverwire.FriendEntry(f, true, peer != nil))
 		list = list.Bytes(serverwire.FriendEntry(f, false, peer != nil))
+		status := byte(protocol.FriendsPresenceOffline)
+		if peer != nil {
+			status = protocol.FriendsPresenceOnline
+		}
+		presence = presence.U32(f.ID).U8(status)
 	}
-	return s.sendAll(c, [][]byte{tab, list})
+	packets := [][]byte{tab, list}
+	if len(friends) > 0 {
+		packets = append(packets, presence)
+	}
+	return s.sendAll(c, packets)
 }
 
 // friendPresence runs on initial map publication and disconnect, never on warps.
@@ -185,10 +198,11 @@ func (s *Server) friendPresence(c *Session, online bool) {
 		if peer == nil {
 			continue
 		}
-		p := protocol.Builder{protocol.CommandFriends, protocol.FriendsWireCode8}.U32(c.character.ID)
+		status := byte(protocol.FriendsPresenceOffline)
 		if online {
-			p, _ = protocol.Builder{protocol.CommandFriends, protocol.FriendsAccepted}.U32(c.character.ID).String(c.character.Name)
+			status = protocol.FriendsPresenceOnline
 		}
+		p := protocol.Builder{protocol.CommandFriends, protocol.FriendsPresence}.U32(c.character.ID).U8(status)
 		s.sendOrClose(peer, p)
 		if err := s.sendFriendList(ctx, peer); err != nil {
 			s.Log.Error("friend list refresh failed", "error", err)
@@ -307,11 +321,8 @@ func (s *Server) addLocalContact(ctx context.Context, c *Session, id uint32, not
 		owner, friend := pair[0], pair[1]
 		var packets [][]byte
 		if !existing {
-			online, err := protocol.Builder{protocol.CommandFriends, protocol.FriendsAccepted}.U32(friend.character.ID).String(friend.character.Name)
-			if err != nil {
-				return err
-			}
-			packets = append(packets, protocol.Builder{protocol.CommandFriends, protocol.FriendsAcceptanceReply}.U32(friend.character.ID).U8(protocol.FriendsAcceptanceSuccess), online)
+			online := protocol.Builder{protocol.CommandFriends, protocol.FriendsTabs}.Bytes(serverwire.FriendEntry(*friend.character, true, true))
+			packets = append(packets, protocol.Builder{protocol.CommandFriends, protocol.FriendsPresence}.U32(friend.character.ID).U8(protocol.FriendsPresenceOnline), online)
 		}
 		if notifyStatus {
 			status, err := socialStatusPacket(friend)
@@ -700,8 +711,13 @@ func (s *Server) textMailCommand(ctx context.Context, c *Session, p []byte) erro
 	if err != nil {
 		return err
 	}
-	// Success means accepted durably, even if the recipient is offline.
-	if err := c.send(protocol.Builder{protocol.CommandFriends, protocol.FriendsMailSent}.U32(recipient).U8(protocol.FriendsMailSentSuccess)); err != nil {
+	// The native AC14:9 updates presence; its final byte is not a mail
+	// receipt result. Keep offline delivery from marking a friend online.
+	status := byte(protocol.FriendsPresenceOffline)
+	if s.friendPlayer(recipient) != nil {
+		status = protocol.FriendsPresenceOnline
+	}
+	if err := c.send(protocol.Builder{protocol.CommandFriends, protocol.FriendsPresence}.U32(recipient).U8(status)); err != nil {
 		return err
 	}
 	if target := s.friendPlayer(message.ReceiverID); target != nil && target.ready {
