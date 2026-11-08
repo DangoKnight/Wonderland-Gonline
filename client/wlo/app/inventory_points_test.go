@@ -1,6 +1,9 @@
 package app
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestInventoryPointAttentionAcknowledgement(t *testing.T) {
 	c, _, _ := enterBattle(t)
@@ -39,5 +42,23 @@ func TestInventoryPointAttentionAcknowledgement(t *testing.T) {
 	w, h := c.Pics.Size(point)
 	if point < 0 || w == 0 || h%3 != 0 {
 		t.Fatal("missing native three-frame POINT artwork")
+	}
+}
+
+func TestInventoryPointAttentionSlowerPace(t *testing.T) {
+	c, now, _ := enteredClient(t)
+	c.Stats.Points = 3
+	c.inventoryPointTick()
+	b := c.MainButtons.Buttons[mainInventoryButton]
+	first := b.AnimFrame
+	*now = now.Add(149 * time.Millisecond)
+	b.Update(c.Input)
+	if b.AnimFrame != first {
+		t.Fatal("attention frame advanced before 150 ms")
+	}
+	*now = now.Add(time.Millisecond)
+	b.Update(c.Input)
+	if b.AnimFrame != first+1 {
+		t.Fatal("attention frame did not advance at 150 ms")
 	}
 }

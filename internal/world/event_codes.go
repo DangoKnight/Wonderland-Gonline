@@ -201,5 +201,6 @@ const (
 	ServiceClinic             = 7
 	ServiceStockKeeper        = 9
 	ServiceRebornJobSelection = 10
+	ServiceMessageBoard       = 15
 	ServiceCompanionRebirth   = 27
 )

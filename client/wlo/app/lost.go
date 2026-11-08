@@ -95,6 +95,7 @@ func (c *Client) sceneFrozen() bool {
 // reason ("Connection lost" unless the server left one) with Leave and
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
+	c.closeMessageBoard()
 	c.stopMapLoading()
 	c.areaTitle = areaTitle{}
 	c.battle.actionHistory = nil

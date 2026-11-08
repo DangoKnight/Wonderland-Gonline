@@ -19,6 +19,12 @@ import (
 // openService opens a service window. Caller holds worldMu.
 func (s *Server) openService(c *Session, action uint16) error {
 	switch action {
+	case world.ServiceMessageBoard:
+		if c.event != nil {
+			c.event.messageBoardOwner = c.character.ID
+			return nil
+		}
+		return c.send([]byte{protocol.CommandMessageBoard, protocol.MessageBoardOpen})
 	case world.ServiceRebornJobSelection:
 		if c.character.Reborn || c.character.Level < game.RebornMinimumLevel {
 			return c.send(serverwire.HeadBanner("Rebirth requires level 100 and a character that has not reborn."))

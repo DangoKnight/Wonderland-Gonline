@@ -36,7 +36,17 @@ func TestItemCardSelectionAndCancellation(t *testing.T) {
 		t.Fatal("cancel consumed card or retained modal")
 	}
 	f.ResetUse()
-	if f.CardPacket([]byte{23, 133, 2, 0, 0, 99}) {
+	if f.CardPacket([]byte{23, 108, 2, 0, 0, 99}) {
 		t.Fatal("mistook stall/malformed data for a card")
+	}
+}
+
+func TestItemCardCatalogRequestMatchesLegacy(t *testing.T) {
+	f, sent := useFixture(50008)
+	if !f.CardPacket([]byte{23, 108, 1, 2, 0, 81, 195, 1, 88, 195, 1}) {
+		t.Fatal("native card index not handled")
+	}
+	if len(*sent) != 1 || !bytes.Equal((*sent)[0], []byte{90, 1, 1, 2, 0, 81, 195, 88, 195}) {
+		t.Fatal("catalog mode/count/IDs differ from Legacy", *sent)
 	}
 }

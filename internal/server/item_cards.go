@@ -33,23 +33,23 @@ func (s *Server) sendCardIndex(c *Session) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	p := protocol.Builder{protocol.CommandInventory, protocol.InventoryGiftCard, protocol.GiftCardIndex}.U16(uint16(len(ids)))
+	p := protocol.Builder{protocol.CommandInventory, protocol.InventoryGiftCardReply, protocol.GiftCardIndex}.U16(uint16(len(ids)))
 	for _, id := range ids {
 		p = p.U16(uint16(id)).U8(protocol.GiftCardVersion)
 	}
 	return c.send(p)
 }
 func (s *Server) cardCatalog(c *Session, p []byte) error {
-	if len(p) < 4 || p[1] != protocol.GiftCardIndex {
+	if len(p) < protocol.GiftCardCatalogHeaderBytes || p[1] != protocol.GiftCardIndex || p[2] != protocol.GiftCardCatalogMode {
 		return protocol.ErrMalformed
 	}
-	n := int(binary.LittleEndian.Uint16(p[2:4]))
-	if n == 0 || len(p) != 4+2*n {
+	n := int(binary.LittleEndian.Uint16(p[3:protocol.GiftCardCatalogHeaderBytes]))
+	if n == 0 || len(p) != protocol.GiftCardCatalogHeaderBytes+protocol.GiftCardCatalogIDBytes*n {
 		return protocol.ErrMalformed
 	}
 	cards := make([]protocol.GiftCard, 0, n)
 	for i := 0; i < n; i++ {
-		id := binary.LittleEndian.Uint16(p[4+i*2:])
+		id := binary.LittleEndian.Uint16(p[protocol.GiftCardCatalogHeaderBytes+i*protocol.GiftCardCatalogIDBytes:])
 		if card, ok := s.Assets.ItemCards[id]; ok {
 			cards = append(cards, s.cardDetails(id, card))
 		}
@@ -90,7 +90,7 @@ func (s *Server) redeemItemCard(ctx context.Context, c *Session, slot byte) (boo
 	if len(card.Rewards) == 1 {
 		return true, s.exchangeItemCard(ctx, c, 1, card.Rewards[0].ItemID)
 	}
-	return true, s.sendAll(c, [][]byte{protocol.GiftCardDetailsPacket([]protocol.GiftCard{s.cardDetails(item.ID, card)}), {protocol.CommandInventory, protocol.InventoryGiftCard, protocol.GiftCardOpen, slot}})
+	return true, s.sendAll(c, [][]byte{protocol.GiftCardDetailsPacket([]protocol.GiftCard{s.cardDetails(item.ID, card)}), {protocol.CommandInventory, protocol.InventoryGiftCardReply, protocol.GiftCardOpen, slot}})
 }
 func (s *Server) itemCardCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 3 {
@@ -172,5 +172,5 @@ func (s *Server) exchangeItemCard(ctx context.Context, c *Session, index byte, r
 	}
 	s.adoptSavedCharacter(c, next)
 	c.itemCard = nil
-	return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, pending.Slot, 1}, next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandInventory, protocol.InventoryGiftCard, protocol.GiftCardRedeemed}.U16(pending.Item.ID).U8(1).U16(r.ItemID).U8(r.Quantity), {protocol.CommandInventory, protocol.InventoryItemUse}})
+	return s.sendAll(c, [][]byte{{protocol.CommandInventory, protocol.InventoryRemove, pending.Slot, 1}, next.Bag.AdditionPacket(adds), protocol.Builder{protocol.CommandInventory, protocol.InventoryGiftCardReply, protocol.GiftCardRedeemed}.U16(pending.Item.ID).U8(1).U16(r.ItemID).U8(r.Quantity), {protocol.CommandInventory, protocol.InventoryItemUse}})
 }

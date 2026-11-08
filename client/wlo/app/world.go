@@ -73,6 +73,7 @@ func (c *Client) warp(p []byte) {
 		return
 	}
 	c.resetServices()
+	c.closeMessageBoard()
 	if c.Notebook != nil {
 		c.Notebook.CloseAll()
 	}
@@ -305,7 +306,11 @@ func (c *Client) WalkKeys(left, up, right, down bool) {
 	if c.mapLoading.active || c.battle.state.Active || c.settingsPromptForm != nil || c.sport != nil || c.World == nil || c.held || c.event.active || !(left || up || right || down) || c.Now().Before(c.nextWalk) {
 		return
 	}
-	if _, typing := c.Input.Focused.(*seui.Editor); typing {
+	if c.MailSend != nil && c.MailSend.Visible || c.MailCompose != nil && c.MailCompose.Visible {
+		return
+	}
+	switch c.Input.Focused.(type) {
+	case *seui.Editor, *seui.Memo:
 		return
 	}
 	c.floorPendingPickup = 0

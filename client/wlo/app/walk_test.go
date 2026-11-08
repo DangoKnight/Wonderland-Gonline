@@ -71,6 +71,19 @@ func TestArrowWalk(t *testing.T) {
 	if c.World.Walking() {
 		t.Fatal("walked while typing")
 	}
+	c.MailCompose.Open([]byte("Pal"), []byte("Draft"))
+	c.Input.Focused = c.MailCompose.Memo
+	c.WalkKeys(true, false, false, false)
+	if c.World.Walking() {
+		t.Fatal("walked while writing a letter")
+	}
+	// Clicking a compose button must not hand arrow keys back to the field.
+	c.Input.Focused = c.MailCompose.Send
+	c.WalkKeys(true, false, false, false)
+	if c.World.Walking() {
+		t.Fatal("compose form lost keyboard attention")
+	}
+	c.MailCompose.Hide()
 	c.Input.Focused = nil
 	x := c.World.Player.X
 	c.WalkKeys(true, false, false, false)

@@ -96,12 +96,14 @@ type MainBtnForm struct {
 }
 
 const (
-	mainButtons                = 6
-	mainBackgroundX            = 0x213
-	mainBackgroundY            = 0x233
-	furnitureLeft              = 0x2fb
-	furnitureTop               = 0x1fb
-	inventoryAttentionInterval = 100 * time.Millisecond
+	mainButtons     = 6
+	mainBackgroundX = 0x213
+	mainBackgroundY = 0x233
+	furnitureLeft   = 0x2fb
+	furnitureTop    = 0x1fb
+	// FUN_002956e0 passes 100 ms (double 0x4059000000000000).
+	// Retain its frames and origin, with the requested gentler client pace.
+	inventoryAttentionInterval = 150 * time.Millisecond
 	inventoryAttentionWidth    = 39
 	inventoryAttentionHeight   = 43
 )

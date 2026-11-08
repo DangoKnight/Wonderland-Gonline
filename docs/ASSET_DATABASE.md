@@ -13,10 +13,13 @@ Existing asset catalogs are never replaced or silently upgraded at startup.
 
 ## Upgrade an existing installation
 
-Current versions are **asset schema 62** and **gameplay schema 21**, defined in
+Current versions are **asset schema 62** and **gameplay schema 23**, defined in
 [`catalog_migration.go`](../internal/assetsql/catalog_migration.go) and
 [`migrations.go`](../internal/store/migrations.go). Asset v62 adds typed item-card
-reward/gender mappings. Earlier supported revisions are handled by the same
+reward/gender mappings. Gameplay v22 adds durable public message-board posts;
+v23 preserves those posts and adds a monotonic ID allocator to prevent stale
+requests from addressing a different notice after deletion.
+Earlier supported revisions are handled by the same
 migrator; the old Client/Quest branch-specific upgrade sequence is obsolete.
 Do not downgrade a newer catalog to match an older executable.
 

@@ -740,6 +740,13 @@
     "ui.team.leadership_offer": "要成為隊長嗎？",
     "ui.team.leadership_refused": "對方拒絕成為隊長。",
     "ui.team.leadership_timeout": "沒有回應。",
-    "ui.team.leadership_busy": "玩家忙碌中。"
+    "ui.team.leadership_busy": "玩家忙碌中。",
+    "ui.board.enter_text": "請輸入主旨和內容。",
+    "ui.board.timeout": "尚未收到回應，請重試。",
+    "ui.board.author_limit": "最多只能張貼三則留言。",
+    "ui.board.full": "留言板已滿。",
+    "ui.board.missing": "找不到此留言，請稍後重試。",
+    "ui.hud.mail_sent": "寄件備份",
+    "ui.board.subject": "主旨："
   }
 }

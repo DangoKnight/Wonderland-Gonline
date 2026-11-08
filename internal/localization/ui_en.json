@@ -740,6 +740,13 @@
     "ui.team.leadership_offer": "Want to be a team leader?",
     "ui.team.leadership_refused": "The player refused to be leader.",
     "ui.team.leadership_timeout": "No response.",
-    "ui.team.leadership_busy": "Player busy."
+    "ui.team.leadership_busy": "Player busy.",
+    "ui.board.enter_text": "Enter a subject and message.",
+    "ui.board.timeout": "No response. Please try again.",
+    "ui.board.author_limit": "Only 3 messages allowed.",
+    "ui.board.full": "Message board is full.",
+    "ui.board.missing": "Info not found. Try again later.",
+    "ui.hud.mail_sent": "Sent",
+    "ui.board.subject": "Subject: "
   }
 }

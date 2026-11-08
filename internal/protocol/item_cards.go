@@ -4,12 +4,15 @@ import "encoding/binary"
 
 // Native TGiftExchangeCardForm / Gec.Dat catalog layout.
 const (
-	GiftCardIndex          byte = 1
-	GiftCardDetails        byte = 2
-	GiftCardRedeemed       byte = 3
-	GiftCardOpen           byte = 4
-	GiftCardVersion        byte = 1
-	GiftCardCatalogRequest byte = 90 // Shares AC90 with the two-byte fishing commands.
+	GiftCardIndex              byte = 1
+	GiftCardDetails            byte = 2
+	GiftCardRedeemed           byte = 3
+	GiftCardOpen               byte = 4
+	GiftCardVersion            byte = 1
+	GiftCardCatalogRequest     byte = 90 // Shares AC90 with the two-byte fishing commands.
+	GiftCardCatalogMode        byte = 1  // Native AC90:1 payload prefix before the UInt16 count.
+	GiftCardCatalogHeaderBytes      = 5
+	GiftCardCatalogIDBytes          = 2
 )
 
 type GiftCardReward struct {
@@ -23,7 +26,7 @@ type GiftCard struct {
 }
 
 func GiftCardDetailsPacket(cards []GiftCard) []byte {
-	p := Builder{CommandInventory, InventoryGiftCard, GiftCardDetails}.U16(uint16(len(cards)))
+	p := Builder{CommandInventory, InventoryGiftCardReply, GiftCardDetails}.U16(uint16(len(cards)))
 	for _, c := range cards {
 		p = p.U16(c.ID).U8(c.Version).U8(byte(len(c.Rewards)))
 		for _, r := range c.Rewards {
@@ -34,7 +37,7 @@ func GiftCardDetailsPacket(cards []GiftCard) []byte {
 }
 
 func ParseGiftCardDetails(p []byte) ([]GiftCard, bool) {
-	if len(p) < 5 || p[0] != CommandInventory || p[1] != InventoryGiftCard || p[2] != GiftCardDetails {
+	if len(p) < 5 || p[0] != CommandInventory || p[1] != InventoryGiftCardReply || p[2] != GiftCardDetails {
 		return nil, false
 	}
 	count := int(binary.LittleEndian.Uint16(p[3:5]))

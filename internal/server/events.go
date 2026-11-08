@@ -36,6 +36,7 @@ type eventSession struct {
 	ignoreChoiceAck     bool
 	shopCart            bool   // Native item-picker question owns a purchase.
 	bankOwner           uint32 // Queued service belongs to this event and character.
+	messageBoardOwner   uint32 // Open only after the event resume closes dialogue.
 }
 
 const clickResume = 1500 * time.Millisecond
@@ -46,6 +47,7 @@ const maxAutomaticStoryTransitions = assets.MaxStoryAutomaticTransitions
 func (s *Server) endEvent(c *Session) {
 	if c.event != nil {
 		c.event.bankOwner = 0
+		c.event.messageBoardOwner = 0
 	}
 	c.event = nil
 	c.arcade = nil
@@ -71,6 +73,7 @@ func (s *Server) finishEvent(c *Session, es *eventSession) error {
 		return nil
 	}
 	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
+	openBoard := es.messageBoardOwner != 0 && es.messageBoardOwner == c.character.ID && es.mapID == c.character.Map
 	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
@@ -83,6 +86,9 @@ func (s *Server) finishEvent(c *Session, es *eventSession) error {
 	}
 	if openBank {
 		return s.openMoneyBank(c)
+	}
+	if openBoard {
+		return c.send([]byte{protocol.CommandMessageBoard, protocol.MessageBoardOpen})
 	}
 	return nil
 }

@@ -130,14 +130,14 @@ func (d *cardDialog) Paint() {
 	text(204, 224, 50, fmt.Sprintf("%d/%d", d.page+1, (len(d.rewards)+giftCardRows-1)/giftCardRows))
 }
 
-// Card metadata shares an outbound code with older vehicle stalls. Only consume
-// strictly shaped catalogs, and show choices only for our pending owned card.
+// Native card replies use AC23:108; AC23:133 is only the request direction.
+// Show choices only for our pending owned card.
 func (f *Form) CardPacket(p []byte) bool {
 	if len(p) == 2 && p[0] == protocol.CommandInventory && p[1] == protocol.InventoryItemUse && f.CardDialog != nil && f.CardDialog.waiting {
 		f.CardDialog.Hide()
 		return false
 	}
-	if len(p) < 3 || p[0] != protocol.CommandInventory || p[1] != protocol.InventoryGiftCard {
+	if len(p) < 3 || p[0] != protocol.CommandInventory || p[1] != protocol.InventoryGiftCardReply {
 		return false
 	}
 	switch p[2] {
@@ -150,7 +150,7 @@ func (f *Form) CardPacket(p []byte) bool {
 			return false
 		}
 		if n > 0 {
-			query := protocol.Builder{protocol.GiftCardCatalogRequest, protocol.GiftCardIndex}.U16(uint16(n))
+			query := protocol.Builder{protocol.GiftCardCatalogRequest, protocol.GiftCardIndex, protocol.GiftCardCatalogMode}.U16(uint16(n))
 			for i := 0; i < n; i++ {
 				query = query.U16(binary.LittleEndian.Uint16(p[5+3*i:]))
 			}

@@ -1,5 +1,28 @@
 package protocol
 
+// Public notice board: aLogin FUN_001ff4b8, FUN_001ff95c and FUN_001fff90.
+const (
+	CommandMessageBoard                 = 82
+	MessageBoardEntries                 = 1   // S>C page entries
+	MessageBoardPage                    = 2   // C>S page request; S>C full entry
+	MessageBoardRead                    = 3   // C>S selected entry; S>C pagination
+	MessageBoardOpen                    = 9   // S>C open the public notice window
+	MessageBoardPost                    = 1   // C>S create a notice
+	MessageBoardDelete                  = 4   // C>S delete; S>C refreshed pagination
+	MessageBoardAuthorLimit             = 5   // S>C three-post limit
+	MessageBoardFull                    = 6   // S>C board capacity reached
+	MessageBoardMissing                 = 7   // S>C missing or unauthorized entry
+	MessageBoardPosted                  = 8   // S>C close the composer; followed by board context.
+	MessageBoardPagination              = 4   // S>C count:u32, current page:u8 (also follows refresh/post).
+	MessageBoardContentMaxBytes         = 151 // FUN_001fe600 sets Memo.MaxLen to 0x97.
+	MessageBoardPageSize                = 10
+	MessageBoardAuthorMaxBytes          = 14
+	MessageBoardTitleMaxBytes           = 30
+	MessageBoardWireContext1            = 1 // Public Notice form +0xa6c; broader context semantics unresolved.
+	MessageBoardNativePageBytes         = 4
+	MessageBoardNativeEntryRequestBytes = 19 // ID:u32, page:u32, date:f64, context:u8.
+)
+
 // Wire command and subcommand values are explicit: changing declaration order must
 // never change the bytes sent to the client. Names describe the existing handlers.
 // WireCode names preserve values whose full meaning is not established.
@@ -1043,7 +1066,8 @@ const (
 	InventoryVehicleStallBrowse   = 133
 	// AC23:133 is gift-card exchange in this native build. The older outbound
 	// vehicle-stall compatibility value above is retained independently.
-	InventoryGiftCard       = 133
+	InventoryGiftCard       = 133 // Client-to-server redemption requests.
+	InventoryGiftCardReply  = 108 // Server-to-client catalog and redemption replies; 133 opens a vehicle stall.
 	InventoryStallMapState  = 31
 	InventoryStallDespawn   = 32
 	InventoryStallFormClose = 165

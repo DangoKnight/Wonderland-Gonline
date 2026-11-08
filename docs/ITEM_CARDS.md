@@ -42,10 +42,19 @@ to resolve reliably.
 
 The client form follows decompiled `TGiftExchangeCardForm` (unit 169): native
 `Form_GiftExchange_1`, 447×293, checkbox rows, icon/name, paging and exchange/close
-controls. Native AC23:133 provides catalog index (1), details (2), redemption
-notice (3) and slot reopening (4); AC90:1 requests catalog details. AC90's normal
-two-byte fishing messages remain separate. The vehicle-stall compatibility code
-also uses 133, so card packets require exact layout validation.
+controls. Native server replies use AC23:108: catalog index (1), details (2),
+redemption notice (3) and slot reopening (4). Client redemption requests use
+AC23:133; AC90:1 requests catalog details. AC90's normal two-byte fishing messages
+remain separate. The directions are not interchangeable: the native dispatcher
+routes AC23:108 to `FUN_001d6e54` (gift cards), but AC23:133 to `FUN_003325bc`
+(vehicle-stall browsing). Sending a card catalog on 133 opens a garbled stall
+window during login.
+
+The Legacy login relay capture on 2026-11-07 also confirms the catalog request
+layout: `90, 1, mode=1, count:u16, item IDs:u16[]`. With 236 entries this is
+477 bytes. The mode byte precedes the count; omitting it misreads the count and
+causes the server to reject the request and disconnect after loading the map.
+Gonline emits this same layout. Two-byte AC90 fishing requests remain separate.
 
 Catalog layouts and form controls are recovered from the decompile. The outbound
 exchange request's slot/count/index/item ordering is reconstructed from its

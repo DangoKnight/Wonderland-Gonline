@@ -132,6 +132,24 @@ const (
 
 var mailKindLabels = map[byte]string{MailKindFriend: localization.UI("ui.hud.friends_bd104d1b"), MailKindGuild: localization.UI("ui.hud.guild_298ffc49"), MailKindSystem: localization.UI("ui.hud.system_6725e7bb"), MailKindPet: localization.UI("ui.hud.pet_8f0d1b30")}
 
+// The legacy Sent tab has "Backup" baked into its English picture. Keep its
+// native border/states and replace the interior label with localized text.
+type mailSentTab struct{ seui.FixedButton }
+
+func (b *mailSentTab) Paint() {
+	b.FixedButton.Paint()
+	at := b.Abs()
+	scr := b.Env.Screen
+	label := []byte(localization.UI("ui.hud.mail_sent"))
+	for y := at.Y + 3; y < at.Y+b.Height-3; y++ {
+		x := at.X + 3
+		if x >= 0 && x < scr.W && y >= 0 && y < scr.H {
+			scr.Fill(image.Rect(at.X+4, y, at.X+b.Width-4, y+1), scr.Pix[y*scr.W+x])
+		}
+	}
+	b.Env.Text.Draw(at.X+(b.Width-len(label)*8)/2, at.Y+3, 0, false, true, scr, label, 15, b.Width, 0, labelColor, 0)
+}
+
 // NewMailbox is FUN_001d0ca8.
 func NewMailbox(env *seui.Env) *Mailbox {
 	m := &Mailbox{Page: 1, title: env.Pics.Find("Icon_MailBoxTitleMash_1")}
@@ -152,7 +170,15 @@ func NewMailbox(env *seui.Env) *Mailbox {
 	m.NextPage = button("Btn_NextPage_1", 0x16d, 0x140, 0x38, 0x14, m.nextPage)
 	for i, left := range [2]int{0xf, 0x4f} {
 		tab := i
-		m.Tabs[i] = button("Btn_MailBoxTab_"+strconv.Itoa(i+1), left, 0x30, 0x40, 0x15, func() { m.SelectTab(tab) })
+		if i == 1 {
+			b := &mailSentTab{}
+			b.InitFixedButton(b, env, m)
+			b.Init("Btn_MailBoxTab_2", left, 0x15, 0x40, 0, 0, true, 0x15, 0x40, 0x30)
+			b.OnClick = func() { m.SelectTab(tab) }
+			m.Tabs[i] = &b.FixedButton
+		} else {
+			m.Tabs[i] = button("Btn_MailBoxTab_"+strconv.Itoa(i+1), left, 0x30, 0x40, 0x15, func() { m.SelectTab(tab) })
+		}
 	}
 	m.SelectTab(0)
 	return m

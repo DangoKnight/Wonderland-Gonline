@@ -36,7 +36,7 @@ const (
 	MailToFriend  = 0
 	MailToTicked  = 2
 	MailMaxText   = 0x98
-	mailTextColor = 0xffe0
+	mailTextColor = 0x0841 // Near-black RGB565; zero is the glyph transparency key.
 	mailSendSound = `sound\wav0155.wav`
 	mailNameX     = 0x32
 	mailNameY     = 0x43
@@ -86,7 +86,7 @@ func (m *MailSend) Paint() {
 		return
 	}
 	at := m.Abs()
-	m.Env.Text.Draw(at.X+mailNameX, at.Y+mailNameY, 0, false, true, m.Env.Screen, m.To.Name, mailNameH, mailNameW, 0, labelColor, 0)
+	m.Env.Text.Draw(at.X+mailNameX, at.Y+mailNameY, 0, false, true, m.Env.Screen, m.To.Name, mailNameH, mailNameW, 0, mailTextColor, 0)
 	if m.DrawPortrait != nil {
 		m.DrawPortrait(m.To, at.X+mailFaceX, at.Y+mailFaceY)
 	}
@@ -100,7 +100,13 @@ func (m *MailSend) Deliver(to Friend, text []byte) {
 }
 
 // send is 0x3c03c4 for modes 0 and 2.
-func (m *MailSend) send() { m.deliver(m.Memo.Text) }
+func (m *MailSend) send() {
+	if len(m.Memo.Text) == 0 || m.SendMail == nil {
+		return
+	}
+	m.deliver(m.Memo.Text)
+	m.Hide()
+}
 
 func (m *MailSend) deliver(text []byte) {
 	if len(text) == 0 || m.SendMail == nil {

@@ -43,7 +43,7 @@ const (
 	mailReadFaceY  = 0xf4
 	mailReadBadgeX = 0x13
 	mailReadBadgeY = 0x38
-	mailReadInk    = 0x7e0
+	mailReadInk    = mailTextColor
 	// mailInvitation marks an invitation letter (FUN_003c58f4, the
 	// short string at 0x3c5a28); it is cut from the text shown.
 	mailInvitation = "^inviation^"
@@ -58,6 +58,7 @@ func NewMailRead(env *seui.Env) *MailRead {
 	}
 	m.InitFixedForm(m, env)
 	m.Name = "TSe_ReceiveMailForm"
+	m.Color = mailTextColor
 	m.Init("form_MailReceive_1", 10, mailReadHeight, mailReadWidth, 0, 0, true, mailReadHeight, mailReadWidth, 0x32)
 	button := func(picture string, left, top, w, h int, click func()) *seui.FixedButton {
 		b := seui.NewFixedButton(env, m)

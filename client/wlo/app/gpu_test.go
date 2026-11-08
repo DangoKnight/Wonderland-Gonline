@@ -26,7 +26,7 @@ import (
 
 // Requires a graphics context and installed exports or compiled packs. CPU and
 // GPU windows run the same deterministic login/world/UI states without dialing.
-const gpuParityStages = 101
+const gpuParityStages = 103
 
 func isolateGPUFixture(t *testing.T) bool {
 	t.Helper()
@@ -174,6 +174,16 @@ func (g *gpuParityGame) Draw(screen *ebiten.Image) {
 		case 100:
 			c.Mall.Tabs[2].Click()
 			c.Mall.TryOn(12101)
+		case 101:
+			c.Mall.Hide()
+			c.dispatch([]byte{82, 9})
+			c.dispatch([]byte{82, 3, 1, 0, 0, 0, 1})
+			c.dispatch(protocol.Builder{82, 1}.U32(6).Bytes([]byte("Sender")).U32(5).Bytes([]byte("Title")).F64(25569).U32(20002).U32(7))
+		case 102:
+			b := c.messageBoard
+			b.selected = b.entries[0]
+			b.pendingRead = 7
+			c.dispatch(protocol.Builder{82, 2}.U32(6).Bytes([]byte("Sender")).U32(5).Bytes([]byte("Title")).F64(25569).U32(4).U32(20002).Bytes([]byte("Body")))
 		case 86:
 			c.mapReady = false
 			c.startMapLoading()

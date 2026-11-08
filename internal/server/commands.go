@@ -51,6 +51,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandGemSocket:           {handler: (*Server).gemSocketCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandManufacture:         {handler: (*Server).manufactureCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandGuild:               {handler: (*Server).guildCommand, policy: protocol.CommandPolicy{World: true}},
+	protocol.CommandMessageBoard:        {handler: (*Server).messageBoardCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandStall:               {handler: (*Server).stallCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandSceneReady:          {handler: withoutContext((*Server).sceneReadyCommand), policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},
 	protocol.CommandSceneReadyAck:       {handler: withoutContext((*Server).sceneReadyCommand), policy: protocol.CommandPolicy{World: true, BeforeWorldGates: true}},

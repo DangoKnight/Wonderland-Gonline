@@ -126,6 +126,7 @@ type Client struct {
 	FuncButtons          *hud.FuncBtnForm // the toolbar at the top right
 	MainButtons          *hud.MainBtnForm // the menu at the bottom right
 	inventoryPoints      inventoryPointAlert
+	messageBoard         *messageBoardForm
 	HotKeys              *hud.HotKeyForm // the F1–F8 bar
 	ChatBar              *hud.InputBar   // the chat bar
 	groundHeld           bool            // the left button went down on the ground
@@ -411,6 +412,7 @@ func New(o Options) (*Client, error) {
 	c.initVehicleStatus()
 	c.initTrade()
 	c.initServices()
+	c.initMessageBoard()
 	c.initLuckyDraw()
 	c.initWorldPK()
 	c.initPK()
@@ -445,6 +447,7 @@ func (c *Client) frame(draw bool) {
 	c.friendAskTick(c.Now())
 	c.luckyDrawTick()
 	c.inventoryPointTick()
+	c.messageBoardTick()
 	c.clinicTick()
 	c.teamTransferTick()
 	dialogueOverlay := false
@@ -623,6 +626,9 @@ func (c *Client) dispatchNative(p []byte) {
 		return
 	}
 	if c.mallPacket(p) {
+		return
+	}
+	if c.messageBoardPacket(p) {
 		return
 	}
 	s := p[1:]

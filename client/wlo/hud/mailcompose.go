@@ -27,9 +27,9 @@ type MailCompose struct {
 }
 
 const (
-	mailComposeNameInk = 0x1f
+	mailComposeNameInk = mailTextColor
 	mailComposeNameMax = 10
-	mailComposeInk     = 0x0841
+	mailComposeInk     = mailTextColor
 	mailNoTarget       = "ui.hud.no_target_player_a1cd475b"
 	mailNoContent      = "ui.hud.no_mail_content_7118a879"
 	mailNeedMailbox    = "ui.hud.need_mailbox_to_send_0b029d9c"

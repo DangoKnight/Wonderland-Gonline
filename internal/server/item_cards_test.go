@@ -8,6 +8,47 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
+func TestItemCardLoginCatalogUsesNativeReplyCode(t *testing.T) {
+	s, players, wires := gachaFixture(t)
+	s.Assets.ItemCards = map[uint16]assets.ItemCard{34171: {Rewards: []assets.CardReward{{ItemID: 32176, Quantity: 1}}}}
+	wires[0].Reset()
+	if err := s.sendCardIndex(players[0]); err != nil {
+		t.Fatal(err)
+	}
+	packets := wires[0].packets(t)
+	// AC23:108 dispatches to FUN_001d6e54 (gift cards). AC23:133
+	// dispatches to FUN_003325bc, opening a vehicle-stall buyer window.
+	if len(packets) != 1 || !bytes.Equal(packets[0], []byte{23, 108, 1, 1, 0, 123, 133, 1}) {
+		t.Fatal("login card index must not open a native stall", packets)
+	}
+}
+
+func TestItemCardNativeCatalogRequest(t *testing.T) {
+	s, players, wires := gachaFixture(t)
+	s.Assets.ItemCards = map[uint16]assets.ItemCard{50001: {Rewards: []assets.CardReward{{ItemID: 32176, Quantity: 1}}}}
+	// Relay capture: Legacy sends 90,1,1,236,0 followed by 236 UInt16
+	// IDs (477 bytes). The third byte is a mode, not part of the count.
+	request := []byte{90, 1, 1, 1, 0, 81, 195}
+	wires[0].Reset()
+	if err := s.dispatch(context.Background(), players[0], request); err != nil {
+		t.Fatal("native login request disconnected the client", err)
+	}
+	packets := wires[0].packets(t)
+	if len(packets) != 1 || !bytes.Equal(packets[0], []byte{23, 108, 2, 1, 0, 81, 195, 1, 1, 176, 125, 1}) {
+		t.Fatal("native catalog response", packets)
+	}
+	for _, malformed := range [][]byte{
+		{90, 1, 1, 0, 81, 195}, // Old Gonline layout without mode.
+		{90, 1, 2, 1, 0, 81, 195},
+		{90, 1, 1, 2, 0, 81, 195},
+		{90, 1, 1, 1, 0, 81, 195, 0},
+	} {
+		if err := s.dispatch(context.Background(), players[0], malformed); err == nil {
+			t.Fatal("accepted malformed catalog request", malformed)
+		}
+	}
+}
+
 func TestItemCardChoiceIsTransactional(t *testing.T) {
 	for _, mode := range []string{"success", "full", "save-failure", "stale", "forged", "locked", "cancel"} {
 		t.Run(mode, func(t *testing.T) {
@@ -68,7 +109,7 @@ func TestItemCardChoiceIsTransactional(t *testing.T) {
 					t.Fatal("exchange", err, c.character.Bag)
 				}
 				packets := wires[0].packets(t)
-				if !bytes.Equal(packets[2], []byte{23, 133, 3, 123, 133, 1, 177, 125, 2}) {
+				if !bytes.Equal(packets[2], []byte{23, 108, 3, 123, 133, 1, 177, 125, 2}) {
 					t.Fatal("redemption reply", packets)
 				}
 			} else if c.character.Bag != before {
