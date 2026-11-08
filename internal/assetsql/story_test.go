@@ -314,12 +314,16 @@ func TestStoryInstalledMigration(t *testing.T) {
 	// independent lookup kinds elsewhere. Visibility snapshots and backgrounds
 	// never compete with other kinds; preserve precedence within each kind while
 	// comparing them separately. Constellations are sent in numeric star order.
-	// The v51/v52 Xaolan and Noa continuations occupy disjoint event branches
+	// The v41 honeycomb and v51/v52 Xaolan and Noa continuations occupy disjoint event branches
 	// and may occur before or after unrelated wiki rules in old installations.
 	// Preserve their own order and every other executable rule's relative order.
 	canonical := func(rules []assets.StoryRule) []assets.StoryRule {
-		var ordered, constellations, visits, backgrounds, noa, xaolan, ground []assets.StoryRule
+		var ordered, constellations, visits, backgrounds, honeycomb, noa, xaolan, ground []assets.StoryRule
 		for _, rule := range rules {
+			if rule.ID == "honeycomb_start_bee_battle" {
+				honeycomb = append(honeycomb, rule)
+				continue
+			}
 			if rule.ID == "xaolan_recruitment_question_continuation" {
 				xaolan = append(xaolan, rule)
 				continue
@@ -346,6 +350,7 @@ func TestStoryInstalledMigration(t *testing.T) {
 		slices.SortFunc(constellations, func(a, b assets.StoryRule) int { return strings.Compare(a.ID, b.ID) })
 		ordered = append(ordered, visits...)
 		ordered = append(ordered, backgrounds...)
+		ordered = append(ordered, honeycomb...)
 		ordered = append(ordered, xaolan...)
 		ordered = append(ordered, noa...)
 		ordered = append(ordered, ground...)

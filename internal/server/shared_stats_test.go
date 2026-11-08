@@ -10,6 +10,7 @@ import (
 func TestBattleCatalogStatsReachEnemiesAndOwnedPets(t *testing.T) {
 	s, sessions, _ := worldFixture(t)
 	c := sessions[0]
+	c.ready = true
 	if s.Assets.NPCs == nil {
 		s.Assets.NPCs = map[uint16]assets.NPC{}
 	}
@@ -40,6 +41,7 @@ func TestBattleStoredEnemyVitalsAndEncounterOverrides(t *testing.T) {
 		17002: {ID: 17002, Level: 1, HP: 40, SP: 0},
 	}
 	c := sessions[0]
+	c.ready = true
 	enemies := make([]battle.Enemy, 2*battle.MaxEnemies+1)
 	for i := range enemies {
 		enemies[i] = battle.Enemy{Template: 17000, Level: 1}

@@ -38,6 +38,7 @@ func TestInstalledXaolanBattleBackdropPacket(t *testing.T) {
 	}
 	s, players, wires := worldFixture(t)
 	c := players[0]
+	c.ready = true
 	c.character.Map = 12002
 	s.Assets, s.World = catalog, world.New(catalog)
 	event, ok := s.World.Event(12002, 5)

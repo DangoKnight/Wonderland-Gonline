@@ -41,14 +41,19 @@ func migrateTentCraft(tx *gorm.DB) error {
 	}
 	// Existing recipe values become their reset baseline without changing any
 	// administrator duration. Future edits modify only ValueDurationSeconds.
-	if err := tx.Model(&ManufacturingRow{}).Where("1 = 1").Update("value_default_duration_seconds", gorm.Expr("value_duration_seconds")).Error; err != nil {
-		return err
+	if tx.Migrator().HasTable(&ManufacturingRow{}) {
+		if err := tx.Model(&ManufacturingRow{}).Where("1 = 1").Update("value_default_duration_seconds", gorm.Expr("value_duration_seconds")).Error; err != nil {
+			return err
+		}
 	}
 	ids, err := tentFloorSwitchIDs()
 	if err != nil {
 		return err
 	}
-	return tx.Model(&NativeItemsRow{}).Where("native_items_key IN ?", ids).Update("value_definition_tent_floor_switch", true).Error
+	if tx.Migrator().HasTable(&NativeItemsRow{}) {
+		return tx.Model(&NativeItemsRow{}).Where("native_items_key IN ?", ids).Update("value_definition_tent_floor_switch", true).Error
+	}
+	return nil
 }
 
 func addTentCraftColumns(tx *gorm.DB) error {

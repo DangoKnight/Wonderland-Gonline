@@ -119,8 +119,8 @@ func (s *Server) challengeTrial(c *Session, stage byte, native bool) error {
 	if accepted {
 		// Reserve enough space before admission for every participant. Reward is
 		// still checked again at settlement before the durable character save.
-		for _, m := range s.battleTeam(c) {
-			if !gmIdle(m) {
+		for _, m := range pkTeam(c) {
+			if !gmIdle(m) || !battleInteractionAvailable(m, nil) || !s.samePlayerScene(c, m) {
 				accepted = false
 				break
 			}

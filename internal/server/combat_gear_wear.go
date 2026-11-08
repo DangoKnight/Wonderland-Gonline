@@ -54,7 +54,23 @@ func (s *Server) commitCombatGearWearWithRoll(run *battleRun, roll func(int, int
 		if err != nil {
 			return err
 		}
-		s.adoptSavedCharacter(c, saved)
+		// This SQL transaction owns gear only. Adopting its whole character
+		// snapshot would discard pending skill progress and other round state.
+		c.character.Equipment = saved.Equipment
+		if c.autosaveBaseline == nil {
+			baseline := saved.Clone()
+			c.autosaveBaseline = &baseline
+		} else {
+			c.autosaveBaseline.Equipment = saved.Equipment
+		}
+		if petIndex >= 0 {
+			id := before.Pets[petIndex].ID
+			storedIndex, _ := saved.Pet(id)
+			c.character.Pets[petIndex].Equipment = saved.Pets[storedIndex].Equipment
+			if baselineIndex, ok := c.autosaveBaseline.Pet(id); ok {
+				c.autosaveBaseline.Pets[baselineIndex].Equipment = saved.Pets[storedIndex].Equipment
+			}
+		}
 		m.self.Char = c.character
 		// These are private roster receipts, not public spectator playback.
 		s.sendOrClose(c, c.character.EquipmentPacket())

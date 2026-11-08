@@ -77,7 +77,7 @@ func migrateCatalog(tx *gorm.DB) error {
 		if err := addTentCraftColumns(tx); err != nil {
 			return err
 		}
-		if schema.Version < equipmentDurabilitySchemaVersion && !tx.Migrator().HasColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible") {
+		if schema.Version < equipmentDurabilitySchemaVersion && tx.Migrator().HasTable(&NativeItemsRow{}) && !tx.Migrator().HasColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible") {
 			if err := tx.Migrator().AddColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible"); err != nil {
 				return err
 			}

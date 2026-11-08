@@ -9,6 +9,7 @@ import (
 func TestPositionBackdropsAndExplicitStoryOverride(t *testing.T) {
 	s, players, _ := worldFixture(t)
 	c := players[0]
+	c.ready = true
 	c.character.Map, c.character.X, c.character.Y = 60001, 2202, 1395
 	s.Assets.BattleBackdrops = map[uint16]assets.BattleBackdrop{60001: {Default: 80, Regions: []assets.BattleBackdropRegion{{Selector: 91, Left: 1899, Top: 1165, Right: 2844, Bottom: 1442}}}}
 	if got := s.battleBackground(c, nil); got != 91 {
@@ -42,6 +43,7 @@ func TestInstalledNorthIslandSeaflowerBackdropPackets(t *testing.T) {
 	} {
 		s, players, wires := worldFixture(t)
 		c := players[0]
+		c.ready = true
 		c.character.Map = northIslandCoastMap
 		c.character.X, c.character.Y = 1694, 963 // The player's shore position, independent of NPC movement.
 		s.Assets, s.World = catalog, world.New(catalog)
@@ -86,6 +88,7 @@ func TestInstalledLakesideMushroomBackdropPacket(t *testing.T) {
 	}
 	s, players, wires := worldFixture(t)
 	c := players[0]
+	c.ready = true
 	const northIslandMap = 60001
 	c.character.Map = northIslandMap
 	c.character.X, c.character.Y = 2202, 1395

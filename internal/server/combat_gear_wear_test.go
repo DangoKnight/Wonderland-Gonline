@@ -18,6 +18,8 @@ func TestCombatGearWearPersistsPlayerAndPetOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	w.Reset()
+	c.character.Reborn = true
+	c.character.Skills = []game.LearnedSkill{{ID: 10001, Grade: 1, EXP: 37}}
 	run.b.GearHits = map[*battle.Fighter][]battle.GearHit{m.self: {{EnemyLevel: 255, Contacts: 2}}, m.pet: {{EnemyLevel: 255, Contacts: 3}}}
 	if err := s.commitCombatGearWearWithRoll(run, func(int, int) int { return 0 }); err != nil {
 		t.Fatal(err)
@@ -25,6 +27,9 @@ func TestCombatGearWearPersistsPlayerAndPetOnce(t *testing.T) {
 	saved, err := s.Store.Characters(context.Background(), c.account.ID)
 	if err != nil || saved[0].Equipment[0].Damage != 12 || saved[0].Pets[0].Equipment[0].Damage != 23 {
 		t.Fatal(saved, err)
+	}
+	if !c.character.Reborn || len(c.character.Skills) != 1 || c.character.Skills[0].EXP != 37 {
+		t.Fatal("gear transaction overwrote pending round state")
 	}
 	w.Reset()
 	if err := s.commitCombatGearWearWithRoll(run, func(int, int) int { return 0 }); err != nil || w.Len() != 0 {

@@ -33,6 +33,7 @@ func TestInstalledHoneycombUsesModularStoryPolicies(t *testing.T) {
 		}
 		s, players, _ := worldFixture(t)
 		c := players[0]
+		c.ready = true
 		s.Assets, s.World = &configured, world.New(&configured)
 		c.character.Map, c.character.X, c.character.Y = kelanMap, 195, 1568
 		c.character.Bag, c.character.Quests = game.Inventory{}, map[uint32]game.Quest{}
@@ -74,6 +75,7 @@ func TestInstalledHoneycombBees(t *testing.T) {
 	for _, result := range []uint16{1, 2} {
 		s, players, _ := worldFixture(t)
 		c := players[0]
+		c.ready = true
 		s.Assets, s.World = catalog, world.New(catalog)
 		c.character.Map, c.character.X, c.character.Y = 12000, 195, 1568
 		c.character.Bag = game.Inventory{}

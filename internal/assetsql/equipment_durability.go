@@ -19,6 +19,9 @@ func indestructibleEquipmentIDs() ([]uint16, error) {
 	return ids, err
 }
 func seedIndestructibleEquipment(tx *gorm.DB) error {
+	if !tx.Migrator().HasTable(&NativeItemsRow{}) {
+		return nil
+	}
 	ids, err := indestructibleEquipmentIDs()
 	if err != nil {
 		return err
