@@ -20,7 +20,16 @@ import (
 
 func worldFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	t.Helper()
-	db, err := store.Open(filepath.Join(t.TempDir(), "db"))
+	s, sessions, wires, _ := worldFixturePath(t)
+	return s, sessions, wires
+}
+
+// worldFixturePath also exposes the gameplay database path for tests that need
+// to seed state the public store API does not edit.
+func worldFixturePath(t *testing.T) (*Server, []*Session, []*captureConn, string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "db")
+	db, err := store.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +69,7 @@ func worldFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 			}
 		}
 	})
-	return s, sessions, wires
+	return s, sessions, wires, path
 }
 
 func TestWorldVisibilityMovementAndLogout(t *testing.T) {

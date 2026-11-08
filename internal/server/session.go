@@ -52,6 +52,14 @@ type Session struct {
 	warped               bool
 	manufacturing        *store.ManufactureJob
 	manufacturingLoaded  bool
+	manufactureSync      bool
+	tentFloor            byte
+	tentSignSync         bool
+	tentOccupantsSync    bool
+	tentSyncAt           time.Time
+	tentFloorClickAt     time.Time
+	tentFloorClickX      uint16
+	tentFloorClickY      uint16
 	fishing              *fishingRun // Transient cast; guarded by worldMu.
 	emote                byte        // Current AC32 pose; guarded by worldMu.
 	shapeshift           uint16      // Cosmetic NPC disguise, guarded by worldMu.

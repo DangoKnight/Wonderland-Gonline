@@ -95,7 +95,15 @@ func TestTentNativePlacementLayoutAndCollision(t *testing.T) {
 
 func tentFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	t.Helper()
-	s, players, wires := worldFixture(t)
+	s, players, wires, _ := tentFixturePath(t)
+	return s, players, wires
+}
+
+// tentFixturePath also exposes the gameplay database path for tests that need
+// to seed tent state the public store API does not edit.
+func tentFixturePath(t *testing.T) (*Server, []*Session, []*captureConn, string) {
+	t.Helper()
+	s, players, wires, path := worldFixturePath(t)
 	s.Assets.Maps[12000] = assets.Map{ID: 12000}
 	s.World.ReloadCatalog(s.Assets)
 	s.Assets.Tents = assets.TentRules{SpawnX: 460, SpawnY: 700, Floor: 39062, Wallpaper: 39064, Furniture: []assets.TentFurnitureDefault{{ItemID: 38027, X: 43, Y: 42}}}
@@ -113,7 +121,7 @@ func tentFixture(t *testing.T) (*Server, []*Session, []*captureConn) {
 	for _, w := range wires {
 		w.Reset()
 	}
-	return s, players, wires
+	return s, players, wires, path
 }
 func enterTestTent(t *testing.T, s *Server, c *Session, owner uint32) {
 	t.Helper()

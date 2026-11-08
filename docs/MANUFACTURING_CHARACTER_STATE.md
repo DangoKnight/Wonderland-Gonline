@@ -3,6 +3,9 @@
 ## Native manufacturing
 
 Native AC64 start accepts `[64,1,bench:u16,formula:u16,batch:u8?]`.
+The captured 24-byte start also carries placement metadata; other partial tails
+are rejected before consuming resources. Continue/stop accept the captured
+12-byte padded control request as well as the compact compatibility forms.
 An absent or zero batch means one. The older five-byte start with a byte bench
 remains a compatibility adapter. Formula IDs retain Compound2 ordinals; typed
 `Manufacturing` definitions supply the five ingredient pairs, plan, tool, output
@@ -39,6 +42,29 @@ retry. No overlapping fallback is used when the floor is full.
 
 Native formulas store build time in minutes; offline conversion produces seconds.
 Timer animation and native-client acceptance are tracked in [TESTING.md](TESTING.md).
+
+## Tent floors and recipe administration
+
+Tent interiors have separate ground and upper-floor scenes. Furniture, floor
+coverings, wallpaper and occupants are scoped to their floor. Stairs, ladders
+and elevators use the SQL item flag `tent_floor_switch`, independent of their
+display language. Repeated activation is debounced; invalid furniture clicks
+and failed saves do not consume the cooldown or switch scenes. Leaving from the
+upper floor returns downstairs before exiting outdoors.
+
+The administrator's **Tent craft** view lists recipe durations and supports
+individual edits, setting all durations to zero, and restoring SQL reset
+baselines. Existing jobs retain their deadlines. Updates validate the resulting
+catalog before committing, reload the served definitions, and disconnect clients
+after checkpointing so their cached recipes are refreshed. Reset works with the
+tracked server-only seed and does not read original client archives. Asset schema
+65 adds the baseline and floor-switch columns; run the normal offline database
+migration for existing installations. The migration preserves current durations
+as their baseline and retains subsequent administrator edits.
+
+The pull request author reported native-client testing of entry, both floors,
+furniture and stairs. Integration checks here use automated packet and SQL
+regressions; a fresh live-client acceptance run has not been performed here.
 
 ## Two-input recipes and synthesis
 

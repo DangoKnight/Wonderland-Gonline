@@ -6343,24 +6343,25 @@ func readQuestDefinitionsStepsDespawnNPCClickIDs(tx *gorm.DB, QuestDefinitionsKe
 }
 
 type ManufacturingRow struct {
-	ManufacturingKey     uint16 `gorm:"column:manufacturing_key;primaryKey;autoIncrement:false"`
-	ValueID              uint16
-	ValueOutputItemID    uint16
-	ValueOutputCount     uint8
-	ValueInputs0ItemID   uint16
-	ValueInputs0Count    uint8
-	ValueInputs1ItemID   uint16
-	ValueInputs1Count    uint8
-	ValueInputs2ItemID   uint16
-	ValueInputs2Count    uint8
-	ValueInputs3ItemID   uint16
-	ValueInputs3Count    uint8
-	ValueInputs4ItemID   uint16
-	ValueInputs4Count    uint8
-	ValuePlanID          uint16
-	ValueToolID          uint16
-	ValueDurationSeconds uint32
-	ValueTentOutput      bool
+	ManufacturingKey            uint16 `gorm:"column:manufacturing_key;primaryKey;autoIncrement:false"`
+	ValueID                     uint16
+	ValueOutputItemID           uint16
+	ValueOutputCount            uint8
+	ValueInputs0ItemID          uint16
+	ValueInputs0Count           uint8
+	ValueInputs1ItemID          uint16
+	ValueInputs1Count           uint8
+	ValueInputs2ItemID          uint16
+	ValueInputs2Count           uint8
+	ValueInputs3ItemID          uint16
+	ValueInputs3Count           uint8
+	ValueInputs4ItemID          uint16
+	ValueInputs4Count           uint8
+	ValuePlanID                 uint16
+	ValueToolID                 uint16
+	ValueDurationSeconds        uint32
+	ValueDefaultDurationSeconds uint32
+	ValueTentOutput             bool
 }
 
 func (ManufacturingRow) TableName() string { return "catalog_manufacturing" }
@@ -6384,6 +6385,7 @@ func writeManufacturing(tx *gorm.DB, values map[uint16]assets.ManufacturingFormu
 		row.ValuePlanID = value.PlanID
 		row.ValueToolID = value.ToolID
 		row.ValueDurationSeconds = value.DurationSeconds
+		row.ValueDefaultDurationSeconds = value.DefaultDurationSeconds
 		row.ValueTentOutput = value.TentOutput
 		rows = append(rows, row)
 	}
@@ -6423,6 +6425,7 @@ func readManufacturing(tx *gorm.DB) (map[uint16]assets.ManufacturingFormula, err
 		value.PlanID = row.ValuePlanID
 		value.ToolID = row.ValueToolID
 		value.DurationSeconds = row.ValueDurationSeconds
+		value.DefaultDurationSeconds = row.ValueDefaultDurationSeconds
 		value.TentOutput = row.ValueTentOutput
 		result[row.ManufacturingKey] = value
 	}
@@ -8379,28 +8382,29 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 }
 
 type NativeItemsRow struct {
-	NativeItemsKey                uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
-	ValueDefinitionIndestructible bool
-	ValueDefinitionEquipLevel     uint16
-	ValueDefinitionCellWidth      uint8
-	ValueDefinitionCellHeight     uint8
-	ValueDefinitionID             uint16
-	ValueDefinitionName           string
-	ValueDefinitionType           uint8
-	ValueDefinitionEquipSlot      uint16
-	ValueDefinitionLevel          uint16
-	ValueDefinitionStatus0        uint16
-	ValueDefinitionStatus1        uint16
-	ValueDefinitionValues0        int32
-	ValueDefinitionValues1        int32
-	ValueDescription              string
-	ValueIcon                     uint16
-	ValueLargeIcon                uint16
-	ValueSprites0                 uint16
-	ValueSprites1                 uint16
-	ValueSprites2                 uint16
-	ValueSprites3                 uint16
-	ValueRecord                   []byte
+	NativeItemsKey                 uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
+	ValueDefinitionTentFloorSwitch bool
+	ValueDefinitionIndestructible  bool
+	ValueDefinitionEquipLevel      uint16
+	ValueDefinitionCellWidth       uint8
+	ValueDefinitionCellHeight      uint8
+	ValueDefinitionID              uint16
+	ValueDefinitionName            string
+	ValueDefinitionType            uint8
+	ValueDefinitionEquipSlot       uint16
+	ValueDefinitionLevel           uint16
+	ValueDefinitionStatus0         uint16
+	ValueDefinitionStatus1         uint16
+	ValueDefinitionValues0         int32
+	ValueDefinitionValues1         int32
+	ValueDescription               string
+	ValueIcon                      uint16
+	ValueLargeIcon                 uint16
+	ValueSprites0                  uint16
+	ValueSprites1                  uint16
+	ValueSprites2                  uint16
+	ValueSprites3                  uint16
+	ValueRecord                    []byte
 }
 
 func (NativeItemsRow) TableName() string { return "catalog_native_items" }
@@ -8408,6 +8412,7 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	var rows []NativeItemsRow
 	for key, value := range values {
 		row := NativeItemsRow{NativeItemsKey: key}
+		row.ValueDefinitionTentFloorSwitch = value.Definition.TentFloorSwitch
 		row.ValueDefinitionIndestructible = value.Definition.Indestructible
 		row.ValueDefinitionEquipLevel = value.Definition.EquipLevel
 		row.ValueDefinitionCellWidth = value.Definition.CellWidth
@@ -8451,6 +8456,7 @@ func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
 	rows = loaded
 	for _, row := range rows {
 		var value assets.NativeItem
+		value.Definition.TentFloorSwitch = row.ValueDefinitionTentFloorSwitch
 		value.Definition.Indestructible = row.ValueDefinitionIndestructible
 		value.Definition.EquipLevel = row.ValueDefinitionEquipLevel
 		value.Definition.CellWidth = row.ValueDefinitionCellWidth

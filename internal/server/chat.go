@@ -149,6 +149,10 @@ func (s *Server) command(ctx context.Context, c *Session, text string) error {
 		return s.gmMallPoints(ctx, c, words)
 	case "item":
 		return s.giveItem(ctx, c, words)
+	case "floorup":
+		return s.floorUp(ctx, c)
+	case "floordown":
+		return s.floorDown(ctx, c)
 	case "town":
 		return s.gmTown(ctx, c, words)
 	case "summonall":

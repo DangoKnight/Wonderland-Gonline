@@ -13,7 +13,7 @@ Existing asset catalogs are never replaced or silently upgraded at startup.
 
 ## Upgrade an existing installation
 
-Current versions are **asset schema 64** and **gameplay schema 24**, defined in
+Current versions are **asset schema 65** and **gameplay schema 24**, defined in
 [`catalog_migration.go`](../internal/assetsql/catalog_migration.go) and
 [`migrations.go`](../internal/store/migrations.go). Asset v62 adds typed item-card
 reward/gender mappings. Gameplay v22 adds durable public message-board posts;
@@ -24,6 +24,14 @@ preserving migration seeds starter outfits and the six rebirth cape series from
 `internal/assetsql/indestructible_equipment_defaults.json`. Later administrator
 edits are retained. Existing installations must run the normal database migration
 before starting the updated server.
+
+Asset v65 stores manufacturing reset baselines in
+`catalog_manufacturing.value_default_duration_seconds` and furniture floor-switch
+flags in `catalog_native_items.value_definition_tent_floor_switch`. Migration
+preserves existing recipe durations as their baseline; subsequent duration edits
+do not change that baseline. Repository-only installations support reset without
+`compound2.dat` archive records. Floor-switch flags identify stairs, ladders and
+elevators independently of translated item names; later administrator edits survive.
 
 Asset v63 adds the SQL-owned `account_ground_once` policy for Newbie Island.
 Gameplay v24 stores permanent account/node claims transactionally with pickups.

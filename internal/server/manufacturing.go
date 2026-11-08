@@ -288,6 +288,45 @@ func (s *Server) maintainGathering(ctx context.Context, now time.Time) {
 	s.tickManufacturing(ctx, now)
 }
 
+// tentManufactureBench reads the bench a continue/stop request addresses. The
+// native form repeats it as u16 after padding; the legacy form uses one byte or
+// omits it and reuses the active job.
+func tentManufactureBench(p []byte, current byte) byte {
+	switch {
+	case len(p) >= protocol.TentManufactureNativeControlBytes:
+		return byte(protocol.NewReader(p[2:]).U16())
+	case len(p) == protocol.TentManufactureControlBytes:
+		return p[2]
+	}
+	return current
+}
+
+// parseTentManufactureStart reads the legacy five-byte start plus the native
+// forms. The native client pads the request with an 18-byte placement tail that
+// this server does not need: bench and formula keep their offsets.
+func parseTentManufactureStart(p []byte) (bench uint16, id uint16, batch byte, native bool, err error) {
+	batch = 1
+	if len(p) != protocol.TentManufactureStartBytes && len(p) != protocol.TentManufactureNativeStartBytes && len(p) != protocol.TentManufactureNativeBatchBytes && len(p) != protocol.TentManufacturePlacementBytes {
+		return 0, 0, 0, false, protocol.ErrMalformed
+	}
+	if len(p) == protocol.TentManufactureStartBytes {
+		bench = uint16(p[2])
+		id = protocol.NewReader(p[3:]).U16()
+		return bench, id, batch, false, nil
+	}
+	r := protocol.NewReader(p[2:])
+	bench, id = r.U16(), r.U16()
+	if r.Err() != nil {
+		return 0, 0, 0, false, protocol.ErrMalformed
+	}
+	if len(p) > protocol.TentManufactureNativeStartBytes {
+		if v := r.U8(); v > 0 {
+			batch = v
+		}
+	}
+	return bench, id, batch, true, nil
+}
+
 func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
@@ -296,23 +335,18 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 	now := time.Now()
 	switch p[1] {
 	case protocol.TentManufactureStart:
-		if len(p) != protocol.TentManufactureStartBytes && len(p) != protocol.TentManufactureNativeStartBytes && len(p) != protocol.TentManufactureNativeBatchBytes {
+		// The native request also carries an 18-byte tail (placement/bench
+		// metadata); bench and formula keep their payload offsets.
+		if len(p) < protocol.TentManufactureStartBytes {
 			return protocol.ErrMalformed
 		}
 		if !gmIdle(c) || c.tentOwner != c.character.ID {
+			s.Log.Info("tent manufacture rejected", "character", c.character.ID, "idle", gmIdle(c), "tent_owner", c.tentOwner)
 			return s.chatFeedback(c, "Manufacture inside your own tent.")
 		}
-		bench := uint16(p[2])
-		batch := byte(1)
-		id := protocol.NewReader(p[3:]).U16()
-		native := len(p) != protocol.TentManufactureStartBytes
-		if native {
-			r := protocol.NewReader(p[2:])
-			bench = r.U16()
-			id = r.U16()
-			if len(p) == protocol.TentManufactureNativeBatchBytes {
-				batch = max(byte(1), r.U8())
-			}
+		bench, id, batch, native, parseErr := parseTentManufactureStart(p)
+		if parseErr != nil {
+			return protocol.ErrMalformed
 		}
 		formula, known := s.Assets.Manufacturing[id]
 		if !known {
@@ -332,6 +366,7 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 			next, job, removes, err = s.Store.StartManufacturing(ctx, ref, byte(bench), formula, now, s.Assets.Items, *c.character)
 		}
 		if err != nil {
+			s.Log.Info("tent manufacture start failed", "character", c.character.ID, "formula", id, "bench", bench, "error", err)
 			return s.chatFeedback(c, "Manufacturing could not start: "+err.Error())
 		}
 		s.adoptSavedCharacter(c, next)
@@ -342,10 +377,16 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 		for _, remove := range removes {
 			s.sendOrClose(c, []byte{protocol.CommandInventory, protocol.InventoryRemove, remove.Slot, remove.Count})
 		}
+		// The native form opens its progress window on the continue/refresh pair,
+		// not on the start packet alone.
+		s.sendOrClose(c, []byte{protocol.CommandTentManufacture, protocol.TentManufactureContinue, job.Bench})
 		s.sendOrClose(c, serverwire.ManufactureStartPacket(job, now))
+		c.manufactureSync = true
 		return s.completeManufacture(ctx, c, now)
 	case protocol.TentManufactureContinue, protocol.TentManufactureStop:
-		if len(p) != 2 && len(p) != protocol.TentManufactureControlBytes {
+		// The native control request repeats the bench as u16 and pads the
+		// packet; the legacy form is a bare command or bench byte.
+		if len(p) != 2 && len(p) != protocol.TentManufactureControlBytes && len(p) != protocol.TentManufactureNativeControlBytes {
 			return protocol.ErrMalformed
 		}
 		if !gmIdle(c) {
@@ -358,10 +399,7 @@ func (s *Server) tentManufactureCommand(ctx context.Context, c *Session, p []byt
 		if current == nil {
 			return nil
 		}
-		bench := current.Bench
-		if len(p) == protocol.TentManufactureControlBytes {
-			bench = p[2]
-		}
+		bench := tentManufactureBench(p, current.Bench)
 		if current.Native && p[1] == protocol.TentManufactureStop {
 			next, adds, err := s.Store.CancelNativeManufacturing(ctx, ref, bench, s.Assets.Items, *c.character)
 			if err != nil {
@@ -439,6 +477,28 @@ func (s *Server) tickManufacturing(ctx context.Context, now time.Time) {
 	for _, c := range s.world {
 		if !c.ready || !gmIdle(c) {
 			continue
+		}
+		if c.tentOccupantsSync && !now.Before(c.tentSyncAt) {
+			c.tentOccupantsSync = false
+			if c.tentOwner != 0 {
+				s.syncTentOccupants(ctx, c)
+			}
+		}
+		if c.tentSignSync {
+			c.tentSignSync = false
+			for _, peer := range s.world {
+				if peer.openTent != nil && peer.openTent.Map == c.character.Map &&
+					(peer.tentOwner != 0 || !s.World.HideOtherPlayers(c.character.Map)) {
+					s.Log.Debug("tent sign resend", "to", c.character.ID, "owner", peer.character.ID)
+					s.sendOrClose(c, tentSign(peer))
+				}
+			}
+		}
+		if c.manufactureSync {
+			c.manufactureSync = false
+			if job := c.manufacturing; job != nil {
+				s.sendOrClose(c, serverwire.ManufactureStartPacket(job, now))
+			}
 		}
 		if !c.manufacturingLoaded {
 			job, err := s.Store.ManufacturingJob(ctx, store.CharacterRef{Account: c.account.ID, ID: c.character.ID})

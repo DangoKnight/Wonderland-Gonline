@@ -164,9 +164,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	if err != nil {
 		return err
 	}
-	c.character = &char
 	c.shapeshift = 0
-	c.openTent, c.tentOwner = nil, 0
 	baseline := char.Clone()
 	c.autosaveBaseline = &baseline
 	c.view, c.pets = view, pets
@@ -186,7 +184,12 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	c.encounter.enterMap()
 	c.slot = char.Slot
 	c.arrived = true
+	// Publish the character under s.mu: tentPeers inspects sessions that are
+	// still loading and therefore yet to enter the world registry.
 	s.mu.Lock()
+	c.character = &char
+	c.openTent, c.tentOwner = nil, 0
+	c.tentFloor = 0
 	c.info.CharacterID = char.ID
 	c.info.CharacterName = char.Name
 	c.info.Map = char.Map

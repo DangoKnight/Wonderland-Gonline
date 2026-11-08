@@ -10,12 +10,13 @@ const ManufacturingMinutesToSeconds = 60
 const ManufacturingMaxDurationSeconds = 7 * 24 * 60 * 60
 
 type ManufacturingFormula struct {
-	ID              uint16
-	Output          ManufacturingInput
-	Inputs          [ManufacturingMaterialLimit]ManufacturingInput
-	PlanID, ToolID  uint16
-	DurationSeconds uint32
-	TentOutput      bool
+	ID                     uint16
+	Output                 ManufacturingInput
+	Inputs                 [ManufacturingMaterialLimit]ManufacturingInput
+	PlanID, ToolID         uint16
+	DurationSeconds        uint32
+	DefaultDurationSeconds uint32
+	TentOutput             bool
 }
 type RebornClass struct {
 	Job     byte

@@ -39,7 +39,7 @@ func (s *Store) TeleportPoints(ctx context.Context, ref CharacterRef) (map[byte]
 // RecordTeleportPoint verifies the scroll and current map against SQL before
 // recording the session's current (possibly buffered) walking position.
 func (s *Store) RecordTeleportPoint(ctx context.Context, ref CharacterRef, point, slot byte, location game.Location, scrolls map[uint16]byte, reservations ...game.Character) error {
-	if point < 1 || point > MaxTeleportPoints || slot < 1 || slot > game.BagSize || location.Map == 0 || location.Map == game.TentMapID {
+	if point < 1 || point > MaxTeleportPoints || slot < 1 || slot > game.BagSize || location.Map == 0 || game.IsTentMap(location.Map) {
 		return game.ErrInvalidItem
 	}
 	return s.transaction(ctx, func(tx *gorm.DB) error {

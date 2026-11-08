@@ -39,17 +39,18 @@ const ItemTypeExotic = 10
 const ItemTypeRedemptionCard = 40
 
 type ItemDefinition struct {
-	Indestructible bool      `json:"indestructible"`
-	EquipLevel     uint16    `json:"equip_level"`
-	CellWidth      byte      `json:"cell_width"`
-	CellHeight     byte      `json:"cell_height"`
-	ID             uint16    `json:"id"`
-	Name           string    `json:"name"`
-	Type           byte      `json:"type"`
-	EquipSlot      uint16    `json:"equip_slot"`
-	Level          uint16    `json:"level"`
-	Status         [2]uint16 `json:"status"`
-	Values         [2]int32  `json:"values"`
+	TentFloorSwitch bool      `json:"tent_floor_switch"`
+	Indestructible  bool      `json:"indestructible"`
+	EquipLevel      uint16    `json:"equip_level"`
+	CellWidth       byte      `json:"cell_width"`
+	CellHeight      byte      `json:"cell_height"`
+	ID              uint16    `json:"id"`
+	Name            string    `json:"name"`
+	Type            byte      `json:"type"`
+	EquipSlot       uint16    `json:"equip_slot"`
+	Level           uint16    `json:"level"`
+	Status          [2]uint16 `json:"status"`
+	Values          [2]int32  `json:"values"`
 }
 
 func (d ItemDefinition) StackLimit() byte {

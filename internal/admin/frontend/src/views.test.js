@@ -35,6 +35,19 @@ function fixture(path) {
 		return [{ id: 1, username: "tester", character_id: 10001, character_name: "Player" }];
 	if (path === "guilds") return [{ id: 1, name: "Guild", leader_id: 10001, members: [10001] }];
 	if (path === "battles") return [{ leader_id: 10001, players: [10001] }];
+	if (path === "tent-craft")
+		return {
+			formulas: [
+				{
+					formula_id: 511,
+					item_id: 38027,
+					name: "Coconut Basin",
+					duration_seconds: 0,
+					tent_output: true,
+				},
+			],
+			max_duration_seconds: 604800,
+		};
 	if (path.startsWith("assets/definitions/"))
 		return { version: "1", value: path.endsWith("QuestDefinitions") ? {} : [] };
 	return [];

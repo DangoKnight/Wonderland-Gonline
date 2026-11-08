@@ -36,6 +36,7 @@ func importedManufacturing(tx *gorm.DB, items map[uint16]game.ItemDefinition) (m
 			continue
 		}
 		f := assets.ManufacturingFormula{ID: uint16(record.RecordIndex), Output: assets.ManufacturingInput{ItemID: uint16(fields["result_id"]), Count: byte(fields["result_count"])}, PlanID: uint16(fields["plan_id"]), ToolID: uint16(fields["tool_id"]), DurationSeconds: fields["build_time"] * assets.ManufacturingMinutesToSeconds}
+		f.DefaultDurationSeconds = f.DurationSeconds
 		for i := range f.Inputs {
 			idKey, countKey := manufacturingMaterialKeys[i][0], manufacturingMaterialKeys[i][1]
 			f.Inputs[i] = assets.ManufacturingInput{ItemID: uint16(fields[idKey]), Count: byte(fields[countKey])}
@@ -102,4 +103,18 @@ func manufacturingFieldsFit(fields map[string]uint32) bool {
 		}
 	}
 	return true
+}
+
+// DefaultManufactureDurations reads typed reset baselines, including catalogs
+// built exclusively from the repository seed with no native archive records.
+func DefaultManufactureDurations(tx *gorm.DB) (map[uint16]uint32, error) {
+	out := map[uint16]uint32{}
+	var rows []ManufacturingRow
+	if err := tx.Select("manufacturing_key", "value_default_duration_seconds").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.ManufacturingKey] = row.ValueDefaultDurationSeconds
+	}
+	return out, nil
 }

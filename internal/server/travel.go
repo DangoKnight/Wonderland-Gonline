@@ -348,7 +348,7 @@ func (s *Server) bambooDragonfly(ctx context.Context, c *Session, destination, s
 // No warp or success receipt is published before commit. Old-map departure uses
 // the previous location even though inventory and the checkpoint already changed.
 func (s *Server) travelWithItem(ctx context.Context, c *Session, slot byte, search bool, dst world.Destination, valid func(game.Item) bool) error {
-	if !gmIdle(c) || c.tentOwner != 0 || c.character.Map == game.TentMapID || dst.Map == game.TentMapID {
+	if !gmIdle(c) || c.tentOwner != 0 || game.IsTentMap(c.character.Map) || game.IsTentMap(dst.Map) {
 		return nil
 	}
 	if _, exists := s.World.Map(dst.Map); !exists {
