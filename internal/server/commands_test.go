@@ -26,7 +26,7 @@ func TestCommandRegistryCompatibility(t *testing.T) {
 	for code := 0; code <= 255; code++ {
 		c := byte(code)
 		registration := commandRegistry[c]
-		world := contains(c, 2, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31, 32, 33, 34, 36, 37, 39, 40, 44, 45, 50, 53, 56, 57, 59, 62, 64, 65, 66, 67, 68, 69, 71, 74, 75, 77, 79, 85, 87, 89, 90, 91, 92, 104, 183, 186, 226, 254)
+		world := contains(c, 2, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31, 32, 33, 34, 36, 37, 39, 40, 44, 45, 50, 53, 56, 57, 59, 62, 64, 65, 66, 67, 68, 69, 71, 74, 75, 77, 79, 82, 85, 87, 89, 90, 91, 92, 104, 183, 186, 226, 254)
 		known := world || contains(c, 0, 1, 9, 13, 35, 63)
 		p := registration.policy
 		if (registration.handler != nil) != known || p.IsWorldCommand() != world ||

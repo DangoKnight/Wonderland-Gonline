@@ -50,8 +50,8 @@ func TestGonlineCombatNegotiation(t *testing.T) {
 		t.Fatal(err)
 	}
 	packets := w.packets(t)
-	// Includes the complete-map-snapshot bit; acceptance below selects only combat.
-	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 15, 0, 0, 0}) {
+	// Includes complete map snapshots and observed pickups; acceptance selects only combat.
+	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 31, 0, 0, 0}) {
 		t.Fatal("offer", packets)
 	}
 	if err := s.dispatch(context.Background(), c, accept); err != nil || c.combatCapabilities != 1 {
@@ -77,7 +77,7 @@ func TestGonlineCombatDisabledByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	packets := w.packets(t)
-	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 13, 0, 0, 0}) || c.combatOffered || s.combatRoundChain {
+	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 29, 0, 0, 0}) || c.combatOffered || s.combatRoundChain {
 		t.Fatal("default server offered full-round combat", packets)
 	}
 	c.combatOffered = true // Even a stale/forged offer cannot bypass the startup gate.
@@ -98,7 +98,7 @@ func TestGonlineCombatEnabledKeepsUnnegotiatedClientNative(t *testing.T) {
 	if err := s.discoveryCommand(context.Background(), c, nil); err != nil {
 		t.Fatal(err)
 	}
-	if len(w.packets(t)) != 3 || c.connectionOffered != 15 || c.combatCapabilities != 0 {
+	if len(w.packets(t)) != 3 || c.connectionOffered != 31 || c.combatCapabilities != 0 {
 		t.Fatal("offer activated transport without acceptance")
 	}
 	// A legacy-style short handshake reply cannot enable full-round delivery.
