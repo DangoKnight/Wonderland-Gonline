@@ -238,6 +238,51 @@ func TestSpeakerPortraitPress(t *testing.T) {
 	}
 }
 
+func TestChatPortraitSurvivesMapChangesUntilOffline(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	_ = wire(t, c)
+	ann := game.Character{ID: 20002, Slot: 1, Name: "Ann", Level: 3, Element: 2, Body: 1,
+		Color1: 444444444, Color2: 444444444, Map: 10017, X: 900, Y: 1100}
+	appear := func() {
+		t.Helper()
+		p, err := ann.AppearancePacket(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.dispatch(p)
+	}
+	appear()
+	c.dispatch(protocol.Builder{2, 2}.U32(ann.ID).Bytes([]byte("hi")))
+	if c.chatFace(ann.ID) == nil {
+		t.Fatal("missing same-map chat portrait")
+	}
+	lines := len(c.Chat.Lines)
+	ann.Map = 20000
+	c.dispatch(protocol.Builder{12}.U32(ann.ID).U16(ann.Map).U16(900).U16(1100))
+	if c.World.Peers[ann.ID] != nil || c.chatFace(ann.ID) == nil {
+		t.Fatal("portrait followed peer map residency")
+	}
+	// The observer changes map too; its replacement World has no peer roles.
+	c.dispatch([]byte{12, 17, 39, 0, 0, 43, 39, 162, 2, 43, 4})
+	if c.chatFace(ann.ID) == nil {
+		t.Fatal("own map change discarded chat portrait")
+	}
+	c.dispatch(protocol.Builder{12}.U32(ann.ID).U16(0).U16(0).U16(0))
+	if c.chatFace(ann.ID) != nil {
+		t.Fatal("offline speaker retained portrait")
+	}
+	// A fresh out-of-map appearance restores the portrait on existing log rows.
+	appear()
+	if c.World.Peers[ann.ID] != nil || c.chatFace(ann.ID) == nil || len(c.Chat.Lines) != lines {
+		t.Fatal("reconnect failed to restore existing cross-map log portrait")
+	}
+	c.dispatch(protocol.Builder{12}.U32(ann.ID).U16(0).U16(0).U16(0))
+	c.dispatch(protocol.Builder{10, 3}.U32(ann.ID).U8(255))
+	if c.chatFace(ann.ID) == nil {
+		t.Fatal("online presence did not restore cached portrait")
+	}
+}
+
 // TestWhisperers: another player's whisper joins the recent whisperers;
 // on the Whisper channel the list opens under the pointer over the whisper
 // field, and picking a name makes it the target.

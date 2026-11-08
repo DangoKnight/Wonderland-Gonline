@@ -4,6 +4,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -43,13 +44,17 @@ func (g *ground) init() {
 
 // GroundPacket lists available native items, then dropped items, as one AC23:4 packet.
 // It returns nil when the map has nothing on the ground.
-func (w *World) GroundPacket(mapID uint16) []byte {
+func (w *World) GroundPacket(mapID uint16, hidden ...map[byte]bool) []byte {
 	w.ground.mu.Lock()
 	defer w.ground.mu.Unlock()
 	p := protocol.Builder{protocol.CommandInventory, protocol.InventoryGroundItems}
+	personal := w.AccountGroundScope(mapID) != 0
 	if m, ok := w.maps[mapID]; ok {
 		for _, it := range m.Items {
-			if _, taken := w.ground.taken[mapID][it.Slot]; !taken {
+			if len(hidden) > 0 && hidden[0][it.Slot] {
+				continue
+			}
+			if _, taken := w.ground.taken[mapID][it.Slot]; !taken || personal {
 				p = groundItem(p, it.Slot, it.ItemID, it.X, it.Y, it.Depth)
 			}
 		}
@@ -94,7 +99,7 @@ func (w *World) GroundAt(mapID uint16, slot byte) (GroundTarget, bool) {
 	if found == nil {
 		return GroundTarget{}, false
 	}
-	if _, taken := w.ground.taken[mapID][found.Slot]; taken {
+	if _, taken := w.ground.taken[mapID][found.Slot]; taken && w.AccountGroundScope(mapID) == 0 {
 		return GroundTarget{}, false
 	}
 	return GroundTarget{Slot: found.Slot, Item: game.Item{ID: found.ItemID, Count: 1}, X: found.X, Y: found.Y, native: found}, true
@@ -106,6 +111,9 @@ func (w *World) Take(mapID uint16, t GroundTarget, now time.Time) {
 	defer w.ground.mu.Unlock()
 	if t.dropped {
 		delete(w.ground.dropped[mapID], t.Slot)
+		return
+	}
+	if w.AccountGroundScope(mapID) != 0 {
 		return
 	}
 	if w.ground.taken[mapID] == nil {
@@ -122,9 +130,24 @@ func (t GroundTarget) RespawnDelay() time.Duration {
 	return t.native.Respawn
 }
 
+// AccountGroundScope identifies an SQL-authored permanent account resource group.
+// Alternate maps may share a namespace so changing character/intro variant cannot
+// collect the same native node twice. Player-dropped items are never personal.
+func (w *World) AccountGroundScope(mapID uint16) uint16 {
+	for r := range w.StoryRules(assets.StoryAccountGroundOnce, nil, nil, StoryContext{Map: mapID}) {
+		return uint16(r.Value)
+	}
+	return 0
+}
+
+func (t GroundTarget) Native() bool { return t.native != nil }
+
 // RestoreGroundCooldowns merges durable clocks before map publication. Retain
 // expired in-memory entries until Respawn broadcasts their return to peers.
 func (w *World) RestoreGroundCooldowns(mapID uint16, clocks map[uint16]time.Time) {
+	if w.AccountGroundScope(mapID) != 0 {
+		return
+	}
 	w.ground.mu.Lock()
 	defer w.ground.mu.Unlock()
 	if w.ground.taken[mapID] == nil {
@@ -189,6 +212,9 @@ func (w *World) Respawn(now time.Time) map[uint16][][]byte {
 	defer w.ground.mu.Unlock()
 	out := map[uint16][][]byte{}
 	for mapID, taken := range w.ground.taken {
+		if w.AccountGroundScope(mapID) != 0 {
+			continue
+		}
 		m := w.maps[mapID]
 		for _, it := range m.Items {
 			if at, ok := taken[it.Slot]; ok && !now.Before(at) {

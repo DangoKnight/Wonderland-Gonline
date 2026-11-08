@@ -154,7 +154,20 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 		return c.send(serverwire.HeadBanner("Your inventory is full."))
 	}
 	now := time.Now()
-	if cooldown := target.RespawnDelay(); cooldown > 0 {
+	accountScope := s.World.AccountGroundScope(char.Map)
+	personal := target.Native() && accountScope != 0
+	if personal {
+		grant := target.Item
+		grant.Count = 1
+		next, err := s.Store.ClaimAccountGroundItem(ctx, store.CharacterRef{Account: c.account.ID, ID: char.ID}, char.Map, accountScope, target.Slot, grant, limit, now, s.Assets.Items, char.Clone())
+		if errors.Is(err, store.ErrResourceUnavailable) {
+			return c.send(protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)))
+		}
+		if err != nil {
+			return err
+		}
+		s.adoptSavedCharacter(c, next)
+	} else if cooldown := target.RespawnDelay(); cooldown > 0 {
 		cooldown = s.Assets.ResourceCooldown(store.ResourceGroundItem, char.Map, uint16(target.Slot), cooldown)
 		grant := target.Item
 		grant.Count = 1
@@ -182,7 +195,26 @@ func (s *Server) pickup(ctx context.Context, c *Session, slot byte) error {
 	if e = c.send(game.AcquisitionPacket(grant)); e != nil {
 		return e
 	}
-	s.broadcastWorld(c, protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot)).U8(0))
+	remove := protocol.Builder{protocol.CommandInventory, protocol.InventoryPickup}.U16(uint16(target.Slot))
+	if personal {
+		for _, peer := range s.world {
+			if peer != c && peer.character != nil && peer.account.ID == c.account.ID && peer.tentOwner == 0 && s.World.AccountGroundScope(peer.character.Map) == accountScope {
+				_ = peer.send(remove)
+			}
+		}
+	} else {
+		flight := (protocol.ObservedGroundPickup{Slot: uint16(target.Slot), Collector: char.ID, X: char.X, Y: char.Y}).Packet()
+		// Resource visibility is independent of private player appearances.
+		for _, peer := range s.world {
+			if peer != c && sameScene(c, peer) {
+				packet := []byte(remove)
+				if peer.connectionNegotiated && peer.connectionFeatures&protocol.ConnectionObservedPickups != 0 && !c.invisible && s.samePlayerScene(c, peer) {
+					packet = flight
+				}
+				_ = peer.send(packet)
+			}
+		}
+	}
 	return nil
 }
 

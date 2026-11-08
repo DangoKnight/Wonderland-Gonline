@@ -60,7 +60,7 @@ func TestConnectionHelloRespectsConfigAndMissingAssets(t *testing.T) {
 	_ = wire(t, c)
 	c.resources.battleBackdrops = nil
 	// Server has chains disabled and the client cannot resolve backdrops.
-	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 21, 0, 0, 0}) // Includes an unknown future bit, ignored by intersection.
+	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 37, 0, 0, 0}) // Includes an unknown future bit, ignored by intersection.
 	if c.connection.features != 1 {
 		t.Fatal("unavailable features selected", c.connection.features)
 	}
@@ -86,5 +86,18 @@ func TestConnectionHelloNegotiatesCompleteMapSnapshot(t *testing.T) {
 	c.dispatch([]byte{1, 250, 71, 76, 79, 78, 1, 0, 9, 0, 0, 0})
 	if !c.connection.enabled {
 		t.Fatal("map snapshot capability not confirmed")
+	}
+}
+
+func TestConnectionHelloNegotiatesObservedPickups(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	_ = wire(t, c)
+	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 17, 0, 0, 0})
+	if c.connection.features != 17 || c.connection.enabled {
+		t.Fatal("pickup feature not selected or enabled prematurely")
+	}
+	c.dispatch([]byte{1, 250, 71, 76, 79, 78, 1, 0, 17, 0, 0, 0})
+	if !c.connection.enabled || c.connection.features != 17 {
+		t.Fatal("pickup feature not confirmed")
 	}
 }

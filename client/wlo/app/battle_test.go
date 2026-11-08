@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -383,6 +384,49 @@ func TestBattleTurnCountdown(t *testing.T) {
 	c.battleFrame(false)
 	if c.battle.timerShown != clientbattle.TurnLimitLong || c.battle.timedOut {
 		t.Fatalf("kind 2 countdown %d", c.battle.timerShown)
+	}
+}
+
+func TestBattleTurnCountdownStopsDuringFleeDeparture(t *testing.T) {
+	for _, started := range []bool{false, true} {
+		t.Run(fmt.Sprint("timer_started_", started), func(t *testing.T) {
+			// A teammate flees while this player remains in the battle.
+			c, now, _ := enterBattle(t, remoteRecord(5, 2, 4, 1, 10002, 0))
+			warnings := 0
+			c.Env.Sound = func(path string) {
+				if path == battleTimerSound {
+					warnings++
+				}
+			}
+			if started {
+				c.battleTimerTick(*now)
+				if !c.battle.timerOn {
+					t.Fatal("selection countdown did not start")
+				}
+			}
+			c.dispatch([]byte{11, 1, 4, 1, 0})
+			if len(c.battle.departures) != 1 || !c.battle.state.Active {
+				t.Fatal("missing teammate departure")
+			}
+			c.battleTimerTick(now.Add(time.Second))
+			if c.battle.timerOn {
+				t.Fatal("countdown continued during flee")
+			}
+			// A next-round prompt can arrive before presentation finishes. Its
+			// selection allowance must begin only after the departure finishes.
+			c.dispatch([]byte{50, 6, 4, 2, 0})
+			c.dispatch([]byte{52, 1})
+			*now = now.Add(time.Minute)
+			c.battleTimerTick(*now)
+			if c.battle.timerOn || c.battle.timedOut || warnings != 0 {
+				t.Fatal("playback consumed next round's selection time")
+			}
+			delete(c.battle.departures, clientbattle.Cell{X: 4, Y: 1})
+			c.battleTimerTick(*now)
+			if !c.battle.timerOn || c.battle.timerShown != c.battle.state.TurnLimit() {
+				t.Fatal("next round did not receive a fresh timer")
+			}
+		})
 	}
 }
 

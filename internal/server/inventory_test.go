@@ -270,7 +270,7 @@ func TestGroundItemsAndBagMoves(t *testing.T) {
 	// Slot 1 holds a full stack of the starter item, so the pickup opens slot 2.
 	command(alice, 23, 2, 5)
 	expect(0, []byte{23, 2, 5, 0, 1}, record(2, 32176, 1))
-	expect(1, []byte{23, 2, 5, 0, 0})
+	expect(1, []byte{23, 2, 5, 0})
 	command(alice, 23, 2, 5)
 	expect(0)
 	chars, err := s.Store.Characters(ctx, alice.account.ID)
@@ -291,7 +291,7 @@ func TestGroundItemsAndBagMoves(t *testing.T) {
 	expect(1, dropped)
 	command(bobby, 23, 2, 2)
 	expect(1, []byte{23, 2, 2, 0, 1}, record(2, 32176, 1))
-	expect(0, []byte{23, 2, 2, 0, 0})
+	expect(0, []byte{23, 2, 2, 0})
 
 	alice.character.Bag[9] = game.Item{ID: 21001, Count: 1}
 	command(alice, 23, 3, 10, 1, 0)

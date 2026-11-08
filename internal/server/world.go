@@ -203,6 +203,7 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 	if !c.warped {
 		c.friendOnline = true
 		s.friendPresence(c, true)
+		s.knownPlayerOnline(c)
 	}
 	// Deliver queued mail after the map snapshot, including mail received while
 	// loading a warp. Socket failure leaves undelivered messages queued.
@@ -322,6 +323,7 @@ func (s *Server) leaveWorld(c *Session) {
 	}
 	c.tentOwner = 0
 	if published {
+		s.knownPlayerOffline(c)
 		if err := s.guildPresence(context.Background(), c.character.ID); err != nil {
 			s.Log.Error("guild logout presence failed", "character", c.character.ID, "error", err)
 		}
@@ -343,6 +345,10 @@ func (s *Server) depart(c *Session, packet []byte) {
 // equipment, sprite refresh, SendMapInfo with its visibility sync, then the quest
 // journal. Peers are exchanged after AC12:1. It resets the view's scene state.
 func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *petRoster, portal byte) ([][]byte, error) {
+	claimed, err := s.accountGroundClaims(context.Background(), char)
+	if err != nil {
+		return nil, err
+	}
 	clocks, err := s.Store.ActiveResourceCooldowns(context.Background(), store.ResourceGroundItem, char.Map, time.Now())
 	if err != nil {
 		return nil, err
@@ -361,7 +367,7 @@ func (s *Server) arrivalPackets(char game.Character, view *world.View, pets *pet
 		}
 	}
 	packets = append(packets, char.WarpPacket(uint16(portal)), char.PositionPacket(), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(char.ID).Bytes(char.WornEquipment()), protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(char.ID).U8(0))
-	packets = append(packets, s.World.MapInfo(&char, view, []uint32{char.ID})...)
+	packets = append(packets, s.World.MapInfo(&char, view, []uint32{char.ID}, claimed)...)
 	packets = append(packets, s.World.Sync(&char, view, false)...)
 	packets = append(packets, s.rosterPackets(&char, pets)...)
 	return append(packets, s.World.Journal(&char, view)...), nil

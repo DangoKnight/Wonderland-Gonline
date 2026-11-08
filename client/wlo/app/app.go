@@ -92,7 +92,7 @@ type Client struct {
 	Compound             *inventory.CompoundForm
 	Team                 *team.Form
 	TeamState            *team.State
-	teamAppearances      map[uint32]*world.Peer
+	teamAppearances      map[uint32]*world.Peer // Known appearances across maps, reused by team, battle and chat portraits.
 	teamTransferLeader   uint32
 	teamTransferDeadline time.Time
 	teamTransferClose    func()

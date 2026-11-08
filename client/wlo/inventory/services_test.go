@@ -193,6 +193,30 @@ func TestServiceHotelCapturedCopyAndUnlock(t *testing.T) {
 		t.Fatal("hotel removal")
 	}
 }
+
+func TestServiceHotelNativeProgressionFields(t *testing.T) {
+	f, _ := serviceFixture()
+	// Authored raw AC31:6 record: no name, no equipment/skills. Amity
+	// belongs in header byte 25, not in the post-equipment rebirth byte.
+	p := make([]byte, 66)
+	copy(p, []byte{31, 6, 1, 0x94, 0x3a})
+	r := p[2:]
+	r[7], r[8], r[18] = 1, 189, 10
+	r[25], r[26] = 89, 1
+	r[57], r[58], r[59] = 0, 9, 2
+	if !f.HotelPacket(p) {
+		t.Fatal("native hotel record rejected")
+	}
+	pet := f.Hotel[0]
+	if pet.Amity != 89 || pet.Stats.Rebirth != 0 || pet.Potential != 9 || pet.Stats.Job != 2 || pet.Stats.HP != 189 {
+		t.Fatal("hotel fields mixed", pet)
+	}
+	before := pet.Stats.MaxHP
+	r[25] = 12
+	if !f.HotelPacket(p) || f.Hotel[0].Stats.MaxHP != before {
+		t.Fatal("amity changed maximum HP")
+	}
+}
 func TestServiceMultiSlotSelectionResolvesCoveredCell(t *testing.T) {
 	f, _ := serviceFixture()
 	f.Mode = ServiceStorage

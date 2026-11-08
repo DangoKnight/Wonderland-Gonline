@@ -26,17 +26,26 @@ func (s *Server) openService(c *Session, action uint16) error {
 		}
 		return c.send([]byte{protocol.CommandMessageBoard, protocol.MessageBoardOpen})
 	case world.ServiceRebornJobSelection:
+		if c.event != nil {
+			c.event.deferredServiceOwner, c.event.deferredServiceKind = c.character.ID, action
+			return nil
+		}
 		if c.character.Reborn || c.character.Level < game.RebornMinimumLevel {
 			return c.send(serverwire.HeadBanner("Rebirth requires level 100 and a character that has not reborn."))
 		}
 		c.view.RebornFormOpen = true
 		return c.send([]byte{protocol.CommandRebirthJobSelection, protocol.RebirthJobConfirm})
 	case world.ServiceCompanionRebirth:
+		if c.event != nil {
+			c.event.deferredServiceOwner, c.event.deferredServiceKind = c.character.ID, action
+			return nil
+		}
 		c.view.CompanionRebirthOpen = true
 		return c.send([]byte{protocol.CommandCompanionRebirth, protocol.CompanionRebirthOpen})
 	case world.ServicePetHotel:
+		s.holdNPCService(c, action)
 		c.hotelMap = c.character.Map
-		return s.sendAll(c, append(s.hotelPackets(c.character), []byte{protocol.CommandNPCService, protocol.PetHotelOpen}))
+		return s.publishNPCService(c, append(s.hotelPackets(c.character), []byte{protocol.CommandNPCService, protocol.PetHotelOpen})...)
 	case world.ServiceWeaponShop, world.ServicePropsShop, world.ServiceArmorShop: // Weapon shop, props shop, armor shop: selling only, as in C#.
 		mode := 0
 		if action == world.ServicePropsShop {
@@ -45,8 +54,12 @@ func (s *Server) openService(c *Session, action uint16) error {
 		c.saleMode, c.saleMap = mode, c.character.Map
 		return s.openNPCShop(c, action)
 	case world.ServicePropsKeeper, world.ServiceStockKeeper: // Props keeper and stock keeper both open item storage.
+		s.holdNPCService(c, action)
 		c.storageMap = c.character.Map
-		return s.sendAll(c, [][]byte{{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), {protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandCharacterSelection, protocol.CharacterSelectionRecordPoint, 0x98, 0x98, 1, 0, 0}, {protocol.CommandEvent, protocol.EventResume}})
+		// FUN_001ded68 marks the dialogue ready to acknowledge when storage
+		// closes. Retain its event until AC20:6; an early resume followed by an
+		// ignored close ACK leaves Legacy waiting and unable to click or warp.
+		return s.publishNPCService(c, []byte{protocol.CommandStorage, protocol.StorageOpen}, c.character.Storage.Packet(protocol.CommandStorage, protocol.StorageItems), []byte{protocol.CommandLegacyStorage, protocol.LegacyStorageWireCode6})
 	case world.ServiceBank: // Bank counter: the dialogue close would hide the form, so open it after the resume.
 		if c.event != nil {
 			c.event.bankOwner = c.character.ID
@@ -54,6 +67,7 @@ func (s *Server) openService(c *Session, action uint16) error {
 		}
 		return s.openMoneyBank(c)
 	case world.ServiceClinic: // Clinic: offer a free rest when HP or SP is missing.
+		s.holdNPCService(c, action)
 		full := c.character.Combat(s.Assets.Items)
 		needs := int64(c.character.HP) < int64(full.MaxHP) || int64(c.character.SP) < int64(full.MaxSP)
 		for _, pet := range c.character.Pets {
@@ -65,9 +79,12 @@ func (s *Server) openService(c *Session, action uint16) error {
 		if needs {
 			c.restMap, offer = c.character.Map, 0
 		}
-		return c.send(protocol.Builder{protocol.CommandNPCService, protocol.ClinicRestOffer}.U32(offer))
+		return s.publishNPCService(c, protocol.Builder{protocol.CommandNPCService, protocol.ClinicRestOffer}.U32(offer))
 	}
-	return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	if c.event == nil {
+		return c.send([]byte{protocol.CommandEvent, protocol.EventResume})
+	}
+	return nil // The owning event publishes its single completion/resume.
 }
 
 // confirmRest is Player.ConfirmNpcRest (AC31:1). Caller holds worldMu.
@@ -386,6 +403,7 @@ const (
 )
 
 func (s *Server) openNPCShop(c *Session, service uint16) error {
+	s.holdNPCService(c, service)
 	kind, catalog := byte(npcShopWeaponsKind), uint32(protocol.ShopCatalogWeapons)
 	if service == world.ServicePropsShop {
 		kind, catalog = npcShopPropsKind, protocol.ShopCatalogProps
@@ -418,16 +436,19 @@ func (s *Server) openNPCShop(c *Session, service uint16) error {
 			return s.openNPCSaleWindow(c)
 		}
 	}
-	return c.send(protocol.Builder{protocol.CommandShopCatalog, protocol.ShopCatalogOpen}.U32(catalog))
+	return s.publishNPCService(c, protocol.Builder{protocol.CommandShopCatalog, protocol.ShopCatalogOpen}.U32(catalog))
 }
 
 func merchantSellChoice(answer uint16) bool { return answer == 31 || answer == 41 || answer == 2 }
 func (s *Server) openNPCSaleWindow(c *Session) error {
 	sub := byte(protocol.ShopEquipmentWindow)
+	service := uint16(world.ServiceWeaponShop)
 	if c.saleMode == 1 {
 		sub = protocol.ShopPropsWindow
+		service = world.ServicePropsShop
 	}
-	return c.send([]byte{protocol.CommandShop, sub})
+	s.holdNPCService(c, service)
+	return s.publishNPCService(c, []byte{protocol.CommandShop, sub})
 }
 
 // Some native merchants have only a question and no callback branch. Restrict
@@ -455,10 +476,7 @@ func (s *Server) merchantChoice(c *Session, es *eventSession, answer uint16) (bo
 	if !buy && !merchantSellChoice(answer) {
 		return false, nil
 	}
-	// Keep es available while opening so a sell choice sends only its sale form.
-	if err := s.finishEvent(c, es); err != nil {
-		return true, err
-	}
+	// The window replaces the question but retains its close-ACK token.
 	if merchantSellChoice(answer) {
 		// Configure the catalog without sending a second buy window.
 		c.saleMode = 0
@@ -518,7 +536,7 @@ func (s *Server) buyNPCItems(ctx context.Context, c *Session, p []byte) error {
 	if err != nil {
 		return err
 	}
-	if c.view == nil || len(c.view.ShopItems) == 0 || c.saleMap != c.character.Map || c.event != nil && !c.event.shopCart {
+	if c.view == nil || len(c.view.ShopItems) == 0 || c.saleMap != c.character.Map || c.event != nil && !c.event.shopCart && !ownsNPCShop(c) {
 		return reply()
 	}
 	var total uint64
@@ -660,7 +678,9 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 	if kind == world.ServicePropsKeeper || kind == world.ServiceStockKeeper || kind == world.ServiceBank || kind == world.ServicePetHotel {
 		return true, s.openService(c, uint16(kind))
 	}
-	es := &eventSession{mapID: c.character.Map, click: n.ClickID}
+	// ServiceQuestion uses native mode zero, so every answered question also
+	// has a trailing AC20:6 distinct from the eventual service close ACK.
+	es := &eventSession{mapID: c.character.Map, click: n.ClickID, choiceAcknowledged: true}
 	c.event = es
 	if err := c.send([]byte{protocol.CommandMovement, protocol.MovementMovementLock, 1}); err != nil {
 		return true, err
@@ -672,22 +692,16 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 			}
 			switch choice {
 			case 30, 1:
-				if err := s.openService(c, world.ServiceClinic); err != nil {
-					return err
-				}
+				return s.openService(c, world.ServiceClinic)
 			case 31, 2:
 				next := c.character.Clone()
 				next.RecordPoint = &game.Location{Map: next.Map, X: next.X, Y: next.Y}
 				if err := s.commit(ctx, c, next); err != nil {
 					return err
 				}
-				if err := s.sendAll(c, [][]byte{serverwire.DialogueFrame(1, 3, byte(n.ClickID), 0x0379b6), serverwire.RecordPointStatus(next), {protocol.CommandEvent, protocol.EventStepComplete}, {protocol.CommandEvent, protocol.EventResume}}); err != nil {
-					return err
-				}
+				return s.sendAll(c, [][]byte{serverwire.DialogueFrame(1, 3, byte(n.ClickID), 0x0379b6), serverwire.RecordPointStatus(next), {protocol.CommandEvent, protocol.EventStepComplete}})
 			case 32:
-				if err := s.openService(c, 5); err != nil {
-					return err
-				}
+				return s.openService(c, world.ServicePetHotel)
 			}
 			return s.cancelInteraction(c)
 		}
@@ -702,26 +716,26 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 			return nil
 		}
 		if choice != 30 && choice != 1 {
-			if err := s.sendAll(c, [][]byte{{protocol.CommandShop, protocol.ShopPropsWindow}, {protocol.CommandEvent, protocol.EventChoice}, {protocol.CommandEvent, protocol.EventResume}}); err != nil {
-				return err
+			if !merchantSellChoice(uint16(choice)) {
+				return s.cancelInteraction(c)
 			}
-			return s.cancelInteraction(c)
+			c.saleMode, c.saleMap = 1, c.character.Map
+			if kind == world.ServiceWeaponShop {
+				c.saleMode = 0
+			}
+			c.view.ShopItems = nil
+			return s.openNPCSaleWindow(c)
 		}
 		es.onChoice = func(choice byte) error {
 			if c.event != es || c.character.Map != es.mapID {
 				return nil
-			}
-			if err := c.send([]byte{protocol.CommandEvent, protocol.EventResume}); err != nil {
-				return err
 			}
 			service := uint16(kind)
 			if n.Template == npcArmorMerchantTemplate || strings.Contains(strings.ToLower(n.Name), "armor") {
 				service = world.ServiceArmorShop
 			}
 			if choice == 30 || choice == 1 {
-				if err := s.openService(c, service); err != nil {
-					return err
-				}
+				return s.openService(c, service)
 			}
 			if merchantSellChoice(uint16(choice)) {
 				c.saleMode, c.saleMap = 0, c.character.Map
@@ -729,9 +743,7 @@ func (s *Server) fallbackService(ctx context.Context, c *Session, n world.NPC) (
 					c.saleMode = 1
 				}
 				c.view.ShopItems = nil
-				if err := s.openNPCSaleWindow(c); err != nil {
-					return err
-				}
+				return s.openNPCSaleWindow(c)
 			}
 			return s.cancelInteraction(c)
 		}

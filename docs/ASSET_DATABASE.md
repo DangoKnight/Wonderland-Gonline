@@ -13,12 +13,19 @@ Existing asset catalogs are never replaced or silently upgraded at startup.
 
 ## Upgrade an existing installation
 
-Current versions are **asset schema 62** and **gameplay schema 23**, defined in
+Current versions are **asset schema 63** and **gameplay schema 24**, defined in
 [`catalog_migration.go`](../internal/assetsql/catalog_migration.go) and
 [`migrations.go`](../internal/store/migrations.go). Asset v62 adds typed item-card
 reward/gender mappings. Gameplay v22 adds durable public message-board posts;
 v23 preserves those posts and adds a monotonic ID allocator to prevent stale
 requests from addressing a different notice after deletion.
+Asset v63 adds the SQL-owned `account_ground_once` policy for Newbie Island.
+Gameplay v24 stores permanent account/node claims transactionally with pickups.
+All Newbie Island map variants share the same claim namespace; each account can
+collect each authored material once across its characters, without respawn.
+Player-dropped items retain their normal behavior. Old shared cooldown rows are
+ignored for these personal nodes; past collectors cannot be inferred from those
+rows, so existing accounts begin with no permanent claims after this upgrade.
 Earlier supported revisions are handled by the same
 migrator; the old Client/Quest branch-specific upgrade sequence is obsolete.
 Do not downgrade a newer catalog to match an older executable.

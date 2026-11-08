@@ -72,6 +72,11 @@ func (c *Client) receivePresence(p []byte) {
 		if len(p) != presenceStringEnd {
 			return
 		}
+		if p[0] == protocol.PresenceOnline && p[presenceIDEnd] == protocol.PresenceMapAvailable {
+			if known := c.teamAppearances[id]; known != nil {
+				c.rememberPlayer(id, known.Name)
+			}
+		}
 		if id == c.World.Player.ID {
 			c.World.Player.Presence = p[presenceIDEnd]
 		}

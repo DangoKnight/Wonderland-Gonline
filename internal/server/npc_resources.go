@@ -8,6 +8,7 @@ import (
 	"wonderland-gonline/internal/game"
 	serverwire "wonderland-gonline/internal/server/wire"
 	"wonderland-gonline/internal/store"
+	"wonderland-gonline/internal/world"
 )
 
 var errNPCResourceConflict = errors.New("NPC service resources changed; reopen the service")
@@ -86,9 +87,14 @@ func (s *Server) authorizeShopQuestion(c *Session, es *eventSession, id uint16) 
 			}
 		}
 		if len(items) > 0 {
+			kind := uint16(world.ServiceWeaponShop)
+			if g.Header[0] == npcShopPropsKind {
+				kind = world.ServicePropsShop
+			}
+			s.holdNPCService(c, kind)
 			c.view.ShopItems = items
 			c.saleMap = c.character.Map
-			es.shopCart = true
+			es.shopCart, es.shopPicker = true, true
 		}
 		return
 	}

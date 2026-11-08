@@ -88,6 +88,11 @@ func (c *Client) warp(p []byte) {
 	// map is not ready until 5/4.
 	c.areas.last = 0
 	c.vacuum = vacuumRuntime{}
+	// Ground packets are sparse updates (including individual respawns). Never
+	// carry a previous visit's items into the new authoritative map snapshot,
+	// even when no ground packets arrive on the intervening map.
+	c.floorItems = nil
+	c.floorMap = 0
 	c.floorPendingPickup, c.floorHovered = 0, 0
 	c.worldItemFlights = nil
 	c.acquisitionActor = 0

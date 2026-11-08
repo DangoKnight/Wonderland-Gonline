@@ -162,6 +162,19 @@ func TestNativeShopPickerOwnsCartWithoutUnlockingOtherEvents(t *testing.T) {
 	if c.character.Gold != before || !contains(wires[0].packets(t), []byte{27, 1, 1}) {
 		t.Fatal("unrelated event accepted cart")
 	}
+	wires[0].Reset()
+	if err := s.eventCommand(context.Background(), c, []byte{20, 6}); err != nil {
+		t.Fatal(err)
+	}
+	if c.event != nil || !contains(wires[0].packets(t), []byte{20, 8}) || len(c.view.ShopItems) != 0 {
+		t.Fatal("native picker close did not release interaction")
+	}
+	if err := s.eventCommand(context.Background(), c, []byte{20, 6}); err != nil {
+		t.Fatal(err)
+	}
+	if wires[0].Len() != 0 {
+		t.Fatal("duplicate picker close produced a resume loop")
+	}
 }
 
 func TestNPCResourcesPreserveBufferedMovementAndRecovery(t *testing.T) {

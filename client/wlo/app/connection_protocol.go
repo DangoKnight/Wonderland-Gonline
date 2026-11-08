@@ -17,7 +17,7 @@ func (c *Client) connectionCapabilitiesPacket(p []byte) bool {
 		if !ok || c.connection.offered || c.connection.enabled || c.combat.enabled || c.backdrops.enabled || c.battle.state.Active {
 			return true
 		}
-		supported := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionCombatRoundChain | protocol.ConnectionCompleteMapSnapshot)
+		supported := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionCombatRoundChain | protocol.ConnectionCompleteMapSnapshot | protocol.ConnectionObservedPickups)
 		if c.resources != nil && len(c.resources.battleBackdrops) > 0 {
 			supported |= protocol.ConnectionClientBackdrops
 		}

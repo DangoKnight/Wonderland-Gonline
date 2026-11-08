@@ -59,8 +59,8 @@ func (c *Client) receiveChat(sub byte, s []byte) {
 	}
 }
 
-// chatFace is a speaker's look for the chat log's icon: the player, or a
-// player on the map.
+// Chat portraits follow known online players, independently of map residency.
+// AC4 appearances survive scene changes; AC12 map zero removes online presence.
 func (c *Client) chatFace(id uint32) hud.SpeakerFace {
 	if c.World == nil {
 		return nil
@@ -69,6 +69,8 @@ func (c *Client) chatFace(id uint32) hud.SpeakerFace {
 	if id == c.World.Player.ID {
 		body = c.World.Body
 	} else if p := c.World.Peers[id]; p != nil {
+		body = p.Role
+	} else if p := c.teamAppearances[id]; p != nil && len(c.players[id]) > 0 {
 		body = p.Role
 	}
 	if f, ok := body.(hud.SpeakerFace); ok {

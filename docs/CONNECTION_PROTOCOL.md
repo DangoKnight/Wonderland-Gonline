@@ -26,6 +26,7 @@ The payload is exactly 12 bytes. Bits are:
 | 1 | Full combat round chains and batched choices |
 | 2 | Client-side native backdrop resolution |
 | 3 | AC5:4 completes the entire initial map snapshot |
+| 4 | Shared ground pickups include the collector for observer animations |
 
 The server includes bit 1 only when its captured startup `combat_round_chain`
 setting is enabled. The client intersects the offer with its supported features;
@@ -52,6 +53,20 @@ Interaction messages still carry their necessary data. For example, AC1:247
 GLBD map/X/Y specifies the shared battle-entry position used for local backdrop
 selection. It requires no response and does not renegotiate the connection.
 Round prompts, choices and result chains likewise use the mode already selected.
+
+With bit 4 selected, shared pickups send observers an extended AC23:2:
+`command:u8, subcommand:u8, ground_slot:u16, collector_id:u32, x:u16, y:u16`
+(12 bytes). X/Y are the collector's world position at pickup. Observers remove
+the ground node and fly its icon along a parabola toward that position, without
+granting an item or displaying an acquisition notice. The collector retains the
+native pickup/grant sequence. Permanent account-owned tutorial nodes never send
+this animation to another account. Hidden collectors receive no visual disclosure.
+
+Unnegotiated observers receive the four-byte native AC23:2 removal. Decompilation
+`FUN_003dc72c` checks packet length, not the extra byte's value: adding even a zero
+byte requests `FUN_003d74d4` to animate toward the receiving client's own player
+through `FUN_003e0548`. No remote collector field is available in that native
+message. Full observer flight therefore currently requires Gonline Client.
 
 With bit 3 selected, the server emits the existing AC5:4 map-ready reply after
 the complete destination snapshot, including peer positions, vehicle state,

@@ -9,7 +9,7 @@ import (
 func TestHotelRecordGolden(t *testing.T) {
 	p := Pet{Slot: 2, ID: 12032, Name: "Robinson", Level: 1, HP: 100, SP: 20, Base: Attributes{Intelligence: 1, Strength: 2, Constitution: 3, Agility: 4, Wisdom: 5}, Reborn: true, Job: 2, StatPoints: 9}
 	p.Equipment[0] = Item{ID: 10063, Count: 1}
-	want := "02922f060000000164000000140001000200030004000500010200090008526f62696e736f6e0000000000000000000000000000004f270000000000000000000000000000000000"
+	want := "02922f060000000164000000140001000200030004000500000001090008526f62696e736f6e0000000000000000000000000000004f270000000000000000000001000200000000"
 	// Robinson's native pet template alias is 12178 (0x2f92).
 	got := hex.EncodeToString(p.HotelRecord(protocol.Builder{}, PetTemplate{}))
 	if got != want {
@@ -26,11 +26,11 @@ func TestHotelRecordGolden(t *testing.T) {
 }
 
 func TestHotelRecordPreservesNativePotentialAndAmity(t *testing.T) {
-	p := Pet{Slot: 1, ID: 17004, Name: "Fragrance", Level: 5, Potential: 9, Amity: 64}
+	p := Pet{Slot: 1, ID: 17004, Name: "Fragrance", Level: 5, Potential: 9, Amity: 64, Reborn: true, Job: 2}
 	packet := p.HotelRecord(protocol.Builder{}, PetTemplate{})
-	// FUN_003b377c maps byte 26 to +0x2a70 (potential) and the first
-	// post-equipment byte to +0x2a72; FUN_003b3cfc copies it to loyalty +0x1f99.
-	if packet[26] != 9 || packet[57+len(p.Name)] != 64 {
+	// Header 25 is amity; tail 57/58/59 is rebirth/potential/job.
+	// Native effective level uses tail 57 as level + 100*rebirth.
+	if packet[25] != 64 || packet[26] != 1 || packet[57+len(p.Name)] != 1 || packet[58+len(p.Name)] != 9 || packet[59+len(p.Name)] != 2 {
 		t.Fatal("hotel progression lost", packet)
 	}
 }

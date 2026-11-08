@@ -59,6 +59,8 @@ const (
 	StorySyncActors        = "sync_actors"
 	StoryPreserveActor     = "preserve_actor"
 	StoryArrivalPackets    = "arrival_packets"
+	// Value identifies the shared claim namespace across alternate maps.
+	StoryAccountGroundOnce = "account_ground_once"
 	// Retained for imported authored data compatibility. Vehicle consumption is
 	// resolved by terrain-based landing, never by this old portal hint.
 	StoryPortalConsumeVehicle = "portal_consume_vehicle"
@@ -284,6 +286,7 @@ func DefaultStoryDefinitions() StoryDefinitions {
 
 func validateStoryStructure(d StoryDefinitions) error {
 	kinds := map[string]bool{}
+	kinds[StoryAccountGroundOnce] = true
 	for _, k := range []string{StoryForwardOnly, StoryPriority, StoryBlock, StoryContinue, StoryClick, StoryClickMark, StoryCandidate, StoryArrival, StoryArrivalCleanup, StoryArrivalRegion, StoryVisibility, StoryFinalVisibility, StoryVisitVisibility, StoryCondition, StoryPreCondition, StoryPropCondition, StoryEquipmentGate, StoryPreFallback, StoryMovieMode, StoryChoiceMode, StoryActorCapability, StoryOutcome, StoryBattleBackground, StoryRepair, StoryRegionMargin, StoryTransition, StoryExchange, StoryQuestCompletion, StoryQuestRewardBundle, StoryQuestCompanion, StoryQuestDisguise, StoryConstellation, StoryRecruitBlock, StorySyncActors, StoryPreserveActor, StoryArrivalPackets, StoryPortalConsumeVehicle, StoryRebornCheckpoint} {
 		kinds[k] = true
 	}
@@ -296,6 +299,9 @@ func validateStoryStructure(d StoryDefinitions) error {
 		return nil
 	}
 	for _, r := range d.Rules {
+		if r.Kind == StoryAccountGroundOnce && (r.Value < 1 || r.Value > 65535 || len(r.Scope.Maps) == 0 || len(r.Scope.Events) != 0 || len(r.Scope.Branches) != 0 || len(r.Scope.Actors) != 0 || len(r.Gates) != 0 || r.Pattern != (StoryPattern{})) {
+			return fmt.Errorf("story %s: account ground claims require maps, a claim namespace and no gates", r.ID)
+		}
 		if err := identity(r.ID); err != nil {
 			return err
 		}

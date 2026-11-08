@@ -336,7 +336,11 @@ func (s *Server) fishingCatchAnimation(c *Session, item uint16) [][]byte {
 		return nil
 	}
 	var occupied [nativeFishingGroundSlotLimit + 1]bool
-	ground := s.World.GroundPacket(c.character.Map)
+	claimed, err := s.accountGroundClaims(context.Background(), *c.character)
+	if err != nil {
+		return nil
+	}
+	ground := s.World.GroundPacket(c.character.Map, claimed)
 	for at := 2; at+nativeFishingGroundRecordBytes <= len(ground); at += nativeFishingGroundRecordBytes {
 		slot := binary.LittleEndian.Uint16(ground[at+1:])
 		if int(slot) < len(occupied) {

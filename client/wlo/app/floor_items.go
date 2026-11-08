@@ -122,14 +122,30 @@ func (c *Client) floorItemPacket(p []byte) bool {
 		if (len(p)-2)%nativeGroundRecordBytes != 0 {
 			return true
 		}
+		if len(p) == 2 {
+			// An explicitly empty scene snapshot clears cached items; nonempty
+			// packets also serve as incremental respawns and must merge.
+			clear(c.floorItems)
+			c.floorPendingPickup, c.floorHovered = 0, 0
+		}
 		for at := 2; at < len(p); at += nativeGroundRecordBytes {
 			c.floorItems[word(at+1)] = floorItem{id: uint16(binary.LittleEndian.Uint32(p[at+3:])), x: int(word(at + 7)), y: int(word(at + 9)), depth: int32(binary.LittleEndian.Uint32(p[at+nativeGroundDepthOffset:]))}
 		}
 	case protocol.InventoryPickup:
-		if len(p) == 5 {
-			if item, ok := c.floorItems[word(2)]; ok && p[4] != 0 {
+		target := image.Pt(c.World.Player.X, c.World.Player.Y-worldItemTargetLift)
+		animate := len(p) == 5 && p[4] != 0
+		if len(p) == protocol.ObservedGroundPickupBytes {
+			pickup, ok := protocol.ParseObservedGroundPickup(p)
+			if !ok || !c.connection.enabled || c.connection.features&protocol.ConnectionObservedPickups == 0 {
+				return true
+			}
+			target = image.Pt(int(pickup.X), int(pickup.Y)-worldItemTargetLift)
+			animate = true
+		}
+		if len(p) == 4 || len(p) == 5 || len(p) == protocol.ObservedGroundPickupBytes {
+			if item, ok := c.floorItems[word(2)]; ok && animate {
 				c.worldItemFlights = append(c.worldItemFlights, worldItemFlight{
-					source: image.Pt(item.x, item.y), target: image.Pt(c.World.Player.X, c.World.Player.Y-worldItemTargetLift),
+					source: image.Pt(item.x, item.y), target: target,
 					item: item.id, mapID: c.World.Player.Map, at: c.Now(),
 				})
 			}

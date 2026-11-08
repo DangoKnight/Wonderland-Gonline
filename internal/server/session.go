@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"io"
 	"log/slog"
@@ -107,19 +108,33 @@ type Session struct {
 	// resultAck is set by a minigame result: the client follows 57/1 with
 	// its own 20/6 (FUN_003bdfa4 marks the event step done), which must not
 	// acknowledge the outcome branch's first step.
-	resultAck  bool
-	info       SessionInfo
-	conn       net.Conn
-	account    store.Account
-	slot       byte
-	gmLevel    atomic.Uint32
-	sendMu     sync.Mutex
-	log        *slog.Logger
-	lastWindow time.Time
-	packets    int
+	resultAck    bool
+	info         SessionInfo
+	conn         net.Conn
+	account      store.Account
+	slot         byte
+	gmLevel      atomic.Uint32
+	sendMu       sync.Mutex
+	knownMu      sync.Mutex
+	knownPlayers map[uint32]bool // Appearances disclosed to this connection, across map changes.
+	log          *slog.Logger
+	lastWindow   time.Time
+	packets      int
 }
 
-func (s *Session) send(p []byte) error {
+func (s *Session) send(p []byte) (err error) {
+	if len(p) >= 5 && p[0] == protocol.CommandAppearance {
+		defer func() {
+			if err == nil {
+				s.knownMu.Lock()
+				if s.knownPlayers == nil {
+					s.knownPlayers = map[uint32]bool{}
+				}
+				s.knownPlayers[binary.LittleEndian.Uint32(p[1:])] = true
+				s.knownMu.Unlock()
+			}
+		}()
+	}
 	if output, ok := s.conn.(*transport.Conn); ok {
 		return output.Send(p)
 	}
@@ -130,7 +145,7 @@ func (s *Session) send(p []byte) error {
 	if e := s.conn.SetWriteDeadline(time.Now().Add(transport.WriteTimeout)); e != nil {
 		return e
 	}
-	err := protocol.Write(s.conn, p)
+	err = protocol.Write(s.conn, p)
 	if s.log != nil {
 		s.log.Debug("packet sent", append(serverlog.TraceAttrs(p, true), "session", s.info.ID, "error", err)...)
 	}

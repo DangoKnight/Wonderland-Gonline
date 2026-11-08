@@ -8,6 +8,7 @@ import (
 	"time"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/internal/game"
+	"wonderland-gonline/internal/protocol"
 )
 
 func TestDroppedCoconutBehindNativePalmLeaves(t *testing.T) {
@@ -124,6 +125,34 @@ func TestCoconutFloorPickupArcAndNotice(t *testing.T) {
 	c.dispatch([]byte{23, 2, 1, 0, 0})
 	if len(c.worldItemFlights) != 1 {
 		t.Fatal("another player's pickup created a local acquisition flight")
+	}
+}
+
+func TestObservedFloorPickupFliesToCollector(t *testing.T) {
+	c, _, _ := enteredClient(t)
+	c.connection = connectionRuntime{enabled: true, features: protocol.ConnectionObservedPickups}
+	c.dispatch([]byte{23, 3, 106, 160, 177, 5, 117, 3, 0, 0, 0, 0, 1})
+	packet := []byte{23, 2, 1, 0, 4, 3, 2, 1, 232, 3, 208, 7}
+	before := c.InventoryState.Bag
+	c.dispatch(packet)
+	if len(c.floorItems) != 0 || len(c.worldItemFlights) != 1 {
+		t.Fatal("observer did not remove item/start flight")
+	}
+	flight := c.worldItemFlights[0]
+	if flight.source != image.Pt(1457, 885) || flight.target != image.Pt(1000, 2000-worldItemTargetLift) {
+		t.Fatal("flight targeted the observer instead of collector", flight)
+	}
+	if before != c.InventoryState.Bag || len(c.Notices.items) != 0 {
+		t.Fatal("observer received pickup rewards")
+	}
+	c.dispatch(packet)
+	if len(c.worldItemFlights) != 1 {
+		t.Fatal("repeated removal duplicated flight")
+	}
+	c.dispatch([]byte{23, 3, 106, 160, 177, 5, 117, 3, 0, 0, 0, 0, 1})
+	c.dispatch([]byte{23, 2, 1, 0})
+	if len(c.floorItems) != 0 || len(c.worldItemFlights) != 1 {
+		t.Fatal("native silent removal animated")
 	}
 }
 

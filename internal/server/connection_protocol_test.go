@@ -30,7 +30,7 @@ func TestConnectionNegotiatesOnceAndRejectsFeatureEscalation(t *testing.T) {
 	if offers != 1 {
 		t.Fatal("connection hello repeated", offers)
 	}
-	for _, flags := range []byte{7, 16, 255} {
+	for _, flags := range []byte{7, 32, 255} {
 		bad := append([]byte(nil), accept...)
 		bad[8] = flags
 		if err := s.handshakeCommand(ctx, c, bad); err == nil || c.connectionNegotiated {

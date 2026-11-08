@@ -1257,12 +1257,13 @@ func (c *Client) drawBattleFighterOverlay(f clientbattle.Fighter, b *battleBody,
 // (FUN_003920a0) stops it.
 func (c *Client) battleTimerTick(now time.Time) {
 	v := &c.battle
-	if c.combat.round != nil || v.closing || v.state.Finished || v.petTransition || c.enteringBattle() || c.sceneFade.mode == sceneFadeRevealBattle || len(v.overkills) > 0 {
+	// A successful flee can arrive as a departure without an attack batch.
+	// Use the same playback boundary as menus/slow-action indicators, including
+	// departures and queued transitions. Return before a premature next prompt
+	// can restart the countdown while the previous round is still animating.
+	if !v.state.Active || !v.state.Ready || v.closing || v.state.Finished || v.petTransition || c.battleAnimating() {
 		v.timerOn = false
 		return
-	}
-	if len(v.state.Actions) > 0 || len(v.playing) > 0 {
-		v.timerOn = false
 	}
 	if v.state.Ready && v.timerTurn != v.state.Turn {
 		v.timerTurn = v.state.Turn

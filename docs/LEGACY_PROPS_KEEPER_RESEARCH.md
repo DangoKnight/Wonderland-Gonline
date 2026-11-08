@@ -56,6 +56,27 @@ reordering, restricted items and reopening an already populated storage.
 
 ## Gonline implementation follow-up
 
+### Native storage close handshake (2026-11-08)
+
+The mixed-client reproduction is recorded in
+`var/pet-switch-capture/mixed-client-lock-6414.events.jsonl`. Legacy character
+10004 clicked Kelan actor 38 itself; a second client's action was not required.
+The trace shows AC20:1, movement lock, AC20:9, two premature AC20:8 resumes,
+then the client's AC20:6 with no response. Subsequent movement still received
+replies, while no further NPC/warp requests were sent. This capture filtered
+out AC29/30, so their opening payloads are established by source/decompilation,
+not claimed as captured here.
+
+Native storage hide handler `FUN_001ded68` calls `FUN_0030a508`, which sets the
+event-completion flag at +0x7108. The event loop sends its completion ACK and
+waits for resume. Storage must therefore retain an owned event until the close
+ACK, rather than ending the event as soon as the window opens. Both authored
+Props/Stock Keeper services and fallback storage now use that lifetime.
+Opening sends the storage snapshot, AC29:6 and AC20:9 without an early resume
+or unrelated record-point update. Closing acknowledges once, releases movement
+and storage authority, and leaves duplicate ACKs inert. Gonline's cancellation
+uses the same cleanup; teleport/disconnect cannot revive the old service.
+
 Implemented on `Client-rewrite`: session-owned native service forms and packet
 handling, with captured response ordering on the server. The client sends the
 reference counted slot/quantity cart and selected-slot transfer requests; the
@@ -72,6 +93,64 @@ The client applies server receipts rather than predicting inventory or gold.
 Treatment uses the native five-second timer (`FUN_002b6d08`) and defers its
 completion acknowledgement through the presentation. Spawn-point saving retains
 its existing durable event path.
+
+### Service lifecycle audit (2026-11-08)
+
+The same completion ownership applies to weapon/props/armor shop buy and sell
+windows, Props/Stock Keeper, Pet Hotel and Treatment. They now retain their event
+until native AC20:6 closes the window or completes the treatment presentation.
+Pet Hotel hide handler `FUN_002238cc` also calls `FUN_0030a508`; Treatment's
+`FUN_002b6d08` sets the completion flag after its five-second presentation.
+Opening these services must not send an early AC20:8. Completion releases the
+event and its resource authority once; cancellation and map changes invalidate
+the same ownership. Duplicate acknowledgements remain inert.
+
+Fallback service questions use mode zero. Their answer acknowledgement is
+consumed separately from the eventual service completion, including nested
+buy/sell questions and treatment, hotel and spawn-save choices. Native item-picker
+questions relinquish their question callback when opening a cart, retain close
+ownership and authorize only one purchase from their listed stock.
+
+Money Bank and Message Board remain independent forms opened after the dialogue
+resume. Rebirth job selection and companion rebirth now follow that ordering
+as well, because their handlers reject commands during an active conversation.
+The audit covers every currently named EVE service family; unsupported service
+codes retain the existing fallback and are not claimed as implemented.
+
+Regression coverage includes authored and fallback entry, trailing question
+acknowledgements, close/completion, cancellation, duplicate acknowledgements,
+private packet isolation and native-cart replay rejection. These are source and
+decompilation checks; the generalized changes still need live Legacy acceptance.
+
+Sell additionally needs AC20:9 immediately after AC27:3/4. Native sale hide
+handler `FUN_0036c8c8` sets completion pending (+0x7108), but leaves the
+waiting-for-server flag (+0x7109) untouched. The event loop cannot send AC20:6
+while that wait flag remains set. AC20:9 clears it without prematurely ending
+the interaction. Earlier lifecycle tests injected AC20:6 directly and missed
+this prerequisite; a separate raw-byte opening golden now covers both sale modes.
+
+The wait-release requirement is shared by all conversation-owned service
+handoffs, not specific to Sell. `publishNPCService` now sends the window/offer
+payload followed by AC20:9 for shop catalogs, sale windows, storage, hotel and
+treatment. It deliberately leaves event ownership intact until completion.
+Native item-picker event frames already clear the native wait flag through
+AC20:6's receive handler; independent forms instead follow the final AC20:8.
+The common lifecycle tests model a waiting native client and refuse to emit a
+close acknowledgement until an actual wait-release packet has arrived. Both
+authored service actions and fallback merchant/doctor choices are covered.
+
+### Stored-pet field layout correction (2026-11-08)
+
+AC31:6's 64-byte-plus-name hotel record uses header byte 25 for amity and
+header byte 26 for the native compatibility value 1. After the name, three
+skill records and six equipment IDs, bytes 57/58/59 plus the name length are
+rebirth count, potential and job. `FUN_003b377c` decodes them into
++0x2a72/73/74; `FUN_003b3cfc` copies them to +0x1f99/9a/9b.
+The hotel preview calls `FUN_00485490(level, rebirth)` to obtain
+`level + 100*rebirth`. Sending amity in that rebirth field therefore inflated
+the displayed maximum HP. Sending job in the header amity field also produced
+zero intimacy for ordinary pets. The server record and Gonline decoder now use
+the native layout. This is a wire correction; stored pet data is unchanged.
 
 Focused validation covers native request bytes, captured receipt sequences,
 malformed packets, covered inventory cells, pending submissions, hotel stat/copy

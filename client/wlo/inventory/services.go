@@ -908,11 +908,11 @@ func (f *ServiceForm) hotelList(p []byte) bool {
 		pet.Stats.CON = binary.LittleEndian.Uint16(r[18:])
 		pet.Stats.AGI = binary.LittleEndian.Uint16(r[20:])
 		pet.Stats.WIS = binary.LittleEndian.Uint16(r[22:])
-		pet.Stats.Rebirth = r[24]
-		pet.Stats.Job = r[25]
-		pet.Potential = r[26]
+		pet.Stats.Rebirth = r[prefix+n+27]
+		pet.Stats.Job = r[prefix+n+29]
+		pet.Potential = r[prefix+n+28]
 		pet.Stats.Potential = pet.Potential
-		pet.Amity = r[prefix+n+27]
+		pet.Amity = r[25]
 		pet.Stats.Points = binary.LittleEndian.Uint16(r[27:])
 		if pet.Potential > game.PotentialMaximum {
 			return false

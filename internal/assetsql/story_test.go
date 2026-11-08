@@ -195,6 +195,12 @@ func TestStoryMigrationPreservesEditsAndEmptyDefinitions(t *testing.T) {
 		assets.StoryRule{ID: "noa_quiz_retry_continuation", Kind: assets.StoryContinue, Scope: assets.StoryScope{AllowMissing: true, Maps: []uint16{12000}, Events: []uint16{56}, Branches: []byte{1, 17}}, TargetBranch: 3},
 		assets.StoryRule{ID: "noa_recruitment_continuation", Kind: assets.StoryContinue, Scope: assets.StoryScope{AllowMissing: true, Maps: []uint16{12000}, Events: []uint16{56}, Branches: []byte{19}}, TargetBranch: 21},
 	)
+	// v63 adds the account resource policy without changing custom story rules.
+	for _, rule := range assets.DefaultStoryDefinitions().Rules {
+		if rule.Kind == assets.StoryAccountGroundOnce {
+			defs.Rules = append(defs.Rules, rule)
+		}
+	}
 	if err != nil || !reflect.DeepEqual(got.Story, defs) {
 		t.Fatal("migration replaced edited story", err)
 	}

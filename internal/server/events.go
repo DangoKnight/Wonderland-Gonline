@@ -17,26 +17,31 @@ import (
 // session's pointer is the token: callbacks of a replaced session do nothing.
 // Reference: EveEventRuntime.StartSession and EveEventInterpreter.ExecuteOpcode.
 type eventSession struct {
-	conversationBefore  *game.Character
-	conversationSource  *assets.Event
-	conversationBranch  int
-	conversationVisited map[questConversationBranch]bool
-	transitions         int
-	chestReward         *assets.ChestReward
-	mapID, click        uint16
-	ev                  *assets.Event
-	branch              int
-	index               int
-	transition          bool
-	cinematicPosture    bool
-	onComplete          func() error
-	onChoice            func(byte) error
-	onMinigame          func(byte) error
-	choiceAcknowledged  bool // Mode-zero questions send AC20:6 after their answer.
-	ignoreChoiceAck     bool
-	shopCart            bool   // Native item-picker question owns a purchase.
-	bankOwner           uint32 // Queued service belongs to this event and character.
-	messageBoardOwner   uint32 // Open only after the event resume closes dialogue.
+	conversationBefore   *game.Character
+	conversationSource   *assets.Event
+	conversationBranch   int
+	conversationVisited  map[questConversationBranch]bool
+	transitions          int
+	chestReward          *assets.ChestReward
+	mapID, click         uint16
+	ev                   *assets.Event
+	branch               int
+	index                int
+	transition           bool
+	cinematicPosture     bool
+	onComplete           func() error
+	onChoice             func(byte) error
+	onMinigame           func(byte) error
+	choiceAcknowledged   bool // Mode-zero questions send AC20:6 after their answer.
+	ignoreChoiceAck      bool
+	shopCart             bool   // Native item-picker question owns a purchase.
+	shopPicker           bool   // One-shot question cart, distinct from an open shop catalog.
+	bankOwner            uint32 // Queued service belongs to this event and character.
+	serviceOwner         uint32 // Native service close/completion ACK belongs to this event.
+	serviceKind          uint16 // EVE service operand; selects authority to release on close.
+	deferredServiceOwner uint32
+	deferredServiceKind  uint16 // Independent form opens only after the dialogue resume.
+	messageBoardOwner    uint32 // Open only after the event resume closes dialogue.
 }
 
 const clickResume = 1500 * time.Millisecond
@@ -48,6 +53,11 @@ func (s *Server) endEvent(c *Session) {
 	if c.event != nil {
 		c.event.bankOwner = 0
 		c.event.messageBoardOwner = 0
+		c.event.deferredServiceOwner, c.event.deferredServiceKind = 0, 0
+		if c.event.serviceOwner != 0 {
+			s.clearServiceAuthority(c, c.event.serviceKind)
+			c.event.serviceOwner, c.event.serviceKind = 0, 0
+		}
 	}
 	c.event = nil
 	c.arcade = nil
@@ -74,6 +84,10 @@ func (s *Server) finishEvent(c *Session, es *eventSession) error {
 	}
 	openBank := es.bankOwner != 0 && es.bankOwner == c.character.ID && es.mapID == c.character.Map
 	openBoard := es.messageBoardOwner != 0 && es.messageBoardOwner == c.character.ID && es.mapID == c.character.Map
+	deferred := uint16(0)
+	if es.deferredServiceOwner == c.character.ID && es.mapID == c.character.Map {
+		deferred = es.deferredServiceKind
+	}
 	es.bankOwner = 0
 	if e := s.cancelInteraction(c); e != nil {
 		return e
@@ -89,6 +103,9 @@ func (s *Server) finishEvent(c *Session, es *eventSession) error {
 	}
 	if openBoard {
 		return c.send([]byte{protocol.CommandMessageBoard, protocol.MessageBoardOpen})
+	}
+	if deferred != 0 {
+		return s.openService(c, deferred)
 	}
 	return nil
 }
@@ -574,6 +591,9 @@ func (s *Server) advance(ctx context.Context, c *Session, es *eventSession) erro
 		ok, e := s.execute(ctx, c, es, op)
 		if e != nil {
 			return e
+		}
+		if op.Code == world.ActionServiceOrTeleport && c.event == es && es.serviceOwner == c.character.ID {
+			return nil // The service's close/completion ACK owns the conversation.
 		}
 		if !ok || op.Code == world.ActionServiceOrTeleport {
 			return s.finishEvent(c, es)

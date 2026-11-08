@@ -10,7 +10,8 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 62
+const catalogSchemaVersion = 63
+const accountGroundSchemaVersion = 63
 const itemCardsSchemaVersion = 62
 const mallFeaturedContainersSchemaVersion = 61
 const mallAdditionalPacksSchemaVersion = 60
@@ -665,6 +666,11 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < itemCardsSchemaVersion {
 			if err := migrateItemCards(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < accountGroundSchemaVersion {
+			if err := migrateAccountGroundStory(tx); err != nil {
 				return err
 			}
 		}

@@ -386,7 +386,7 @@ func (p Pet) HotelRecord(b protocol.Builder, t PetTemplate) protocol.Builder {
 	b = b.U8(p.Slot).U16(uint16(BroadcastID(p.ID))).U32(p.ClientTotalExp()).U8(p.Level).
 		U32(uint32(max(0, p.HP))).U16(uint16(min(max(0, p.SP), math.MaxUint16))).
 		U16(a.Intelligence).U16(a.Strength).U16(a.Constitution).U16(a.Agility).U16(a.Wisdom).
-		U8(reborn).U8(p.Job).U8(byte(p.Potential)).U16(p.StatPoints)
+		U8(0).U8(p.Amity).U8(1).U16(p.StatPoints)
 	var name []byte
 	for _, v := range p.Name {
 		if v > 127 {
@@ -401,7 +401,9 @@ func (p Pet) HotelRecord(b protocol.Builder, t PetTemplate) protocol.Builder {
 	for _, item := range p.Equipment {
 		b = b.U16(item.ID)
 	}
-	return b.U8(p.Amity).U8(0).U8(0).U16(0).U16(0)
+	// FUN_003b377c stores these at +0x2a72/73/74; the hotel preview
+	// uses the first as rebirth count (effective level = level + 100*count).
+	return b.U8(reborn).U8(byte(p.Potential)).U8(p.Job).U16(0).U16(0)
 }
 
 func PetStat(clientSlot, stat byte, value int64) []byte {

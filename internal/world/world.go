@@ -187,7 +187,7 @@ func groundItem(p protocol.Builder, slot byte, item, x, y uint16, depth int32) p
 // MapInfo follows SendMapInfo for a character entering its current map. players lists
 // the characters announced in the scene, including the entrant. It resets the view's
 // scene state and records the actors concealed from this character.
-func (w *World) MapInfo(c *game.Character, v *View, players []uint32) [][]byte {
+func (w *World) MapInfo(c *game.Character, v *View, players []uint32, claimedGround ...map[byte]bool) [][]byte {
 	v.Reset()
 	v.HiddenMap = c.Map
 	packets := [][]byte{{protocol.CommandInventory, protocol.InventorySceneBegin}}
@@ -206,7 +206,7 @@ func (w *World) MapInfo(c *game.Character, v *View, players []uint32) [][]byte {
 		}
 		packets = append(packets, list)
 	}
-	if items := w.GroundPacket(c.Map); items != nil {
+	if items := w.GroundPacket(c.Map, claimedGround...); items != nil {
 		packets = append(packets, items)
 	}
 	for _, id := range players {

@@ -299,7 +299,7 @@ func TestNPCShopCatalogPurchaseAndAuthority(t *testing.T) {
 	if err := s.openService(c, world.ServicePropsShop); err != nil {
 		t.Fatal(err)
 	}
-	if got := wires[0].packets(t); len(got) != 1 || !bytes.Equal(got[0], []byte{35, 12, 133, 251, 1, 0}) {
+	if got := wires[0].packets(t); len(got) != 2 || !bytes.Equal(got[0], []byte{35, 12, 133, 251, 1, 0}) || !bytes.Equal(got[1], []byte{20, 9}) {
 		t.Fatal(got)
 	}
 	// The cart's byte slot resolves through the current map's authored catalog.
@@ -356,7 +356,7 @@ func TestDoctorHotelChoiceWithoutDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := wire.packets(t)
-	if !contains(got, []byte{31, 7}) || !contains(got, []byte{6, 2, 0}) || c.event != nil {
+	if !contains(got, []byte{31, 7}) || contains(got, []byte{20, 8}) || c.event == nil || c.event.serviceKind != world.ServicePetHotel {
 		t.Fatal("hotel choice", got)
 	}
 	if err := s.eventCommand(context.Background(), c, []byte{20, 9, 32}); err != nil {
@@ -401,7 +401,7 @@ func TestMerchantFallbackSeparatesBuyAndSell(t *testing.T) {
 					hasSell = true
 				}
 			}
-			if hasBuy != buy || hasSell == buy || c.event != nil || !buy && len(c.view.ShopItems) != 0 {
+			if hasBuy != buy || hasSell == buy || c.event == nil || c.event.serviceOwner != c.character.ID || !buy && len(c.view.ShopItems) != 0 {
 				t.Fatal("merchant choice opened the wrong service", packets)
 			}
 		})

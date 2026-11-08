@@ -2468,6 +2468,12 @@
       "gates": [],
       "pattern": {},
       "target_branch": 4
+    },
+    {
+      "id": "newbie_island_account_ground_once",
+      "kind": "account_ground_once",
+      "scope": {"maps": [10003, 10031, 10032, 10033, 10034, 10035, 10036, 10037, 10038, 10039, 10040], "allow_missing": true},
+      "value": 10003
     }
   ],
   "recruitments": [
