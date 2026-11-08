@@ -1,0 +1,148 @@
+@import "tailwindcss" source("../");
+
+@layer base {
+	:root {
+		font-family:
+			Inter,
+			ui-sans-serif,
+			system-ui,
+			-apple-system,
+			"Segoe UI",
+			sans-serif;
+		color-scheme: light;
+	}
+	body {
+		@apply m-0 bg-[#f4f6f8] text-slate-800 antialiased;
+	}
+	button,
+	a,
+	input,
+	textarea,
+	select {
+		@apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600;
+	}
+	button {
+		@apply inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50;
+	}
+	input,
+	textarea,
+	select {
+		@apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-xs;
+	}
+	input[type="number"] {
+		@apply font-mono;
+	}
+	label {
+		@apply block text-xs font-medium text-slate-600;
+	}
+	label > span {
+		@apply block mb-2;
+	}
+	small {
+		@apply block text-xs text-slate-500 mt-1;
+	}
+	h1 {
+		@apply text-3xl font-semibold tracking-tight text-slate-900;
+	}
+	h2 {
+		@apply text-base font-semibold tracking-tight text-slate-900 mb-4;
+	}
+	h3 {
+		@apply text-sm font-semibold mb-2;
+	}
+	pre {
+		@apply max-h-[36rem] overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-6 whitespace-pre-wrap break-words font-mono;
+	}
+	table {
+		@apply w-full border-collapse text-left text-sm;
+	}
+	th {
+		@apply bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap;
+	}
+	td {
+		@apply px-5 py-4 border-t border-slate-100 align-top max-w-lg break-words;
+	}
+	tbody tr {
+		@apply hover:bg-slate-50/70;
+	}
+	dialog::backdrop {
+		@apply bg-slate-950/55 backdrop-blur-xs;
+	}
+}
+@layer components {
+	.panel {
+		@apply rounded-xl bg-white border border-slate-200 p-6 shadow-xs;
+	}
+	.primary {
+		@apply bg-emerald-700 border-emerald-700 text-white hover:bg-emerald-800;
+	}
+	.danger {
+		@apply text-red-700 border-red-200 hover:bg-red-50;
+	}
+	.muted {
+		@apply text-slate-500;
+	}
+	.eyebrow {
+		@apply text-[10px] tracking-[.16em] font-bold text-slate-500 uppercase mb-2;
+	}
+	.error {
+		@apply text-sm text-red-700 whitespace-pre-wrap;
+	}
+	.error-banner {
+		@apply rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 whitespace-pre-wrap;
+	}
+	.success-banner {
+		@apply rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 whitespace-pre-wrap;
+	}
+	.warning {
+		@apply text-xs text-amber-800 bg-amber-50 rounded-md p-3 break-words;
+	}
+	.metric strong {
+		@apply block mt-3 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums;
+	}
+	.table-heading {
+		@apply !border-0 !bg-transparent !p-0 !shadow-none !text-slate-500 !text-xs;
+	}
+	.sidebar {
+		@apply hidden lg:flex flex-col bg-[#101c2c] text-slate-200 lg:sticky lg:top-0 lg:h-screen;
+	}
+	.sidebar.mobile-open {
+		@apply flex fixed inset-y-0 left-0 w-[248px] z-30 shadow-2xl lg:sticky lg:shadow-none;
+	}
+	.brand {
+		@apply flex gap-3 items-center p-6 no-underline;
+	}
+	.brand strong {
+		@apply text-xs tracking-[.16em] text-white;
+	}
+	.brand small {
+		@apply text-[9px] tracking-[.15em] text-slate-400 mt-1;
+	}
+	.brand-mark {
+		@apply flex items-center justify-center size-9 rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xl font-serif;
+	}
+	.nav-group {
+		@apply text-[9px] tracking-[.18em] uppercase text-slate-500 px-3 mb-2;
+	}
+	.nav-link {
+		@apply flex items-center justify-between rounded-md px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-white/5;
+	}
+	.nav-link.selected {
+		@apply bg-emerald-400/10 text-emerald-200 font-medium;
+	}
+	.topbar {
+		@apply flex justify-between items-center gap-4 min-h-18 px-5 md:px-8 border-b border-slate-200 bg-white;
+	}
+	.status-dot {
+		@apply inline-block size-2 rounded-full bg-slate-400;
+	}
+	.status-dot.connected {
+		@apply bg-emerald-500 ring-4 ring-emerald-50;
+	}
+	.editor-dialog {
+		@apply fixed m-auto max-h-[90vh] overflow-auto w-[min(960px,92vw)] rounded-xl border border-slate-200 bg-white p-7 text-slate-800 shadow-2xl;
+	}
+	.json-editor {
+		@apply min-h-80 h-[50vh] font-mono text-xs leading-6 resize-y;
+	}
+}

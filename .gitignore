@@ -3,6 +3,7 @@
 /coverage.out
 /config.local.json
 /node_modules/
+**/node_modules/
 /client/assets/
 /client/reference/
 __pycache__/

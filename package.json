@@ -4,13 +4,25 @@
 	"private": true,
 	"description": "Wonderland Gonline Server admin web assets tooling",
 	"scripts": {
-		"format": "prettier --write \"internal/admin/web/**/*.{html,css,js}\"",
-		"format:check": "prettier --check \"internal/admin/web/**/*.{html,css,js}\"",
+		"admin:dev": "vite --config internal/admin/frontend/vite.config.js --host 127.0.0.1",
+		"admin:build": "vite build --config internal/admin/frontend/vite.config.js",
+		"admin:test": "vitest run --config internal/admin/frontend/vite.config.js",
+		"format": "prettier --write \"internal/admin/frontend/**/*.{html,css,js,vue}\"",
+		"format:check": "prettier --check \"internal/admin/frontend/**/*.{html,css,js,vue}\"",
 		"lint": "npm run lint:html",
-		"lint:html": "htmlhint --config .htmlhintrc internal/admin/web/index.html"
+		"lint:html": "htmlhint --config .htmlhintrc internal/admin/frontend/index.html"
 	},
 	"devDependencies": {
+		"@vitejs/plugin-vue": "^6.0.0",
+		"@tailwindcss/vite": "^4.1.0",
+		"tailwindcss": "^4.1.0",
+		"vite": "^7.0.0",
+		"vitest": "^3.2.0",
+		"@vue/test-utils": "^2.4.6",
+		"jsdom": "^26.1.0",
 		"htmlhint": "^1.9.2",
 		"prettier": "^3.8.1"
-	}
+	},
+	"dependencies": { "vue": "^3.5.0" },
+	"engines": { "node": ">=22.18.0" }
 }

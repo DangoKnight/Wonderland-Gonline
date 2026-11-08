@@ -134,14 +134,19 @@ commands in [setup](GETTING_STARTED.md)); client builds validate edited assets.
 
 ```sh
 git ls-files -z '*.go' | xargs -0 gofmt -l
-npx prettier --check "internal/admin/web/**/*.{html,css,js}"
-npx htmlhint --config .htmlhintrc internal/admin/web/index.html
+npm run format:check
+npm run lint
+npm run admin:test
+npm run admin:build
+go test ./internal/admin
 ```
 
 The formatting check should print no files; using tracked source excludes local
 scratch programs and generated Go files under ignored validation directories.
 Run `golangci-lint run ./...` when installed to
-match the optional Makefile check. Node/npm is needed for web lint, not startup.
+match the optional Makefile check. Node/npm is needed for frontend development,
+tests and rebuilding its bundle, not normal Go builds or startup. Generated web
+files are committed; see [admin frontend](../internal/admin/frontend/README.md).
 Makefile test/race/vet targets cover only the root module; their defaults do not
 set optional data paths or extend the installed-suite timeout.
 

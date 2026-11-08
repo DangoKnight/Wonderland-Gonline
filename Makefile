@@ -23,17 +23,17 @@ run:
 fmt:
 	gofmt -s -w .
 	@if command -v prettier >/dev/null 2>&1; then \
-		prettier --write "internal/admin/web/**/*.{html,css,js}"; \
+		prettier --write "internal/admin/frontend/**/*.{html,css,js,vue}"; \
 	elif command -v npx >/dev/null 2>&1; then \
-		npx prettier --write "internal/admin/web/**/*.{html,css,js}"; \
+		npx prettier --write "internal/admin/frontend/**/*.{html,css,js,vue}"; \
 	fi
 
 fmt-check:
 	@DIFF=$$(gofmt -l .); if [ -n "$$DIFF" ]; then echo "Unformatted Go files:"; echo "$$DIFF"; exit 1; fi
 	@if command -v prettier >/dev/null 2>&1; then \
-		prettier --check "internal/admin/web/**/*.{html,css,js}"; \
+		prettier --check "internal/admin/frontend/**/*.{html,css,js,vue}"; \
 	elif command -v npx >/dev/null 2>&1; then \
-		npx prettier --check "internal/admin/web/**/*.{html,css,js}"; \
+		npx prettier --check "internal/admin/frontend/**/*.{html,css,js,vue}"; \
 	fi
 
 lint: lint-go lint-html
@@ -45,9 +45,9 @@ lint-go: vet
 
 lint-html:
 	@if command -v htmlhint >/dev/null 2>&1; then \
-		htmlhint --config .htmlhintrc internal/admin/web/index.html; \
+		htmlhint --config .htmlhintrc internal/admin/frontend/index.html; \
 	elif command -v npx >/dev/null 2>&1; then \
-		npx htmlhint --config .htmlhintrc internal/admin/web/index.html; \
+		npx htmlhint --config .htmlhintrc internal/admin/frontend/index.html; \
 	else \
 		echo "htmlhint not found. Please install node/npm to lint HTML." && exit 1; \
 	fi

@@ -74,7 +74,7 @@ func TestAdminToolsRequireAuthorizationAndPersistOperations(t *testing.T) {
 	if w := request("PUT", "/api/assets/documents/item.dat/records/0", `{}`, token); w.Code != 400 {
 		t.Fatal(w.Code)
 	}
-	if w := request("GET", "/tools.js", "", ""); w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("renderOperations")) {
-		t.Fatal("tools not embedded", w.Code)
+	if w := request("GET", "/assets/admin.js", "", ""); w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("Server operations")) {
+		t.Fatal("compiled Vue admin not embedded", w.Code)
 	}
 }

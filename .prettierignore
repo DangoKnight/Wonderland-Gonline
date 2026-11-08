@@ -5,3 +5,4 @@
 *.db
 config.local.json
 package-lock.json
+/internal/admin/web/

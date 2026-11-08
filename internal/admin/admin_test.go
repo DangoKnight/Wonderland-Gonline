@@ -99,14 +99,14 @@ func TestPublicAccountRegistrationPage(t *testing.T) {
 		h.ServeHTTP(w, httptest.NewRequest(method, path, bytes.NewBufferString(body)))
 		return w
 	}
-	for _, path := range []string{"/register", "/register.css", "/register.js"} {
+	for _, path := range []string{"/register", "/assets/admin.css", "/assets/admin.js"} {
 		w := request("GET", path, "")
 		if w.Code != http.StatusOK || w.Header().Get("Content-Security-Policy") == "" || w.Header().Get("Cache-Control") != "no-store" {
 			t.Fatalf("public registration resource %s: %d", path, w.Code)
 		}
 	}
-	if w := request("GET", "/register", ""); !bytes.Contains(w.Body.Bytes(), []byte("Create your account")) || !bytes.Contains(w.Body.Bytes(), []byte(`autocomplete="new-password"`)) {
-		t.Fatal("registration URL does not serve the public form")
+	if w := request("GET", "/register", ""); !bytes.Contains(w.Body.Bytes(), []byte(`id="app"`)) || !bytes.Contains(w.Body.Bytes(), []byte(`/assets/admin.js`)) {
+		t.Fatal("registration URL does not serve the compiled Vue application")
 	}
 	body := `{"username":"player0001","password":"Secret1234","email":"player@example.com"}`
 	w := request("POST", "/register", body)

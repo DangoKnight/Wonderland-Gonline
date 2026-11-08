@@ -164,7 +164,10 @@ server/client module commands, optional assets, graphics tests and live acceptan
 - `internal/assets`: gameplay catalog types, validation and offline native format readers; no SQL dependency.
 - `internal/assetsql`: typed SQL catalog loading, projections, migrations and validated content edits.
 - `internal/assetdb`: GORM asset import, provenance storage and database rebuild.
-- `internal/admin`: authenticated HTTP API and embedded HTML/CSS/JavaScript interface.
+- `internal/admin`: authenticated HTTP API and embedded Vue/Tailwind interface.
+  Frontend development and rebuilding are documented in
+  [the admin frontend guide](internal/admin/frontend/README.md); normal server
+  builds use the checked-in bundle and do not require Node.js.
 - `docs/source-inventory.json`: source revision, hashes and independent per-file findings for all 566 reference files, including 331 C# files.
 - `docs/PORTING.md`: current implemented scope, remaining executable migration work and unfinished-source hold list.
 

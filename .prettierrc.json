@@ -5,6 +5,7 @@
 	"singleQuote": false,
 	"bracketSameLine": false,
 	"htmlWhitespaceSensitivity": "css",
+	"vueIndentScriptAndStyle": true,
 	"endOfLine": "lf",
 	"overrides": [
 		{
