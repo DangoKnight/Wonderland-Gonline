@@ -85,6 +85,8 @@ func (a *API) bindTools(m *http.ServeMux) {
 	bind("GET /api/mail", a.mail)
 	bind("POST /api/mail", a.mail)
 	bind("DELETE /api/mail/{id}", a.mail)
+	bind("GET /api/tent-craft", a.tentCraft)
+	bind("POST /api/tent-craft", a.tentCraft)
 	bind("GET /api/assets/definitions", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := a.Server.AssetDocuments(r.Context())
 		if err != nil {

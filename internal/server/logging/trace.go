@@ -37,6 +37,21 @@ func TraceAttrs(p []byte, sent bool) []any {
 			attrs = append(attrs, "lucky_draw_intent", intent, "expected_request_bytes", protocol.LuckyDrawRequestBytes)
 		}
 	}
+	if !sent && len(p) >= 2 && p[0] == protocol.CommandTent {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), 24)]))
+	}
+	if sent && len(p) >= 2 && p[0] == protocol.CommandTentFurniture && (p[1] == protocol.TentFloorSurface || p[1] == protocol.TentWallpaperSurface) {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), 8)]))
+	}
+	if sent && len(p) >= 2 && p[0] == protocol.CommandTent && p[1] == protocol.TentInteriorLayout {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), 8)]))
+	}
+	if sent && len(p) >= 2 && p[0] == protocol.CommandTentFurniture && p[1] == protocol.TentFurnitureTree {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), 320)]))
+	}
+	if !sent && len(p) >= 2 && p[0] == protocol.CommandTentFurniture {
+		attrs = append(attrs, "payload_hex", hex.EncodeToString(p[:min(len(p), 24)]))
+	}
 	if len(p) >= 2 && p[0] == protocol.CommandInventory && (p[1] == protocol.InventoryPotentialPill || p[1] == protocol.InventoryPotentialPillResult) {
 		limit := protocol.PotentialPillRequestBytes
 		if sent {

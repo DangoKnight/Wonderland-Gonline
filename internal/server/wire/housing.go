@@ -27,11 +27,18 @@ func TentTreeRecord(index, id uint16, x, y, z uint32, rotation byte, parent uint
 
 // NativeTentTree sends roots followed by child tools. Client indices are dense
 // and independent of SQL slots, which remain stable when a sibling is removed.
-func NativeTentTree(t store.Tent) []byte {
+func NativeTentTree(t store.Tent) []byte { return NativeTentTreeFloor(t, -1) }
+
+// NativeTentTreeFloor sends the furniture layout for one floor. A negative
+// floor keeps every item, which is what entering the tent does.
+func NativeTentTreeFloor(t store.Tent, floor int) []byte {
 	p := protocol.Builder{protocol.CommandTentFurniture, protocol.TentFurnitureTree}.U32(t.OwnerID)
 	next := uint16(len(t.Items) + 1)
 	var children [][]byte
 	for i, row := range t.Items {
+		if floor >= 0 && int(row.Floor) != floor {
+			continue
+		}
 		index := uint16(i + 1)
 		var slots []uint16
 		for _, tool := range row.Tools {
@@ -48,8 +55,8 @@ func NativeTentTree(t store.Tent) []byte {
 }
 
 const (
-	tentTreeBeforeFloorPadding = 9
-	tentTreeAfterFloorPadding  = 8
+	tentTreeBeforeFloorPadding = 8
+	tentTreeAfterFloorPadding  = 9
 	tentTreeGroundZ            = 1
 	tentTreeAttachedFloor      = 1
 )

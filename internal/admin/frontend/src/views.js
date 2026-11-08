@@ -38,6 +38,7 @@ export const navigation = [
 			["catalog", "Item mall catalog"],
 			["drops", "Monster drops"],
 			["chest", "Chest loot"],
+			["tent", "Tent craft"],
 			["starters", "Starter items"],
 			["quest_definitions", "Quest definitions"],
 			["talks", "Dialogue resolver"],
@@ -71,6 +72,7 @@ const paths = {
 	portals: "assets/maps",
 	studio: "sessions",
 	talks: "assets/talks",
+	tent: "tent-craft",
 	assets_editor: "assets/definitions",
 	inventory: "characters",
 	stats: "characters",
@@ -173,6 +175,13 @@ const columns = {
 		["Points", "point_cost"],
 		["Quantity", "count"],
 		["Order", "order_idx"],
+	],
+	tent: [
+		["Formula", "formula_id"],
+		["Output", "name"],
+		["Item ID", "item_id"],
+		["Tent", "tent"],
+		["Seconds", "duration_seconds"],
 	],
 };
 export async function loadView(target, ctx) {
@@ -324,6 +333,57 @@ export async function loadView(target, ctx) {
 					true,
 				),
 			]),
+		];
+	}
+	if (target === "tent") {
+		const data = await api("tent-craft");
+		const rows = (data.formulas ?? []).map((r) => ({
+			...r,
+			tent: r.tent_output ? "yes" : "",
+		}));
+		const max = data.max_duration_seconds ?? 0;
+		return [
+			section(
+				"Tent craft",
+				"Recipe durations come from the SQL manufacturing catalog. Zero finishes the craft immediately; existing jobs keep their deadline.",
+				[
+					actions([
+						button("Set every duration to 0", () =>
+							mutation("tent-craft", { all: true, duration_seconds: 0 }),
+						),
+						button("Return all to default values", () =>
+							mutation("tent-craft", { reset: true }),
+						),
+					]),
+					table(rows, columns.tent, (row) => [
+						button("Edit duration", () =>
+							edit({
+								title: `Formula ${row.formula_id} · ${row.name || "unnamed"}`,
+								note: `Zero finishes the craft immediately. Maximum ${max} seconds. Existing jobs keep their deadline.`,
+								fields: [
+									[
+										"Seconds",
+										"duration_seconds",
+										row.duration_seconds,
+										"number",
+										undefined,
+										{ min: 0, max },
+									],
+								],
+								save: async (value) => {
+									await request("tent-craft", {
+										ids: [row.formula_id],
+										duration_seconds: Math.max(
+											0,
+											Math.trunc(Number(value.duration_seconds) || 0),
+										),
+									});
+								},
+							}),
+						),
+					]),
+				],
+			),
 		];
 	}
 	let data = await api(paths[target] ?? (target === "overview" ? "status" : target));

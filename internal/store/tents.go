@@ -91,7 +91,7 @@ func (s *Store) ApplyTentSurface(ctx context.Context, ref CharacterRef, slot byt
 		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
 		}
-		if next.Map != game.TentMapID || next.TentReturn == nil || next.Bag[slot-1] != expected {
+		if !game.IsTentMap(next.Map) || next.TentReturn == nil || next.Bag[slot-1] != expected {
 			return game.ErrInvalidItem
 		}
 		tent, err = loadTent(tx, ref.ID)
@@ -184,7 +184,7 @@ func (s *Store) placeTentItem(ctx context.Context, ref CharacterRef, bagSlot byt
 			return err
 		}
 		if strict {
-			if next.Map != game.TentMapID || next.TentReturn == nil {
+			if !game.IsTentMap(next.Map) || next.TentReturn == nil {
 				return game.ErrInvalidItem
 			}
 			if !tentPlacementAvailable(tent, TentItem{ItemID: expected.ID, X: x, Y: y, Floor: floor}, items, nil) {

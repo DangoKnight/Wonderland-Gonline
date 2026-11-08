@@ -57,3 +57,15 @@ const (
 
 // Shared native interior template; server visibility is additionally scoped by owner.
 const TentMapID uint16 = 63507
+const TentUpperMapID uint16 = 63508
+
+// IsTentMap reports whether a map id is a tent interior level.
+func IsTentMap(id uint16) bool { return id == TentMapID || id == TentUpperMapID }
+
+// TentFloor returns the level a tent interior map renders.
+func TentFloor(id uint16) byte {
+	if id == TentUpperMapID {
+		return 1
+	}
+	return 0
+}

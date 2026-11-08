@@ -1101,22 +1101,23 @@ const (
 
 // Native manufacturing (AC59). The reference wire handler selects Forge.
 const (
-	CommandGemSocket                = 37
-	GemSocketRequestBytes           = 4
-	CommandTentManufacture          = 64
-	TentManufactureStart            = 1
-	TentManufactureContinue         = 2
-	TentManufactureStop             = 3
-	TentManufactureStopped          = 4
-	TentManufactureBagComplete      = 9
-	TentManufactureStartBytes       = 5
-	TentManufactureNativeStartBytes = 6
-	TentManufactureNativeBatchBytes = 7
-	TentManufactureControlBytes     = 3
-	CommandManufacture              = 59
-	ManufactureRequestBytes         = 8
-	ManufactureFailed               = 0
-	ManufactureSucceeded            = 1
+	CommandGemSocket                  = 37
+	GemSocketRequestBytes             = 4
+	CommandTentManufacture            = 64
+	TentManufactureStart              = 1
+	TentManufactureContinue           = 2
+	TentManufactureStop               = 3
+	TentManufactureStopped            = 4
+	TentManufactureBagComplete        = 9
+	TentManufactureStartBytes         = 5
+	TentManufactureNativeStartBytes   = 6
+	TentManufactureNativeBatchBytes   = 7
+	TentManufactureControlBytes       = 3
+	TentManufactureNativeControlBytes = 12
+	CommandManufacture                = 59
+	ManufactureRequestBytes           = 8
+	ManufactureFailed                 = 0
+	ManufactureSucceeded              = 1
 )
 
 // Fixed Economy/Social inbound payload sizes include command and subcommand.

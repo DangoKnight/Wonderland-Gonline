@@ -36,7 +36,7 @@ func (s *Store) AttachTentTool(ctx context.Context, ref CharacterRef, bagSlot by
 		if err = preserveItemReservations(&next, reservations); err != nil {
 			return err
 		}
-		if next.Map != game.TentMapID || next.TentReturn == nil {
+		if !game.IsTentMap(next.Map) || next.TentReturn == nil {
 			return game.ErrInvalidItem
 		}
 		tent, err = loadTent(tx, ref.ID)

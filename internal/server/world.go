@@ -40,6 +40,11 @@ func (s *Server) peers(c *Session) []*Session {
 func (s *Server) acknowledgeWorld(c *Session) error {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	return s.acknowledgeWorldLocked(c)
+}
+
+// acknowledgeWorldLocked runs the map load for callers that already hold worldMu.
+func (s *Server) acknowledgeWorldLocked(c *Session) error {
 	if err := c.outputError(); err != nil {
 		return err
 	}
@@ -183,11 +188,15 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 		return err
 	}
 	if c.tentOwner == 0 {
+		// The first sign is often dropped while the client still loads the
+		// scene, so repeat it on the next tick.
 		for _, peer := range s.world {
-			if peer.openTent != nil && peer.openTent.Map == c.character.Map && s.samePlayerScene(peer, c) {
+			if peer.openTent != nil && peer.openTent.Map == c.character.Map &&
+				(peer.tentOwner != 0 || !s.World.HideOtherPlayers(c.character.Map)) {
 				if err := c.send(tentSign(peer)); err != nil {
 					return err
 				}
+				c.tentSignSync = true
 			}
 		}
 	}
@@ -391,6 +400,9 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 			return nil
 		}
 		if portal == 1 {
+			if c.tentFloor == 1 {
+				return s.floorDown(ctx, c)
+			}
 			return s.exitTent(ctx, c)
 		}
 		return nil

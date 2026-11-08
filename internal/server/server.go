@@ -86,7 +86,21 @@ type Server struct {
 	dropRateMultiplier        float64 // Live GM setting; guarded by worldMu.
 }
 
+// registerTentMaps adds the synthetic interior templates to a served catalog.
+// They live only in memory, so every catalog reload must register them again.
+func registerTentMaps(c *assets.Catalog) {
+	if c.Maps == nil {
+		c.Maps = map[uint16]assets.Map{}
+	}
+	for _, id := range []uint16{game.TentMapID, game.TentUpperMapID} {
+		if _, ok := c.Maps[id]; !ok {
+			c.Maps[id] = assets.Map{ID: id}
+		}
+	}
+}
+
 func New(c config.Config, db *store.Store, a *assets.Catalog, log *slog.Logger) *Server {
+	registerTentMaps(a)
 	s := &Server{comboDamagePerParticipant: c.ComboDamagePerParticipant, petGrowthFormula: c.PetGrowthFormula, world: map[uint64]*Session{}, friendSessions: map[uint32]*Session{}, names: map[string]uint64{}, Config: c, Store: db, Assets: a, World: world.New(a), Log: log, Started: time.Now(), sessions: map[uint64]*Session{}, accounts: map[uint32]uint64{}}
 	s.logs = &serverlog.Buffer{}
 	s.combatRoundChain = c.CombatRoundChain

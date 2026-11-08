@@ -206,6 +206,9 @@ func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, co
 			return err
 		}
 		for id := range s.Assets.Maps {
+			if game.IsTentMap(id) {
+				continue
+			}
 			if _, ok := candidate.Maps[id]; !ok {
 				return fmt.Errorf("cannot remove existing map %d", id)
 			}
@@ -216,6 +219,7 @@ func (s *Server) EditAsset(ctx context.Context, asset string, edit AssetEdit, co
 		return err
 	}
 	candidate.AssetsDatabase = s.Config.AssetsDatabase
+	registerTentMaps(candidate)
 	*s.Assets = *candidate
 	s.alchemyIndex = nil // Native item edits invalidate derived rank/base candidate indexes.
 	s.World.ReloadCatalog(s.Assets)
@@ -528,4 +532,116 @@ func (s *Server) EditAdminActor(ctx context.Context, id uint32, edit AdminActorE
 		s.sendOrClose(target, packet)
 	}
 	return nil
+}
+
+// applyManufactureDurations rewrites recipe durations for the selected formulas.
+func applyManufactureDurations(db *gorm.DB, ids []uint16, all bool, duration uint32) (int64, error) {
+	query := db.Model(&assetsql.ManufacturingRow{})
+	var res *gorm.DB
+	if all {
+		res = query.Where("1 = 1").Update("value_duration_seconds", duration)
+	} else {
+		res = query.Where("manufacturing_key IN ?", ids).Update("value_duration_seconds", duration)
+	}
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	return res.RowsAffected, nil
+}
+
+// applyManufactureDefaults restores recorded durations per formula.
+func applyManufactureDefaults(tx *gorm.DB, defaults map[uint16]uint32) (int64, error) {
+	var updated int64
+	for id, duration := range defaults {
+		res := tx.Model(&assetsql.ManufacturingRow{}).Where("manufacturing_key = ?", id).Update("value_duration_seconds", duration)
+		if res.Error != nil {
+			return 0, res.Error
+		}
+		updated += res.RowsAffected
+	}
+	return updated, nil
+}
+
+// SetManufactureDurations rewrites recipe durations in the served catalog.
+// Existing jobs keep their deadline; new starts use the new value.
+func (s *Server) SetManufactureDurations(ctx context.Context, ids []uint16, all bool, duration uint32) (int64, error) {
+	if duration > assets.ManufacturingMaxDurationSeconds {
+		return 0, fmt.Errorf("duration above %d seconds", assets.ManufacturingMaxDurationSeconds)
+	}
+	s.adminEditMu.Lock()
+	defer s.adminEditMu.Unlock()
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+	db, err := assetdb.Open(s.Config.AssetsDatabase)
+	if err != nil {
+		return 0, err
+	}
+	defer assetdb.Close(db)
+	updated, err := applyManufactureDurations(db, ids, all, duration)
+	if err != nil {
+		return 0, err
+	}
+	candidate, err := assetsql.LoadDatabase(s.Config.AssetsDatabase)
+	if err != nil {
+		return 0, err
+	}
+	candidate.AssetsDatabase = s.Config.AssetsDatabase
+	registerTentMaps(candidate)
+	*s.Assets = *candidate
+	s.World.ReloadCatalog(s.Assets)
+	for _, c := range s.friendSessions {
+		if err := s.autosaveSession(ctx, c); err != nil {
+			s.Log.Error("asset edit autosave failed", "character", c.character.ID, "error", err)
+		}
+		c.conn.Close()
+	}
+	s.Log.Info("administrator manufacturing durations", "updated", updated, "duration", duration)
+	return updated, nil
+}
+
+// ResetManufactureDurations restores every recipe duration from the retained
+// source records.
+func (s *Server) ResetManufactureDurations(ctx context.Context) (int64, error) {
+	s.adminEditMu.Lock()
+	defer s.adminEditMu.Unlock()
+	s.worldMu.Lock()
+	defer s.worldMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+	db, err := assetdb.Open(s.Config.AssetsDatabase)
+	if err != nil {
+		return 0, err
+	}
+	defer assetdb.Close(db)
+	defaults, err := assetsql.DefaultManufactureDurations(db)
+	if err != nil {
+		return 0, err
+	}
+	var updated int64
+	err = db.Transaction(func(tx *gorm.DB) error {
+		var e error
+		updated, e = applyManufactureDefaults(tx, defaults)
+		return e
+	})
+	if err != nil {
+		return 0, err
+	}
+	candidate, err := assetsql.LoadDatabase(s.Config.AssetsDatabase)
+	if err != nil {
+		return 0, err
+	}
+	candidate.AssetsDatabase = s.Config.AssetsDatabase
+	registerTentMaps(candidate)
+	*s.Assets = *candidate
+	s.World.ReloadCatalog(s.Assets)
+	for _, c := range s.friendSessions {
+		if err := s.autosaveSession(ctx, c); err != nil {
+			s.Log.Error("asset edit autosave failed", "character", c.character.ID, "error", err)
+		}
+		c.conn.Close()
+	}
+	s.Log.Info("administrator manufacturing durations reset", "updated", updated)
+	return updated, nil
 }

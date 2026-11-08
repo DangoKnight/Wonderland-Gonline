@@ -153,7 +153,7 @@ func (s *Store) startManufacturing(ctx context.Context, ref CharacterRef, bench 
 		if err = assets.ValidateManufacturing(map[uint16]assets.ManufacturingFormula{f.ID: f}, items); err != nil {
 			return err
 		}
-		if next.Map != game.TentMapID || native && next.TentReturn == nil {
+		if !game.IsTentMap(next.Map) || native && next.TentReturn == nil {
 			return game.ErrInvalidItem
 		}
 		var count int64

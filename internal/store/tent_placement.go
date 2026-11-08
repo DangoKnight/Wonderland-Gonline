@@ -92,7 +92,7 @@ func (s *Store) MoveNativeTentItem(ctx context.Context, ref CharacterRef, rawInd
 		if err != nil {
 			return err
 		}
-		if c.Map != game.TentMapID || c.TentReturn == nil {
+		if !game.IsTentMap(c.Map) || c.TentReturn == nil {
 			return game.ErrInvalidItem
 		}
 		tent, err := loadTent(tx, ref.ID)

@@ -103,3 +103,31 @@ func manufacturingFieldsFit(fields map[string]uint32) bool {
 	}
 	return true
 }
+
+// DefaultManufactureDurations returns the durations recorded in the retained
+// compound2.dat provenance records, which administrator edits never touch.
+func DefaultManufactureDurations(tx *gorm.DB) (map[uint16]uint32, error) {
+	out := map[uint16]uint32{}
+	if !tx.Migrator().HasTable(&assetdb.Record{}) {
+		return out, nil
+	}
+	var rows []assetdb.Record
+	if err := tx.Where("asset = ? AND collection = ?", "compound2.dat", "records").Order("ordinal").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		var record exportRow
+		if err := json.Unmarshal([]byte(row.JSON), &record); err != nil {
+			return nil, err
+		}
+		var fields map[string]uint32
+		if err := json.Unmarshal(record.Fields, &fields); err != nil {
+			return nil, err
+		}
+		if record.RecordIndex < 0 || record.RecordIndex > math.MaxUint16 {
+			continue
+		}
+		out[uint16(record.RecordIndex)] = fields["build_time"] * assets.ManufacturingMinutesToSeconds
+	}
+	return out, nil
+}

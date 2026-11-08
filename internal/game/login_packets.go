@@ -94,6 +94,18 @@ func (c Character) PositionPacket() []byte {
 	return protocol.Builder{protocol.CommandPosition}.U32(c.ID).U16(c.Map).U16(c.X).U16(c.Y)
 }
 
+// PositionPacketFloor is the tent-interior form: the native client reads the
+// level from the trailing byte when the map is an interior (0xF80D..0xFFDC).
+func (c Character) PositionPacketFloor(floor byte) []byte {
+	return protocol.Builder{protocol.CommandPosition}.U32(c.ID).U16(c.Map).U16(c.X).U16(c.Y).U8(floor)
+}
+
+// PositionPacketTent sends the tent interior identity: a distinct map per level
+// so guests on the other floor are not rendered and the client reloads the scene.
+func (c Character) PositionPacketTent(mapID uint16, floor byte) []byte {
+	return protocol.Builder{protocol.CommandPosition}.U32(c.ID).U16(mapID).U16(c.X).U16(c.Y).U8(floor)
+}
+
 // StatPackets follows Equip.Send8_1 ordering: maxima follow CON/WIS, then current HP/SP.
 func (c Character) StatPackets(items map[uint16]ItemDefinition, growth ...ElementalGrowth) [][]byte {
 	a := c.Attributes()
