@@ -14,6 +14,7 @@ func TestInstalledXaolanForestBattleFormationAndBackground(t *testing.T) {
 	for _, encounter := range []struct{ event, formation uint16 }{{44, 15}, {83, 33}} {
 		s, players, wires := worldFixture(t)
 		c := players[0]
+		c.ready = true
 		c.character.Map = northIslandMap
 		c.character.X, c.character.Y = 2622, 755
 		s.Assets, s.World = catalog, world.New(catalog)

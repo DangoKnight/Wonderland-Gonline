@@ -327,6 +327,7 @@ func (s *Server) gmReload(ctx context.Context, c *Session, _ string, args []stri
 			s.Log.Error("GM asset reload failed", "category", scope, "error", err)
 			return s.chatFeedback(c, "Asset reload failed; the current catalog is unchanged.")
 		}
+		registerTentMaps(next)
 	}
 	s.catalogMu.Lock()
 	defer s.catalogMu.Unlock()
