@@ -40,13 +40,20 @@ func TestCommandRegistryCompatibility(t *testing.T) {
 		for sub := 0; sub <= 255; sub++ {
 			packet := []byte{c, byte(sub)}
 			early := p.BeforeWorldGates || (registration.beforeWorldGates != nil && registration.beforeWorldGates(packet))
-			expected := contains(c, 4, 16, 33, 89, 92, 183, 186, 226) || (c == 21 && contains(byte(sub), 1, 3)) || (c == 32 && sub == 3) || (c == 23 && contains(byte(sub), 25, 54, 77)) || (c == 75 && sub == 2) || (c == 5 && contains(byte(sub), 4, 7))
+			expected := contains(c, 4, 16, 33, 89, 92, 183, 186, 226) || (c == 21 && contains(byte(sub), 1, 3)) || (c == 32 && sub == 3) || (c == 23 && contains(byte(sub), 25, 54, 77)) || (c == 75 && sub == 2) || (c == 5 && contains(byte(sub), 4, 7, 14, 17))
 			if early != expected {
 				t.Errorf("command %d:%d changed pre-gate routing", c, sub)
 			}
 		}
 		if registration.beforeWorldGates != nil && (registration.beforeWorldGates(nil) || registration.beforeWorldGates([]byte{c})) {
 			t.Errorf("command %d accepts truncated synchronization request", c)
+		}
+	}
+	// Two-byte EXP-time queries may run while loading or playing a battle.
+	// AC5:17's longer travel request must still pass ordinary world gates.
+	for _, packet := range [][]byte{{5, 14, 1}, {5, 17, 1}} {
+		if commandRegistry[5].beforeWorldGates(packet) {
+			t.Fatalf("timed query exception permits a longer request: %v", packet)
 		}
 	}
 }
