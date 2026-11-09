@@ -170,7 +170,7 @@ func (s *Scene) SetTentWalkGrid(room image.Rectangle, blocked []image.Rectangle)
 		for y := 0; y < int(s.Ground.GridHeight); y++ {
 			p := housing.Cell(x*cellSize+cellSize/2, y*cellSize+cellSize/2)
 			value := byte(walkBlocked)
-			if p.In(room) || image.Pt(x*cellSize+cellSize/2,y*cellSize+cellSize/2).In(housing.Doorway()) {
+			if p.In(room) || image.Pt(x*cellSize+cellSize/2, y*cellSize+cellSize/2).In(housing.Doorway()) {
 				value = 0
 				for _, r := range blocked {
 					if p.In(r) {

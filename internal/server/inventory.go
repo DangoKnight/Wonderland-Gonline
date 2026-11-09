@@ -22,7 +22,7 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 	}
 	switch p[1] {
 	case protocol.InventoryStopwatchControl:
-		return s.stopwatchControl(ctx,c,p)
+		return s.stopwatchControl(ctx, c, p)
 	case protocol.InventoryTrainingControl:
 		return s.trainingControl(ctx, c, p)
 	case protocol.InventoryGiftCard:
