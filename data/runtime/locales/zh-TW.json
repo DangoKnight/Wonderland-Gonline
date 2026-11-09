@@ -2,6 +2,17 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+    "ui.timed.exp_time": "%.1f倍經驗加成：剩餘%d分鐘",
+    "ui.timed.exp_expired": "經驗加成已結束。",
+    "ui.timed.exp_repeated": "經驗藥水效果仍在持續。",
+    "ui.timed.exp_incompatible": "成長雕像與經驗藥水不可同時使用。",
+    "ui.timed.training_expired": "練功島時間已結束。",
+    "ui.timed.exp_hint": "經驗倍率：%.1f倍",
+    "ui.timed.paused": "（暫停）",
+    "ui.timed.training_time": "練功島剩餘%d分鐘",
+
+	"ui.app.tent_home": "%s的家",
+	"ui.app.tent_floor": "%d樓",
     "item.10000.description": "問號",
     "item.10000.name": "問號(未開)",
     "item.10001.description": "未知",

@@ -13,7 +13,7 @@ Existing asset catalogs are never replaced or silently upgraded at startup.
 
 ## Upgrade an existing installation
 
-Current versions are **asset schema 65** and **gameplay schema 24**, defined in
+Current versions are **asset schema 70** and **gameplay schema 25**, defined in
 [`catalog_migration.go`](../internal/assetsql/catalog_migration.go) and
 [`migrations.go`](../internal/store/migrations.go). Asset v62 adds typed item-card
 reward/gender mappings. Gameplay v22 adds durable public message-board posts;
@@ -24,6 +24,28 @@ preserving migration seeds starter outfits and the six rebirth cape series from
 `internal/assetsql/indestructible_equipment_defaults.json`. Later administrator
 edits are retained. Existing installations must run the normal database migration
 before starting the updated server.
+
+Asset v66 removes Notepad from starter grants so it is obtained through the
+Astrology lady's native event. Other starter grants and existing characters'
+inventories are preserved.
+
+Asset v69 corrects Training Voucher 34181 from the former one-hour default to
+six hours, following its English/stored description. Only the previous default
+is changed; different administrator durations/kinds and existing character timers
+are preserved. Training Fare remains one hour. Asset v70 similarly updates Training Ticket
+34253 to six hours by administrator policy, preserving non-default overrides.
+
+Asset v68 adds typed timed-item kind, duration and EXP multiplier columns, plus
+Training Island entitlement/entry metadata. Gameplay v25 stores remaining online
+EXP and Training Island seconds and the EXP pause state in `character_state`.
+Activation/consumption is transactional; countdown checkpoints do not rewrite
+inventory. Existing characters begin without timed effects.
+
+Asset v67 adds map-specific battle recovery and flat victory EXP columns in
+`catalog_maps`: `value_battle_round_recovery_hp`, `value_battle_round_recovery_sp`
+and `value_battle_victory_exp`. Training Island maps receive 100 HP/50 SP recovery
+and 200 unscaled EXP per contributor. Other map data is preserved; later
+administrator edits survive migration and initialization.
 
 Asset v65 stores manufacturing reset baselines in
 `catalog_manufacturing.value_default_duration_seconds` and furniture floor-switch

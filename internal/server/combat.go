@@ -630,7 +630,14 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 	}
 	exp, gold := run.b.Rewards()
 	s.closeBattleObservers(run, departure...)
-	exp = ScaleExperience(exp, s.expRateMultiplier)
+	for _, m := range run.active() {
+		s.advanceTimedSession(m.c, time.Now(), true)
+	}
+	var mapBonus uint64
+	if area := s.battleMapDefinition(run); !run.b.PvP {
+		mapBonus = uint64(area.BattleVictoryEXP)
+	}
+	bonus := run.b.ParticipationBonus(mapBonus)
 	var results []memberResult
 	for _, m := range run.active() {
 		c := m.c
@@ -648,7 +655,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		}
 		switch memberOutcome {
 		case battle.Victory:
-			if run.b.PvP {
+			if run.b.PvP || !s.trainingRewardEligible(c, run) {
 				break
 			}
 			first = append(first, s.discoverBattleMonsters(&next, run)...)
@@ -659,9 +666,13 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 			if s.battleGoldEnabled && next.Gold < game.MaxGold {
 				next.Gold = uint32(min(uint64(next.Gold)+gold, uint64(game.MaxGold)))
 			}
-			playerEXP := exp
+			// Simple mode rewards every battle member, even without kill credit.
+			// The flat map bonus is added after scaling the regular reward.
+			multiplier := s.expRateMultiplier * next.TimedEffects.Multiplier()
+			scaledEXP := ScaleExperience(exp, multiplier)
+			playerEXP := scaledEXP + mapBonus
 			if s.battleEXPFormula == game.BattleEXPParticipation {
-				playerEXP = ScaleExperience(run.b.ParticipantEXP(m.self), s.expRateMultiplier)
+				playerEXP = ScaleExperience(run.b.ParticipantEXP(m.self), multiplier) + bonus.Participant(m.self)
 			}
 			levels := next.AddExp(playerEXP)
 			if levels > 0 {
@@ -672,7 +683,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 				// each owned pet's accumulated kill share separately below.
 				pet := &next.Pets[j]
 				pet.HP = int32(max(1, m.pet.HP))
-				petEXP := exp
+				petEXP := scaledEXP + mapBonus
 				if s.battleEXPFormula == game.BattleEXPParticipation {
 					petEXP = 0
 				}
@@ -683,10 +694,11 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 				for i := range next.Pets {
 					pet := &next.Pets[i]
 					share := run.b.PetParticipantEXP(next.ID, pet.ID)
-					if share == 0 {
+					awarded := ScaleExperience(share, multiplier) + bonus.Pet(next.ID, pet.ID)
+					if awarded == 0 {
 						continue
 					}
-					grown := s.gainPetExp(pet, uint32(ScaleExperience(share, s.expRateMultiplier)), petGrowth)
+					grown := s.gainPetExp(pet, uint32(min(awarded, 1<<31-1)), petGrowth)
 					pet.Normalize(s.Assets.Items, grown > 0, s.petTemplate(pet.ID))
 					if slot := c.pets.slot(pet.ID); slot != 0 && (m.pet == nil || !game.SamePet(m.pet.ID, pet.ID)) {
 						first = append(first, pet.ProgressionPackets(slot, s.Assets.Items, s.petTemplate(pet.ID))...)
@@ -708,7 +720,7 @@ func (s *Server) endBattle(run *battleRun, outcome battle.Outcome) {
 		for id, slot := range c.pets.slots {
 			roster.slots[id] = slot
 		}
-		if memberOutcome == battle.Victory && !run.b.PvP {
+		if memberOutcome == battle.Victory && !run.b.PvP && s.trainingRewardEligible(c, run) {
 			if run.trial == nil && m == run.members[0] && run.event == nil {
 				first = append(first, s.legacyBattleRewards(&next, run, roster)...)
 			}
@@ -1006,6 +1018,9 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 		return nil
 	}
 	targetID := uint32(p[3]) | uint32(p[4])<<8 | uint32(p[5])<<16 | uint32(p[6])<<24
+	if click := uint16(p[7]) | uint16(p[8])<<8; click != 0 {
+		return s.challengeMonster(c, targetID, click)
+	}
 	target := s.friendSessions[targetID]
 	if target == nil || target == c || target.character == nil || !s.samePlayerScene(target, c) || c.tentOwner != 0 ||
 		!c.character.Preferences().PKAllowed || !target.character.Preferences().PKAllowed ||
@@ -1013,6 +1028,28 @@ func (s *Server) battleStateCommand(c *Session, p []byte) error {
 		return c.send(serverwire.HeadBanner("The player is unavailable for PK."))
 	}
 	return s.startPvP(c, target)
+}
+
+// Explicit monster challenges use the same native mode as player PK, with a
+// template and click ID. They intentionally bypass automatic encounter timing,
+// including Training Island expiry, while reward eligibility remains per owner.
+func (s *Server) challengeMonster(c *Session, template uint32, click uint16) error {
+	if !battleInteractionAvailable(c, nil) || !gmIdle(c) || c.tentOwner != 0 {
+		return nil
+	}
+	n, ok := s.World.NPC(c.character.Map, click)
+	if !ok || n.Template != template || !s.World.Wild(c.character.Map, n) || s.World.Defeated(c.character.Map, click) || c.view.Hidden[click] || !s.World.VisibleIn(c.character, c.view, c.character.Map, click) {
+		return nil
+	}
+	dx, dy := int64(c.character.X)-int64(n.X), int64(c.character.Y)-int64(n.Y)
+	if dx*dx+dy*dy > npcInteractionRangePixels*npcInteractionRangePixels {
+		return nil
+	}
+	if handled, err := s.wildClick(c, n); handled || err != nil {
+		return err
+	}
+	_, err := s.runNPCEvent(context.Background(), c, click)
+	return err
 }
 
 // startPvP initializes two parties through the same turn/persistence pipeline as PvE.

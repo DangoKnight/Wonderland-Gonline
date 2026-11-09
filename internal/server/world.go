@@ -475,6 +475,7 @@ func (s *Server) portalDestination(c *Session, portal uint16) (world.Destination
 // teleportPrelude is GameMap.Teleport's freeze and companion/vehicle reset for regular
 // and command warps.
 func (s *Server) teleportPrelude(c *Session) error {
+	s.advanceTimedSession(c, time.Now(), true)
 	id := c.character.ID
 	for _, packet := range [][]byte{{protocol.CommandEvent, protocol.EventClose}, protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode32}.U32(id), protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode112}.U32(id), protocol.Builder{protocol.CommandInventory, protocol.InventoryWireCode132}.U32(id)} {
 		if e := c.send(packet); e != nil {
@@ -510,6 +511,7 @@ func (s *Server) teleport(ctx context.Context, c *Session, dst world.Destination
 }
 
 func (s *Server) teleportMember(ctx context.Context, c *Session, dst world.Destination, portal byte) error {
+	s.advanceTimedSession(c, time.Now(), true)
 	char := c.character
 	if c.openTent != nil && (c.tentOwner == 0 || dst.Map != c.openTent.Map) {
 		if err := s.closePlayerTent(ctx, c); err != nil {

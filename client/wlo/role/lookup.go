@@ -18,6 +18,7 @@ type lookupGroup struct {
 }
 
 var lookupGroups = map[string]lookupGroup{
+	"009":  {0, []lookupMember{{"009_c01", false, false}}},
 	"002a": {0, []lookupMember{{"002a_c01", false, false}}},
 	"002c": {0, []lookupMember{{"002c_1", false, false}, {"002c_01", false, false}, {"002c_b01", false, false}, {"002c_c01", false, false}, {"002c1", false, false}, {"002c2", false, false}}},
 	"002e": {0, []lookupMember{{"002e_1", false, false}, {"002e_a01", false, false}, {"002e_b01", false, false}, {"002e_c01", false, false}, {"002e1", false, false}, {"002e1_c01", false, false}, {"002e2", false, false}, {"002e3", false, false}}},

@@ -109,10 +109,10 @@ The receive dispatcher (`FUN_002dde1c`) handles **91** commands; the Go client h
 | 59 | Manufacture |  |
 | 60 | — |  |
 | 61 | — |  |
-| 62 | Wire62 |  |
+| 62 | Wire62 | partial |
 | 63 | Login | yes |
 | 64 | TentManufacture |  |
-| 65 | Tent |  |
+| 65 | Tent | partial |
 | 66 | RebornJob |  |
 | 67 | PetFeeding |  |
 | 68 | PetTraining |  |
@@ -577,9 +577,12 @@ CH_TMiniMapForm, Tse_MapFrame, TSe_SmallMap, THL_WorldMapForm, user\Map data. Po
 <a id="housing"></a>
 ### Housing and furniture
 
-Status **todo**; 246 functions, 17 cited. Go: not started.
+Status **partial**; 246 functions, 17 cited. Go: client/wlo/housing and app/tents.go.
 
 TRE_FurnitureMng, TGdThing, home pillars, furniture drawing, NPC dolls.
+Native exterior snapshots, private room entry/exit, guest eviction, room templates,
+furniture drawing, placement/movement and floor-switch activation are ported.
+See [tent evidence and remaining controls](TENTS_CLIENT.md).
 
 | Region | Range | Functions | Cited | Classes |
 |---:|---|---:|---:|---|

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"wonderland-gonline/internal/assetdb"
+	"wonderland-gonline/internal/game"
 )
 
 func TestRepositorySeedStartsWithoutClientAssetsAndPreservesEdits(t *testing.T) {
@@ -25,6 +26,49 @@ func TestRepositorySeedStartsWithoutClientAssetsAndPreservesEdits(t *testing.T) 
 		t.Fatal(err)
 	}
 	c.AssetsDatabase = ""
+	for _, id := range []uint16{13050, 13051, 13052, 13053, 13054, 13055, 13056, 13057, 13059} {
+		area := c.Maps[id]
+		if !area.TrainingArea || area.BattleRoundRecoveryHP != 100 || area.BattleRoundRecoverySP != 50 || area.BattleVictoryEXP != 200 {
+			t.Fatalf("training map %d lacks repository-owned battle rules", id)
+		}
+	}
+	if entry := c.Maps[13050]; entry.TrainingEntryX != 2632 || entry.TrainingEntryY != 1344 {
+		t.Fatal("missing native training entry destination")
+	}
+	if potion := c.Items[34173]; potion.TimedKind != game.TimedItemPotion || potion.TimedMinutes != 120 || potion.EXPTenths != 100 {
+		t.Fatal("missing repository EXP potion definition", potion)
+	}
+	if pass := c.Items[34181]; pass.TimedKind != game.TimedItemTraining || pass.TimedMinutes != 360 {
+		t.Fatal("training voucher must match its six-hour description", pass)
+	}
+	if ticket := c.Items[34253]; ticket.TimedKind != game.TimedItemTraining || ticket.TimedMinutes != 360 {
+		t.Fatal("training ticket must grant six hours", ticket)
+	}
+	if c.Maps[12000].BattleVictoryEXP != 0 || c.Maps[12000].BattleRoundRecoveryHP != 0 {
+		t.Fatal("ordinary map has training bonuses")
+	}
+	for _, grant := range c.StarterItems {
+		if grant.ID == game.NotepadItemID {
+			t.Fatal("Notepad must be obtained from the Astrology lady, not the starter pack")
+		}
+	}
+	// Independent native EVE reward bytes: the Astrology lady still grants
+	// one Notepad (34038) during her first conversation.
+	notepadReward := [21]byte{1, 1, 0, 1, 0, 0xf6, 0x84, 0, 1, 0, 0, 0, 1}
+	hasNotepadReward := false
+	for _, event := range c.Maps[12003].Events {
+		if event.ClickID != 4 {
+			continue
+		}
+		for _, branch := range event.Branches {
+			for _, operation := range branch.Operations {
+				hasNotepadReward = hasNotepadReward || operation.Data == notepadReward
+			}
+		}
+	}
+	if !hasNotepadReward {
+		t.Fatal("Astrology lady's native Notepad reward is missing")
+	}
 	if !reflect.DeepEqual(c.Summary(), m.Definitions) {
 		t.Fatal("bundled definition census changed", c.Summary(), m.Definitions)
 	}

@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
 	"os"
 	"strconv"
 	"strings"
@@ -24,9 +25,11 @@ import (
 	"wonderland-gonline/internal/clientfs"
 	"wonderland-gonline/internal/clientruntime"
 
+	"wonderland-gonline/client/wlo/housing"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/game"
 )
 
 // Map background archives, searched in order (patches first).
@@ -106,6 +109,9 @@ func groundRecord(a login.Assets, mapID uint16) (*groundEntry, error) {
 
 // LoadScene reads the map's terrain and its background layers.
 func loadScene(a login.Assets, mapID uint16) (*Scene, error) {
+	if game.IsTentMap(mapID) {
+		return NewTentScene(mapID), nil
+	}
 	e, err := groundRecord(a, mapID)
 	if err != nil {
 		return nil, err
@@ -138,6 +144,44 @@ func loadScene(a login.Assets, mapID uint16) (*Scene, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// Tent interiors are synthesized by the native housing manager; Ground.MMG
+// has no terrain record for either private floor.
+func NewTentScene(mapID uint16) *Scene {
+	w, h := housing.SceneWidth, housing.SceneHeight
+	g := clientassets.GroundPrefix{Width: uint32(w), Height: uint32(h), GridWidth: uint16((w + cellSize - 1) / cellSize), GridHeight: uint16((h + cellSize - 1) / cellSize)}
+	g.Cells = make([]byte, int(g.GridWidth)*int(g.GridHeight))
+	s := &Scene{MapID: mapID, Width: w, Height: h, Ground: g}
+	s.SetTentWalkGrid(housing.Room(housing.DefaultRoom), nil)
+	return s
+}
+
+// AC65:12 selects the native room image directly. Those image identifiers
+// are not ordinary Ground.MMG map templates (FUN_00404e4c).
+func TentBackground(a login.Assets, kind byte) (*surface.Surface, error) {
+	return background(a, housing.Background(kind))
+}
+
+// Furniture footprints use native isometric cells. The regular pathfinder
+// receives an independent walk grid, so tentative drags cannot alter it.
+func (s *Scene) SetTentWalkGrid(room image.Rectangle, blocked []image.Rectangle) {
+	for x := 0; x < int(s.Ground.GridWidth); x++ {
+		for y := 0; y < int(s.Ground.GridHeight); y++ {
+			p := housing.Cell(x*cellSize+cellSize/2, y*cellSize+cellSize/2)
+			value := byte(walkBlocked)
+			if p.In(room) || image.Pt(x*cellSize+cellSize/2,y*cellSize+cellSize/2).In(housing.Doorway()) {
+				value = 0
+				for _, r := range blocked {
+					if p.In(r) {
+						value = byte(walkBlocked)
+						break
+					}
+				}
+			}
+			s.Ground.Cells[x*int(s.Ground.GridHeight)+y] = value
+		}
+	}
 }
 
 // background decodes the first exported picture <archive>/<resource>.png.
@@ -182,6 +226,9 @@ var sceneCache = struct {
 }{entries: map[string]*Scene{}}
 
 func LoadScene(a login.Assets, mapID uint16) (*Scene, error) {
+	if game.IsTentMap(mapID) {
+		return NewTentScene(mapID), nil
+	}
 	key := fmt.Sprintf("%s:%d", a.Data, mapID)
 	sceneCache.Lock()
 	defer sceneCache.Unlock()

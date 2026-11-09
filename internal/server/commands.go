@@ -65,7 +65,7 @@ var commandRegistry = map[byte]commandRegistration{
 	protocol.CommandCharacterCreation:   {handler: (*Server).createCharacter, policy: protocol.CommandPolicy{}},
 	protocol.CommandCharacterSelection:  {handler: (*Server).deleteCharacter, policy: protocol.CommandPolicy{CharacterDeletion: true}},
 	protocol.CommandChat:                {handler: (*Server).chat, policy: protocol.CommandPolicy{World: true, AllowedDuringBattle: true, AllowedDuringMinigame: true}},
-	protocol.CommandCharacterState:      {handler: (*Server).menuCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: matchingSubcommands(protocol.CharacterStateRefreshRequest, protocol.CharacterStateRefresh)},
+	protocol.CommandCharacterState:      {handler: (*Server).menuCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}, beforeWorldGates: characterStateBeforeGates},
 	protocol.CommandMovement:            {handler: (*Server).movementCommand, policy: protocol.CommandPolicy{World: true}},
 	protocol.CommandStats:               {handler: (*Server).allocateStats, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandPalaceTrial:         {handler: withoutContext((*Server).palaceTrialCommand), policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
@@ -116,7 +116,7 @@ func matchingSubcommands(subcommands ...byte) func([]byte) bool {
 	}
 }
 
-func (s *Server) discoveryCommand(_ context.Context, c *Session, _ []byte) error {
+func (s *Server) discoveryCommand(_ context.Context, c *Session, p []byte) error {
 	if e := c.send(append([]byte{protocol.CommandHandshake, protocol.HandshakeServerDescription, 101, 0, 1}, []byte(s.Name())...)); e != nil {
 		return e
 	}
@@ -360,4 +360,8 @@ func (s *Server) nativeMallCommand(ctx context.Context, c *Session, p []byte) er
 	default:
 		return ErrUnsupported
 	}
+}
+
+func characterStateBeforeGates(p []byte) bool {
+	return matchingSubcommands(protocol.CharacterStateRefreshRequest, protocol.CharacterStateRefresh)(p) || len(p) == 2 && (p[1] == protocol.CharacterStateStatueTime || p[1] == protocol.CharacterStateEXPPotion)
 }

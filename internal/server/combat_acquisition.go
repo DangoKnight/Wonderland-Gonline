@@ -87,6 +87,9 @@ func (s *Server) commitCombatLoot(run *battleRun, target *battle.Fighter, actors
 			owner = a.Actor.Owner
 		}
 		for _, m := range run.active() {
+			if !s.trainingRewardEligible(m.c, run) {
+				continue
+			}
 			if m.self.ID != owner {
 				continue
 			}

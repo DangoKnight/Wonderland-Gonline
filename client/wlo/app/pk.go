@@ -73,6 +73,16 @@ func (c *Client) pkTargetAt(x, y int) bool {
 	id := c.World.PKTargetAt(x, y)
 	peer := c.World.Peers[id]
 	if id == 0 || peer == nil {
+		// Native FUN_0038d1ac sets both the NPC template and click ID.
+		// The server validates whether the actor can actually be challenged.
+		if n := c.World.NPCAt(x, y); n != nil && !n.Info.Prop() {
+			dx, dy := n.X-c.World.Player.X, n.Y-c.World.Player.Y
+			if dx >= -pkTargetDistance && dx <= pkTargetDistance && dy >= -pkTargetDistance && dy <= pkTargetDistance {
+				if err := c.Net.Send(protocol.Builder{protocol.CommandBattleState, protocol.BattleStateChallenge, protocol.BattleChallengeNPC}.U32(n.Template).U16(n.ClickID)); err != nil {
+					c.friendNotice(err.Error(), pkNoticeDuration)
+				}
+			}
+		}
 		return true
 	}
 	for _, member := range c.TeamState.Members {

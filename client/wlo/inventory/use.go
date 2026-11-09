@@ -39,6 +39,15 @@ func (f *Form) useBag(slot byte) {
 		return
 	}
 	def := f.State.Items[it.ID].Definition
+	if def.TimedKind != game.TimedItemNone || def.Status[0] == game.ItemEXPStatus || it.ID == game.ItemStopwatch || it.ID == game.ItemTrainingVoucher || it.ID == game.ItemTrainingTicket || it.ID == game.ItemTrainingFare {
+		f.send([]byte{protocol.CommandInventory, protocol.InventoryUse, slot})
+		return
+	}
+	if def.Type == game.ItemTypeTent {
+		f.send([]byte{protocol.CommandInventory, protocol.InventoryUse, slot})
+		f.Hide()
+		return
+	}
 	if it.ID == game.NotepadItemID && f.OpenNotebook != nil {
 		f.send([]byte{protocol.CommandInventory, protocol.InventoryUse, slot})
 		f.Hide()

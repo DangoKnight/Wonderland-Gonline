@@ -10,6 +10,7 @@ import (
 	"wonderland-gonline/client/wlo/role"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -119,8 +120,12 @@ func (c *Client) warp(p []byte) {
 		c.startMapLoading()
 	}
 	pl.Map = binary.LittleEndian.Uint16(p[4:])
+	c.resetTentScene()
+	if game.IsTentMap(pl.Map) {
+		c.tentWarpMetadata(p)
+	}
 	pl.X, pl.Y = int(binary.LittleEndian.Uint16(p[6:])), int(binary.LittleEndian.Uint16(p[8:]))
-	if pl.Map != c.World.Player.Map {
+	if pl.Map != c.World.Player.Map || game.IsTentMap(pl.Map) {
 		c.stopAmbience() // FUN_004057c8(-1, -1)
 		var body login.RoleView
 		if c.lib != nil {
@@ -219,6 +224,9 @@ func (c *Client) GroundClick(x, y int) {
 	if c.boardPlacedVehicle(x, y) {
 		return
 	}
+	if c.clickTent(x, y) {
+		return
+	}
 	if c.pickupFloorItem(x, y) {
 		return
 	}
@@ -283,6 +291,9 @@ func (c *Client) exitMovementMode() bool {
 // GroundHold re-aims a ground walk. After three seconds it stays active on release;
 // only movement is repeated, never the entity interaction under the pointer.
 func (c *Client) GroundHold(held bool, x, y int) {
+	if c.holdTentFurniture(held, x, y) {
+		return
+	}
 	c.sportRelease(held, x, y)
 	if c.mapLoading.active || c.battle.state.Active || c.sport != nil || c.settingsPromptForm != nil || c.World == nil || c.held || c.event.active || c.sceneFrozen() || c.Talk.Shown() || !c.clinicUntil.IsZero() || c.Services != nil && c.Services.Visible {
 		c.resetGroundHold()

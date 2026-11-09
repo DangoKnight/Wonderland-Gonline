@@ -123,6 +123,11 @@ per-session ordering and protection against logout/reconnect races.
 
 **Current implementation:** ordinary walking and resting HP/SP recovery change
 the session in memory. See [resting recovery](ITEMS_PLAYER_STATE.md#resting-recovery).
+Remaining online EXP-boost and Training Island seconds are also recoverable
+session fields. Consumption/activation and Stopwatch pause/resume commit in SQL;
+online countdown decrements use guarded narrow state checkpoints. Normal logout
+flushes remaining time. A crash can restore at most the pending checkpoint
+interval of time; offline time is never deducted.
 `character_save_seconds` selects the startup checkpoint interval (default 30,
 accepted 1–3600 seconds). Clean sessions skip SQL entirely. Walking and resting
 use narrow X/Y/HP/SP updates guarded by the saved map, position and vitals,

@@ -100,6 +100,7 @@ func (c *Client) closeWorldZoom() {
 func (c *Client) drawWorldScene() {
 	c.syncWorldZoom()
 	sprites := append(c.floorItemSprites(), c.placedVehicleSprites()...)
+	sprites = append(sprites, c.tentSceneSprites()...)
 	if c.World.ViewWidth == 0 {
 		if c.drawSubpixelWorld(sprites) {
 			return

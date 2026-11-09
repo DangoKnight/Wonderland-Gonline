@@ -32,6 +32,7 @@ func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 	defer s.worldMu.Unlock()
 	maps := map[uint16][]*Session{}
 	for _, c := range s.world {
+		s.advanceTimedSession(c, now, true)
 		s.validatePartyScene(c.party)
 		if c.ready && c.character != nil && c.tentOwner == 0 {
 			maps[c.character.Map] = append(maps[c.character.Map], c)
@@ -109,7 +110,7 @@ func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 				if distance > actorDetectionRadius*actorDetectionRadius || distance >= nearest {
 					continue
 				}
-				if !ambientEncounterAvailable(c, now) || !bounds.Contains(c.character.X, c.character.Y) ||
+				if !s.trainingEligible(c) || !ambientEncounterAvailable(c, now) || !bounds.Contains(c.character.X, c.character.Y) ||
 					c.view.Hidden[npc.ClickID] || !s.World.VisibleIn(c.character, c.view, mapID, npc.ClickID) || s.World.InParty(c.character, npc.Template) {
 					continue
 				}
@@ -224,6 +225,9 @@ func (s *Server) npcStats(template uint32) (level int, element byte, name string
 
 // stepEncounter runs after a move that started no region event. Caller holds worldMu.
 func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
+	if !s.trainingEligible(c) {
+		return nil
+	}
 	char, enc := c.character, &c.encounter
 	if c.battle != nil || !battleInteractionAvailable(c, nil) || (char.X == prevX && char.Y == prevY) || enc.resting() || s.World.SafeTown(char.Map) {
 		return nil
@@ -262,6 +266,9 @@ func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 // proximityEncounter fights one to four copies of a nearby monster; a native roaming
 // encounter runs its event instead.
 func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
+	if !s.trainingEligible(c) {
+		return nil
+	}
 	if !battleInteractionAvailable(c, nil) || c.battle != nil {
 		return nil
 	}
@@ -284,6 +291,9 @@ func (s *Server) proximityEncounter(c *Session, n world.NPC) error {
 
 // randomEncounter fights one to four monsters drawn from the map's wild actors.
 func (s *Server) randomEncounter(c *Session, m *world.Map) error {
+	if !s.trainingEligible(c) {
+		return nil
+	}
 	if !battleInteractionAvailable(c, nil) || c.battle != nil {
 		return nil
 	}

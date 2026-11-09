@@ -153,8 +153,9 @@ const (
 
 // Rules supplies data and randomness. Next(lo, hi) returns lo..hi-1 like System.Random.
 type Rules struct {
-	ExperienceFormula game.BattleEXPFormula
-	Items             map[uint16]assets.BattleItem
+	RoundRecoveryHP, RoundRecoverySP int // Map-defined living ally recovery after a resolved round.
+	ExperienceFormula                game.BattleEXPFormula
+	Items                            map[uint16]assets.BattleItem
 	// Called synchronously during Round, before an item effect or success packet.
 	CommitItem func(Action, *Fighter, int, int) bool
 	// Selects 10 percent per actual combo participant instead of the fixed bonus.
@@ -175,17 +176,19 @@ type Rules struct {
 
 // Battle owns both sides of a PvE or PvP encounter.
 type Battle struct {
-	GearHits             map[*Fighter][]GearHit // Resolved enemy hits, consumed transactionally before playback.
-	reviveSupport        map[experienceIdentity]map[*Fighter]bool
-	experience           map[experienceIdentity]uint64
-	experienceKills      map[*Fighter]bool
-	experienceDamage     map[*Fighter]map[experienceIdentity]*Fighter
-	Reinforcements       [MaxEnemies][]Enemy
-	defeatedDefenders    []*Fighter
-	Attackers, Defenders []*Fighter
-	Pending              map[int]Action
-	Turn                 int
-	Processing, Finished bool
+	EXPAllowed             func(owner uint32) bool // Per-owner entitlement; nil permits ordinary encounters.
+	GearHits               map[*Fighter][]GearHit  // Resolved enemy hits, consumed transactionally before playback.
+	reviveSupport          map[experienceIdentity]map[*Fighter]bool
+	experience             map[experienceIdentity]uint64
+	experienceKills        map[*Fighter]bool
+	experienceDamage       map[*Fighter]map[experienceIdentity]*Fighter
+	experienceContributors map[experienceIdentity]experienceContribution
+	Reinforcements         [MaxEnemies][]Enemy
+	defeatedDefenders      []*Fighter
+	Attackers, Defenders   []*Fighter
+	Pending                map[int]Action
+	Turn                   int
+	Processing, Finished   bool
 	// Roster lists each player's pet templates, for capture limits; Captures records
 	// the monsters caught, to be added after the battle.
 	Roster        map[uint32][]uint32
@@ -733,11 +736,18 @@ func (r Rules) spend(f *Fighter, skill uint16) []byte {
 
 // Round is ExecuteTurn: it applies one round and returns its steps. A non-Continue
 // outcome ends the battle; the caller then runs the matching ending.
-func (b *Battle) Round(r Rules) ([]Step, Outcome) {
+func (b *Battle) Round(r Rules) (steps []Step, outcome Outcome) {
 	b.GearHits = nil
 	defer func() {
 		for _, f := range b.all() {
 			f.Joining = false
+		}
+	}()
+	defer func() {
+		if !b.PvP && outcome != Fled && outcome != Defeat {
+			if packets := b.roundRecovery(r); len(packets) > 0 {
+				steps = append(steps, Step{Packets: packets})
+			}
 		}
 	}()
 	for _, f := range b.all() {
@@ -754,7 +764,6 @@ func (b *Battle) Round(r Rules) ([]Step, Outcome) {
 		actions = append(actions, b.Pending[k])
 	}
 	b.Pending = map[int]Action{}
-	var steps []Step
 	emit := func(delay time.Duration, packets ...[]byte) {
 		steps = append(steps, Step{Packets: packets, Delay: delay})
 	}

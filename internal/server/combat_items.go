@@ -13,12 +13,28 @@ func (s *Server) combatRules(run *battleRun) battle.Rules {
 		run.items = s.battleItems()
 	}
 	r := s.rules()
+	if s.battleMapDefinition(run).TrainingArea {
+		run.b.EXPAllowed = func(owner uint32) bool {
+			for _, m := range run.active() {
+				if m.self.ID == owner {
+					return s.trainingRewardEligible(m.c, run)
+				}
+			}
+			return false
+		}
+	}
+	if area := s.battleMapDefinition(run); !run.b.PvP {
+		r.RoundRecoveryHP, r.RoundRecoverySP = int(area.BattleRoundRecoveryHP), int(area.BattleRoundRecoverySP)
+	}
 	r.Items = run.items
 	r.CommitCapture = func(catch battle.Capture) (battle.Step, bool) { return s.commitCombatCapture(run, catch) }
 	r.RewardKill = func(target *battle.Fighter, actors []battle.Action) battle.Step {
 		return s.commitCombatLoot(run, target, actors)
 	}
 	r.PrepareCapture = func(a battle.Action) (int, bool) {
+		if run.b.EXPAllowed != nil && !run.b.EXPAllowed(a.Player) {
+			return 0, false
+		}
 		// No PvP mode may consume equipment durability, even if a future caller
 		// reaches this hook without the engine's normal capture rejection.
 		if run.b.PvP {

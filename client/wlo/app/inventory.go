@@ -80,6 +80,12 @@ func (c *Client) initInventory() {
 		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.battle.state.Active && !c.sceneFrozen()
 	}
 	c.Inventory.BattleUse = c.selectBattleItem
+	c.Inventory.CloseTent = func(id uint16) {
+		if c.openTentItem == id {
+			c.Net.Send([]byte{protocol.CommandTent, protocol.TentClose})
+		}
+	}
+	c.Inventory.PlaceFurniture = c.placeTentFurniture
 	c.Inventory.Now = func() time.Time { return c.Now() }
 	c.initPotentialPreview()
 	c.Inventory.Notice = c.Chat.Notice

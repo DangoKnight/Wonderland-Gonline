@@ -196,6 +196,9 @@ func (c *Client) lostPrev() {
 	c.sceneFade = sceneFade{}
 	c.G.InGame = false
 	c.World = nil
+	c.clearTimedStatus()
+	c.resetTentScene()
+	c.openTentItem = 0
 	c.petAnnouncements = nil
 	c.petAnnouncement = false
 	c.movie = nil

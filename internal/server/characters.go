@@ -188,6 +188,7 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 	// still loading and therefore yet to enter the world registry.
 	s.mu.Lock()
 	c.character = &char
+	c.timedTickAt = time.Now()
 	c.openTent, c.tentOwner = nil, 0
 	c.tentFloor = 0
 	c.info.CharacterID = char.ID
@@ -211,6 +212,9 @@ func (s *Server) enterWorld(c *Session, char game.Character, view *world.View, p
 		}
 	}
 	s.Log.Info("world entry sent", s.sessionLogAttrs(c)...)
+	if err := s.sendAll(c, timedPackets(c.character.TimedEffects, false)); err != nil {
+		return err
+	}
 	for point := byte(1); point <= store.MaxTeleportPoints; point++ {
 		if location, ok := points[point]; ok {
 			if err := c.send(teleportPointPacket(point, location)); err != nil {

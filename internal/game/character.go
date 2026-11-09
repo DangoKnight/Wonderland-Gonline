@@ -7,6 +7,7 @@ import (
 )
 
 type Character struct {
+	TimedEffects       TimedEffects         `json:"timed_effects,omitempty"`
 	DiscoveredMonsters []uint16             `json:"discovered_monsters,omitempty"`
 	ChestRespawns      map[uint32]time.Time `json:"chest_respawns,omitempty"`
 	MutedUntil         time.Time            `json:"muted_until,omitempty"`

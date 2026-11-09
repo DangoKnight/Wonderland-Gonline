@@ -25,6 +25,8 @@ unverified cases:
   damage numbers, escape and post-battle notices.
 - Social/mail, item trades, teams, invitations, followers and teammate vitals.
 - NPC shops, treatment, spawn records, pet hotel and Props Keeper storage.
+- Tent exteriors/interiors, entry/exit, guest eviction, furniture placement and
+  movement. See [tent coverage and remaining controls](TENTS_CLIENT.md).
 - Mall/catalog/cart, bag contents and equipment previews, forging and supported
   paid minigames. See [mall coverage](LEGACY_MALL_RESEARCH.md).
 - Notebook, quest log, monster book and star-book presentation. See

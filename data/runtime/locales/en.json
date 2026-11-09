@@ -2,6 +2,17 @@
   "version": 1,
   "language": "en",
   "strings": {
+    "ui.timed.exp_time": "%.1fX EXP boost: %d minutes remaining",
+    "ui.timed.exp_expired": "EXP boost expired.",
+    "ui.timed.exp_repeated": "An EXP potion is already active.",
+    "ui.timed.exp_incompatible": "Growth Statues and EXP potions cannot be used together.",
+    "ui.timed.training_expired": "Training Island time expired.",
+    "ui.timed.exp_hint": "EXP multiplier: %.1fX",
+    "ui.timed.paused": "(Paused)",
+    "ui.timed.training_time": "Training Island: %d minutes remaining",
+
+	"ui.app.tent_home": "%s's Home",
+	"ui.app.tent_floor": "Floor %d",
     "item.10000.description": "Test",
     "item.10000.name": "Test",
     "item.10001.description": "Test",

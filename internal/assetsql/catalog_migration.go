@@ -10,7 +10,12 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 65
+const catalogSchemaVersion = 70
+const trainingTicketDurationSchemaVersion = 70
+const timedItemDurationsSchemaVersion = 69
+const timedItemsSchemaVersion = 68
+const trainingAreasSchemaVersion = 67
+const questNotepadSchemaVersion = 66
 const tentCraftSchemaVersion = 65
 const equipmentDurabilitySchemaVersion = 64
 const accountGroundSchemaVersion = 63
@@ -75,6 +80,12 @@ func migrateCatalog(tx *gorm.DB) error {
 			return fmt.Errorf("unsupported structured asset schema %d", schema.Version)
 		}
 		if err := addTentCraftColumns(tx); err != nil {
+			return err
+		}
+		if err := addMapBattleColumns(tx); err != nil {
+			return err
+		}
+		if err := addTimedItemColumns(tx); err != nil {
 			return err
 		}
 		if schema.Version < equipmentDurabilitySchemaVersion && tx.Migrator().HasTable(&NativeItemsRow{}) && !tx.Migrator().HasColumn(&NativeItemsRow{}, "ValueDefinitionIndestructible") {
@@ -694,6 +705,31 @@ func migrateCatalog(tx *gorm.DB) error {
 				return err
 			}
 		}
+		if schema.Version < questNotepadSchemaVersion {
+			if err := removeStarterNotepad(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < trainingAreasSchemaVersion {
+			if err := migrateTrainingAreas(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < timedItemsSchemaVersion {
+			if err := migrateTimedItems(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < timedItemDurationsSchemaVersion {
+			if err := migrateTimedItemDurations(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < trainingTicketDurationSchemaVersion {
+			if err := migrateTrainingTicketDuration(tx); err != nil {
+				return err
+			}
+		}
 		return tx.Model(&schema).Update("version", catalogSchemaVersion).Error
 	}
 	c, err := loadLegacyTransaction(tx)
@@ -843,7 +879,16 @@ func migrateCatalog(tx *gorm.DB) error {
 			return err
 		}
 	}
+	if err := seedTrainingAreas(c); err != nil {
+		return err
+	}
+	if err := seedTimedItems(c); err != nil {
+		return err
+	}
 	if err = writeCatalog(tx, c); err != nil {
+		return err
+	}
+	if err := removeStarterNotepad(tx); err != nil {
 		return err
 	}
 	if err := migrateMallFeaturedContainers(tx); err != nil {

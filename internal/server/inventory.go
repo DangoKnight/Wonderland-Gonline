@@ -21,6 +21,10 @@ func (s *Server) itemCommand(ctx context.Context, c *Session, p []byte) error {
 		return protocol.ErrMalformed
 	}
 	switch p[1] {
+	case protocol.InventoryStopwatchControl:
+		return s.stopwatchControl(ctx,c,p)
+	case protocol.InventoryTrainingControl:
+		return s.trainingControl(ctx, c, p)
 	case protocol.InventoryGiftCard:
 		return s.itemCardCommand(ctx, c, p)
 	case protocol.InventoryPetStallPurchase, protocol.InventoryVehicleStallPurchase:
@@ -413,6 +417,9 @@ const (
 // useItem is AC23.Recv96: equipment is worn, the Star explains itself, and anything
 // else uses the recovery, gacha, voucher or tent workflow.
 func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
+	if handled, err := s.useTimedItem(ctx, c, slot); handled || err != nil {
+		return err
+	}
 	if handled, err := s.redeemItemCard(ctx, c, slot); handled || err != nil {
 		return err
 	}
@@ -474,6 +481,13 @@ func (s *Server) useItem(ctx context.Context, c *Session, slot byte) error {
 
 // useItemOn is AC23.Recv15: use count items on a target (0 is the character).
 func (s *Server) useItemOn(ctx context.Context, c *Session, slot, count byte, target uint16) error {
+	if slot >= 1 && slot <= game.BagSize && s.Assets.Items[c.character.Bag[slot-1].ID].TimedKind != game.TimedItemNone {
+		if count != 1 || target != 0 {
+			return c.send(serverwire.HeadBanner("Use one timed item on your character."))
+		}
+		_, err := s.useTimedItem(ctx, c, slot)
+		return err
+	}
 	if slot >= 1 && slot <= game.BagSize && (s.Assets.Items[c.character.Bag[slot-1].ID].Type == game.ItemTypeRedemptionCard || len(s.Assets.ItemCards[c.character.Bag[slot-1].ID].Rewards) > 0) {
 		if count == 1 && target == 0 {
 			_, err := s.redeemItemCard(ctx, c, slot)

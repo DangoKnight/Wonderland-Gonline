@@ -1,5 +1,29 @@
 package protocol
 
+const (
+	CharacterStateStatueTime  = 14
+	CharacterStateEXPPotion   = 17
+	TimedEffectInitial        = 1
+	TimedEffectRejected       = 2
+	TimedPotionActivated      = 3
+	TimedPotionExpired        = 4
+	TimedEffectRunning        = 1
+	TimedStatueExpired        = 2
+	TimedRejectRepeated       = 1
+	TimedRejectIncompatible   = 2
+	InventoryTrainingTime     = 106
+	InventoryTrainingControl  = 111
+	InventoryStopwatchControl = 110 // Native confirmation sends bag slot; zero resumes without consuming.
+	InventoryStopwatchStatus  = 204 // Initial/update mode, followed by pause boolean.
+	StopwatchStatusInitial    = 1
+	StopwatchStatusChanged    = 2
+	TrainingControlEnter      = 2
+	TrainingTimeUpdate        = 1
+	TrainingTimeExpired       = 2
+	TrainingPassStandard      = 1
+	TimedNotify               = 1
+)
+
 // Public notice board: aLogin FUN_001ff4b8, FUN_001ff95c and FUN_001fff90.
 const (
 	CommandMessageBoard                 = 82
@@ -212,6 +236,7 @@ const (
 	BattleStateExit                = 1
 	BattleStateChallenge           = 2
 	BattleChallengePlayer          = 3
+	BattleChallengeNPC             = 3 // FUN_0038d1ac: template ID plus nonzero NPC click ID.
 	BattleWatchPlayer              = 4 // FUN_0038dfe0: observe an existing battle.
 	BattleJoinPlayer               = 5 // FUN_0038e1d4: join the target's fighting side.
 	BattlePresenceSpectator        = 4
@@ -1153,6 +1178,8 @@ const (
 	TentClose                   = 2
 	TentExit                    = 3
 	TentClosed                  = 4
+	TentEvicted                 = 5 // Notification only; AC12 carries the forced return.
+	TentPillarLayout            = 11
 	TentInteriorStatus          = 7
 	TentOpened                  = 59
 	TentOpenedStatus            = 2

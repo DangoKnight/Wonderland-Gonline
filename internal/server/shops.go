@@ -357,6 +357,19 @@ func (s *Server) menuCommand(ctx context.Context, c *Session, p []byte) error {
 	if len(p) < 2 {
 		return protocol.ErrMalformed
 	}
+	if len(p) == 2 && (p[1] == protocol.CharacterStateStatueTime || p[1] == protocol.CharacterStateEXPPotion) {
+		s.advanceTimedSession(c, time.Now(), true)
+		status := c.character.TimedEffects
+		status.TrainingSeconds = 0
+		packets := timedPackets(status, true)
+		if len(packets) == 0 {
+			if p[1] == protocol.CharacterStateStatueTime {
+				return c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateStatueTime, protocol.TimedStatueExpired, 1})
+			}
+			return c.send([]byte{protocol.CommandCharacterState, protocol.CharacterStateEXPPotion, protocol.TimedEffectInitial, 0, 0})
+		}
+		return s.sendAll(c, packets)
+	}
 	switch p[1] {
 	case protocol.CharacterStateRefreshRequest:
 		packets := [][]byte{protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(c.character.ID).U8(0)}

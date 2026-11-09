@@ -169,6 +169,7 @@ func (c *Client) cancelSessionInput() {
 	c.WalkKeys(false, false, false, false)
 }
 func (c *Client) closeSession() {
+	c.resetTentScene()
 	c.stopMapLoading()
 	c.closeWorldZoom()
 	c.UI.HideAll() // Release transient closing images before render resources.

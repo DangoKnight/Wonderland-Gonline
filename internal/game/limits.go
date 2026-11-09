@@ -7,6 +7,8 @@ const (
 	MaxTentToolAttachments        = 10
 	NotepadItemID          uint16 = 34038
 	RemoteControlItemID    uint16 = 34058
+	ItemTypeTent           byte   = 27
+	ItemTypeTentFurniture  byte   = 28
 	ItemTypeAppliance      byte   = 29
 	ItemTypeTentDecoration byte   = 30
 	MaxGold                       = 999_999

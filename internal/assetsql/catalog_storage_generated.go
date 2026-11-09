@@ -8383,6 +8383,9 @@ func readForgingPointItems(tx *gorm.DB, ForgingKey int) (map[uint16]bool, error)
 
 type NativeItemsRow struct {
 	NativeItemsKey                 uint16 `gorm:"column:native_items_key;primaryKey;autoIncrement:false"`
+	ValueDefinitionTimedKind       game.TimedItemKind
+	ValueDefinitionTimedMinutes    uint32
+	ValueDefinitionEXPTenths       uint16
 	ValueDefinitionTentFloorSwitch bool
 	ValueDefinitionIndestructible  bool
 	ValueDefinitionEquipLevel      uint16
@@ -8412,6 +8415,9 @@ func writeNativeItems(tx *gorm.DB, values map[uint16]assets.NativeItem) error {
 	var rows []NativeItemsRow
 	for key, value := range values {
 		row := NativeItemsRow{NativeItemsKey: key}
+		row.ValueDefinitionTimedKind = value.Definition.TimedKind
+		row.ValueDefinitionTimedMinutes = value.Definition.TimedMinutes
+		row.ValueDefinitionEXPTenths = value.Definition.EXPTenths
 		row.ValueDefinitionTentFloorSwitch = value.Definition.TentFloorSwitch
 		row.ValueDefinitionIndestructible = value.Definition.Indestructible
 		row.ValueDefinitionEquipLevel = value.Definition.EquipLevel
@@ -8456,6 +8462,9 @@ func readNativeItems(tx *gorm.DB) (map[uint16]assets.NativeItem, error) {
 	rows = loaded
 	for _, row := range rows {
 		var value assets.NativeItem
+		value.Definition.TimedKind = row.ValueDefinitionTimedKind
+		value.Definition.TimedMinutes = row.ValueDefinitionTimedMinutes
+		value.Definition.EXPTenths = row.ValueDefinitionEXPTenths
 		value.Definition.TentFloorSwitch = row.ValueDefinitionTentFloorSwitch
 		value.Definition.Indestructible = row.ValueDefinitionIndestructible
 		value.Definition.EquipLevel = row.ValueDefinitionEquipLevel
@@ -10174,6 +10183,12 @@ func readTalksByOffset(tx *gorm.DB, TalksKey int) (map[uint32]string, error) {
 
 type MapsRow struct {
 	MapsKey                    uint16 `gorm:"column:maps_key;primaryKey;autoIncrement:false"`
+	ValueTrainingArea          bool
+	ValueTrainingEntryX        uint16
+	ValueTrainingEntryY        uint16
+	ValueBattleRoundRecoveryHP uint16
+	ValueBattleRoundRecoverySP uint16
+	ValueBattleVictoryEXP      uint16
 	ValueSections0             []byte
 	ValueSections0Present      bool
 	ValueSections1             []byte
@@ -10216,6 +10231,12 @@ func writeMaps(tx *gorm.DB, values map[uint16]assets.Map) error {
 	var rows []MapsRow
 	for key, value := range values {
 		row := MapsRow{MapsKey: key}
+		row.ValueTrainingArea = value.TrainingArea
+		row.ValueTrainingEntryX = value.TrainingEntryX
+		row.ValueTrainingEntryY = value.TrainingEntryY
+		row.ValueBattleRoundRecoveryHP = value.BattleRoundRecoveryHP
+		row.ValueBattleRoundRecoverySP = value.BattleRoundRecoverySP
+		row.ValueBattleVictoryEXP = value.BattleVictoryEXP
 		row.ValueSections0 = value.Sections[0]
 		row.ValueSections0Present = value.Sections[0] != nil
 		row.ValueSections1 = value.Sections[1]
@@ -10308,6 +10329,12 @@ func readMaps(tx *gorm.DB) (map[uint16]assets.Map, error) {
 	rows = loaded
 	for _, row := range rows {
 		var value assets.Map
+		value.TrainingArea = row.ValueTrainingArea
+		value.TrainingEntryX = row.ValueTrainingEntryX
+		value.TrainingEntryY = row.ValueTrainingEntryY
+		value.BattleRoundRecoveryHP = row.ValueBattleRoundRecoveryHP
+		value.BattleRoundRecoverySP = row.ValueBattleRoundRecoverySP
+		value.BattleVictoryEXP = row.ValueBattleVictoryEXP
 		if row.ValueSections0Present {
 			value.Sections[0] = append([]byte{}, row.ValueSections0...)
 		}

@@ -42,6 +42,7 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 		// other cached field agrees with authoritative SQL. Party pet recovery
 		// updates only HP/SP, without rewriting pets, equipment or skills.
 		afterState, durableState := after, durable
+		afterState.TimedEffects, durableState.TimedEffects = game.TimedEffects{}, game.TimedEffects{}
 		afterState.Pets, durableState.Pets = slices.Clone(after.Pets), slices.Clone(durable.Pets)
 		afterState.X, afterState.Y, afterState.HP, afterState.SP = 0, 0, 0, 0
 		durableState.X, durableState.Y, durableState.HP, durableState.SP = 0, 0, 0, 0
@@ -52,10 +53,11 @@ func (s *Store) AutosaveCharacter(ctx context.Context, ref CharacterRef, baselin
 			durableState.Pets[i].HP, durableState.Pets[i].SP = 0, 0
 		}
 		if before.Map == after.Map && durable.Map == before.Map &&
+			durable.TimedEffects == before.TimedEffects &&
 			reflect.DeepEqual(afterState, durableState) && durable.X == before.X && durable.Y == before.Y &&
 			durable.HP == before.HP && durable.SP == before.SP && petVitalsMatch(before.Pets, durable.Pets) {
 			result := tx.Model(&characterStateRow{}).Where("character_id = ? AND map = ? AND x = ? AND y = ? AND hp = ? AND sp = ?", ref.ID, before.Map, before.X, before.Y, before.HP, before.SP).
-				Updates(map[string]any{"x": next.X, "y": next.Y, "hp": next.HP, "sp": next.SP})
+				Updates(map[string]any{"x": next.X, "y": next.Y, "hp": next.HP, "sp": next.SP, "timed_exp_kind": next.TimedEffects.EXPKind, "timed_exp_tenths": next.TimedEffects.EXPTenths, "timed_exp_seconds": next.TimedEffects.EXPSeconds, "timed_exp_paused": next.TimedEffects.EXPPaused, "timed_training_seconds": next.TimedEffects.TrainingSeconds})
 			if result.Error != nil {
 				return result.Error
 			}

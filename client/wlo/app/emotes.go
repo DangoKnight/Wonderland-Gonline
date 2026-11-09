@@ -135,6 +135,18 @@ func (c *Client) playPose(cell int) bool {
 // directions 0..3 to their first action and 4..7 to their second. The native
 // path calls FUN_00430f90 and publishes the faced action through AC32:2.
 func (c *Client) GroundRightClick(x, y int) {
+	if c.tentDrag != nil {
+		c.tentDrag = nil
+		return
+	}
+	if c.tentPending != 0 {
+		c.tentPending = 0
+		if c.World != nil {
+			c.World.StopWalk()
+			c.World.Marker.Hide()
+		}
+		return
+	}
 	if c.exitMovementMode() {
 		return
 	}

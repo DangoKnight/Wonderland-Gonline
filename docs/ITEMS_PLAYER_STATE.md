@@ -272,8 +272,8 @@ recovery, funded potential training and the pending socket/upstairs rules.
 
 Notepad 34038 is obtained from the Astrology lady (native map 12003, event 4),
 not from the starter pack, and opens the SQL-backed quest journal. Existing
-asset databases can apply `tools/sql/remove-starter-notepad.sql` after backup;
-restart the server afterward to reload the catalog. This content patch preserves
+asset databases receive this correction through the normal asset v66 migration;
+restart the server afterward to reload the catalog. This content correction preserves
 other starter grants and does not remove notepads from existing characters.
 The starter seed's raw source fields retain the original import for provenance;
 its parsed `value` contains the corrected grants. Remote Control 34058 opens its

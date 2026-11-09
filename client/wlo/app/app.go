@@ -15,6 +15,7 @@ import (
 	"wonderland-gonline/internal/localization"
 
 	"wonderland-gonline/client/wlo/cursor"
+	"wonderland-gonline/client/wlo/housing"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/inventory"
 	"wonderland-gonline/client/wlo/login"
@@ -119,6 +120,7 @@ type Client struct {
 	clinicSleepGlyph     *surface.Surface
 	friendAsk            *friendAsk // the open friend question
 	remote               remoteRuntime
+	timedStatus          timedStatus
 	battle               battleView
 	battleResults        battleResultsRuntime
 	combat               combatRuntime // Per-connection opt-in; never shared between sessions.
@@ -195,6 +197,16 @@ type Client struct {
 	hotbar             hotbarRuntime
 	waterTravel        waterTravelState
 	placedVehicles     map[vehicleKey]placedVehicle
+	housing            housing.State
+	tentPending        uint32
+	tentSprites        map[uint32]*role.Tent
+	tentKind           byte
+	tentRoomKinds      [5]byte
+	tentLeaving        bool
+	tentBackdrop       *surface.Surface
+	tentBackdropStyle  tentStyle
+	tentDrag           *tentDrag
+	openTentItem       uint16
 	vehicleEffects     vehicleEffectState
 	logoutPrompt       *logoutForm
 	// Scene names (SceneData.dat) and each map's scene (eve.Emg), read on
@@ -470,6 +482,7 @@ func (c *Client) frame(draw bool) {
 		}
 		c.reachNPC()
 		c.reachFloorItem()
+		c.tentTick()
 		c.syncMiniMap()
 		c.constellationTick(c.Now())
 		c.eventTick()
@@ -596,6 +609,9 @@ func (c *Client) handleNet() {
 // dispatch is the part of the packet dispatcher (FUN_002dde1c) the login
 // phase reaches.
 func (c *Client) dispatchNative(p []byte) {
+	if c.timedStatusPacket(p) {
+		return
+	}
 	if c.deferBattleTransitionPacket(p) {
 		return
 	}
@@ -787,7 +803,12 @@ func (c *Client) dispatchNative(p []byte) {
 		c.endSport()
 	case p[0] == protocol.CommandCharacterSelection && sub == protocol.CharacterSelectionMallBalance && c.sport != nil:
 		c.sportBalance(s)
+	case p[0] == protocol.CommandTent || p[0] == protocol.CommandTentFurniture:
+		if !c.tentPacket(p) && c.Unhandled != nil {
+			c.Unhandled(p)
+		}
 	case p[0] == protocol.CommandPosition:
+		c.tentFloorPacket(s)
 		if id, mapID, x, y, ok := world.ParsePlace(s); ok && c.World != nil {
 			if id == c.World.Player.ID && mapID == c.World.Player.Map {
 				c.rememberVehiclePosition(id)
@@ -854,6 +875,8 @@ func (c *Client) dispatchNative(p []byte) {
 // enterWorld loads the player's map and replaces the login screens with
 // the world view.
 func (c *Client) enterWorld(p []byte) {
+	c.resetTentScene()
+	c.openTentItem = 0
 	c.mapReady = false
 	c.placedVehicles = nil
 	c.floorItems = nil

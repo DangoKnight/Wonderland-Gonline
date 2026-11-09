@@ -33,6 +33,7 @@ type SessionInfo struct {
 }
 
 type Session struct {
+	timedTickAt           time.Time // Online countdown anchor; never persisted.
 	itemCard              *pendingItemCard
 	pendingMail           map[deliveryKey]*transport.Receipt // Guarded by worldMu.
 	textMailPending       bool
@@ -422,6 +423,7 @@ const (
 
 // Caller holds worldMu, which also serializes gameplay commits and disconnects.
 func (s *Server) autosaveSession(ctx context.Context, c *Session) error {
+	s.advanceTimedSession(c, time.Now(), true)
 	if err := s.saveBattleDisconnect(ctx, c); err != nil {
 		return err
 	}
@@ -484,6 +486,9 @@ func (s *Server) adoptSavedCharacter(c *Session, next game.Character) {
 	baseline := next.Clone()
 	if c.character != nil && c.autosaveBaseline != nil {
 		old, checkpoint := c.character, c.autosaveBaseline
+		if next.TimedEffects == checkpoint.TimedEffects {
+			next.TimedEffects = old.TimedEffects
+		}
 		if old.Map == checkpoint.Map && next.Map == checkpoint.Map && next.X == checkpoint.X && next.Y == checkpoint.Y {
 			next.X, next.Y = old.X, old.Y
 		}

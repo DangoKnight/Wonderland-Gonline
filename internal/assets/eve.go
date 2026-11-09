@@ -9,20 +9,26 @@ import (
 )
 
 type Map struct {
-	Sections       [11][]byte    `json:"-"`
-	Entries        []AreaEntry   `json:"entries"`
-	Mining         []AreaEntry   `json:"mining"`
-	Groups         []Group       `json:"groups"`
-	Interactive    []Group       `json:"interactive"`
-	Battles        []BattleEntry `json:"battles"`
-	ExtendedGroups []Group       `json:"extended_groups"`
-	ID             uint16        `json:"id"`
-	Scene          uint16        `json:"scene"`
-	NPCs           []MapNPC      `json:"npcs"`
-	Items          []GroundItem  `json:"items"`
-	Warps          []Warp        `json:"warps"`
-	Events         []Event       `json:"events"`
-	PreEvents      []Event       `json:"pre_events"`
+	TrainingArea          bool          `json:"training_area,omitempty"`
+	TrainingEntryX        uint16        `json:"training_entry_x,omitempty"`
+	TrainingEntryY        uint16        `json:"training_entry_y,omitempty"`
+	BattleRoundRecoveryHP uint16        `json:"battle_round_recovery_hp"`
+	BattleRoundRecoverySP uint16        `json:"battle_round_recovery_sp"`
+	BattleVictoryEXP      uint16        `json:"battle_victory_exp"` // Flat award after multipliers, once per contributor in participation mode.
+	Sections              [11][]byte    `json:"-"`
+	Entries               []AreaEntry   `json:"entries"`
+	Mining                []AreaEntry   `json:"mining"`
+	Groups                []Group       `json:"groups"`
+	Interactive           []Group       `json:"interactive"`
+	Battles               []BattleEntry `json:"battles"`
+	ExtendedGroups        []Group       `json:"extended_groups"`
+	ID                    uint16        `json:"id"`
+	Scene                 uint16        `json:"scene"`
+	NPCs                  []MapNPC      `json:"npcs"`
+	Items                 []GroundItem  `json:"items"`
+	Warps                 []Warp        `json:"warps"`
+	Events                []Event       `json:"events"`
+	PreEvents             []Event       `json:"pre_events"`
 }
 type MapNPC struct {
 	ClickID uint16

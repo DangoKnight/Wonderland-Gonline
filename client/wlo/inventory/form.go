@@ -50,6 +50,8 @@ type Form struct {
 	LoadPotentialPictures                                           func()
 	LoadCardPictures                                                func(...string)
 	OpenNotebook                                                    func()
+	CloseTent                                                       func(uint16)
+	PlaceFurniture                                                  func(byte, game.Item, int, int) bool
 	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
 	remoteOptions                                                   *RemoteOptions
@@ -349,10 +351,16 @@ func (c *slotControl) DblClick() {
 	}
 }
 func (c *slotControl) RightUp(_ byte, _, _ int) {
+	if !c.worn && c.form.allowed() && c.slot >= 1 && c.slot <= game.BagSize {
+		it := c.form.State.Bag[c.slot-1]
+		if c.form.State.Items[it.ID].Definition.Type == game.ItemTypeTent && c.form.CloseTent != nil {
+			c.form.CloseTent(it.ID)
+		}
+	}
 	// Native FUN_00355d80 is the contextual callback, distinct from the
 	// double-click use callback FUN_003548bc. Ordinary consumables and
-	// equipment have no right-click use action. Tent retrieval and other
-	// special contextual windows remain pending their client modules.
+	// equipment have no right-click use action. Tent retrieval is dispatched
+	// above through its connection-owned open-tent state.
 }
 func (f *Form) allowed() bool { return f.Visible && (f.CanAct == nil || f.CanAct()) }
 func (f *Form) send(p []byte) {
@@ -447,6 +455,9 @@ func (f *Form) release(x, y int) {
 		}
 	}
 	if !image.Pt(x, y).In(f.Rect()) && !d.worn && f.Env.UI.Input.Hovered == nil {
+		if f.PlaceFurniture != nil && f.PlaceFurniture(byte(d.slot), d.item, x, y) {
+			return
+		}
 		// Native non-droppable categories are destroyed, not placed on the
 		// ground. Warn before sending anything; keep the server's 23/212
 		// confirmation path for unknown definitions and server overrides.
