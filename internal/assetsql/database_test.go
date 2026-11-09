@@ -236,7 +236,16 @@ func TestInstalledSQLCatalogMatchesClientData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(maps, catalog.Maps) {
+	// Compare only the native EVE projection. Training entitlement, entry and
+	// battle reward/recovery policies belong to SQL and have no EVE bytes;
+	// training_areas_test.go and repository_seed_test.go verify those separately.
+	nativeMaps := make(map[uint16]assets.Map, len(catalog.Maps))
+	for id, got := range catalog.Maps {
+		got.TrainingArea, got.TrainingEntryX, got.TrainingEntryY = false, 0, 0
+		got.BattleRoundRecoveryHP, got.BattleRoundRecoverySP, got.BattleVictoryEXP = 0, 0, 0
+		nativeMaps[id] = got
+	}
+	if !reflect.DeepEqual(maps, nativeMaps) {
 		t.Fatal("SQL EVE maps differ from native archive")
 	}
 	timings, err := assets.ParseAnimationTiming(read("SkillData.MBTM"))
