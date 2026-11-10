@@ -4,11 +4,13 @@ import (
 	"errors"
 	"image"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/seui"
@@ -413,6 +415,19 @@ func (g *Game) workspaceCursor() (int, int) {
 // Run opens the window and runs the client until Leave or the window
 // closes.
 func Run(c *Client) error {
+	// A crash must leave a trace: keep the panic and its stack beside the session
+	// logs, then let the process die as it would have.
+	defer func() {
+		if r := recover(); r != nil {
+			path, err := debuglog.WriteCrash(c.Assets.UserPath("logs"), c.Now(), r, debug.Stack())
+			if err == nil {
+				log.Printf("panic: %v (report: %s)", r, path)
+			} else {
+				log.Printf("panic: %v (report failed: %v)", r, err)
+			}
+			panic(r)
+		}
+	}()
 	g := NewGame(c)
 	presenter, err := render.New(c.options.Renderer)
 	if err != nil {

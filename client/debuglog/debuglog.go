@@ -102,6 +102,17 @@ func NormalizeLimit(maxLines int) int {
 	return min(max(0, maxLines), MaxLimit)
 }
 
+// WriteCrash stores a panic report beside the session logs, so a crash leaves a
+// trace even when the process dies before anything else reaches the disk.
+func WriteCrash(dir string, at time.Time, value any, stack []byte) (string, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, "crash-"+at.Format(timeFormat)+FileExtension)
+	body := fmt.Sprintf("%s panic: %v\n\n%s", at.Format(lineTimeFormat), value, stack)
+	return path, os.WriteFile(path, []byte(body), 0o600)
+}
+
 // Path is the session file this log writes.
 func (l *Log) Path() string {
 	l.mu.Lock()

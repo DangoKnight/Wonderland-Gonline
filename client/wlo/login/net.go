@@ -6,7 +6,9 @@ package login
 
 import (
 	"encoding/binary"
+	"log"
 	"net"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
@@ -166,6 +168,14 @@ func (n *Net) Connect(host string) {
 	n.dialing, n.pending = true, nil
 	n.mu.Unlock()
 	go func() {
+		// A panic here would kill the process with no trace; record the stack in
+		// the session transcript, then let it die as before.
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("panic in the connection reader: %v\n%s", r, debug.Stack())
+				panic(r)
+			}
+		}()
 		c, err := n.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(LoginPort)))
 		n.mu.Lock()
 		if n.closed {
