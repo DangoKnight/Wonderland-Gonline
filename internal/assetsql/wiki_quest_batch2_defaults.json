@@ -1200,6 +1200,28 @@
     }
   },
   {
+    "id": "wiki_native_priority_12000_16_21",
+    "kind": "branch_priority",
+    "scope": {
+      "maps": [
+        12000
+      ],
+      "events": [
+        16
+      ],
+      "allow_missing": true
+    },
+    "gates": [
+      {
+        "source": "active_mark_step",
+        "id": 12042,
+        "op": "eq",
+        "value": 3
+      }
+    ],
+    "value": 21
+  },
+  {
     "id": "wiki_native_completion_12000_38_7",
     "kind": "quest_completion",
     "scope": {
