@@ -95,6 +95,21 @@ func TestUnlimitedKeepsEveryLine(t *testing.T) {
 	}
 }
 
+// A capped session must still be readable while it runs: lines reach the file
+// immediately instead of waiting for a batch flush or a clean shutdown.
+func TestCappedLogWritesBeforeClose(t *testing.T) {
+	dir := t.TempDir()
+	log := open(t, dir, 1000)
+	log.Printf("first line")
+	lines := readLines(t, log.Path())
+	if len(lines) != 1 || !strings.HasSuffix(lines[0], "first line") {
+		t.Fatalf("file before close = %q", lines)
+	}
+	if err := log.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+}
+
 func TestCapKeepsTheLastLines(t *testing.T) {
 	dir := t.TempDir()
 	const cap = 50

@@ -55,7 +55,7 @@ type Log struct {
 	suffix string
 	max    int
 	ring   []string
-	queued int
+	onDisk int
 	closed bool
 	now    func() time.Time
 }
@@ -190,28 +190,32 @@ func (l *Log) entry(text string) {
 }
 
 func (l *Log) appendLocked(line string) {
+	if _, err := l.buffer.WriteString(line + "\n"); err != nil {
+		return
+	}
+	// Flush every line: a transcript is worthless if a crash or a kill loses it,
+	// and this is a debugging aid, not a hot path.
+	if err := l.buffer.Flush(); err != nil {
+		return
+	}
 	if l.max == 0 {
-		if _, err := l.buffer.WriteString(line + "\n"); err != nil {
-			return
-		}
 		return
 	}
 	l.ring = append(l.ring, line)
 	if len(l.ring) > l.max {
 		l.ring = l.ring[len(l.ring)-l.max:]
 	}
-	l.queued++
-	if l.queued >= flushBatch(l.max) {
+	l.onDisk++
+	// Trim only with slack, so a capped session rewrites rarely instead of on
+	// every line past the cap.
+	if l.onDisk >= l.max+capSlack(l.max) {
 		l.rewriteLocked()
 	}
 }
 
-// flushBatch is how many capped lines accumulate before the file is rewritten.
-func flushBatch(maxLines int) int {
-	if n := maxLines / 4; n > 0 {
-		return n
-	}
-	return 1
+// capSlack is how far past the cap the file may grow before it is trimmed.
+func capSlack(maxLines int) int {
+	return max(16, maxLines/8)
 }
 
 // rewriteLocked replaces the file with the retained lines.
@@ -230,5 +234,5 @@ func (l *Log) rewriteLocked() {
 			return
 		}
 	}
-	l.queued = 0
+	l.onDisk = len(l.ring)
 }
