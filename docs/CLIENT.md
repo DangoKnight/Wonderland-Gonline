@@ -28,6 +28,24 @@ does not carry or search the override tables.
 
 The workspace's **Settings** button or **F10** opens window-wide settings,
 including display controls and language selection.
+
+### Session debug log
+
+The in-game settings form carries a **Debug log** switch with a line-cap stepper
+(`client/debuglog`, `client/wlo/settings/form.go`, `client/wlo/app/settings.go`).
+Switching it on writes one transcript per session to
+`var/client/user/logs/session-YYYYMMDD-HHMMSS.txt` (the user data directory
+beside `settings.json`): every packet that crosses the login socket in both
+directions, with its command bytes and full payload in hexadecimal, plus every
+line the client writes through the standard logger. Switched off, nothing is
+created and the standard logger keeps writing to its own output.
+
+The cap keeps the last N lines, rewritten to the file in batches; **0 =
+unlimited**, and an unlimited session can fill the disk, which the form says
+beside the control. The cap list is `0, 1000, 5000, 20000, 100000`; a
+hand-edited `debug_log_max_lines` is clamped to `0…1000000`. Changing the cap
+while recording is on starts a new transcript, and quitting flushes the current
+one.
 The first implementation supports windowed mode, Ebitengine fullscreen, and a
 desktop-sized borderless window. Windowed mode supports edge resizing and the
 normal maximize/restore controls. Resolution picking is temporarily disabled:

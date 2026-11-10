@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/internal/clientassets"
 )
 
@@ -53,5 +54,36 @@ func TestSettingsLocalRoundTripAndBig5Blacklist(t *testing.T) {
 	}
 	if _, err = Load(path); err == nil {
 		t.Fatal("corrupt preferences accepted")
+	}
+}
+
+// The session transcript is opt-in and its cap is clamped on load, so a hand
+// edited settings file cannot ask for an unbounded or negative limit.
+func TestDebugLogSettingsAreOptInAndClamped(t *testing.T) {
+	if d := Defaults(); d.DebugLog || d.DebugLogMaxLines != debuglog.DefaultLimit {
+		t.Fatalf("defaults = %+v", d)
+	}
+	path := filepath.Join(t.TempDir(), "settings.json")
+	if err := os.WriteFile(path, []byte(`{"debug_log":true,"debug_log_max_lines":-9}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(path)
+	if err != nil || !got.DebugLog || got.DebugLogMaxLines != 0 {
+		t.Fatalf("load = %+v, %v", got, err)
+	}
+	if err := os.WriteFile(path, []byte(`{"debug_log_max_lines":99999999}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err = Load(path); err != nil || got.DebugLog || got.DebugLogMaxLines != debuglog.MaxLimit {
+		t.Fatalf("load = %+v, %v", got, err)
+	}
+	got.DebugLog = true
+	got.DebugLogMaxLines = 20000
+	if err := got.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := Load(path)
+	if err != nil || !reflect.DeepEqual(reloaded, got) {
+		t.Fatalf("round trip = %+v, %v", reloaded, err)
 	}
 }

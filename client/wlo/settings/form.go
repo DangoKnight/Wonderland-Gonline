@@ -4,7 +4,9 @@ import "wonderland-gonline/internal/localization"
 
 import (
 	"image"
+	"strconv"
 	"strings"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/protocol"
@@ -20,6 +22,12 @@ const (
 	colorSampleX   = 144
 	colorSampleY   = 265
 	colorRowHeight = 30
+	// Debug recording controls occupy the free left column below the title
+	// button; the right column from x=213 is the native button grid.
+	debugRowY    = 263
+	debugLimitY  = 287
+	debugTextY   = 311
+	debugTextGap = 14
 )
 
 // Form is TSe_SystemForm (FUN_00282990). Labels and borders come from the
@@ -34,6 +42,8 @@ type Form struct {
 	Notice                            func(string)
 	Toggles                           map[byte]*seui.FixedButton
 	Music, Sound, Zoom                *seui.FixedButton
+	Debug                             *seui.FixedButton
+	DebugLimitLeft, DebugLimitRight   *seui.FixedButton
 	Channels, Info, Titles, Blacklist *Dialog
 	channelDraft                      byte
 	infoDraft                         [InfoCount]bool
@@ -81,6 +91,14 @@ func NewForm(env *seui.Env, state *State) *Form {
 	}
 	f.Music = button(env, f, "Btn_On_1", 289, 84, toggleWidth, buttonHeight, func() { state.Local.MusicOn = !state.Local.MusicOn; f.changed() })
 	f.Sound = button(env, f, "Btn_On_1", 250, 154, toggleWidth, buttonHeight, func() { state.Local.SoundOn = !state.Local.SoundOn; f.changed() })
+	// Debug session recording: the toggle sits in the free left column below the
+	// title button, with the line cap stepper beside it.
+	f.Debug = button(env, f, "Btn_On_1", 143, debugRowY, toggleWidth, buttonHeight, func() {
+		state.Local.DebugLog = !state.Local.DebugLog
+		f.changed()
+	})
+	f.DebugLimitLeft = button(env, f, "Btn_ArrowL_4", 90, debugLimitY, 17, 17, func() { f.DebugLimitStep(-1) })
+	f.DebugLimitRight = button(env, f, "Btn_ArrowR_4", 190, debugLimitY, 17, 17, func() { f.DebugLimitStep(1) })
 	f.Zoom = button(env, f, "Btn_On_1", 143, 185, toggleWidth, buttonHeight, func() {
 		state.Local.Zoom = !state.Local.Zoom
 		f.changed()
@@ -204,6 +222,30 @@ func (f *Form) Color(row, delta int) {
 	*v = (*v + delta + len(Palette)) % len(Palette)
 	f.changed()
 }
+
+// DebugLimitStep moves the session transcript cap by one offered step. Zero is
+// the unlimited choice and stays first so the arrows can reach it.
+func (f *Form) DebugLimitStep(delta int) {
+	steps := debuglog.LimitSteps
+	current := f.State.Local.DebugLogMaxLines
+	index := 0
+	for i, v := range steps {
+		if v <= current {
+			index = i
+		}
+	}
+	index = max(0, min(len(steps)-1, index+delta))
+	f.State.Local.DebugLogMaxLines = steps[index]
+	f.changed()
+}
+
+// DebugLimitLabel is the transcript cap as shown beside the stepper.
+func DebugLimitLabel(lines int) string {
+	if lines == 0 {
+		return "unlimited"
+	}
+	return strconv.Itoa(lines)
+}
 func setToggle(env *seui.Env, b *seui.FixedButton, on bool) {
 	asset := "Btn_Off_1"
 	if on {
@@ -229,7 +271,14 @@ func (f *Form) Paint() {
 	setToggle(f.Env, f.Music, f.State.Local.MusicOn)
 	setToggle(f.Env, f.Sound, f.State.Local.SoundOn)
 	setToggle(f.Env, f.Zoom, f.State.Local.Zoom)
+	setToggle(f.Env, f.Debug, f.State.Local.DebugLog)
 	f.Panel.Paint()
+	// Debug recording: label, cap, and the disk-space warning the setting owes
+	// the player before a long session fills the disk.
+	f.Env.Text.Draw(f.Left+20, f.Top+debugRowY+5, 0, false, true, f.Env.Screen, []byte("Debug log"), 0, 90, 0, 0xffff, 2)
+	f.Env.Text.Draw(f.Left+116, f.Top+debugLimitY+5, 0, false, true, f.Env.Screen, []byte(DebugLimitLabel(f.State.Local.DebugLogMaxLines)), 0, 60, 0, 0xffff, 2)
+	f.Env.Text.Draw(f.Left+20, f.Top+debugTextY, 0, false, true, f.Env.Screen, []byte("Writes packets and game events to"), 0, 200, 0, 0xffe0, 2)
+	f.Env.Text.Draw(f.Left+20, f.Top+debugTextY+debugTextGap, 0, false, true, f.Env.Screen, []byte("user/logs. Long sessions take much space."), 0, 200, 0, 0xffe0, 2)
 	for row, label := range []string{localization.UI("ui.settings.local_8c31e6e7"), localization.UI("ui.settings.whisper_41714d2c"), localization.UI("ui.settings.team_5985039f"), localization.UI("ui.settings.guild_298ffc49"), localization.UI("ui.settings.world_78ae647d")} {
 		f.Env.Text.Draw(f.Left+colorSampleX, f.Top+colorSampleY+row*colorRowHeight, 0, false, true, f.Env.Screen, []byte(label), 0, 60, 0, Palette[f.State.Local.Colors[row]], 2)
 	}

@@ -14,6 +14,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/localization"
 
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/inventory"
@@ -83,11 +84,14 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World                *world.World
-	Settings             *settings.Form
-	SettingsState        *settings.State
-	settingsPromptForm   *seui.Form
-	settingsPath         string
+	World              *world.World
+	Settings           *settings.Form
+	SettingsState      *settings.State
+	settingsPromptForm *seui.Form
+	settingsPath       string
+	// debugLog records the session transcript while the setting is on.
+	debugLog             *debuglog.Log
+	debugLogCap          int
 	Inventory            *inventory.Form
 	Compound             *inventory.CompoundForm
 	Team                 *team.Form

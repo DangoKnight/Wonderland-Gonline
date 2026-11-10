@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -35,21 +36,25 @@ const (
 // Local preferences follow native user/save*.dat. Server permissions are never
 // restored from this file: AC33:2 remains authoritative for each character.
 type Local struct {
-	MusicOn     bool              `json:"music_on"`
-	SoundOn     bool              `json:"sound_on"`
-	MusicVolume int               `json:"music_volume"`
-	SoundVolume int               `json:"sound_volume"`
-	Zoom        bool              `json:"zoom"`
-	Info        [InfoCount]bool   `json:"info"`
-	Colors      [ChannelCount]int `json:"chat_colors"`
-	Blacklist   []string          `json:"blacklist"`
+	MusicOn     bool `json:"music_on"`
+	SoundOn     bool `json:"sound_on"`
+	MusicVolume int  `json:"music_volume"`
+	SoundVolume int  `json:"sound_volume"`
+	Zoom        bool `json:"zoom"`
+	// DebugLog records the session transcript; DebugLogMaxLines caps it at the
+	// last N lines, and zero keeps every line (see client/debuglog).
+	DebugLog         bool              `json:"debug_log"`
+	DebugLogMaxLines int               `json:"debug_log_max_lines"`
+	Info             [InfoCount]bool   `json:"info"`
+	Colors           [ChannelCount]int `json:"chat_colors"`
+	Blacklist        []string          `json:"blacklist"`
 }
 
 // Palette is the native chat text palette in RGB565; channel colors wrap.
 var Palette = [...]uint16{0xfe31, 0xffb3, 0xc6f3, 0x8653, 0x6e7e, 0x8e27, 0xffff, 0xf800, 0xf4a3, 0xff80, 0xfc00}
 
 func Defaults() Local {
-	l := Local{MusicOn: true, SoundOn: true, MusicVolume: DefaultVolume, SoundVolume: DefaultVolume, Zoom: true, Colors: [ChannelCount]int{9, 10, 6, 4, 1}}
+	l := Local{MusicOn: true, SoundOn: true, MusicVolume: DefaultVolume, SoundVolume: DefaultVolume, Zoom: true, DebugLogMaxLines: debuglog.DefaultLimit, Colors: [ChannelCount]int{9, 10, 6, 4, 1}}
 	for i := range l.Info {
 		l.Info[i] = true
 	}
@@ -69,6 +74,7 @@ func Load(path string) (Local, error) {
 	}
 	l.MusicVolume = max(0, min(VolumeSteps, l.MusicVolume))
 	l.SoundVolume = max(0, min(VolumeSteps, l.SoundVolume))
+	l.DebugLogMaxLines = debuglog.NormalizeLimit(l.DebugLogMaxLines)
 	for i, v := range l.Colors {
 		l.Colors[i] = (v%len(Palette) + len(Palette)) % len(Palette)
 	}

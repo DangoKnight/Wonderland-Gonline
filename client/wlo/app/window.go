@@ -420,6 +420,8 @@ func Run(c *Client) error {
 	}
 	g.presenter = presenter
 	defer presenter.Close()
+	// Flush the session transcript before the process exits.
+	defer c.stopDebugLog()
 	log.Printf("renderer: %s", presenter.Mode())
 	defer g.Workspace.Close()
 	if err := g.Workspace.RestoreProfile(); err != nil {

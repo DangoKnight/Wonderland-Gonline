@@ -3,9 +3,13 @@ package app
 import "wonderland-gonline/internal/localization"
 
 import (
+	"io"
+	"log"
+	"os"
 	"time"
 
 	"math"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/settings"
 	"wonderland-gonline/client/wlo/seui"
@@ -132,6 +136,52 @@ func (c *Client) applyLocalSettings() {
 		colors[ch] = settings.Palette[l.Colors[i]]
 	}
 	c.Chat.SetColors(colors)
+	c.applyDebugLog(l)
+}
+
+// applyDebugLog starts, re-targets or stops the session transcript. The file is
+// only created when the setting is on, and the recorder is installed on the
+// socket so every packet in both directions is captured.
+func (c *Client) applyDebugLog(l settings.Local) {
+	if !l.DebugLog {
+		c.stopDebugLog()
+		return
+	}
+	if c.debugLog != nil && c.debugLogCap == l.DebugLogMaxLines {
+		return
+	}
+	c.stopDebugLog()
+	recorded, err := debuglog.Open(c.Assets.UserPath("logs"), l.DebugLogMaxLines, c.Now())
+	if err != nil {
+		c.Chat.Notice("Could not start the debug log: " + err.Error())
+		return
+	}
+	c.debugLog = recorded
+	c.debugLogCap = l.DebugLogMaxLines
+	c.Net.SetObserver(recorded.Packet)
+	// Game log lines share the transcript while recording is on.
+	log.SetOutput(io.MultiWriter(os.Stderr, recorded))
+	c.Chat.Notice("Debug log started: " + recorded.Path())
+	if l.DebugLogMaxLines > 0 {
+		c.Chat.Notice(settings.DebugLimitLabel(l.DebugLogMaxLines) + " lines kept; a long session still writes a large file.")
+	} else {
+		c.Chat.Notice("Line limit is off: a long session can fill the disk.")
+	}
+}
+
+// stopDebugLog flushes and releases the transcript, restoring the standard
+// logger's own output.
+func (c *Client) stopDebugLog() {
+	if c.debugLog == nil {
+		return
+	}
+	c.Net.SetObserver(nil)
+	log.SetOutput(os.Stderr)
+	if err := c.debugLog.Close(); err != nil {
+		c.Chat.Notice("Debug log: " + err.Error())
+	}
+	c.debugLog = nil
+	c.debugLogCap = 0
 }
 func (c *Client) settingsAction(action string) {
 	switch action {
