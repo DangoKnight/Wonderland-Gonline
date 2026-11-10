@@ -50,8 +50,10 @@ const (
 	displayFrameRateRow  = 3
 	displayScalingRow    = 4
 	displayLanguageRow   = 5
-	displayDebugRow      = 6 // painted below the select rows: toggle and cap
-	displayRowCount      = 5
+	// Visual slots: the debug row sits above Language, which moves one down.
+	displayDebugRow     = 5
+	displayLanguageSlot = 5
+	displayRowCount     = 5
 )
 
 var displayModes = []string{displayWindowed, displayFullscreen, displayBorderless}
@@ -334,6 +336,15 @@ func displaySettingsButton() image.Rectangle {
 func displayValueRect(row int) image.Rectangle {
 	return image.Rect(displayControlLeft, displayRowTop+row*displayRowHeight, displayControlLeft+displayControlWidth, displayRowTop+row*displayRowHeight+30)
 }
+
+// displayRowSlot maps a select field to its visual slot. Only Language moves, so
+// the debug row can sit above it without renumbering the open dropdowns.
+func displayRowSlot(row int) int {
+	if row == displayLanguageRow {
+		return displayLanguageSlot
+	}
+	return row - 1
+}
 func displayActionRect(right bool) image.Rectangle {
 	x := displayPanelLeft + 30
 	if right {
@@ -427,7 +438,7 @@ func (d *displayControls) selectLabels() []string {
 }
 
 func (d *displayControls) selectRect() image.Rectangle {
-	r := displayValueRect(d.selectRow - 1)
+	r := displayValueRect(displayRowSlot(d.selectRow))
 	return image.Rect(r.Min.X, r.Max.Y, r.Max.X, r.Max.Y+len(d.selectLabels())*displaySelectItemHeight)
 }
 
@@ -589,11 +600,11 @@ func (g *Game) displayInput(now time.Time) bool {
 		d.draft.DebugLogMaxLines = NextDebugLimit(d.draft.DebugLogMaxLines)
 		return true
 	}
-	for row := 0; row < displayRowCount; row++ {
-		if !pt.In(displayValueRect(row)) {
-			continue
+	for _, field := range []int{displayModeRow, displayResolutionRow, displayFrameRateRow, displayScalingRow, displayLanguageRow} {
+		if pt.In(displayValueRect(displayRowSlot(field))) {
+			d.openSelect(field, pt)
+			return true
 		}
-		d.openSelect(row+1, pt)
 	}
 	return true
 }
@@ -631,18 +642,36 @@ func (g *Game) drawDisplay(dst *surface.Surface) {
 	if d.draft.Language == localization.Chinese {
 		language = localization.UI("ui.settings.chinese")
 	}
-	for i, row := range []struct{ name, value string }{{localization.UI("ui.app.mode_5e23ec6a"), mode}, {localization.UI("ui.app.render_resolution_992e3361"), size}, {localization.UI("ui.app.frame_limit_cd2533e0"), fps}, {localization.UI("ui.app.scaling_filter_325b8c64"), render.ScalingLabel(d.draft.Scaling)}, {localization.UI("ui.settings.language"), language}} {
-		text(displayPanelLeft+24, displayRowTop+i*displayRowHeight+7, 180, row.name)
+	// Visual order: the four selects, then the debug row, then Language.
+	rows := []struct {
+		field       int
+		name, value string
+	}{
+		{displayModeRow, localization.UI("ui.app.mode_5e23ec6a"), mode},
+		{displayResolutionRow, localization.UI("ui.app.render_resolution_992e3361"), size},
+		{displayFrameRateRow, localization.UI("ui.app.frame_limit_cd2533e0"), fps},
+		{displayScalingRow, localization.UI("ui.app.scaling_filter_325b8c64"), render.ScalingLabel(d.draft.Scaling)},
+	}
+	for _, row := range rows {
+		slot := displayRowSlot(row.field)
+		text(displayPanelLeft+24, displayRowTop+slot*displayRowHeight+7, 180, row.name)
 		value := row.value
-		if !d.preview && (i != displayResolutionRow-1 || displayResolutionPickingEnabled) {
+		if !d.preview && (row.field != displayResolutionRow || displayResolutionPickingEnabled) {
 			value += "   v"
 		}
-		button(displayValueRect(i), value)
+		button(displayValueRect(slot), value)
 	}
-	debugY := displayRowTop + (displayDebugRow-1)*displayRowHeight + 7
-	text(displayPanelLeft+24, debugY, 180, "Debug log")
+	debugSlot := displayDebugRow - 1
+	text(displayPanelLeft+24, displayRowTop+debugSlot*displayRowHeight+7, 180, "Debug log")
 	button(displayDebugToggleRect(), debugToggleLabel(d.draft.DebugLog))
 	button(displayDebugCapRect(), DebugLimitLabel(d.draft.DebugLogMaxLines))
+	languageSlot := displayRowSlot(displayLanguageRow)
+	text(displayPanelLeft+24, displayRowTop+languageSlot*displayRowHeight+7, 180, localization.UI("ui.settings.language"))
+	languageValue := language
+	if !d.preview {
+		languageValue += "   v"
+	}
+	button(displayValueRect(languageSlot), languageValue)
 	if d.preview {
 		text(displayPanelLeft+24, displayPanelTop+272, 450, fmt.Sprintf(localization.UI("ui.app.keep_these_settings_reverts_in_d_seconds_7abc12e5"), max(0, int(time.Until(d.deadline).Seconds())+1)))
 		button(displayActionRect(false), localization.UI("ui.app.revert_0026c505"))
