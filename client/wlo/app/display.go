@@ -9,10 +9,12 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/surface"
@@ -48,6 +50,7 @@ const (
 	displayFrameRateRow  = 3
 	displayScalingRow    = 4
 	displayLanguageRow   = 5
+	displayDebugRow      = 6 // painted below the select rows: toggle and cap
 	displayRowCount      = 5
 )
 
@@ -62,6 +65,10 @@ type DisplaySettings struct {
 	FPS      int    `json:"fps"`
 	Scaling  string `json:"scaling,omitempty"`
 	Language string `json:"language,omitempty"`
+	// DebugLog is a window rule: every session records its own transcript, so
+	// the setting lives here rather than in the per-session game settings.
+	DebugLog         bool `json:"debug_log,omitempty"`
+	DebugLogMaxLines int  `json:"debug_log_max_lines"`
 }
 
 // Matches the existing workspace-level preference directory, independently of
@@ -78,7 +85,7 @@ func applicationSettingsPath(o Options, a login.Assets) string {
 }
 
 func defaultDisplaySettings() DisplaySettings {
-	return DisplaySettings{Mode: displayWindowed, Width: workspaceWidth, Height: ScreenHeight, FPS: displayFPSVSync}
+	return DisplaySettings{Mode: displayWindowed, Width: workspaceWidth, Height: ScreenHeight, FPS: displayFPSVSync, DebugLogMaxLines: debuglog.DefaultLimit}
 }
 func (s DisplaySettings) validate() error {
 	modeOK, sizeOK, fpsOK := false, false, false
@@ -99,6 +106,7 @@ func (s DisplaySettings) validate() error {
 	}
 	return render.ValidateScaling(s.Scaling)
 }
+
 func loadDisplaySettings(path string) (DisplaySettings, error) {
 	s := defaultDisplaySettings()
 	f, err := os.Open(path)
@@ -129,6 +137,7 @@ func loadDisplaySettings(path string) (DisplaySettings, error) {
 	if s.Language != "" {
 		s.Language, _ = localization.Normalize(s.Language)
 	}
+	s.DebugLogMaxLines = debuglog.NormalizeLimit(s.DebugLogMaxLines)
 	return s, nil
 }
 func (s DisplaySettings) save(path string) error {
@@ -269,6 +278,9 @@ func (d *displayControls) pace() {
 	d.nextFrame = d.nextFrame.Add(interval)
 }
 func (g *Game) applyDisplay(s DisplaySettings) {
+	// The recording rule is window-wide, so it applies to every session and must
+	// run even when the window mode itself does not change.
+	g.Workspace.ApplyDebugLog(s.DebugLog, s.DebugLogMaxLines)
 	d := g.display
 	previousMode := d.current().Mode
 	if d.applied && previousMode == s.Mode {
@@ -328,6 +340,45 @@ func displayActionRect(right bool) image.Rectangle {
 		x = displayPanelLeft + displayPanelWidth - 150
 	}
 	return image.Rect(x, displayButtonTop, x+120, displayButtonTop+displayButtonHeight)
+}
+
+// The debug row shares the value column: the left part toggles recording for
+// the window, the right part cycles the per-session line cap.
+func displayDebugToggleRect() image.Rectangle {
+	r := displayValueRect(displayDebugRow - 1)
+	r.Max.X = r.Min.X + 90
+	return r
+}
+func displayDebugCapRect() image.Rectangle {
+	r := displayValueRect(displayDebugRow - 1)
+	r.Min.X += 92
+	return r
+}
+
+// DebugLimitLabel is the transcript cap as shown in the settings row.
+func DebugLimitLabel(lines int) string {
+	if lines == 0 {
+		return "unlimited"
+	}
+	return strconv.Itoa(lines)
+}
+
+// debugToggleLabel is the recording switch as shown in the settings row.
+func debugToggleLabel(on bool) string {
+	if on {
+		return "On"
+	}
+	return "Off"
+}
+
+// NextDebugLimit cycles the offered caps, so the row needs no dropdown.
+func NextDebugLimit(lines int) int {
+	for i, v := range debuglog.LimitSteps {
+		if v == lines {
+			return debuglog.LimitSteps[(i+1)%len(debuglog.LimitSteps)]
+		}
+	}
+	return debuglog.LimitSteps[1]
 }
 
 func displayFrameRateLabel(fps int) string {
@@ -530,6 +581,14 @@ func (g *Game) displayInput(now time.Time) bool {
 	if d.preview {
 		return true
 	}
+	if pt.In(displayDebugToggleRect()) {
+		d.draft.DebugLog = !d.draft.DebugLog
+		return true
+	}
+	if pt.In(displayDebugCapRect()) {
+		d.draft.DebugLogMaxLines = NextDebugLimit(d.draft.DebugLogMaxLines)
+		return true
+	}
 	for row := 0; row < displayRowCount; row++ {
 		if !pt.In(displayValueRect(row)) {
 			continue
@@ -580,6 +639,10 @@ func (g *Game) drawDisplay(dst *surface.Surface) {
 		}
 		button(displayValueRect(i), value)
 	}
+	debugY := displayRowTop + (displayDebugRow-1)*displayRowHeight + 7
+	text(displayPanelLeft+24, debugY, 180, "Debug log")
+	button(displayDebugToggleRect(), debugToggleLabel(d.draft.DebugLog))
+	button(displayDebugCapRect(), DebugLimitLabel(d.draft.DebugLogMaxLines))
 	if d.preview {
 		text(displayPanelLeft+24, displayPanelTop+272, 450, fmt.Sprintf(localization.UI("ui.app.keep_these_settings_reverts_in_d_seconds_7abc12e5"), max(0, int(time.Until(d.deadline).Seconds())+1)))
 		button(displayActionRect(false), localization.UI("ui.app.revert_0026c505"))

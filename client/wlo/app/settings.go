@@ -136,34 +136,34 @@ func (c *Client) applyLocalSettings() {
 		colors[ch] = settings.Palette[l.Colors[i]]
 	}
 	c.Chat.SetColors(colors)
-	c.applyDebugLog(l)
 }
 
-// applyDebugLog starts, re-targets or stops the session transcript. The file is
-// only created when the setting is on, and the recorder is installed on the
-// socket so every packet in both directions is captured.
-func (c *Client) applyDebugLog(l settings.Local) {
-	if !l.DebugLog {
+// SyncDebugLog applies the window-level recording rule to this session: the
+// toggle and line cap live in the shared display settings, so every session
+// records into its own file, distinguished by the window suffix.
+func (c *Client) SyncDebugLog(on bool, maxLines int) {
+	c.debugLogOn = on
+	c.debugLogCap = maxLines
+	if !on {
 		c.stopDebugLog()
 		return
 	}
-	if c.debugLog != nil && c.debugLogCap == l.DebugLogMaxLines {
+	if c.debugLog != nil && c.debugLog.MaxLines() == maxLines && c.debugLog.Suffix() == c.screenSuffix {
 		return
 	}
 	c.stopDebugLog()
-	recorded, err := debuglog.Open(c.Assets.UserPath("logs"), l.DebugLogMaxLines, c.Now())
+	recorded, err := debuglog.Open(c.Assets.UserPath("logs"), maxLines, c.Now(), c.screenSuffix)
 	if err != nil {
 		c.Chat.Notice("Could not start the debug log: " + err.Error())
 		return
 	}
 	c.debugLog = recorded
-	c.debugLogCap = l.DebugLogMaxLines
 	c.Net.SetObserver(recorded.Packet)
 	// Game log lines share the transcript while recording is on.
 	log.SetOutput(io.MultiWriter(os.Stderr, recorded))
 	c.Chat.Notice("Debug log started: " + recorded.Path())
-	if l.DebugLogMaxLines > 0 {
-		c.Chat.Notice(settings.DebugLimitLabel(l.DebugLogMaxLines) + " lines kept; a long session still writes a large file.")
+	if maxLines > 0 {
+		c.Chat.Notice(DebugLimitLabel(maxLines) + " lines kept; a long session still writes a large file.")
 	} else {
 		c.Chat.Notice("Line limit is off: a long session can fill the disk.")
 	}
@@ -181,7 +181,6 @@ func (c *Client) stopDebugLog() {
 		c.Chat.Notice("Debug log: " + err.Error())
 	}
 	c.debugLog = nil
-	c.debugLogCap = 0
 }
 func (c *Client) settingsAction(action string) {
 	switch action {

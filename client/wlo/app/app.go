@@ -89,9 +89,12 @@ type Client struct {
 	SettingsState      *settings.State
 	settingsPromptForm *seui.Form
 	settingsPath       string
-	// debugLog records the session transcript while the setting is on.
+	// debugLog records this session's transcript while the window rule is on;
+	// screenSuffix keeps concurrent windows in separate files.
 	debugLog             *debuglog.Log
+	debugLogOn           bool
 	debugLogCap          int
+	screenSuffix         string
 	Inventory            *inventory.Form
 	Compound             *inventory.CompoundForm
 	Team                 *team.Form

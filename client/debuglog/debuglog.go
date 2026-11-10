@@ -52,6 +52,7 @@ type Log struct {
 	file   *os.File
 	buffer *bufio.Writer
 	path   string
+	suffix string
 	max    int
 	ring   []string
 	queued int
@@ -61,22 +62,24 @@ type Log struct {
 
 // Open creates the session file in dir and returns a log that writes to it.
 // maxLines caps the file at the last maxLines lines; zero keeps every line.
-func Open(dir string, maxLines int, at time.Time) (*Log, error) {
+// suffix distinguishes concurrent windows and is written before the extension,
+// for example "-screen2".
+func Open(dir string, maxLines int, at time.Time, suffix string) (*Log, error) {
 	maxLines = NormalizeLimit(maxLines)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
-	path, file, err := createSessionFile(dir, at)
+	path, file, err := createSessionFile(dir, at, suffix)
 	if err != nil {
 		return nil, err
 	}
-	return &Log{file: file, buffer: bufio.NewWriter(file), path: path, max: maxLines, now: time.Now}, nil
+	return &Log{file: file, buffer: bufio.NewWriter(file), path: path, suffix: suffix, max: maxLines, now: time.Now}, nil
 }
 
 // createSessionFile opens a new file for the session stamp, adding a counter
 // when two sessions start inside the same second.
-func createSessionFile(dir string, at time.Time) (string, *os.File, error) {
-	stamp := FilePrefix + at.Format(timeFormat)
+func createSessionFile(dir string, at time.Time, suffix string) (string, *os.File, error) {
+	stamp := FilePrefix + at.Format(timeFormat) + suffix
 	for n := range 100 {
 		name := stamp + FileExtension
 		if n > 0 {
@@ -111,6 +114,13 @@ func (l *Log) MaxLines() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.max
+}
+
+// Suffix is the window marker this log was opened with.
+func (l *Log) Suffix() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.suffix
 }
 
 // Printf writes one timestamped line.

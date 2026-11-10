@@ -83,6 +83,23 @@ type Workspace struct {
 	profileEnabled bool
 	profileLast    []byte
 	profileError   string
+	// The recording rule is window-wide; each session records its own file.
+	debugLogOn  bool
+	debugLogCap int
+}
+
+// screenSuffix marks one window's transcript in a shared directory.
+func screenSuffix(id int) string { return fmt.Sprintf("-screen%d", id) }
+
+// ApplyDebugLog gives every session the window's recording rule. Sessions added
+// later inherit it from the workspace.
+func (w *Workspace) ApplyDebugLog(on bool, maxLines int) {
+	w.debugLogOn, w.debugLogCap = on, maxLines
+	for _, s := range w.Sessions {
+		if s.Client != nil {
+			s.Client.SyncDebugLog(on, maxLines)
+		}
+	}
 }
 
 func NewWorkspace(first *Client) *Workspace {
@@ -91,6 +108,7 @@ func NewWorkspace(first *Client) *Workspace {
 	if o.UserRoot == "" {
 		o.UserRoot = filepath.Dir(filepath.Dir(first.Assets.UserPath("settings.json")))
 	}
+	first.screenSuffix = screenSuffix(1)
 	return &Workspace{Sessions: []*Session{{ID: 1, Client: first}}, options: o, resources: first.resources, nextID: 2, factory: New, hover: image.Pt(-1, -1), screen: surface.New(workspaceWidth, ScreenHeight)}
 }
 func (w *Workspace) Current() *Client {
@@ -123,6 +141,7 @@ func (w *Workspace) Add() error {
 	if err != nil {
 		return err
 	}
+	c.screenSuffix = screenSuffix(w.nextID)
 	if w.attachTarget != nil {
 		w.attachTarget(c.Screen)
 	}
@@ -132,6 +151,8 @@ func (w *Workspace) Add() error {
 	if w.audio {
 		w.initAudio(c)
 	}
+	// A new session inherits the window's recording rule.
+	c.SyncDebugLog(w.debugLogOn, w.debugLogCap)
 	w.Switch(len(w.Sessions) - 1)
 	w.setScroll(max(0, len(w.Sessions)-w.visibleRows()))
 	return nil
@@ -182,6 +203,7 @@ func (c *Client) closeSession() {
 		c.Music.Stop()
 	}
 	c.Net.Shutdown()
+	c.stopDebugLog()
 	c.Screen.Close()
 	if c.fade.frozen != nil {
 		c.fade.frozen.Close()

@@ -23,12 +23,18 @@ func readLines(t *testing.T, path string) []string {
 	return strings.Split(text, "\n")
 }
 
-func TestOpenNamesTheFileBySessionStamp(t *testing.T) {
-	dir := t.TempDir()
-	log, err := Open(dir, 0, stamp)
+func open(t *testing.T, dir string, maxLines int) *Log {
+	t.Helper()
+	log, err := Open(dir, maxLines, stamp, "")
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
+	return log
+}
+
+func TestOpenNamesTheFileBySessionStamp(t *testing.T) {
+	dir := t.TempDir()
+	log := open(t, dir, 0)
 	defer log.Close()
 	want := filepath.Join(dir, "session-20261110-183920.txt")
 	if log.Path() != want {
@@ -36,17 +42,36 @@ func TestOpenNamesTheFileBySessionStamp(t *testing.T) {
 	}
 }
 
-func TestTwoSessionsInOneSecondDoNotShareAFile(t *testing.T) {
+// Concurrent windows record into one directory, so the window marker must be
+// part of the name and must be reported back for change detection.
+func TestSuffixDistinguishesWindows(t *testing.T) {
 	dir := t.TempDir()
-	first, err := Open(dir, 0, stamp)
+	first, err := Open(dir, 0, stamp, "-screen1")
 	if err != nil {
 		t.Fatalf("first: %v", err)
 	}
 	defer first.Close()
-	second, err := Open(dir, 0, stamp)
+	second, err := Open(dir, 0, stamp, "-screen2")
 	if err != nil {
 		t.Fatalf("second: %v", err)
 	}
+	defer second.Close()
+	if filepath.Base(first.Path()) != "session-20261110-183920-screen1.txt" {
+		t.Fatalf("first path = %q", first.Path())
+	}
+	if filepath.Base(second.Path()) != "session-20261110-183920-screen2.txt" {
+		t.Fatalf("second path = %q", second.Path())
+	}
+	if first.Suffix() != "-screen1" || second.Suffix() != "-screen2" {
+		t.Fatalf("suffixes = %q, %q", first.Suffix(), second.Suffix())
+	}
+}
+
+func TestTwoSessionsInOneSecondDoNotShareAFile(t *testing.T) {
+	dir := t.TempDir()
+	first := open(t, dir, 0)
+	defer first.Close()
+	second := open(t, dir, 0)
 	defer second.Close()
 	if first.Path() == second.Path() {
 		t.Fatalf("both sessions wrote %q", first.Path())
@@ -58,10 +83,7 @@ func TestTwoSessionsInOneSecondDoNotShareAFile(t *testing.T) {
 
 func TestUnlimitedKeepsEveryLine(t *testing.T) {
 	dir := t.TempDir()
-	log, err := Open(dir, 0, stamp)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	log := open(t, dir, 0)
 	for i := range 500 {
 		log.Printf("line %d", i)
 	}
@@ -76,10 +98,7 @@ func TestUnlimitedKeepsEveryLine(t *testing.T) {
 func TestCapKeepsTheLastLines(t *testing.T) {
 	dir := t.TempDir()
 	const cap = 50
-	log, err := Open(dir, cap, stamp)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	log := open(t, dir, cap)
 	for i := range 300 {
 		log.Printf("line %d", i)
 	}
@@ -100,10 +119,7 @@ func TestCapKeepsTheLastLines(t *testing.T) {
 
 func TestPacketRecordsDirectionHeaderAndPayload(t *testing.T) {
 	dir := t.TempDir()
-	log, err := Open(dir, 0, stamp)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	log := open(t, dir, 0)
 	log.now = func() time.Time { return stamp }
 	log.Packet(Out, []byte{7, 0, 1, 0, 2, 0})
 	log.Packet(In, []byte{12, 0, 0xff})
@@ -117,7 +133,7 @@ func TestPacketRecordsDirectionHeaderAndPayload(t *testing.T) {
 	if !strings.Contains(lines[0], "[packet] > len=6 7:0 070001000200") {
 		t.Fatalf("outgoing line = %q", lines[0])
 	}
-	if !strings.Contains(lines[1], "[packet] < len=3 12:0 ff") && !strings.Contains(lines[1], "12:0") {
+	if !strings.Contains(lines[1], "[packet] < len=3 12:0 0c00ff") {
 		t.Fatalf("incoming line = %q", lines[1])
 	}
 	if !strings.HasPrefix(lines[0], "2026-11-10 18:39:20") {
@@ -127,10 +143,7 @@ func TestPacketRecordsDirectionHeaderAndPayload(t *testing.T) {
 
 func TestWriteSplitsLoggerOutputIntoLines(t *testing.T) {
 	dir := t.TempDir()
-	log, err := Open(dir, 0, stamp)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	log := open(t, dir, 0)
 	if _, err := log.Write([]byte("first\nsecond\n\n")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -157,10 +170,7 @@ func TestLimitStepsOfferAnUnlimitedChoice(t *testing.T) {
 
 func TestWritesAreIgnoredAfterClose(t *testing.T) {
 	dir := t.TempDir()
-	log, err := Open(dir, 0, stamp)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	log := open(t, dir, 0)
 	if err := log.Close(); err != nil {
 		t.Fatalf("close: %v", err)
 	}

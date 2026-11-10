@@ -31,21 +31,30 @@ including display controls and language selection.
 
 ### Session debug log
 
-The in-game settings form carries a **Debug log** switch with a line-cap stepper
-(`client/debuglog`, `client/wlo/settings/form.go`, `client/wlo/app/settings.go`).
-Switching it on writes one transcript per session to
-`var/client/user/logs/session-YYYYMMDD-HHMMSS.txt` (the user data directory
-beside `settings.json`): every packet that crosses the login socket in both
-directions, with its command bytes and full payload in hexadecimal, plus every
-line the client writes through the standard logger. Switched off, nothing is
-created and the standard logger keeps writing to its own output.
+The window settings (F10) carry a **Debug log** row: a switch and a line-cap
+button that cycles the offered caps (`client/debuglog`, `client/wlo/app/display.go`,
+`client/wlo/app/workspace.go`). The rule belongs to the window, not to a single
+session, so it is stored with the other display settings in `display.json` and
+applies to every open session at once; sessions added later inherit it.
+
+Each session records into its own file, distinguished by the window suffix:
+
+```
+var/client/user/logs/session-YYYYMMDD-HHMMSS-screen1.txt      session 1
+var/client/user/session-2/user/logs/session-…-screen2.txt     session 2
+```
+
+A transcript holds every packet that crosses the login socket in both
+directions — command bytes plus the full payload in hexadecimal — and every line
+the client writes through the standard logger. Switched off, nothing is created
+and the standard logger keeps writing to its own output.
 
 The cap keeps the last N lines, rewritten to the file in batches; **0 =
-unlimited**, and an unlimited session can fill the disk, which the form says
-beside the control. The cap list is `0, 1000, 5000, 20000, 100000`; a
-hand-edited `debug_log_max_lines` is clamped to `0…1000000`. Changing the cap
-while recording is on starts a new transcript, and quitting flushes the current
-one.
+unlimited**, and an unlimited session can fill the disk, which the row's value
+makes explicit. The cap list is `0, 1000, 5000, 20000, 100000`; a hand-edited
+`debug_log_max_lines` is clamped to `0…1000000`. Changing the cap while
+recording is on starts a new transcript, closing a session flushes its file, and
+quitting flushes the rest.
 The first implementation supports windowed mode, Ebitengine fullscreen, and a
 desktop-sized borderless window. Windowed mode supports edge resizing and the
 normal maximize/restore controls. Resolution picking is temporarily disabled:
