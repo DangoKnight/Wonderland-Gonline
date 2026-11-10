@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WLO Agent Host</title>
+<style>
+body { background: #111; color: #eee; font-family: sans-serif; margin: 0; overflow: hidden; }
+#status { position: absolute; top: 10px; left: 10px; padding: 8px 12px; background: rgba(0,0,0,0.7); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="status">Loading assets...</div>
+<script src="wasm_exec.js"></script>
+<script>
+(async () => {
+  const status = document.getElementById('status');
+
+  // Discover asset packs from the /assets directory listing, skipping audio
+  // packs because they are not required for automation and may be incomplete.
+  const listResp = await fetch('/assets/');
+  let names = [];
+  if (listResp.ok) {
+    const text = await listResp.text();
+    const re = /href="([^"]+\.zip)"/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const name = decodeURIComponent(m[1]);
+      // Skip audio packs and duplicate .build packs; use the hashed packs as
+      // the canonical ones.
+      if (!name.includes('-audio') && !name.endsWith('.build.zip')) {
+        names.push(name);
+      }
+    }
+  }
+  // Fallback to known core packs if directory listing is empty/disabled.
+  if (names.length === 0) {
+    names = ['client-assets.zip', 'client-assets-sprites-a06c1e9b5dc1cc31.zip', 'client-assets-world-6e9e84ca37ccf7ce.zip'];
+  }
+
+  const packs = {};
+  for (const name of names) {
+    status.textContent = 'Loading ' + name + '...';
+    const resp = await fetch('/assets/' + name);
+    if (!resp.ok) {
+      console.error('failed to load', name);
+      continue;
+    }
+    packs[name] = await resp.blob();
+  }
+
+  window.wloPacks = packs;
+  window.wloReadBlob = async (name, offset, length) => {
+    const blob = packs[name];
+    if (!blob) throw new Error('unknown pack ' + name);
+    const slice = blob.slice(offset, offset + length);
+    return await slice.arrayBuffer();
+  };
+
+  status.textContent = 'Starting client...';
+  const go = new Go();
+  const resp = await fetch('wonderland-client.wasm');
+  const bytes = await resp.arrayBuffer();
+  const result = await WebAssembly.instantiate(bytes, go.importObject);
+  go.run(result.instance);
+})();
+</script>
+</body>
+</html>

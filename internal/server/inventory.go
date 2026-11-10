@@ -329,7 +329,9 @@ func (s *Server) runRespawns(ctx context.Context) {
 }
 
 // changeEquipment handles AC23:11 (wear bag slot from) and AC23:12 (remove worn slot from
-// to bag slot to). C# does not broadcast the new appearance to map peers.
+// to bag slot to). The original C# server did not broadcast the new appearance to
+// map peers, so a nearby client only saw it after a map change; publish the
+// equipment snapshot and sprite refresh here instead.
 func (s *Server) changeEquipment(ctx context.Context, c *Session, from, to byte, wear bool) error {
 	next := *c.character
 	before := next.Combat(s.Assets.Items)
@@ -354,6 +356,8 @@ func (s *Server) changeEquipment(ctx context.Context, c *Session, from, to byte,
 		return e
 	}
 	c.character.Bag, c.character.Equipment = next.Bag, next.Equipment
+	s.broadcastWorld(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateEquipmentSnapshot}.U32(next.ID).Bytes(next.WornEquipment()))
+	s.broadcastWorld(c, protocol.Builder{protocol.CommandCharacterState, protocol.CharacterStateSpriteRefresh}.U32(next.ID).U8(0))
 	packets := append([][]byte{reply}, next.StatPackets(s.Assets.Items)...)
 	if text := game.ChangeBanner("Equipment: ", before, next.Combat(s.Assets.Items)); text != "" {
 		packets = append(packets, serverwire.HeadBanner(text))

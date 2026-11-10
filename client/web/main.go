@@ -215,5 +215,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return app.Run(c)
+	clientRef = c
+	installAgentAPI()
+	go func() {
+		if err := app.Run(c); err != nil {
+			log.Printf("wonderland web client: %v", err)
+			js.Global().Get("console").Call("error", "wonderland web client: "+err.Error())
+		}
+	}()
+	return nil
 }
