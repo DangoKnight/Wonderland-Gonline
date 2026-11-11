@@ -1,12 +1,12 @@
 {
   "format": "wonderland-server-catalog-sqlite-gzip",
   "version": 1,
-  "schema_version": 70,
+  "schema_version": 71,
   "database_bytes": 50880512,
-  "database_sha256": "d34cf5cce75ac9667ed765a49c942e67b7899e87d5227e00a68abcdbd1147b09",
-  "compressed_bytes": 9179442,
+  "database_sha256": "0846849fca06caa96fbc7e9424916fdb8bfe5be82cf4df758a364dede4a4f17c",
+  "compressed_bytes": 9179543,
   "tables": 185,
-  "rows": 322974,
+  "rows": 322978,
   "definitions": {
     "forge_upgrade_items": 291,
     "point_forge_items": 1940,
