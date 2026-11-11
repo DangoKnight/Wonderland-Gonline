@@ -13,7 +13,7 @@ Existing asset catalogs are never replaced or silently upgraded at startup.
 
 ## Upgrade an existing installation
 
-Current versions are **asset schema 70** and **gameplay schema 25**, defined in
+Current versions are **asset schema 71** and **gameplay schema 25**, defined in
 [`catalog_migration.go`](../internal/assetsql/catalog_migration.go) and
 [`migrations.go`](../internal/store/migrations.go). Asset v62 adds typed item-card
 reward/gender mappings. Gameplay v22 adds durable public message-board posts;
@@ -24,6 +24,11 @@ preserving migration seeds starter outfits and the six rebirth cape series from
 `internal/assetsql/indestructible_equipment_defaults.json`. Later administrator
 edits are retained. Existing installations must run the normal database migration
 before starting the updated server.
+
+Asset v71 installs the missing Hill Pepper quiz completion-branch priority in SQL.
+The migration adds only this rule, preserving existing administrator priorities
+and edited or removed completion policies. Fresh installations include the rule
+in the repository seed; runtime startup does not reload the JSON defaults.
 
 Asset v66 removes Notepad from starter grants so it is obtained through the
 Astrology lady's native event. Other starter grants and existing characters'

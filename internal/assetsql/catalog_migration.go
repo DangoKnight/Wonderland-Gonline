@@ -10,7 +10,8 @@ import (
 	"wonderland-gonline/internal/game"
 )
 
-const catalogSchemaVersion = 70
+const catalogSchemaVersion = 71
+const hillPepperBranchSchemaVersion = 71
 const trainingTicketDurationSchemaVersion = 70
 const timedItemDurationsSchemaVersion = 69
 const timedItemsSchemaVersion = 68
@@ -727,6 +728,11 @@ func migrateCatalog(tx *gorm.DB) error {
 		}
 		if schema.Version < trainingTicketDurationSchemaVersion {
 			if err := migrateTrainingTicketDuration(tx); err != nil {
+				return err
+			}
+		}
+		if schema.Version < hillPepperBranchSchemaVersion {
+			if err := migrateHillPepperBranch(tx); err != nil {
 				return err
 			}
 		}

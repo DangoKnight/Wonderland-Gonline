@@ -300,6 +300,16 @@ func (s *Server) startEvent(ctx context.Context, c *Session, click uint16, ev *a
 		return err
 	}
 	ev = s.World.PrepareStory(c.character, c.view, mapID, ev, branch)
+	// No branch condition matched (FindBranch returned -1): the native client
+	// simply shows nothing. Indexing Branches[-1] used to kill the server and
+	// drop every connected session, the native one included.
+	if branch < 0 || branch >= len(ev.Branches) {
+		s.Log.Debug("story event without a matching branch", "map", mapID, "event", ev.ClickID, "branch", branch)
+		if c.event != nil {
+			return s.finishEvent(c, c.event)
+		}
+		return nil
+	}
 	s.Log.Debug("story event", "map", mapID, "event", ev.ClickID, "branch", ev.Branches[branch].Index, "actor", click)
 	previous := c.event
 	s.endEvent(c)
