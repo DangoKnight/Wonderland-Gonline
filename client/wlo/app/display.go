@@ -80,6 +80,22 @@ func applicationSettingsPath(o Options, a login.Assets) string {
 func defaultDisplaySettings() DisplaySettings {
 	return DisplaySettings{Mode: displayWindowed, Width: workspaceWidth, Height: ScreenHeight, FPS: displayFPSVSync}
 }
+
+// InitializeLanguage stores a confirmed first-launch choice without changing
+// existing display options. Later launches use ordinary live Settings changes.
+func InitializeLanguage(o Options, language string) error {
+	language, err := localization.Normalize(language)
+	if err != nil {
+		return err
+	}
+	path := applicationSettingsPath(o, login.NewAssets(o.Root))
+	prefs, err := loadDisplaySettings(path)
+	if err != nil {
+		return err
+	}
+	prefs.Language = language
+	return prefs.save(path)
+}
 func (s DisplaySettings) validate() error {
 	modeOK, sizeOK, fpsOK := false, false, false
 	for _, mode := range displayModes {

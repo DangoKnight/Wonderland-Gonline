@@ -243,8 +243,9 @@ type Client struct {
 
 // Options configure New.
 type Options struct {
-	Language string // en or zh-TW; empty uses the saved local preference.
-	Renderer string // auto (default), gpu rasterization, or cpu compatibility rendering
+	Language        string // en or zh-TW; empty uses the saved local preference.
+	DefaultLanguage string // First-launch choice, used only when no Settings language exists.
+	Renderer        string // auto (default), gpu rasterization, or cpu compatibility rendering
 	// SpritesRoot is an optional directory of sprite packs or of the
 	// editable export, searched before the decompiled data root's sprites/.
 	Shared       *Resources // workspace-owned immutable assets and decoded caches
@@ -277,6 +278,9 @@ func New(o Options) (*Client, error) {
 		}
 		if r.ready {
 			language = r.language
+		}
+		if language == "" {
+			language = o.DefaultLanguage
 		}
 	}
 	language, err := localization.Normalize(language)

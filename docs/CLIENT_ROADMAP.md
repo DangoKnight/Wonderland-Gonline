@@ -72,6 +72,35 @@ by `_packs.json`; omit compiler caches. Test fresh Chinese-only, translated-only
 and bilingual imports. Preserve the optional `-legacy` front end and `-workbench`
 inspection modes while they remain useful for comparison.
 
+### AFK mode per client instance
+
+- [ ] Implement AFK mode exclusively for Gonline Client connected to Gonline
+  Server. Negotiate support through the existing connection capability exchange;
+  offer the mode only when both endpoints support it.
+- [ ] Add an AFK toggle for each individual client instance/session. Changing
+  one instance must not affect any other instance in the same process.
+- [ ] Restrict AFK operation to vital communication: connection maintenance,
+  required protocol acknowledgements, authoritative player/pet/party state,
+  combat and configured automation, inventory/reward changes, map transitions,
+  timers and actionable errors. Classify messages explicitly so ignoring visual
+  updates cannot stall a battle, dialogue or other active interaction.
+- [ ] Ignore nonessential information such as unrelated players on the map,
+  their movement/appearance and chat. Gonline Server must suppress these updates
+  for the individual AFK connection, and Gonline Client must ignore any already
+  queued nonessential updates. AFK mode is unavailable on Legacy servers and to
+  Legacy clients; their existing communication behavior remains unchanged.
+- [ ] Replace the rendered game scene entirely with an event-log view. Keep
+  player, pet and party stats continuously visible, including current/maximum
+  HP and SP, level, experience/progress and other relevant status values. Obtain
+  any missing authoritative stats through the vital state-update path.
+- [ ] Log important gameplay events such as combat outcomes, EXP/level gains,
+  item acquisition/use, pet changes, recovery, defeats and connection problems.
+  Bound retained log history and avoid unnecessary world rendering, animation,
+  audio and asset-loading work while AFK mode is active.
+- [ ] On leaving AFK mode, resynchronize the current scene and entities before
+  restoring the world view. Test independent AFK/normal instances, existing
+  automation, combat, travel, disconnect/reconnect and return to normal mode.
+
 ## Development and acceptance
 
 1. Read the matching decompiled functions and retained native captures. Record

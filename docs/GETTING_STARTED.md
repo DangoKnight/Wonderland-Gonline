@@ -198,6 +198,12 @@ for character editing, GM tools, EXP tuning, gifts, content editors and maintena
 
 ## 6. Compile and run the Go client
 
+The native client now opens first-launch language setup even when no game assets
+have been extracted. If assets are unavailable, select the Rhodes Island
+installation folder in the setup window and extract them there. Extraction still
+requires Python/Pillow and FFmpeg/FFprobe. After it finishes, **Start client**
+continues without a manual restart. Use `-setup` to reopen this wizard later.
+
 Distributed native clients can import and compile assets directly from a Legacy
 installation with `-extract-assets -client PATH`; see
 [standalone asset import](ASSET_IMPORT.md#import-with-a-compiled-client) for

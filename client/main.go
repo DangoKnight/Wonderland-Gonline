@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"image/color"
@@ -17,6 +18,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"wonderland-gonline/client/firstlaunch"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/clientimport"
 )
@@ -87,6 +89,8 @@ func main() {
 		return
 	}
 	extractAssets := flag.Bool("extract-assets", false, "extract a Legacy installation and compile ready-to-use client packs, then exit")
+	setup := flag.Bool("setup", false, "open first-launch language and asset setup again")
+	setupWindow := flag.String("setup-window", "", "internal startup setup request")
 	extractOutput := flag.String("extract-output", "", "new import directory (default: assets beside the executable)")
 	extractLanguage := flag.String("extract-language", "en", "Legacy source language: en or zh-TW")
 	extractChinese := flag.String("extract-chinese-client", "", "optional matching Chinese installation alongside an English source")
@@ -110,6 +114,14 @@ func main() {
 	serverINI := flag.String("serverini", "", "server list; defaults to SERVER.INI in the client directory (the working directory with -legacy); a single local server is used when missing")
 	legacy := flag.Bool("legacy", false, "run the earlier screenshot-based front end instead of the decompile port")
 	flag.Parse()
+	if *setupWindow != "" {
+		if err := firstlaunch.RunWindow(*setupWindow); errors.Is(err, firstlaunch.ErrCancelled) {
+			os.Exit(firstlaunch.CancelledExitCode)
+		} else if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if *extractAssets {
 		if *extractOutput == "" {
 			executable, err := os.Executable()
@@ -146,7 +158,28 @@ func main() {
 		return
 	}
 	if !*useWorkbench {
-		if err := runClientWithRenderer(*assets, *serverINI, *snapshot, *sprites, *renderer, *language); err != nil {
+		setupLanguage := ""
+		initialLanguage := ""
+		if *snapshot == "" {
+			explicitAssets := false
+			flag.Visit(func(f *flag.Flag) {
+				if f.Name == "assets" {
+					explicitAssets = true
+				}
+			})
+			state, err := firstlaunch.Prepare(firstlaunch.Options{Assets: *assets, Language: *language, ExplicitAssets: explicitAssets, Force: *setup})
+			if errors.Is(err, firstlaunch.ErrCancelled) {
+				return
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
+			*assets, setupLanguage = state.Assets, state.Language
+			if state.Selected {
+				initialLanguage = state.Language
+			}
+		}
+		if err := runConfiguredClient(*assets, *serverINI, *snapshot, *sprites, *renderer, clientLanguages{Explicit: *language, Default: setupLanguage, Initial: initialLanguage}); err != nil {
 			log.Fatal(err)
 		}
 		return

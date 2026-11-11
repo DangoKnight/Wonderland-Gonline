@@ -37,6 +37,23 @@ func TestDisplaySettingsPersistenceAndValidation(t *testing.T) {
 	}
 }
 
+func TestFirstLaunchLanguagePreservesDisplaySettings(t *testing.T) {
+	o := Options{Root: t.TempDir(), UserRoot: t.TempDir()}
+	path := filepath.Join(o.UserRoot, "display.json")
+	want := DisplaySettings{Mode: displayBorderless, Width: 1920, Height: 1080, FPS: 144, Scaling: render.ScalingBicubic, Language: localization.English}
+	if err := want.save(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := InitializeLanguage(o, localization.Chinese); err != nil {
+		t.Fatal(err)
+	}
+	want.Language = localization.Chinese
+	got, err := loadDisplaySettings(path)
+	if err != nil || got != want {
+		t.Fatal("setup changed unrelated display preferences", got, err)
+	}
+}
+
 func TestSettingsLanguageSelectionPersistsOnlyOnApply(t *testing.T) {
 	d := newDisplayControls(filepath.Join(t.TempDir(), "display.json"))
 	d.apply = func(DisplaySettings) { t.Fatal("language-only change must not reconfigure the window") }

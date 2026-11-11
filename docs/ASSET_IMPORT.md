@@ -20,6 +20,27 @@ For the full path from checkout to a running server/client, see
 
 ## Import with a compiled client
 
+On the first normal launch, the native client opens an asset-independent setup
+window and asks for English or Traditional Chinese. If the selected assets are
+missing or the Ship Deck terrain/background cannot be loaded, setup asks for the
+Rhodes Island installation folder (the folder containing `aLogin.exe` and
+`data/`). Use **Browse** or type/paste the path. Select the installation's actual
+language separately from the display language, then choose **Extract assets**.
+Python/Pillow and FFmpeg/FFprobe below must already be installed. Progress and
+errors appear in the setup window; complete extraction output is saved in
+`setup-import.log` in the setup preference directory.
+
+Setup extracts into a new directory under the operating system's user
+configuration directory, `Wonderland-Gonline/assets-<timestamp>/`, and remembers
+the finished bundle in `Wonderland-Gonline/setup.json`. It never replaces an
+existing extraction or modifies the source installation. After success, choose
+**Start client**; no manual restart is required. Later launches reuse the saved
+asset path, while language changes in **Settings** remain authoritative. An
+explicit `-assets PATH` takes priority over the remembered path. Run with
+`-setup` to reopen setup. Cancellation leaves the prior saved setup unchanged.
+The extraction command-line mode, snapshots and asset workbench bypass this
+interactive flow. On Linux without Zenity/KDialog, enter the path directly.
+
 The native Gonline executable can extract and compile a Legacy WLRI installation
 without a repository checkout or Go toolchain. Install Python 3.11 or newer with
 Pillow (`python -m pip install "Pillow>=12,<13"`), and put FFmpeg and FFprobe on

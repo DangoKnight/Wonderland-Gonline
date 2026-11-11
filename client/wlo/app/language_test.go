@@ -15,6 +15,34 @@ import (
 	"wonderland-gonline/internal/localization"
 )
 
+func TestFirstLaunchDefaultLanguagePriority(t *testing.T) {
+	for _, tc := range []struct{ name, saved, explicit, want string }{
+		{"first choice", "", "", localization.Chinese},
+		{"later settings", localization.English, "", localization.English},
+		{"command line", localization.Chinese, localization.English, localization.English},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newClientFixture(t)
+			o := Options{Root: f.root, Shared: f.resources, UserRoot: t.TempDir(), DefaultLanguage: localization.Chinese, Language: tc.explicit, ServerINI: filepath.Join(t.TempDir(), "SERVER.INI"), FallbackINI: []byte("01[Local]1\r\nLocal1*127.0.0.1\r\n")}
+			if tc.saved != "" {
+				s := defaultDisplaySettings()
+				s.Language = tc.saved
+				if err := s.save(filepath.Join(o.UserRoot, "display.json")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c, err := New(o)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer c.Net.Shutdown()
+			if c.resources.language != tc.want {
+				t.Fatal(c.resources.language, tc.want)
+			}
+		})
+	}
+}
+
 func TestLiveLanguagePreservesSharedSessionsAndConversation(t *testing.T) {
 	c, _, _ := enteredClient(t)
 	w := NewWorkspace(c)
