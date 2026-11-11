@@ -298,7 +298,10 @@ func (d *displayControls) pace() {
 func (g *Game) applyDisplay(s DisplaySettings) {
 	// The recording rule is window-wide, so it applies to every session and must
 	// run even when the window mode itself does not change.
-	g.Workspace.ApplyDebugLog(s.DebugLog, s.DebugLogMaxLines)
+	// Native display setup can run before any client workspace exists.
+	if g.Workspace != nil {
+		g.Workspace.ApplyDebugLog(s.DebugLog, s.DebugLogMaxLines)
+	}
 	d := g.display
 	previousMode := d.current().Mode
 	if d.applied && previousMode == s.Mode {

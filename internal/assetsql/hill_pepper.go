@@ -17,6 +17,11 @@ const (
 // Install only this revision's missing rule. Do not replay the historical batch
 // or override an administrator's priority or edited/removed completion policy.
 func migrateHillPepperBranch(tx *gorm.DB) error {
+	// Some catalogs intentionally omit story content. A quest-specific upgrade
+	// must not create that content or prevent unrelated catalog migrations.
+	if !tx.Migrator().HasTable(&StoryRulesRow{}) {
+		return nil
+	}
 	var defaults []assets.StoryRule
 	if err := json.Unmarshal(wikiQuestBatch2Defaults, &defaults); err != nil {
 		return err
