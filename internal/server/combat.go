@@ -268,6 +268,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 			run.b.Roster[m.c.character.ID] = append(run.b.Roster[m.c.character.ID], p.ID)
 		}
 		m.c.battle = run
+		m.c.walk = playerWalk{}
 	}
 	s.captureEscapeLeaders(run)
 	for _, m := range run.members {
@@ -295,6 +296,7 @@ func (s *Server) startBattle(c *Session, run *battleRun, enemies []battle.Enemy)
 }
 
 func (s *Server) battleIntro(run *battleRun, m *battleMember, background byte) error {
+	m.c.walk = playerWalk{}
 	if m.c.clientBackdrops {
 		if err := m.c.send(run.backdropLocation.Packet()); err != nil {
 			return err
@@ -308,7 +310,7 @@ func (s *Server) battleIntro(run *battleRun, m *battleMember, background byte) e
 		}
 	}
 	if m.c.party != nil {
-		s.partyUpdate(m.c.party)
+		s.partySnapshot(m.c)
 	}
 	intro := run.b.Intro(m.self, background)
 	if m.c.combatCapabilities&protocol.CombatCapabilityRoundChain != 0 {

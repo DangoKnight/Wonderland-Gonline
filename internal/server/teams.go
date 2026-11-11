@@ -246,6 +246,7 @@ func (s *Server) partyLeave(c *Session, notify bool) {
 // marks even a zero-member roster as a leader; FUN_00406848 must run after it.
 // The self roster also makes the reset work when the old leader is off-map.
 func (s *Server) partyReset(c *Session) {
+	s.refreshAFKFilter(c)
 	s.sendOrClose(c,
 		protocol.Builder{protocol.CommandTeam, protocol.TeamRoster}.U32(c.character.ID).U8(0),
 		protocol.Builder{protocol.CommandTeam, protocol.TeamLeave}.U32(c.character.ID),
@@ -399,23 +400,38 @@ func (s *Server) partyUpdate(p *party) {
 	if len(p.members) == 0 {
 		return
 	}
+	for _, m := range p.members {
+		s.partySnapshot(m)
+	}
+	for _, m := range p.members {
+		m.partyVitals = s.vitals(m)
+	}
+}
+
+// partySnapshot refreshes only this recipient. Battle entry invokes it once per
+// entrant; rebroadcasting the entire party for each entrant multiplies identical
+// eight-field snapshots by party size.
+func (s *Server) partySnapshot(c *Session) {
+	p := c.party
+	if p == nil || len(p.members) == 0 {
+		return
+	}
 	roster := protocol.Builder{protocol.CommandTeam, protocol.TeamRoster}.U32(p.leader().character.ID).U8(byte(len(p.members) - 1))
 	for _, m := range p.members[1:] {
 		roster = roster.U32(m.character.ID)
 	}
-	for _, m := range p.members {
-		if m.view != nil {
-			m.view.Team.Store(int32(len(p.members) - 1))
-		}
-		packets := [][]byte{roster}
-		for _, other := range p.members {
-			if other != m {
-				packets = append(packets, s.teammateStats(other)...)
-			}
-		}
-		s.sendOrClose(m, packets...)
-		m.partyVitals = s.vitals(m)
+	m := c
+	s.refreshAFKFilter(m)
+	if m.view != nil {
+		m.view.Team.Store(int32(len(p.members) - 1))
 	}
+	packets := [][]byte{roster}
+	for _, other := range p.members {
+		if other != m {
+			packets = append(packets, s.teammateStats(other)...)
+		}
+	}
+	s.sendOrClose(m, packets...)
 }
 
 // vitals are the values SendTeammateStats reports, in its order.
@@ -432,21 +448,29 @@ var vitalStats = [8]byte{game.StatLevel, game.StatCON, game.StatWIS, game.StatCu
 
 func (s *Server) teammateStats(c *Session) [][]byte {
 	v := s.vitals(c)
-	out := make([][]byte, len(v))
+	return teammateStatChanges(c.character.ID, v, nil)
+}
+
+// Each AC8:3 field is independently absolute in both clients. Initial roster
+// snapshots include every field; incremental updates omit unchanged fields.
+func teammateStatChanges(character uint32, v [8]int64, previous *[8]int64) [][]byte {
+	out := make([][]byte, 0, len(v))
 	for i := range v {
+		if previous != nil && v[i] == previous[i] {
+			continue
+		}
 		sign, value := byte(protocol.StatValuePositive), v[i]
 		if value < 0 {
 			sign = protocol.StatValueNegative
 			value = -value
 		}
-		out[i] = protocol.Builder{protocol.CommandStats, protocol.StatsWireCode3}.U32(c.character.ID).U8(vitalStats[i]).U8(sign).U32(uint32(value)).U32(0)
+		out = append(out, protocol.Builder{protocol.CommandStats, protocol.StatsWireCode3}.U32(character).U8(vitalStats[i]).U8(sign).U32(uint32(value)).U32(0))
 	}
 	return out
 }
 
-// partySync reports c's changed vitals to its team. C# rebroadcasts the whole
-// team whenever Send8_1 runs; reporting changes after each command sends the
-// same values without depending on every call site.
+// partySync reports only c's changed vital fields to its team. Initial roster
+// snapshots remain complete; no maximum/level updates are lost when they change.
 func (s *Server) partySync(c *Session) {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
@@ -454,8 +478,8 @@ func (s *Server) partySync(c *Session) {
 		return
 	}
 	if v := s.vitals(c); v != c.partyVitals {
+		packets := teammateStatChanges(c.character.ID, v, &c.partyVitals)
 		c.partyVitals = v
-		packets := s.teammateStats(c)
 		for _, m := range c.party.members {
 			if m != c {
 				s.sendOrClose(m, packets...)

@@ -51,7 +51,7 @@ func TestGonlineCombatNegotiation(t *testing.T) {
 	}
 	packets := w.packets(t)
 	// Includes complete map snapshots and observed pickups; acceptance selects only combat.
-	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 31, 0, 0, 0}) {
+	if len(packets) != 3 || !bytes.Equal(packets[2], []byte{1, 248, 71, 76, 79, 78, 1, 0, 255, 0, 0, 0}) {
 		t.Fatal("offer", packets)
 	}
 	if err := s.dispatch(context.Background(), c, accept); err != nil || c.combatCapabilities != 1 {

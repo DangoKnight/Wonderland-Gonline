@@ -65,6 +65,8 @@ type Client struct {
 	Assets            login.Assets
 	resources         *Resources
 	backgroundSession bool
+	afk               afkRuntime
+	afkWorkspace      *Workspace
 	profileAccount    string
 
 	Screen  *surface.Surface
@@ -337,6 +339,7 @@ func New(o Options) (*Client, error) {
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
 	c.Servers.OnConnecting = func() {
+		c.afk = afkRuntime{}
 		c.combat = combatRuntime{}
 		c.vacuum = vacuumRuntime{}
 		c.gonlineCollectionTiming = false
@@ -460,8 +463,13 @@ func (c *Client) Frame() { c.frame(true) }
 // frame always pumps networking, simulation and automation; background
 // thumbnails render at a lower rate. Movies/minigames retain their own clocks.
 func (c *Client) frame(draw bool) {
+	requestedDraw := draw
 	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
+	c.afkTick()
+	if c.afk.active || c.afk.resync && !c.afk.sceneReceived {
+		draw = false
+	}
 	// Story cinematics take ownership immediately; do not play their opening
 	// seconds behind a decorative loading screen.
 	if c.mapLoading.active && c.movie != nil {
@@ -484,7 +492,9 @@ func (c *Client) frame(draw bool) {
 		c.World.JoinTeamSelection = c.battleEntryTarget != 0 || c.pkTarget || c.joinTeamTarget || c.friendTarget || c.tradeTarget
 		c.World.TeamFollowingPaused = c.battle.state.Active
 		c.World.Step(c.Now())
-		world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
+		if !c.afk.active && !c.afk.resync {
+			world.PrefetchStep(c.Assets, c.World.Walking(), c.Now())
+		}
 		c.waterTravelTick()
 		c.remoteTick()
 		c.updateFloorHover()
@@ -497,13 +507,17 @@ func (c *Client) frame(draw bool) {
 		c.reachNPC()
 		c.reachFloorItem()
 		c.tentTick()
-		c.syncMiniMap()
+		if !c.afk.active && !c.afk.resync {
+			c.syncMiniMap()
+		}
 		c.constellationTick(c.Now())
 		c.eventTick()
 		c.vacuumTick()
 		c.areaTick()
 		c.areaTitleTick(c.Now())
-		c.ambientTick()
+		if !c.afk.active && !c.afk.resync {
+			c.ambientTick()
+		}
 		// The lost connection's snapshot is taken before the names and the
 		// location line are drawn, so the frozen scene has neither.
 		fading := c.fade.step > 0
@@ -587,6 +601,12 @@ func (c *Client) frame(draw bool) {
 		c.drawMapLoading(now)
 	}
 	c.updateCursor(now)
+	if requestedDraw {
+		if draw && c.afk.resync && c.afk.sceneReceived {
+			c.afk.prepared = true
+		}
+		c.drawAFK()
+	}
 }
 
 // drawBackground is 0x40c3c8: LogPic1.jpg through the canvas, then the
@@ -630,6 +650,7 @@ func (c *Client) dispatchNative(p []byte) {
 		return
 	}
 	defer c.recordBattleResultsPacket(p)
+	defer c.afkRecordPacket(p)
 	if len(p) == 0 {
 		return
 	}

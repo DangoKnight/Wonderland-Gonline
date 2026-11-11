@@ -95,6 +95,10 @@ func (c *Client) sceneFrozen() bool {
 // reason ("Connection lost" unless the server left one) with Leave and
 // Prev, and the screen darkens and freezes behind it.
 func (c *Client) disconnected() {
+	if c.afk.active || c.afk.pending {
+		c.afkLog(localization.Text("ui.afk.disconnected"))
+	}
+	c.afk = afkRuntime{log: c.afk.log}
 	c.closeMessageBoard()
 	c.stopMapLoading()
 	c.areaTitle = areaTitle{}

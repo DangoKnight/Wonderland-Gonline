@@ -195,7 +195,7 @@ func TestPartyJoinRosterAndVitals(t *testing.T) {
 	s.partySync(bobby)
 	s.partySync(bobby)
 	hp := protocol.Builder{8, 3}.U32(b).U8(0x19).U8(1).U32(uint32(bobby.character.HP)).U32(0)
-	if got := wires[0].packets(t); len(got) != 8 || !hasPacket(got, hp) {
+	if got := wires[0].packets(t); len(got) != 1 || !hasPacket(got, hp) {
 		t.Fatalf("vitals: %v", got)
 	}
 

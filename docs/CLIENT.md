@@ -29,6 +29,44 @@ does not carry or search the override tables.
 The workspace's **Settings** button or **F10** opens window-wide settings,
 including display controls and language selection.
 
+### AFK mode
+
+On a supporting Gonline server, each session preview in the right sidebar has an
+**AFK** toggle beside its title. It changes only that session, without switching
+the selected preview. Close interactive forms before enabling it. AFK
+replaces that session's world view with player, pet and party HP/SP, level and EXP
+progress, gold/timer information and a timestamped event log. Configure Remote or
+AUTO beforehand; AFK does not enable automation or change gameplay rules itself.
+Other sessions remain independent. Legacy servers do not offer this mode.
+
+Combat, collection, travel, recovery, inventory/rewards and protocol processing
+continue. Ordinary chat and unrelated player presentation are suppressed on the
+server and ignored if already queued at the client. World/UI drawing, minimap
+refresh, speculative world prefetch and ambient audio are skipped; battle timing
+metadata and map/NPC state remain available to automation. This is reduced-work
+operation, not a separate headless engine or a zero-asset client.
+
+The log keeps at most 256 entries; use the mouse wheel to review it. **Return to
+game** or **Esc** requests a peer refresh and waits for local scene preparation
+before restoring the view. Unexpected dialogues or other interactive forms
+automatically request this return rather than silently answering or stalling.
+Disconnects disable AFK; a fresh connection must negotiate it again.
+AFK members of the same party in one client workspace automatically share one
+common stats stream when supported by the server. Private position/resting-pet
+updates remain separate. Carrier departure reassigns the stream; a lone AFK
+member falls back to independent updates. Separate client processes do not share
+streams.
+Supporting servers send compact changed-field updates after the first AFK
+snapshot. Unchanged names, maximum stats and other metadata are not repeated;
+full snapshots remain available for stream initialization and roster changes.
+
+The protocol is documented in [connection modes](CONNECTION_PROTOCOL.md#afk-mode).
+Independent-session, Remote/battle, loading, filtering, privacy, malformed-packet
+and refresh-fence tests cover the implementation. Eight-session automated battle
+runs verify shared streams and network reductions; see
+[performance measurements](CLIENT_PERFORMANCE.md). Broader manual acceptance
+remains tracked in the [roadmap](CLIENT_ROADMAP.md#afk-mode-per-client-instance).
+
 ### Session debug log
 
 The window settings (F10) carry a **Debug log** row: a switch and a line-cap

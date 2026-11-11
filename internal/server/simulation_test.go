@@ -451,7 +451,7 @@ func testNativeMovementRetargetAcrossBlockedRouteDoesNotSnap(t *testing.T, code 
 	if err := s.dispatch(ctx, c, native(1100, 1100)); err != nil {
 		t.Fatal(err)
 	}
-	if c.character.X != 1100 || c.character.Y != 1100 {
+	if code == 1 && (!c.walk.active || c.walk.toX != 1100 || c.walk.toY != 1100) || code == 2 && (c.character.X != 1100 || c.character.Y != 1100) {
 		t.Fatal("native retarget rejected")
 	}
 	for _, packet := range wires[0].packets(t) {
@@ -467,7 +467,7 @@ func testNativeMovementRetargetAcrossBlockedRouteDoesNotSnap(t *testing.T, code 
 			t.Fatal(err)
 		}
 	}
-	if c.character.X != 1100 || c.character.Y != 1100 {
+	if code == 1 && (c.walk.toX != 1100 || c.walk.toY != 1100) || code == 2 && (c.character.X != 1100 || c.character.Y != 1100) {
 		t.Fatal("invalid destination accepted")
 	}
 	for _, wire := range wires {

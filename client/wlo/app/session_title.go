@@ -35,7 +35,7 @@ func validSessionTitle(title string) bool {
 func (w *Workspace) titleRect(row int) image.Rectangle {
 	r := w.cardRect(row)
 	r.Max.Y = r.Min.Y + sessionPreviewTop
-	r.Max.X -= sessionCloseWidth
+	r.Max.X -= sessionCloseWidth + sessionAFKWidth
 	return r
 }
 func (w *Workspace) beginTitle(index int) {

@@ -33,6 +33,13 @@ type SessionInfo struct {
 }
 
 type Session struct {
+	walk                  playerWalk // Reached position and native route leg; guarded by worldMu.
+	afkGroupToken         [protocol.AFKGroupTokenBytes]byte
+	afkStream             *afkPartyStream
+	afk                   bool // Guarded by worldMu; transport filter is immutable and atomic.
+	afkFilter             atomic.Pointer[afkOutputFilter]
+	afkLastState          []byte
+	afkNextState          time.Time
 	timedTickAt           time.Time // Online countdown anchor; never persisted.
 	itemCard              *pendingItemCard
 	pendingMail           map[deliveryKey]*transport.Receipt // Guarded by worldMu.
@@ -133,6 +140,9 @@ type Session struct {
 }
 
 func (s *Session) send(p []byte) (err error) {
+	if filter := s.afkFilter.Load(); filter != nil && protocol.AFKNonessential(p, filter.self, filter.party[:filter.count]) {
+		return nil // Explicitly classified presentation, never durable delivery.
+	}
 	if len(p) >= 5 && p[0] == protocol.CommandAppearance {
 		defer func() {
 			if err == nil {

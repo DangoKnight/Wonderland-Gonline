@@ -955,6 +955,27 @@ state, trade cancellation, encounter progress and vehicle wear. Impose no elapse
 speed/distance cap. A blocked saved spawn may recover to a valid destination;
 AC6:2 stop reports update the stopped position without another encounter/wear step.
 The eight native movement-check bytes remain opaque.
+Keep native destinations in transient `playerWalk` state, independently of the
+character's reached coordinates. Advance native route legs at the client's
+160 scene pixels/second on simulation ticks and before gameplay commands; never
+move aggro/contact checks to the announced endpoint. Check intermediate native
+grid cells for walk-in regions and encounters so a long leg cannot skip them.
+Retarget from the reached position, cancel stale legs on map/position changes,
+events and battles, and let AC6:2 reconcile the stopped coordinate. Existing
+short compatibility reports still apply coordinates immediately. This timing
+model does not reject native packets using an elapsed-distance cap. Checkpoints
+save the reached coordinate, and peer refreshes replay an active leg after its
+current position rather than leaving a moving peer standing still.
+
+Random encounters include eligible native field actors as population sources,
+within their authored roaming areas. Do not exclude all `RoamingBattle` actors:
+many imported maps have no remaining wild candidates after that exclusion.
+Random battles use independent fighters and do not execute/reserve the visible
+actor's event. Preserve town, dialogue, party, training-pass, visibility, defeated
+actor, map-entry grace and post-battle cooldown gates. Native walking advances
+the existing 18–34 encounter-step pacing by traversed 20-pixel grid cells rather
+than packet/click count; the cell-based pacing is a port policy, not a newly
+verified Legacy encounter probability.
 Validated active item vehicles retain native water/air travel within scene bounds;
 land collision bits are not a vehicle capability table. Missing grids preserve
 legacy movement, without falling back to files or fabricated geometry.

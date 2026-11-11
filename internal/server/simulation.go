@@ -32,7 +32,12 @@ func (s *Server) simulateWorldTick(now time.Time, movement bool) {
 	defer s.worldMu.Unlock()
 	maps := map[uint16][]*Session{}
 	for _, c := range s.world {
+		if err := s.advancePlayerWalk(c, now); err != nil {
+			s.Log.Warn("walking progression failed", "session", c.info.ID, "error", err)
+			c.conn.Close()
+		}
 		s.advanceTimedSession(c, now, true)
+		s.syncAFK(c, now)
 		s.validatePartyScene(c.party)
 		if c.ready && c.character != nil && c.tentOwner == 0 {
 			maps[c.character.Map] = append(maps[c.character.Map], c)
@@ -225,18 +230,22 @@ func (s *Server) npcStats(template uint32) (level int, element byte, name string
 
 // stepEncounter runs after a move that started no region event. Caller holds worldMu.
 func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
+	return s.stepEncounterProgress(c, prevX, prevY, 1, time.Now())
+}
+
+func (s *Server) stepEncounterProgress(c *Session, prevX, prevY uint16, steps int, now time.Time) error {
 	if !s.trainingEligible(c) {
 		return nil
 	}
 	char, enc := c.character, &c.encounter
-	if c.battle != nil || !battleInteractionAvailable(c, nil) || (char.X == prevX && char.Y == prevY) || enc.resting() || s.World.SafeTown(char.Map) {
+	if c.battle != nil || !battleInteractionAvailable(c, nil) || (char.X == prevX && char.Y == prevY) || enc.restingAt(now) || s.World.SafeTown(char.Map) {
 		return nil
 	}
 	m, ok := s.World.Map(char.Map)
 	if !ok {
 		return nil
 	}
-	for _, n := range s.World.NPCs(char.Map) {
+	for _, n := range s.World.NPCsAt(char.Map, now) {
 		if area, limited := s.World.ActorTargetArea(char.Map, n.ClickID); limited && !area.Contains(char.X, char.Y) {
 			continue
 		}
@@ -256,7 +265,8 @@ func (s *Server) stepEncounter(c *Session, prevX, prevY uint16) error {
 		return nil
 	}
 	enc.armed = true
-	if enc.steps++; enc.steps >= enc.next {
+	enc.steps += steps
+	if enc.steps >= enc.next && steps > 0 {
 		enc.steps, enc.next = 0, nextEncounter()
 		return s.randomEncounter(c, m)
 	}
@@ -299,7 +309,13 @@ func (s *Server) randomEncounter(c *Session, m *world.Map) error {
 	}
 	var pool []world.NPC
 	for _, n := range m.NPCs {
-		if s.World.Wild(m.ID, n) && !s.World.Defeated(m.ID, n.ClickID) && !s.World.RoamingBattle(m.ID, n.ClickID) {
+		// Native field actors also define this region's wild population. A
+		// random battle does not execute or reserve their scripted visible actor.
+		if s.World.Wild(m.ID, n) && !s.World.Defeated(m.ID, n.ClickID) &&
+			s.World.VisibleIn(c.character, c.view, m.ID, n.ClickID) {
+			if area, limited := s.World.ActorTargetArea(m.ID, n.ClickID); limited && !area.Contains(c.character.X, c.character.Y) {
+				continue
+			}
 			pool = append(pool, n)
 		}
 	}

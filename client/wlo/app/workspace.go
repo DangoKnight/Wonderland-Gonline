@@ -3,6 +3,7 @@ package app
 import "wonderland-gonline/internal/localization"
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"image"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"wonderland-gonline/client/wlo/surface"
 	"wonderland-gonline/internal/clientassets"
+	"wonderland-gonline/internal/protocol"
 )
 
 const (
@@ -57,6 +59,7 @@ type Session struct {
 // Workspace owns a window, shared caches and independently connected clients.
 // Tick and input methods run serially on the platform game thread.
 type Workspace struct {
+	afkToken       [protocol.AFKGroupTokenBytes]byte
 	Sessions       []*Session
 	Active         int
 	Collapsed      bool
@@ -109,7 +112,12 @@ func NewWorkspace(first *Client) *Workspace {
 		o.UserRoot = filepath.Dir(filepath.Dir(first.Assets.UserPath("settings.json")))
 	}
 	first.screenSuffix = screenSuffix(1)
-	return &Workspace{Sessions: []*Session{{ID: 1, Client: first}}, options: o, resources: first.resources, nextID: 2, factory: New, hover: image.Pt(-1, -1), screen: surface.New(workspaceWidth, ScreenHeight)}
+	w := &Workspace{Sessions: []*Session{{ID: 1, Client: first}}, options: o, resources: first.resources, nextID: 2, factory: New, hover: image.Pt(-1, -1), screen: surface.New(workspaceWidth, ScreenHeight)}
+	if _, err := rand.Read(w.afkToken[:]); err != nil {
+		w.afkToken = [protocol.AFKGroupTokenBytes]byte{}
+	}
+	first.afkWorkspace = w
+	return w
 }
 func (w *Workspace) Current() *Client {
 	if len(w.Sessions) == 0 {
@@ -141,6 +149,7 @@ func (w *Workspace) Add() error {
 	if err != nil {
 		return err
 	}
+	c.afkWorkspace = w
 	c.screenSuffix = screenSuffix(w.nextID)
 	if w.attachTarget != nil {
 		w.attachTarget(c.Screen)
@@ -262,6 +271,7 @@ func (w *Workspace) Tick() {
 	for _, s := range w.Sessions {
 		s.Client.frame(s.Client == w.Current() || w.ticks%sessionBackgroundFrameTicks == 0)
 	}
+	w.shareAFKState()
 	for i := len(w.Sessions) - 1; i >= 0; i-- {
 		if w.Sessions[i].Client.Exit {
 			w.Remove(w.Sessions[i].ID)
@@ -378,6 +388,8 @@ func (w *Workspace) panelClick(x, y int) {
 		}
 		if point.In(w.closeRect(row)) {
 			w.PendingRemove = w.Sessions[row+w.firstRow()].ID
+		} else if point.In(w.afkRect(row)) {
+			w.toggleSessionAFK(w.Sessions[row+w.firstRow()].Client)
 		} else if point.In(w.titleRect(row)) {
 			w.beginTitle(row + w.firstRow())
 		} else {
@@ -419,7 +431,7 @@ func (w *Workspace) Compose() *surface.Surface {
 				w.screen.Fill(w.titleRect(row).Inset(1), sessionShadowFill)
 				w.screen.Frame(w.titleRect(row), sessionAccentInk)
 			}
-			w.Current().Env.Text.Draw(r.Min.X+9, r.Min.Y+3, 0, false, true, w.screen, clientassets.Big5Text(name), 15, r.Dx()-sessionCloseWidth-18, 0, sessionPanelInk, 0)
+			w.Current().Env.Text.Draw(r.Min.X+9, r.Min.Y+3, 0, false, true, w.screen, clientassets.Big5Text(name), 15, w.titleRect(row).Dx()-10, 0, sessionPanelInk, 0)
 			w.label(w.closeRect(row).Min.X+8, r.Min.Y+3, "X")
 			if w.PendingRemove == s.ID {
 				w.label(r.Min.X+22, r.Min.Y+34, localization.UI("ui.app.close_instance_306c2fae"))
@@ -440,6 +452,7 @@ func (w *Workspace) Compose() *surface.Surface {
 				preview := image.Rect(x, r.Min.Y+sessionPreviewTop, x+sessionPreviewWidth, r.Min.Y+sessionPreviewTop+sessionPreviewHeight)
 				w.screen.Frame(preview.Inset(-1), sessionShadowFill)
 				w.screen.DrawStretch(preview, s.Client.Screen, false)
+				w.drawSessionAFK(row, s.Client)
 			}
 		}
 		if w.addVisible() {
@@ -489,7 +502,7 @@ func (w *Workspace) initAudio(c *Client) {
 	sounds := &Sounds{Root: c.Assets.Media, Shared: w.resources.audio}
 	c.sfx = sounds
 	c.Env.Sound = func(path string) {
-		if !c.backgroundSession {
+		if !c.backgroundSession && !c.afk.active && !c.afk.resync {
 			sounds.Play(path)
 		}
 	}

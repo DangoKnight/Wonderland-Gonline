@@ -180,6 +180,9 @@ const (
 // a walk (FUN_0043bc70), and holding the button keeps walking toward the
 // pointer.
 func (c *Client) GroundClick(x, y int) {
+	if c.afkClick(x, y) {
+		return
+	}
 	if c.exitMovementMode() {
 		return
 	}

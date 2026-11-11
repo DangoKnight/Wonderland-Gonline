@@ -95,6 +95,19 @@ func (g *Game) shift() byte {
 }
 
 func (g *Game) updateInput(pointerBlocked bool) error {
+	if g.C.afk.active || g.C.afk.resync {
+		x, y, _ := g.Workspace.GamePoint(g.workspaceCursor())
+		if !pointerBlocked && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			g.C.afkClick(x, y)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) && !g.C.afk.pending {
+			_ = g.C.SetAFK(false)
+		}
+		_, wheel := ebiten.Wheel()
+		g.C.afk.scroll = max(0, min(afkLogLimit, g.C.afk.scroll+int(wheel)))
+		g.C.cancelSessionInput()
+		return nil
+	}
 	if g.C.mapLoading.active {
 		g.C.cancelSessionInput()
 		g.lastDown = time.Time{}

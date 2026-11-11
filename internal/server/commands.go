@@ -30,6 +30,7 @@ func withoutContext(handler func(*Server, *Session, []byte) error) commandHandle
 // commandRegistry is immutable after initialization. Register each inbound command
 // once, together with its handler and exceptions to the default interaction gates.
 var commandRegistry = map[byte]commandRegistration{
+	protocol.CommandAFK:                 {handler: (*Server).afkCommand, policy: protocol.CommandPolicy{}}, // Owns worldMu; usable during battle/loading/interaction to leave AFK.
 	protocol.CommandBazaar:              {handler: (*Server).bazaarCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandTeleportScroll:      {handler: (*Server).teleportScrollCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},
 	protocol.CommandRebirthJobSelection: {handler: (*Server).rebirthJobCommand, policy: protocol.CommandPolicy{World: true, BlockedDuringTrade: true}},

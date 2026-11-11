@@ -299,6 +299,9 @@ func TestNativeMovementTrailingData(t *testing.T) {
 	if wires[2].Len() != 0 {
 		t.Fatal("native movement leaked to another map")
 	}
+	if err := s.advancePlayerWalk(players[0], players[0].walk.started.Add(10*time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	s.autosaveCharacters(ctx)
 	stored, err := s.Store.Characters(ctx, players[0].account.ID)
 	if err != nil || len(stored) != 1 || stored[0].X != 1200 || stored[0].Y != 1300 || players[0].character.X != 1200 || players[0].character.Y != 1300 {

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 	"wonderland-gonline/internal/assets"
 	"wonderland-gonline/internal/config"
 	"wonderland-gonline/internal/game"
@@ -917,6 +918,9 @@ func TestVehicleLegacyLandingThenMovementPreservesRaft(t *testing.T) {
 	if err := s.dispatch(context.Background(), c, []byte{6, 1, 1, 184, 11, 32, 8, 2, 0, 235, 11, 233, 17, 1, 0}); err != nil {
 		t.Fatal(err)
 	}
+	if err := s.advancePlayerWalk(c, c.walk.started.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
 	if c.character.ActiveVehicle != 0 || c.character.X != 3000 || c.character.Y != 2080 || c.character.Bag != before {
 		t.Fatal("native landing lost position or changed inventory")
 	}
@@ -966,11 +970,20 @@ func TestStarterBeachRaftWaitsForLand(t *testing.T) {
 	if err := s.movementCommand(context.Background(), c, protocol.Builder{6, 1, 0}.U16(410).U16(1010).Bytes(make([]byte, 8))); err != nil {
 		t.Fatal(err)
 	}
+	if c.character.ActiveVehicle != 48016 {
+		t.Fatal("raft broke at announced destination before arrival")
+	}
+	for _, w := range wires {
+		w.Reset()
+	}
+	if err := s.advancePlayerWalk(c, c.walk.started.Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	if c.character.X != 410 || c.character.Y != 1010 || c.character.ActiveVehicle != 0 || !c.character.Bag[1].Empty() || c.character.Bag[2].ID != 48016 {
 		t.Fatalf("invalid beach landing: %+v", c.character)
 	}
 	packets := wires[0].packets(t)
-	if len(packets) < 4 || !bytes.Equal(packets[0], []byte{23, 9, 2, 1}) || !bytes.Equal(packets[1], protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) || !bytes.Equal(packets[2], protocol.Builder{15, 11, 2}.U32(c.character.ID)) || contains(packets, []byte{5, 4}) {
+	if len(packets) < 3 || !bytes.Equal(packets[0], []byte{23, 9, 2, 1}) || !bytes.Equal(packets[1], protocol.Builder{15, 15}.U32(c.character.ID).U16(48016)) || !bytes.Equal(packets[2], protocol.Builder{15, 11, 2}.U32(c.character.ID)) || contains(packets, []byte{5, 4}) {
 		t.Fatal("incorrect captured break order or extra refresh", packets)
 	}
 	stored, err := s.Store.Characters(context.Background(), c.account.ID)

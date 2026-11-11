@@ -92,6 +92,9 @@ func (s *Server) acknowledgeWorldLocked(c *Session) error {
 		// A peer's battle pet follows its appearance, before its position.
 		position := packets[len(packets)-1]
 		packets = append(append(packets[:len(packets)-1], s.peerPetPackets(peer.character)...), position)
+		if move := playerWalkPacket(peer); move != nil {
+			packets = append(packets, move)
+		}
 		if peer.fishing != nil {
 			packets = append(packets, fishingStartedPacket(peer))
 		}
@@ -395,6 +398,9 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	if err := c.outputError(); err != nil {
 		return err
 	}
+	if err := s.advancePlayerWalk(c, time.Now()); err != nil {
+		return err
+	}
 	if c.tentOwner != 0 {
 		if !gmIdle(c) {
 			return nil
@@ -582,6 +588,7 @@ func (s *Server) teleportAfterSave(c *Session, dst world.Destination, portal byt
 	s.endEvent(c)
 	c.resumeAt = time.Time{}
 	c.encounter.enterMap()
+	c.walk = playerWalk{}
 	packets, err := s.arrivalPackets(*char, c.view, c.pets, portal)
 	if err != nil {
 		return err
@@ -781,9 +788,19 @@ func (s *Server) movementCommand(ctx context.Context, c *Session, p []byte) erro
 		s.stopFishing(c)
 		s.closeStall(c)
 		s.cancelTrade(c)
-		c.arrived = false
+		if !nativeDestination || stopped {
+			c.arrived = false
+		}
 	}
 	s.Log.Debug("movement destination accepted", "session", c.info.ID, "map", c.character.Map, "x", x, "y", y, "previous_x", prevX, "previous_y", prevY, "native_destination", nativeDestination, "stopped", stopped)
+	if nativeDestination && !stopped {
+		remaining := c.walk.distance
+		c.walk = playerWalk{active: x != prevX || y != prevY, mapID: c.character.Map, fromX: prevX, fromY: prevY, toX: x, toY: y, lastX: prevX, lastY: prevY, started: time.Now(), distance: remaining, direction: direction}
+		packet := protocol.Builder{protocol.CommandMovement, protocol.MovementMove}.U32(c.character.ID).U8(direction).U16(x).U16(y)
+		s.broadcastWorld(c, packet)
+		return c.send(packet)
+	}
+	c.walk = playerWalk{}
 	c.character.X, c.character.Y = x, y
 	s.movePartyFollowers(c)
 	// Resolve quest-raft landing before any land region can start an event.

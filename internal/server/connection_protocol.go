@@ -8,7 +8,7 @@ func (s *Server) offerConnectionProtocol(c *Session) error {
 	if c.connectionOffered != 0 || c.connectionNegotiated {
 		return nil
 	}
-	flags := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionClientBackdrops | protocol.ConnectionCompleteMapSnapshot | protocol.ConnectionObservedPickups)
+	flags := uint32(protocol.ConnectionCollectionTiming | protocol.ConnectionClientBackdrops | protocol.ConnectionCompleteMapSnapshot | protocol.ConnectionObservedPickups | protocol.ConnectionAFK | protocol.ConnectionAFKAggregation | protocol.ConnectionAFKDelta)
 	if s.combatRoundChain {
 		flags |= protocol.ConnectionCombatRoundChain
 	}
@@ -26,6 +26,9 @@ func (s *Server) acceptConnectionProtocol(c *Session, p []byte) error {
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if flags&(protocol.ConnectionAFKAggregation|protocol.ConnectionAFKDelta) != 0 && flags&protocol.ConnectionAFK == 0 {
+		return protocol.ErrMalformed
+	}
 	if c.connectionOffered == 0 || flags & ^c.connectionOffered != 0 {
 		return protocol.ErrMalformed
 	}

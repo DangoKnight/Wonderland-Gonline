@@ -89,7 +89,7 @@ func audioGain(on bool, steps int) float64 {
 	return math.Pow(10, -float64((settings.VolumeSteps-steps)*volumeAttenuationStep)/hundredthsPerBel)
 }
 func (c *Client) effectsGain() float64 {
-	if c.backgroundSession {
+	if c.backgroundSession || c.afk.active || c.afk.resync {
 		return 0
 	}
 	if c.SettingsState == nil {
@@ -105,7 +105,7 @@ func (c *Client) applyLocalSettings() {
 	l := c.SettingsState.Local
 	if c.Music != nil {
 		gain := audioGain(l.MusicOn, l.MusicVolume)
-		if c.backgroundSession {
+		if c.backgroundSession || c.afk.active || c.afk.resync {
 			gain = 0
 		}
 		c.Music.SetVolume(gain)

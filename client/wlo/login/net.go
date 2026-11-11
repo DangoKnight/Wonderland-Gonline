@@ -322,3 +322,14 @@ func (n *Net) Shutdown() {
 		status.Close()
 	}
 }
+
+// ServerAddress identifies the actual connected endpoint, not a display name.
+func (n *Net) ServerAddress() string {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.login == nil {
+		return ""
+	}
+	a := n.login.RemoteAddr()
+	return a.Network() + ":" + a.String()
+}

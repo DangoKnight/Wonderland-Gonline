@@ -34,6 +34,17 @@ func (c *Client) dispatch(p []byte) {
 	if len(p) == 0 {
 		return
 	}
+	if c.afkPacket(p) {
+		return
+	}
+	// Apply the ordered peer refresh before its end fence, even during combat.
+	if c.afk.resync && !c.afk.sceneReceived {
+		c.dispatchNative(p)
+		return
+	}
+	if c.afkIgnore(p) {
+		return
+	}
 	if c.connectionCapabilitiesPacket(p) {
 		return
 	}

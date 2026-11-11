@@ -74,32 +74,96 @@ inspection modes while they remain useful for comparison.
 
 ### AFK mode per client instance
 
-- [ ] Implement AFK mode exclusively for Gonline Client connected to Gonline
+- [x] Implement AFK mode exclusively for Gonline Client connected to Gonline
   Server. Negotiate support through the existing connection capability exchange;
   offer the mode only when both endpoints support it.
-- [ ] Add an AFK toggle for each individual client instance/session. Changing
+- [x] Add an AFK toggle for each individual client instance/session. Changing
   one instance must not affect any other instance in the same process.
-- [ ] Restrict AFK operation to vital communication: connection maintenance,
+- [x] Restrict AFK operation to vital communication: connection maintenance,
   required protocol acknowledgements, authoritative player/pet/party state,
   combat and configured automation, inventory/reward changes, map transitions,
   timers and actionable errors. Classify messages explicitly so ignoring visual
   updates cannot stall a battle, dialogue or other active interaction.
-- [ ] Ignore nonessential information such as unrelated players on the map,
+- [x] Ignore nonessential information such as unrelated players on the map,
   their movement/appearance and chat. Gonline Server must suppress these updates
   for the individual AFK connection, and Gonline Client must ignore any already
   queued nonessential updates. AFK mode is unavailable on Legacy servers and to
   Legacy clients; their existing communication behavior remains unchanged.
-- [ ] Replace the rendered game scene entirely with an event-log view. Keep
+- [x] Replace the rendered game scene entirely with an event-log view. Keep
   player, pet and party stats continuously visible, including current/maximum
   HP and SP, level, experience/progress and other relevant status values. Obtain
   any missing authoritative stats through the vital state-update path.
-- [ ] Log important gameplay events such as combat outcomes, EXP/level gains,
+- [x] Log important gameplay events such as combat outcomes, EXP/level gains,
   item acquisition/use, pet changes, recovery, defeats and connection problems.
   Bound retained log history and avoid unnecessary world rendering, animation,
   audio and asset-loading work while AFK mode is active.
-- [ ] On leaving AFK mode, resynchronize the current scene and entities before
+- [x] On leaving AFK mode, resynchronize the current scene and entities before
   restoring the world view. Test independent AFK/normal instances, existing
   automation, combat, travel, disconnect/reconnect and return to normal mode.
+- [ ] Complete multi-client live acceptance and measure CPU, asset-loading and
+  network reductions. Current coverage uses automated fixtures and rendered UI
+  inspection; retained NPC/map state and combat timing still require client work.
+- [x] Implement negotiated aggregate communication for
+  AFK instances in the same client process. For example, AFK party members
+  should share one authorized party-state request/response rather than each
+  requesting duplicate self/party snapshots. Prefer server-pushed updates over
+  polling. Negotiate aggregation explicitly, distinguish shared party state from
+  private owner-only data, and preserve per-session authentication and command
+  ownership. Handle subscriber changes, leadership changes, mixed AFK/normal
+  sessions, reconnects and stale responses with a safe independent-stream fallback.
+  Verified with eight native sessions in two parties: two normal leaders and
+  six AFK followers stayed bound to two shared streams for a 60-second automated
+  battle run. A matching-state wire fixture uses 209 bytes instead of 620 bytes
+  for three subscribers. Battle gameplay packets remain per connection; the
+  aggregation covers common AFK party snapshots, not all combat traffic.
+
+### Complete headless API coverage
+
+- [ ] Extend the optional headless API to cover every implemented client feature
+  through structured commands and state queries. Every supported workflow must
+  be fully operational without mouse emulation, screen coordinates, synthetic
+  keyboard input or screenshot interpretation. Keep coverage aligned with new
+  gameplay features; input simulation and JavaScript evaluation may remain
+  optional diagnostic tools, but must never be required to complete a workflow.
+- [ ] Dispatch commands directly through the client's normal application actions
+  and validation paths, without synthesizing UI input or bypassing server rules.
+  Provide direct movement by world coordinates, entity targeting by stable IDs,
+  item use by inventory identity/slot and explicit target, and menu access by
+  named module. Support opening, inspecting, selecting, confirming and closing
+  menus/forms through the API, including nested dialogs and reward choices.
+- [ ] Publish a versioned, discoverable API contract describing available commands,
+  arguments, state fields, prerequisites and errors. Validate types, ranges and
+  session ownership before dispatching commands.
+- [ ] Support login, server/channel and character selection, character creation,
+  logout and reconnect. Handle credentials without including them in logs, state
+  snapshots or command history.
+- [ ] Cover movement, targeting, NPC dialogue and choices, quests, collection,
+  inventory/equipment, consumables, Potential Pills, compounding, pets, vehicles,
+  tents/furniture, shops, treatment, storage and other implemented NPC services.
+- [ ] Cover combat actions and target selection, capture, pet changes, AUTO,
+  complete Remote configuration, Join Battle, spectating, teams/leadership,
+  traditional PK and World PK. Retain normal client/server eligibility checks.
+- [ ] Cover social/friends, chat, mail, boards, trading, mall/cart, reward choices,
+  forging, supported minigames, notebook, settings and session management wherever
+  these features are implemented. Report unavailable features explicitly.
+- [ ] Expose sufficient structured state to operate these features without
+  screenshots: available actions, open forms and prompts, selections, inventory,
+  skills, player/pet/party stats, timers, combat state and actionable errors.
+- [ ] Distinguish command acceptance, local execution, server rejection and
+  observed completion. Propagate client errors through RPC instead of returning
+  success merely because JavaScript evaluation succeeded. Provide bounded event
+  history, correlation where supported, and timeout/cancellation semantics;
+  never infer authoritative success or retry resource-consuming actions blindly.
+- [ ] Preserve independent instance ownership, ordered input and gameplay gates.
+  Keep headless services behind explicit opt-in and authenticated loopback access;
+  normal server startup must not enable them. Administration remains separate.
+- [ ] Verify command/state coverage with focused tests, malformed-input and
+  rejection cases, concurrent independent agents, disconnect/reconnect and live
+  end-to-end checks with input-emulation helpers disabled. Any remaining UI-only
+  path is incomplete API coverage; document it and unverified behavior explicitly.
+- [ ] Keep this API separate from AFK mode: headless automation currently runs
+  the real browser client, while AFK mode negotiates reduced traffic and replaces
+  scene rendering. Verify compatibility if both features are used together.
 
 ## Development and acceptance
 

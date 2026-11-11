@@ -60,7 +60,7 @@ func TestConnectionHelloRespectsConfigAndMissingAssets(t *testing.T) {
 	_ = wire(t, c)
 	c.resources.battleBackdrops = nil
 	// Server has chains disabled and the client cannot resolve backdrops.
-	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 37, 0, 0, 0}) // Includes an unknown future bit, ignored by intersection.
+	c.dispatch([]byte{1, 248, 71, 76, 79, 78, 1, 0, 5, 1, 0, 0}) // Includes an unknown future bit, ignored by intersection.
 	if c.connection.features != 1 {
 		t.Fatal("unavailable features selected", c.connection.features)
 	}

@@ -622,6 +622,9 @@ func (c *Client) battleAssets() {
 		c.resources.battleAssets = a
 	}
 	v.assets = c.resources.battleAssets
+	if c.afk.active || c.afk.resync && !c.afk.sceneReceived {
+		return
+	} // Timing metadata is vital; backdrop textures are not.
 	bg := v.assets.Background(v.state.Background)
 	for _, id := range bg.Pictures {
 		if id != 0 {
@@ -1456,6 +1459,9 @@ func battleTarget(a clientbattle.Action) clientbattle.Cell {
 // playBattleMusic plays the battle scene record's music (battle scenes
 // such as 59081 name BGM0014), as map scenes name theirs.
 func (c *Client) playBattleMusic() {
+	if c.afk.active || c.afk.resync {
+		return
+	}
 	if c.Music == nil {
 		return
 	}

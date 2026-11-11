@@ -166,6 +166,55 @@ by playing audio streams.
 - Higher-resolution bicubic/edge-aware filtering adds final GPU work. This
   sample did not measure it and does not attribute the reported pause to it.
 
+## AFK traffic audit (2026-11-11)
+
+The first AFK implementation retained gameplay packets and added full vitals
+snapshots. Aggregation removed per-subscriber copies, but a changed HP value
+still repeated unchanged names, levels, maxima and EXP metadata. The audit also
+found native redundancies unrelated to AFK: `partySync` repeated eight stat
+fields for a one-field change, and battle entry broadcast a complete party
+refresh to everyone once per entrant.
+
+Implemented reductions:
+
+- Negotiated changed-field AFK updates, including shared streams; full initial
+  snapshots and full fallback for older peers and roster ordering changes.
+- Native teammate updates contain only changed absolute-value fields. An HP-only
+  update uses one packet instead of eight; joins/refreshes still contain all eight.
+- Battle entry refreshes only the entering recipient. For four entrants this
+  removes three duplicate copies of each recipient's native roster/stat snapshot.
+
+Two 60-second native GPU runs used eight sessions, two four-player parties, two
+normal leaders and six AFK followers, with automated battles. Packet accounting
+counts received Wonderland frames including their four-byte header, and sent TCP
+stream bytes, excluding TCP/IP overhead. Both runs retained all eight sessions,
+six subscribers and two shared streams throughout measurement.
+
+| Measured bytes | Before audit fixes | After fixes |
+| --- | ---: | ---: |
+| AFK private/shared updates | 5,086 | 1,698 |
+| Native stat updates (AC8) | 21,944 | 14,136 |
+| Combat actions (AC50) | 9,688 | 15,692 |
+| All received traffic | 58,556 | 56,938 |
+| All sent traffic | 2,154 | 2,116 |
+| Combined traffic | 60,710 | 59,054 |
+
+The before window contained two party fight starts; the after window contained
+three. Both had one party fight completion, and AC50 action counts increased from
+440 to 712. Do not present the total-byte difference as an exact same-workload
+percentage saving. The controlled wire tests separately verify one-field changes,
+single-recipient snapshots, exact reconstruction, mixed versions and late
+subscribers. An intermediate run before fixing repeated battle-entry broadcasts
+is retained as well; it also demonstrates why raw one-minute totals can rise
+when the window executes more combat.
+
+Combat actions, acknowledgments, inventory receipts and NPC state consumed by
+automation remain on their normal streams. Removing rendered animations does
+not make those protocol messages dispensable. These measurements do not claim
+CPU/GPU savings: unrelated test processes were active during some runs. Raw
+measurements and archived harnesses are under ignored local directories
+`var/afk-traffic-before/`, `var/afk-traffic-after/` and `var/afk-traffic-final/`.
+
 ## Scope and evidence
 
 The initial investigation did not change runtime code. The subsequent rendering
