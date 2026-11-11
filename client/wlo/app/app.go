@@ -14,6 +14,7 @@ import (
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/localization"
 
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/housing"
 	"wonderland-gonline/client/wlo/hud"
@@ -84,11 +85,18 @@ type Client struct {
 	Sprites  *sprites.Manager
 	Notices  Notices
 	// World is the in-game view, set by AC3.
-	World                *world.World
-	Settings             *settings.Form
-	SettingsState        *settings.State
-	settingsPromptForm   *seui.Form
-	settingsPath         string
+	World              *world.World
+	Settings           *settings.Form
+	SettingsState      *settings.State
+	settingsPromptForm *seui.Form
+	settingsPath       string
+	// debugLog records this session's transcript while the window rule is on;
+	// screenSuffix keeps concurrent windows in separate files.
+	debugLog             *debuglog.Log
+	diagnostics          *debuglog.Recorder
+	debugLogOn           bool
+	debugLogCap          int
+	screenSuffix         string
 	Inventory            *inventory.Form
 	Compound             *inventory.CompoundForm
 	Team                 *team.Form
@@ -314,6 +322,8 @@ func New(o Options) (*Client, error) {
 
 	c.G = login.NewGlobals()
 	c.Net = login.NewNet()
+	c.diagnostics = &debuglog.Recorder{}
+	c.Net.SetDiagnostic(c.diagnostics.Printf)
 	if o.Dial != nil {
 		c.Net.Dial = o.Dial
 	}

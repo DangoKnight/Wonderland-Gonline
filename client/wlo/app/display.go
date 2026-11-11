@@ -9,10 +9,12 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/surface"
@@ -48,7 +50,10 @@ const (
 	displayFrameRateRow  = 3
 	displayScalingRow    = 4
 	displayLanguageRow   = 5
-	displayRowCount      = 5
+	// Visual slots: the debug row sits above Language, which moves one down.
+	displayDebugRow     = 5
+	displayLanguageSlot = 5
+	displayRowCount     = 5
 )
 
 var displayModes = []string{displayWindowed, displayFullscreen, displayBorderless}
@@ -62,6 +67,10 @@ type DisplaySettings struct {
 	FPS      int    `json:"fps"`
 	Scaling  string `json:"scaling,omitempty"`
 	Language string `json:"language,omitempty"`
+	// DebugLog is a window rule: every session records its own transcript, so
+	// the setting lives here rather than in the per-session game settings.
+	DebugLog         bool `json:"debug_log,omitempty"`
+	DebugLogMaxLines int  `json:"debug_log_max_lines"`
 }
 
 // Matches the existing workspace-level preference directory, independently of
@@ -78,7 +87,7 @@ func applicationSettingsPath(o Options, a login.Assets) string {
 }
 
 func defaultDisplaySettings() DisplaySettings {
-	return DisplaySettings{Mode: displayWindowed, Width: workspaceWidth, Height: ScreenHeight, FPS: displayFPSVSync}
+	return DisplaySettings{Mode: displayWindowed, Width: workspaceWidth, Height: ScreenHeight, FPS: displayFPSVSync, DebugLogMaxLines: debuglog.DefaultLimit}
 }
 
 // InitializeLanguage stores a confirmed first-launch choice without changing
@@ -115,6 +124,7 @@ func (s DisplaySettings) validate() error {
 	}
 	return render.ValidateScaling(s.Scaling)
 }
+
 func loadDisplaySettings(path string) (DisplaySettings, error) {
 	s := defaultDisplaySettings()
 	f, err := os.Open(path)
@@ -145,6 +155,7 @@ func loadDisplaySettings(path string) (DisplaySettings, error) {
 	if s.Language != "" {
 		s.Language, _ = localization.Normalize(s.Language)
 	}
+	s.DebugLogMaxLines = debuglog.NormalizeLimit(s.DebugLogMaxLines)
 	return s, nil
 }
 func (s DisplaySettings) save(path string) error {
@@ -285,6 +296,9 @@ func (d *displayControls) pace() {
 	d.nextFrame = d.nextFrame.Add(interval)
 }
 func (g *Game) applyDisplay(s DisplaySettings) {
+	// The recording rule is window-wide, so it applies to every session and must
+	// run even when the window mode itself does not change.
+	g.Workspace.ApplyDebugLog(s.DebugLog, s.DebugLogMaxLines)
 	d := g.display
 	previousMode := d.current().Mode
 	if d.applied && previousMode == s.Mode {
@@ -338,12 +352,60 @@ func displaySettingsButton() image.Rectangle {
 func displayValueRect(row int) image.Rectangle {
 	return image.Rect(displayControlLeft, displayRowTop+row*displayRowHeight, displayControlLeft+displayControlWidth, displayRowTop+row*displayRowHeight+30)
 }
+
+// displayRowSlot maps a select field to its visual slot. Only Language moves, so
+// the debug row can sit above it without renumbering the open dropdowns.
+func displayRowSlot(row int) int {
+	if row == displayLanguageRow {
+		return displayLanguageSlot
+	}
+	return row - 1
+}
 func displayActionRect(right bool) image.Rectangle {
 	x := displayPanelLeft + 30
 	if right {
 		x = displayPanelLeft + displayPanelWidth - 150
 	}
 	return image.Rect(x, displayButtonTop, x+120, displayButtonTop+displayButtonHeight)
+}
+
+// The debug row shares the value column: the left part toggles recording for
+// the window, the right part cycles the per-session line cap.
+func displayDebugToggleRect() image.Rectangle {
+	r := displayValueRect(displayDebugRow - 1)
+	r.Max.X = r.Min.X + 90
+	return r
+}
+func displayDebugCapRect() image.Rectangle {
+	r := displayValueRect(displayDebugRow - 1)
+	r.Min.X += 92
+	return r
+}
+
+// DebugLimitLabel is the transcript cap as shown in the settings row.
+func DebugLimitLabel(lines int) string {
+	if lines == 0 {
+		return localization.UI("ui.app.unlimited_11dde17d")
+	}
+	return strconv.Itoa(lines)
+}
+
+// debugToggleLabel is the recording switch as shown in the settings row.
+func debugToggleLabel(on bool) string {
+	if on {
+		return localization.UI("ui.app.on_13001175")
+	}
+	return localization.UI("ui.app.off_ca7981b4")
+}
+
+// NextDebugLimit cycles the offered caps, so the row needs no dropdown.
+func NextDebugLimit(lines int) int {
+	for i, v := range debuglog.LimitSteps {
+		if v == lines {
+			return debuglog.LimitSteps[(i+1)%len(debuglog.LimitSteps)]
+		}
+	}
+	return debuglog.LimitSteps[1]
 }
 
 func displayFrameRateLabel(fps int) string {
@@ -392,7 +454,7 @@ func (d *displayControls) selectLabels() []string {
 }
 
 func (d *displayControls) selectRect() image.Rectangle {
-	r := displayValueRect(d.selectRow - 1)
+	r := displayValueRect(displayRowSlot(d.selectRow))
 	return image.Rect(r.Min.X, r.Max.Y, r.Max.X, r.Max.Y+len(d.selectLabels())*displaySelectItemHeight)
 }
 
@@ -546,11 +608,19 @@ func (g *Game) displayInput(now time.Time) bool {
 	if d.preview {
 		return true
 	}
-	for row := 0; row < displayRowCount; row++ {
-		if !pt.In(displayValueRect(row)) {
-			continue
+	if pt.In(displayDebugToggleRect()) {
+		d.draft.DebugLog = !d.draft.DebugLog
+		return true
+	}
+	if pt.In(displayDebugCapRect()) {
+		d.draft.DebugLogMaxLines = NextDebugLimit(d.draft.DebugLogMaxLines)
+		return true
+	}
+	for _, field := range []int{displayModeRow, displayResolutionRow, displayFrameRateRow, displayScalingRow, displayLanguageRow} {
+		if pt.In(displayValueRect(displayRowSlot(field))) {
+			d.openSelect(field, pt)
+			return true
 		}
-		d.openSelect(row+1, pt)
 	}
 	return true
 }
@@ -588,14 +658,36 @@ func (g *Game) drawDisplay(dst *surface.Surface) {
 	if d.draft.Language == localization.Chinese {
 		language = localization.UI("ui.settings.chinese")
 	}
-	for i, row := range []struct{ name, value string }{{localization.UI("ui.app.mode_5e23ec6a"), mode}, {localization.UI("ui.app.render_resolution_992e3361"), size}, {localization.UI("ui.app.frame_limit_cd2533e0"), fps}, {localization.UI("ui.app.scaling_filter_325b8c64"), render.ScalingLabel(d.draft.Scaling)}, {localization.UI("ui.settings.language"), language}} {
-		text(displayPanelLeft+24, displayRowTop+i*displayRowHeight+7, 180, row.name)
+	// Visual order: the four selects, then the debug row, then Language.
+	rows := []struct {
+		field       int
+		name, value string
+	}{
+		{displayModeRow, localization.UI("ui.app.mode_5e23ec6a"), mode},
+		{displayResolutionRow, localization.UI("ui.app.render_resolution_992e3361"), size},
+		{displayFrameRateRow, localization.UI("ui.app.frame_limit_cd2533e0"), fps},
+		{displayScalingRow, localization.UI("ui.app.scaling_filter_325b8c64"), render.ScalingLabel(d.draft.Scaling)},
+	}
+	for _, row := range rows {
+		slot := displayRowSlot(row.field)
+		text(displayPanelLeft+24, displayRowTop+slot*displayRowHeight+7, 180, row.name)
 		value := row.value
-		if !d.preview && (i != displayResolutionRow-1 || displayResolutionPickingEnabled) {
+		if !d.preview && (row.field != displayResolutionRow || displayResolutionPickingEnabled) {
 			value += "   v"
 		}
-		button(displayValueRect(i), value)
+		button(displayValueRect(slot), value)
 	}
+	debugSlot := displayDebugRow - 1
+	text(displayPanelLeft+24, displayRowTop+debugSlot*displayRowHeight+7, 180, localization.UI("ui.debuglog.title"))
+	button(displayDebugToggleRect(), debugToggleLabel(d.draft.DebugLog))
+	button(displayDebugCapRect(), DebugLimitLabel(d.draft.DebugLogMaxLines))
+	languageSlot := displayRowSlot(displayLanguageRow)
+	text(displayPanelLeft+24, displayRowTop+languageSlot*displayRowHeight+7, 180, localization.UI("ui.settings.language"))
+	languageValue := language
+	if !d.preview {
+		languageValue += "   v"
+	}
+	button(displayValueRect(languageSlot), languageValue)
 	if d.preview {
 		text(displayPanelLeft+24, displayPanelTop+272, 450, fmt.Sprintf(localization.UI("ui.app.keep_these_settings_reverts_in_d_seconds_7abc12e5"), max(0, int(time.Until(d.deadline).Seconds())+1)))
 		button(displayActionRect(false), localization.UI("ui.app.revert_0026c505"))

@@ -2,6 +2,12 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+    "ui.debuglog.title": "除錯記錄",
+    "ui.debuglog.start_failed": "無法啟動除錯記錄：",
+    "ui.debuglog.started": "已啟動除錯記錄：",
+    "ui.debuglog.line_limit": "保留最近 %d 行；持續記錄仍可能佔用大量磁碟空間。",
+    "ui.debuglog.unlimited_warning": "未限制記錄行數；長時間記錄可能用盡磁碟空間。",
+    "ui.debuglog.error": "除錯記錄：",
     "item.10000.description": "問號",
     "item.10000.name": "問號(未開)",
     "item.10001.description": "未知",

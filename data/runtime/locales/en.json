@@ -2,6 +2,12 @@
   "version": 1,
   "language": "en",
   "strings": {
+    "ui.debuglog.title": "Debug log",
+    "ui.debuglog.start_failed": "Could not start the debug log: ",
+    "ui.debuglog.started": "Debug log started: ",
+    "ui.debuglog.line_limit": "Last %d lines retained; recording may still use substantial disk space.",
+    "ui.debuglog.unlimited_warning": "Line limit is off: a long session can fill the disk.",
+    "ui.debuglog.error": "Debug log: ",
     "item.10000.description": "Test",
     "item.10000.name": "Test",
     "item.10001.description": "Test",

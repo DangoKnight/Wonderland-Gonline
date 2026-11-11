@@ -4,7 +4,6 @@ import "wonderland-gonline/internal/localization"
 
 import (
 	"encoding/binary"
-	"log"
 	"math/rand/v2"
 	"strconv"
 	"time"
@@ -325,7 +324,7 @@ func (c *Client) startSport(s []byte) {
 		sp.game, layout = g, memoryLayout
 		exit, exitLeft, exitTop = "Hunting_Exit_Btn", 700, 560
 	default:
-		log.Printf("minigame %d (parameter %d) is not ported; answering a loss", kind, param)
+		c.logf("minigame %d (parameter %d) is not ported; answering a loss", kind, param)
 		c.sendSportResult(false)
 		return
 	}

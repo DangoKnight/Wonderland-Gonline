@@ -28,6 +28,39 @@ does not carry or search the override tables.
 
 The workspace's **Settings** button or **F10** opens window-wide settings,
 including display controls and language selection.
+
+### Session debug log
+
+The window settings (F10) carry a **Debug log** row: a switch and a line-cap
+button that cycles the offered caps (`client/debuglog`, `client/wlo/app/display.go`,
+`client/wlo/app/workspace.go`). The rule belongs to the window, not to a single
+session, so it is stored with the other display settings in `display.json` and
+applies to every open session at once; sessions added later inherit it.
+
+Each session records into its own file, distinguished by the window suffix:
+
+```
+var/client/user/logs/session-YYYYMMDD-HHMMSS-screen1.txt      session 1
+var/client/user/session-2/user/logs/session-…-screen2.txt     session 2
+```
+
+A transcript records packets in both directions, with command bytes and payloads
+in hexadecimal. Credential-bearing login, character creation/deletion and bank
+command families retain only their headers and lengths; their payloads are redacted
+in both directions, including malformed variants. Other packet payloads can still
+contain personal information, including chat, so review logs before sharing them.
+
+Session-owned diagnostics (dialogue, movies, minigames and connection errors) go
+to the owning transcript and the normal logger. Process-wide renderer/workspace
+messages keep their normal destination. Recording never redirects the global logger,
+and disabling or closing one session does not affect another session's recording.
+
+The cap keeps the last N lines, rewritten to the file in batches; **0 =
+unlimited**, and an unlimited session can fill the disk, which the row's value
+makes explicit. The cap list is `0, 1000, 5000, 20000, 100000`; a hand-edited
+`debug_log_max_lines` is clamped to `0…1000000`. Changing the cap while
+recording is on starts a new transcript, closing a session flushes its file, and
+quitting flushes the rest.
 The first implementation supports windowed mode, Ebitengine fullscreen, and a
 desktop-sized borderless window. Windowed mode supports edge resizing and the
 normal maximize/restore controls. Resolution picking is temporarily disabled:
