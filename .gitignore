@@ -43,3 +43,12 @@ __pycache__/
 
 # Generated workbook inspections; keep the authored workbook itself.
 *.xlsx.inspect.ndjson
+
+# Local server build artifact from `go build ./cmd/wonderland`.
+/wonderland
+
+# Headless agent per-session controllers and local logs.
+/tools/headless-agent/session/
+
+# Original client sources.
+/sources/
