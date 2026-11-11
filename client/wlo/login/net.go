@@ -6,11 +6,14 @@ package login
 
 import (
 	"encoding/binary"
+	"log"
 	"net"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
 
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -45,15 +48,56 @@ type Event struct {
 // Net is the pair of client sockets. Events arrive on a channel the frame
 // loop drains, so handlers run on the game thread as in the original.
 type Net struct {
-	Dial    func(network, address string) (net.Conn, error)
-	events  chan Event
-	mu      sync.Mutex
-	status  net.Conn
-	login   net.Conn
-	reframe []byte // DAT_00828128 +8
-	dialing bool
-	closed  bool
-	pending [][]byte
+	Dial   func(network, address string) (net.Conn, error)
+	events chan Event
+	mu     sync.Mutex
+	status net.Conn
+	login  net.Conn
+	// observer records every packet that crosses the login socket; nil disables
+	// recording (see client/debuglog).
+	observer   func(direction byte, p []byte)
+	diagnostic func(format string, args ...any)
+	reframe    []byte // DAT_00828128 +8
+	dialing    bool
+	closed     bool
+	pending    [][]byte
+}
+
+// SetObserver installs or clears the packet recorder. It is called from the
+// game thread when session recording is toggled.
+func (n *Net) SetObserver(observe func(direction byte, p []byte)) {
+	n.mu.Lock()
+	n.observer = observe
+	n.mu.Unlock()
+}
+
+// SetDiagnostic supplies a session-owned diagnostic sink. It must be safe for
+// concurrent calls from the connection reader and the UI thread.
+func (n *Net) SetDiagnostic(report func(format string, args ...any)) {
+	n.mu.Lock()
+	n.diagnostic = report
+	n.mu.Unlock()
+}
+
+func (n *Net) report(format string, args ...any) {
+	n.mu.Lock()
+	report := n.diagnostic
+	n.mu.Unlock()
+	if report != nil {
+		report(format, args...)
+	} else {
+		log.Printf(format, args...)
+	}
+}
+
+// observe hands one packet to the recorder installed by SetObserver.
+func (n *Net) observe(direction byte, p []byte) {
+	n.mu.Lock()
+	observe := n.observer
+	n.mu.Unlock()
+	if observe != nil {
+		observe(direction, p)
+	}
 }
 
 func NewNet() *Net {
@@ -144,6 +188,14 @@ func (n *Net) Connect(host string) {
 	n.dialing, n.pending = true, nil
 	n.mu.Unlock()
 	go func() {
+		// A panic here would kill the process with no trace; record the stack in
+		// the session transcript, then let it die as before.
+		defer func() {
+			if r := recover(); r != nil {
+				n.report("panic in the connection reader: %v\n%s", r, debug.Stack())
+				panic(r)
+			}
+		}()
 		c, err := n.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(LoginPort)))
 		n.mu.Lock()
 		if n.closed {
@@ -174,6 +226,7 @@ func (n *Net) Connect(host string) {
 			k, err := c.Read(buf)
 			if k > 0 {
 				for _, p := range n.receive(buf[:k]) {
+					n.observe(debuglog.In, p)
 					n.post(Event{Packet, p})
 				}
 			}
@@ -245,7 +298,11 @@ func (n *Net) Send(p []byte) error {
 		return net.ErrClosed
 	}
 	c.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	return protocol.Write(c, p)
+	if err := protocol.Write(c, p); err != nil {
+		return err
+	}
+	n.observe(debuglog.Out, p)
+	return nil
 }
 
 // Shutdown permanently disposes a removed session, including late dial results.

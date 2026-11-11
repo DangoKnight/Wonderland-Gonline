@@ -2,6 +2,12 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+    "ui.debuglog.title": "除錯記錄",
+    "ui.debuglog.start_failed": "無法啟動除錯記錄：",
+    "ui.debuglog.started": "已啟動除錯記錄：",
+    "ui.debuglog.line_limit": "保留最近 %d 行；持續記錄仍可能佔用大量磁碟空間。",
+    "ui.debuglog.unlimited_warning": "未限制記錄行數；長時間記錄可能用盡磁碟空間。",
+    "ui.debuglog.error": "除錯記錄：",
     "ui.timed.exp_time": "%.1f倍經驗加成：剩餘%d分鐘",
     "ui.timed.exp_expired": "經驗加成已結束。",
     "ui.timed.exp_repeated": "經驗藥水效果仍在持續。",

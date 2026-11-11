@@ -4,11 +4,13 @@ import (
 	"errors"
 	"image"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/cursor"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/seui"
@@ -413,6 +415,19 @@ func (g *Game) workspaceCursor() (int, int) {
 // Run opens the window and runs the client until Leave or the window
 // closes.
 func Run(c *Client) error {
+	// A crash must leave a trace: keep the panic and its stack beside the session
+	// logs, then let the process die as it would have.
+	defer func() {
+		if r := recover(); r != nil {
+			path, err := debuglog.WriteCrash(c.Assets.UserPath("logs"), c.Now(), r, debug.Stack())
+			if err == nil {
+				c.logf("panic: %v (report: %s)", r, path)
+			} else {
+				c.logf("panic: %v (report failed: %v)", r, err)
+			}
+			panic(r)
+		}
+	}()
 	g := NewGame(c)
 	presenter, err := render.New(c.options.Renderer)
 	if err != nil {
@@ -420,10 +435,12 @@ func Run(c *Client) error {
 	}
 	g.presenter = presenter
 	defer presenter.Close()
-	log.Printf("renderer: %s", presenter.Mode())
+	// Flush the session transcript before the process exits.
+	defer c.stopDebugLog()
+	c.logf("renderer: %s", presenter.Mode())
 	defer g.Workspace.Close()
 	if err := g.Workspace.RestoreProfile(); err != nil {
-		log.Printf("workspace profile: %v", err)
+		c.logf("workspace profile: %v", err)
 	}
 	if presenter.Mode() == render.GPU {
 		g.Workspace.attachRenderer(presenter.Attach)
@@ -432,7 +449,7 @@ func Run(c *Client) error {
 	if icon, err := c.lib.Image(xaolanPortraitFamily, xaolanPortraitID, 0, 0); err == nil {
 		ebiten.SetWindowIcon([]image.Image{icon})
 	} else {
-		log.Printf("window icon: %v", err)
+		c.logf("window icon: %v", err)
 	}
 	g.display = newDisplayControls(applicationSettingsPath(g.Workspace.options, c.Assets))
 	g.display.settings.Language = c.resources.language

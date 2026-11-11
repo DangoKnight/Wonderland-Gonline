@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/binary"
 	"image"
-	"log"
 	"strconv"
 	"strings"
 	"wonderland-gonline/internal/clientimage"
@@ -144,13 +143,13 @@ func (c *Client) startMovie(s []byte) {
 	id := int(binary.LittleEndian.Uint32(s[eventFrameValue:]))
 	m, err := movie.Load(c.Assets, id)
 	if err != nil {
-		log.Printf("movie %d: %v", id, err)
+		c.logf("movie %d: %v", id, err)
 		c.event.done = true
 		return
 	}
 	view, err := c.movieView(m)
 	if err != nil {
-		log.Printf("movie %d: %v", id, err)
+		c.logf("movie %d: %v", id, err)
 		c.event.done = true
 		return
 	}
@@ -163,7 +162,7 @@ func (c *Client) startMovie(s []byte) {
 			}
 		}
 		if mp.background == nil {
-			log.Printf("movie %d: illustration %s unavailable", id, name)
+			c.logf("movie %d: illustration %s unavailable", id, name)
 		}
 	}
 	if mode := s[eventFrameMode]; mode == 2 || mode == 4 {

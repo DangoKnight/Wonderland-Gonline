@@ -3,9 +3,12 @@ package app
 import "wonderland-gonline/internal/localization"
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	"math"
+	"wonderland-gonline/client/debuglog"
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/settings"
 	"wonderland-gonline/client/wlo/seui"
@@ -132,6 +135,57 @@ func (c *Client) applyLocalSettings() {
 		colors[ch] = settings.Palette[l.Colors[i]]
 	}
 	c.Chat.SetColors(colors)
+}
+
+// SyncDebugLog applies the window-level recording rule to this session: the
+// toggle and line cap live in the shared display settings, so every session
+// records into its own file, distinguished by the window suffix.
+func (c *Client) SyncDebugLog(on bool, maxLines int) {
+	c.debugLogOn = on
+	c.debugLogCap = maxLines
+	if !on {
+		c.stopDebugLog()
+		return
+	}
+	if c.debugLog != nil && c.debugLog.MaxLines() == maxLines && c.debugLog.Suffix() == c.screenSuffix {
+		return
+	}
+	c.stopDebugLog()
+	recorded, err := debuglog.Open(c.Assets.UserPath("logs"), maxLines, c.Now(), c.screenSuffix)
+	if err != nil {
+		c.Chat.Notice(localization.UI("ui.debuglog.start_failed") + err.Error())
+		return
+	}
+	c.debugLog = recorded
+	c.Net.SetObserver(recorded.Packet)
+	c.diagnostics.SetLog(recorded)
+	c.Chat.Notice(localization.UI("ui.debuglog.started") + recorded.Path())
+	if maxLines > 0 {
+		c.Chat.Notice(fmt.Sprintf(localization.UI("ui.debuglog.line_limit"), maxLines))
+	} else {
+		c.Chat.Notice(localization.UI("ui.debuglog.unlimited_warning"))
+	}
+}
+
+// stopDebugLog detaches only this session's sinks, then flushes its transcript.
+func (c *Client) stopDebugLog() {
+	if c.debugLog == nil {
+		return
+	}
+	c.Net.SetObserver(nil)
+	c.diagnostics.SetLog(nil)
+	if err := c.debugLog.Close(); err != nil {
+		c.Chat.Notice(localization.UI("ui.debuglog.error") + err.Error())
+	}
+	c.debugLog = nil
+}
+
+func (c *Client) logf(format string, args ...any) {
+	if c.diagnostics == nil {
+		log.Printf(format, args...)
+		return
+	}
+	c.diagnostics.Printf(format, args...)
 }
 func (c *Client) settingsAction(action string) {
 	switch action {

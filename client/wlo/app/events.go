@@ -5,7 +5,6 @@ import "wonderland-gonline/internal/localization"
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"time"
 
 	"wonderland-gonline/client/wlo/hud"
@@ -279,7 +278,7 @@ func (c *Client) loadTalks() {
 		}
 		c.talks = c.resources.talks
 		if err != nil {
-			log.Printf("talk: %v", err)
+			c.logf("talk: %v", err)
 			c.talks = map[uint32]string{}
 		}
 	}
@@ -363,7 +362,7 @@ func (c *Client) ask(subject byte, actor, id uint16, mode byte) {
 		return
 	}
 	if !ok || q.Mode != 0 {
-		log.Printf("event: question %d (form %d) not ported, closing", id, q.Mode)
+		c.logf("event: question %d (form %d) not ported, closing", id, q.Mode)
 		c.Net.Send([]byte{protocol.CommandEvent, protocol.EventChoice, eventChoiceCancel})
 		return
 	}
