@@ -20,22 +20,38 @@ body { background: #111; color: #eee; font-family: sans-serif; margin: 0; overfl
   if (!listResp.ok) throw new Error('Asset manifest unavailable');
   const names = await listResp.json();
 
+  // Only retain pack lengths. The Go reader requests bounded chunks on demand;
+  // materializing all multi-gigabyte packs as Blobs can exhaust Chromium's quota.
   const packs = {};
   for (const name of names) {
-    status.textContent = 'Loading ' + name + '...';
-    const resp = await fetch('/assets/' + name);
-    if (!resp.ok) {
-      throw new Error('Failed to load ' + name);
+    status.textContent = 'Checking ' + name + '...';
+    const resp = await fetch('/assets/' + name, { method: 'HEAD' });
+    const size = Number(resp.headers.get('Content-Length'));
+    if (!resp.ok || !Number.isSafeInteger(size) || size <= 0) {
+      throw new Error('Invalid asset pack ' + name);
     }
-    packs[name] = await resp.blob();
+    packs[name] = { size };
   }
 
   window.wloPacks = packs;
   window.wloReadBlob = async (name, offset, length) => {
-    const blob = packs[name];
-    if (!blob) throw new Error('unknown pack ' + name);
-    const slice = blob.slice(offset, offset + length);
-    return await slice.arrayBuffer();
+    const pack = packs[name];
+    if (!pack || !Number.isSafeInteger(offset) || !Number.isSafeInteger(length) ||
+        offset < 0 || length < 0 || offset + length > pack.size) {
+      throw new Error('Invalid asset range for ' + name);
+    }
+    if (length === 0) return new ArrayBuffer(0);
+    const end = offset + length - 1;
+    const resp = await fetch('/assets/' + name, {
+      headers: { Range: 'bytes=' + offset + '-' + end }, cache: 'no-store'
+    });
+    if (resp.status !== 206 || resp.headers.get('Content-Range') !==
+        'bytes ' + offset + '-' + end + '/' + pack.size) {
+      throw new Error('Asset server did not honor the requested range for ' + name);
+    }
+    const bytes = await resp.arrayBuffer();
+    if (bytes.byteLength !== length) throw new Error('Truncated asset range for ' + name);
+    return bytes;
   };
 
   status.textContent = 'Starting client...';

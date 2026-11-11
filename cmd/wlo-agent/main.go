@@ -254,19 +254,19 @@ func (m *Manager) Command(id, name string, args []any) error {
 
 var assetsPort string
 
-func startAssetsServer(assets, gameTarget string) (string, error) {
+func assetHandler(assets, gameTarget string) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	// Static host files from embed.
 	hostSub, err := fs.Sub(hostFS, "host")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	mux.Handle("/", http.FileServer(http.FS(hostSub)))
 
 	packs, err := assetPackNames(assets)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	mux.HandleFunc("/packs.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -293,6 +293,15 @@ func startAssetsServer(assets, gameTarget string) (string, error) {
 		ValidateTarget: wsgateway.DefaultValidateTarget,
 	})
 	mux.Handle("/ws", gw)
+
+	return mux, nil
+}
+
+func startAssetsServer(assets, gameTarget string) (string, error) {
+	mux, err := assetHandler(assets, gameTarget)
+	if err != nil {
+		return "", err
+	}
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

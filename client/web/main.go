@@ -1,8 +1,9 @@
 //go:build js && wasm
 
 // Browser build of the client. The page stores the asset packs as Blobs
-// (IndexedDB, downloaded once per browser) and sets window.wloPacks to an
-// object of name -> Blob, plus window.wloReadBlob(name, offset, length) which
+// (or supplies lightweight size descriptors for HTTP range reads) and sets
+// window.wloPacks to an object of name -> {size}, plus
+// window.wloReadBlob(name, offset, length) which
 // returns a Promise<ArrayBuffer>. Packs are read on demand, never loaded whole.
 package main
 

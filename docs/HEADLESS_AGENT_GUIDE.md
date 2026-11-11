@@ -41,6 +41,8 @@ Notes:
   `-world-`, `-audio-`) must sit in the `-assets` directory.
 - The host reads `_packs.json` from `client-assets.zip` and loads exactly its
   companions, including audio. Stale ZIPs and unrelated files are not served.
+- Packs are read in bounded HTTP ranges rather than downloaded into whole-file
+  browser Blobs. This avoids Chromium storage quotas on multi-gigabyte exports.
 - Headless Chrome can be Chrome for Testing. Pass it with `-chrome`.
 
 ## 3. Run
