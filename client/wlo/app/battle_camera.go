@@ -34,35 +34,75 @@ func clampBattleCamera(p image.Point) image.Point {
 func (c *Client) battleCamera(now time.Time) {
 	v := &c.battle
 	v.camera, v.zoom = battleCameraOrigin(), image.Rect(0, 0, ScreenWidth, ScreenHeight)
-	for _, p := range v.playing {
-		if now.Before(p.at) || len(p.action.Targets) == 0 || v.assets == nil {
-			continue
-		}
-		m := v.assets.Motions[p.action.Skill]
-		actor, target := p.action.Actor, battleTarget(p.action)
-		elapsed := now.Sub(p.at)
-		at := m.PositionAt(actor, target, elapsed)
-		v.camera = motionCamera(m, actor, target, elapsed)
-		if c.SettingsState != nil && !c.SettingsState.Local.Zoom {
-			return
-		}
-		if c.SkillState == nil || c.SkillState.Catalog.Definitions[p.action.Skill].Attack != battleZoomAttackCategory {
-			return
-		}
-		initial := abs(actor.Position().X - target.Position().X)
-		remaining := abs(at.X - target.Position().X)
-		if initial == 0 || remaining >= initial {
-			return
-		}
-		// FUN_00386880: strength is progress toward the target relative to
-		// the original horizontal separation. Approaching enlarges; returning
-		// restores the full view. It never scales the UI.
-		progress := 1 - float64(remaining)/float64(initial)
-		x := int(math.RoundToEven(battleZoomInsetX * progress))
-		y := int(math.RoundToEven(battleZoomInsetY * progress))
-		v.zoom = image.Rect(x, y, ScreenWidth-x, ScreenHeight-y)
+	if v.assets == nil {
 		return
 	}
+	// Several attacks can play at once. The camera follows the first one that
+	// authors a camera track; a simultaneous plain attack must not take the
+	// camera away and leave only its zoom. Without an authored track anywhere,
+	// the first playing attack still drives the zoom.
+	pick := -1
+	for i, p := range v.playing {
+		if now.Before(p.at) || len(p.action.Targets) == 0 {
+			continue
+		}
+		if pick < 0 {
+			pick = i
+		}
+		if len(v.assets.Motions[p.action.Skill].Camera) > 0 {
+			pick = i
+			break
+		}
+	}
+	if pick < 0 {
+		return
+	}
+	p := v.playing[pick]
+	m := v.assets.Motions[p.action.Skill]
+	actor, target := p.action.Actor, battleTarget(p.action)
+	elapsed := now.Sub(p.at)
+	at := m.PositionAt(actor, target, elapsed)
+	v.camera = motionCamera(m, actor, target, elapsed)
+	if c.SettingsState != nil && !c.SettingsState.Local.Zoom {
+		return
+	}
+	if c.SkillState == nil || c.SkillState.Catalog.Definitions[p.action.Skill].Attack != battleZoomAttackCategory {
+		return
+	}
+	initial := abs(actor.Position().X - target.Position().X)
+	remaining := abs(at.X - target.Position().X)
+	if initial == 0 || remaining >= initial {
+		return
+	}
+	// FUN_00386880: strength is progress toward the target relative to
+	// the original horizontal separation. Approaching enlarges; returning
+	// restores the full view. It never scales the UI.
+	progress := 1 - float64(remaining)/float64(initial)
+	x := int(math.RoundToEven(battleZoomInsetX * progress))
+	y := int(math.RoundToEven(battleZoomInsetY * progress))
+	v.zoom = image.Rect(x, y, ScreenWidth-x, ScreenHeight-y)
+	// A motion without an authored camera track (mode 0, as Double Kick 30028
+	// has) cropped the view without moving it, so the enemy was cut off by the
+	// zoom. Keep the target framed by travelling toward it as the zoom grows.
+	if len(m.Camera) == 0 {
+		centered := clampBattleCamera(target.Position().Add(battleCameraOrigin()).Sub(image.Pt(ScreenWidth/2, ScreenHeight/2)))
+		v.camera = lerpCamera(v.camera, centered, progress)
+	}
+}
+
+// lerpCamera blends two camera positions; t runs from the current view toward t
+// = 1 in whole pixels.
+func lerpCamera(from, to image.Point, t float64) image.Point {
+	if t <= 0 {
+		return from
+	}
+	if t >= 1 {
+		return to
+	}
+	return image.Pt(
+		from.X+int(math.RoundToEven(float64(to.X-from.X)*t)),
+		from.Y+int(math.RoundToEven(float64(to.Y-from.Y)*t)),
+	)
 }
 
 func motionCamera(m clientbattle.Motion, actor, target clientbattle.Cell, elapsed time.Duration) image.Point {
