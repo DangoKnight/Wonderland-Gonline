@@ -114,6 +114,12 @@ func fleeContinues(mapID, event uint16) bool {
 	return false
 }
 
+// battleHPOverrideMask keeps the authored HP operand's low 24 bits. The
+// native battle op's tail dword carries a battle-mode flag in its top byte
+// (0x07/0x08 on the Cave 2F guardians); treating the whole dword as HP gave
+// those guardians 0x07000000 = 117440512 HP.
+const battleHPOverrideMask = 0x00FFFFFF
+
 // questBattle is ExecuteOpcode 4/6: the formation (opcode 4) or a template operand names
 // the enemies. It returns false when no battle can be built. Caller holds worldMu.
 func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, error) {
@@ -146,8 +152,8 @@ func (s *Server) questBattle(c *Session, es *eventSession, op world.Op) (bool, e
 	}
 	level := max(5, int(op.D3))
 	hp := 0 // A positive event HP value overrides the stored NPC HP.
-	if op.DW1 > 0 {
-		hp = int(op.DW1)
+	if v := op.DW1 & battleHPOverrideMask; v > 0 {
+		hp = int(v)
 	}
 	templates := formation
 	if len(templates) == 0 {
