@@ -17,7 +17,7 @@ go build -o bin/wlo-agent ./cmd/wlo-agent
 
 # Set WLO_AGENT_TOKEN to the same random 32+ byte secret for host and scripts.
 # 3. Run (JSON-RPC: ws://127.0.0.1:9000/rpc)
-./bin/wlo-agent \
+./bin/wlo-agent -enable \
   -chrome /path/to/chrome \
   -assets ./bin \
   -game 127.0.0.1:6414

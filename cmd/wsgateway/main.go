@@ -9,11 +9,15 @@ import (
 )
 
 func main() {
+	enabledFlag := flag.Bool("enable", false, "explicitly enable the optional browser WebSocket gateway and web endpoints")
 	listenFlag := flag.String("listen", "127.0.0.1:8090", "Listen address")
 	targetFlag := flag.String("target", "127.0.0.1:6414", "Default target address")
 	allowRemoteFlag := flag.Bool("allow-remote", false, "Allow listening on non-loopback addresses")
 	webFlag := flag.String("web", "", "Optional directory of static files (page, wasm, asset bundles) served at /")
 	flag.Parse()
+	if !*enabledFlag {
+		log.Fatal("browser gateway is disabled; use -enable to opt in")
+	}
 
 	if !*allowRemoteFlag && !wsgateway.IsLoopback(*listenFlag) {
 		log.Fatalf("refusing to listen on non-loopback address %s without -allow-remote", *listenFlag)

@@ -6,3 +6,5 @@
 config.local.json
 package-lock.json
 /internal/admin/web/
+/cmd/wlo-agent/host/
+/cmd/wlo-agent/frontend/public/wasm_exec.js

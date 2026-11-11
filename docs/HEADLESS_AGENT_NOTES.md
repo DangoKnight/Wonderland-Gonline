@@ -6,7 +6,7 @@ artifacts and can be removed once the feature is stable.
 
 ## Architecture
 
-- `cmd/wlo-agent` starts headless Chrome through chromedp and serves the host
+- With explicit `-enable`, `cmd/wlo-agent` starts headless Chrome through chromedp and serves the host
   page, the WASM client, the asset packs and a `/ws` gateway on one loopback
   port.
 - `client/web/agent_api.go` exposes `window.wlo`:

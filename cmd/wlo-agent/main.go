@@ -34,11 +34,12 @@ import (
 var hostFS embed.FS
 
 var (
-	listenAddr = flag.String("listen", "127.0.0.1:9000", "agent RPC listen address")
-	chromePath = flag.String("chrome", "", "path to Chrome/Chromium binary (autodetect if empty)")
-	assetsDir  = flag.String("assets", "", "directory with wonderland-client.wasm and asset packs")
-	gameTarget = flag.String("game", "127.0.0.1:6414", "game server address for the WebSocket gateway")
-	noHeadless = flag.Bool("no-headless", false, "show Chrome window for debugging")
+	enableAgent = flag.Bool("enable", false, "explicitly enable the optional headless automation and web endpoints")
+	listenAddr  = flag.String("listen", "127.0.0.1:9000", "agent RPC listen address")
+	chromePath  = flag.String("chrome", "", "path to Chrome/Chromium binary (autodetect if empty)")
+	assetsDir   = flag.String("assets", "", "directory with wonderland-client.wasm and asset packs")
+	gameTarget  = flag.String("game", "127.0.0.1:6414", "game server address for the WebSocket gateway")
+	noHeadless  = flag.Bool("no-headless", false, "show Chrome window for debugging")
 )
 
 type Agent struct {
@@ -544,6 +545,9 @@ func dispatch(mgr *Manager, req Request) Response {
 
 func main() {
 	flag.Parse()
+	if !*enableAgent {
+		log.Fatal("headless agent is disabled; use -enable to opt in")
+	}
 	token := os.Getenv("WLO_AGENT_TOKEN")
 	if len(token) < minRPCTokenBytes {
 		log.Fatal("set WLO_AGENT_TOKEN to a random secret of at least 32 bytes")

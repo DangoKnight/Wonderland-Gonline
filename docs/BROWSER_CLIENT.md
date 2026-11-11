@@ -19,9 +19,13 @@ Remove-Item Env:GOOS, Env:GOARCH, Env:CGO_ENABLED
 
 From the repository root, build/run the transport separately:
 
+The browser gateway is optional and requires `-enable`. Without that switch,
+it exits before opening any HTTP or WebSocket endpoints. Starting the normal
+game server never starts this gateway; administration remains independent.
+
 ```powershell
 go build -o bin/wsgateway.exe ./cmd/wsgateway
-.\bin\wsgateway.exe -listen 127.0.0.1:8090 -target 127.0.0.1:6414
+.\bin\wsgateway.exe -enable -listen 127.0.0.1:8090 -target 127.0.0.1:6414
 ```
 
 The gateway exposes `/healthz` and `/ws?target=host:port`. Its target policy

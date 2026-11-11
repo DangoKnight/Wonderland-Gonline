@@ -7,10 +7,13 @@
 		"admin:dev": "vite --config internal/admin/frontend/vite.config.js --host 127.0.0.1",
 		"admin:build": "vite build --config internal/admin/frontend/vite.config.js",
 		"admin:test": "vitest run --config internal/admin/frontend/vite.config.js",
-		"format": "prettier --write \"internal/admin/frontend/**/*.{html,css,js,vue}\"",
-		"format:check": "prettier --check \"internal/admin/frontend/**/*.{html,css,js,vue}\"",
+		"agent-host:dev": "vite --config cmd/wlo-agent/frontend/vite.config.js --host 127.0.0.1",
+		"agent-host:build": "vite build --config cmd/wlo-agent/frontend/vite.config.js",
+		"agent-host:test": "vitest run --config cmd/wlo-agent/frontend/vite.config.js",
+		"format": "prettier --write \"{internal/admin,cmd/wlo-agent}/frontend/**/*.{html,css,js,vue}\"",
+		"format:check": "prettier --check \"{internal/admin,cmd/wlo-agent}/frontend/**/*.{html,css,js,vue}\"",
 		"lint": "npm run lint:html",
-		"lint:html": "htmlhint --config .htmlhintrc internal/admin/frontend/index.html"
+		"lint:html": "htmlhint --config .htmlhintrc internal/admin/frontend/index.html cmd/wlo-agent/frontend/index.html"
 	},
 	"devDependencies": {
 		"@vitejs/plugin-vue": "^6.0.0",

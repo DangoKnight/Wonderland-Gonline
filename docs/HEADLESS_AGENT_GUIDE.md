@@ -24,6 +24,12 @@ headless Chrome  ->  wasm client (client/web)  ->  /ws gateway  ->  game server
 
 ## 2. Build
 
+The host UI uses Vue 3, Tailwind CSS and Vite, like the admin frontend.
+Its compiled bundle is checked into `cmd/wlo-agent/host`, so normal Go builds
+require no Node.js or external frontend service. After editing its sources, run
+`npm run agent-host:test` and `npm run agent-host:build` before rebuilding the
+orchestrator. See [host frontend development](../cmd/wlo-agent/frontend/README.md).
+
 ```bash
 # WASM client (separate Go module under client/)
 cd client
@@ -47,6 +53,11 @@ Notes:
 
 ## 3. Run
 
+Headless automation is optional and disabled unless `wlo-agent -enable` is
+explicitly requested. The normal game server never starts Chrome, the agent
+RPC endpoint, its asset server or a browser gateway. Administration is separate
+and retains its existing startup behavior.
+
 Set `WLO_AGENT_TOKEN` to a random secret of at least 32 bytes in both the
 orchestrator and controller environments. For example, in PowerShell:
 
@@ -62,7 +73,7 @@ Chrome's sandbox remains enabled; run as a regular user.
 
 
 ```bash
-./bin/wlo-agent \
+./bin/wlo-agent -enable \
   -chrome /path/to/chrome \
   -assets ./bin \
   -game 127.0.0.1:6414 \
