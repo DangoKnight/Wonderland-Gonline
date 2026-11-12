@@ -33,7 +33,7 @@ func participationVictoryFixture(t *testing.T) (*Server, *Session, uint64, uint6
 		t.Fatal("EXP awarded before victory")
 	}
 	playerEXP, petEXP := run.b.ParticipantEXP(m.self), run.b.ParticipantEXP(m.pet)
-	if playerEXP != 28 || petEXP != 9 {
+	if playerEXP != 56 || petEXP != 18 {
 		t.Fatal("inverse-level killing shares", playerEXP, petEXP)
 	}
 	return s, c, playerEXP, petEXP

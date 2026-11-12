@@ -32,7 +32,7 @@ Team membership alone grants no credit: if the level-1 player does not contribut
 only the six contributors enter the pool, level sum and distribution. The existing
 half credit for earlier damage and full credit for qualifying support still apply.
 
-For each monster, let `BASE = max(1, monster level) * 1.5`, `N` be the number
+For each monster, let `BASE = max(1, monster level) * 3`, `N` be the number
 of unique eligible participants, `COMBO_UNITS` the number of distinct attacking
 units that landed hits in the killing combo, and `LEVEL_SUM` the sum of all
 eligible participants' levels. Support-only assistants count in `N` and the
@@ -56,8 +56,8 @@ and earlier attackers, after dividing the pool. It is exactly 1 at equal levels,
 approaches 3 for much lower-level participants and 0.5 for much higher-level
 participants. At half the monster's level it is 1.75; at 1.5 times its level it
 is 0.75. This adjustment changes the total awarded EXP rather than redistributing
-the adjusted amounts among participants. A level-20 monster has a base of 30:
-a solo level-10/20/30 participant earns 52/30/22 EXP respectively (midpoint-even
+the adjusted amounts among participants. A level-20 monster has a base of 60:
+a solo level-10/20/30 participant earns 105/60/45 EXP respectively (midpoint-even
 rounding). Simple mode is unchanged.
 
 Earlier attackers do not increase the killing combo bonus. For two equal-level
@@ -74,8 +74,8 @@ even with assistants. This EXP bonus is independent of the combo damage switch.
 Fractional bonused pools use midpoint-even rounding. Shares are rounded
 down first; leftover EXP goes to the largest fractional remainders, with stable
 entity-identity ordering for ties. This preserves the complete pool per kill
-before the per-participant level adjustment. Fractional base EXP is retained
-until the bonused pool is rounded, so odd monster levels do not truncate 1.5x.
+before the per-participant level adjustment. Fractional participation and combo
+bonuses are retained until the pool is rounded.
 The calculation uses each fighter's battle level at the time of that kill.
 The global EXP rate applies once to each entity's accumulated level-adjusted share at
 victory, using the existing midpoint-even rounding and native caps.

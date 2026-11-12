@@ -10,7 +10,7 @@ import (
 const (
 	minimumMonsterExperience        = 10
 	monsterExperiencePerLevel       = 15
-	participationExperiencePerLevel = 1.5
+	participationExperiencePerLevel = 3.0
 	participationMinimumMultiplier  = 0.5
 	participationMaximumMultiplier  = 3.0
 	participationLevelRatioWeight   = 4.0 // Makes equal-level rewards exactly 1x.

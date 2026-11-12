@@ -49,11 +49,11 @@ func TestParticipationExperienceWholeTeamContributors(t *testing.T) {
 			b := &Battle{Attackers: team}
 			b.recordKillExperience(&Fighter{Kind: Monster, Side: Defender, Level: 100}, actors)
 			for _, fighter := range team[:6] {
-				want := uint64(270)
+				want := uint64(540)
 				if lowLevelContributes {
-					want = 277
-					if fighter == team[0] {
-						want = 278 // Stable identity breaks equal fractional remainders.
+					want = 554
+					if fighter == team[0] || fighter == team[2] {
+						want = 555 // Stable identity breaks equal fractional remainders.
 					}
 				}
 				if got := b.ParticipantEXP(fighter); got != want {
@@ -62,7 +62,7 @@ func TestParticipationExperienceWholeTeamContributors(t *testing.T) {
 			}
 			wantEarnedLowLevel := uint64(0)
 			if lowLevelContributes {
-				wantEarnedLowLevel = 996 // Apply the existing individual level multiplier after sharing.
+				wantEarnedLowLevel = 1991 // Apply the individual level multiplier after sharing.
 			}
 			if got := b.ParticipantEXP(lowLevel); got != wantEarnedLowLevel {
 				t.Fatalf("low-level EXP=%d want=%d", got, wantEarnedLowLevel)
@@ -85,9 +85,9 @@ func TestEarlierDamageHalfParticipationAndUpgrade(t *testing.T) {
 			actors = append(actors, Action{Actor: a})
 		}
 		b.recordKillExperience(target, actors)
-		wantA, wantKiller := uint64(38), uint64(75) // Half/full credits, then level-10 vs level-25 scaling.
+		wantA, wantKiller := uint64(75), uint64(152) // Half/full credits, then level-10 vs level-25 scaling.
 		if full {
-			wantA, wantKiller = 107, 105
+			wantA, wantKiller = 213, 213
 		} // Two full comboers, +40%.
 		if b.ParticipantEXP(a) != wantA || b.ParticipantEXP(killer) != wantKiller {
 			t.Fatal(full, b.experience)
@@ -114,7 +114,7 @@ func TestEarlierDamageEligibilityAndSupportUpgrade(t *testing.T) {
 	pet.Withdrawn = true
 	target.HP = 0
 	b.recordKillExperience(target, []Action{{Actor: killer, supporters: []*Fighter{a}}})
-	if b.ParticipantEXP(a) != 77 || b.ParticipantEXP(killer) != 75 || b.ParticipantEXP(pet) != 0 {
+	if b.ParticipantEXP(a) != 152 || b.ParticipantEXP(killer) != 152 || b.ParticipantEXP(pet) != 0 {
 		t.Fatal(b.experience)
 	}
 }
@@ -141,7 +141,7 @@ func TestParticipationExperienceBaseRateIsSeparateFromSimple(t *testing.T) {
 		participation float64
 		simple        uint64
 	}{
-		{0, 1.5, 10}, {1, 1.5, 15}, {10, 15, 150}, {25, 37.5, 375}, {255, 382.5, 3825},
+		{0, 3, 10}, {1, 3, 15}, {10, 30, 150}, {25, 75, 375}, {255, 765, 3825},
 	} {
 		if got := participationMonsterExperience(tc.level); got != tc.participation {
 			t.Fatal("participation base", tc, got)
@@ -184,7 +184,7 @@ func TestParticipationExperienceSoloLevelScaling(t *testing.T) {
 	for _, tc := range []struct {
 		level byte
 		want  uint64
-	}{{10, 52}, {20, 30}, {30, 22}} {
+	}{{10, 105}, {20, 60}, {30, 45}} {
 		actor := &Fighter{Kind: Player, ID: 1, Level: tc.level}
 		b := &Battle{}
 		b.recordKillExperience(&Fighter{Kind: Monster, Side: Defender, Level: 20}, []Action{{Actor: actor}})
@@ -237,7 +237,7 @@ func TestParticipationExperienceComboPoolBonus(t *testing.T) {
 	b := &Battle{}
 	target := &Fighter{Kind: Monster, Side: Defender, Level: 20}
 	b.recordKillExperience(target, []Action{{Actor: player, supporters: []*Fighter{assistant}}, {Actor: player}, {Actor: pet, supporters: []*Fighter{assistant}}})
-	if total := b.ParticipantEXP(assistant) + b.ParticipantEXP(player) + b.ParticipantEXP(pet); total != 158 {
+	if total := b.ParticipantEXP(assistant) + b.ParticipantEXP(player) + b.ParticipantEXP(pet); total != 315 {
 		t.Fatal("duplicate actor or assistant increased combo bonus", total)
 	}
 }
@@ -252,7 +252,7 @@ func TestParticipationExperienceBuffAndHealLifetimes(t *testing.T) {
 	b := &Battle{}
 	target := &Fighter{Kind: Monster, Side: Defender, Level: 20, HP: 0}
 	b.recordKillExperience(target, actors)
-	if b.ParticipantEXP(assistant) != 93 || b.ParticipantEXP(player) != 42 || b.ParticipantEXP(pet) != 23 {
+	if b.ParticipantEXP(assistant) != 184 || b.ParticipantEXP(player) != 84 || b.ParticipantEXP(pet) != 47 {
 		t.Fatal("assistant not deduplicated across comboers", b.experience)
 	}
 	if len(player.consumeSupport()) != 0 || len(pet.consumeSupport()) != 1 {
@@ -263,7 +263,7 @@ func TestParticipationExperienceBuffAndHealLifetimes(t *testing.T) {
 		t.Fatal("expired buff still grants assistance")
 	}
 	b.recordKillExperience(target, actors)
-	if b.ParticipantEXP(assistant) != 93 {
+	if b.ParticipantEXP(assistant) != 184 {
 		t.Fatal("kill awarded twice")
 	}
 }
@@ -335,7 +335,7 @@ func TestParticipationExperienceBuffThenHealAndKillingCombo(t *testing.T) {
 	target := b.Defenders[0]
 	target.HP = 1
 	r.attack(b, []Action{{Actor: player, Kind: "attack", Skill: 10001, TX: target.X, TY: target.Y}, {Actor: pet, Kind: "attack", Skill: 10001, TX: target.X, TY: target.Y}}, nil)
-	if b.ParticipantEXP(assistant) != 93 || b.ParticipantEXP(player) != 42 || b.ParticipantEXP(pet) != 23 {
+	if b.ParticipantEXP(assistant) != 184 || b.ParticipantEXP(player) != 84 || b.ParticipantEXP(pet) != 47 {
 		t.Fatal("cast/strike assistance integration", b.experience)
 	}
 }
@@ -358,7 +358,7 @@ func TestParticipationExperienceReviveLastsThroughBattle(t *testing.T) {
 		}
 		b.recordKillExperience(&Fighter{Kind: Monster, Side: Defender, Level: 10}, []Action{{Actor: player, supporters: supporters}})
 	}
-	if b.ParticipantEXP(assistant) != 60 || b.ParticipantEXP(player) != 18 {
+	if b.ParticipantEXP(assistant) != 120 || b.ParticipantEXP(player) != 39 {
 		t.Fatal("reviver did not earn each later kill", b.experience)
 	}
 	player.HP = 0
