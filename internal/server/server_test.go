@@ -56,10 +56,10 @@ func TestLoginWireFlow(t *testing.T) {
 		t.Fatal(p)
 	}
 	// Independent wire golden: one connection hello advertises collection
-	// timing, local backdrops, complete snapshots and observed pickups, with
-	// full-round combat disabled. A Legacy
+	// timing, local backdrops, complete snapshots, observed pickups and AFK,
+	// with full-round combat and agent/API access disabled. A Legacy
 	// client can ignore it and proceed with the native login exchange.
-	if p := read(); !bytes.Equal(p, []byte{1, 248, 71, 76, 79, 78, 1, 0, 29, 0, 0, 0}) {
+	if p := read(); !bytes.Equal(p, []byte{1, 248, 71, 76, 79, 78, 1, 0, 253, 0, 0, 0}) {
 		t.Fatalf("connection capability %x", p)
 	}
 	login, _ := protocol.Builder{63, 4}.U16(1205).String("tester")
