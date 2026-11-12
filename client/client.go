@@ -33,7 +33,7 @@ func runClientWithRenderer(assets, serverINI, snapshot, sprites, renderer string
 	return runConfiguredClient(assets, serverINI, snapshot, sprites, renderer, clientLanguages{Explicit: language})
 }
 
-type clientLanguages struct{ Explicit, Default, Initial string }
+type clientLanguages struct{ Explicit, Default, Initial, Attach string }
 
 func runConfiguredClient(assets, serverINI, snapshot, sprites, renderer string, languages clientLanguages) error {
 	if err := render.Validate(renderer); err != nil {
@@ -66,6 +66,9 @@ func runConfiguredClient(assets, serverINI, snapshot, sprites, renderer string, 
 	}
 	defer c.Net.Shutdown()
 	if snapshot == "" {
+		if languages.Attach != "" {
+			return app.RunAttached(c, languages.Attach)
+		}
 		return app.Run(c)
 	}
 	defer func() { c.Sprites.WaitNative(); c.Sprites.Close() }()

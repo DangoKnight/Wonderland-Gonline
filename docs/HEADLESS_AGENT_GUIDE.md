@@ -5,6 +5,12 @@ without a window, driving it from an AI agent, and keeping it alive in combat
 and long journeys. Research notes live in `HEADLESS_AGENT_NOTES.md`; test
 findings are kept in a local, gitignored `tools/headless-agent/session/bugs.log`.
 
+For the native Go implementation, use the [native host instructions](HEADLESS_API.md#native-host-no-web-functionality).
+It supports the semantic API and detachable native spectator without Chrome,
+WebAssembly, HTTP or WebSockets. Launch the regular client with explicit
+`-headless -api-listen` flags; ordinary startup enables neither API nor web endpoints.
+The Chrome-based orchestrator documented below is an optional alternative.
+
 ## 1. What it is
 
 ```
@@ -21,6 +27,20 @@ headless Chrome  ->  wasm client (client/web)  ->  /ws gateway  ->  game server
 - `window.wlo` exposes state, synthetic input, collision grids and screenshots.
 - `cmd/wlo-agent` serves the host page, the WASM binary, the asset packs and
   the `/ws` game gateway on one loopback port, and exposes JSON-RPC at `/rpc`.
+
+## Structured commands (API version 2)
+
+Use the [structured API reference](HEADLESS_API.md) for direct gameplay, forms,
+queries, per-session routing, strict payload schemas and completion semantics.
+`agent.execute` invokes normal application actions; `agent.state` and
+`agent.observe` provide structured observations. Input emulation and arbitrary
+JavaScript evaluation are disabled unless `-diagnostic-input` is explicitly set.
+
+The historical helper examples later in this guide use that diagnostic opt-in.
+They are not the current API contract and are not required for gameplay workflows.
+Hosted sessions reject legacy synthetic-input commands; use semantic API commands
+or the [detachable viewer](HEADLESS_API.md#persistent-session-host-and-detachable-viewer)
+for human intervention. A viewer can disconnect without logging the character out.
 
 ## 2. Build
 
@@ -67,7 +87,7 @@ $env:WLO_AGENT_TOKEN = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToStr
 
 The RPC listener accepts numeric loopback addresses only. Clients authenticate
 with `Authorization: Bearer <token>`; unrelated browser origins are rejected.
-Keep the token private: this API controls the browser and can evaluate scripts.
+Keep the token private: this API controls the client. Script evaluation requires a separate diagnostic opt-in.
 The Python examples read the environment variable and omit the browser Origin.
 Chrome's sandbox remains enabled; run as a regular user.
 
@@ -82,7 +102,7 @@ Chrome's sandbox remains enabled; run as a regular user.
 
 JSON-RPC endpoint: `ws://127.0.0.1:9000/rpc`.
 `agent.create` creates a client without logging in. Supply credentials through
-the client UI using the input commands below; credential parameters to create
+the structured `login.submit` command; credential parameters to create
 are rejected rather than silently ignored.
 
 Methods: `agent.create`, `agent.destroy`, `agent.state`, `agent.command`,
@@ -152,7 +172,7 @@ Walkability:
 - `wlo.mapGrid(step)` returns a coarse whole-map overview.
 - `wlo.plan(x, y)` returns the client's own short-range path.
 
-## 6. Commands
+## 6. Historical diagnostic commands
 
 Synthetic input and client actions available through `agent.command` or
 `wlo.command`:

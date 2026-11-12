@@ -12,6 +12,9 @@ func (s *Server) offerConnectionProtocol(c *Session) error {
 	if s.combatRoundChain {
 		flags |= protocol.ConnectionCombatRoundChain
 	}
+	if s.agentAPIEnabled {
+		flags |= protocol.ConnectionAgentAPI
+	}
 	if err := c.send(protocol.ConnectionCapabilities(protocol.HandshakeConnectionOffer, flags)); err != nil {
 		return err
 	}
@@ -26,6 +29,18 @@ func (s *Server) acceptConnectionProtocol(c *Session, p []byte) error {
 	}
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if flags&protocol.ConnectionAgentAPI != 0 {
+		c.agentRequested = true
+		if !s.agentAPIEnabled || c.connectionOffered&protocol.ConnectionAgentAPI == 0 {
+			return s.denyAgentAccess(c)
+		}
+	}
+	if c.agentRequested && flags&protocol.ConnectionAgentAPI == 0 {
+		if !s.agentAPIEnabled {
+			return s.denyAgentAccess(c)
+		}
+		return protocol.ErrMalformed
+	}
 	if flags&(protocol.ConnectionAFKAggregation|protocol.ConnectionAFKDelta) != 0 && flags&protocol.ConnectionAFK == 0 {
 		return protocol.ErrMalformed
 	}
@@ -51,4 +66,26 @@ func (s *Server) acceptConnectionProtocol(c *Session, p []byte) error {
 		c.combatCapabilities = protocol.CombatCapabilityRoundChain
 	}
 	return nil
+}
+
+// Caller holds worldMu. Refusal is queued before closing the game connection.
+func (s *Server) denyAgentAccess(c *Session) error {
+	s.Log.Info("agent/API access refused by server policy", "session", c.info.ID, "account", c.account.ID)
+	err := c.send(protocol.AgentAccessDenied())
+	c.closeAfterFlush()
+	return err
+}
+
+func (s *Server) revokeAgentAccess() {
+	s.mu.Lock()
+	var agents []*Session
+	for _, c := range s.sessions {
+		if c.agentRequested {
+			agents = append(agents, c)
+		}
+	}
+	s.mu.Unlock()
+	for _, c := range agents {
+		_ = s.denyAgentAccess(c)
+	}
 }

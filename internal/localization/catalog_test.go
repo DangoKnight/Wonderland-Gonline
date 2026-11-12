@@ -91,6 +91,10 @@ func TestInvalidCatalogFailsInsteadOfSilentlyFallingBack(t *testing.T) {
 func TestClientReferencesHaveCatalogEntries(t *testing.T) {
 	en := BaseStrings(English)
 	keys := regexp.MustCompile(`"(ui\.[a-zA-Z0-9_.]+)"`)
+	// API command names share the ui.* namespace but are not display text.
+	actionNames := regexp.MustCompile(`agentActionDef\(\s*"(ui\.[a-zA-Z0-9_.]+)"`)
+	commands := map[string]bool{}
+	references := map[string][]string{}
 	err := filepath.WalkDir(filepath.Join("..", "..", "client", "wlo"), func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -102,14 +106,20 @@ func TestClientReferencesHaveCatalogEntries(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		for _, match := range actionNames.FindAllSubmatch(raw, -1) {
+			commands[string(match[1])] = true
+		}
 		for _, match := range keys.FindAllSubmatch(raw, -1) {
-			if _, ok := en[string(match[1])]; !ok {
-				t.Errorf("%s references missing key %s", path, match[1])
-			}
+			references[string(match[1])] = append(references[string(match[1])], path)
 		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	for key, paths := range references {
+		if _, ok := en[key]; !ok && !commands[key] {
+			t.Errorf("%v references missing key %s", paths, key)
+		}
 	}
 }

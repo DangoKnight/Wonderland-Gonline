@@ -117,9 +117,18 @@ func (g *Arcade) Click(x, y int, now time.Time) {
 		g.confirming = false
 		return
 	}
+	g.Play(now, g.confirming)
+}
+
+// Play preserves the explicit spend confirmation and one outstanding request.
+func (g *Arcade) Play(now time.Time, confirm bool) {
+	g.Update(now)
+	if !g.Started || g.Done() || g.pending || g.animating || confirm && !g.confirming {
+		return
+	}
 	// FUN_001754c4 and FUN_00176b90 ask before spending points. The second
 	// click confirms the visible purchase prompt; Start itself never purchases.
-	if !g.confirming {
+	if !confirm {
 		g.confirming = true
 		g.status = localization.UI("ui.minigame.spend_arcade_points_click_play_again_to__6618a859")
 		return

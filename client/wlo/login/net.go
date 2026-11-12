@@ -48,11 +48,13 @@ type Event struct {
 // Net is the pair of client sockets. Events arrive on a channel the frame
 // loop drains, so handlers run on the game thread as in the original.
 type Net struct {
-	Dial   func(network, address string) (net.Conn, error)
-	events chan Event
-	mu     sync.Mutex
-	status net.Conn
-	login  net.Conn
+	presentationOnly bool
+	outboundPolicy   func([]byte) error
+	Dial             func(network, address string) (net.Conn, error)
+	events           chan Event
+	mu               sync.Mutex
+	status           net.Conn
+	login            net.Conn
 	// observer records every packet that crosses the login socket; nil disables
 	// recording (see client/debuglog).
 	observer   func(direction byte, p []byte)
@@ -146,6 +148,12 @@ func (n *Net) CloseStatus() {
 // QueryStatus opens ClientSocket3 to host. Every read is posted as
 // StatusData; errors are dropped (ClientSocket3Error zeroes the code).
 func (n *Net) QueryStatus(host string) {
+	n.mu.Lock()
+	disabled := n.presentationOnly
+	n.mu.Unlock()
+	if disabled {
+		return
+	}
 	go func() {
 		c, err := n.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(StatusPort)))
 		if err != nil {
@@ -181,6 +189,10 @@ func (n *Net) QueryStatus(host string) {
 // Connect opens ClientSocket1 to host.
 func (n *Net) Connect(host string) {
 	n.mu.Lock()
+	if n.presentationOnly {
+		n.mu.Unlock()
+		return
+	}
 	if n.closed {
 		n.mu.Unlock()
 		return
@@ -289,6 +301,18 @@ func (n *Net) receive(data []byte) [][]byte {
 // action 0; it is sent once the connection completes.
 func (n *Net) Send(p []byte) error {
 	n.mu.Lock()
+	if n.presentationOnly {
+		n.mu.Unlock()
+		return nil
+	}
+	policy := n.outboundPolicy
+	n.mu.Unlock()
+	if policy != nil {
+		if err := policy(p); err != nil {
+			return err
+		}
+	}
+	n.mu.Lock()
 	c := n.login
 	if c == nil && n.dialing {
 		n.pending = append(n.pending, p)
@@ -303,6 +327,22 @@ func (n *Net) Send(p []byte) error {
 	}
 	n.observe(debuglog.Out, p)
 	return nil
+}
+
+func (n *Net) SetOutboundPolicy(policy func([]byte) error) {
+	n.mu.Lock()
+	n.outboundPolicy = policy
+	n.mu.Unlock()
+}
+
+// SetPresentationOnly makes a replicated client incapable of contacting the
+// game server or sending acknowledgements, purchases or combat choices.
+func (n *Net) SetPresentationOnly() {
+	n.mu.Lock()
+	n.presentationOnly = true
+	n.mu.Unlock()
+	// Shutdown also rejects connections whose dial was already in flight.
+	n.Shutdown()
 }
 
 // Shutdown permanently disposes a removed session, including late dial results.

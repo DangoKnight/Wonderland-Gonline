@@ -32,6 +32,10 @@ func (s *Store) SaveSettings(ctx context.Context, settings map[string]string) er
 	return s.transaction(ctx, func(tx *gorm.DB) error {
 		for k, v := range settings {
 			switch k {
+			case "agent_api_enabled":
+				if v != "true" && v != "false" {
+					return errors.New("invalid agent API policy")
+				}
 			case "server_name", "motd":
 			case "exp_rate", "drop_rate":
 				rate, err := strconv.ParseFloat(v, 64)
@@ -62,4 +66,9 @@ func (s *Store) SaveSettings(ctx context.Context, settings map[string]string) er
 		}
 		return adminAudit(tx, "runtime settings update", "server")
 	})
+}
+
+// EnsureAgentPolicy seeds only a missing policy; upgrades preserve operator edits.
+func (s *Store) EnsureAgentPolicy(ctx context.Context) error {
+	return s.orm.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&settingRow{Key: "agent_api_enabled", Value: "false"}).Error
 }

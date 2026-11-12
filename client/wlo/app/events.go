@@ -467,6 +467,12 @@ func stepDone(sub byte) bool {
 // ends with the teleport's closing 20/8.
 func (c *Client) eventResume() {
 	c.stopConstellation()
+	// The server can finish/cancel an event while its presentation is still
+	// running (for example after a timeout). Retire that presentation before
+	// resetting the step, so it cannot later issue a stale completion ACK.
+	if c.movie != nil {
+		c.endMovie()
+	}
 	for npc, action := range c.event.npcFacings {
 		if npc.Conversation {
 			npc.Action = action
@@ -479,11 +485,15 @@ func (c *Client) eventResume() {
 	c.petAnnouncement = false
 }
 
-// advanceTalk is a click while a line shows: the step is done.
+// advanceTalk dismisses a line. A movie owns its own completion; its dialogue
+// cannot acknowledge the surrounding event ahead of the timeline.
 func (c *Client) advanceTalk() {
 	c.Talk.Hide()
 	if c.petAnnouncement {
 		c.petAnnouncement = false
+		return
+	}
+	if c.movie != nil {
 		return
 	}
 	c.event.done = true
@@ -492,7 +502,7 @@ func (c *Client) advanceTalk() {
 // eventTick is FUN_00307300's acknowledgement.
 func (c *Client) eventTick() {
 	// Native +0x732a holds AC20:6 until the entire constellation sequence ends.
-	if c.constellation != nil {
+	if c.constellation != nil || c.movie != nil {
 		return
 	}
 	if c.minigameResultAckPending {

@@ -315,6 +315,10 @@ func (g *Game) Update() error {
 	if g.C == nil {
 		return ErrExit
 	}
+	if g.C.agentHosted() {
+		g.Workspace.Tick()
+		return nil
+	}
 	// Consume exit before Settings and the session sidebar handle the press.
 	if (inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)) && g.C.exitMovementMode() {
 		g.lastDown = time.Time{}
@@ -322,6 +326,12 @@ func (g *Game) Update() error {
 		return nil
 	}
 	if g.displayInput(time.Now()) {
+		if g.C.spectator != nil {
+			if !g.C.spectatorBlocked {
+				g.C.spectator.ResetInput()
+			}
+			g.C.spectatorBlocked = true
+		}
 		if g.suppressedKeys == nil {
 			g.suppressedKeys = map[ebiten.Key]bool{}
 		}
@@ -354,7 +364,9 @@ func (g *Game) Update() error {
 		g.lastDown = time.Time{}
 		g.C.cancelSessionInput()
 	}
-	if err := g.updateInput(consumed); err != nil {
+	if g.C.spectator != nil {
+		g.updateSpectatorInput(consumed)
+	} else if err := g.updateInput(consumed); err != nil {
 		return err
 	}
 	g.Workspace.Tick()
@@ -428,6 +440,13 @@ func (g *Game) workspaceCursor() (int, int) {
 // Run opens the window and runs the client until Leave or the window
 // closes.
 func Run(c *Client) error {
+	return run(c, "")
+}
+
+// RunAttached uses the regular window and saved preferences for a spectator.
+func RunAttached(c *Client, address string) error { return run(c, address) }
+
+func run(c *Client, attachment string) error {
 	// A crash must leave a trace: keep the panic and its stack beside the session
 	// logs, then let the process die as it would have.
 	defer func() {
@@ -455,6 +474,11 @@ func Run(c *Client) error {
 	if err := g.Workspace.RestoreProfile(); err != nil {
 		c.logf("workspace profile: %v", err)
 	}
+	if attachment != "" {
+		if err := g.Workspace.AddSpectator(attachment); err != nil {
+			return err
+		}
+	}
 	if presenter.Mode() == render.GPU {
 		g.Workspace.attachRenderer(presenter.Attach)
 	}
@@ -469,6 +493,7 @@ func Run(c *Client) error {
 	g.display.draft = g.display.settings
 	g.display.apply = g.applyDisplay
 	g.display.prepareLanguage = g.Workspace.prepareLanguage
+	g.Workspace.agentDisplay = g.display
 	ebiten.SetWindowSize(workspaceWidth, ScreenHeight)
 	ebiten.SetWindowSizeLimits(displayMinimumWindowWidth, displayMinimumWindowHeight, -1, -1)
 	g.applyDisplay(g.display.settings)

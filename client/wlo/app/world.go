@@ -195,7 +195,7 @@ func (c *Client) GroundClick(x, y int) {
 	if c.movie != nil {
 		// In a movie a click only closes the shown line.
 		if c.Talk.Shown() {
-			c.Talk.Hide()
+			c.advanceTalk()
 		}
 		return
 	}

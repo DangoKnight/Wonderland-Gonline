@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"time"
 	clientbattle "wonderland-gonline/client/wlo/battle"
+	"wonderland-gonline/client/wlo/sessionstream"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -31,6 +32,7 @@ type combatPlayback struct {
 // Subsequent readiness/results/warps wait for local playback; chat and explicit
 // disconnect reasons still arrive immediately. No playback acknowledgments exist.
 func (c *Client) dispatch(p []byte) {
+	c.agentObservePacket(p)
 	if len(p) == 0 {
 		return
 	}
@@ -212,6 +214,9 @@ func (c *Client) combatRoundTick(now time.Time) {
 }
 
 func (c *Client) sendCombatChoice(p []byte) error {
+	if c.native != nil && c.native.depth == 0 {
+		c.recordNative(sessionstream.Event{Kind: "choice", Packet: append([]byte(nil), p...)})
+	}
 	if !c.combat.enabled {
 		return c.Net.Send(p)
 	}

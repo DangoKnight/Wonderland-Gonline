@@ -52,6 +52,7 @@ type Form struct {
 	OpenNotebook                                                    func()
 	CloseTent                                                       func(uint16)
 	PlaceFurniture                                                  func(byte, game.Item, int, int) bool
+	CanPlaceVehicle                                                 func(uint16) bool
 	PotentialSkillsAtRisk                                           func() []string
 	Remote                                                          *remoteForm
 	remoteOptions                                                   *RemoteOptions

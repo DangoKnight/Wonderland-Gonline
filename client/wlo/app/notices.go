@@ -187,9 +187,13 @@ func (n *Notices) dismissAt(env *seui.Env, now time.Time, x, y int) bool {
 	if !n.shown || n.panel == nil || !image.Pt(x, y).In(n.panel.Rect()) {
 		return false
 	}
+	n.dismiss(env, now)
+	return true
+}
+
+func (n *Notices) dismiss(env *seui.Env, now time.Time) {
 	env.UI.CloseOverlayMessage(n, n.Now, func() { n.paint(env, now) })
 	n.shown = false
 	n.items = nil
 	n.until = time.Time{}
-	return true
 }

@@ -461,9 +461,13 @@ func vehicleDo(t *testing.T, s *Server, c *Session, sub, slot byte, id uint16) {
 
 func TestVehiclePlacementBoardingAndLanding(t *testing.T) {
 	s, c, wires := vehicleFixture(t)
+	c.character.X, c.character.Y = 110, 110
+	terrain := assets.Terrain{Width: 180, Height: 180, GridWidth: 9, GridHeight: 9, Cells: make([]byte, 81)}
+	terrain.Cells[6*9+5], terrain.Cells[7*9+5] = 2, 2
+	s.Assets.Terrains = map[uint16]assets.Terrain{c.character.Map: terrain}
 	before := c.character.Bag
 	vehicleDo(t, s, c, 9, 2, 48016)
-	manual := protocol.Builder{15, 12, 2}.U32(c.character.ID).U16(48016).U32(uint32(c.character.X)).U32(uint32(c.character.Y))
+	manual := protocol.Builder{15, 12, 2}.U32(c.character.ID).U16(48016).U32(130).U32(110)
 	for _, wire := range wires[:2] {
 		packets := wire.packets(t)
 		if len(packets) != 1 || !bytes.Equal(packets[0], manual) {
@@ -520,6 +524,53 @@ func TestVehiclePlacementBoardingAndLanding(t *testing.T) {
 	vehicleDo(t, s, c, 10, 99, 48016)
 	if wires[0].Len() != 0 || wires[1].Len() != 0 {
 		t.Fatal("landing callback replayed")
+	}
+}
+
+func TestRaftManualPlacementRejectsInvalidTerrainWithoutPublishing(t *testing.T) {
+	for _, name := range []string{"missing geometry", "solid ground", "isolated water", "distant water", "blocked corner", "alternate water", "raft capsule"} {
+		t.Run(name, func(t *testing.T) {
+			s, c, wires := vehicleFixture(t)
+			c.character.X, c.character.Y = 110, 110
+			terrain := assets.Terrain{Width: 180, Height: 180, GridWidth: 9, GridHeight: 9, Cells: make([]byte, 81)}
+			valid := false
+			slot, id := byte(2), uint16(game.DisposableRaftItemID)
+			switch name {
+			case "isolated water":
+				terrain.Cells[6*9+5] = 2
+			case "distant water":
+				terrain.Cells[7*9+5], terrain.Cells[8*9+5] = 2, 2
+			case "blocked corner":
+				terrain.Cells[6*9+6], terrain.Cells[7*9+6] = 2, 2
+				terrain.Cells[6*9+5], terrain.Cells[5*9+6] = 4, 4
+			case "alternate water":
+				terrain.Cells[6*9+5], terrain.Cells[7*9+5] = 8, 8
+				valid = true
+			case "raft capsule":
+				terrain.Cells[6*9+5], terrain.Cells[7*9+5] = 2, 2
+				slot, id = 5, 48028
+				valid = true
+			}
+			s.Assets.Terrains = map[uint16]assets.Terrain{}
+			if name != "missing geometry" {
+				s.Assets.Terrains[c.character.Map] = terrain
+			}
+			before := c.character.Clone()
+			vehicleDo(t, s, c, protocol.PetControlPlaceVehicleManual, slot, id)
+			for _, wire := range wires[:2] {
+				packets := wire.packets(t)
+				if valid {
+					if len(packets) != 1 {
+						t.Fatal("missing valid placement", packets)
+					}
+				} else if len(packets) != 0 {
+					t.Fatal("invalid placement published", packets)
+				}
+			}
+			if c.character.Bag != before.Bag || c.character.X != before.X || c.character.Y != before.Y || c.character.ActiveVehicle != 0 || wires[2].Len() != 0 {
+				t.Fatal("placement changed inventory, position or another map")
+			}
+		})
 	}
 }
 

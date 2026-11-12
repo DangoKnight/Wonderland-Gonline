@@ -1388,6 +1388,13 @@ func (c *Client) battleOverlay() {
 // damaging attack, falling back to Basic Attack for other actions or low SP.
 // Targets retain the native column/row scan order (FUN_0039a5b8).
 func (c *Client) battleAutoTick() {
+	if c.replica != nil {
+		c.battleAutoCancel()
+		return
+	}
+	if c.agentViewerOwns() {
+		return
+	}
 	v := &c.battle
 	c.remoteRearmBattleAuto()
 	c.battleAutoCancel()

@@ -119,51 +119,88 @@ inspection modes while they remain useful for comparison.
 
 ### Complete headless API coverage
 
-- [ ] Extend the optional headless API to cover every implemented client feature
+Implemented version 2: typed commands and queries, per-session queues and
+in-flight/history tracking, cancellation/expiry/reset, semantic form controls with
+strict payload schemas and stale-state/context fences, gameplay/service adapters,
+browser preference storage, and authenticated optional RPC. See
+[the API reference](HEADLESS_API.md) for coverage and explicit native limitations.
+Local dispatch and observed server state remain distinct: Legacy packets do not
+provide universal transaction receipts, so automatic resource retries are unsafe.
+
+Agent/API gameplay requires a server-controlled opt-in. It is denied by default; the
+gameplay database setting `agent_api_enabled` authorizes declared API sessions,
+and revocation disconnects them with a policy explanation. Ordinary manual
+clients do not request this permission. See [server permission](HEADLESS_API.md#server-permission).
+
+The native Go client supports browser-free headless TCP API hosting and a
+native TCP spectator. Native spectators reconstruct the normal client scene from
+ordered packet/action data and render locally at their configured frame rate;
+they do not display streamed browser/JPEG frames. The web host/viewer remain
+optional alternatives.
+The persistent host supports a detachable browser/native viewer and exclusive
+API/human intervention alongside the direct-action coverage below.
+See [session-host requirements](HEADLESS_API.md#persistent-session-host-and-detachable-viewer).
+
+- [x] Separate hosted game-session lifetime from API transport and viewer lifetime.
+  The host retains the game connection and state when a viewer disconnects.
+- [x] Attach a Gonline client to the same hosted session for readonly viewing,
+  without a second game login; resynchronize snapshots and ordered updates on
+  reconnect, including ongoing battles, dialogue and forms.
+- [x] Implement atomic, per-session API/human ownership with generation fencing.
+  Reject gameplay commands from the inactive owner while allowing observations;
+  clear queued/held/unsent input and fence AUTO/Remote producers on handoff.
+- [x] Implement explicit intervention/release and controller-loss recovery.
+  Revoke disconnected viewer control, reject stale messages and return control
+  without replaying old API commands or interrupting the API/game connection.
+- [x] Verify exclusive execution and lifetime isolation with race/integration
+  tests and live viewer disconnect/reconnect tests throughout gameplay.
+
+- [x] Extend the optional headless API to cover every implemented client feature
   through structured commands and state queries. Every supported workflow must
   be fully operational without mouse emulation, screen coordinates, synthetic
   keyboard input or screenshot interpretation. Keep coverage aligned with new
   gameplay features; input simulation and JavaScript evaluation may remain
   optional diagnostic tools, but must never be required to complete a workflow.
-- [ ] Dispatch commands directly through the client's normal application actions
+- [x] Dispatch commands directly through the client's normal application actions
   and validation paths, without synthesizing UI input or bypassing server rules.
   Provide direct movement by world coordinates, entity targeting by stable IDs,
   item use by inventory identity/slot and explicit target, and menu access by
   named module. Support opening, inspecting, selecting, confirming and closing
   menus/forms through the API, including nested dialogs and reward choices.
-- [ ] Publish a versioned, discoverable API contract describing available commands,
+- [x] Publish a versioned, discoverable API contract describing available commands,
   arguments, state fields, prerequisites and errors. Validate types, ranges and
   session ownership before dispatching commands.
-- [ ] Support login, server/channel and character selection, character creation,
+- [x] Support login, server/channel and character selection, character creation,
   logout and reconnect. Handle credentials without including them in logs, state
   snapshots or command history.
-- [ ] Cover movement, targeting, NPC dialogue and choices, quests, collection,
+- [x] Cover movement, targeting, NPC dialogue and choices, quests, collection,
   inventory/equipment, consumables, Potential Pills, compounding, pets, vehicles,
   tents/furniture, shops, treatment, storage and other implemented NPC services.
-- [ ] Cover combat actions and target selection, capture, pet changes, AUTO,
+- [x] Cover combat actions and target selection, capture, pet changes, AUTO,
   complete Remote configuration, Join Battle, spectating, teams/leadership,
   traditional PK and World PK. Retain normal client/server eligibility checks.
-- [ ] Cover social/friends, chat, mail, boards, trading, mall/cart, reward choices,
+- [x] Cover social/friends, chat, mail, boards, trading, mall/cart, reward choices,
   forging, supported minigames, notebook, settings and session management wherever
   these features are implemented. Report unavailable features explicitly.
-- [ ] Expose sufficient structured state to operate these features without
+- [x] Expose sufficient structured state to operate these features without
   screenshots: available actions, open forms and prompts, selections, inventory,
   skills, player/pet/party stats, timers, combat state and actionable errors.
-- [ ] Distinguish command acceptance, local execution, server rejection and
+- [x] Distinguish command acceptance, local execution, server rejection and
   observed completion. Propagate client errors through RPC instead of returning
   success merely because JavaScript evaluation succeeded. Provide bounded event
   history, correlation where supported, and timeout/cancellation semantics;
   never infer authoritative success or retry resource-consuming actions blindly.
-- [ ] Preserve independent instance ownership, ordered input and gameplay gates.
+- [x] Preserve independent instance ownership, ordered input and gameplay gates.
   Keep headless services behind explicit opt-in and authenticated loopback access;
   normal server startup must not enable them. Administration remains separate.
-- [ ] Verify command/state coverage with focused tests, malformed-input and
+- [x] Verify command/state coverage with focused tests, malformed-input and
   rejection cases, concurrent independent agents, disconnect/reconnect and live
   end-to-end checks with input-emulation helpers disabled. Any remaining UI-only
   path is incomplete API coverage; document it and unverified behavior explicitly.
-- [ ] Keep this API separate from AFK mode: headless automation currently runs
-  the real browser client, while AFK mode negotiates reduced traffic and replaces
-  scene rendering. Verify compatibility if both features are used together.
+- [x] Keep this API separate from AFK mode: headless automation runs the native
+  Go client or the optional browser backend, while AFK mode negotiates reduced
+  traffic and replaces scene rendering. Verify compatibility if both features
+  are used together.
 
 ## Development and acceptance
 

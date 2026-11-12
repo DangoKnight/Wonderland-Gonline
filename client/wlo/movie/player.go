@@ -53,10 +53,15 @@ func (a *ActorState) Point() image.Point {
 // step is FUN_00339598: toward the target at the speed, the longer axis
 // moving the full step and the other in proportion; it reports arrival.
 func (a *ActorState) step(now time.Time) bool {
-	dt := float64(now.Sub(a.at).Milliseconds())
-	a.at = now
+	// The legacy timer rounds whole-pixel steps. Doing that on each Go tick
+	// discards slow movement entirely at 30/120+ Hz. Keep fractional positions
+	// and sub-millisecond time until Point converts them for presentation.
+	dt := float64(max(0, now.Sub(a.at))) / float64(time.Millisecond)
+	if now.After(a.at) {
+		a.at = now
+	}
 	dx, dy := float64(a.TX)-a.X, float64(a.TY)-a.Y
-	d := math.Round(dt * a.Speed)
+	d := dt * a.Speed
 	if d >= math.Abs(dx) && d >= math.Abs(dy) {
 		a.X, a.Y = float64(a.TX), float64(a.TY)
 		a.Moving = false

@@ -245,6 +245,9 @@ func (s *Server) worldCommand(ctx context.Context, c *Session, p []byte) error {
 	// Published state can change from other sessions (GM summons), so check it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if c.agentRequested && (!s.agentAPIEnabled || !c.connectionNegotiated || c.connectionFeatures&protocol.ConnectionAgentAPI == 0) {
+		return s.denyAgentAccess(c)
+	}
 	if err := c.outputError(); err != nil {
 		return err
 	}

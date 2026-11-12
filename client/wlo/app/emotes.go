@@ -5,11 +5,11 @@ import "wonderland-gonline/internal/localization"
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"wonderland-gonline/client/wlo/hud"
 	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/userdata"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/protocol"
 )
@@ -57,7 +57,7 @@ func (c *Client) loadEmotes() {
 	}
 	f := emoteFile{Slots: hud.DefaultSlots()}
 	if p := c.emotePath(); p != "" {
-		if b, err := os.ReadFile(p); err == nil {
+		if b, err := userdata.ReadFile(p); err == nil {
 			if err := json.Unmarshal(b, &f); err != nil {
 				c.Chat.Notice(localization.UI("ui.app.could_not_load_emotes_7c263d70") + err.Error())
 				f = emoteFile{Slots: hud.DefaultSlots()}
@@ -89,10 +89,7 @@ func (c *Client) saveEmotes() {
 	}
 	b, err := json.Marshal(f)
 	if err == nil {
-		err = os.MkdirAll(filepath.Dir(p), 0o700)
-	}
-	if err == nil {
-		err = os.WriteFile(p, b, 0o600)
+		err = userdata.WriteFile(p, b)
 	}
 	if err != nil {
 		c.Chat.Notice(localization.UI("ui.app.could_not_save_emotes_422aef05") + err.Error())

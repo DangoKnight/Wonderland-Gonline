@@ -90,6 +90,9 @@ func main() {
 	}
 	extractAssets := flag.Bool("extract-assets", false, "extract a Legacy installation and compile ready-to-use client packs, then exit")
 	setup := flag.Bool("setup", false, "open first-launch language and asset setup again")
+	attach := flag.String("attach", "", "watch or control a persistent API session using its viewer URL")
+	headlessMode := flag.Bool("headless", false, "run the native client without a window or browser (requires -api-listen)")
+	apiListen := flag.String("api-listen", "", "explicitly enable native TCP API on a numeric loopback address; requires -headless and WLO_AGENT_TOKEN")
 	setupWindow := flag.String("setup-window", "", "internal startup setup request")
 	extractOutput := flag.String("extract-output", "", "new import directory (default: assets beside the executable)")
 	extractLanguage := flag.String("extract-language", "en", "Legacy source language: en or zh-TW")
@@ -114,6 +117,17 @@ func main() {
 	serverINI := flag.String("serverini", "", "server list; defaults to SERVER.INI in the client directory (the working directory with -legacy); a single local server is used when missing")
 	legacy := flag.Bool("legacy", false, "run the earlier screenshot-based front end instead of the decompile port")
 	flag.Parse()
+	if *headlessMode || *apiListen != "" {
+		if !*headlessMode || *apiListen == "" || *attach != "" {
+			log.Fatal("native API requires -headless and -api-listen together; -attach runs a separate viewer")
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		if err := runNativeHeadless(ctx, *assets, *serverINI, *sprites, *language, *apiListen, os.Getenv("WLO_AGENT_TOKEN")); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if *setupWindow != "" {
 		if err := firstlaunch.RunWindow(*setupWindow); errors.Is(err, firstlaunch.ErrCancelled) {
 			os.Exit(firstlaunch.CancelledExitCode)
@@ -147,6 +161,9 @@ func main() {
 	if (*useWorkbench || *legacy) && *clientDir == "" {
 		log.Fatal("-client must point to an original client installation for inspection modes")
 	}
+	if *attach != "" && (*useWorkbench || *legacy || *snapshot != "") {
+		log.Fatal("-attach uses the regular Gonline client and cannot be combined with inspection modes")
+	}
 	if !*useWorkbench && *legacy {
 		if *serverINI == "" {
 			*serverINI = "SERVER.INI"
@@ -179,7 +196,7 @@ func main() {
 				initialLanguage = state.Language
 			}
 		}
-		if err := runConfiguredClient(*assets, *serverINI, *snapshot, *sprites, *renderer, clientLanguages{Explicit: *language, Default: setupLanguage, Initial: initialLanguage}); err != nil {
+		if err := runConfiguredClient(*assets, *serverINI, *snapshot, *sprites, *renderer, clientLanguages{Explicit: *language, Default: setupLanguage, Initial: initialLanguage, Attach: *attach}); err != nil {
 			log.Fatal(err)
 		}
 		return

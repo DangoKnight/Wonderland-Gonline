@@ -79,6 +79,16 @@ func (c *Client) initInventory() {
 	c.Inventory.CanAct = func() bool {
 		return c.World != nil && c.mapReady && c.movie == nil && c.sport == nil && !c.held && !c.event.active && !c.battle.state.Active && !c.sceneFrozen()
 	}
+	c.Inventory.CanPlaceVehicle = func(id uint16) bool {
+		if !game.Raft(id) {
+			return true
+		}
+		if c.World == nil || c.World.Scene == nil || c.World.Player.VehicleID != 0 {
+			return false
+		}
+		_, _, ok := game.RaftPlacement(c.World.Player.X, c.World.Player.Y, c.World.Scene.Land, c.World.Scene.Water)
+		return ok
+	}
 	c.Inventory.BattleUse = c.selectBattleItem
 	c.Inventory.CloseTent = func(id uint16) {
 		if c.openTentItem == id {

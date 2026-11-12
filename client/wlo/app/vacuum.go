@@ -111,6 +111,9 @@ func (c *Client) stopVacuum() {
 }
 
 func (c *Client) vacuumTick() {
+	if c.agentViewerOwns() || c.replica != nil {
+		return
+	}
 	r := &c.vacuum
 	if r.actor == 0 {
 		return

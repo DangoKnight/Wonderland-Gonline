@@ -14,8 +14,18 @@ const (
 	ConnectionAFK                 uint32 = 1 << 5
 	ConnectionAFKAggregation      uint32 = 1 << 6
 	ConnectionAFKDelta            uint32 = 1 << 7
-	ConnectionKnownFeatures              = ConnectionCollectionTiming | ConnectionCombatRoundChain | ConnectionClientBackdrops | ConnectionCompleteMapSnapshot | ConnectionObservedPickups | ConnectionAFK | ConnectionAFKAggregation | ConnectionAFKDelta
+	ConnectionAgentAPI            uint32 = 1 << 8
+	ConnectionKnownFeatures              = ConnectionCollectionTiming | ConnectionCombatRoundChain | ConnectionClientBackdrops | ConnectionCompleteMapSnapshot | ConnectionObservedPickups | ConnectionAFK | ConnectionAFKAggregation | ConnectionAFKDelta | ConnectionAgentAPI
 )
+
+// AgentAccessDeniedMessage is deliberately explicit about the operator's policy.
+const AgentAccessDeniedMessage = "This server is specifically configured to disallow agentic AI and API-controlled gameplay. Please respect the server operator's choice and use a regular, manually controlled client."
+
+func AgentAccessDenied() []byte {
+	return Builder{CommandHandshake, HandshakeAgentAccessDenied}.Bytes([]byte(AgentAccessDeniedMessage))
+}
+
+func IsAgentAccessDenied(p []byte) bool { return bytes.Equal(p, AgentAccessDenied()) }
 
 // One application hello after TCP connection establishment. Native framing and
 // discovery stay intact so unknown peers continue speaking the Legacy protocol.

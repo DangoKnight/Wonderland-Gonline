@@ -51,7 +51,19 @@ func (s *Server) vehicleCommand(ctx context.Context, c *Session, p []byte) error
 		if _, ok := c.character.Vehicle(slot, id, s.Assets.Items); !ok || c.character.ActiveVehicle != 0 {
 			return nil
 		}
-		return s.sendVehiclePackets(c, [][]byte{protocol.Builder{protocol.CommandPetControl, protocol.PetControlVehiclePlaced, slot}.U32(c.character.ID).U16(id).U32(uint32(c.character.X)).U32(uint32(c.character.Y))})
+		x, y := int(c.character.X), int(c.character.Y)
+		if game.Raft(id) {
+			terrain, known := s.Assets.Terrains[c.character.Map]
+			if !known {
+				return nil
+			}
+			var valid bool
+			x, y, valid = game.RaftPlacement(x, y, terrain.Land, terrain.Water)
+			if !valid {
+				return nil
+			}
+		}
+		return s.sendVehiclePackets(c, [][]byte{protocol.Builder{protocol.CommandPetControl, protocol.PetControlVehiclePlaced, slot}.U32(c.character.ID).U16(id).U32(uint32(x)).U32(uint32(y))})
 	case protocol.PetControlPlaceVehicle:
 		if _, ok := c.character.Vehicle(slot, id, s.Assets.Items); !ok {
 			return nil

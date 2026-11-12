@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"wonderland-gonline/client/wlo/inventory"
+	"wonderland-gonline/client/wlo/userdata"
 	"wonderland-gonline/internal/localization"
 )
 
@@ -38,26 +39,11 @@ func saveRemoteProfile(path string, options inventory.RemoteOptions) error {
 	if err != nil {
 		return err
 	}
-	if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".remote-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	if _, err = f.Write(raw); err != nil {
-		f.Close()
-		return err
-	}
-	if err = f.Close(); err != nil {
-		return err
-	}
-	return os.Rename(f.Name(), path)
+	return userdata.WriteFile(path, raw)
 }
 
 func readRemoteProfile(path string) (inventory.RemoteOptions, bool, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := userdata.ReadFile(path)
 	if os.IsNotExist(err) {
 		return inventory.RemoteOptions{}, false, nil
 	}

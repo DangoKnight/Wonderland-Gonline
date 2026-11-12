@@ -59,6 +59,8 @@ type Session struct {
 // Workspace owns a window, shared caches and independently connected clients.
 // Tick and input methods run serially on the platform game thread.
 type Workspace struct {
+	hosted         bool
+	agentDisplay   *displayControls
 	afkToken       [protocol.AFKGroupTokenBytes]byte
 	Sessions       []*Session
 	Active         int
@@ -112,11 +114,12 @@ func NewWorkspace(first *Client) *Workspace {
 		o.UserRoot = filepath.Dir(filepath.Dir(first.Assets.UserPath("settings.json")))
 	}
 	first.screenSuffix = screenSuffix(1)
-	w := &Workspace{Sessions: []*Session{{ID: 1, Client: first}}, options: o, resources: first.resources, nextID: 2, factory: New, hover: image.Pt(-1, -1), screen: surface.New(workspaceWidth, ScreenHeight)}
+	w := &Workspace{hosted: first.agentHosted(), Sessions: []*Session{{ID: 1, Client: first}}, options: o, resources: first.resources, nextID: 2, factory: New, hover: image.Pt(-1, -1), screen: surface.New(workspaceWidth, ScreenHeight)}
 	if _, err := rand.Read(w.afkToken[:]); err != nil {
 		w.afkToken = [protocol.AFKGroupTokenBytes]byte{}
 	}
 	first.afkWorkspace = w
+	first.agent.session = 1
 	return w
 }
 func (w *Workspace) Current() *Client {
@@ -149,7 +152,11 @@ func (w *Workspace) Add() error {
 	if err != nil {
 		return err
 	}
+	if w.hosted {
+		c.AgentEnableSessionHost()
+	}
 	c.afkWorkspace = w
+	c.agent.session = w.nextID
 	c.screenSuffix = screenSuffix(w.nextID)
 	if w.attachTarget != nil {
 		w.attachTarget(c.Screen)
@@ -163,6 +170,9 @@ func (w *Workspace) Add() error {
 	// A new session inherits the window's recording rule.
 	c.SyncDebugLog(w.debugLogOn, w.debugLogCap)
 	w.Switch(len(w.Sessions) - 1)
+	if w.Current() == c {
+		c.backgroundSession = false
+	}
 	w.setScroll(max(0, len(w.Sessions)-w.visibleRows()))
 	return nil
 }
@@ -182,6 +192,9 @@ func (w *Workspace) Switch(index int) {
 	current.Frame()
 }
 func (c *Client) cancelSessionInput() {
+	if c.spectator != nil {
+		c.spectator.ResetInput()
+	}
 	if c.HotKeys != nil {
 		c.HotKeys.CancelDrag()
 	}
@@ -199,6 +212,10 @@ func (c *Client) cancelSessionInput() {
 	c.WalkKeys(false, false, false, false)
 }
 func (c *Client) closeSession() {
+	if c.spectator != nil {
+		c.spectator.Close()
+		c.spectator = nil
+	}
 	c.resetTentScene()
 	c.stopMapLoading()
 	c.closeWorldZoom()
@@ -264,12 +281,20 @@ func (w *Workspace) Close() error {
 	return errors.Join(profileErr, w.resources.Close())
 }
 func (w *Workspace) Tick() {
+	w.tick(true)
+}
+
+// TickHeadless advances the same simulation without rendering unused previews.
+// A viewer request still forces a complete scene capture on its owning frame.
+func (w *Workspace) TickHeadless() { w.tick(false) }
+
+func (w *Workspace) tick(draw bool) {
 	defer w.checkpointProfile()
 	w.stepLayout()
 	w.stepScroll()
 	w.ticks++
 	for _, s := range w.Sessions {
-		s.Client.frame(s.Client == w.Current() || w.ticks%sessionBackgroundFrameTicks == 0)
+		s.Client.frame(draw && (s.Client == w.Current() || w.ticks%sessionBackgroundFrameTicks == 0))
 	}
 	w.shareAFKState()
 	for i := len(w.Sessions) - 1; i >= 0; i-- {
@@ -388,6 +413,9 @@ func (w *Workspace) panelClick(x, y int) {
 		}
 		if point.In(w.closeRect(row)) {
 			w.PendingRemove = w.Sessions[row+w.firstRow()].ID
+		} else if c := w.Sessions[row+w.firstRow()].Client; c.spectator != nil && point.In(w.spectatorControlRect(row)) {
+			w.Switch(row + w.firstRow())
+			c.spectator.ToggleControl()
 		} else if point.In(w.afkRect(row)) {
 			w.toggleSessionAFK(w.Sessions[row+w.firstRow()].Client)
 		} else if point.In(w.titleRect(row)) {
@@ -450,9 +478,19 @@ func (w *Workspace) Compose() *surface.Surface {
 			} else {
 				x := (r.Min.X + r.Max.X - sessionPreviewWidth) / 2
 				preview := image.Rect(x, r.Min.Y+sessionPreviewTop, x+sessionPreviewWidth, r.Min.Y+sessionPreviewTop+sessionPreviewHeight)
+				if s.Client.spectator != nil {
+					height := sessionPreviewHeight - spectatorButtonHeight
+					width := height * ScreenWidth / ScreenHeight
+					x = (r.Min.X + r.Max.X - width) / 2
+					preview = image.Rect(x, r.Min.Y+sessionPreviewTop, x+width, r.Min.Y+sessionPreviewTop+height)
+				}
 				w.screen.Frame(preview.Inset(-1), sessionShadowFill)
 				w.screen.DrawStretch(preview, s.Client.Screen, false)
-				w.drawSessionAFK(row, s.Client)
+				if s.Client.spectator != nil {
+					w.drawSpectatorControl(row, s.Client)
+				} else {
+					w.drawSessionAFK(row, s.Client)
+				}
 			}
 		}
 		if w.addVisible() {

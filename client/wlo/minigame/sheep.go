@@ -133,6 +133,15 @@ func (g *Sheep) Click(x, y int, now time.Time) {
 	if !g.ready(now) || !g.hitTarget(x, y) || g.hammerFrame(now) != sheepStandingHammer {
 		return
 	}
+	g.Strike(now)
+}
+
+// Strike is the semantic hammer action, shared with the headless API.
+func (g *Sheep) Strike(now time.Time) {
+	g.Update(now)
+	if !g.ready(now) || g.hammerFrame(now) != sheepStandingHammer {
+		return
+	}
 	g.hammerAt = now
 	if g.answered {
 		return

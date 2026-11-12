@@ -59,6 +59,10 @@ func (f *Form) useBag(slot byte) {
 		return
 	}
 	if def.Type == game.VehicleType {
+		if f.CanPlaceVehicle != nil && !f.CanPlaceVehicle(it.ID) {
+			f.notice(localization.UI("ui.inventory.raft_requires_adjacent_water"))
+			return
+		}
 		f.send(protocol.Builder{protocol.CommandPetControl, protocol.PetControlPlaceVehicleManual, slot}.U16(it.ID))
 		return
 	}

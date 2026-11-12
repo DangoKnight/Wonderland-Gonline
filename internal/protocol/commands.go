@@ -144,6 +144,7 @@ const (
 	HandshakeConnectionOffer   = 248
 	HandshakeConnectionAccept  = 249
 	HandshakeConnectionEnabled = 250
+	HandshakeAgentAccessDenied = 251 // Gonline server policy refusal, not a legacy error code.
 )
 
 // Chat subcommands (AC2). Each carries the speaker's ID and the text both

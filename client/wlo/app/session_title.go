@@ -19,6 +19,9 @@ func (s *Session) DisplayTitle() string {
 	if s.Title != "" {
 		return s.Title
 	}
+	if s.Client != nil && s.Client.spectator != nil {
+		return spectatorTitle(s.ID)
+	}
 	return fmt.Sprintf(localization.Text("ui.app.session_d_5b56e49c"), s.ID)
 }
 func validSessionTitle(title string) bool {

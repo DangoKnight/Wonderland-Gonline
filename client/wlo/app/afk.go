@@ -1,11 +1,13 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"image"
 	"time"
 	"unicode/utf8"
+	"wonderland-gonline/client/wlo/sessionstream"
 	"wonderland-gonline/internal/clientassets"
 	"wonderland-gonline/internal/localization"
 	"wonderland-gonline/internal/protocol"
@@ -368,6 +370,10 @@ func (c *Client) afkText(x, y int, text string, width int) {
 }
 
 func (c *Client) applyAFKState(state protocol.AFKState) {
+	if c.native != nil && c.replica == nil {
+		data, _ := json.Marshal(state)
+		c.recordNative(sessionstream.Event{Kind: "afkState", Arguments: data})
+	}
 	a := &c.afk
 	if a.state.Map != 0 && state.Map != a.state.Map {
 		c.afkLog(fmt.Sprintf(localization.Text("ui.afk.map_changed"), a.state.Map, state.Map))

@@ -84,6 +84,7 @@ type Server struct {
 	statusMode                string
 	adminEditMu               sync.Mutex
 	dropRateMultiplier        float64 // Live GM setting; guarded by worldMu.
+	agentAPIEnabled           bool    // Explicit, durable operator opt-in; guarded by worldMu.
 }
 
 // registerTentMaps adds the synthetic interior templates to a served catalog.
@@ -307,6 +308,14 @@ func (s *Server) dispatch(ctx context.Context, c *Session, p []byte) error {
 	if len(p) == 0 {
 		return protocol.ErrMalformed
 	}
+	s.worldMu.Lock()
+	denied := c.agentRequested && (!s.agentAPIEnabled || !c.connectionNegotiated || c.connectionFeatures&protocol.ConnectionAgentAPI == 0)
+	if denied {
+		err := s.denyAgentAccess(c)
+		s.worldMu.Unlock()
+		return err
+	}
+	s.worldMu.Unlock()
 	command := commandRegistry[p[0]]
 	if command.policy.IsWorldCommand() {
 		return s.worldCommand(ctx, c, p)

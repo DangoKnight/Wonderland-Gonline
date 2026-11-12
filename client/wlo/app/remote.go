@@ -151,6 +151,9 @@ func (c *Client) remoteButton() {
 	b.Show()
 }
 func (c *Client) remoteTick() {
+	if c.agentViewerOwns() || c.replica != nil {
+		return
+	}
 	r := &c.remote
 	if c.World == nil {
 		return

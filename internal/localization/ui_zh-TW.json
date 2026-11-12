@@ -2,6 +2,13 @@
   "version": 1,
   "language": "zh-TW",
   "strings": {
+    "ui.inventory.raft_requires_adjacent_water": "請移動到可航行的水域旁放置木筏。",
+    "ui.spectator.stream_error": "同步錯誤",
+    "ui.spectator.synchronizing": "同步中...",
+    "ui.spectator.title": "觀看 %d",
+    "ui.spectator.take_control": "接管操作",
+    "ui.spectator.release_control": "交回 API",
+    "ui.spectator.connecting": "重新連線中...",
     "ui.afk.remote_changed": "遙控器啟用：%t",
     "ui.afk.pet_changed": "出戰寵物：%d（0 表示休息）",
     "ui.afk.enabled": "已啟用 AFK。自動操作繼續，聊天及無關玩家更新已暫停。",

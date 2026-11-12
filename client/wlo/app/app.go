@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"wonderland-gonline/client/wlo/viewer"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/localization"
 
@@ -60,6 +61,13 @@ var (
 
 // Client is the running login phase.
 type Client struct {
+	agentUI           agentUIRuntime
+	agent             agentRuntime
+	native            *nativeRecording
+	replica           *nativeReplica
+	replaying         bool
+	spectator         *viewer.Connection
+	spectatorBlocked  bool
 	options           Options
 	Root              string
 	Assets            login.Assets
@@ -339,6 +347,11 @@ func New(o Options) (*Client, error) {
 	c.Lost.Leave.OnClick = func() { c.Exit = true }
 	c.Lost.Prev.OnClick = c.lostPrev
 	c.Servers.OnConnecting = func() {
+		if c.agentHosted() {
+			c.agent.serverPermission.Store(agentPermissionUnknown)
+			c.agent.serverAttached.Store(true)
+		}
+		c.agentReset()
 		c.afk = afkRuntime{}
 		c.combat = combatRuntime{}
 		c.vacuum = vacuumRuntime{}
@@ -463,9 +476,17 @@ func (c *Client) Frame() { c.frame(true) }
 // frame always pumps networking, simulation and automation; background
 // thumbnails render at a lower rate. Movies/minigames retain their own clocks.
 func (c *Client) frame(draw bool) {
+	if c.spectator != nil && !c.replaying {
+		c.spectatorFrame(draw)
+		return
+	}
+	c.beginNativeFrame()
+	defer c.endNativeFrame()
+	draw = draw || c.agentFrameRequested()
 	requestedDraw := draw
 	draw = draw || c.movie != nil || c.sport != nil || c.constellation != nil || c.fade.step > 0
 	c.handleNet()
+	c.agentTick()
 	c.afkTick()
 	if c.afk.active || c.afk.resync && !c.afk.sceneReceived {
 		draw = false
@@ -599,6 +620,8 @@ func (c *Client) frame(draw bool) {
 	if draw {
 		c.drawConstellation(c.Now())
 		c.drawMapLoading(now)
+	} else {
+		c.tickMapLoading(now)
 	}
 	c.updateCursor(now)
 	if requestedDraw {
@@ -607,6 +630,7 @@ func (c *Client) frame(draw bool) {
 		}
 		c.drawAFK()
 	}
+	c.agentCaptureFrame()
 }
 
 // drawBackground is 0x40c3c8: LogPic1.jpg through the canvas, then the
@@ -627,14 +651,17 @@ func (c *Client) drawBackground() {
 // handleNet runs the socket events and the received packets.
 func (c *Client) handleNet() {
 	for _, e := range c.Net.Poll() {
+		c.recordNativeNet(e)
 		switch e.Kind {
 		case login.StatusData:
 			c.Servers.StatusReceived(e.Data)
 		case login.Packet:
 			c.dispatch(e.Data)
 		case login.Disconnected:
+			c.agentReset()
 			c.disconnected()
 		case login.ConnectFailed:
+			c.agentReset()
 			c.connectFailed()
 		}
 	}

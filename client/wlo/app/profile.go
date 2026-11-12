@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"wonderland-gonline/client/wlo/login"
+	"wonderland-gonline/client/wlo/userdata"
 )
 
 const workspaceProfileVersion = 1
@@ -51,12 +52,18 @@ func (w *Workspace) ProfilePath() string {
 func (w *Workspace) snapshotProfile() workspaceProfile {
 	p := workspaceProfile{Version: workspaceProfileVersion, NextSessionID: w.nextID, Collapsed: w.Collapsed}
 	for i, s := range w.Sessions {
+		if s.Client.spectator != nil {
+			continue
+		}
 		entry := sessionProfile{ID: s.ID, Title: s.Title, Server: s.Client.Servers.LastSelection}
 		if s.Client.profileAccount != "" {
 			name := s.Client.profileAccount
 			entry.Account = &name
 		}
 		p.Sessions = append(p.Sessions, entry)
+		if p.ActiveSession == 0 {
+			p.ActiveSession = s.ID
+		}
 		if i == w.Active {
 			p.ActiveSession = s.ID
 		}
@@ -81,25 +88,7 @@ func (w *Workspace) SaveProfile() error {
 		return nil
 	}
 	path := w.ProfilePath()
-	if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".workspace-*.json")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	if _, err = f.Write(data); err == nil {
-		err = f.Sync()
-	}
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	if closeErr != nil {
-		return closeErr
-	}
-	if err = os.Rename(f.Name(), path); err != nil {
+	if err = userdata.WriteFile(path, data); err != nil {
 		return err
 	}
 	w.profileLast = data
@@ -107,7 +96,7 @@ func (w *Workspace) SaveProfile() error {
 }
 func readWorkspaceProfile(path string) (workspaceProfile, error) {
 	var p workspaceProfile
-	f, err := os.Open(path)
+	f, err := userdata.Open(path)
 	if err != nil {
 		return p, err
 	}
@@ -169,6 +158,9 @@ func (w *Workspace) RestoreProfile() error {
 		c := first
 		if entry.ID != 1 {
 			c, err = w.factory(w.sessionOptions(entry.ID))
+			if err == nil && w.hosted {
+				c.AgentEnableSessionHost()
+			}
 			if err != nil {
 				for _, s := range restored {
 					if s.Client != first {
@@ -184,6 +176,8 @@ func (w *Workspace) RestoreProfile() error {
 	w.Active = 0
 	for i, entry := range p.Sessions {
 		c := restored[i].Client
+		c.afkWorkspace = w
+		c.agent.session = entry.ID
 		reusedFirst = reusedFirst || c == first
 		if entry.Server != nil {
 			saved := *entry.Server

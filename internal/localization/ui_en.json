@@ -2,6 +2,13 @@
   "version": 1,
   "language": "en",
   "strings": {
+    "ui.inventory.raft_requires_adjacent_water": "Move next to open water to place the raft.",
+    "ui.spectator.stream_error": "Stream error",
+    "ui.spectator.synchronizing": "Synchronizing...",
+    "ui.spectator.title": "Watch %d",
+    "ui.spectator.take_control": "Take control",
+    "ui.spectator.release_control": "Return to API",
+    "ui.spectator.connecting": "Reconnecting...",
     "ui.afk.remote_changed": "Remote active: %t",
     "ui.afk.pet_changed": "Active battle pet: %d (0 means resting)",
     "ui.afk.enabled": "AFK enabled. Automation continues; chat and unrelated players are suppressed.",

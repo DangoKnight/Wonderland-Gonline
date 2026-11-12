@@ -52,6 +52,19 @@ func (t Terrain) Land(x, y int) bool {
 	return at < len(t.Cells) && t.Cells[at] == 0
 }
 
+// Water accepts only the two native navigable water collision values.
+func (t Terrain) Water(x, y int) bool {
+	if !t.Contains(x, y) {
+		return false
+	}
+	cx, cy := x/TerrainCellSize, y/TerrainCellSize
+	if cx >= int(t.GridWidth) || cy >= int(t.GridHeight) {
+		return false
+	}
+	at := cx*int(t.GridHeight) + cy
+	return at < len(t.Cells) && (t.Cells[at] == FishingWaterCell || t.Cells[at] == terrainAlternateWater)
+}
+
 // NearestWalkable finds the nearest interior land point to a water position.
 // Exhaustive cell search is used only for exceptional recovery transitions.
 func (t Terrain) NearestWalkable(x, y int) (uint16, uint16, bool) {

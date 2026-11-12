@@ -705,6 +705,13 @@ export async function loadView(target, ctx) {
 					["Server name", "server_name", data.server_name],
 					["Message of the day", "motd", data.motd, "textarea"],
 					[
+						"Agent / gameplay API access",
+						"agent_api_enabled",
+						data.agent_api_enabled ? "enabled" : "disabled",
+						"text",
+						["disabled", "enabled"],
+					],
+					[
 						"EXP multiplier",
 						"exp_rate",
 						data.exp_rate,
@@ -738,10 +745,15 @@ export async function loadView(target, ctx) {
 				(v) =>
 					request(
 						"operations",
-						{ ...v, exp_rate: Number(v.exp_rate), drop_rate: Number(v.drop_rate) },
+						{
+							...v,
+							agent_api_enabled: v.agent_api_enabled === "enabled",
+							exp_rate: Number(v.exp_rate),
+							drop_rate: Number(v.drop_rate),
+						},
 						"PUT",
 					),
-				"Rates, traffic status and logging settings persist across restarts.",
+				"Settings persist across restarts. Agent/API access is disabled by default; disabling it disconnects declared agent sessions immediately.",
 			),
 			form(
 				"Broadcast announcement",

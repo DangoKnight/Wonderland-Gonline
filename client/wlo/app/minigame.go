@@ -4,6 +4,7 @@ import "wonderland-gonline/internal/localization"
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math/rand/v2"
 	"strconv"
 	"time"
@@ -84,6 +85,7 @@ func (g hunterGame) Cursor() cursor.Shape        { return cursor.ShapeNormal }
 
 // sportPlay is a running minigame.
 type sportPlay struct {
+	apiID string
 	kind  byte
 	game  sportGame
 	start *sportStartForm
@@ -224,6 +226,8 @@ func (c *Client) startSport(s []byte) {
 	param := int(binary.LittleEndian.Uint16(s[sportParam:]))
 	now := c.Now()
 	sp := &sportPlay{kind: kind}
+	c.agentUI.serial++
+	sp.apiID = fmt.Sprintf("game-%d-%d", c.G.PlayerID, c.agentUI.serial)
 	result := func(win bool) {
 		if c.sport != sp {
 			return

@@ -48,10 +48,10 @@ func loadingEase(elapsed, duration time.Duration) float64 {
 	return p * p * (3 - 2*p)
 }
 
-// Draw after the destination has rendered underneath, including its UI. The
-// minimum starts on the first displayed frame, even if synchronous map loading
-// was slow. A slow server holds the illustration until its readiness packet.
-func (c *Client) drawMapLoading(now time.Time) {
+// tickMapLoading advances readiness and the transition clock even when no scene
+// is drawn. Headless hosts and hidden sessions must not depend on a viewer or
+// screenshot request to release their input lock after server readiness.
+func (c *Client) tickMapLoading(now time.Time) {
 	f := &c.mapLoading
 	if !f.active {
 		return
@@ -67,13 +67,24 @@ func (c *Client) drawMapLoading(now time.Time) {
 	if f.closing.IsZero() && ready && elapsed >= mapLoadingLeave+mapLoadingShow+mapLoadingHold {
 		f.closing = now
 	}
+	if !f.closing.IsZero() && now.Sub(f.closing) >= mapLoadingHide+mapLoadingReveal {
+		c.stopMapLoading()
+	}
+}
+
+// Draw after the destination has rendered underneath, including its UI. A slow
+// server holds the illustration until its readiness packet. Direct rendering
+// callers also advance the transition, as the ordinary frame loop does.
+func (c *Client) drawMapLoading(now time.Time) {
+	c.tickMapLoading(now)
+	f := &c.mapLoading
+	if !f.active {
+		return
+	}
+	elapsed := now.Sub(f.started)
 	r := image.Rect(0, 0, ScreenWidth, ScreenHeight)
 	if !f.closing.IsZero() && now.Sub(f.closing) >= mapLoadingHide {
 		reveal := now.Sub(f.closing) - mapLoadingHide
-		if reveal >= mapLoadingReveal {
-			c.stopMapLoading()
-			return
-		}
 		c.Screen.FillAlpha(r, 0, int(255*(1-loadingEase(reveal, mapLoadingReveal))))
 		return
 	}

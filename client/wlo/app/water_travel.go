@@ -2,8 +2,10 @@ package app
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"image"
 	"time"
+	"wonderland-gonline/client/wlo/sessionstream"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -40,6 +42,10 @@ type waterTravelState struct {
 }
 
 func (c *Client) walkWaterAware(x, y int, now time.Time) {
+	if c.native != nil && c.native.depth == 0 {
+		data, _ := json.Marshal([2]int{x, y})
+		c.recordNative(sessionstream.Event{Kind: "walk", Arguments: data})
+	}
 	w := c.World
 	if w.FollowingTeam() {
 		return

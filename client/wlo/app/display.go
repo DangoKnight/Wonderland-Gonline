@@ -18,6 +18,7 @@ import (
 	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/render"
 	"wonderland-gonline/client/wlo/surface"
+	"wonderland-gonline/client/wlo/userdata"
 )
 
 // Display settings belong to the application window, shared by every session.
@@ -127,7 +128,7 @@ func (s DisplaySettings) validate() error {
 
 func loadDisplaySettings(path string) (DisplaySettings, error) {
 	s := defaultDisplaySettings()
-	f, err := os.Open(path)
+	f, err := userdata.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return s, nil
 	}
@@ -166,26 +167,7 @@ func (s DisplaySettings) save(path string) error {
 	if err != nil {
 		return err
 	}
-	if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".display-*.json")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	_, err = f.Write(append(raw, '\n'))
-	if err == nil {
-		err = f.Sync()
-	}
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	if closeErr != nil {
-		return closeErr
-	}
-	return os.Rename(f.Name(), path)
+	return userdata.WriteFile(path, append(raw, '\n'))
 }
 
 type displayControls struct {

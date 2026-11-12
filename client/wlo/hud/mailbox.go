@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"wonderland-gonline/client/wlo/seui"
+	"wonderland-gonline/client/wlo/surface"
 )
 
 // Mail is one 0xb9-byte mailbox record (FUN_001d495c, FUN_001d5128).
@@ -134,18 +135,33 @@ var mailKindLabels = map[byte]string{MailKindFriend: localization.UI("ui.hud.fri
 
 // The legacy Sent tab has "Backup" baked into its English picture. Keep its
 // native border/states and replace the interior label with localized text.
-type mailSentTab struct{ seui.FixedButton }
+type mailSentTab struct {
+	seui.FixedButton
+	backgrounds [3]*surface.Surface
+}
 
 func (b *mailSentTab) Paint() {
 	b.FixedButton.Paint()
 	at := b.Abs()
 	scr := b.Env.Screen
 	label := []byte(localization.UI("ui.hud.mail_sent"))
-	for y := at.Y + 3; y < at.Y+b.Height-3; y++ {
-		x := at.X + 3
-		if x >= 0 && x < scr.W && y >= 0 && y < scr.H {
-			scr.Fill(image.Rect(at.X+4, y, at.X+b.Width-4, y+1), scr.Pix[y*scr.W+x])
+	// GPU render targets intentionally have no CPU pixel buffer. Reconstruct
+	// the label's background from the immutable tab picture instead of reading
+	// back the framebuffer (which also forced a GPU synchronization).
+	state := min(int(b.State), len(b.backgrounds)-1)
+	if b.Width > 8 && b.Height > 6 {
+		background := b.backgrounds[state]
+		if background == nil || background.W != b.Width-8 || background.H != b.Height-6 {
+			background = surface.New(b.Width-8, b.Height-6)
+			strip := surface.New(1, b.Height-6)
+			sourceY := b.Clip.Min.Y + state*b.Clip.Dy() + 3
+			b.Env.Pics.DrawRect(strip, b.Image, 0, 0, image.Rect(b.Clip.Min.X+3, sourceY, b.Clip.Min.X+4, sourceY+strip.H), false)
+			for y := 0; y < background.H; y++ {
+				background.Fill(image.Rect(0, y, background.W, y+1), strip.Pix[y])
+			}
+			b.backgrounds[state] = background
 		}
+		scr.Draw(at.X+4, at.Y+3, background, false)
 	}
 	b.Env.Text.Draw(at.X+(b.Width-len(label)*8)/2, at.Y+3, 0, false, true, scr, label, 15, b.Width, 0, labelColor, 0)
 }

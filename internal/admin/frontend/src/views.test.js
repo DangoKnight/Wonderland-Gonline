@@ -53,6 +53,38 @@ function fixture(path) {
 	return [];
 }
 describe("feature parity", () => {
+	it("requires an explicit opt-in for agent gameplay API access", async () => {
+		const request = vi.fn();
+		const nodes = await loadView("operations", {
+			api: async (path) => fixture(path),
+			request,
+			notify: vi.fn(),
+			refresh: vi.fn(),
+			edit: vi.fn(),
+		});
+		const wrapper = mount({ render: () => h("div", nodes) });
+		const field = wrapper
+			.findAll("label")
+			.find((label) => label.text().includes("Agent / gameplay API access"))
+			.find("select");
+		expect(field.element.value).toBe("disabled");
+		await wrapper.find("form").trigger("submit");
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(request).toHaveBeenLastCalledWith(
+			"operations",
+			expect.objectContaining({ agent_api_enabled: false }),
+			"PUT",
+		);
+		await field.setValue("enabled");
+		await wrapper.find("form").trigger("submit");
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(request).toHaveBeenLastCalledWith(
+			"operations",
+			expect.objectContaining({ agent_api_enabled: true }),
+			"PUT",
+		);
+		wrapper.unmount();
+	});
 	for (const [key, label] of Object.entries(titles))
 		it(`renders ${label}`, async () => {
 			const api = vi.fn(async (path) => fixture(path));

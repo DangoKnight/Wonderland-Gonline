@@ -40,6 +40,19 @@ func TestVehicleUseRequestsManualPlacement(t *testing.T) {
 		t.Fatal("vehicle use must request placement without consuming", *sent)
 	}
 }
+
+func TestVehicleUseRejectsInvalidPlacementLocally(t *testing.T) {
+	f, sent := useFixture(game.DisposableRaftItemID)
+	f.State.Items[game.DisposableRaftItemID] = assets.NativeItem{Definition: game.ItemDefinition{Type: game.VehicleType}}
+	var notice string
+	f.Notice = func(text string) { notice = text }
+	f.CanPlaceVehicle = func(uint16) bool { return false }
+	before := f.State.Bag
+	f.Use(1, false)
+	if len(*sent) != 0 || notice == "" || f.State.Bag != before {
+		t.Fatal("invalid placement sent or consumed raft", *sent, notice)
+	}
+}
 func TestItemUseTargetedPacketsAndValidation(t *testing.T) {
 	f, sent := useFixture(32011)
 	item := f.State.Bag[0]

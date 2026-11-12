@@ -216,8 +216,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// Standalone browser clients retain their ordinary local input. Only the
+	// optional orchestrator opts into exclusive API/viewer ownership.
+	if js.Global().Get("URLSearchParams").New(js.Global().Get("location").Get("search")).Call("get", "sessionHost").String() == "1" {
+		c.AgentEnableSessionHost()
+		clientRef = c
+		installAgentAPI()
+	}
 	clientRef = c
-	installAgentAPI()
 	go func() {
 		if err := app.Run(c); err != nil {
 			log.Printf("wonderland web client: %v", err)

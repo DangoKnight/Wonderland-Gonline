@@ -6,8 +6,8 @@ import (
 	"errors"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"os"
-	"path/filepath"
 	"strings"
+	"wonderland-gonline/client/wlo/userdata"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
@@ -57,7 +57,7 @@ func Defaults() Local {
 }
 func Load(path string) (Local, error) {
 	l := Defaults()
-	raw, err := os.ReadFile(path)
+	raw, err := userdata.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return l, nil
 	}
@@ -79,26 +79,7 @@ func (l Local) Save(path string) error {
 	if err != nil {
 		return err
 	}
-	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".settings-*")
-	if err != nil {
-		return err
-	}
-	name := f.Name()
-	defer os.Remove(name)
-	if _, err = f.Write(raw); err == nil {
-		err = f.Sync()
-	}
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	if closeErr != nil {
-		return closeErr
-	}
-	return os.Rename(name, path)
+	return userdata.WriteFile(path, raw)
 }
 func (l Local) Blocked(name []byte) bool {
 	for _, n := range l.Blacklist {

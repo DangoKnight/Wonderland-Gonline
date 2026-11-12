@@ -145,19 +145,29 @@ func (m *Memory) Click(x, y int, now time.Time) {
 		if c.Taken || !image.Pt(x, y).In(image.Rect(c.X, c.Y, c.X+memoryCardWidth, c.Y+memoryCardHeight)) {
 			continue
 		}
-		c.Taken = true
-		if i != m.next {
-			m.mistake(now)
-			return
-		}
-		m.next++
-		if m.next == len(m.cards) {
-			m.Score++
-			m.phase, m.deadline = memoryCorrect, now.Add(memoryCorrectWait)
-		}
+		m.ChooseCard(i, now)
 		return
 	}
 }
+
+// ChooseCard selects a visible board slot without pointer hit testing.
+func (m *Memory) ChooseCard(i int, now time.Time) {
+	m.Update(now)
+	if !m.ready(now) || m.phase != memoryPlaying || i < 0 || i >= len(m.cards) || m.cards[i].Taken {
+		return
+	}
+	m.cards[i].Taken = true
+	if i != m.next {
+		m.mistake(now)
+		return
+	}
+	m.next++
+	if m.next == len(m.cards) {
+		m.Score++
+		m.phase, m.deadline = memoryCorrect, now.Add(memoryCorrectWait)
+	}
+}
+
 func (m *Memory) Draw(dst *surface.Surface, _, _ int, now time.Time) {
 	m.background(dst, "CJ_BG1")
 	arcadeText(dst, 30, 15, fmt.Sprintf(localization.UI("ui.minigame.memory_lives_d_score_d_d_d830f06c"), m.Lives, m.Score, memoryWinRounds))

@@ -109,12 +109,13 @@ const (
 )
 
 type RuntimeSettings struct {
-	Name       string  `json:"server_name"`
-	MOTD       string  `json:"motd"`
-	ExpRate    float64 `json:"exp_rate"`
-	DropRate   float64 `json:"drop_rate"`
-	StatusMode string  `json:"status_mode"`
-	LogLevel   string  `json:"log_level"`
+	AgentAPIEnabled bool    `json:"agent_api_enabled"`
+	Name            string  `json:"server_name"`
+	MOTD            string  `json:"motd"`
+	ExpRate         float64 `json:"exp_rate"`
+	DropRate        float64 `json:"drop_rate"`
+	StatusMode      string  `json:"status_mode"`
+	LogLevel        string  `json:"log_level"`
 }
 
 func validExpRate(rate float64) bool {
@@ -146,7 +147,7 @@ func (s *Server) runtimeSettingsLocked() RuntimeSettings {
 	if mode == "" {
 		mode = "auto"
 	}
-	return RuntimeSettings{Name: s.Name(), MOTD: s.motd, ExpRate: exp, DropRate: drop, StatusMode: mode, LogLevel: s.logs.Level()}
+	return RuntimeSettings{AgentAPIEnabled: s.agentAPIEnabled, Name: s.Name(), MOTD: s.motd, ExpRate: exp, DropRate: drop, StatusMode: mode, LogLevel: s.logs.Level()}
 }
 func (s *Server) RuntimeSettings() RuntimeSettings {
 	s.worldMu.Lock()
@@ -174,6 +175,7 @@ func (s *Server) updateRuntimeSettingsLocked(ctx context.Context, v RuntimeSetti
 	v.LogLevel = serverlog.NormalizeLevel(v.LogLevel)
 	v.ExpRate = math.RoundToEven(v.ExpRate*expRatePrecision) / expRatePrecision
 	settings := map[string]string{"server_name": v.Name, "motd": v.MOTD, "exp_rate": strconv.FormatFloat(v.ExpRate, 'f', 2, 64), "drop_rate": strconv.FormatFloat(v.DropRate, 'f', -1, 64), "status_mode": v.StatusMode, "log_level": v.LogLevel}
+	settings["agent_api_enabled"] = strconv.FormatBool(v.AgentAPIEnabled)
 	if err := s.Store.SaveSettings(ctx, settings); err != nil {
 		return err
 	}
@@ -181,6 +183,11 @@ func (s *Server) updateRuntimeSettingsLocked(ctx context.Context, v RuntimeSetti
 	return nil
 }
 func (s *Server) applyRuntimeSettings(v RuntimeSettings) {
+	revoke := s.agentAPIEnabled && !v.AgentAPIEnabled
+	s.agentAPIEnabled = v.AgentAPIEnabled
+	if revoke {
+		s.revokeAgentAccess()
+	}
 	s.SetName(v.Name)
 	s.motd = v.MOTD
 	s.expRateMultiplier = v.ExpRate
@@ -189,6 +196,9 @@ func (s *Server) applyRuntimeSettings(v RuntimeSettings) {
 	s.logs.SetLevel(v.LogLevel)
 }
 func (s *Server) LoadRuntimeSettings(ctx context.Context) error {
+	if err := s.Store.EnsureAgentPolicy(ctx); err != nil {
+		return err
+	}
 	v, err := s.Store.Settings(ctx)
 	if err != nil {
 		return err
@@ -196,6 +206,10 @@ func (s *Server) LoadRuntimeSettings(ctx context.Context) error {
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
 	current := s.runtimeSettingsLocked()
+	if v["agent_api_enabled"] != "true" && v["agent_api_enabled"] != "false" {
+		return errors.New("invalid persisted agent API policy")
+	}
+	current.AgentAPIEnabled = v["agent_api_enabled"] == "true"
 	if name := v["server_name"]; name != "" {
 		current.Name = name
 	}

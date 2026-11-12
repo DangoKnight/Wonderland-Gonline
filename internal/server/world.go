@@ -45,6 +45,9 @@ func (s *Server) acknowledgeWorld(c *Session) error {
 
 // acknowledgeWorldLocked runs the map load for callers that already hold worldMu.
 func (s *Server) acknowledgeWorldLocked(c *Session) error {
+	if c.agentRequested && (!s.agentAPIEnabled || !c.connectionNegotiated || c.connectionFeatures&protocol.ConnectionAgentAPI == 0) {
+		return s.denyAgentAccess(c)
+	}
 	if err := c.outputError(); err != nil {
 		return err
 	}
@@ -395,6 +398,9 @@ func (s *Server) usePortal(ctx context.Context, c *Session, p []byte) error {
 	// A GM summon may move this character from another session; read it under worldMu.
 	s.worldMu.Lock()
 	defer s.worldMu.Unlock()
+	if c.agentRequested && (!s.agentAPIEnabled || !c.connectionNegotiated || c.connectionFeatures&protocol.ConnectionAgentAPI == 0) {
+		return s.denyAgentAccess(c)
+	}
 	if err := c.outputError(); err != nil {
 		return err
 	}

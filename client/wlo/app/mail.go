@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 
 	"wonderland-gonline/client/wlo/hud"
+	"wonderland-gonline/client/wlo/userdata"
 )
 
 // Letters (mailbox PTR_DAT_004ca0fc, read form PTR_DAT_004c9868). The
@@ -210,7 +210,7 @@ func (c *Client) loadMail() {
 	}
 	var f mailFile
 	if p := c.mailPath(); p != "" {
-		if b, err := os.ReadFile(p); err == nil {
+		if b, err := userdata.ReadFile(p); err == nil {
 			if err := json.Unmarshal(b, &f); err != nil {
 				c.Chat.Notice(localization.UI("ui.app.could_not_load_mail_7db89d36") + err.Error())
 				f = mailFile{}
@@ -235,10 +235,7 @@ func (c *Client) saveMail() {
 	}
 	b, err := json.Marshal(mailFile{Inbox: c.Mailbox.Inbox, Sent: c.Mailbox.Sent})
 	if err == nil {
-		err = os.MkdirAll(filepath.Dir(p), 0o700)
-	}
-	if err == nil {
-		err = os.WriteFile(p, b, 0o600)
+		err = userdata.WriteFile(p, b)
 	}
 	if err != nil {
 		c.Chat.Notice(localization.UI("ui.app.could_not_save_mail_1ae04a40") + err.Error())

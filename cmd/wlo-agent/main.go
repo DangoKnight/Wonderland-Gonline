@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/gorilla/websocket"
 
@@ -34,12 +35,14 @@ import (
 var hostFS embed.FS
 
 var (
-	enableAgent = flag.Bool("enable", false, "explicitly enable the optional headless automation and web endpoints")
-	listenAddr  = flag.String("listen", "127.0.0.1:9000", "agent RPC listen address")
-	chromePath  = flag.String("chrome", "", "path to Chrome/Chromium binary (autodetect if empty)")
-	assetsDir   = flag.String("assets", "", "directory with wonderland-client.wasm and asset packs")
-	gameTarget  = flag.String("game", "127.0.0.1:6414", "game server address for the WebSocket gateway")
-	noHeadless  = flag.Bool("no-headless", false, "show Chrome window for debugging")
+	enableAgent     = flag.Bool("enable", false, "explicitly enable the optional headless automation and web endpoints")
+	listenAddr      = flag.String("listen", "127.0.0.1:9000", "agent RPC listen address")
+	chromePath      = flag.String("chrome", "", "path to Chrome/Chromium binary (autodetect if empty)")
+	assetsDir       = flag.String("assets", "", "directory with wonderland-client.wasm and asset packs")
+	gameTarget      = flag.String("game", "127.0.0.1:6414", "game server address for the WebSocket gateway")
+	noHeadless      = flag.Bool("no-headless", false, "show Chrome window for debugging")
+	diagnosticInput = flag.Bool("diagnostic-input", false, "allow legacy commands and arbitrary JavaScript evaluation for diagnostics")
+	browserLog      = flag.Bool("browser-log", false, "log browser console output for diagnostics; may include gameplay text")
 )
 
 type Agent struct {
@@ -76,25 +79,28 @@ func (a *Agent) Close() {
 
 // Manager owns all agents.
 type Manager struct {
-	mu       sync.RWMutex
-	agents   map[string]*Agent
-	chrome   string
-	assets   string
-	headless bool
+	viewers     viewerRegistry
+	mu          sync.RWMutex
+	agents      map[string]*Agent
+	chrome      string
+	assets      string
+	headless    bool
+	diagnostics bool
 }
 
 func NewManager(chrome, assets string, headless bool) *Manager {
 	return &Manager{
-		agents:   make(map[string]*Agent),
-		chrome:   chrome,
-		assets:   assets,
-		headless: headless,
+		agents:      make(map[string]*Agent),
+		chrome:      chrome,
+		assets:      assets,
+		headless:    headless,
+		diagnostics: *diagnosticInput,
 	}
 }
 
 func (m *Manager) Create(account, password string) (*Agent, error) {
 	if account != "" || password != "" {
-		return nil, errors.New("automatic login is not implemented; create without credentials and use the client login UI")
+		return nil, errors.New("create without credentials; use the structured login.submit command after server selection")
 	}
 	id := fmt.Sprintf("agent-%d", time.Now().UnixNano())
 
@@ -111,6 +117,20 @@ func (m *Manager) Create(account, password string) (*Agent, error) {
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
+	if *browserLog {
+		_ = chromedp.Listen(ctx, func(event any) {
+			if message, ok := event.(*runtime.EventConsoleAPICalled); ok {
+				for _, arg := range message.Args {
+					if arg.Type == runtime.RemoteObjectTypeString {
+						var line string
+						if json.Unmarshal(arg.Value, &line) == nil {
+							log.Printf("browser %s: %s", id, line)
+						}
+					}
+				}
+			}
+		})
+	}
 
 	a := &Agent{
 		ID:        id,
@@ -120,7 +140,7 @@ func (m *Manager) Create(account, password string) (*Agent, error) {
 		ctx:       ctx,
 	}
 
-	pageURL := "http://" + net.JoinHostPort("127.0.0.1", assetsPort) + "/"
+	pageURL := "http://" + net.JoinHostPort("127.0.0.1", assetsPort) + "/?sessionHost=1"
 
 	if _, err := chromedp.Run(ctx, chromedp.Navigate(pageURL)); err != nil {
 		a.Close()
@@ -150,6 +170,13 @@ func (m *Manager) Destroy(id string) error {
 		return fmt.Errorf("agent %s not found", id)
 	}
 	a.Close()
+	m.viewers.mu.Lock()
+	for token, ticket := range m.viewers.tickets {
+		if ticket.Agent == id {
+			delete(m.viewers.tickets, token)
+		}
+	}
+	m.viewers.mu.Unlock()
 	return nil
 }
 
@@ -219,8 +246,11 @@ func (m *Manager) Command(id, name string, args []any) error {
 			return err
 		}
 		script := fmt.Sprintf("window.wlo ? window.wlo.command.apply(window.wlo, %s) : 'no wlo'", payload)
-		_, err = chromedp.Run(a.ctx, chromedp.Evaluate[string](script))
-		return err
+		out, err := chromedp.Run(a.ctx, chromedp.Evaluate[string](script))
+		if err != nil {
+			return err
+		}
+		return commandResponse(out)
 	case "key":
 		if len(args) < 1 {
 			return fmt.Errorf("key requires key name")
@@ -248,9 +278,81 @@ func (m *Manager) Command(id, name string, args []any) error {
 			return err
 		}
 		script := fmt.Sprintf("window.wlo ? window.wlo.command.apply(window.wlo, %s) : 'no wlo'", payload)
-		_, err = chromedp.Run(a.ctx, chromedp.Evaluate[string](script))
-		return err
+		out, err := chromedp.Run(a.ctx, chromedp.Evaluate[string](script))
+		if err != nil {
+			return err
+		}
+		return commandResponse(out)
 	}
+}
+
+// Older bridges return a string rather than a structured execution ticket.
+func commandResponse(out string) error {
+	if out == "ok" {
+		return nil
+	}
+	if strings.HasPrefix(out, "err: ") {
+		return errors.New(strings.TrimPrefix(out, "err: "))
+	}
+	return errors.New("client command API unavailable")
+}
+
+// StructuredAPI calls only fixed bridge methods; request values are JSON data.
+func (m *Manager) StructuredAPI(id, method string, argument json.RawMessage) (json.RawMessage, error) {
+	a, ok := m.Get(id)
+	if !ok {
+		return nil, errors.New("agent not found")
+	}
+	return m.structuredAPI(a.ctx, id, method, argument)
+}
+func (m *Manager) structuredAPI(parent context.Context, id, method string, argument json.RawMessage) (json.RawMessage, error) {
+	a, ok := m.Get(id)
+	if !ok {
+		return nil, errors.New("agent not found")
+	}
+	switch method {
+	case "contract":
+		argument = nil
+	case "execute", "cancel", "commands", "state", "lookup", "navigation", "hostControl", "viewerFrame", "nativeSync":
+		if !json.Valid(argument) {
+			return nil, errors.New("invalid API argument")
+		}
+	default:
+		return nil, errors.New("unknown API method")
+	}
+	_ = a
+	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
+	defer cancel()
+	argumentJS := ""
+	if argument != nil {
+		encoded, _ := json.Marshal(string(argument))
+		argumentJS = "JSON.parse(" + string(encoded) + ")"
+	}
+	script := fmt.Sprintf("JSON.stringify(window.wlo && window.wlo.%s ? window.wlo.%s(%s) : {error:'client API unavailable'})", method, method, argumentJS)
+	out, err := chromedp.Run(ctx, chromedp.Evaluate[string](script))
+	if err != nil {
+		return nil, errors.New("client API evaluation failed")
+	}
+	return structuredResponse([]byte(out))
+}
+
+// A successful CDP evaluation can still contain a rejected client operation.
+// Promote bridge admission/query errors to RPC errors; executed ticket outcomes
+// remain in their owning session's command history.
+func structuredResponse(raw []byte) (json.RawMessage, error) {
+	if !json.Valid(raw) {
+		return nil, errors.New("invalid client API response")
+	}
+	var object map[string]json.RawMessage
+	if json.Unmarshal(raw, &object) == nil {
+		if value, ok := object["error"]; ok && len(object) == 1 {
+			var message string
+			if json.Unmarshal(value, &message) == nil && message != "" {
+				return nil, errors.New(message)
+			}
+		}
+	}
+	return json.RawMessage(raw), nil
 }
 
 var assetsPort string
@@ -293,7 +395,20 @@ func assetHandler(assets, gameTarget string) (http.Handler, error) {
 		DefaultTarget:  gameTarget,
 		ValidateTarget: wsgateway.DefaultValidateTarget,
 	})
-	mux.Handle("/ws", gw)
+	mux.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		target, err := agentGameTarget(r.URL.Query().Get("target"), gameTarget)
+		if err != nil {
+			http.Error(w, "game endpoint unavailable", http.StatusBadRequest)
+			return
+		}
+		copyURL := *r.URL
+		query := copyURL.Query()
+		query.Set("target", target)
+		copyURL.RawQuery = query.Encode()
+		copyRequest := r.Clone(r.Context())
+		copyRequest.URL = &copyURL
+		gw.ServeHTTP(w, copyRequest)
+	}))
 
 	return mux, nil
 }
@@ -461,6 +576,21 @@ func dispatch(mgr *Manager, req Request) Response {
 			return resp
 		}
 		resp.Result = map[string]string{"id": a.ID}
+	case "agent.viewer.open":
+		var p struct {
+			ID      string `json:"id"`
+			Session int    `json:"session"`
+		}
+		if json.Unmarshal(req.Params, &p) != nil {
+			resp.Error = newError("invalid params", -32602)
+			return resp
+		}
+		out, err := mgr.openViewer(p.ID, p.Session)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
 	case "agent.destroy":
 		var p struct {
 			ID string `json:"id"`
@@ -476,7 +606,8 @@ func dispatch(mgr *Manager, req Request) Response {
 		resp.Result = "ok"
 	case "agent.state":
 		var p struct {
-			ID string `json:"id"`
+			ID      string `json:"id"`
+			Session int    `json:"session"`
 		}
 		if err := json.Unmarshal(req.Params, &p); err != nil {
 			resp.Error = newError("invalid params", -32602)
@@ -487,8 +618,97 @@ func dispatch(mgr *Manager, req Request) Response {
 			resp.Error = newError("not found", 2)
 			return resp
 		}
-		resp.Result = a.State()
+		_ = a
+		argument, _ := json.Marshal(p.Session)
+		out, err := mgr.StructuredAPI(p.ID, "state", argument)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
+	case "agent.observe":
+		var p observationRequest
+		if json.Unmarshal(req.Params, &p) != nil {
+			resp.Error = newError("invalid params", -32602)
+			return resp
+		}
+		out, err := mgr.Observe(p)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
+	case "agent.navigation":
+		var p struct {
+			ID      string          `json:"id"`
+			Request json.RawMessage `json:"request"`
+		}
+		if json.Unmarshal(req.Params, &p) != nil || p.ID == "" || !json.Valid(p.Request) {
+			resp.Error = newError("invalid navigation params", -32602)
+			return resp
+		}
+		out, err := mgr.StructuredAPI(p.ID, "navigation", p.Request)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
+	case "agent.lookup":
+		var p struct {
+			ID      string `json:"id"`
+			Kind    string `json:"kind"`
+			Entry   uint32 `json:"entry"`
+			Session int    `json:"session"`
+		}
+		if json.Unmarshal(req.Params, &p) != nil || p.ID == "" || p.Session < 0 {
+			resp.Error = newError("invalid lookup params", -32602)
+			return resp
+		}
+		argument, _ := json.Marshal(map[string]any{"kind": p.Kind, "id": p.Entry, "session": p.Session})
+		out, err := mgr.StructuredAPI(p.ID, "lookup", argument)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
+	case "agent.list":
+		out := []map[string]any{}
+		mgr.mu.RLock()
+		for _, a := range mgr.agents {
+			out = append(out, map[string]any{"id": a.ID, "createdAt": a.CreatedAt})
+		}
+		mgr.mu.RUnlock()
+		resp.Result = out
+	case "agent.contract", "agent.execute", "agent.commands", "agent.cancel":
+		var p struct {
+			ID      string          `json:"id"`
+			Request json.RawMessage `json:"request"`
+			Ticket  string          `json:"ticket"`
+			Session int             `json:"session"`
+		}
+		if err := json.Unmarshal(req.Params, &p); err != nil || p.ID == "" {
+			resp.Error = newError("invalid params", -32602)
+			return resp
+		}
+		method := strings.TrimPrefix(req.Method, "agent.")
+		argument := p.Request
+		if method == "cancel" {
+			argument, _ = json.Marshal(map[string]any{"ticket": p.Ticket, "session": p.Session})
+		}
+		if method == "commands" {
+			argument, _ = json.Marshal(p.Session)
+		}
+		out, err := mgr.StructuredAPI(p.ID, method, argument)
+		if err != nil {
+			resp.Error = newError(err.Error(), 3)
+			return resp
+		}
+		resp.Result = out
 	case "agent.command":
+		if !mgr.diagnostics {
+			resp.Error = newError("input diagnostics are disabled; use agent.execute", 3)
+			return resp
+		}
 		var p struct {
 			ID      string `json:"id"`
 			Command string `json:"command"`
@@ -504,6 +724,10 @@ func dispatch(mgr *Manager, req Request) Response {
 		}
 		resp.Result = "ok"
 	case "agent.eval":
+		if !mgr.diagnostics {
+			resp.Error = newError("JavaScript diagnostics are disabled", 3)
+			return resp
+		}
 		var p struct {
 			ID     string `json:"id"`
 			Script string `json:"script"`
@@ -589,6 +813,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/rpc", rpcHandler(mgr, token))
+	mgr.installViewer(mux)
 
 	log.Printf("wlo-agent listening on ws://%s/rpc", *listenAddr)
 	if err := http.ListenAndServe(*listenAddr, mux); err != nil {

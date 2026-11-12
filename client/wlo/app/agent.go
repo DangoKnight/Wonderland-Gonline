@@ -4,6 +4,7 @@ import (
 	"image"
 
 	clientbattle "wonderland-gonline/client/wlo/battle"
+	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/world"
 	"wonderland-gonline/internal/protocol"
@@ -35,22 +36,26 @@ func (c *Client) AgentCamera() (int, int) {
 
 // AgentTalk returns the state of the event talk window.
 func (c *Client) AgentTalk() (shown, choosing bool, options [][]byte, lines [][]byte) {
-	if c.Talk == nil {
+	talk := c.Talk
+	if c.sport != nil && c.sport.talk != nil && c.sport.talk.Shown() {
+		talk = c.sport.talk
+	}
+	if talk == nil {
 		return false, false, nil, nil
 	}
-	for _, line := range c.Talk.Lines() {
+	for _, line := range talk.Lines() {
 		lines = append(lines, append([]byte(nil), line...))
 	}
-	for _, option := range c.Talk.Options() {
+	for _, option := range talk.Options() {
 		options = append(options, append([]byte(nil), option...))
 	}
-	return c.Talk.Shown(), c.Talk.Choosing(), options, lines
+	return talk.Shown(), talk.Choosing(), options, lines
 }
 
 // AgentWalkWorld plans a walk to world coordinates using the client's normal
 // walk logic, without going through screen-space hit testing.
 func (c *Client) AgentWalkWorld(x, y int) bool {
-	if c.World == nil || c.held || c.event.active || c.sceneFrozen() {
+	if c.World == nil || c.held || c.event.active || c.sceneFrozen() || c.battle.state.Active || c.World.FollowingTeam() || c.afk.active || c.afk.resync || c.UI.Modal != nil {
 		return false
 	}
 	c.groundHeld = false
@@ -59,16 +64,18 @@ func (c *Client) AgentWalkWorld(x, y int) bool {
 	c.nextWalk = c.Now().Add(walkRepeat)
 	c.walkWaterAware(x, y, c.Now())
 	c.World.MarkWalk()
-	return true
+	// Boarding/dismounting first waits for a server receipt; no walker is
+	// active yet. The API reports dispatch acceptance, not eventual arrival.
+	return c.World.Walking() || c.waterTravel.requestID != 0 || c.World.Player.X == x && c.World.Player.Y == y
 }
 
 // AgentInteractNPC triggers the same interaction path as clicking an NPC.
 func (c *Client) AgentInteractNPC(id uint16) bool {
-	if c.World == nil {
+	if c.World == nil || !c.mapReady || c.held || c.event.active || c.sceneFrozen() || c.battle.state.Active || c.afk.active || c.afk.resync || c.UI.Modal != nil {
 		return false
 	}
 	n := c.World.NPCs[id]
-	if n == nil {
+	if n == nil || !n.Visible() || abs(c.World.Player.X-n.X) > npcReach || abs(c.World.Player.Y-n.Y) > npcReach {
 		return false
 	}
 	c.clickNPC(n)
@@ -77,7 +84,7 @@ func (c *Client) AgentInteractNPC(id uint16) bool {
 
 // AgentPickupFloorSlot picks up a ground item by its slot id.
 func (c *Client) AgentPickupFloorSlot(slot uint16) bool {
-	if c.World == nil {
+	if c.World == nil || !c.mapReady || c.held || c.event.active || c.sceneFrozen() || c.battle.state.Active || c.afk.active || c.afk.resync || c.UI.Modal != nil {
 		return false
 	}
 	item, ok := c.floorItems[slot]
@@ -244,7 +251,7 @@ func (c *Client) AgentPets() []AgentPet {
 			continue
 		}
 		out = append(out, AgentPet{
-			Slot: i + 1, ID: p.ID, Name: string(p.Name),
+			Slot: i + 1, ID: p.ID, Name: seui.DecodeText(p.Name),
 			Level: p.Stats.Level, HP: p.Stats.HP, MaxHP: p.Stats.MaxHP,
 			SP: p.Stats.SP, MaxSP: p.Stats.MaxSP,
 			Amity: p.Amity, Potential: p.Potential,
@@ -437,7 +444,7 @@ func (c *Client) AgentHotel() []AgentPet {
 			continue
 		}
 		out = append(out, AgentPet{
-			Slot: i + 1, ID: p.ID, Name: string(p.Name),
+			Slot: i + 1, ID: p.ID, Name: seui.DecodeText(p.Name),
 			Level: p.Stats.Level, HP: p.Stats.HP, MaxHP: p.Stats.MaxHP,
 			SP: p.Stats.SP, MaxSP: p.Stats.MaxSP,
 			Amity: p.Amity, Potential: p.Potential,
@@ -453,7 +460,17 @@ func (c *Client) AgentEventAnswers() []byte {
 
 // AgentAnswer submits a question option by index without a UI click.
 func (c *Client) AgentAnswer(index int) bool {
-	if index < 0 || index >= len(c.event.answers) {
+	if sp := c.sport; sp != nil && sp.talk != nil && sp.talk.Shown() {
+		if index < 0 || index >= len(sp.talk.Options()) || sp.answer == nil {
+			return false
+		}
+		pick := sp.answer
+		sp.answer = nil
+		sp.talk.Hide()
+		pick(index)
+		return true
+	}
+	if c.Talk == nil || !c.Talk.Shown() || !c.Talk.Choosing() || index < 0 || index >= len(c.event.answers) {
 		return false
 	}
 	c.answer(c.event.answers[index])
@@ -581,7 +598,7 @@ func (c *Client) AgentBattleAttack(tx, ty int) bool {
 		return false
 	}
 	c.submitHotbar(c.battleBinding(skills.BasicAttack, actor), target)
-	return true
+	return c.hotbar.submitted[[2]byte{actor.x, actor.y}]
 }
 
 // AgentBattleDefend submits the actor's defend action.
@@ -594,7 +611,7 @@ func (c *Client) AgentBattleDefend() bool {
 		return false
 	}
 	c.submitHotbar(c.battleBinding(skills.Defense, actor), actor)
-	return true
+	return c.hotbar.submitted[[2]byte{actor.x, actor.y}]
 }
 
 // AgentBattleSkill submits a learned skill at a target cell.
@@ -611,7 +628,7 @@ func (c *Client) AgentBattleSkill(id uint16, tx, ty int) bool {
 		return false
 	}
 	c.submitHotbar(c.battleBinding(id, actor), target)
-	return true
+	return c.hotbar.submitted[[2]byte{actor.x, actor.y}]
 }
 
 // AgentBattleItem submits a bag item (healing, revive) at a target cell.
@@ -645,7 +662,7 @@ func (c *Client) AgentBattleItem(slot int, tx, ty int) bool {
 		item:       item,
 	}
 	c.submitBattleItem(target)
-	return true
+	return c.hotbar.submitted[[2]byte{actor.x, actor.y}]
 }
 
 // AgentBattleAuto toggles the client's AUTO combat mode.
@@ -667,7 +684,7 @@ func (c *Client) AgentBattleFlee() bool {
 		return false
 	}
 	c.submitBattleSpecial(actor, actor, battleFleeSkill, protocol.BattleActionFleeRequest)
-	return true
+	return c.hotbar.submitted[[2]byte{actor.x, actor.y}]
 }
 
 // AgentHeal uses a bag item outside battle (field healing).

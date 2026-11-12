@@ -92,6 +92,7 @@ type Session struct {
 	connectionOffered    uint32 // Connection-wide feature negotiation; guarded by worldMu.
 	connectionFeatures   uint32
 	connectionNegotiated bool
+	agentRequested       bool // Sticky declaration: cannot renegotiate away agent identity.
 	combatSequence       uint32
 	encounter            encounterState
 	carnieReturn         *world.Destination // Where Carnie's exit portal leads (CarnieReturnMap).
