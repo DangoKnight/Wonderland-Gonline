@@ -17,7 +17,9 @@ func TestClientBackdropsNegotiatedWithoutRoundChains(t *testing.T) {
 	if err := s.discoveryCommand(context.Background(), c, nil); err != nil {
 		t.Fatal(err)
 	}
-	if !contains(wires[0].packets(t), []byte{1, 248, 71, 76, 79, 78, 1, 0, 29, 0, 0, 0}) {
+	// Include the AFK feature family while keeping round chains and agent/API
+	// access disabled. Keep this raw offer independent of production constants.
+	if !contains(wires[0].packets(t), []byte{1, 248, 71, 76, 79, 78, 1, 0, 253, 0, 0, 0}) {
 		t.Fatal("missing backdrop offer")
 	}
 	if err := s.handshakeCommand(context.Background(), c, accept); err != nil {
