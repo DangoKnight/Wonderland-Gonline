@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,6 +37,11 @@ func TestLiveNativeGroup(t *testing.T) {
 	}
 	defer rpc.conn.Close()
 	g := &sessionGroup{rpc: rpc, root: root, accounts: accounts, sessions: map[int]managedSession{}, viewers: map[int]*spectatorProcess{}}
+	g.designCharacter = func(context.Context, map[string]any, []string) (characterDesign, error) {
+		design := fixtureCharacterDesign()
+		design.Name = "Group" + rand.Text()[:5]
+		return design, nil // Native integration uses a fixture, never a paid model request.
+	}
 	first, err := g.open(ctx, 1, 1)
 	if err != nil {
 		t.Fatal("first account startup failed", err)

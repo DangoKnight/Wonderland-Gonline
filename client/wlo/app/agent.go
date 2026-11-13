@@ -1,12 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"image"
 
 	clientbattle "wonderland-gonline/client/wlo/battle"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/client/wlo/skills"
 	"wonderland-gonline/client/wlo/world"
+	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
 )
 
@@ -69,17 +71,45 @@ func (c *Client) AgentWalkWorld(x, y int) bool {
 	return c.World.Walking() || c.waterTravel.requestID != 0 || c.World.Player.X == x && c.World.Player.Y == y
 }
 
-// AgentInteractNPC triggers the same interaction path as clicking an NPC.
+// AgentInteractNPC retains the boolean interface used by older integrations.
 func (c *Client) AgentInteractNPC(id uint16) bool {
-	if c.World == nil || !c.mapReady || c.held || c.event.active || c.sceneFrozen() || c.battle.state.Active || c.afk.active || c.afk.resync || c.UI.Modal != nil {
+	return c.AgentInteractNPCByID(id) == nil
+}
+
+func (c *Client) agentNPCInteractionReady() bool {
+	return c.World != nil && c.mapReady && !c.held && !c.event.active && !c.sceneFrozen() && !c.battle.state.Active && !c.afk.active && !c.afk.resync && (c.UI == nil || c.UI.Modal == nil)
+}
+
+// The Gonline API respects both the native client's axis limit and the
+// authoritative server circle. Manual Legacy-client geometry stays unchanged.
+func agentNPCInInteractionRange(p world.Player, n *world.NPC) bool {
+	if n == nil {
 		return false
 	}
+	dx, dy := int64(p.X)-int64(n.X), int64(p.Y)-int64(n.Y)
+	return abs(p.X-n.X) <= npcReach && abs(p.Y-n.Y) <= npcReach && dx*dx+dy*dy <= game.NPCInteractionRangePixels*game.NPCInteractionRangePixels
+}
+
+// AgentInteractNPCByID resolves a map actor's click ID at execution time. It
+// never uses a snapshot's coordinates, sprite hit testing or a template ID.
+func (c *Client) AgentInteractNPCByID(id uint16) error {
+	if !c.agentNPCInteractionReady() {
+		return fmt.Errorf("NPC interaction unavailable during loading, dialogue, combat, AFK or modal input")
+	}
+	// API commands run before the frame's usual simulation step. Catch up the
+	// player and roaming actors before checking their physical distance.
+	c.World.Step(c.Now())
 	n := c.World.NPCs[id]
-	if n == nil || !n.Visible() || abs(c.World.Player.X-n.X) > npcReach || abs(c.World.Player.Y-n.Y) > npcReach {
-		return false
+	if n == nil {
+		return fmt.Errorf("NPC click ID %d is not on this map; use npcs[].id/clickID, not template", id)
 	}
-	c.clickNPC(n)
-	return true
+	if !n.Visible() {
+		return fmt.Errorf("NPC click ID %d is not visible", id)
+	}
+	if !agentNPCInInteractionRange(c.World.Player, n) {
+		return fmt.Errorf("NPC click ID %d is out of interaction range at (%d,%d); approach and refresh state", id, n.X, n.Y)
+	}
+	return c.beginNPCInteraction(n)
 }
 
 // AgentPickupFloorSlot picks up a ground item by its slot id.
@@ -355,8 +385,7 @@ func (c *Client) AgentClickID(id uint16) bool {
 	if c.World == nil {
 		return false
 	}
-	c.sendNPCClick(id)
-	return true
+	return c.sendNPCClick(id) == nil
 }
 
 // AgentShopEntry is one shop catalog row.

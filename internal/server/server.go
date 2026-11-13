@@ -507,7 +507,7 @@ func StatusPacket(online int, serverIDs ...uint16) []byte {
 
 const (
 	maxPacketsPerSecond       = 200
-	npcInteractionRangePixels = 200
+	npcInteractionRangePixels = game.NPCInteractionRangePixels
 	tradeRangePixels          = 180
 	defaultMinigameSeed       = 0x012af8
 	minigameSeedHighByte      = 1 << 16

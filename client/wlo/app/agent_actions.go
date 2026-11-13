@@ -79,8 +79,8 @@ func buildAgentActions() []agentAction {
 		agentActionDef("walk.to", world, xy, func(c *Client, a map[string]any) error {
 			return agentRejected(c.AgentWalkWorld(a["x"].(int), a["y"].(int)))
 		}),
-		agentActionDef("world.interactNPC", world, []AgentArgument{agentInteger("id", 1, 65535)}, func(c *Client, a map[string]any) error {
-			return agentRejected(c.AgentInteractNPC(uint16(a["id"].(int))))
+		agentActionDef("world.interactNPC", "visible nearby map NPC; id is npcs[].id/clickID, never template or coordinates; resolves live position at execution; 169 pixels per axis and 200 pixels radial maximum; inspect inInteractionRange/interactable", []AgentArgument{agentInteger("id", 1, 65535)}, func(c *Client, a map[string]any) error {
+			return c.AgentInteractNPCByID(uint16(a["id"].(int)))
 		}),
 		agentActionDef("world.pickup", world, []AgentArgument{agentInteger("slot", 1, 65535)}, func(c *Client, a map[string]any) error {
 			return agentRejected(c.AgentPickupFloorSlot(uint16(a["slot"].(int))))

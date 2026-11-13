@@ -285,6 +285,16 @@ This is a compact contract, not the complete JSON Schema specification.
 
 ## Coverage
 
+Talk to an NPC with `world.interactNPC` and `{"id": NPC_ID}`. Use the current
+map's `npcs[].id` (also exposed as `clickID`), not `template`, screen coordinates
+or a sprite hitbox. The client resolves the live actor and advances movement at
+execution time, so a roaming NPC can be targeted without clicking its old pixels.
+Snapshots expose `inInteractionRange` and `interactable`. Reach must satisfy the
+native 169-pixel per-axis limit and the server's 200-pixel circular limit. Walk
+closer with some margin before interacting. A moved, hidden, missing or blocked
+target returns an explicit rejection; a local executed ticket still requires
+observing the server's dialogue/event response.
+
 The running contract defines exact argument spellings and limits. Form/list
 indexes are zero-based; inventory slots retain their native one-based numbering.
 

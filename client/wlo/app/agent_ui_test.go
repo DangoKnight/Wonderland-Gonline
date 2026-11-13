@@ -159,6 +159,11 @@ func TestAgentNPCInteractionRespectsVisibility(t *testing.T) {
 		t.Fatal("hidden actor was clickable through API")
 	}
 	c.World.NPCs[actor].Shown = true
+	state := c.AgentState()
+	npcs := state["npcs"].([]map[string]any)
+	if len(npcs) != 1 || npcs[0]["clickID"] != uint16(actor) || npcs[0]["inInteractionRange"] != true || npcs[0]["interactable"] != true {
+		t.Fatal("NPC ID/range state is incomplete", npcs)
+	}
 	if !c.AgentInteractNPC(actor) || len(sent()) != 1 {
 		t.Fatal("visible nearby actor not clickable")
 	}

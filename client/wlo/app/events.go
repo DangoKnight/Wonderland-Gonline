@@ -93,14 +93,24 @@ func (c *Client) clickNPC(n *world.NPC) {
 	c.stopVacuum()
 	p := c.World.Player
 	if abs(p.X-n.X) <= npcReach && abs(p.Y-n.Y) <= npcReach {
-		c.World.StopWalk()
-		c.prepareVacuum(n.ClickID)
-		c.sendNPCClick(n.ClickID)
-		c.beginVacuum()
+		_ = c.beginNPCInteraction(n)
 		return
 	}
 	c.pendingNPC = nil
 	c.Notices.Show([]byte(localization.UI("ui.app.too_far_0ef2cb2c")), interactionNoticeDuration, c.Now())
+}
+
+func (c *Client) beginNPCInteraction(n *world.NPC) error {
+	c.stopVacuum()
+	c.World.StopWalk()
+	c.groundHeld = false
+	c.prepareVacuum(n.ClickID)
+	if err := c.sendNPCClick(n.ClickID); err != nil {
+		c.stopVacuum()
+		return fmt.Errorf("NPC interaction could not be sent: %w", err)
+	}
+	c.beginVacuum()
+	return nil
 }
 
 func abs(v int) int {
@@ -111,11 +121,17 @@ func abs(v int) int {
 }
 
 // sendNPCClick is 20/1 with the NPC's click ID.
-func (c *Client) sendNPCClick(id uint16) {
+func (c *Client) sendNPCClick(id uint16) error {
 	c.pendingNPC = nil
+	if c.Net == nil {
+		return fmt.Errorf("network is unavailable")
+	}
+	if err := c.Net.Send(binary.LittleEndian.AppendUint16([]byte{protocol.CommandEvent, protocol.EventActorClick}, id)); err != nil {
+		return err
+	}
 	c.acquisitionActor = id
 	c.event = eventState{active: true}
-	c.Net.Send(binary.LittleEndian.AppendUint16([]byte{protocol.CommandEvent, protocol.EventActorClick}, id))
+	return nil
 }
 
 // reachNPC sends a walk's pending click once the player stops near it.

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"syscall/js"
 
 	"wonderland-gonline/client/wlo/app"
@@ -433,8 +434,11 @@ func agentCommand(name string, args []any) error {
 		if !ok {
 			return fmt.Errorf("interactNPC id must be a number")
 		}
-		if !c.AgentInteractNPC(uint16(id)) {
-			return fmt.Errorf("interactNPC rejected")
+		if id < 1 || id > math.MaxUint16 {
+			return fmt.Errorf("interactNPC requires a map click ID in 1..65535")
+		}
+		if err := c.AgentInteractNPCByID(uint16(id)); err != nil {
+			return err
 		}
 	case "clickID":
 		if len(args) < 1 {

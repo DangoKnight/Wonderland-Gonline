@@ -39,6 +39,7 @@ type sessionGroup struct {
 	startBudget     func()
 	reservations    *reservations
 	allowedAccounts map[int]bool
+	designCharacter characterDesigner
 }
 
 func (g *sessionGroup) ids() []int {
@@ -241,7 +242,7 @@ func (g *sessionGroup) open(ctx context.Context, account, character int) (map[st
 	if err := os.MkdirAll(directory, 0700); err != nil {
 		return nil, err
 	}
-	if err := login(ctx, g.rpc, g.accounts[account-1], character, directory); err != nil {
+	if err := login(ctx, g.rpc, g.accounts[account-1], character, directory, g.designCharacter); err != nil {
 		return map[string]any{"session": id, "needsAttention": true}, err
 	}
 	if g.startBudget != nil {

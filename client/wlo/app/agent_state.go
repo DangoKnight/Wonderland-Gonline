@@ -214,14 +214,19 @@ func (c *Client) AgentState() map[string]any {
 		}
 		state["peers"] = peers
 		npcs := make([]map[string]any, 0, len(w.NPCs))
+		interactionReady := c.agentNPCInteractionReady()
 		for id, n := range w.NPCs {
+			inRange := agentNPCInInteractionRange(w.Player, n)
 			npcs = append(npcs, map[string]any{
-				"id":       id,
-				"x":        n.X,
-				"y":        n.Y,
-				"name":     n.Info.Name,
-				"visible":  n.Visible(),
-				"template": n.Template,
+				"id":                 id,
+				"clickID":            id,
+				"x":                  n.X,
+				"y":                  n.Y,
+				"name":               n.Info.Name,
+				"visible":            n.Visible(),
+				"template":           n.Template,
+				"inInteractionRange": inRange,
+				"interactable":       interactionReady && n.Visible() && inRange,
 			})
 		}
 		state["npcs"] = npcs

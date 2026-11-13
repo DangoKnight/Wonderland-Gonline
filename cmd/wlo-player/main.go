@@ -196,7 +196,7 @@ func sleep(ctx context.Context, duration time.Duration) error {
 
 // Each startup action is submitted once and checked by its ticket. Character
 // creation uses normal form callbacks and waits for the server's updated roster.
-func login(ctx context.Context, rpc *rpcClient, c credentials, slot int, directory string) error {
+func login(ctx context.Context, rpc *rpcClient, c credentials, slot int, directory string, designers ...characterDesigner) error {
 	profile, err := loadCharacterProfile(directory)
 	if err != nil {
 		return err
@@ -205,6 +205,11 @@ func login(ctx context.Context, rpc *rpcClient, c credentials, slot int, directo
 	tickets := map[string]string{}
 	lastForms := ""
 	deadline := time.Now().Add(3 * startupTimeout)
+	nameExecuted := false
+	designAttempts := 0
+	if profile.Design != nil {
+		designAttempts = 1
+	}
 	for time.Now().Before(deadline) {
 		state, err := rpc.call("agent.state", rpc.route())
 		if err != nil {
@@ -220,12 +225,72 @@ func login(ctx context.Context, rpc *rpcClient, c credentials, slot int, directo
 			if stage == "" {
 				continue
 			}
+			if stage == "create-next-name" && textValue(result["status"]) == "executed" {
+				nameExecuted = true
+			}
 			if status := textValue(result["status"]); status == "rejected" || status == "timed_out" || status == "cancelled" {
 				return fmt.Errorf("startup stage %s %s", stage, status)
+			}
+			if textValue(result["status"]) == "executed" {
+				if strings.HasPrefix(stage, "create-stat-") || strings.HasPrefix(stage, "create-color-") || stage == "create-role" {
+					delete(sent, stage)
+				}
+				delete(tickets, textValue(result["id"]))
 			}
 		}
 		if textValue(state["status"]) == "agent_access_blocked" {
 			return errors.New(textValue(state["error"]))
+		}
+		if !canAct(state) {
+			if err := sleep(ctx, pollInterval); err != nil {
+				return err
+			}
+			continue
+		}
+		if hasForm(state, creationForm) && canAct(state) {
+			creation := creationValue(state)
+			if number(creation["step"]) == creationNameStep && !boolValue(creation["waiting"]) {
+				if nameExecuted && !boolValue(creation["nameAccepted"]) {
+					profile.RejectedNames = append(profile.RejectedNames, profile.Name)
+					if len(profile.RejectedNames) > maxRejectedCreationNames {
+						profile.RejectedNames = profile.RejectedNames[len(profile.RejectedNames)-maxRejectedCreationNames:]
+					}
+					profile.Name, profile.Design = "", nil
+					if err := saveCharacterProfile(directory, profile); err != nil {
+						return err
+					}
+					sent, tickets, nameExecuted = map[string]bool{}, map[string]string{}, false
+				}
+				if profile.Design == nil {
+					if designAttempts >= creationNameAttempts {
+						return errors.New("character name attempts exhausted; inspect the saved design and server notice")
+					}
+					if len(designers) == 0 || designers[0] == nil {
+						return errors.New("character creation requires an agent designer")
+					}
+					started := time.Now()
+					design, err := designers[0](ctx, state, profile.RejectedNames)
+					deadline = deadline.Add(time.Since(started))
+					if err != nil {
+						return fmt.Errorf("character design failed: %w", err)
+					}
+					roles, _ := creation["roles"].([]any)
+					if err := design.validate(roles); err != nil {
+						return err
+					}
+					profile.Name, profile.Design = design.Name, &design
+					designAttempts++
+					if err := saveCharacterProfile(directory, profile); err != nil {
+						return err
+					}
+				}
+			}
+			if profile.Design != nil {
+				roles, _ := creation["roles"].([]any)
+				if err := profile.Design.validate(roles); err != nil {
+					return err
+				}
+			}
 		}
 		forms := jsonText(state["openForms"])
 		if forms != lastForms {
@@ -311,7 +376,7 @@ func run() error {
 	account := flag.Int("account", 0, "initial account entry in .secrets; 0 lets the agent choose")
 	slot := flag.Int("character", 1, "existing character slot, 1 or 2")
 	model := flag.String("model", "gpt-5-mini", "OpenAI model with structured output support")
-	limit := flag.Int("decisions", 0, "optional maximum model decisions within the gameplay duration; 0 applies no decision cap")
+	limit := flag.Int("decisions", 0, "optional maximum gameplay/coordinator decisions; character designs are additional; 0 applies no decision cap")
 	duration := flag.Duration("duration", defaultGameplayDuration, "maximum elapsed gameplay time after entering the world")
 	viewer := flag.Bool("spectator", true, "open the native spectator")
 	profileName := flag.String("profile", "default", "persistent controller profile, e.g. Aria or Meteo")
@@ -374,10 +439,6 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-	startupDirectory := filepath.Join(*root, "agent", fmt.Sprintf("account-%d-character-%d", *account, *slot))
-	if err := os.MkdirAll(startupDirectory, 0700); err != nil {
-		return err
-	}
 	logRoot := profileDirectory
 	if err := os.MkdirAll(logRoot, 0700); err != nil {
 		return err
@@ -396,11 +457,6 @@ func run() error {
 	}
 	defer rpc.conn.Close()
 	fmt.Println("Native host started.")
-	if *account > 0 {
-		if err := login(ctx, rpc, c, *slot, startupDirectory); err != nil {
-			return err
-		}
-	}
 	gameplayCtx, stopGameplay := context.WithCancelCause(ctx)
 	defer stopGameplay(nil)
 	var gameplayTimer *time.Timer
@@ -414,9 +470,6 @@ func run() error {
 			gameplayTimer.Stop()
 		}
 	}()
-	if *account > 0 {
-		startBudget()
-	}
 	// Interrupt pending local RPC reads as well as model requests at expiry.
 	stopRPC := context.AfterFunc(gameplayCtx, func() { _ = rpc.conn.Close() })
 	defer stopRPC()
@@ -428,17 +481,14 @@ func run() error {
 	player.profile = &profile
 	player.group = &sessionGroup{rpc: rpc, root: *root, accounts: accounts,
 		sessions: map[int]managedSession{}, startBudget: startBudget, reservations: locks, allowedAccounts: allowedAccounts,
-		states: map[int]map[string]any{}, viewers: map[int]*spectatorProcess{}, showViewers: *viewer}
+		states: map[int]map[string]any{}, viewers: map[int]*spectatorProcess{}, showViewers: *viewer, designCharacter: player.designCharacter}
 	if *account > 0 {
-		player.group.sessions[nativeSession] = managedSession{Account: *account, Character: *slot}
-	}
-	commands, _ := player.contract["commands"].([]any)
-	player.contract["commands"] = append(commands, groupCommandDefinitions()...)
-	if *viewer && *account > 0 {
-		if err := player.group.watch(nativeSession); err != nil {
+		if _, err := player.group.open(gameplayCtx, *account, *slot); err != nil {
 			return err
 		}
 	}
+	commands, _ := player.contract["commands"].([]any)
+	player.contract["commands"] = append(commands, groupCommandDefinitions()...)
 	fmt.Println("Exploration started. Take control in the spectator to pause the agent. Ctrl+C stops the controller and its host.")
 	if err := play(gameplayCtx, rpc, player, *limit); err != nil {
 		return err

@@ -7,6 +7,12 @@ close or watch individual sessions. Its goal is ordinary exploration, dialogue,
 quest progression, combat and discovering systems. Suspected problems go into
 a local report.
 
+Agents can initiate and reply to in-game conversations using `chat.send`, including
+local chat, whispers and party chat. They speak according to their profile and can
+coordinate with other characters. Native channel permissions still apply: world
+chat requires a radio and SP, party/guild chat requires membership, and whispers
+require a known recipient's player ID. Incoming chat remains untrusted game content.
+
 ## Build and installation
 
 ```powershell
@@ -35,11 +41,29 @@ To force the initial account, use `-account 2` with `-character 1` or
 `-character 2`. By default `-account 0` lets the agent choose its initial account
 and open additional accounts through `controller.openAccount`. If a selected slot is empty, startup creates a character
 through the ordinary creation forms and enters once the server confirms it.
-The initial profile uses a generated Rover name, default appearance, Fire element,
-and two bonus points each in CON/INT plus one in WIS. Its name and generated
-deletion code are saved privately in `agent/account-N-character-N/character.private.json`
-before submission. Keep this file with your local account credentials. Existing
-characters are selected on subsequent launches.
+For an empty slot, a separate model request chooses the character's name, native
+portrait archetype, element, starting stats and all four RGB tint controls. It
+uses the controller persona, ongoing goals, native portrait bonuses and existing
+character names. There is no fixed Rover/Fire/default-color creation template.
+The choices are validated and saved with the private deletion code in
+`agent/account-N-character-N/character.private.json` before submission. Retries
+reuse that design. Rejected names can trigger a new design, with at most three
+design/name attempts per startup. Credentials and the deletion code are never
+included in the design request. Keep this private file with your account records.
+Existing characters retain their appearance and are selected without requesting
+a new design; customization applies when a chosen slot is empty.
+
+Character design and gameplay guidance describe the elements' broad tendencies:
+Water favors support, Wind favors speed and dodging, Fire favors raw damage, and
+Earth favors defense. Agents may use these to plan party roles while keeping
+their own preferences and checking actual skills and effects during play.
+
+Names follow the shared server rules and the native wizard's ten-byte editor
+limit (4–10 printable ASCII bytes). The five free stat points are allocated in
+STR/CON/INT/WIS/AGI order, separately from the archetype's built-in bonuses. Color
+choices use the wizard's four RGB tint groups: digits 0–9, with 4 neutral, rather
+than absolute 0–255 RGB values. Both the updated controller and native client are
+needed for the creation catalog and color-state observations.
 
 ```powershell
 .\wlo-player.exe --profile Aria --accounts 1,2 --duration 1h
@@ -54,7 +78,9 @@ This is one shared deadline for the whole group. Opening or closing another
 account does not restart it. Each account can have one active character at a time.
 Walking, cinematics and spectator intervention count toward this hour. Use
 `-duration 30m` to select another duration. An optional `-decisions` cap can end
-a diagnostic run earlier. Pending model requests and local API waits are cancelled
+a diagnostic run earlier. This cap counts gameplay/coordinator decisions; the
+one-time character-design requests and bounded name retries are additional.
+Pending model requests and local API waits are cancelled
 when the duration expires, and the hosted connection closes. Token usage is
 recorded in the profile directory's `usage.jsonl`. There is no monetary
 spending cap in this tool.
@@ -119,11 +145,17 @@ Workspace changes pause while any spectator owns input.
 
 ## Gameplay and reports
 
-The model receives semantic state and visible NPCs. It can request navigation
-and asset lookups, inspect forms and choose ordinary game actions. Login happens
+The model receives semantic state and visible NPCs. It interacts with NPCs by
+their map click ID using `world.interactNPC`, without
+screen-coordinate clicks. NPC snapshots expose live interaction eligibility;
+moving actors are resolved again when the command executes. Their template IDs
+identify definitions and must not be used as interaction targets.
+It can request navigation and asset lookups, inspect forms and choose ordinary
+game actions. Login happens
 inside the controller. Passwords and API keys are removed from model input and
 controller journals. Model output has no filesystem, shell or browser tools.
-The prompt directs it to avoid unsolicited player interactions and spending IM
+The prompt allows in-game chat, while directing it to avoid unsolicited mail,
+trade or PK and spending IM
 or Bonus points. Normal NPC purchases using earned gold are allowed.
 
 Each account/character keeps its private creation profile under `agent/`, for
@@ -145,7 +177,9 @@ timing and long-session recovery require live evaluation with the selected model
 
 `go test -race ./cmd/wlo-player` covers session routing, profile memory isolation,
 allowed account sets, reservation exclusion and reservation recovery after a
-controller crash. Model decisions use a local mock server in these tests.
+controller crash. It also covers model-selected character designs, wizard control
+routing, persisted choices and name rejection recovery. Model decisions use a
+local mock server in these tests.
 
 The separate `TestLiveNativeGroup` integration test is disabled unless
 `WLO_PLAYER_LIVE_ROOT` points to an exported client directory. It uses the first
@@ -153,7 +187,8 @@ two accounts in that directory's `.secrets`, enters slot 1, creates a character
 if empty, and temporarily forms a party when the characters can see each other.
 Use dedicated test accounts. Private tutorial scenes skip the party subtest;
 independent login and closing one session while retaining the other are still
-checked. It does not call OpenAI or establish autonomous model gameplay acceptance.
+checked. It uses a fixture character design, does not call OpenAI and does not
+establish autonomous model gameplay acceptance.
 
 The model request uses the documented [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)
 and [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).

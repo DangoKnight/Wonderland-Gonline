@@ -14,6 +14,25 @@ import (
 	"time"
 )
 
+func TestControllerAllowsGameChatWithoutOpeningRestrictedCommands(t *testing.T) {
+	names := []string{"chat.send", "world.interactNPC", "chat.admin", "mail.send", "social.friend", "trade.offer", "login.submit", "server.shutdown"}
+	commands := make([]any, 0, len(names))
+	for _, name := range names {
+		commands = append(commands, map[string]any{"name": name})
+	}
+	p := newPlayer(nil, credentials{}, "test-model", t.TempDir(), map[string]any{"commands": commands})
+	for _, name := range names {
+		want := name == "chat.send" || name == "world.interactNPC"
+		if p.allowed[name] != want {
+			t.Errorf("command %s allowed=%v, want %v", name, p.allowed[name], want)
+		}
+	}
+	filtered, _ := p.contract["commands"].([]any)
+	if len(filtered) != 2 || textValue(object(filtered[0])["name"]) != "chat.send" {
+		t.Fatal("chat command was not exposed in the model contract", filtered)
+	}
+}
+
 func TestCredentialsNeverNeedModelAccess(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 	path := filepath.Join(t.TempDir(), ".secrets")
