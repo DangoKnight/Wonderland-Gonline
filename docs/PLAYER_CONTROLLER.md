@@ -53,6 +53,11 @@ included in the design request. Keep this private file with your account records
 Existing characters retain their appearance and are selected without requesting
 a new design; customization applies when a chosen slot is empty.
 
+Portraits outside the native carousel viewport are brought into view with its
+arrows; carousel motion also advances in headless sessions without rendering.
+If startup returns `needsAttention`, opening the same account and character again
+resumes its existing session through the controller's private startup path.
+
 Character design and gameplay guidance describe the elements' broad tendencies:
 Water favors support, Wind favors speed and dodging, Fire favors raw damage, and
 Earth favors defense. Agents may use these to plan party roles while keeping
@@ -150,6 +155,9 @@ their map click ID using `world.interactNPC`, without
 screen-coordinate clicks. NPC snapshots expose live interaction eligibility;
 moving actors are resolved again when the command executes. Their template IDs
 identify definitions and must not be used as interaction targets.
+Model output constrains operation names to the filtered live API contract, so
+descriptions such as “Interact with Persian Cat” belong in the reason field and
+cannot replace `world.interactNPC` as the command identifier.
 It can request navigation and asset lookups, inspect forms and choose ordinary
 game actions. Login happens
 inside the controller. Passwords and API keys are removed from model input and

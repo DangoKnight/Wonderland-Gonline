@@ -11,6 +11,8 @@ func (c *CreateCharacter) AutomationInfo() seui.AutomationInfo {
 		}
 	}
 	value["roles"] = roles
+	value["carouselPosition"] = c.Current
+	value["carouselMoving"] = c.Remaining != 0
 	if c.Role != nil {
 		value["appearance"] = map[string]any{"body": c.Role.Body.Type, "head": c.Role.Body.Head, "element": c.Role.Body.Element, "colors": c.Role.Body.Colors, "edit": c.Role.Body.Edit}
 		parts := [partCount][3]byte{}

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -38,6 +39,9 @@ Do not claim a suspected bug is proven. Avoid repeating an ineffective action.
 
 Your only means of acting is the supplied semantic game API. Choose exactly one
 command or query at a time, using the supplied contract's exact names and arguments.
+The name field is an exact API identifier such as world.interactNPC, never a
+description such as "Interact with Persian Cat". Put explanations in reason.
+For wait or stop, use an empty name and argumentsJSON {}.
 ArgumentsJSON must contain a JSON object. Query names are navigation or lookup.
 Navigation takes query and its fields from the contract; lookup takes kind and entry.
 Use queries to find walkable routes and learn about items/skills you can see or own.
@@ -86,6 +90,10 @@ Use controller.openAccount with account and character (slot 1 or 2) when you wan
 another character. One account may have one active character at a time. Empty slots
 are created automatically with a design guided by your persona and plans. Existing
 characters keep their designs; choose an empty slot if you want to design a new one.
+If startup needs attention and the session is not inWorld, use
+controller.openAccount again with the same account and character to resume it.
+Resuming your own activeSession is allowed even if its account is reserved.
+Do not attempt to complete login or character creation with gameplay ui.invoke.
 controller.closeSession closes one session; watchSession
 opens its spectator. All members share the same one-hour gameplay budget.
 controlledSessions contains each session's current observations. Set the decision's
@@ -225,19 +233,58 @@ func playerObservation(state map[string]any) map[string]any {
 	return copy
 }
 
-func decisionSchema() map[string]any {
+func decisionSchema(contract map[string]any) map[string]any {
 	properties := map[string]any{}
 	for _, name := range []string{"kind", "name", "argumentsJSON", "memory", "reason", "report"} {
 		properties[name] = map[string]any{"type": "string"}
 	}
 	properties["kind"] = map[string]any{"type": "string", "enum": []string{"command", "query", "wait", "stop"}}
+	names := []string{""} // wait/stop do not execute an operation.
+	seen := map[string]bool{"": true}
+	definitions, _ := contract["commands"].([]any)
+	for _, definition := range definitions {
+		name := textValue(object(definition)["name"])
+		if name != "" && !seen[name] {
+			names, seen[name] = append(names, name), true
+		}
+	}
+	for name := range object(contract["queries"]) {
+		if name != "" && !seen[name] {
+			names, seen[name] = append(names, name), true
+		}
+	}
+	sort.Strings(names)
+	properties["name"] = map[string]any{"type": "string", "enum": names, "description": "Exact command/query identifier from the supplied contract; empty for wait/stop. Describe your intention in reason, not name."}
 	properties["waitSeconds"] = map[string]any{"type": "integer", "minimum": 1, "maximum": maxDecisionWaitSeconds}
 	properties["session"] = map[string]any{"type": "integer", "minimum": 0}
 	return map[string]any{"type": "object", "properties": properties, "required": []string{"kind", "name", "argumentsJSON", "memory", "reason", "report", "waitSeconds", "session"}, "additionalProperties": false}
 }
 
 func (p *player) decide(ctx context.Context, state map[string]any) (decision, error) {
-	input := map[string]any{"contract": p.contract, "memory": p.memory, "recent": p.recent, "observation": playerObservation(state)}
+	contract := p.contract
+	if p.group != nil && p.instructions == "" {
+		inWorld := false
+		for _, member := range p.group.states {
+			inWorld = inWorld || boolValue(member["inWorld"])
+		}
+		if !inWorld {
+			// Startup is controller-owned. Do not offer gameplay/UI operations
+			// that will necessarily be rejected until a character enters world.
+			contract = map[string]any{}
+			for key, value := range p.contract {
+				contract[key] = value
+			}
+			commands, _ := p.contract["commands"].([]any)
+			startup := []any{}
+			for _, definition := range commands {
+				if strings.HasPrefix(textValue(object(definition)["name"]), "controller.") {
+					startup = append(startup, definition)
+				}
+			}
+			contract["commands"], contract["queries"] = startup, map[string]any{}
+		}
+	}
+	input := map[string]any{"contract": contract, "memory": p.memory, "recent": p.recent, "observation": playerObservation(state)}
 	instructions := playInstructions
 	if p.instructions != "" {
 		instructions = p.instructions
@@ -251,7 +298,7 @@ func (p *player) decide(ctx context.Context, state map[string]any) (decision, er
 	body := map[string]any{"model": p.model, "store": false, "instructions": instructions,
 		"input": p.redact(jsonText(input)), "max_output_tokens": maxModelOutputTokens,
 		"reasoning": map[string]any{"effort": "low"},
-		"text":      map[string]any{"format": map[string]any{"type": "json_schema", "name": "game_decision", "strict": true, "schema": decisionSchema()}},
+		"text":      map[string]any{"format": map[string]any{"type": "json_schema", "name": "game_decision", "strict": true, "schema": decisionSchema(contract)}},
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, p.endpoint, bytes.NewBufferString(jsonText(body)))
 	if err != nil {

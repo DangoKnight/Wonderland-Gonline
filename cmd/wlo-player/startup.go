@@ -165,7 +165,16 @@ func chooseStartupAction(state map[string]any, c credentials, slot int, profile 
 		switch number(creation["step"]) {
 		case creationNameStep:
 			if number(creation["selected"]) != design.Role {
-				return invokeStartup(state, creationForm, fmt.Sprintf("RolePics[%d]", design.Role), "create-role", "activate", nil)
+				if boolValue(creation["carouselMoving"]) {
+					return startupAction{}, nil
+				}
+				portrait := fmt.Sprintf("RolePics[%d]", design.Role)
+				if control := formControl(state, creationForm, portrait); control != nil && boolValue(control["enabled"]) {
+					return invokeStartup(state, creationForm, portrait, "create-role", "activate", nil)
+				}
+				// Native portraits outside the carousel viewport have no live UI
+				// handle. Bring the selected design into view through its arrows.
+				return invokeStartup(state, creationForm, "NextChar", fmt.Sprintf("create-carousel-%d", number(creation["carouselPosition"])), "activate", nil)
 			}
 			if !sent["create-name"] {
 				return invokeStartup(state, creationForm, "NameField", "create-name", "set", profile.Name)

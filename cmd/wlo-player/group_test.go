@@ -84,7 +84,8 @@ func TestGroupDecisionTargetsChosenSession(t *testing.T) {
 }
 
 func TestGroupRejectsDuplicateAccountAndForeignTargets(t *testing.T) {
-	g := &sessionGroup{accounts: []credentials{{}}, sessions: map[int]managedSession{7: {Account: 1, Character: 1}}, states: map[int]map[string]any{7: groupState(7, false)}}
+	rpc := fakeRPC(t, func(string, map[string]any) any { return groupState(7, false) })
+	g := &sessionGroup{rpc: rpc, accounts: []credentials{{}}, sessions: map[int]managedSession{7: {Account: 1, Character: 1}}, states: map[int]map[string]any{7: groupState(7, false)}}
 	if _, err := g.open(context.Background(), 1, 2); err == nil {
 		t.Fatal("two simultaneous characters from one account accepted")
 	}
@@ -104,6 +105,38 @@ func TestGroupRejectsDuplicateAccountAndForeignTargets(t *testing.T) {
 	}
 }
 
+func TestGroupOpenResumesExistingStartupWithoutAllocatingSession(t *testing.T) {
+	state := startupState("SelectCharacter", startupControl("Enter[0]"))
+	state["details"] = groupState(7, false)["details"]
+	submissions := 0
+	rpc := fakeRPC(t, func(method string, params map[string]any) any {
+		switch method {
+		case "agent.state":
+			if number(params["session"]) != 7 {
+				t.Error("startup resumed on another session")
+			}
+			return state
+		case "agent.execute":
+			request := object(params["request"])
+			if request["command"] != "character.select" || number(object(request["arguments"])["slot"]) != 1 {
+				t.Error("unexpected startup action", request["command"])
+			}
+			submissions++
+			state["inWorld"] = true
+			return map[string]any{"id": "resume", "status": "accepted"}
+		default:
+			t.Error("resume allocated or modified workspace", method)
+			return nil
+		}
+	})
+	started := 0
+	g := &sessionGroup{rpc: rpc, root: t.TempDir(), accounts: []credentials{{}}, sessions: map[int]managedSession{7: {Account: 1, Character: 1}}, startBudget: func() { started++ }}
+	result, err := g.open(context.Background(), 1, 1)
+	if err != nil || result["session"] != 7 || submissions != 1 || started != 1 || len(g.sessions) != 1 {
+		t.Fatal("incomplete startup was not resumed", result, err, submissions, started)
+	}
+}
+
 func TestGroupBlocksModelLoginThroughGenericUI(t *testing.T) {
 	state := groupState(1, false)
 	state["inWorld"] = false
@@ -117,7 +150,19 @@ func TestGroupBlocksModelLoginThroughGenericUI(t *testing.T) {
 	})
 	p := newPlayer(rpc, credentials{key: "test-key"}, "test-model", t.TempDir(), map[string]any{"commands": []any{map[string]any{"name": "ui.invoke"}}})
 	p.group = &sessionGroup{rpc: rpc, sessions: map[int]managedSession{1: {Account: 1, Character: 1}}, states: map[int]map[string]any{1: state}}
-	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	p.contract["commands"] = append(p.contract["commands"].([]any), groupCommandDefinitions()...)
+	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Error(err)
+			return
+		}
+		schema := object(object(object(body["text"])["format"])["schema"])
+		names := jsonText(object(object(schema["properties"])["name"])["enum"])
+		if strings.Contains(names, "ui.invoke") || !strings.Contains(names, openAccountCommand) {
+			t.Error("incomplete startup offered gameplay instead of recovery", names)
+		}
+		// A malicious/nonconforming response must still fail the execution gate.
 		d := decision{Kind: "command", Session: 1, Name: "ui.invoke", ArgumentsJSON: `{"id":"login-account","revision":"current","action":"set","value":"unassigned-account"}`, Memory: "Recover the disconnected character.", Reason: "Try logging in through a form.", WaitSeconds: 1}
 		_ = json.NewEncoder(w).Encode(map[string]any{"status": "completed", "output": []any{map[string]any{"content": []any{map[string]any{"type": "output_text", "text": jsonText(d)}}}}})
 	}))

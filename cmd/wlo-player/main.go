@@ -232,7 +232,7 @@ func login(ctx context.Context, rpc *rpcClient, c credentials, slot int, directo
 				return fmt.Errorf("startup stage %s %s", stage, status)
 			}
 			if textValue(result["status"]) == "executed" {
-				if strings.HasPrefix(stage, "create-stat-") || strings.HasPrefix(stage, "create-color-") || stage == "create-role" {
+				if strings.HasPrefix(stage, "create-stat-") || strings.HasPrefix(stage, "create-color-") || strings.HasPrefix(stage, "create-carousel-") || stage == "create-role" {
 					delete(sent, stage)
 				}
 				delete(tickets, textValue(result["id"]))

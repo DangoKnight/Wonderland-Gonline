@@ -199,6 +199,14 @@ func (g *sessionGroup) open(ctx context.Context, account, character int) (map[st
 			if member.Character != character {
 				return nil, errors.New("close this account's active session before selecting its other character")
 			}
+			g.rpc.session = id
+			state, err := g.rpc.call("agent.state", g.rpc.route())
+			if err != nil {
+				return nil, err
+			}
+			if !boolValue(state["inWorld"]) {
+				return g.loginSession(ctx, id, account, character)
+			}
 			return map[string]any{"session": id, "alreadyOpen": true}, nil
 		}
 	}
@@ -237,6 +245,12 @@ func (g *sessionGroup) open(ctx context.Context, account, character int) (map[st
 	}
 	g.sessions[id] = managedSession{Account: account, Character: character}
 	registered = true // Retain the reservation even if login needs attention.
+	return g.loginSession(ctx, id, account, character)
+}
+
+// Resume the controller-owned startup path without allocating another session
+// or releasing the account reservation when a recoverable startup error occurs.
+func (g *sessionGroup) loginSession(ctx context.Context, id, account, character int) (map[string]any, error) {
 	g.rpc.session = id
 	directory := filepath.Join(g.root, "agent", fmt.Sprintf("account-%d-character-%d", account, character))
 	if err := os.MkdirAll(directory, 0700); err != nil {

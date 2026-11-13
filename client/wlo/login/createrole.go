@@ -864,14 +864,22 @@ func (c *CreateCharacter) animate() {
 	}
 }
 
-// Update is slot +0x18 (FUN_002198a8): the fixed form, the animation, then
-// the attribute hint under the pointer.
+// Tick advances the carousel even when headless/background sessions skip UI
+// drawing. Its state determines which portrait controls can be selected.
+func (c *CreateCharacter) Tick() {
+	c.FixedForm.Tick()
+	if c.Visible {
+		c.animate()
+	}
+}
+
+// Update is slot +0x18 (FUN_002198a8): the fixed form and attribute hint.
+// Animation advances through Tick so control availability never requires drawing.
 func (c *CreateCharacter) Update(in *seui.Input) {
 	if !c.Visible {
 		return
 	}
 	c.FixedForm.Update(in)
-	c.animate()
 	if i := c.hoveredStat(in); i != 0 {
 		r := c.StatRects[i]
 		seui.WrappedTooltip(c.Env, r.Max.X+2, r.Min.Y, []byte(statHints[i]), hintPen, hintFill, hintLineHeight, hintCharsPerLine)

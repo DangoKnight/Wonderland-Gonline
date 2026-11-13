@@ -158,6 +158,33 @@ func TestModelReceivesStateWithoutSecretsAndUsesStructuredOutput(t *testing.T) {
 	}
 }
 
+func TestModelOperationNamesAreConstrainedToFilteredLiveContract(t *testing.T) {
+	p := newPlayer(nil, credentials{key: "test-key"}, "test-model", t.TempDir(), map[string]any{
+		"commands": []any{map[string]any{"name": "world.interactNPC"}, map[string]any{"name": "login.submit"}},
+		"queries":  map[string]any{"navigation": map[string]any{}, "lookup": map[string]any{}},
+	})
+	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Error(err)
+			return
+		}
+		schema := object(object(object(body["text"])["format"])["schema"])
+		names := object(object(schema["properties"])["name"])["enum"]
+		if jsonText(names) != `["","lookup","navigation","world.interactNPC"]` {
+			t.Error("model can invent operation names or lost native queries", names)
+		}
+		d := decision{Kind: "command", Name: "world.interactNPC", ArgumentsJSON: `{"id":8}`, WaitSeconds: 1}
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "completed", "output": []any{map[string]any{"content": []any{map[string]any{"type": "output_text", "text": jsonText(d)}}}}})
+	}))
+	defer model.Close()
+	p.endpoint = model.URL
+	d, err := p.decide(context.Background(), nil)
+	if err != nil || d.Name != "world.interactNPC" {
+		t.Fatal(d, err)
+	}
+}
+
 func TestViewerTakeoverDiscardsModelAction(t *testing.T) {
 	state := map[string]any{"details": map[string]any{"context": map[string]any{"map": 1}, "control": map[string]any{"owner": "api", "generation": 1}}}
 	viewer := map[string]any{"details": map[string]any{"context": map[string]any{"map": 1}, "control": map[string]any{"owner": "viewer", "generation": 2}}}

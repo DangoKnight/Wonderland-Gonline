@@ -163,6 +163,30 @@ func TestStartupAppliesChosenRoleStatsElementAndAllColors(t *testing.T) {
 	}
 }
 
+func TestStartupScrollsHiddenPortraitAndWaitsForCarousel(t *testing.T) {
+	design := fixtureCharacterDesign()
+	design.Role = 2 // Aria's selected portrait was initially outside the viewport.
+	value := map[string]any{"step": float64(1), "selected": float64(1), "carouselPosition": float64(1)}
+	root := map[string]any{"kind": "characterCreation", "value": value}
+	state := startupState(creationForm, root, startupControl("NextChar"))
+	profile := characterProfile{Name: design.Name, Design: &design}
+	action, err := chooseStartupAction(state, credentials{}, 1, profile, nil)
+	if err != nil || action.args["id"] != "handle-NextChar" {
+		t.Fatal("hidden portrait did not scroll into view", action, err)
+	}
+	value["carouselMoving"] = true
+	action, err = chooseStartupAction(state, credentials{}, 1, profile, nil)
+	if err != nil || action.key != "" {
+		t.Fatal("another action interrupted the carousel animation", action, err)
+	}
+	value["carouselMoving"] = false
+	state = startupState(creationForm, root, startupControl("NextChar"), startupControl("RolePics[2]"))
+	action, err = chooseStartupAction(state, credentials{}, 1, profile, nil)
+	if err != nil || action.args["id"] != "handle-RolePics[2]" {
+		t.Fatal("visible target portrait was not selected", action, err)
+	}
+}
+
 func TestLoginRedesignsRejectedNameAndSavesBeforeSubmission(t *testing.T) {
 	directory := t.TempDir()
 	initial, err := loadCharacterProfile(directory)
