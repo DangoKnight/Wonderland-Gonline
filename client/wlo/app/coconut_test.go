@@ -190,9 +190,15 @@ func TestGroundItemUsesNativeCenterAnchor(t *testing.T) {
 
 func TestCoconutNativeAcquisitionArcAndNotice(t *testing.T) {
 	c, now, _ := enteredClient(t)
+	sent := wire(t, c)
 	c.InventoryState.Bag = game.Inventory{}
 	c.World.NPCs[1].X, c.World.NPCs[1].Y = 950, 950
-	c.sendNPCClick(1)
+	if err := c.sendNPCClick(1); err != nil {
+		t.Fatal(err)
+	}
+	if got := sent(); len(got) != 1 || !bytes.Equal(got[0], []byte{20, 1, 1, 0}) {
+		t.Fatal("missing native actor click", got)
+	}
 	// Independent native AC23:6 golden: Coconut, one, actor-flight flag.
 	p := []byte{23, 6, 106, 160, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 	c.dispatch(p)
