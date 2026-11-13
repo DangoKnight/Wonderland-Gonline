@@ -13,10 +13,13 @@ import (
 
 // Account form layout from FUN_003ffbc0, FUN_0040063c and FUN_00400420.
 const (
-	loginBackX, loginBackY     = 0x10b, 0x87
-	recordIconX, recordIconY   = 0x147, 0x130
-	fieldInk                   = 0x1f
-	fieldMaxBytes              = 10
+	loginBackX, loginBackY   = 0x10b, 0x87
+	recordIconX, recordIconY = 0x147, 0x130
+	fieldInk                 = 0x1f
+	fieldMaxBytes            = 10
+	// Gonline account passwords permit up to 14 bytes. Passwords use a
+	// length-prefixed wire field and are independent of the account-name limit.
+	PasswordMaxBytes           = 14
 	noticeDuration             = 3 * time.Second
 	accountFile                = "AccountList.dat"
 	accountFieldName           = "IDField"
@@ -100,7 +103,7 @@ func (f *IDPassword) build() {
 	p.Password = true
 	p.OnEnter, p.OnTab = f.clickLogin, f.clickLogin
 	p.AllowPaste = true
-	p.SetMaxLen(fieldMaxBytes)
+	p.SetMaxLen(PasswordMaxBytes)
 
 	f.Login = f.button("Btn_Login_L", 0x168, f.Submit)
 	f.Prev = f.button("Btn_Prev_L", 0x186, f.Previous)

@@ -139,8 +139,8 @@ scripts are `agent_flow.py` and `agent_world.py`.
 
 Limits and gotchas:
 
-- Account and password editors are limited to **10 bytes**; longer values are
-  silently truncated and login fails.
+- Account names are limited to **10 bytes**. Password editors and the semantic
+  login API accept up to **14 bytes**, matching Gonline's server password limit.
 - The character creation "Set password" page is validated against the account
   password by the server, despite the UI wording.
 - A rejected create packet is not handled by the client: the form hides and

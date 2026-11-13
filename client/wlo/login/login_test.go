@@ -3,7 +3,34 @@ package login
 import (
 	"bytes"
 	"testing"
+	"wonderland-gonline/client/wlo/picdb"
+	"wonderland-gonline/client/wlo/seui"
 )
+
+func TestFullLengthPasswordThroughLoginAndConfirmation(t *testing.T) {
+	env := &seui.Env{Pics: picdb.New()}
+	assets := NewAssets(t.TempDir())
+	form := NewIDPassword(env, NewGlobals(), NewNet(), assets)
+	if form.Password.MaxLen != 14 {
+		t.Fatal("login editor cannot accept the server password limit")
+	}
+	form.Account.SetText([]byte("sample"))
+	form.Password.SetText([]byte("abcdefghijkl"))
+	packet := form.LoginPacket()
+	// Native raw bytes independently assert the password length and all bytes.
+	want := []byte{63, 4, 187, 4, 6, 's', 'a', 'm', 'p', 'l', 'e', 12, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 0}
+	if len(packet) != len(want)+1 || !bytes.Equal(packet[:len(want)], want) {
+		t.Fatal("12-byte password was truncated on the wire")
+	}
+	confirmation := NewInputPassword(env, assets)
+	confirmation.Fields[1].SetText([]byte("abcdefghijkl"))
+	confirmation.Fields[2].SetText([]byte("abcdefghijkl"))
+	confirmation.Fields[3].SetText([]byte("123456"))
+	confirmation.Fields[4].SetText([]byte("123456"))
+	if confirmation.Fields[1].MaxLen != 14 || confirmation.Fields[2].MaxLen != 14 || confirmation.Check(false) != PwOK {
+		t.Fatal("full password rejected by confirmation form")
+	}
+}
 
 func TestBuildLoginGolden(t *testing.T) {
 	p := BuildLogin([]byte(" ABC "), []byte("pw"), nil)

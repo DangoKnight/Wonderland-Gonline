@@ -45,13 +45,13 @@ func TestAgentContractValidation(t *testing.T) {
 func TestAgentQueueLifecycleAndPrivacy(t *testing.T) {
 	now := time.Unix(100, 0)
 	c := &Client{Now: func() time.Time { return now }}
-	request := []byte(`{"command":"login.submit","arguments":{"account":"sample","password":"secret123"}}`)
+	request := []byte(`{"command":"login.submit","arguments":{"account":"sample","password":"secret123456"}}`)
 	accepted, err := c.AgentSubmit(request)
 	if err != nil || accepted.Status != "accepted" {
 		t.Fatalf("admission: %+v %v", accepted, err)
 	}
 	b, _ := json.Marshal(c.AgentCommandResults())
-	if bytes.Contains(b, []byte("secret123")) || bytes.Contains(b, []byte("sample")) {
+	if bytes.Contains(b, []byte("secret123456")) || bytes.Contains(b, []byte("sample")) {
 		t.Fatal("credentials leaked into results")
 	}
 	other := &Client{Now: c.Now}

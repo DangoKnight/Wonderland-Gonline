@@ -15,6 +15,7 @@ import (
 // mode 2 character deletion.
 const (
 	pwFields       = 4
+	passwordFields = 2 // Account password and its confirmation.
 	pwMinLen       = 6
 	pwMaxLen       = 10
 	pwFieldLeft    = 149 // Align with the field boxes authored into Form_InputPw_1/2.
@@ -71,6 +72,9 @@ func NewInputPassword(env *seui.Env, a Assets) *InputPassword {
 		w, h := env.Pics.Size(env.Pics.Find("Panel26"))
 		e.Init("Panel26", pwFieldLeft, h, w, 0, 0, true, pwFieldHeight, pwFieldWidth, top)
 		e.SetMaxLen(pwMaxLen)
+		if i <= passwordFields {
+			e.SetMaxLen(PasswordMaxBytes)
+		}
 		e.Password = true
 		e.Tag = i
 		e.OnClickTag = f.fieldClicked
@@ -173,7 +177,7 @@ func (f *InputPassword) Check(notify bool) int {
 		return say(PwBadLength, localization.UI("ui.login.password_less_6_char_1d73a030"))
 	case len(code) < pwMinLen:
 		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_less_6_char_41e8891d"))
-	case len(pw) > pwMaxLen:
+	case len(pw) > PasswordMaxBytes:
 		return say(PwBadLength, localization.UI("ui.login.password_is_too_long_f4ecbe2a"))
 	case len(code) > pwMaxLen:
 		return say(PwBadCodeLength, localization.UI("ui.login.del_pwd_is_too_long_997f1f09"))

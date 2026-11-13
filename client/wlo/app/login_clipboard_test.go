@@ -14,10 +14,13 @@ func TestLoginClipboardPaste(t *testing.T) {
 			t.Fatal("login field not wired to clipboard", i)
 		}
 		field.SetText(nil)
-		field.Clipboard = func() []byte { return []byte("Abcd12345678") }
+		field.Clipboard = func() []byte { return []byte("Abcd1234567890xy") }
 		c.UI.Focus(field)
 		c.UI.KeyDown(seui.VKV, seui.ShiftCtrl)
 		want := "Abcd123456"
+		if i == 1 {
+			want = "Abcd1234567890"
+		}
 		if string(field.Text) != want {
 			t.Fatal("paste did not respect field rules", i)
 		}
@@ -27,7 +30,7 @@ func TestLoginClipboardPaste(t *testing.T) {
 		// Release resets suppression; subsequent typing must still work.
 		field.KeyDown(seui.VKBack, 0)
 		field.Char('9')
-		if len(field.Text) != 10 || field.Text[9] != '9' {
+		if string(field.Text) != want[:len(want)-1]+"9" {
 			t.Fatal("typing broken after paste", i)
 		}
 	}

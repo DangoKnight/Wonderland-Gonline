@@ -6,6 +6,7 @@ import (
 	"wonderland-gonline/client/wlo/hud"
 
 	"wonderland-gonline/client/wlo/inventory"
+	"wonderland-gonline/client/wlo/login"
 	"wonderland-gonline/client/wlo/seui"
 	"wonderland-gonline/internal/game"
 	"wonderland-gonline/internal/protocol"
@@ -54,7 +55,7 @@ func buildAgentActions() []agentAction {
 			c.Servers.Connect(channel)
 			return nil
 		}),
-		agentActionDef("login.submit", "login form is open; credentials are never retained in command history", []AgentArgument{{Name: "account", Type: "string", Min: 1, Max: 10, Sensitive: true}, {Name: "password", Type: "string", Min: 1, Max: 10, Sensitive: true}}, func(c *Client, a map[string]any) error {
+		agentActionDef("login.submit", "login form is open; credentials are never retained in command history", []AgentArgument{{Name: "account", Type: "string", Min: 1, Max: 10, Sensitive: true}, {Name: "password", Type: "string", Min: 1, Max: login.PasswordMaxBytes, Sensitive: true}}, func(c *Client, a map[string]any) error {
 			if c.Login == nil || !c.Login.Visible {
 				return agentRejected(false)
 			}
